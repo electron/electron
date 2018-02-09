@@ -39,8 +39,7 @@ class GtkMessageBox : public NativeWindowObserver {
                 const std::string& message,
                 const std::string& detail,
                 const std::string& checkbox_label,
-                bool checkbox_checked,
-                const gfx::ImageSkia& icon)
+                bool checkbox_checked)
       : cancel_id_(cancel_id),
         checkbox_checked_(false),
         parent_(static_cast<NativeWindow*>(parent_window)) {
@@ -56,22 +55,6 @@ class GtkMessageBox : public NativeWindowObserver {
           GTK_MESSAGE_DIALOG(dialog_), "%s", detail.c_str());
     if (!title.empty())
       gtk_window_set_title(GTK_WINDOW(dialog_), title.c_str());
-
-    // Set dialog's icon.
-    if (!icon.isNull()) {
-      GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(*icon.bitmap());
-      GtkIconSource* iconsource = gtk_icon_source_new();
-      GtkIconSet* iconset = gtk_icon_set_new();
-      gtk_icon_source_set_pixbuf(iconsource, pixbuf);
-      gtk_icon_set_add_source(iconset, iconsource);
-      GtkWidget* image = gtk_image_new_from_icon_set(iconset,
-                                                     GTK_ICON_SIZE_DIALOG);
-      gtk_message_dialog_set_image(GTK_MESSAGE_DIALOG(dialog_), image);
-      gtk_widget_show(image);
-      gtk_icon_source_free(iconsource);
-      gtk_icon_set_unref(iconset);
-      g_object_unref(pixbuf);
-    }
 
     if (!checkbox_label.empty()) {
       GtkWidget* message_area =
@@ -212,9 +195,9 @@ int ShowMessageBox(NativeWindow* parent,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
-                   const gfx::ImageSkia& icon) {
+                   const gfx::ImageSkia& /*icon*/) {
   return GtkMessageBox(parent, type, buttons, default_id, cancel_id, title,
-                       message, detail, "", false, icon)
+                       message, detail, "", false)
       .RunSynchronous();
 }
 
@@ -229,10 +212,10 @@ void ShowMessageBox(NativeWindow* parent,
                     const std::string& detail,
                     const std::string& checkbox_label,
                     bool checkbox_checked,
-                    const gfx::ImageSkia& icon,
+                    const gfx::ImageSkia& /*icon*/,
                     const MessageBoxCallback& callback) {
   (new GtkMessageBox(parent, type, buttons, default_id, cancel_id, title,
-                     message, detail, checkbox_label, checkbox_checked, icon))
+                     message, detail, checkbox_label, checkbox_checked))
       ->RunAsynchronous(callback);
 }
 
@@ -240,8 +223,7 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
     GtkMessageBox(nullptr, MESSAGE_BOX_TYPE_ERROR, {"OK"}, -1, 0, "Error",
                   base::UTF16ToUTF8(title).c_str(),
-                  base::UTF16ToUTF8(content).c_str(), "", false,
-                  gfx::ImageSkia())
+                  base::UTF16ToUTF8(content).c_str(), "", false)
         .RunSynchronous();
   } else {
     fprintf(stderr,
