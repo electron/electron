@@ -16,6 +16,8 @@
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
+#include <glib/gi18n.h>
+
 #define ANSI_FOREGROUND_RED   "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
 #define ANSI_TEXT_BOLD        "\x1b[1m"
@@ -124,17 +126,16 @@ class GtkMessageBox : public NativeWindowObserver {
   }
 
   const char* TranslateToStock(int id, const std::string& text) {
-    std::string lower = base::ToLowerASCII(text);
+    const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return GTK_STOCK_CANCEL;
-    else if (lower == "no")
-      return GTK_STOCK_NO;
-    else if (lower == "ok")
-      return GTK_STOCK_OK;
-    else if (lower == "yes")
-      return GTK_STOCK_YES;
-    else
-      return text.c_str();
+      return _("_Cancel");
+    if (lower == "no")
+      return _("_No");
+    if (lower == "ok")
+      return _("_OK");
+    if (lower == "yes")
+      return _("_Yes");
+    return text.c_str();
   }
 
   void Show() {
