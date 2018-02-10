@@ -14,9 +14,41 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 
+@interface PopUpButtonHandler : NSObject
+@property (nonatomic, weak) NSSavePanel *savePanel;
+@property (nonatomic, weak) NSArray *fileTypes;
+- (instancetype)initWithPanel:(NSSavePanel *)panel andTypes:(NSArray *)types;
+- (void)selectFormat:(id)sender;
+@end
+
+@implementation PopUpButtonHandler
+- (instancetype)initWithPanel:(NSSavePanel *)panel andTypes:(NSArray *)types {
+  self = [super init];
+  if (self) {
+    _savePanel = panel;
+    _fileTypes = types;
+  }
+  return self;
+}
+
+- (void)selectFormat:(id)sender {
+  NSPopUpButton *button = (NSPopUpButton *)sender;
+  NSInteger selectedItemIndex = [button indexOfSelectedItem];
+  NSString *nameFieldString = [[self savePanel] nameFieldStringValue];
+  NSString *trimmedNameFieldString = [nameFieldString stringByDeletingPathExtension];
+  NSString *extension = [[self fileTypes] objectAtIndex: selectedItemIndex];
+
+  NSString *nameFieldStringWithExt = [NSString stringWithFormat:@"%@.%@", trimmedNameFieldString, extension];
+  [[self savePanel] setNameFieldStringValue:nameFieldStringWithExt];
+  [[self savePanel] setAllowedFileTypes:@[extension]];
+}
+@end
+
 namespace file_dialog {
 
 namespace {
+
+static PopUpButtonHandler *popUpButtonHandler;
 
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableSet* file_type_set = [NSMutableSet set];
@@ -43,6 +75,9 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   [dialog setAllowedFileTypes:file_types];
 
+  if (!popUpButtonHandler)
+    popUpButtonHandler = [[PopUpButtonHandler alloc] initWithPanel:dialog andTypes:file_types];
+
   // add file format picker
   NSView  *accessoryView = [[NSView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
   NSTextField *label = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 60, 22)];
@@ -55,6 +90,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   NSPopUpButton *popupButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0) pullsDown:NO];
   [popupButton addItemsWithTitles:file_types];
+  [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
 
   [accessoryView addSubview:label];
