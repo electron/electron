@@ -24,26 +24,62 @@ namespace atom {
 
 namespace {
 
+#if defined(USE_X11)
+#if GTK_CHECK_VERSION(3,0,0)
+
+SkColor GdkRgbaToSkColor(const GdkRGBA& rgba) {
+  return SkColorSetARGB(rgba.alpha*255, rgba.red*255,
+                        rgba.green*255, rgba.blue*255);
+}
+
+SkColor GetStyleContextFgColor(GtkStyleContext* style_context,
+                               GtkStateFlags state) {
+  GdkRGBA rgba;
+  gtk_style_context_get_color(style_context, state, &rgba);
+  return GdkRgbaToSkColor(rgba);
+}
+
+SkColor GetStyleContextBgColor(GtkStyleContext* style_context,
+                               GtkStateFlags state) {
+  GdkRGBA rgba;
+  gtk_style_context_get_background_color(style_context, state, &rgba);
+  return GdkRgbaToSkColor(rgba);
+}
+
+// GTK+ 3 impl
+void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
+                     SkColor* hover, SkColor* background) {
+  GtkWidget* menu_bar = gtk_menu_bar_new();
+  GtkStyleContext* style_context = gtk_widget_get_style_context(menu_bar);
+  *enabled    = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_NORMAL);
+  *disabled   = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_INSENSITIVE);
+  *highlight  = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_SELECTED);
+  *hover      = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_PRELIGHT);
+  *background = GetStyleContextBgColor(style_context, GTK_STATE_FLAG_NORMAL);
+  g_object_unref(G_OBJECT(menu_bar));
+}
+
+#else  // GTK_CHECK_VERSION(3,0,0)
+
+// GTK+ 2 impl
+void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
+                     SkColor* hover, SkColor* background) {
+  GtkWidget* menu_bar = gtk_menu_bar_new();
+  GtkStyle* style = gtk_rc_get_style(menu_bar);
+  *enabled    = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
+  *disabled   = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
+  *highlight  = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
+  *hover      = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
+  *background = libgtkui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
+  g_object_unref(G_OBJECT(menu_bar));
+}
+#endif  // GTK_CHECK_VERSION(3,0,0)
+#endif  // USE_X11
+
 const char kViewClassName[] = "ElectronMenuBar";
 
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
-
-#if defined(USE_X11)
-void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
-                     SkColor* hover, SkColor* background) {
-  GtkWidget* menu_bar = gtk_menu_bar_new();
-
-  GtkStyle* style = gtk_rc_get_style(menu_bar);
-  *enabled = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_NORMAL]);
-  *disabled = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_INSENSITIVE]);
-  *highlight = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_SELECTED]);
-  *hover = libgtkui::GdkColorToSkColor(style->fg[GTK_STATE_PRELIGHT]);
-  *background = libgtkui::GdkColorToSkColor(style->bg[GTK_STATE_NORMAL]);
-
-  gtk_widget_destroy(menu_bar);
-}
-#endif
 
 }  // namespace
 
