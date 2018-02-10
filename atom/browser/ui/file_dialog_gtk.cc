@@ -4,6 +4,8 @@
 
 #include "atom/browser/ui/file_dialog.h"
 
+#include <glib/gi18n.h>  // _() macro
+
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "base/callback.h"
@@ -12,8 +14,6 @@
 #include "chrome/browser/ui/libgtkui/gtk_signal.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
-
-#include <glib/gi18n.h>  // _() macro
 
 namespace file_dialog {
 

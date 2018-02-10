@@ -4,6 +4,8 @@
 
 #include "atom/browser/ui/message_box.h"
 
+#include <glib/gi18n.h>
+
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/native_window_views.h"
@@ -15,8 +17,6 @@
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
-
-#include <glib/gi18n.h>
 
 #define ANSI_FOREGROUND_RED   "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
