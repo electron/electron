@@ -831,7 +831,8 @@ Sends a request to get current zoom factor, the `callback` will be called with
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+limits of 300% and 50% of original size, respectively. The formula for this is
+`scale := 1.2 ^ level`.
 
 #### `contents.getZoomLevel(callback)`
 
