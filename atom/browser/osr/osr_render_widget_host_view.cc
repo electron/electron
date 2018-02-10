@@ -194,7 +194,7 @@ class AtomCopyFrameGenerator {
 
   void OnCopyFrameCaptureSuccess(
       const gfx::Rect& damage_rect,
-      std::shared_ptr<SkBitmap> bitmap) {
+      const std::shared_ptr<SkBitmap>& bitmap) {
     base::AutoLock lock(onPaintLock_);
     view_->OnPaint(damage_rect, *bitmap);
   }
