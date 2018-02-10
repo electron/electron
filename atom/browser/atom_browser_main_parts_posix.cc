@@ -119,9 +119,8 @@ void ShutdownDetector::ThreadMain() {
 
   int signal;
   size_t bytes_read = 0;
-  ssize_t ret;
   do {
-    ret = HANDLE_EINTR(
+    ssize_t ret = HANDLE_EINTR(
         read(shutdown_fd_,
              reinterpret_cast<char*>(&signal) + bytes_read,
              sizeof(signal) - bytes_read));
