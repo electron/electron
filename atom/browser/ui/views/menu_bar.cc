@@ -25,7 +25,7 @@ namespace atom {
 namespace {
 
 #if defined(USE_X11)
-#if GTK_CHECK_VERSION(3,0,0)
+#if GTK_CHECK_VERSION(3, 0, 0)
 
 SkColor GdkRgbaToSkColor(const GdkRGBA& rgba) {
   return SkColorSetARGB(rgba.alpha*255, rgba.red*255,
@@ -50,12 +50,12 @@ SkColor GetStyleContextBgColor(GtkStyleContext* style_context,
 void GetMenuBarColor(SkColor* enabled, SkColor* disabled, SkColor* highlight,
                      SkColor* hover, SkColor* background) {
   GtkWidget* menu_bar = gtk_menu_bar_new();
-  GtkStyleContext* style_context = gtk_widget_get_style_context(menu_bar);
-  *enabled    = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_NORMAL);
-  *disabled   = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_INSENSITIVE);
-  *highlight  = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_SELECTED);
-  *hover      = GetStyleContextFgColor(style_context, GTK_STATE_FLAG_PRELIGHT);
-  *background = GetStyleContextBgColor(style_context, GTK_STATE_FLAG_NORMAL);
+  GtkStyleContext* sc = gtk_widget_get_style_context(menu_bar);
+  *enabled    = GetStyleContextFgColor(sc, GTK_STATE_FLAG_NORMAL);
+  *disabled   = GetStyleContextFgColor(sc, GTK_STATE_FLAG_INSENSITIVE);
+  *highlight  = GetStyleContextFgColor(sc, GTK_STATE_FLAG_SELECTED);
+  *hover      = GetStyleContextFgColor(sc, GTK_STATE_FLAG_PRELIGHT);
+  *background = GetStyleContextBgColor(sc, GTK_STATE_FLAG_NORMAL);
   g_object_unref(G_OBJECT(menu_bar));
 }
 
