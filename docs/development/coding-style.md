@@ -21,6 +21,13 @@ document. The document mentions some special types, scoped types (that
 automatically release their memory when going out of scope), logging mechanisms
 etc.
 
+## Documentation
+
+* Write [remark](https://github.com/remarkjs/remark) markdown style
+
+You can run `npm run lint-docs` to ensure that your documentation changes are
+formatted correctly.
+
 ## JavaScript
 
 * Write [standard](https://npm.im/standard) JavaScript style.
