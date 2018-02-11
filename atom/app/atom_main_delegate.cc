@@ -30,7 +30,7 @@
 #include "content/public/common/content_ipc_logging.h"
 #define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
   content::RegisterIPCLogger(msg_id, logger)
-#include "atom/common/api/api_messages.h"
+#include "atom/common/common_message_generator.h"
 #endif
 
 namespace atom {
