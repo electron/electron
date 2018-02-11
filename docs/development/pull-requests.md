@@ -27,7 +27,7 @@ locally.
 
 ```text
 $ git clone git@github.com:username/electron.git
-$ cd node
+$ cd electron
 $ git remote add upstream https://github.com/electron/electron.git
 $ git fetch upstream
 ```
@@ -73,7 +73,7 @@ the project.
 
 It is a recommended best practice to keep your changes as logically grouped
 as possible within individual commits. There is no limit to the number of
-commits any single Pull Request may have, and many contributors find it easier
+commits any single pull request may have, and many contributors find it easier
 to review changes that are split across multiple commits.
 
 ```text
@@ -152,7 +152,7 @@ your fork on GitHub.
 $ git push origin my-branch
 ```
 
-### Step 8: Opening the Pull Request
+### Step 8: Opening the
 
 From within GitHub, opening a new pull request will present you with a template
 that should be filled out:
@@ -164,7 +164,7 @@ the requirements below.
 
 Bug fixes and new features should include tests and possibly benchmarks.
 
-Contributors guide: https://github.com/nodejs/node/blob/master/CONTRIBUTING.md
+Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTING.md
 -->
 ```
 
@@ -189,7 +189,7 @@ $ git push origin my-branch
 There are a number of more advanced mechanisms for managing commits using
 `git rebase` that can be used, but are beyond the scope of this guide.
 
-Feel free to post a comment in the Pull Request to ping reviewers if you are
+Feel free to post a comment in the pull request to ping reviewers if you are
 awaiting an answer on something. If you encounter words or acronyms that
 seem unfamiliar, refer to this
 [glossary](https://sites.google.com/a/chromium.org/dev/glossary).
@@ -213,9 +213,9 @@ unhelpful is likely safe to ignore.
 
 ### Step 10: Landing
 
-In order to land, a Pull Request needs to be reviewed and [approved][] by
+In order to land, a pull request needs to be reviewed and approved by
 at least one Electron Code Owner and pass CI. After that, as long as there are no
-objections from other contributors, the Pull Request can be merged.
+objections from other contributors, the pull request can be merged.
 
 Congratulations and thanks for your contribution!
 
