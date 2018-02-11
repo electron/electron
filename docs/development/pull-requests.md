@@ -1,10 +1,11 @@
 # Pull Requests
 
+* [Dependencies](#dependencies)
 * [Setting up your local environment](#setting-up-your-local-environment)
   * [Step 1: Fork](#step-1-fork)
   * [Step 2: Build](#step-2-build)
   * [Step 3: Branch](#step-3-branch)
-* [The Process of Making Changes](#the-process-of-making-changes)
+* [Making Changes](#making-changes)
   * [Step 4: Code](#step-4-code)
   * [Step 5: Commit](#step-5-commit)
     * [Commit message guidelines](#commit-message-guidelines)
@@ -24,45 +25,43 @@
 Fork the project [on GitHub](https://github.com/electron/electron) and clone your fork
 locally.
 
-```text
+```sh
 $ git clone git@github.com:username/electron.git
-$ cd electron
+$ cd node
 $ git remote add upstream https://github.com/electron/electron.git
 $ git fetch upstream
 ```
 
 ### Step 2: Build
 
-Build steps and dependencies differ slightly depending on your operating system;
-for detailed guides on what is needed to build Electron locally see:
+Build steps and dependencies differ slightly depending on your operating system.
+See these detailed guides on building Electron locally:
 * [Building on MacOS](https://electronjs.org/docs/development/build-instructions-osx)
 * [Building on Linux](https://electronjs.org/docs/development/build-instructions-linux)
 * [Building on Windows](https://electronjs.org/docs/development/build-instructions-windows)
 
-Once you've built the project locally, you're ready to get started making some changes!
+Once you've built the project locally, you're ready to start making changes!
 
 ### Step 3: Branch
 
-As a best practice to keep your development environment as organized as
-possible, create local branches to work within. These should also be created
-directly off of the `master` branch.
+To keep your development environment organized, create local branches to
+hold your work. These should be branched directly off of the `master` branch.
 
-```text
+```sh
 $ git checkout -b my-branch -t upstream/master
 ```
 
-## The Process of Making Changes
+## Making Changes
 
 ### Step 4: Code
 
-The vast majority of pull requests opened against the `electron/electron`
-repository includes changes to either the C/C++ code contained in the `atom` or
-`brightray` directories, the JavaScript code contained in the `lib` directory, the
-documentation in `docs/api` or tests within the `spec` directory.
+Most pull requests opened against the `electron/electron` repository include
+changes to either the C/C++ code in the `atom/` or `brightray/` folders,
+the JavaScript code in the `lib/` folder, the documentation in `docs/api/`
+or tests in the `spec/` folder.
 
-If you are modifying code, please be sure to run `npm run lint` from time to
-time to ensure that the changes follow the code style enforced by the Electron
-project.
+Please be sure to run `npm run lint` from time to time on any code changes
+to ensure that they follow the project's code style.
 
 See [coding style](https://electronjs.org/docs/development/coding-style) for
 more information about best practice when modifying code in different parts of
@@ -70,12 +69,12 @@ the project.
 
 ### Step 5: Commit
 
-It is a recommended best practice to keep your changes as logically grouped
-as possible within individual commits. There is no limit to the number of
-commits any single pull request may have, and many contributors find it easier
-to review changes that are split across multiple commits.
+It is recommended to keep your changes grouped logically within individual
+commits. Many contributors find it easier to review changes that are split
+across multiple commits. There is no limit to the number of commits in a
+Pull Request.
 
-```text
+```sh
 $ git add my/changed/files
 $ git commit
 ```
@@ -100,13 +99,15 @@ A good commit message should describe what changed and why.
 2. Keep the second line blank.
 3. Wrap all other lines at 72 columns.
 
+See [this article](https://chris.beams.io/posts/git-commit/) for more examples
+of how to write good git commit messages.
+
 ### Step 6: Rebase
 
-As a best practice, once you have committed your changes, it is a good idea
-to use `git rebase` (not `git merge`) to synchronize your work with the main
-repository.
+Once you have committed your changes, it is a good idea to use `git rebase`
+(not `git merge`) to synchronize your work with the main repository.
 
-```text
+```sh
 $ git fetch upstream
 $ git rebase upstream/master
 ```
@@ -124,16 +125,16 @@ should be structured can also help.
 Before submitting your changes in a pull request, always run the full
 test suite. To run the tests:
 
-```text
+```sh
 $ npm run test
 ```
 
-Make sure the linter does not report any issues and that all tests pass. Please
-do not submit patches that fail either check.
+Make sure the linter does not report any issues and that all tests pass.
+Please do not submit patches that fail either check.
 
 If you are updating tests and just want to run a single spec to check it:
 
-```text
+```sh
 $ npm run test -match=menu
 ```
 
@@ -143,11 +144,11 @@ the testing cycle.
 
 ### Step 8: Push
 
-Once you are sure your commits are ready to go, with passing tests and linting,
-begin the process of opening a pull request by pushing your working branch to
-your fork on GitHub.
+Once your commits are ready to go -- with passing tests and linting --
+begin the process of opening a pull request by pushing your working branch
+to your fork on GitHub.
 
-```text
+```sh
 $ git push origin my-branch
 ```
 
@@ -163,7 +164,7 @@ the requirements below.
 
 Bug fixes and new features should include tests and possibly benchmarks.
 
-Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTING.md
+Contributors guide: https://github.com/nodejs/node/blob/master/CONTRIBUTING.md
 -->
 ```
 
@@ -171,15 +172,15 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 You will probably get feedback or requests for changes to your pull request.
 This is a big part of the submission process so don't be discouraged! Some
-contributors may sign off on the pull request right away, others may have
-more detailed comments or feedback. This is a necessary part of the process
+contributors may sign off on the pull request right away. Others may have
+detailed comments or feedback. This is a necessary part of the process
 in order to evaluate whether the changes are correct and necessary.
 
 To make changes to an existing pull request, make the changes to your local
 branch, add a new commit with those changes, and push those to your fork.
 GitHub will automatically update the pull request.
 
-```text
+```sh
 $ git add my/changed/files
 $ git commit
 $ git push origin my-branch
@@ -188,7 +189,7 @@ $ git push origin my-branch
 There are a number of more advanced mechanisms for managing commits using
 `git rebase` that can be used, but are beyond the scope of this guide.
 
-Feel free to post a comment in the pull request to ping reviewers if you are
+Feel free to post a comment in the Pull Request to ping reviewers if you are
 awaiting an answer on something. If you encounter words or acronyms that
 seem unfamiliar, refer to this
 [glossary](https://sites.google.com/a/chromium.org/dev/glossary).
@@ -197,42 +198,38 @@ seem unfamiliar, refer to this
 
 All pull requests require approval from a [Code Owner](https://github.com/orgs/electron/teams/code-owners) of the area you
 modified in order to land. Whenever a maintainer reviews a pull request they
-may find specific details that they would like to see changed or fixed.
-These may be as simple as fixing a typo, or may involve substantive changes to
-the code you have written. In general, such requests are intended to be helpful, but at times may come across as abrupt or unhelpful, especially requests to change things
-that do not include concrete suggestions on *how* to change them.
+may request changes. These may be small, such as fixing a typo, or may involve
+substantive changes. Such requests are intended to be helpful, but at times
+may come across as abrupt or unhelpful, especially if they do not include
+concrete suggestions on *how* to change them.
 
-Try not to be discouraged. If you feel that a particular review is unfair,
-say so, or contact one of the other contributors in the project and seek their
-input. Often such comments are the result of the reviewer having only taken a
-short amount of time to review and are not ill-intended. Such issues can often
-be resolved with a bit of patience. That said, reviewers should be expected to
-be helpful in their feedback, and feedback that is simply vague, dismissive and
-unhelpful is likely safe to ignore.
+Try not to be discouraged. If you feel that a review is unfair, say so or seek
+the input of another project contributor. Often such comments are the result of
+a reviewer having taken insufficient time to review and are not ill-intended.
+Such difficulties can often be resolved with a bit of patience. That said,
+reviewers should be expected to provide helpful feeback.
 
 ### Step 10: Landing
 
-In order to land, a pull request needs to be reviewed and approved by
-at least one Electron Code Owner and pass CI. After that, as long as there are no
-objections from other contributors, the pull request can be merged.
+In order to land, a Pull Request needs to be reviewed and [approved][] by
+at least one Electron Code Owner and pass CI. After that, if there are no
+objections from other contributors, the Pull Request can be merged.
 
 Congratulations and thanks for your contribution!
 
 ### Continuous Integration Testing
 
-Every pull request needs to be tested to make sure that it works on the
-platforms that Electron supports. This is done by running the code through the
-CI system.
+Every pull request is tested on the Continuous Integration (CI) system to
+confirm that it works on Electron's supported platforms.
 
-Ideally, the code change will pass ("be green") on all platform configurations
-supported by Electron. This means that all tests pass and there are no linting
-errors. In reality, however, it is not uncommon for the CI infrastructure itself
-to fail on specific platforms or for so-called "flaky" tests to fail ("be red").
-It is vital to visually inspect the results of all failed ("red") tests to determine
-whether the failure was caused by the changes in the pull request.
+Ideally, the pull request will pass ("be green") on all of CI's platforms.
+This means that all tests pass and there are no linting errors. However,
+it is not uncommon for the CI infrastructure itself to fail on specific
+platforms or for so-called "flaky" tests to fail ("be red"). Each CI
+failure must be manually inspected to determine the cause.
 
-Only [Releasers](https://github.com/orgs/electron/teams/releasers/members) can
-start a CI run. CI will automatically start when you open a pull request, but
-if for some reason CI seems to be failing on what you believe is an flake and
-you would like it to be rerun, one of them will be happy to do it for you.
+CI starts automatically when you open a pull request, but only
+[Releasers](https://github.com/orgs/electron/teams/releasers/members)
+can restart a CI run. If you believe CI is giving a false negative,
+ask a Releaser to restart the tests.
 
