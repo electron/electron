@@ -15,8 +15,8 @@
 #include "base/strings/sys_string_conversions.h"
 
 @interface PopUpButtonHandler : NSObject
-@property (nonatomic, weak) NSSavePanel *savePanel;
-@property (nonatomic, weak) NSArray *fileTypes;
+@property (nonatomic, strong) NSSavePanel *savePanel;
+@property (nonatomic, strong) NSArray *fileTypes;
 - (instancetype)initWithPanel:(NSSavePanel *)panel andTypes:(NSArray *)types;
 - (void)selectFormat:(id)sender;
 @end
