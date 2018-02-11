@@ -1,6 +1,5 @@
 # Pull Requests
 
-* [Dependencies](#dependencies)
 * [Setting up your local environment](#setting-up-your-local-environment)
   * [Step 1: Fork](#step-1-fork)
   * [Step 2: Build](#step-2-build)
@@ -152,7 +151,7 @@ your fork on GitHub.
 $ git push origin my-branch
 ```
 
-### Step 8: Opening the
+### Step 8: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
 that should be filled out:
