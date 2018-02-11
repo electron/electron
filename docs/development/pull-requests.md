@@ -12,10 +12,10 @@
   * [Step 6: Rebase](#step-6-rebase)
   * [Step 7: Test](#step-7-test)
   * [Step 8: Push](#step-8-push)
-  * [Step 8: Opening the Pull Request](#step-8-opening-the-pull-request)
-  * [Step 9: Discuss and Update](#step-9-discuss-and-update)
+  * [Step 9: Opening the Pull Request](#step-8-opening-the-pull-request)
+  * [Step 10: Discuss and Update](#step-9-discuss-and-update)
     * [Approval and Request Changes Workflow](#approval-and-request-changes-workflow)
-  * [Step 10: Landing](#step-10-landing)
+  * [Step 11: Landing](#step-10-landing)
   * [Continuous Integration Testing](#continuous-integration-testing)
 
 ## Setting up your local environment
@@ -27,7 +27,7 @@ locally.
 
 ```sh
 $ git clone git@github.com:username/electron.git
-$ cd node
+$ cd electron
 $ git remote add upstream https://github.com/electron/electron.git
 $ git fetch upstream
 ```
@@ -72,7 +72,7 @@ the project.
 It is recommended to keep your changes grouped logically within individual
 commits. Many contributors find it easier to review changes that are split
 across multiple commits. There is no limit to the number of commits in a
-Pull Request.
+pull request.
 
 ```sh
 $ git add my/changed/files
@@ -152,23 +152,23 @@ to your fork on GitHub.
 $ git push origin my-branch
 ```
 
-### Step 8: Opening the Pull Request
+### Step 9: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
 that should be filled out:
 
 ```markdown
 <!--
-Thank you for your Pull Request. Please provide a description above and review
+Thank you for your pull request. Please provide a description above and review
 the requirements below.
 
 Bug fixes and new features should include tests and possibly benchmarks.
 
-Contributors guide: https://github.com/nodejs/node/blob/master/CONTRIBUTING.md
+Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTING.md
 -->
 ```
 
-### Step 9: Discuss and update
+### Step 10: Discuss and update
 
 You will probably get feedback or requests for changes to your pull request.
 This is a big part of the submission process so don't be discouraged! Some
@@ -189,7 +189,7 @@ $ git push origin my-branch
 There are a number of more advanced mechanisms for managing commits using
 `git rebase` that can be used, but are beyond the scope of this guide.
 
-Feel free to post a comment in the Pull Request to ping reviewers if you are
+Feel free to post a comment in the pull request to ping reviewers if you are
 awaiting an answer on something. If you encounter words or acronyms that
 seem unfamiliar, refer to this
 [glossary](https://sites.google.com/a/chromium.org/dev/glossary).
@@ -209,11 +209,11 @@ a reviewer having taken insufficient time to review and are not ill-intended.
 Such difficulties can often be resolved with a bit of patience. That said,
 reviewers should be expected to provide helpful feeback.
 
-### Step 10: Landing
+### Step 11: Landing
 
-In order to land, a Pull Request needs to be reviewed and [approved][] by
+In order to land, a pull request needs to be reviewed and approved by
 at least one Electron Code Owner and pass CI. After that, if there are no
-objections from other contributors, the Pull Request can be merged.
+objections from other contributors, the pull request can be merged.
 
 Congratulations and thanks for your contribution!
 
