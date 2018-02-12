@@ -88,11 +88,11 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', () => {
+      w.close()
+      w = null
       w = new BrowserWindow({
         webContents: void 0
       })
-      w.close()
-      w = null
     })
   })
 
