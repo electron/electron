@@ -69,6 +69,11 @@ class OffScreenWebContentsView : public content::WebContentsView,
                      content::RenderWidgetHostImpl* source_rwh) override;
   void UpdateDragCursor(blink::WebDragOperation operation) override;
 
+  void SetPainting(bool painting);
+  bool IsPainting() const;
+  void SetFrameRate(int frame_rate);
+  int GetFrameRate() const;
+
  private:
 #if defined(OS_MACOSX)
   void PlatformCreate();
@@ -78,6 +83,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   OffScreenRenderWidgetHostView* GetView() const;
 
   const bool transparent_;
+  bool painting_;
+  int frame_rate_;
   OnPaintCallback callback_;
 
   // Weak refs.

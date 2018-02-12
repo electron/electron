@@ -74,6 +74,8 @@ class OffScreenRenderWidgetHostView
       public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool painting,
+                                int frame_rate,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 OffScreenRenderWidgetHostView* parent_host_view,
@@ -313,6 +315,8 @@ class OffScreenRenderWidgetHostView
 
   bool hold_resize_;
   bool pending_resize_;
+
+  bool paint_callback_running_;
 
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
