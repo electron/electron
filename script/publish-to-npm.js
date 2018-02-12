@@ -50,7 +50,7 @@ new Promise((resolve, reject) => {
   tempDir = dirPath
   // copy files from `/npm` to temp directory
   files.forEach((name) => {
-    const noThirdSegment = name === 'README.md' || 'LICENSE'
+    const noThirdSegment = name === 'README.md' || name === 'LICENSE'
     fs.writeFileSync(
       path.join(tempDir, name),
       fs.readFileSync(path.join(__dirname, '..', noThirdSegment ? '' : 'npm', name))
