@@ -26,7 +26,7 @@ The following properties are available on instances of `TouchBar`:
 
 #### `touchBar.escapeItem`
 
-The `TouchBarButton` that will replace the "esc" button on the touch bar when set.
+A `TouchBarItem` that will replace the "esc" button on the touch bar when set.
 Setting to `null` restores the default "esc" button. Changing this value
 immediately updates the escape item in the touch bar.
 
