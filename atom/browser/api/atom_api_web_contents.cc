@@ -340,7 +340,7 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
   // Obtain the session.
   std::string partition;
   mate::Handle<api::Session> session;
-  if (options.Get("session", &session)) {
+  if (options.Get("session", &session) && !session.IsEmpty()) {
   } else if (options.Get("partition", &partition)) {
     session = Session::FromPartition(isolate, partition);
   } else {
