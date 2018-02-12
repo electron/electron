@@ -1262,6 +1262,10 @@ void App::BuildPrototype(
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       #endif
+      #if defined(MAS_BUILD)
+      .SetMethod("startAccessingSecurityScopedResource",
+                 &App::StartAccessingSecurityScopedResource)
+      #endif
       .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }
 

@@ -740,6 +740,11 @@
           'atom/app/node_main.h',
         ],
       }],  # enable_run_as_node
+      ['mas_build==1', {
+        'lib_sources': [
+          'atom/browser/api/atom_api_app_mas.mm',
+        ],
+      }],  # mas_build==1
     ],
   },
 }
