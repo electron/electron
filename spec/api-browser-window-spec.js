@@ -1063,6 +1063,42 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('"additionalArguments" option', () => {
+      it('adds extra args to process.argv in the renderer process', (done) => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        ipcMain.once('answer', (event, argv) => {
+          assert.ok(argv.includes('--my-magic-arg'))
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            additionalArguments: ['--my-magic-arg']
+          }
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)
+      })
+
+      it('adds extra value args to process.argv in the renderer process', (done) => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        ipcMain.once('answer', (event, argv) => {
+          assert.ok(argv.includes('--my-magic-arg=foo'))
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            additionalArguments: ['--my-magic-arg=foo']
+          }
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)
+      })
+    })
+
     describe('"node-integration" option', () => {
       it('disables node integration when specified to false', (done) => {
         const preload = path.join(fixtures, 'module', 'send-later.js')
