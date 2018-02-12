@@ -225,7 +225,7 @@ and intend to stay there).
 
 * `capacity` Integer
 
-Attemp to set the capacity of resource cache for the renderer process in bytes
+Attempt to set the capacity of resource cache for the renderer process in bytes
 
 Note if current cached resource size is larger than newly specified capacity, Electron
 will schedule to prune cached resources until it reaches below new capacity.
