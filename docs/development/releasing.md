@@ -167,27 +167,10 @@ This release is published to [npm](https://www.npmjs.com/package/electron) under
 1. You can run `npm run release -- --validateRelease` to verify that all of the
 required files have been created for the release.
 
-## Merge temporary branch
-Once the release builds have finished, merge the `release` branch back into
-the source release branch using the `merge-release` script.
-If the branch cannot be successfully merged back this script will automatically
-rebase the `release` branch and push the changes which will trigger the release
-builds again, which means you will need to wait for the release builds to run
-again before proceeding.
-
-### Merging back into master
-```sh
-npm run merge-release -- master
-```
-
-### Merging back into old release branch
-```sh
-npm run merge-release -- 1-7-x
-```
 
 ## Publish the release
 
-Once the merge has finished successfully, run the `release` script
+Once the release builds have finished, run the `release` script
 via `npm run release` to finish the release process. This script will do the
 following:
 1. Build the project to validate that the correct version number is being released.
