@@ -21,8 +21,17 @@
 #include "base/logging.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
+#include "ipc/ipc_features.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+
+#if BUILDFLAG(IPC_MESSAGE_LOG_ENABLED)
+#define IPC_MESSAGE_MACROS_LOG_ENABLED
+#include "content/public/common/content_ipc_logging.h"
+#define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
+  content::RegisterIPCLogger(msg_id, logger)
+#include "atom/common/common_message_generator.h"
+#endif
 
 namespace atom {
 
