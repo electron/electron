@@ -10,21 +10,15 @@ The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
 propose changes to this document in a pull request.
 
-## Submitting Issues
+## [Issues](https://electronjs.org/docs/development/issues)
 
-### Creating Issues
-* You can create an issue [here](https://github.com/electron/electron/issues/new),
-but before doing that please read the notes below and include as many details as
-possible with your report. If you can, please include:
-  * The version of Electron you are using
-  * The operating system you are using
-  * If applicable, what you were doing when the issue arose and what you
-  expected to happen
-* Other things that will help resolve your issue:
-  * Screenshots and animated GIFs
-  * Error output that appears in your terminal, dev tools or as an alert
-  * Perform a [cursory search](https://github.com/electron/electron/issues?utf8=✓&q=is%3Aissue+)
-  to see if a similar issue has already been submitted
+Issues are created [here](https://github.com/electron/electron/issues/new).
+
+* [How to Contribute in Issues](https://electronjs.org/docs/development/issues#how-to-contribute-in-issues)
+* [Asking for General Help](https://electronjs.org/docs/development/issues#asking-for-general-help)
+* [Submitting a Bug Report](https://electronjs.org/docs/development/issues#submitting-a-bug-report)
+* [Triaging a Bug Report](https://electronjs.org/docs/development/issues#triaging-a-bug-report)
+* [Resolving a Bug Report](https://electronjs.org/docs/development/issues#resolving-a-bug-report)
 
 ### Issue Maintenance and Closure
 * If an issue is inactive for 45 days (no activity of any kind), it will be
@@ -34,56 +28,29 @@ the issue will be closed.
   * If an issue has been closed and you still feel it's relevant, feel free to
   ping a maintainer or add a comment!
 
-## Development
-* Build instructions can be found in [docs/development](docs/development).
+## [Pull Requests](https://electronjs.org/docs/development/pull-requests)
 
-## Submitting Pull Requests
+Pull Requests are the way concrete changes are made to the code, documentation,
+dependencies, and tools contained in the `electron/electron` repository.
 
-* Include screenshots and animated GIFs in your pull request whenever possible.
-* Follow the JavaScript, C++, and Python [coding style defined in docs](/docs/development/coding-style.md).
-* Write documentation in [Markdown](https://daringfireball.net/projects/markdown).
-  See the [Documentation Styleguide](/docs/styleguide.md).
-* Use short, present tense commit messages. See [Commit Message Styleguide](#git-commit-messages).
+* [Setting up your local environment](https://electronjs.org/docs/development/pull-requests#setting-up-your-local-environment)
+  * [Step 1: Fork](https://electronjs.org/docs/development/pull-requests#step-1-fork)
+  * [Step 2: Build](https://electronjs.org/docs/development/pull-requests#step-2-build)
+  * [Step 3: Branch](https://electronjs.org/docs/development/pull-requests#step-3-branch)
+* [The Process of Making Changes](https://electronjs.org/docs/development/pull-requests#the-process-of-making-changes)
+  * [Step 4: Code](https://electronjs.org/docs/development/pull-requests#step-4-code)
+  * [Step 5: Commit](https://electronjs.org/docs/development/pull-requests#step-5-commit)
+    * [Commit message guidelines](https://electronjs.org/docs/development/pull-requests#commit-message-guidelines)
+  * [Step 6: Rebase](https://electronjs.org/docs/development/pull-requests#step-6-rebase)
+  * [Step 7: Test](https://electronjs.org/docs/development/pull-requests#step-7-test)
+  * [Step 8: Push](https://electronjs.org/docs/development/pull-requests#step-8-push)
+  * [Step 8: Opening the Pull Request](https://electronjs.org/docs/development/pull-requests#step-8-opening-the-pull-request)
+  * [Step 9: Discuss and Update](#step-9-discuss-and-update)
+    * [Approval and Request Changes Workflow](https://electronjs.org/docs/development/pull-requests#approval-and-request-changes-workflow)
+  * [Step 10: Landing](https://electronjs.org/docs/development/pull-requests#step-10-landing)
+  * [Continuous Integration Testing](https://electronjs.org/docs/development/pull-requests#continuous-integration-testing)
 
-## Styleguides
+## Style Guides
 
-### General Code
+See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
 
-* End files with a newline.
-* Place requires in the following order:
-  * Built in Node Modules (such as `path`)
-  * Built in Electron Modules (such as `ipc`, `app`)
-  * Local Modules (using relative paths)
-* Place class properties in the following order:
-  * Class methods and properties (methods starting with a `@`)
-  * Instance methods and properties
-* Avoid platform-dependent code:
-  * Use `path.join()` to concatenate filenames.
-  * Use `os.tmpdir()` rather than `/tmp` when you need to reference the
-    temporary directory.
-* Using a plain `return` when returning explicitly at the end of a function.
-  * Not `return null`, `return undefined`, `null`, or `undefined`
-
-### Git Commit Messages
-
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally
-* When only changing documentation, include `[ci skip]` in the commit description
-* Consider starting the commit message with an applicable emoji:
-  * :art: `:art:` when improving the format/structure of the code
-  * :racehorse: `:racehorse:` when improving performance
-  * :non-potable_water: `:non-potable_water:` when plugging memory leaks
-  * :memo: `:memo:` when writing docs
-  * :penguin: `:penguin:` when fixing something on Linux
-  * :apple: `:apple:` when fixing something on macOS
-  * :checkered_flag: `:checkered_flag:` when fixing something on Windows
-  * :bug: `:bug:` when fixing a bug
-  * :fire: `:fire:` when removing code or files
-  * :green_heart: `:green_heart:` when fixing the CI build
-  * :white_check_mark: `:white_check_mark:` when adding tests
-  * :lock: `:lock:` when dealing with security
-  * :arrow_up: `:arrow_up:` when upgrading dependencies
-  * :arrow_down: `:arrow_down:` when downgrading dependencies
-  * :shirt: `:shirt:` when removing linter warnings
