@@ -221,4 +221,13 @@ in your app has occurred that makes you think your page is actually using less
 memory (i.e. you have navigated from a super heavy page to a mostly empty one,
 and intend to stay there).
 
+### `webFrame.setCacheCapacity(capacity)`
+
+* `capacity` Integer
+
+Attemp to set the capacity of resource cache for the renderer process in bytes
+
+Note if current cached resource size is larger than newly specified capacity, Electron
+will schedule to prune cached resources until it reaches below new capacity.
+
 [spellchecker]: https://github.com/atom/node-spellchecker
