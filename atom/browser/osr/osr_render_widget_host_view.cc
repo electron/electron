@@ -181,7 +181,7 @@ class AtomCopyFrameGenerator {
   }
 
   void GenerateCopyFrame(const gfx::Rect& damage_rect) {
-    if (!view_->render_widget_host())
+    if (!view_->render_widget_host() || !view_->IsPainting())
       return;
 
     std::unique_ptr<cc::CopyOutputRequest> request =
@@ -312,6 +312,8 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    bool painting,
+    int frame_rate,
     const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     OffScreenRenderWidgetHostView* parent_host_view,
@@ -325,17 +327,18 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       transparent_(transparent),
       callback_(callback),
       parent_callback_(nullptr),
-      frame_rate_(60),
+      frame_rate_(frame_rate),
       frame_rate_threshold_us_(0),
       last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
       size_(native_window->GetSize()),
-      painting_(true),
+      painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       is_destroyed_(false),
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      paint_callback_running_(false),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -358,7 +361,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
                          content::GetContextFactory(), context_factory_private,
                          base::ThreadTaskRunnerHandle::Get()));
-  compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
+  compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 #endif
   GetCompositor()->SetDelegate(this);
@@ -591,7 +594,7 @@ void OffScreenRenderWidgetHostView::OnSwapCompositorFrame(
   if (!frame.render_pass_list.empty()) {
     if (software_output_device_) {
       if (!begin_frame_timer_.get() || IsPopupWidget()) {
-        software_output_device_->SetActive(painting_);
+        software_output_device_->SetActive(painting_, false);
       }
 
       // The compositor will draw directly to the SoftwareOutputDevice which
@@ -774,6 +777,8 @@ content::RenderWidgetHostViewBase*
 
   return new OffScreenRenderWidgetHostView(
       transparent_,
+      true,
+      embedder_host_view->GetFrameRate(),
       callback_,
       render_widget_host,
       embedder_host_view,
@@ -972,12 +977,12 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
 
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
     bool needs_begin_frames) {
-  SetupFrameRate(false);
+  SetupFrameRate(true);
 
   begin_frame_timer_->SetActive(needs_begin_frames);
 
   if (software_output_device_) {
-    software_output_device_->SetActive(needs_begin_frames && painting_);
+    software_output_device_->SetActive(needs_begin_frames && painting_, false);
   }
 }
 
@@ -1046,7 +1051,9 @@ void OffScreenRenderWidgetHostView::OnPaint(
     }
 
     damage.Intersect(GetViewBounds());
+    paint_callback_running_ = true;
     callback_.Run(damage, bitmap);
+    paint_callback_running_ = false;
 
     for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, originals[i], damages[i]);
@@ -1190,7 +1197,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting_);
+    software_output_device_->SetActive(painting_, !paint_callback_running_);
   }
 }
 
@@ -1207,16 +1214,16 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
-    if (frame_rate > 60)
-      frame_rate = 60;
+    if (frame_rate > 240)
+      frame_rate = 240;
 
     frame_rate_ = frame_rate;
   }
 
+  SetupFrameRate(true);
+
   for (auto guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);
-
-  SetupFrameRate(true);
 }
 
 int OffScreenRenderWidgetHostView::GetFrameRate() const {
@@ -1244,7 +1251,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
+  GetCompositor()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
 
   if (copy_frame_generator_.get()) {
