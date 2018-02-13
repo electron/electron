@@ -92,7 +92,6 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
   void ClearCache(v8::Isolate* isolate);
-  void SetCacheCapacity(v8::Isolate* isolate, int capacity);
 
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 
