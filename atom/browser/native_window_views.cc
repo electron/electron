@@ -53,6 +53,7 @@
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "content/public/browser/gpu_data_manager.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/display.h"
@@ -297,7 +298,13 @@ NativeWindowViews::NativeWindowViews(
     ::SetWindowLong(GetAcceleratedWidget(), GWL_STYLE, frame_style);
   }
 
+  bool hardware_accelerated =
+    content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled();
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  // Window without thick frame has to have WS_EX_COMPOSITED style when GPU
+  // acceleration is enabled.
+  if (!thick_frame_ && hardware_accelerated)
+    ex_style |= WS_EX_COMPOSITED;
   if (window_type == "toolbar")
     ex_style |= WS_EX_TOOLWINDOW;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
