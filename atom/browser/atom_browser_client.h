@@ -98,6 +98,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
       bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
+  void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
@@ -119,9 +120,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
                                    content::SiteInstance* current_instance,
                                    const GURL& dest_url);
   struct ProcessPreferences {
-    bool sandbox;
-    bool native_window_open;
-    bool disable_popups;
+    bool sandbox = false;
+    bool native_window_open = false;
+    bool disable_popups = false;
   };
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
@@ -134,6 +135,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   std::map<int, ProcessPreferences> process_preferences_;
   std::map<int, base::ProcessId> render_process_host_pids_;
+
+  // list of site per affinity. weak_ptr to prevent instance locking
+  std::map<std::string, content::SiteInstance*> site_per_affinities;
+
   base::Lock process_preferences_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
