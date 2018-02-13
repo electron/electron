@@ -3,7 +3,7 @@
 ## Discussion
 
 One upgrade issue is building all of Electron with a single copy
-of V8 to ensure compatability. This is important because
+of V8 to ensure compatibility. This is important because
 upstream Node and [libchromiumcontent](upgrading-chromium.md)
 both use their own versions of V8.
 
