@@ -112,7 +112,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (IsSandboxed(web_contents)) {
+  bool sandbox = false;
+  if (web_preferences.GetBoolean("sandbox", &sandbox) && sandbox) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(::switches::kNoSandbox);
@@ -235,47 +236,6 @@ bool WebContentsPreferences::IsPreferenceEnabled(
   bool bool_value = false;
   web_preferences.GetBoolean(attribute_name, &bool_value);
   return bool_value;
-}
-
-bool WebContentsPreferences::GetPreferenceString(
-    const std::string& attribute_name,
-    content::WebContents* web_contents,
-    std::string* strValue) {
-    WebContentsPreferences* self;
-    if (!web_contents)
-        return false;
-
-    self = FromWebContents(web_contents);
-    if (!self)
-        return false;
-
-    base::DictionaryValue& web_preferences = self->web_preferences_;
-    return web_preferences.GetString(attribute_name, strValue);
-}
-
-bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
-  return IsPreferenceEnabled("sandbox", web_contents);
-}
-
-bool WebContentsPreferences::UsesNativeWindowOpen(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("nativeWindowOpen", web_contents);
-}
-
-bool WebContentsPreferences::IsPluginsEnabled(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("plugins", web_contents);
-}
-
-bool WebContentsPreferences::DisablePopups(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("disablePopups", web_contents);
-}
-
-bool WebContentsPreferences::GetAffinity(
-    content::WebContents* web_contents,
-    std::string* string_value) {
-    return GetPreferenceString("affinity", web_contents, string_value);
 }
 
 // static

@@ -98,6 +98,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
       bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
+  void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
@@ -113,17 +114,15 @@ class AtomBrowserClient : public brightray::BrowserClient,
                            base::TerminationStatus status,
                            int exit_code) override;
 
-  void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
-
  private:
   bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
                                    content::BrowserContext* browser_context,
                                    content::SiteInstance* current_instance,
                                    const GURL& dest_url);
   struct ProcessPreferences {
-    bool sandbox;
-    bool native_window_open;
-    bool disable_popups;
+    bool sandbox = false;
+    bool native_window_open = false;
+    bool disable_popups = false;
   };
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
