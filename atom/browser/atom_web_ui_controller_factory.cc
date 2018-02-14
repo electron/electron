@@ -52,7 +52,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
   if (url.host() == kPdfViewerUIHost) {
     base::StringPairs toplevel_params;
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
-    std::string stream_id, src;
+    std::string src;
 
     const net::UnescapeRule::Type unescape_rules =
       net::UnescapeRule::SPACES | net::UnescapeRule::PATH_SEPARATORS |

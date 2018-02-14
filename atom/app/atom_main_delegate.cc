@@ -95,9 +95,10 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   logging::SetLogItems(true, false, true, false);
 
   // Enable convient stack printing.
-  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
 #if defined(DEBUG) && defined(OS_LINUX)
-  enable_stack_dumping = true;
+  bool enable_stack_dumping = true;
+#else
+  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
 #endif
   if (enable_stack_dumping)
     base::debug::EnableInProcessStackDumping();
