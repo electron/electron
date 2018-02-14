@@ -32,7 +32,7 @@ There are several major changes from our 1.x strategy outlined below. Each chang
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
 4. Clearly defined stabilization branches
-5. The `master` branch is versionless; only stability branches contain version information
+5. The `master` branch is versionless; only stabilization branches contain version information
 
 We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
 
@@ -52,7 +52,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 * **Patch Version Increments**
 	* node.js patch version updates
 	* fix-related chromium patches
-	* electron bug fixes
+	* Electron bug fixes
 
 Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
@@ -91,7 +91,7 @@ e.g. `2.0.0`.
 4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented accordingly
 e.g. `2.0.1`.
 
-For each major and minor bump, you should expect too see something like the following:
+For each major and minor bump, you should expect to see something like the following:
 
 ```text
 2.0.0-beta.1
@@ -106,11 +106,11 @@ An example lifecycle in pictures:
 
 * A new release branch is created that includes the latest set of features. It is published as `2.0.0-beta.1`.
 ![](../images/versioning-sketch-3.png)
-* A bug fix comes into master that can be pack-ported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
+* A bug fix comes into master that can be backported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
 ![](../images/versioning-sketch-4.png)
 * The beta is considered _generally stable_ and it is published again as a non-beta under `2.0.0`.
 ![](../images/versioning-sketch-5.png)
-* Later, a zero-day exploit is revealed and a fix is applied to master. We pack-port the fix to the `2-0-x` line and release `2.0.1`.
+* Later, a zero-day exploit is revealed and a fix is applied to master. We backport the fix to the `2-0-x` line and release `2.0.1`.
 ![](../images/versioning-sketch-6.png)
 
 A few examples of how various semver ranges will pick up new releases:
@@ -128,7 +128,7 @@ As a future consideration, we may introduce one or both of the following:
 # Feature Flags
 Feature flags are a common practice in Chromium, and are well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft branch** must have the following properties:
 
-* is is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag
+* it is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag
 * it completely segments new and old code paths; refactoring old code to support a new feature _violates_ the feature-flag contract
 * feature flags are eventually removed after the soft-branch is merged
 
