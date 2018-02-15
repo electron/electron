@@ -9,9 +9,13 @@
 #import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
 #import <Squirrel/Squirrel.h>
 
+#include "atom/browser/browser.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/bind.h"
 #include "base/time/time.h"
 #include "base/strings/sys_string_conversions.h"
+#include "native_mate/converter.h"
+#include "native_mate/dictionary.h"
 
 namespace auto_updater {
 
@@ -34,8 +38,29 @@ std::string AutoUpdater::GetFeedURL() {
 }
 
 // static
-void AutoUpdater::SetFeedURL(const std::string& feed,
-                             const HeaderMap& requestHeaders) {
+void AutoUpdater::SetFeedURL(mate::Arguments* args) {
+  mate::Dictionary opts;
+  std::string feed;
+  HeaderMap requestHeaders;
+  std::string serverType = "default";
+  if (args->GetNext(&opts)) {
+    if (!opts.Get("url", &feed)) {
+      args->ThrowError("Expected options object to contain a 'url' string property in setFeedUrl call");
+      return;
+    }
+    opts.Get("requestHeaders", &requestHeaders);
+    opts.Get("serverType", &serverType);
+    if (serverType != "default" && serverType != "json") {
+      args->ThrowError("Expected serverType to be 'default' or 'json'");
+      return;
+    }
+  } else if (args->GetNext(&feed)) {
+    args->GetNext(&requestHeaders);
+  } else {
+    args->ThrowError("Expected an options object with a 'url' property to be provided");
+    return;
+  }
+  
   Delegate* delegate = GetDelegate();
   if (!delegate)
     return;
@@ -55,7 +80,13 @@ void AutoUpdater::SetFeedURL(const std::string& feed,
 
   // Initialize the SQRLUpdater.
   @try {
-    g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
+    if (serverType == "json") {
+      NSString* nsAppVersion = base::SysUTF8ToNSString(atom::Browser::Get()->GetVersion());
+      g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest forVersion:nsAppVersion];
+    } else {
+      // default
+      g_updater = [[SQRLUpdater alloc] initWithUpdateRequest:urlRequest];
+    }
   } @catch (NSException* error) {
     delegate->OnError(base::SysNSStringToUTF8(error.reason));
     return;
