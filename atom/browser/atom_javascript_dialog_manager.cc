@@ -17,6 +17,10 @@
 
 using content::JavaScriptDialogType;
 
+namespace {
+  constexpr int USER_WANTS_NO_MORE_DIALOGS = -1;
+}
+
 namespace atom {
 
 AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
@@ -36,7 +40,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     origin_counts_[origin] = 0;
   }
 
-  if (origin_counts_[origin] == -1) {
+  if (origin_counts_[origin] == USER_WANTS_NO_MORE_DIALOGS) {
     return callback.Run(false, base::string16());
   }
 
@@ -92,7 +96,7 @@ void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     int code,
     bool checkbox_checked) {
   if (checkbox_checked) {
-    (*origin_counts_)[origin] = -1;
+    (*origin_counts_)[origin] = USER_WANTS_NO_MORE_DIALOGS;
   }
   callback.Run(code == 0, base::string16());
 }
