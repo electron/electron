@@ -88,6 +88,10 @@ void CocoaNotification::Show(const NotificationOptions& options) {
     [notification_ setHasReplyButton:true];
   }
 
+  if (!options.close_button_text.empty()) {
+    [notification_ setOtherButtonTitle:base::SysUTF16ToNSString(options.close_button_text)];
+  }
+
   [NSUserNotificationCenter.defaultUserNotificationCenter
       deliverNotification:notification_];
 }
