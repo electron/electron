@@ -25,9 +25,8 @@ gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
   // Makes .* file extension matches all file types.
   if (*file_extension == ".*")
     return true;
-  return base::EndsWith(
-    file_info->filename,
-    *file_extension, base::CompareCase::INSENSITIVE_ASCII);
+  return base::EndsWith(file_info->filename, *file_extension,
+                        base::CompareCase::INSENSITIVE_ASCII);
 }
 
 // Deletes |data| when gtk_file_filter_add_custom() is done with it.
@@ -37,8 +36,7 @@ void OnFileFilterDataDestroyed(std::string* file_extension) {
 
 class FileChooserDialog {
  public:
-  FileChooserDialog(GtkFileChooserAction action,
-                    const DialogSettings& settings)
+  FileChooserDialog(GtkFileChooserAction action, const DialogSettings& settings)
       : parent_(static_cast<atom::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
     const char* confirm_text = _("_OK");
@@ -51,12 +49,8 @@ class FileChooserDialog {
       confirm_text = _("_Open");
 
     dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(),
-        NULL,
-        action,
-        _("_Cancel"), GTK_RESPONSE_CANCEL,
-        confirm_text, GTK_RESPONSE_ACCEPT,
-        NULL);
+        settings.title.c_str(), NULL, action, _("_Cancel"), GTK_RESPONSE_CANCEL,
+        confirm_text, GTK_RESPONSE_ACCEPT, NULL);
     if (parent_) {
       parent_->SetEnabled(false);
       libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
@@ -71,8 +65,8 @@ class FileChooserDialog {
 
     if (!settings.default_path.empty()) {
       if (base::DirectoryExists(settings.default_path)) {
-        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog_),
-            settings.default_path.value().c_str());
+        gtk_file_chooser_set_current_folder(
+            GTK_FILE_CHOOSER(dialog_), settings.default_path.value().c_str());
       } else {
         if (settings.default_path.IsAbsolute()) {
           gtk_file_chooser_set_current_folder(
@@ -80,7 +74,8 @@ class FileChooserDialog {
               settings.default_path.DirName().value().c_str());
         }
 
-        gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog_),
+        gtk_file_chooser_set_current_name(
+            GTK_FILE_CHOOSER(dialog_),
             settings.default_path.BaseName().value().c_str());
       }
     }
@@ -105,8 +100,8 @@ class FileChooserDialog {
   void RunAsynchronous() {
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), NULL);
-    g_signal_connect(dialog_, "response",
-                     G_CALLBACK(OnFileDialogResponseThunk), this);
+    g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
+                     this);
     gtk_widget_show_all(dialog_);
 
     // We need to call gtk_window_present after making the widgets visible to
@@ -134,11 +129,11 @@ class FileChooserDialog {
 
   std::vector<base::FilePath> GetFileNames() const {
     std::vector<base::FilePath> paths;
-    GSList* filenames = gtk_file_chooser_get_filenames(
-        GTK_FILE_CHOOSER(dialog_));
+    GSList* filenames =
+        gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
     for (GSList* iter = filenames; iter != NULL; iter = g_slist_next(iter)) {
-      base::FilePath path = AddExtensionForFilename(
-          static_cast<char*>(iter->data));
+      base::FilePath path =
+          AddExtensionForFilename(static_cast<char*>(iter->data));
       g_free(iter->data);
       paths.push_back(path);
     }
@@ -192,8 +187,7 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
       std::unique_ptr<std::string> file_extension(
           new std::string("." + filter.second[j]));
       gtk_file_filter_add_custom(
-          gtk_filter,
-          GTK_FILE_FILTER_FILENAME,
+          gtk_filter, GTK_FILE_FILTER_FILENAME,
           reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
           file_extension.release(),
           reinterpret_cast<GDestroyNotify>(OnFileFilterDataDestroyed));
@@ -229,7 +223,6 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
   return path.ReplaceExtension(extensions[0]);
 }
 
-
 }  // namespace
 
 bool ShowOpenDialog(const DialogSettings& settings,
@@ -260,8 +253,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   open_dialog->RunOpenAsynchronous(callback);
 }
 
-bool ShowSaveDialog(const DialogSettings& settings,
-                    base::FilePath* path) {
+bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   gtk_widget_show_all(save_dialog.dialog());
   int response = gtk_dialog_run(GTK_DIALOG(save_dialog.dialog()));
@@ -275,8 +267,8 @@ bool ShowSaveDialog(const DialogSettings& settings,
 
 void ShowSaveDialog(const DialogSettings& settings,
                     const SaveDialogCallback& callback) {
-  FileChooserDialog* save_dialog = new FileChooserDialog(
-      GTK_FILE_CHOOSER_ACTION_SAVE, settings);
+  FileChooserDialog* save_dialog =
+      new FileChooserDialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   save_dialog->RunSaveAsynchronous(callback);
 }
 

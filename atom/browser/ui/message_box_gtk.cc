@@ -18,11 +18,11 @@
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
-#define ANSI_FOREGROUND_RED   "\x1b[31m"
+#define ANSI_FOREGROUND_RED "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
-#define ANSI_TEXT_BOLD        "\x1b[1m"
-#define ANSI_BACKGROUND_GRAY  "\x1b[47m"
-#define ANSI_RESET            "\x1b[0m"
+#define ANSI_TEXT_BOLD "\x1b[1m"
+#define ANSI_BACKGROUND_GRAY "\x1b[47m"
+#define ANSI_RESET "\x1b[0m"
 
 namespace atom {
 
@@ -44,15 +44,15 @@ class GtkMessageBox : public NativeWindowObserver {
         checkbox_checked_(false),
         parent_(static_cast<NativeWindow*>(parent_window)) {
     // Create dialog.
-    dialog_ = gtk_message_dialog_new(
-        nullptr,  // parent
-        static_cast<GtkDialogFlags>(0),  // no flags
-        GetMessageType(type),  // type
-        GTK_BUTTONS_NONE,  // no buttons
-        "%s", message.c_str());
+    dialog_ =
+        gtk_message_dialog_new(nullptr,                         // parent
+                               static_cast<GtkDialogFlags>(0),  // no flags
+                               GetMessageType(type),            // type
+                               GTK_BUTTONS_NONE,                // no buttons
+                               "%s", message.c_str());
     if (!detail.empty())
-      gtk_message_dialog_format_secondary_text(
-          GTK_MESSAGE_DIALOG(dialog_), "%s", detail.c_str());
+      gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog_),
+                                               "%s", detail.c_str());
     if (!title.empty())
       gtk_window_set_title(GTK_WINDOW(dialog_), title.c_str());
 
@@ -142,8 +142,8 @@ class GtkMessageBox : public NativeWindowObserver {
     callback_ = callback;
     g_signal_connect(dialog_, "delete-event",
                      G_CALLBACK(gtk_widget_hide_on_delete), nullptr);
-    g_signal_connect(dialog_, "response",
-                     G_CALLBACK(OnResponseDialogThunk), this);
+    g_signal_connect(dialog_, "response", G_CALLBACK(OnResponseDialogThunk),
+                     this);
     Show();
   }
 
@@ -226,11 +226,8 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
                   base::UTF16ToUTF8(content).c_str(), "", false)
         .RunSynchronous();
   } else {
-    fprintf(stderr,
-            ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY
-            ANSI_FOREGROUND_RED  "%s\n"
-            ANSI_FOREGROUND_BLACK "%s"
-            ANSI_RESET "\n",
+    fprintf(stderr, ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY ANSI_FOREGROUND_RED
+            "%s\n" ANSI_FOREGROUND_BLACK "%s" ANSI_RESET "\n",
             base::UTF16ToUTF8(title).c_str(),
             base::UTF16ToUTF8(content).c_str());
   }
