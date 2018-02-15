@@ -29,20 +29,18 @@ CocoaNotification::~CocoaNotification() {
 void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
-  NSString* identifier = [NSString stringWithFormat:@"%s%d", "ElectronNotification", g_identifier_];
+  NSString* identifier = [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
   [notification_ setInformativeText:base::SysUTF16ToNSString(options.msg)];
   [notification_ setIdentifier:identifier];
-  g_identifier_++;
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
   }
 
-  if ([notification_ respondsToSelector:@selector(setContentImage:)] &&
-      !options.icon.drawsNothing()) {
+  if (!options.icon.drawsNothing()) {
     NSImage* image = skia::SkBitmapToNSImageWithColorSpace(
         options.icon, base::mac::GetGenericRGBColorSpace());
     [notification_ setContentImage:image];
@@ -50,22 +48,39 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   if (options.silent) {
     [notification_ setSoundName:nil];
-  } else if (options.sound != nil) {
-    [notification_ setSoundName:base::SysUTF16ToNSString(options.sound)];
-  } else {
+  } else if (options.sound.empty()) {
     [notification_ setSoundName:NSUserNotificationDefaultSoundName];
+  } else {
+    [notification_ setSoundName:base::SysUTF16ToNSString(options.sound)];
   }
 
   [notification_ setHasActionButton:false];
 
   int i = 0;
+  action_index_ = UINT_MAX;
+  NSMutableArray* additionalActions = [[[NSMutableArray alloc] init] autorelease];
   for (const auto& action : options.actions) {
     if (action.type == base::ASCIIToUTF16("button")) {
-      [notification_ setHasActionButton:true];
-      [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
-      action_index_ = i;
+      if (action_index_ == UINT_MAX) {
+        // First button observed is the displayed action
+        [notification_ setHasActionButton:true];
+        [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
+        action_index_ = i;
+      } else {
+        // All of the rest are appended to the list of additional actions
+        NSString* actionIdentifier = [NSString stringWithFormat:@"%@Action%d", identifier, i];
+        NSUserNotificationAction* notificationAction =
+          [NSUserNotificationAction actionWithIdentifier:actionIdentifier
+                                                   title:base::SysUTF16ToNSString(action.text)];
+        [additionalActions addObject:notificationAction];
+        additional_action_indices_.insert(std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
+      }
     }
     i++;
+  }
+  if ([additionalActions count] > 0 &&
+      [notification_ respondsToSelector:@selector(setAdditionalActions:)]) {
+    [notification_ setAdditionalActions:additionalActions]; // Requires macOS 10.10
   }
 
   if (options.has_reply) {
@@ -101,9 +116,26 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
   this->LogAction("replied to");
 }
 
-void CocoaNotification::NotificationButtonClicked() {
+void CocoaNotification::NotificationActivated() {
   if (delegate())
     delegate()->NotificationAction(action_index_);
+
+  this->LogAction("button clicked");
+}
+
+void CocoaNotification::NotificationActivated(NSUserNotificationAction* action) {
+  if (delegate()) {
+    unsigned index = action_index_;
+    std::string identifier = base::SysNSStringToUTF8(action.identifier);
+    for (const auto& it : additional_action_indices_) {
+      if (it.first == identifier) {
+        index = it.second;
+        break;
+      }
+    }
+
+    delegate()->NotificationAction(index);
+  }
 
   this->LogAction("button clicked");
 }
