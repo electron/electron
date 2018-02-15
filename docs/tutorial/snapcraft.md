@@ -125,7 +125,7 @@ parts:
     source: my-deb.deb
     source-type: deb
     after:
-      - desktop-gtk2
+      - desktop-gtk3
     stage-packages:
       - libasound2
       - libgconf2-4
