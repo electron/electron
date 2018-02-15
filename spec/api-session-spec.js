@@ -271,7 +271,8 @@ describe('session module', () => {
   })
 
   describe('DownloadItem', () => {
-    const mockPDF = new Buffer(1024 * 1024 * 5)
+    const mockPDF = Buffer.alloc(1024 * 1024 * 5)
+    const protocolName = 'custom-dl'
     let contentDisposition = 'inline; filename="mock.pdf"'
     const downloadFilePath = path.join(fixtures, 'mock.pdf')
     const downloadServer = http.createServer((req, res) => {
@@ -286,11 +287,15 @@ describe('session module', () => {
     })
     const assertDownload = (event, state, url, mimeType,
                                    receivedBytes, totalBytes, disposition,
-                                   filename, port, savePath) => {
+                                   filename, port, savePath, isCustom) => {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
       assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
-      assert.equal(url, `http://127.0.0.1:${port}/`)
+      if (isCustom) {
+        assert.equal(url, `${protocolName}://item`)
+      } else {
+        assert.equal(url, `http://127.0.0.1:${port}/`)
+      }
       assert.equal(mimeType, 'application/pdf')
       assert.equal(receivedBytes, mockPDF.length)
       assert.equal(totalBytes, mockPDF.length)
@@ -311,6 +316,30 @@ describe('session module', () => {
           assertDownload(event, state, url, mimeType, receivedBytes,
                          totalBytes, disposition, filename, port, savePath)
           done()
+        })
+      })
+    })
+
+    it('can download from custom protocols using WebContents.downloadURL', (done) => {
+      const protocol = session.defaultSession.protocol
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        const handler = (ignoredError, callback) => {
+          callback({url: `${url}:${port}`})
+        }
+        protocol.registerHttpProtocol(protocolName, handler, (error) => {
+          if (error) return done(error)
+          ipcRenderer.sendSync('set-download-option', false, false)
+          w.webContents.downloadURL(`${protocolName}://item`)
+          ipcRenderer.once('download-done', (event, state, url,
+                                                      mimeType, receivedBytes,
+                                                      totalBytes, disposition,
+                                                      filename, savePath) => {
+            assertDownload(event, state, url, mimeType, receivedBytes,
+                           totalBytes, disposition, filename, port, savePath,
+                           true)
+            done()
+          })
         })
       })
     })
