@@ -29,6 +29,25 @@ describe('autoUpdater module', function () {
     })
   })
 
+  describe('getFeedURL', function () {
+    it('returns a falsey value by default', function () {
+      assert.ok(!autoUpdater.getFeedURL())
+    })
+
+    it('correctly fetches the previously set FeedURL', function (done) {
+      if (process.platform !== 'win32') {
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
+        return done()
+      }
+
+      const updateURL = 'https://fake-update.electron.io'
+      autoUpdater.setFeedURL(updateURL)
+      assert.equal(autoUpdater.getFeedURL(), updateURL)
+      done()
+    })
+  })
+
   describe('setFeedURL', function () {
     describe('on Mac or Windows', () => {
       const noThrow = (fn) => {
@@ -103,25 +122,6 @@ describe('autoUpdater module', function () {
           isServerTypeError
         )
       })
-    })
-  })
-
-  describe('getFeedURL', function () {
-    it('returns a falsey value by default', function () {
-      assert.ok(!autoUpdater.getFeedURL())
-    })
-
-    it('correctly fetches the previously set FeedURL', function (done) {
-      if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done()
-      }
-
-      const updateURL = 'https://fake-update.electron.io'
-      autoUpdater.setFeedURL(updateURL)
-      assert.equal(autoUpdater.getFeedURL(), updateURL)
-      done()
     })
   })
 
