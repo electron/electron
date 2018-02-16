@@ -104,8 +104,10 @@
     # Setup building with clang.
     ['clang==1', {
       'make_global_settings': [
+        ['AR', '<(make_clang_dir)/bin/llvm-ar'],
         ['CC', '<(make_clang_dir)/bin/clang'],
         ['CXX', '<(make_clang_dir)/bin/clang++'],
+        ['AR.host', '$(AR)'],
         ['CC.host', '$(CC)'],
         ['CXX.host', '$(CXX)'],
       ],
