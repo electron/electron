@@ -48,7 +48,7 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
       args->ThrowError("Expected options object to contain a 'url' string property in setFeedUrl call");
       return;
     }
-    opts.Get("requestHeaders", &requestHeaders);
+    opts.Get("headers", &requestHeaders);
     opts.Get("serverType", &serverType);
     if (serverType != "default" && serverType != "json") {
       args->ThrowError("Expected serverType to be 'default' or 'json'");
