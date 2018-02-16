@@ -99,10 +99,8 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
-  auto_updater::AutoUpdater::HeaderMap headers;
-  args->GetNext(&headers);
-  auto_updater::AutoUpdater::SetFeedURL(url, headers);
+void AutoUpdater::SetFeedURL(mate::Arguments* args) {
+  auto_updater::AutoUpdater::SetFeedURL(args);
 }
 
 void AutoUpdater::QuitAndInstall() {
