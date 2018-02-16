@@ -19,6 +19,7 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 
 #include "atom/common/node_includes.h"
@@ -30,6 +31,11 @@ namespace {
 
 const std::string kIpcKey = "ipcNative";
 const std::string kModuleCacheKey = "native-module-cache";
+
+bool IsDevTools(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url()
+        .ProtocolIs("chrome-devtools");
+}
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
@@ -148,15 +154,14 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
 
-  // Only allow preload for the main frame
-  if (!render_frame->IsMainFrame())
+  // Only allow preload for the main frame or
+  // For devtools we still want to run the preload_bundle script
+  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
     return;
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath preload_script_path = command_line->GetSwitchValuePath(
       switches::kPreloadScript);
-  if (preload_script_path.empty())
-    return;
 
   auto isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
