@@ -16,7 +16,7 @@ npm install --save-dev electron@latest
 
 ## Version 1.x
 
-Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spec. Major versions corresponded to end-user API changes. Minor versions corresponded to Chromium major releases. Patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
 
 Here is an example of the 1.x strategy:
 
@@ -42,17 +42,12 @@ From 2.0 onward, Electron will follow semver.
 
 Below is a table explicitly mapping types of changes to their corresponding category of semver (e.g. Major, Minor, Patch).
 
-* **Major Version Increments**
-	* Chromium version updates
-	* node.js major version updates
-	* Electron breaking API changes
-* **Minor Version Increments**
-	* node.js minor version updates
-	* Electron non-breaking API changes
-* **Patch Version Increments**
-	* node.js patch version updates
-	* fix-related chromium patches
-	* Electron bug fixes
+| Major Version Increments        | Minor Version Increments           | Patch Version Increments      |
+| ------------------------------- | ---------------------------------- | ----------------------------- |
+| Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
+| node.js major version updates   | node.js minor version updates      | node.js patch version updates |
+| Chromium version updates        |                                    | fix-related chromium patches  |
+
 
 Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
