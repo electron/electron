@@ -42,17 +42,12 @@ From 2.0 onward, Electron will follow semver.
 
 Below is a table explicitly mapping types of changes to their corresponding category of semver (e.g. Major, Minor, Patch).
 
-* **Major Version Increments**
-	* Chromium version updates
-	* node.js major version updates
-	* Electron breaking API changes
-* **Minor Version Increments**
-	* node.js minor version updates
-	* Electron non-breaking API changes
-* **Patch Version Increments**
-	* node.js patch version updates
-	* fix-related chromium patches
-	* Electron bug fixes
+| Major Version Increments        | Minor Version Increments           | Patch Version Increments      |
+| ------------------------------- | ---------------------------------- | ----------------------------- |
+| Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
+| node.js major version updates   | node.js minor version updates      | node.js patch version updates |
+| Chromium version updates        |                                    | fix-related chromium patches  |
+
 
 Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
