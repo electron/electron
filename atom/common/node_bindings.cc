@@ -62,7 +62,7 @@
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
 // forward declaration. The definitions are in each module's
-// implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
+// implementation when calling the NODE_MODULE_CONTEXT_AWARE_BUILTIN.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
 #undef V
