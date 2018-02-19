@@ -45,7 +45,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | Major Version Increments        | Minor Version Increments           | Patch Version Increments      |
 | ------------------------------- | ---------------------------------- | ----------------------------- |
 | Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
-| node.js major version updates   | node.js minor version updates      | node.js patch version updates |
+| Node.js major version updates   | Node.js minor version updates      | Node.js patch version updates |
 | Chromium version updates        |                                    | fix-related chromium patches  |
 
 
