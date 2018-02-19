@@ -6,7 +6,6 @@ namespace {
 
 std::string g_overridden_application_name;
 std::string g_overridden_app_version;
-
 }
 
 // version

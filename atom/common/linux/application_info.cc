@@ -19,9 +19,8 @@ namespace {
 GDesktopAppInfo* get_desktop_app_info() {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  return desktop_id.empty()
-    ? nullptr
-    : g_desktop_app_info_new(desktop_id.c_str());
+  return desktop_id.empty() ? nullptr
+                            : g_desktop_app_info_new(desktop_id.c_str());
 }
 
 }  // namespace
@@ -34,9 +33,9 @@ std::string GetApplicationName() {
 
   // attempt #2: the 'Name' entry from .desktop file's [Desktop] section
   if (ret.empty()) {
-    GDesktopAppInfo * info = get_desktop_app_info();
+    GDesktopAppInfo* info = get_desktop_app_info();
     if (info != nullptr) {
-      char * str = g_desktop_app_info_get_string(info, "Name");
+      char* str = g_desktop_app_info_get_string(info, "Name");
       g_clear_object(&info);
       if (str != nullptr)
         ret = str;
