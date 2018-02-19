@@ -250,17 +250,71 @@ describe('crashReporter module', () => {
   })
 
   describe('getUploadedReports', () => {
-    it('returns an array of reports', () => {
-      const reports = crashReporter.getUploadedReports()
-      assert(typeof reports === 'object')
-    })
-  })
+    let w = null
+    let stopServer = null
 
-  describe('getLastCrashReport', () => {
-    it('correctly returns the most recent report', () => {
-      const reports = crashReporter.getUploadedReports()
-      const lastReport = reports[0]
-      assert(lastReport != null)
+    beforeEach(() => {
+      stopServer = null
+      w = new BrowserWindow({ show: false })
+    })
+
+    afterEach(() => closeWindow(w).then(() => { w = null }))
+
+    afterEach(() => {
+      stopCrashService()
+    })
+
+    afterEach((done) => {
+      if (stopServer != null) {
+        stopServer(done)
+      } else {
+        done()
+      }
+    })
+
+    it('getLastCrashReport correctly returns the most recent report', function(done)  {
+      this.timeout(180000)
+
+      const secondCrashDone = () => { 
+        let sortedReports = crashReporter.getUploadedReports().sort(function(a,b){
+          return b.date - a.date;
+        })
+
+        const latestReport = crashReporter.getLastCrashReport()
+        console.log(latestReport, sortedReports)
+        assert(latestReport.date.getTime() == sortedReports[0].date.getTime())
+        done()
+      }
+
+      const firstCrashDone = () => {
+        stopServer(() =>{
+          stopServer = startServer({
+            callback (port) {
+              const crashUrl = url.format({
+                protocol: 'file',
+                pathname: path.join(fixtures, 'api', 'crash.html'),
+                search: `?port=${port}`
+              })
+              w.reload()
+            },
+            processType: 'renderer',
+            done: secondCrashDone.bind(null)
+          })
+        })
+      }
+
+      stopServer = startServer({
+        callback (port) {
+          const crashUrl = url.format({
+            protocol: 'file',
+            pathname: path.join(fixtures, 'api', 'crash.html'),
+            search: `?port=${port}`
+          })
+          w.loadURL(crashUrl)
+        },
+        processType: 'renderer',
+        done: firstCrashDone.bind(null)
+      })
     })
   })
 
