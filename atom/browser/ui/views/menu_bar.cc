@@ -57,7 +57,7 @@ void GetMenuBarColor(SkColor* enabled,
   *highlight = GetStyleContextFgColor(sc, GTK_STATE_FLAG_SELECTED);
   *hover = GetStyleContextFgColor(sc, GTK_STATE_FLAG_PRELIGHT);
   *background = GetStyleContextBgColor(sc, GTK_STATE_FLAG_NORMAL);
-  g_object_unref(G_OBJECT(menu_bar));
+  gtk_widget_destroy(GTK_WIDGET(menu_bar));
 }
 
 #endif  // USE_X11
