@@ -62,7 +62,7 @@
         ['exclude', '_gtk(_browsertest|_unittest)?\\.(h|cc)$'],
         ['exclude', '(^|/)gtk/'],
         ['exclude', '(^|/)gtk_[^/]*\\.(h|cc)$'],
-        ['exclude', '(^|/)libgtk2ui/'],
+        ['exclude', '(^|/)libgtkui/'],
         ['exclude', '(^|/)x/'],
       ],
     }],

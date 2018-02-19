@@ -18,8 +18,12 @@ Please note, the `ARM` version of Windows is not supported for now.
 ### Linux
 
 The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
-Ubuntu 12.04, the `arm` binary is built against ARM v7 with hard-float ABI and
+Ubuntu 12.04, the `armv7l` binary is built against ARM v7 with hard-float ABI and
 NEON for Debian Wheezy.
+
+[Until the release of Electron 2.0][arm-breaking-change], Electron will also
+continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries 
+are identical.
 
 Whether the prebuilt binary can run on a distribution depends on whether the
 distribution includes the libraries that Electron is linked to on the building
@@ -29,3 +33,5 @@ are also verified to be able to run the prebuilt binaries of Electron:
 * Ubuntu 12.04 and later
 * Fedora 21
 * Debian 8
+
+[arm-breaking-change]: https://github.com/electron/electron/blob/master/docs/tutorial/planned-breaking-changes.md#duplicate-arm-assets

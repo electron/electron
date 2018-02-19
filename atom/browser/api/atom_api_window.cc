@@ -101,7 +101,7 @@ Window::Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
   }
 #endif
 
-  if (options.Get("webContents", &web_contents)) {
+  if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
     // Set webPreferences from options if using an existing webContents.
     // These preferences will be used when the webContent launches new
     // render processes.
@@ -135,7 +135,7 @@ void Window::Init(v8::Isolate* isolate,
 
   // The parent window.
   mate::Handle<Window> parent;
-  if (options.Get("parent", &parent))
+  if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
   // Creates BrowserWindow.
@@ -149,7 +149,7 @@ void Window::Init(v8::Isolate* isolate,
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
   mate::Handle<NativeImage> icon;
-  if (options.Get(options::kIcon, &icon))
+  if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
 
@@ -184,7 +184,7 @@ void Window::WillDestroyNativeObject() {
   v8::HandleScope handle_scope(isolate());
   for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
     mate::Handle<Window> child;
-    if (mate::ConvertFromV8(isolate(), value, &child))
+    if (mate::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window_->CloseImmediately();
   }
 }
@@ -391,6 +391,10 @@ bool Window::IsVisible() {
 
 bool Window::IsEnabled() {
   return window_->IsEnabled();
+}
+
+void Window::SetEnabled(bool enable) {
+  window_->SetEnabled(enable);
 }
 
 void Window::Maximize() {
@@ -727,7 +731,7 @@ void Window::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
   if (value->IsObject() &&
       mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
-      mate::ConvertFromV8(isolate, value, &menu)) {
+      mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
   } else if (value->IsNull()) {
@@ -847,7 +851,7 @@ void Window::SetParentWindow(v8::Local<v8::Value> value,
   }
 
   mate::Handle<Window> parent;
-  if (value->IsNull()) {
+  if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
@@ -883,7 +887,7 @@ void Window::SetBrowserView(v8::Local<v8::Value> value) {
   ResetBrowserView();
 
   mate::Handle<BrowserView> browser_view;
-  if (value->IsNull()) {
+  if (value->IsNull() || value->IsUndefined()) {
     window_->SetBrowserView(nullptr);
   } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
     window_->SetBrowserView(browser_view->view());
@@ -898,7 +902,8 @@ void Window::ResetBrowserView() {
   }
 
   mate::Handle<BrowserView> browser_view;
-  if (mate::ConvertFromV8(isolate(), GetBrowserView(), &browser_view)) {
+  if (mate::ConvertFromV8(isolate(), GetBrowserView(), &browser_view)
+    && !browser_view.IsEmpty()) {
     browser_view->web_contents()->SetOwnerWindow(nullptr);
   }
 
@@ -987,8 +992,10 @@ void Window::RemoveFromParentChildWindows() {
     return;
 
   mate::Handle<Window> parent;
-  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent))
+  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent)
+    || parent.IsEmpty()) {
     return;
+  }
 
   parent->child_windows_.Remove(ID());
 }
@@ -1008,6 +1015,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("isEnabled", &Window::IsEnabled)
+      .SetMethod("setEnabled", & Window::SetEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)

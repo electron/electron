@@ -36,8 +36,11 @@ class AtomMenuModel : public ui::SimpleMenuModel {
    public:
     virtual ~Observer() {}
 
+    // Notifies the menu will open.
+    virtual void OnMenuWillShow() {}
+
     // Notifies the menu has been closed.
-    virtual void MenuWillClose() {}
+    virtual void OnMenuWillClose() {}
   };
 
   explicit AtomMenuModel(Delegate* delegate);
@@ -54,6 +57,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
 
   // ui::SimpleMenuModel:
   void MenuWillClose() override;
+  void MenuWillShow() override;
 
   using SimpleMenuModel::GetSubmenuModelAt;
   AtomMenuModel* GetSubmenuModelAt(int index);

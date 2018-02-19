@@ -14,7 +14,7 @@ LINUX_DEPS = [
   'libdbus-1-dev',
   'libgconf2-dev',
   'libgnome-keyring-dev',
-  'libgtk2.0-dev',
+  'libgtk-3-dev',
   'libnotify-dev',
   'libnss3-dev',
   'libxtst-dev',

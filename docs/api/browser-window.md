@@ -280,6 +280,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       same `partition`. If there is no `persist:` prefix, the page will use an
       in-memory session. By assigning the same `partition`, multiple pages can share
       the same session. Default is the default session.
+    * `affinity` String (optional) - When specified, web pages with the same
+      `affinity` will run in the same renderer process. Note that due to reusing
+      the renderer process, certain `webPreferences` options will also be shared
+      between the web pages even when you specified different values for them,
+      including but not limited to `preload`, `sandbox` and `nodeIntegration`.
+      So it is suggested to use exact same `webPreferences` for web pages with
+      the same `affinity`.
     * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
       `300%`. Default is `1.0`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
@@ -353,6 +360,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
       to strip away the `preload` script and to validate or alter the
       `<webview>`'s initial settings.
+    * `additionArguments` String[] (optional) - A list of strings that will be appended
+      to `process.argv` in the renderer process of this app.  Useful for passing small
+      bits of data down to renderer process preload scripts.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -846,6 +856,12 @@ the supplied bounds.
 #### `win.getContentBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md)
+
+#### `win.setEnabled(enable)`
+
+* `enable` Boolean
+
+Disable or enable the window.
 
 #### `win.setSize(width, height[, animate])`
 

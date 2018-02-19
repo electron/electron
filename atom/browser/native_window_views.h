@@ -132,7 +132,7 @@ class NativeWindowViews : public NativeWindow,
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  void SetEnabled(bool enable);
+  void SetEnabled(bool enable) override;
 
   views::Widget* widget() const { return window_.get(); }
 

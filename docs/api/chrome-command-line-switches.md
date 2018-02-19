@@ -28,6 +28,10 @@ Disables the disk cache for HTTP requests.
 
 Disable HTTP/2 and SPDY/3.1 protocols.
 
+## --lang
+
+Set a custom locale.
+
 ## --inspect=`port` and --inspect-brk=`port`
 
 Debug-related flags, see the [Debugging the Main Process][debugging-main-process] guide for details.

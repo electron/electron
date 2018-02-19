@@ -31,17 +31,6 @@ namespace brightray {
 
 namespace {
 
-bool GetAppUserModelId(ScopedHString* app_id) {
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    app_id->Reset(current_app_id);
-    CoTaskMemFree(current_app_id);
-  } else {
-    app_id->Reset(base::UTF8ToUTF16(GetApplicationName()));
-  }
-  return app_id->success();
-}
-
 bool IsDebuggingNotifications() {
   return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 }
@@ -70,7 +59,7 @@ bool WindowsToastNotification::Initialize() {
     return false;
 
   ScopedHString app_id;
-  if (!GetAppUserModelId(&app_id))
+  if (!GetAppUserModelID(&app_id))
     return false;
 
   return SUCCEEDED(

@@ -4,12 +4,16 @@
 
 #include "brightray/browser/browser_main_parts.h"
 
-#if defined(OSX_POSIX)
+#if defined(OS_POSIX)
 #include <stdlib.h>
 #endif
 
 #include <sys/stat.h>
 #include <string>
+
+#if defined(OS_LINUX)
+#include <glib.h>  // for g_setenv()
+#endif
 
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -29,6 +33,8 @@
 #include "net/proxy/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/material_design/material_design_controller.h"
+#include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
@@ -220,10 +226,29 @@ void BrowserMainParts::ToolkitInitialized() {
 }
 
 void BrowserMainParts::PreMainMessageLoopStart() {
-#if defined(OS_MACOSX)
-  l10n_util::OverrideLocaleWithCocoaLocale();
+  // Initialize ui::ResourceBundle.
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      "", nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  auto cmd_line = base::CommandLine::ForCurrentProcess();
+  if (cmd_line->HasSwitch(switches::kLang)) {
+    const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
+    const base::FilePath locale_file_path =
+        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale, true);
+    if (!locale_file_path.empty()) {
+      custom_locale_ = locale;
+#if defined(OS_LINUX)
+      /* When built with USE_GLIB, libcc's GetApplicationLocaleInternal() uses
+       * glib's g_get_language_names(), which keys off of getenv("LC_ALL") */
+      g_setenv("LC_ALL", custom_locale_.c_str(), TRUE);
 #endif
-  InitializeResourceBundle("");
+    }
+  }
+
+#if defined(OS_MACOSX)
+  if (custom_locale_.empty())
+    l10n_util::OverrideLocaleWithCocoaLocale();
+#endif
+  LoadResourceBundle(custom_locale_);
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif
@@ -277,7 +302,8 @@ int BrowserMainParts::PreCreateThreads() {
     layout_provider_.reset(new views::LayoutProvider());
 
   // Initialize the app locale.
-  BrowserClient::SetApplicationLocale(l10n_util::GetApplicationLocale(""));
+  BrowserClient::SetApplicationLocale(
+    l10n_util::GetApplicationLocale(custom_locale_));
 
   // Manage global state of net and other IO thread related.
   io_thread_ = base::MakeUnique<IOThread>();

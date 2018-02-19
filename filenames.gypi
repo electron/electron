@@ -63,6 +63,7 @@
       'lib/renderer/init.js',
       'lib/renderer/inspector.js',
       'lib/renderer/override.js',
+      'lib/renderer/security-warnings.js',
       'lib/renderer/window-setup.js',
       'lib/renderer/web-view/guest-view-internal.js',
       'lib/renderer/web-view/web-view.js',
@@ -739,6 +740,11 @@
           'atom/app/node_main.h',
         ],
       }],  # enable_run_as_node
+      ['mas_build==1', {
+        'lib_sources': [
+          'atom/browser/api/atom_api_app_mas.mm',
+        ],
+      }],  # mas_build==1
     ],
   },
 }

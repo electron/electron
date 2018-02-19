@@ -7,6 +7,7 @@
 #include <string>
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/elements_upload_data_stream.h"
@@ -121,6 +122,9 @@ void AtomURLRequest::DoInitialize(
   request_->set_method(method);
   // Do not send cookies from the cookie store.
   DoSetLoadFlags(net::LOAD_DO_NOT_SEND_COOKIES);
+  // Set a flag to stop custom protocol from intercepting this request.
+  request_->SetUserData(DisableProtocolInterceptFlagKey(),
+                        base::WrapUnique(new base::SupportsUserData::Data()));
 }
 
 void AtomURLRequest::DoTerminate() {

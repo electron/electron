@@ -831,7 +831,8 @@ Sends a request to get current zoom factor, the `callback` will be called with
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+limits of 300% and 50% of original size, respectively. The formula for this is
+`scale := 1.2 ^ level`.
 
 #### `contents.getZoomLevel(callback)`
 
@@ -1111,7 +1112,7 @@ with native view, which developers have very limited control of. With the
 the devtools in it, including `BrowserWindow`, `BrowserView` and `<webview>`
 tag.
 
-Note that closing the devtools does not destory the `devToolsWebContents`, it
+Note that closing the devtools does not destroy the `devToolsWebContents`, it
 is caller's responsibility to destroy `devToolsWebContents`.
 
 An example of showing devtools in a `<webview>` tag:

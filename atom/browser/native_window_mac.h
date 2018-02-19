@@ -38,6 +38,7 @@ class NativeWindowMac : public NativeWindow,
   void Hide() override;
   bool IsVisible() override;
   bool IsEnabled() override;
+  void SetEnabled(bool enable) override;
   void Maximize() override;
   void Unmaximize() override;
   bool IsMaximized() override;
@@ -175,6 +176,8 @@ class NativeWindowMac : public NativeWindow,
   void RegisterInputEventObserver(content::RenderViewHost* host);
   void UnregisterInputEventObserver(content::RenderViewHost* host);
 
+  void SetRenderWidgetHostOpaque(bool opaque);
+
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
 
@@ -211,6 +214,9 @@ class NativeWindowMac : public NativeWindow,
   bool was_movable_;
   NSRect original_frame_;
   NSUInteger simple_fullscreen_mask_;
+
+  base::scoped_nsobject<NSColor> background_color_before_vibrancy_;
+  bool transparency_before_vibrancy_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;

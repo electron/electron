@@ -54,6 +54,9 @@ struct Converter<file_dialog::DialogSettings> {
     dict.Get("filters", &(out->filters));
     dict.Get("properties", &(out->properties));
     dict.Get("showsTagField", &(out->shows_tag_field));
+    #if defined(MAS_BUILD)
+    dict.Get("securityScopedBookmarks", &(out->security_scoped_bookmarks));
+    #endif
     return true;
   }
 };

@@ -16,6 +16,8 @@
 
 namespace atom {
 
+const void* DisableProtocolInterceptFlagKey();
+
 class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
  public:
   AtomURLRequestJobFactory();

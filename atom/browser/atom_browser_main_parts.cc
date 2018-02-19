@@ -154,9 +154,12 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 }
 
 int AtomBrowserMainParts::PreCreateThreads() {
-  fake_browser_process_->SetApplicationLocale(
-      l10n_util::GetApplicationLocale(""));
-  return brightray::BrowserMainParts::PreCreateThreads();
+  const int result = brightray::BrowserMainParts::PreCreateThreads();
+  if (!result) {
+    fake_browser_process_->SetApplicationLocale(
+        brightray::BrowserClient::Get()->GetApplicationLocale());
+  }
+  return result;
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

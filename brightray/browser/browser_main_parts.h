@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_MAIN_PARTS_H_
 
 #include <memory>
+#include <string>
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
@@ -62,6 +63,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
+  std::string custom_locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };

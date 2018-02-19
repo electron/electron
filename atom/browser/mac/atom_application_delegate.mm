@@ -87,13 +87,6 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
-// We simply try to close the browser, which in turn will try to close the windows.
-// Termination can proceed if all windows are closed or window close can be cancelled
-// which will abort termination.
-- (void)tryToTerminateApp:(NSApplication*)app {
-  atom::Browser::Get()->Quit();
-}
-
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();
