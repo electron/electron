@@ -28,25 +28,33 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     // init app
     app.setName(appName)
     app.setDesktopName(appName + '.desktop')
-    // init dbus mock
+    // init dbus
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
     const bus = dbus.sessionBus()
-    console.log('system bus')
-    console.log(process.env.DBUS_SYSTEM_BUS_ADDRESS)
-    console.log('session bus')
-    console.log(process.env.DBUS_SESSION_BUS_ADDRESS)
+    console.log('session bus: ' + process.env.DBUS_SESSION_BUS_ADDRESS)
     const service = bus.getService(serviceName)
+    console.log('service')
+    console.log(service)
     const getInterface = Promise.promisify(service.getInterface, {context: service})
+    console.log('getInterface')
+    console.log(getInterface)
     mock = await getInterface(path, iface)
+    console.log('mock')
+    console.log(mock)
     getCalls = Promise.promisify(mock.GetCalls, {context: mock})
+    console.log('getCalls')
+    console.log(getCalls)
     reset = Promise.promisify(mock.Reset, {context: mock})
+    console.log('reset')
+    console.log(reset)
   })
 
   after(async () => {
+    // cleanup dbus
     console.log('in after')
     await reset()
-    // restore app fields to pre-test state
+    // cleanup app
     app.setName(realAppName)
     app.setVersion(realAppVersion)
   })
@@ -54,8 +62,10 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   describe('Notification module using ' + serviceName, () => {
     function onMethodCalled (done) {
       function cb (name) {
+        console.log('onMethodCalled: ' + name)
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb)
+          console.log('done')
           done()
         }
       }
@@ -102,11 +112,15 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
 
     it('should call ' + serviceName + ' to show notifications', async () => {
       const calls = await getCalls()
+      console.log('calls')
+      console.log(calls)
       assert(calls.length >= 1)
       let lastCall = calls[calls.length - 1]
       let methodName = lastCall[1]
       assert.equal(methodName, 'Notify')
       let args = unmarshalDBusNotifyArgs(lastCall[2])
+      console.log('args')
+      console.log(args)
       assert.deepEqual(args, {
         app_name: appName,
         replaces_id: 0,
