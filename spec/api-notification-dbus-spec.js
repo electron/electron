@@ -51,6 +51,28 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
       return cb
     }
 
+    function unmarshalDBusNotifyHints (dbusHints) {
+      let o = {}
+      for (let hint of dbusHints) {
+        let key = hint[0]
+        let value = hint[1][1][0]
+        o[key] = value
+      }
+      return o
+    }
+
+    function unmarshalDBusNotifyArgs (dbusArgs) {
+      return {
+        app_name: dbusArgs[0][1][0],
+        replaces_id: dbusArgs[1][1][0],
+        app_icon: dbusArgs[2][1][0],
+        title: dbusArgs[3][1][0],
+        body: dbusArgs[4][1][0],
+        actions: dbusArgs[5][1][0],
+        hints: unmarshalDBusNotifyHints(dbusArgs[6][1][0])
+      }
+    }
+
     before((done) => {
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
@@ -69,19 +91,22 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     it('should call ' + serviceName + ' to display a notification', async () => {
       const calls = await getCalls()
       assert(calls.length >= 1)
-      let call = calls[calls.length - 1]
-      let methodName = call[1]
-      let args = call[2]
+      let lastCall = calls[calls.length - 1]
+      let methodName = lastCall[1]
       assert.equal(methodName, 'Notify')
-      assert.equal(args[0][1], appName) // app_name
-      assert.equal(args[1][1], 0) // replaces_id
-      assert.equal(args[2][1], '') // app_icon
-      assert.equal(args[3][1], 'title') // summary
-      assert.equal(args[4][1], 'body') // body
-      assert.equal(args[5][1], '') // actions
-      let hints = args[6][1][0] // hints
-      assert.equal(JSON.stringify(hints[0]), '["append",[[{"type":"s","child":[]}],["true"]]]')
-      assert.equal(JSON.stringify(hints[1]), '["desktop-entry",[[{"type":"s","child":[]}],["' + appName + '"]]]')
+      let args = unmarshalDBusNotifyArgs(lastCall[2])
+      assert.deepEqual(args, {
+        app_name: appName,
+        replaces_id: 0,
+        app_icon: '',
+        title: 'title',
+        body: 'body',
+        actions: [],
+        hints: {
+          'append': 'true',
+          'desktop-entry': appName
+        }
+      })
     })
   })
 })
