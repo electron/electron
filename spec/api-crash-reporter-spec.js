@@ -281,7 +281,6 @@ describe('crashReporter module', () => {
         })
 
         const latestReport = crashReporter.getLastCrashReport()
-        console.log(latestReport, sortedReports)
         assert(latestReport.date.getTime() === sortedReports[0].date.getTime())
         done()
       }
