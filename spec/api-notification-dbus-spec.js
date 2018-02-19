@@ -17,7 +17,6 @@ const {app} = remote.require('electron')
 const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
-  console.log('hello world')
   let mock, Notification, getCalls, reset
   const realAppName = app.getName()
   const realAppVersion = app.getVersion()
@@ -25,7 +24,6 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   const serviceName = 'org.freedesktop.Notifications'
 
   before(async () => {
-    console.log('inb4')
     // init app
     app.setName(appName)
     app.setDesktopName(appName + '.desktop')
@@ -113,15 +111,11 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
 
     it('should call ' + serviceName + ' to show notifications', async () => {
       const calls = await getCalls()
-      console.log('calls')
-      console.log(calls)
       assert(calls.length >= 1)
       let lastCall = calls[calls.length - 1]
       let methodName = lastCall[1]
       assert.equal(methodName, 'Notify')
       let args = unmarshalDBusNotifyArgs(lastCall[2])
-      console.log('args')
-      console.log(args)
       assert.deepEqual(args, {
         app_name: appName,
         replaces_id: 0,
