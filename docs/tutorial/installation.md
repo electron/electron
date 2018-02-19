@@ -1,8 +1,6 @@
 # Installation
 
-> Tips for installing Electron
-
-To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
+To install prebuilt Electron binaries, use [`npm`][npm].
 The preferred method is to install Electron as a development dependency in your
 app:
 
@@ -10,9 +8,8 @@ app:
 npm install electron --save-dev
 ```
 
-See the
-[Electron versioning doc](electron-versioning.md)
-for info on how to manage Electron versions in your apps.
+See the [Electron versioning doc][versioning] for info on how to
+manage Electron versions in your apps.
 
 ## Global Installation
 
@@ -41,11 +38,12 @@ npm install --platform=win32 electron
 
 ## Proxies
 
-If you need to use an HTTP proxy you can [set these environment variables](https://github.com/request/request/tree/f0c4ec061141051988d1216c24936ad2e7d5c45d#controlling-proxy-behaviour-using-environment-variables).
+If you need to use an HTTP proxy you can [set these environment variables][proxy-env].
 
 ## Custom Mirrors and Caches
-During installation, the `electron` module will call out to [`electron-download`](https://github.com/electron-userland/electron-download) to download prebuilt
-binaries of Electron for your platform. It will do so by contacting GitHub's
+During installation, the `electron` module will call out to
+[`electron-download`][electron-download] to download prebuilt binaries of
+Electron for your platform. It will do so by contacting GitHub's
 release download page (`https://github.com/electron/electron/releases/tag/v$VERSION`,
 where `$VERSION` is the exact version of Electron).
 
@@ -111,19 +109,21 @@ network problems. The best resolution is to try switching networks, or
 just wait a bit and try installing again.
 
 You can also attempt to download Electron directly from
-[electron/electron/releases](https://github.com/electron/electron/releases)
+[electron/electron/releases][releases]
 if installing via `npm` is failing.
 
 If installation fails with an `EACCESS` error you may need to
-[fix your npm permissions](https://docs.npmjs.com/getting-started/fixing-npm-permissions).
+[fix your npm permissions][npm-permissions].
 
-If the above error persists, the [unsafe-perm](https://docs.npmjs.com/misc/config#unsafe-perm) flag may need to be set to true:
+If the above error persists, the [unsafe-perm][unsafe-perm] flag may need to be
+set to true:
 
 ```sh
 sudo npm install electron --unsafe-perm=true
 ```
 
-On slower networks, it may be advisable to use the `--verbose` flag in order to show download progress:
+On slower networks, it may be advisable to use the `--verbose` flag in order to
+show download progress:
 
 ```sh
 npm install --verbose electron
@@ -131,3 +131,11 @@ npm install --verbose electron
 
 If you need to force a re-download of the asset and the SHASUM file set the
 `force_no_cache` environment variable to `true`.
+
+[npm]: https://docs.npmjs.com
+[versioning]: ./electron-versioning.md
+[releases]: https://github.com/electron/electron/releases
+[proxy-env]: https://github.com/request/request/tree/f0c4ec061141051988d1216c24936ad2e7d5c45d#controlling-proxy-behaviour-using-environment-variables
+[electron-download]: https://github.com/electron-userland/electron-download
+[npm-permissions]: https://docs.npmjs.com/getting-started/fixing-npm-permissions
+[unsafe-perm]: https://docs.npmjs.com/misc/config#unsafe-perm
