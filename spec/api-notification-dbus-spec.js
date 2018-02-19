@@ -18,6 +18,8 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
   console.log('hello world')
   let mock, Notification, getCalls, reset
+  const realAppName = app.getName()
+  const realAppVersion = app.getVersion()
   const appName = 'api-notification-dbus-spec'
   const serviceName = 'org.freedesktop.Notifications'
 
@@ -44,6 +46,9 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   after(async () => {
     console.log('in after')
     await reset()
+    // restore app fields to pre-test state
+    app.setName(realAppName)
+    app.setVersion(realVersion)
   })
 
   describe('Notification module using ' + serviceName, () => {
