@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "base/environment.h"
-#include "base/logging.h"
 #include "base/files/file_enumerator.h"
+#include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
@@ -27,7 +27,7 @@ bool HasCapability(const std::string& capability) {
   LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << " searching for " << capability;
   bool result = false;
   GList* capabilities = libnotify_loader_.notify_get_server_caps();
-  for (auto l=capabilities; l!=nullptr; l=l->next)
+  for (auto l=capabilities; l != nullptr; l=l->next)
     LOG(INFO) << "capability: " << static_cast<const char*>(l->data);
 
   if (g_list_find_custom(capabilities, capability.c_str(),
