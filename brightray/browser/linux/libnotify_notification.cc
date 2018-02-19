@@ -41,14 +41,7 @@ bool NotifierSupportsActions() {
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return false;
 
-  static bool notify_has_result = false;
-  static bool notify_result = false;
-
-  if (notify_has_result)
-    return notify_result;
-
-  notify_result = HasCapability("actions");
-  return notify_result;
+  return HasCapability("actions");
 }
 
 void log_and_clear_error(GError* error, const char* context) {
