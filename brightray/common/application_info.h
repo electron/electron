@@ -10,7 +10,7 @@
 namespace brightray {
 
 void OverrideApplicationName(const std::string& name);
-std::string GetOverridenApplicationName();
+std::string GetOverriddenApplicationName();
 
 void OverrideApplicationVersion(const std::string& version);
 std::string GetOverriddenApplicationVersion();
