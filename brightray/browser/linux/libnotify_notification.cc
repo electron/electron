@@ -41,7 +41,6 @@ bool HasCapability(const std::string& capability) {
 }
 
 bool NotifierSupportsActions() {
-  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return false;
 
@@ -59,7 +58,6 @@ void log_and_clear_error(GError* error, const char* context) {
 
 // static
 bool LibnotifyNotification::Initialize() {
-  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
   if (!libnotify_loader_.Load("libnotify.so.4") &&  // most common one
       !libnotify_loader_.Load("libnotify.so.5") &&
       !libnotify_loader_.Load("libnotify.so.1") &&
@@ -72,7 +70,6 @@ bool LibnotifyNotification::Initialize() {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
-  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << "Initialize returning true";
   return true;
 }
 
@@ -88,8 +85,6 @@ LibnotifyNotification::~LibnotifyNotification() {
 }
 
 void LibnotifyNotification::Show(const NotificationOptions& options) {
-  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
-
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(options.title).c_str(),
       base::UTF16ToUTF8(options.msg).c_str(), nullptr);
