@@ -16,17 +16,17 @@
 
 @interface PopUpButtonHandler : NSObject
 @property (nonatomic, strong) NSSavePanel *savePanel;
-@property (nonatomic, strong) NSArray *fileTypes;
-- (instancetype)initWithPanel:(NSSavePanel *)panel andTypes:(NSArray *)types;
+@property (nonatomic, strong) NSArray *fileTypesList;
+- (instancetype)initWithPanel:(NSSavePanel *)panel andTypesList:(NSArray *)typesList;
 - (void)selectFormat:(id)sender;
 @end
 
 @implementation PopUpButtonHandler
-- (instancetype)initWithPanel:(NSSavePanel *)panel andTypes:(NSArray *)types {
+- (instancetype)initWithPanel:(NSSavePanel *)panel andTypesList:(NSArray *)typesList {
   self = [super init];
   if (self) {
     _savePanel = panel;
-    _fileTypes = types;
+    _fileTypesList = typesList;
   }
   return self;
 }
@@ -34,13 +34,16 @@
 - (void)selectFormat:(id)sender {
   NSPopUpButton *button = (NSPopUpButton *)sender;
   NSInteger selectedItemIndex = [button indexOfSelectedItem];
-  NSString *nameFieldString = [[self savePanel] nameFieldStringValue];
-  NSString *trimmedNameFieldString = [nameFieldString stringByDeletingPathExtension];
-  NSString *extension = [[self fileTypes] objectAtIndex: selectedItemIndex];
+  NSArray *list = [self fileTypesList];
+  NSArray *fileTypes = [list objectAtIndex:selectedItemIndex];
 
-  NSString *nameFieldStringWithExt = [NSString stringWithFormat:@"%@.%@", trimmedNameFieldString, extension];
-  [[self savePanel] setNameFieldStringValue:nameFieldStringWithExt];
-  [[self savePanel] setAllowedFileTypes:@[extension]];
+  // If we meet a '*' file extension, we allow all the file types and no
+  // need to set the specified file types.
+  if ([fileTypes count] == 0 || [fileTypes containsObject:@"*"]) {
+    [[self savePanel] setAllowedFileTypes:nil];
+  } else {
+    [[self savePanel] setAllowedFileTypes:fileTypes];
+  }
 }
 @end
 
@@ -48,35 +51,39 @@ namespace file_dialog {
 
 namespace {
 
-static PopUpButtonHandler *popUpButtonHandler;
-
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
-  NSMutableSet* file_type_set = [NSMutableSet set];
-  for (size_t i = 0; i < filters.size(); ++i) {
-    const Filter& filter = filters[i];
-    for (size_t j = 0; j < filter.second.size(); ++j) {
-      // If we meet a '*' file extension, we allow all the file types and no
-      // need to set the specified file types.
+  NSMutableArray* file_types_list = [NSMutableArray array];
+  NSMutableArray* filter_names = [NSMutableArray array];
 
-      if (filter.second[j] == "*") {
-        [dialog setAllowsOtherFileTypes:YES];
-        return;
-      }
-      base::ScopedCFTypeRef<CFStringRef> ext_cf(
-          base::SysUTF8ToCFStringRef(filter.second[j]));
+  // Create array to keep file types and their name.
+  for (size_t i = 0; i < filters.size(); ++i) {
+    NSMutableSet* file_type_set = [NSMutableSet set];
+    const Filter& filter = filters[i];
+    base::ScopedCFTypeRef<CFStringRef> name_cf(base::SysUTF8ToCFStringRef(filter.first));
+    [filter_names addObject:base::mac::CFToNSCast(name_cf.get())];
+    for (size_t j = 0; j < filter.second.size(); ++j) {
+      base::ScopedCFTypeRef<CFStringRef> ext_cf(base::SysUTF8ToCFStringRef(filter.second[j]));
       [file_type_set addObject:base::mac::CFToNSCast(ext_cf.get())];
     }
+    [file_types_list addObject:[file_type_set allObjects]];
   }
 
   // Passing empty array to setAllowedFileTypes will cause exception.
   NSArray* file_types = nil;
-  if ([file_type_set count])
-    file_types = [file_type_set allObjects];
-
+  NSUInteger count = [file_types_list count];
+  if (count > 0) {
+    file_types = [[file_types_list objectAtIndex:0] allObjects];
+    // If we meet a '*' file extension, we allow all the file types and no
+    // need to set the specified file types.
+    if ([file_types count] == 0 || [file_types containsObject:@"*"]) {
+      file_types = nil;
+    }
+  }
   [dialog setAllowedFileTypes:file_types];
 
-  if (!popUpButtonHandler)
-    popUpButtonHandler = [[PopUpButtonHandler alloc] initWithPanel:dialog andTypes:file_types];
+  if (count <= 1) {
+    return; // don't add file format picker
+  }
 
   // add file format picker
   NSView  *accessoryView = [[NSView alloc] initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
@@ -89,7 +96,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [label setDrawsBackground:NO];
 
   NSPopUpButton *popupButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0) pullsDown:NO];
-  [popupButton addItemsWithTitles:file_types];
+  PopUpButtonHandler *popUpButtonHandler = [[PopUpButtonHandler alloc] initWithPanel:dialog andTypesList:[file_types_list copy]];
+  [popupButton addItemsWithTitles:[filter_names copy]];
   [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
 
