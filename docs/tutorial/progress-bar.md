@@ -26,7 +26,7 @@ See the [API documentation for more options and modes][setprogressbar].
 
 ```javascript
 const { BrowserWindow } = require('electron')
-const myWindow = new BrowserWindow()
+const win = new BrowserWindow()
 
 win.setProgressBar(0.5)
 ```

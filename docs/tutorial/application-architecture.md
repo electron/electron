@@ -67,7 +67,7 @@ class. It is only available in the main process.
 // renderer process:
 const { BrowserWindow } = require('electron')
 
-const myWindow = new BrowserWindow()
+const win = new BrowserWindow()
 ```
 
 Since communication between the processes is possible, a renderer process
@@ -82,7 +82,7 @@ we'd use the remote as a middle-man:
 const { remote } = require('electron')
 const { BrowserWindow } = remote
 
-const myWindow = new BrowserWindow()
+const win = new BrowserWindow()
 ```
 
 ## Using Node.js APIs
