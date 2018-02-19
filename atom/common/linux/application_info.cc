@@ -2,27 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "brightray/common/application_info.h"
+
+#include <gio/gdesktopappinfo.h>
+#include <gio/gio.h>
+
 #include <memory>
 #include <string>
 
-#include <gio/gio.h>
-#include <gio/gdesktopappinfo.h>
-
-#include "base/environment.h"
-#if 0
-#include "base/files/file_enumerator.h"
- #include "base/strings/string_util.h"
- #include "base/strings/utf_string_conversions.h"
- #include "brightray/browser/notification_delegate.h"
- #include "brightray/common/application_info.h"
-#endif
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
-// #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
-// #include "third_party/skia/include/core/SkBitmap.h"
-
-
 #include "atom/common/atom_version.h"
-#include "brightray/common/application_info.h"
+#include "base/environment.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 
 namespace {
 
@@ -31,7 +21,7 @@ GDesktopAppInfo* get_desktop_app_info() {
   std::string desktop_id = libgtkui::GetDesktopName(env.get());
   return desktop_id.empty()
     ? nullptr
-    : g_desktop_app_info_new (desktop_id.c_str());
+    : g_desktop_app_info_new(desktop_id.c_str());
 }
 
 }  // namespace
@@ -39,7 +29,6 @@ GDesktopAppInfo* get_desktop_app_info() {
 namespace brightray {
 
 std::string GetApplicationName() {
-
   // attempt #1: the string set in app.setName()
   std::string ret = GetOverriddenApplicationName();
 
@@ -64,7 +53,6 @@ std::string GetApplicationName() {
 }
 
 std::string GetApplicationVersion() {
-
   std::string ret;
 
   // ensure ATOM_PRODUCT_NAME and ATOM_PRODUCT_STRING match up

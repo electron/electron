@@ -134,7 +134,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   std::string desktop_id = libgtkui::GetDesktopName(env.get());
   if (!desktop_id.empty()) {
     const std::string suffix {".desktop"};
-    if (base::EndsWith(desktop_id, suffix, base::CompareCase::INSENSITIVE_ASCII)) {
+    if (base::EndsWith(desktop_id, suffix,
+                       base::CompareCase::INSENSITIVE_ASCII)) {
       desktop_id.resize(desktop_id.size() - suffix.size());
     }
     libnotify_loader_.notify_notification_set_hint_string(

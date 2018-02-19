@@ -24,7 +24,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   before(async () => {
     // init app
     app.setName(appName)
-    app.setDesktopName(appName+'.desktop')
+    app.setDesktopName(appName + '.desktop')
     // init dbus mock
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
@@ -40,7 +40,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     await reset()
   })
 
-  describe('Notification module using '+serviceName, () => {
+  describe('Notification module using ' + serviceName, () => {
     function onMethodCalled (done) {
       function cb (name) {
         if (name === 'Notify') {
@@ -69,7 +69,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     it('should call ' + serviceName + ' to display a notification', async () => {
       const calls = await getCalls()
       assert(calls.length >= 1)
-      let call = calls[calls.length-1]
+      let call = calls[calls.length - 1]
       let methodName = call[1]
       let args = call[2]
       assert.equal(methodName, 'Notify')
@@ -79,9 +79,9 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
       assert.equal(args[3][1], 'title') // summary
       assert.equal(args[4][1], 'body') // body
       assert.equal(args[5][1], '') // actions
-      hints = args[6][1][0] // hints
-      assert.equal(JSON.stringify(hints[0]),'["append",[[{"type":"s","child":[]}],["true"]]]')
-      assert.equal(JSON.stringify(hints[1]),'["desktop-entry",[[{"type":"s","child":[]}],["'+appName+'"]]]')
+      let hints = args[6][1][0] // hints
+      assert.equal(JSON.stringify(hints[0]), '["append",[[{"type":"s","child":[]}],["true"]]]')
+      assert.equal(JSON.stringify(hints[1]), '["desktop-entry",[[{"type":"s","child":[]}],["' + appName + '"]]]')
     })
   })
 })
