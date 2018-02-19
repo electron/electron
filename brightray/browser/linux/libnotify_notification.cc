@@ -4,6 +4,8 @@
 
 #include "brightray/browser/linux/libnotify_notification.h"
 
+#include <set>
+#include <string>
 #include <vector>
 
 #include "base/files/file_enumerator.h"
@@ -20,17 +22,19 @@ namespace {
 
 LibNotifyLoader libnotify_loader_;
 
+const std::set<std::string>& GetServerCapabilities() {
+  static std::set<std::string> caps;
+  if (caps.empty()) {
+    auto capabilities = libnotify_loader_.notify_get_server_caps();
+    for (auto l=capabilities; l != nullptr; l=l->next)
+      caps.insert(static_cast<const char*>(l->data));
+    g_list_free_full(capabilities, g_free);
+  }
+  return caps;
+}
+
 bool HasCapability(const std::string& capability) {
-  bool result = false;
-  GList* capabilities = libnotify_loader_.notify_get_server_caps();
-
-  if (g_list_find_custom(capabilities, capability.c_str(),
-                         (GCompareFunc)g_strcmp0) != NULL)
-    result = true;
-
-  g_list_free_full(capabilities, g_free);
-
-  return result;
+  return GetServerCapabilities().count(capability) != 0;
 }
 
 bool NotifierSupportsActions() {
