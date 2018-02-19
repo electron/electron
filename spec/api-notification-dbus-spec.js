@@ -16,11 +16,13 @@ const {app} = remote.require('electron')
 const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
+  console.log('hello world')
   let mock, Notification, getCalls, reset
   const appName = 'api-notification-dbus-spec'
   const serviceName = 'org.freedesktop.Notifications'
 
   before(async () => {
+    console.log('inb4')
     // init app
     app.setName(appName)
     app.setDesktopName(appName + '.desktop')
@@ -40,6 +42,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   })
 
   after(async () => {
+    console.log('in after')
     await reset()
   })
 
@@ -77,6 +80,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     }
 
     before((done) => {
+      console.log('in before-test')
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
       Notification = require('electron').remote.Notification
