@@ -12,6 +12,8 @@ newIssueWelcomeComment: |
 newPRWelcomeComment: |
   💖 Thanks for opening this pull request! 💖
 
+  ![typing cat](https://camo.githubusercontent.com/e4aaf7060ca8a003fc454bb87358802a779e1ecb/68747470733a2f2f6d656469612e67697068792e636f6d2f6d656469612f74354a32794246614d313436342f67697068792e676966)
+
   Here is a list of things that will help get it across the finish line:
   - Follow the JavaScript, C++, and Python [coding style](https://github.com/electron/electron/blob/master/docs/development/coding-style.md).
   - Run `npm run lint` locally to catch formatting errors earlier.
