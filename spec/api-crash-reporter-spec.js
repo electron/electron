@@ -276,12 +276,12 @@ describe('crashReporter module', () => {
       this.timeout(180000)
 
       const secondCrashDone = () => {
-        let sortedReports = crashReporter.getUploadedReports().sort(function (a, b) {
+        const sortedReports = crashReporter.getUploadedReports().sort(function (a, b) {
           return b.date - a.date
         })
 
         const latestReport = crashReporter.getLastCrashReport()
-        assert(latestReport.date.getTime() === sortedReports[0].date.getTime())
+        assert(latestReport && latestReport.date.getTime() === sortedReports[0].date.getTime())
         done()
       }
 
