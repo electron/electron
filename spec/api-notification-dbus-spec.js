@@ -4,8 +4,7 @@
 //
 // script/test.py spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
 //
-// See https://pypi.python.org/pypi/python-dbusmock for more information about
-// python-dbusmock.
+// See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
 const assert = require('assert')
 const dbus = require('dbus-native')
@@ -29,6 +28,10 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
     const bus = dbus.sessionBus()
+    console.log('system bus')
+    console.log(process.env.DBUS_SYSTEM_BUS_ADDRESS)
+    console.log('session bus')
+    console.log(process.env.DBUS_SESSION_BUS_ADDRESS)
     const service = bus.getService(serviceName)
     const getInterface = Promise.promisify(service.getInterface, {context: service})
     mock = await getInterface(path, iface)
