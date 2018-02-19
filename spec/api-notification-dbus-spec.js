@@ -8,6 +8,7 @@
 
 const assert = require('assert')
 const dbus = require('dbus-native')
+const util = require('util')
 const Promise = require('bluebird')
 
 const {remote} = require('electron')
@@ -35,19 +36,19 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     console.log('session bus: ' + process.env.DBUS_SESSION_BUS_ADDRESS)
     const service = bus.getService(serviceName)
     console.log('service')
-    console.log(service)
+    console.log(util.inspect(service))
     const getInterface = Promise.promisify(service.getInterface, {context: service})
     console.log('getInterface')
-    console.log(getInterface)
+    console.log(util.inspect(getInterface))
     mock = await getInterface(path, iface)
     console.log('mock')
-    console.log(mock)
+    console.log(util.inspect(mock))
     getCalls = Promise.promisify(mock.GetCalls, {context: mock})
     console.log('getCalls')
-    console.log(getCalls)
+    console.log(util.inspect(getCalls))
     reset = Promise.promisify(mock.Reset, {context: mock})
     console.log('reset')
-    console.log(reset)
+    console.log(util.inspect(reset))
   })
 
   after(async () => {
