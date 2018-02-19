@@ -48,7 +48,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     await reset()
     // restore app fields to pre-test state
     app.setName(realAppName)
-    app.setVersion(realVersion)
+    app.setVersion(realAppVersion)
   })
 
   describe('Notification module using ' + serviceName, () => {
