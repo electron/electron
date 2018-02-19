@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "base/environment.h"
+#include "base/logging.h"
 #include "base/files/file_enumerator.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -23,8 +24,11 @@ namespace {
 LibNotifyLoader libnotify_loader_;
 
 bool HasCapability(const std::string& capability) {
+  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << " searching for " << capability;
   bool result = false;
   GList* capabilities = libnotify_loader_.notify_get_server_caps();
+  for (auto l=capabilities; l!=nullptr; l=l->next)
+    LOG(INFO) << "capability: " << static_cast<const char*>(l->data);
 
   if (g_list_find_custom(capabilities, capability.c_str(),
                          (GCompareFunc)g_strcmp0) != NULL)
@@ -36,6 +40,7 @@ bool HasCapability(const std::string& capability) {
 }
 
 bool NotifierSupportsActions() {
+  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
   if (getenv("ELECTRON_USE_UBUNTU_NOTIFIER"))
     return false;
 
@@ -60,16 +65,20 @@ void log_and_clear_error(GError* error, const char* context) {
 
 // static
 bool LibnotifyNotification::Initialize() {
+  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
   if (!libnotify_loader_.Load("libnotify.so.4") &&  // most common one
       !libnotify_loader_.Load("libnotify.so.5") &&
       !libnotify_loader_.Load("libnotify.so.1") &&
       !libnotify_loader_.Load("libnotify.so")) {
+    LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << "Initialize returning FALSE!";
     return false;
   }
   if (!libnotify_loader_.notify_is_initted() &&
       !libnotify_loader_.notify_init(GetApplicationName().c_str())) {
+    LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << "Initialize returning FALSE!";
     return false;
   }
+  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC << "Initialize returning true";
   return true;
 }
 
@@ -85,6 +94,8 @@ LibnotifyNotification::~LibnotifyNotification() {
 }
 
 void LibnotifyNotification::Show(const NotificationOptions& options) {
+  LOG(INFO) << G_STRLOC << ' ' << G_STRFUNC;
+
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(options.title).c_str(),
       base::UTF16ToUTF8(options.msg).c_str(), nullptr);
