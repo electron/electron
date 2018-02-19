@@ -170,7 +170,7 @@ void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
     // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
     // Otherwise use white background.
-    SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
+    SkColor color = name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
     web_frame_widget->SetBaseBackgroundColor(color);
   }
 }
