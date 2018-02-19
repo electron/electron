@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/files/file_enumerator.h"
+#include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
@@ -60,10 +61,12 @@ bool LibnotifyNotification::Initialize() {
       !libnotify_loader_.Load("libnotify.so.5") &&
       !libnotify_loader_.Load("libnotify.so.1") &&
       !libnotify_loader_.Load("libnotify.so")) {
+    LOG(WARNING) << "Unable to find libnotify; notifications disabled";
     return false;
   }
   if (!libnotify_loader_.notify_is_initted() &&
       !libnotify_loader_.notify_init(GetApplicationName().c_str())) {
+    LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
   return true;
