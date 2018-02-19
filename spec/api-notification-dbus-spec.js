@@ -16,7 +16,7 @@ const {app} = remote.require('electron')
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRESS;
 
-(skip ? describe.skip : describe)('Notifications module - dbus', () => {
+(skip ? describe.skip : describe)('Notification module (dbus)', () => {
   let mock, Notification, getCalls, reset
   const appName = 'api-notification-dbus-spec'
   const serviceName = 'org.freedesktop.Notifications'
@@ -88,7 +88,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
       n.show()
     })
 
-    it('should call ' + serviceName + ' to display a notification', async () => {
+    it('should call ' + serviceName + ' to show notifications', async () => {
       const calls = await getCalls()
       assert(calls.length >= 1)
       let lastCall = calls[calls.length - 1]
