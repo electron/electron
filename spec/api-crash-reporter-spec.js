@@ -272,29 +272,24 @@ describe('crashReporter module', () => {
       }
     })
 
-    it('getLastCrashReport correctly returns the most recent report', function(done)  {
+    it('getLastCrashReport correctly returns the most recent report', function (done) {
       this.timeout(180000)
 
-      const secondCrashDone = () => { 
-        let sortedReports = crashReporter.getUploadedReports().sort(function(a,b){
-          return b.date - a.date;
+      const secondCrashDone = () => {
+        let sortedReports = crashReporter.getUploadedReports().sort(function (a, b) {
+          return b.date - a.date
         })
 
         const latestReport = crashReporter.getLastCrashReport()
         console.log(latestReport, sortedReports)
-        assert(latestReport.date.getTime() == sortedReports[0].date.getTime())
+        assert(latestReport.date.getTime() === sortedReports[0].date.getTime())
         done()
       }
 
       const firstCrashDone = () => {
-        stopServer(() =>{
+        stopServer(() => {
           stopServer = startServer({
             callback (port) {
-              const crashUrl = url.format({
-                protocol: 'file',
-                pathname: path.join(fixtures, 'api', 'crash.html'),
-                search: `?port=${port}`
-              })
               w.reload()
             },
             processType: 'renderer',
