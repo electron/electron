@@ -47,7 +47,7 @@ PCWSTR GetRawAppUserModelID() {
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
       g_app_user_model_id = current_app_id;
     } else {
-      std::string name = GetOverridenApplicationName();
+      std::string name = GetOverriddenApplicationName();
       if (name.empty()) {
         name = GetApplicationName();
       }

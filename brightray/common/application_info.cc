@@ -12,7 +12,7 @@ std::string g_overridden_application_version;
 void OverrideApplicationName(const std::string& name) {
   g_overriden_application_name = name;
 }
-std::string GetOverridenApplicationName() {
+std::string GetOverriddenApplicationName() {
   return g_overriden_application_name;
 }
 
