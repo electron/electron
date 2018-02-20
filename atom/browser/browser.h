@@ -273,7 +273,6 @@ class Browser : public WindowListObserver {
   // The browser is being shutdown.
   bool is_shutdown_;
 
-  std::string version_override_;
   std::string name_override_;
 
   int badge_count_ = 0;

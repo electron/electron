@@ -97,27 +97,21 @@ void Browser::Shutdown() {
 }
 
 std::string Browser::GetVersion() const {
-  if (version_override_.empty()) {
-    std::string version = GetExecutableFileVersion();
-    if (!version.empty())
-      return version;
-  }
-
-  return version_override_;
+  std::string ret = brightray::GetOverriddenApplicationVersion();
+  if (ret.empty())
+    ret = GetExecutableFileVersion();
+  return ret;
 }
 
 void Browser::SetVersion(const std::string& version) {
-  version_override_ = version;
+  brightray::OverrideApplicationVersion(version);
 }
 
 std::string Browser::GetName() const {
-  if (name_override_.empty()) {
-    std::string name = GetExecutableFileProductName();
-    if (!name.empty())
-      return name;
-  }
-
-  return name_override_;
+  std::string ret = name_override_;
+  if (ret.empty())
+    ret = GetExecutableFileProductName();
+  return ret;
 }
 
 void Browser::SetName(const std::string& name) {
