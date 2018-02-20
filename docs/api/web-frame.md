@@ -77,16 +77,6 @@ webFrame.setSpellCheckProvider('en-US', true, {
 })
 ```
 
-### `webFrame.registerURLSchemeAsSecure(scheme)`
-
-* `scheme` String
-
-Registers the `scheme` as secure scheme.
-
-Secure schemes do not trigger mixed content warnings. For example, `https` and
-`data` are secure schemes because they cannot be corrupted by active network
-attackers.
-
 ### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String

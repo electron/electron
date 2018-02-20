@@ -201,12 +201,6 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
 }
 
-void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
-  // TODO(pfrazee): Remove 2.0
-  blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-}
-
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
   // Register scheme to bypass pages's Content Security Policy.
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
@@ -238,10 +232,6 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
   // Register scheme to privileged list (https, wss, data, chrome-extension)
   WTF::String privileged_scheme(
       WTF::String::FromUTF8(scheme.data(), scheme.length()));
-  if (secure) {
-    // TODO(pfrazee): Remove 2.0
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(privileged_scheme);
-  }
   if (bypassCSP) {
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
         privileged_scheme);
@@ -389,8 +379,6 @@ void WebFrame::BuildPrototype(
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerURLSchemeAsSecure",
-                 &WebFrame::RegisterURLSchemeAsSecure)
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
       .SetMethod("registerURLSchemeAsPrivileged",
