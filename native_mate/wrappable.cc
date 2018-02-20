@@ -23,7 +23,7 @@ WrappableBase::~WrappableBase() {
   wrapper_.Reset();
 }
 
-v8::Local<v8::Object> WrappableBase::GetWrapper() {
+v8::Local<v8::Object> WrappableBase::GetWrapper() const {
   if (!wrapper_.IsEmpty())
     return v8::Local<v8::Object>::New(isolate_, wrapper_);
   else

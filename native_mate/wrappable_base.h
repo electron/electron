@@ -31,7 +31,7 @@ class WrappableBase {
   virtual ~WrappableBase();
 
   // Retrieve the v8 wrapper object cooresponding to this object.
-  v8::Local<v8::Object> GetWrapper();
+  v8::Local<v8::Object> GetWrapper() const;
 
   // Returns the Isolate this object is created in.
   v8::Isolate* isolate() const { return isolate_; }
