@@ -134,7 +134,6 @@ describe('webFrame module', function () {
 
   it('supports setting the visual and layout zoom level limits', function () {
     assert.doesNotThrow(function () {
-      webFrame.setZoomLevelLimits(1, 100)
       webFrame.setVisualZoomLevelLimits(1, 50)
       webFrame.setLayoutZoomLevelLimits(0, 25)
     })
