@@ -162,9 +162,6 @@ describe('nativeImage module', () => {
       const imageI = nativeImage.createFromBuffer(imageA.toBitmap(),
         {width: 538, height: 190, scaleFactor: 2.0})
       expect(imageI.getSize()).to.deep.equal({width: 269, height: 95})
-
-      const imageJ = nativeImage.createFromBuffer(imageA.toPNG(), 2.0)
-      expect(imageJ.getSize()).to.deep.equal({width: 269, height: 95})
     })
   })
 
