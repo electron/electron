@@ -44,3 +44,5 @@ of `app` module will be emitted for it.
 
 [jumplist-image]: https://cloud.githubusercontent.com/assets/2289/23446924/11a27b98-fdfc-11e6-8485-cc3b1e86b80a.png
 [dock-menu-image]: https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png
+[addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-macos-windows
+[clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-macos-windows
