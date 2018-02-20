@@ -344,7 +344,11 @@ describe('Menu module', () => {
     })
 
     it('returns immediately', () => {
-      const { browserWindow, x, y } = menu.popup(w, {x: 100, y: 101})
+      const { browserWindow, x, y } = menu.popup({
+        window: w,
+        x: 100,
+        y: 101
+      })
 
       assert.equal(browserWindow, w)
       assert.equal(x, 100)
@@ -360,7 +364,12 @@ describe('Menu module', () => {
     })
 
     it('works with a given BrowserWindow, options and callback', (done) => {
-      const {x, y} = menu.popup(w, {x: 100, y: 101}, () => done())
+      const {x, y} = menu.popup({
+        window: w,
+        x: 100,
+        y: 101,
+        callback: () => done()
+      })
 
       assert.equal(x, 100)
       assert.equal(y, 101)
@@ -368,12 +377,7 @@ describe('Menu module', () => {
     })
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
-      menu.popup(w, () => done())
-      menu.closePopup()
-    })
-
-    it('calls the callback', (done) => {
-      menu.popup({}, () => done())
+      menu.popup({window: w, callback: () => done()})
       menu.closePopup()
     })
   })
