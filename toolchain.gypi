@@ -107,7 +107,7 @@
         ['AR', '<(make_clang_dir)/bin/llvm-ar'],
         ['CC', '<(make_clang_dir)/bin/clang'],
         ['CXX', '<(make_clang_dir)/bin/clang++'],
-        ['AR.host', '$(AR)'],
+        ['AR.host', '<(make_clang_dir)/bin/llvm-ar'],
         ['CC.host', '$(CC)'],
         ['CXX.host', '$(CXX)'],
       ],
