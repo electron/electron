@@ -19,5 +19,5 @@ RUN apt-get install -y libnotify-bin:i386
 ADD tools/xvfb-init.sh /etc/init.d/xvfb
 RUN chmod a+x /etc/init.d/xvfb
 
-#USER builduser
-#WORKDIR /home/builduser
+USER builduser
+WORKDIR /home/builduser
