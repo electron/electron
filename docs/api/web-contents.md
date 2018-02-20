@@ -842,14 +842,6 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 Sends a request to get current zoom level, the `callback` will be called with
 `callback(zoomLevel)`.
 
-#### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-**Deprecated:** Call `setVisualZoomLevelLimits` instead to set the visual zoom
-level limits. This method will be removed in Electron 2.0.
-
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
