@@ -383,6 +383,11 @@ describe('Menu module', () => {
       assert.equal(y, 101)
     })
 
+    it('works with a given BrowserWindow, no options, and a callback', (done) => {
+      menu.popup(w, () => done())
+      menu.closePopup()
+    })
+
     it('calls the callback', (done) => {
       menu.popup({}, () => done())
       menu.closePopup()
