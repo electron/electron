@@ -131,7 +131,7 @@ There is one important caveat: Native Node.js modules (that is, modules that
 require compilation of native code before they can be used) will need to be
 compiled to be used with Electron.
 
-The vast majority of Node.js modules is _not_ native. Only 400 out of the
+The vast majority of Node.js modules are _not_ native. Only 400 out of the
 ~650.000 modules are native. However, if you do need native modules, please
 consult [this guide on how to recompile them for Electron][native-node] (it's
 easy).
@@ -139,3 +139,4 @@ easy).
 [node-docs]: https://nodejs.org/en/docs/
 [security]: ./security.md
 [native-node]: ./using-native-node-modules.md
+[share-data]: ../faq.md#how-to-share-data-between-web-pages

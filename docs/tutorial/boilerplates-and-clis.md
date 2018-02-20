@@ -33,8 +33,8 @@ development.
 
 Forge comes with [ready-to-use templates][forge-templates] for popular
 frameworks like React, Vue, or Angular. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`]) – changes made by
-Electron maintainers (like Slack) benefit Forge's users, too.
+greater Electron community (like [`electron-packager`][electron-packager]) – 
+changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
 You can find more information and documentation on [electronforge.io][forge].
 
@@ -59,7 +59,7 @@ CT Lin's [`electron-react-boilerplate`][boilerplate] might be worth
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
 
-## Other Tools and Bboilerplates
+## Other Tools and Boilerplates
 
 The ["Awesome Electron" list][awesome] contains more tools and boilerplates
 to choose from. If you find the length of the list intimidating, don't
@@ -69,5 +69,6 @@ forget that adding tools as you go along is a valid approach, too.
 [forge]: https://electronforge.io/
 [forge-templates]: https://electronforge.io/templates
 [builder]: https://github.com/electron-userland/electron-builder
+[electron-packager]: https://github.com/electron-userland/electron-packager
 [boilerplate]: https://github.com/chentsulin/electron-react-boilerplate
 [awesome]: https://github.com/sindresorhus/awesome-electron#boilerplates

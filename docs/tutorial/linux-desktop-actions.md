@@ -1,7 +1,9 @@
-# Unity Launcher Shortcuts
+# Custom Linux Desktop Launcher Actions
 
-In Unity, you can add custom entries to its launcher via modifying the
-`.desktop` file, see [Adding Shortcuts to a Launcher][unity-launcher].
+On many Linux environments, you can add custom entries to its launcher
+by modifying the `.desktop` file. For Canonical's Unity documentation,
+see [Adding Shortcuts to a Launcher][unity-launcher]. For details on a
+more generic implementation, see the [Free Desktop Specification][spec].
 
 __Launcher shortcuts of Audacious:__
 
@@ -36,3 +38,4 @@ parameters. You can find these in your app in the global variable
 
 [unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [audacious-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles?action=AttachFile&do=get&target=shortcuts.png
+[spec]: https://specifications.freedesktop.org/desktop-entry-spec/1.1/ar01s11.html

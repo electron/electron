@@ -37,16 +37,16 @@ an issue:
   * [Using Node.js APIs](tutorial/application-architecture.md#using-node.js-apis)
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
   * [Inter-Process Communication](tutorial/application-architecture.md#)
-* [Adding Features to Your App]()
+* Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/desktop-environment-integration.md#recent-documents-windows-mac-os)
   * [Application Progress](tutorial/progress-bar.md)
   * [Custom Dock Menu](tutorial/desktop-environment-integration.md#custom-dock-menu-mac-os)
   * [Custom Windows Taskbar](tutorial/windows-taskbar.md)
-  * [Custom Unity Launcher](tutorial/unity-launcher.md)
+  * [Custom Linux Desktop Actions](tutorial/linux-desktop-actions.md)
   * [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
   * [Offline/Online Detection](tutorial/online-offline-events.md)
-  * [Represented File for macOS Windows](tutorial/represented-file.md)
+  * [Represented File for macOS BrowserWindows](tutorial/represented-file.md)
   * [Native File Drag & Drop](tutorial/native-file-drag-drop.md)
 * [Application Accessibility](tutorial/accessibility.md)
   * [Spectron](tutorial/accessibility.md#spectron)
@@ -94,7 +94,7 @@ These individual tutorial expand on topics discussed in the guide above.
 * [In Detail: Using Widevine CDM Plugin](tutorial/using-widevine-cdm-plugin.md)
 * [Offscreen Rendering](tutorial/offscreen-rendering.md)
 
-____
+---
 
 * [Glossary of Terms](glossary.md)
 
