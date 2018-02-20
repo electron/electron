@@ -1266,7 +1266,6 @@ void App::BuildPrototype(
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
       #endif
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
 }
 
 }  // namespace api
