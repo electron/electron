@@ -259,7 +259,7 @@ menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
 
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault()
-  menu.popup(remote.getCurrentWindow())
+  menu.popup({window: remote.getCurrentWindow()})
 }, false)
 </script>
 ```
