@@ -149,19 +149,19 @@ void Clipboard::WriteText(const base::string16& text, mate::Arguments* args) {
   writer.WriteText(text);
 }
 
-base::string16 Clipboard::ReadRtf(mate::Arguments* args) {
+base::string16 Clipboard::ReadRTF(mate::Arguments* args) {
   std::string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadRTF(GetClipboardType(args), &data);
   return base::UTF8ToUTF16(data);
 }
 
-void Clipboard::WriteRtf(const std::string& text, mate::Arguments* args) {
+void Clipboard::WriteRTF(const std::string& text, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteRTF(text);
 }
 
-base::string16 Clipboard::ReadHtml(mate::Arguments* args) {
+base::string16 Clipboard::ReadHTML(mate::Arguments* args) {
   base::string16 data;
   base::string16 html;
   std::string url;
@@ -173,7 +173,7 @@ base::string16 Clipboard::ReadHtml(mate::Arguments* args) {
   return data;
 }
 
-void Clipboard::WriteHtml(const base::string16& html, mate::Arguments* args) {
+void Clipboard::WriteHTML(const base::string16& html, mate::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
   writer.WriteHTML(html, std::string());
 }
@@ -238,10 +238,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("write", &atom::api::Clipboard::Write);
   dict.SetMethod("readText", &atom::api::Clipboard::ReadText);
   dict.SetMethod("writeText", &atom::api::Clipboard::WriteText);
-  dict.SetMethod("readRTF", &atom::api::Clipboard::ReadRtf);
-  dict.SetMethod("writeRTF", &atom::api::Clipboard::WriteRtf);
-  dict.SetMethod("readHTML", &atom::api::Clipboard::ReadHtml);
-  dict.SetMethod("writeHTML", &atom::api::Clipboard::WriteHtml);
+  dict.SetMethod("readRTF", &atom::api::Clipboard::ReadRTF);
+  dict.SetMethod("writeRTF", &atom::api::Clipboard::WriteRTF);
+  dict.SetMethod("readHTML", &atom::api::Clipboard::ReadHTML);
+  dict.SetMethod("writeHTML", &atom::api::Clipboard::WriteHTML);
   dict.SetMethod("readBookmark", &atom::api::Clipboard::ReadBookmark);
   dict.SetMethod("writeBookmark", &atom::api::Clipboard::WriteBookmark);
   dict.SetMethod("readImage", &atom::api::Clipboard::ReadImage);
@@ -251,12 +251,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.SetMethod("readBuffer", &atom::api::Clipboard::ReadBuffer);
   dict.SetMethod("writeBuffer", &atom::api::Clipboard::WriteBuffer);
   dict.SetMethod("clear", &atom::api::Clipboard::Clear);
-
-  // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-  dict.SetMethod("readRtf", &atom::api::Clipboard::ReadRtf);
-  dict.SetMethod("writeRtf", &atom::api::Clipboard::WriteRtf);
-  dict.SetMethod("readHtml", &atom::api::Clipboard::ReadHtml);
-  dict.SetMethod("writeHtml", &atom::api::Clipboard::WriteHtml);
 }
 
 }  // namespace
