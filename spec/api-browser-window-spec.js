@@ -927,7 +927,7 @@ describe('BrowserWindow module', () => {
         show: false,
         width: 400,
         height: 400,
-        titleBarStyle: 'hidden-inset'
+        titleBarStyle: 'hiddenInset'
       })
       const contentSize = w.getContentSize()
       assert.equal(contentSize[1], 400)
