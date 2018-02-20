@@ -334,12 +334,12 @@ describe('Menu module', () => {
 
     it('should emit menu-will-show event', (done) => {
       menu.on('menu-will-show', () => { done() })
-      menu.popup(w)
+      menu.popup({window: w})
     })
 
     it('should emit menu-will-close event', (done) => {
       menu.on('menu-will-close', () => { done() })
-      menu.popup(w)
+      menu.popup({window: w})
       menu.closePopup()
     })
 
