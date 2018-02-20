@@ -6,7 +6,7 @@ const {expect} = require('chai')
 const {nativeImage} = require('electron')
 const path = require('path')
 
-describe.only('nativeImage module', () => {
+describe('nativeImage module', () => {
   const ImageFormat = {
     PNG: 'png',
     JPEG: 'jpeg'
