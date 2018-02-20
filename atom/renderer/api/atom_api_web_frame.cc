@@ -201,62 +201,10 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
 }
 
-void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
-  // TODO(pfrazee): Remove 2.0
-  blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-}
-
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
   // Register scheme to bypass pages's Content Security Policy.
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       WTF::String::FromUTF8(scheme.data(), scheme.length()));
-}
-
-void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
-                                             mate::Arguments* args) {
-  // TODO(deepak1556): blink::SchemeRegistry methods should be called
-  // before any renderer threads are created. Fixing this would break
-  // current api. Change it with 2.0.
-
-  // Read optional flags
-  bool secure = true;
-  bool bypassCSP = true;
-  bool allowServiceWorkers = true;
-  bool supportFetchAPI = true;
-  bool corsEnabled = true;
-  if (args->Length() == 2) {
-    mate::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("secure", &secure);
-      options.Get("bypassCSP", &bypassCSP);
-      options.Get("allowServiceWorkers", &allowServiceWorkers);
-      options.Get("supportFetchAPI", &supportFetchAPI);
-      options.Get("corsEnabled", &corsEnabled);
-    }
-  }
-  // Register scheme to privileged list (https, wss, data, chrome-extension)
-  WTF::String privileged_scheme(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-  if (secure) {
-    // TODO(pfrazee): Remove 2.0
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(privileged_scheme);
-  }
-  if (bypassCSP) {
-    blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        privileged_scheme);
-  }
-  if (allowServiceWorkers) {
-    blink::SchemeRegistry::RegisterURLSchemeAsAllowingServiceWorkers(
-        privileged_scheme);
-  }
-  if (supportFetchAPI) {
-    blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
-        privileged_scheme);
-  }
-  if (corsEnabled) {
-    blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled(privileged_scheme);
-  }
 }
 
 void WebFrame::InsertText(const std::string& text) {
@@ -389,12 +337,8 @@ void WebFrame::BuildPrototype(
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerURLSchemeAsSecure",
-                 &WebFrame::RegisterURLSchemeAsSecure)
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
-      .SetMethod("registerURLSchemeAsPrivileged",
-                 &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)

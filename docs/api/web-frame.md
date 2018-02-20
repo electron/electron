@@ -77,43 +77,12 @@ webFrame.setSpellCheckProvider('en-US', true, {
 })
 ```
 
-### `webFrame.registerURLSchemeAsSecure(scheme)`
-
-* `scheme` String
-
-Registers the `scheme` as secure scheme.
-
-Secure schemes do not trigger mixed content warnings. For example, `https` and
-`data` are secure schemes because they cannot be corrupted by active network
-attackers.
-
 ### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
 * `scheme` String
 
 Resources will be loaded from this `scheme` regardless of the current page's
 Content Security Policy.
-
-### `webFrame.registerURLSchemeAsPrivileged(scheme[, options])`
-
-* `scheme` String
-* `options` Object (optional)
-  * `secure` Boolean (optional) - Default true.
-  * `bypassCSP` Boolean (optional) - Default true.
-  * `allowServiceWorkers` Boolean (optional) - Default true.
-  * `supportFetchAPI` Boolean (optional) - Default true.
-  * `corsEnabled` Boolean (optional) - Default true.
-
-Registers the `scheme` as secure, bypasses content security policy for resources,
-allows registering ServiceWorker and supports fetch API.
-
-Specify an option with the value of `false` to omit it from the registration.
-An example of registering a privileged scheme, without bypassing Content Security Policy:
-
-```javascript
-const {webFrame} = require('electron')
-webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
-```
 
 ### `webFrame.insertText(text)`
 

@@ -106,13 +106,6 @@ void RendererClientBase::RenderThreadStarted() {
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       extension_scheme);
 
-  // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(switches::kSecureSchemes);
-  for (const std::string& scheme : secure_schemes_list)
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-        WTF::String::FromUTF8(scheme.data(), scheme.length()));
-
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?
   blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
