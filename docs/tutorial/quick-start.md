@@ -17,6 +17,6 @@ If you just came here to learn about Electron, check out the
 [official guides][readme].
 
 [first-app]: ./first-app.md
-[processes]: ./electron-apis.md#main-and-renderer-processes
+[processes]: ./application-architecture.md#main-and-renderer-processes
 [readme]: ../README.md
 
