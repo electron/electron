@@ -207,48 +207,6 @@ void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
       WTF::String::FromUTF8(scheme.data(), scheme.length()));
 }
 
-void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
-                                             mate::Arguments* args) {
-  // TODO(deepak1556): blink::SchemeRegistry methods should be called
-  // before any renderer threads are created. Fixing this would break
-  // current api. Change it with 2.0.
-
-  // Read optional flags
-  bool secure = true;
-  bool bypassCSP = true;
-  bool allowServiceWorkers = true;
-  bool supportFetchAPI = true;
-  bool corsEnabled = true;
-  if (args->Length() == 2) {
-    mate::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("secure", &secure);
-      options.Get("bypassCSP", &bypassCSP);
-      options.Get("allowServiceWorkers", &allowServiceWorkers);
-      options.Get("supportFetchAPI", &supportFetchAPI);
-      options.Get("corsEnabled", &corsEnabled);
-    }
-  }
-  // Register scheme to privileged list (https, wss, data, chrome-extension)
-  WTF::String privileged_scheme(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-  if (bypassCSP) {
-    blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        privileged_scheme);
-  }
-  if (allowServiceWorkers) {
-    blink::SchemeRegistry::RegisterURLSchemeAsAllowingServiceWorkers(
-        privileged_scheme);
-  }
-  if (supportFetchAPI) {
-    blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
-        privileged_scheme);
-  }
-  if (corsEnabled) {
-    blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled(privileged_scheme);
-  }
-}
-
 void WebFrame::InsertText(const std::string& text) {
   web_frame_->FrameWidget()
             ->GetActiveWebInputMethodController()
@@ -381,8 +339,6 @@ void WebFrame::BuildPrototype(
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
-      .SetMethod("registerURLSchemeAsPrivileged",
-                 &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)
       .SetMethod("executeJavaScript", &WebFrame::ExecuteJavaScript)
