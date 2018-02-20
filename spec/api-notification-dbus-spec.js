@@ -4,8 +4,7 @@
 //
 // script/test.py spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
 //
-// See https://pypi.python.org/pypi/python-dbusmock for more information about
-// python-dbusmock.
+// See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
 const assert = require('assert')
 const dbus = require('dbus-native')
@@ -18,6 +17,8 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
   let mock, Notification, getCalls, reset
+  const realAppName = app.getName()
+  const realAppVersion = app.getVersion()
   const appName = 'api-notification-dbus-spec'
   const serviceName = 'org.freedesktop.Notifications'
 
@@ -25,7 +26,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     // init app
     app.setName(appName)
     app.setDesktopName(appName + '.desktop')
-    // init dbus mock
+    // init dbus
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
     const bus = dbus.sessionBus()
@@ -37,7 +38,11 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   })
 
   after(async () => {
+    // cleanup dbus
     await reset()
+    // cleanup app
+    app.setName(realAppName)
+    app.setVersion(realAppVersion)
   })
 
   describe('Notification module using ' + serviceName, () => {
