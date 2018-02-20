@@ -62,7 +62,7 @@ This will start the process that will monitor and send the crash reports. Replac
 and `crashesDirectory` with appropriate values.
 
 **Note:** If you need send additional/updated `extra` parameters after your
-first call `start` you can call `setExtraParameter` on macOS or call `start`
+first call `start` you can call `addExtraParameter` on macOS or call `start`
 again with the new/updated `extra` parameters on Linux and Windows.
 
 ```js
