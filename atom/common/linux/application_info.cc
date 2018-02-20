@@ -4,15 +4,52 @@
 
 #include "brightray/common/application_info.h"
 
+#include <gio/gdesktopappinfo.h>
+#include <gio/gio.h>
+
+#include <memory>
 #include <string>
 
 #include "atom/common/atom_version.h"
-#include "base/log.h"
+#include "base/environment.h"
+#include "base/logging.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
+
+namespace {
+
+GDesktopAppInfo* get_desktop_app_info() {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  const std::string desktop_id = libgtkui::GetDesktopName(env.get());
+  return desktop_id.empty() ? nullptr
+                            : g_desktop_app_info_new(desktop_id.c_str());
+}
+
+}  // namespace
 
 namespace brightray {
 
 std::string GetApplicationName() {
-  return ATOM_PRODUCT_NAME;
+  // attempt #1: the string set in app.setName()
+  std::string ret = GetOverridenApplicationName();
+
+  // attempt #2: the 'Name' entry from .desktop file's [Desktop] section
+  if (ret.empty()) {
+    GDesktopAppInfo* info = get_desktop_app_info();
+    if (info != nullptr) {
+      char* str = g_desktop_app_info_get_string(info, "Name");
+      g_clear_object(&info);
+      if (str != nullptr)
+        ret = str;
+      g_clear_pointer(&str, g_free);
+    }
+  }
+
+  // attempt #3: Electron's name
+  if (ret.empty()) {
+    ret = ATOM_PRODUCT_NAME;
+  }
+
+  return ret;
 }
 
 std::string GetApplicationVersion() {
