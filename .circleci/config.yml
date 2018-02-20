@@ -189,7 +189,7 @@ jobs:
             fi
   electron-linux-ia32:
     docker:
-      - image: electronbuilds/electron:0.0.6
+      - image: electronbuilds/electronia32:0.0.1
         environment:
           TARGET_ARCH: ia32
           DISPLAY: ':99.0'
