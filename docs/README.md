@@ -30,7 +30,7 @@ an issue:
   * [electron-forge](tutorial/boilerplates-and-clis.md#electron-forge)
   * [electron-builder](tutorial/boilerplates-and-clis.md#electron-builder)
   * [electron-react-boilerplate](tutorial/boilerplates-and-clis.md#electron-react-boilerplate)
-  * [Other Tools and Boilerplates](tutorial/boilerplates-and-clis.md#other-tools-and-boilerplates)\
+  * [Other Tools and Boilerplates](tutorial/boilerplates-and-clis.md#other-tools-and-boilerplates)
 * [Application Architecture](tutorial/application-architecture.md)
   * [Main and Renderer Processes](tutorial/application-architecture.md#main-and-renderer-processes)
   * [Using Electron's APIs](tutorial/application-architecture.md#using-electron-apis)

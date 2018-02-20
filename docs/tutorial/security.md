@@ -521,7 +521,7 @@ A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
 always create an independent renderer process with its own `webPreferences`.
 
-It is a good idea to control the creation of new [`WebViews`](web-view) from
+It is a good idea to control the creation of new [`WebViews`][web-view] from
 the main process and to verify that their webPreferences do not disable
 security features.
 
@@ -533,11 +533,11 @@ website even if Node.js integration is otherwise disabled.
 Electron enables developers to disable various security features that control
 a renderer process. In most cases, developers do not need to disable any of
 those features - and you should therefore not allow different configurations
-for newly created [`<WebView>`](web-view) tags.
+for newly created [`<WebView>`][web-view] tags.
 
 ### How?
 
-Before a [`<WebView>`](web-view) tag is attached, Electron will fire the
+Before a [`<WebView>`][web-view] tag is attached, Electron will fire the
 `will-attach-webview` event on the hosting `webContents`. Use the event to
 prevent the creation of WebViews with possibly insecure options.
 
