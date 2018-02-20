@@ -359,28 +359,12 @@ describe('Menu module', () => {
       assert.equal(y, 101)
     })
 
-    it('works without a given BrowserWindow', () => {
-      const { browserWindow, x, y } = menu.popup(100, 101)
+    it('works with a given BrowserWindow, options and callback', (done) => {
+      const {x, y} = menu.popup(w, {x: 100, y: 101}, () => done())
 
-      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 100)
       assert.equal(y, 101)
-    })
-
-    it('works without a given BrowserWindow and 0 options', () => {
-      const { browserWindow, x, y } = menu.popup(0, 1)
-
-      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
-      assert.equal(x, 0)
-      assert.equal(y, 1)
-    })
-
-    it('works with a given BrowserWindow and no options', () => {
-      const { browserWindow, x, y } = menu.popup(w, 100, 101)
-
-      assert.equal(browserWindow, w)
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      menu.closePopup()
     })
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
@@ -390,11 +374,6 @@ describe('Menu module', () => {
 
     it('calls the callback', (done) => {
       menu.popup({}, () => done())
-      menu.closePopup()
-    })
-
-    it('works with old style', (done) => {
-      menu.popup(w, 100, 101, () => done())
       menu.closePopup()
     })
   })
