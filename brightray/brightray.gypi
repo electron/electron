@@ -278,7 +278,6 @@
               '-Wl,-O1',
               '-Wl,--as-needed',
               '-Wl,--gc-sections',
-              '-Wl,--icf=all',
             ],
           }],  # OS=="linux"
           ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
@@ -290,6 +289,7 @@
               '-fuse-ld=gold',
               '-Wl,-plugin-opt,O1',
               '-Wl,-plugin-opt,-function-sections',
+              '-Wl,--icf=all',
             ],
           }],
         ],
