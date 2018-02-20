@@ -583,10 +583,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
-      .SetMethod("addRepresentation", &NativeImage::AddRepresentation)
-      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-      .SetMethod("toPng", &NativeImage::ToPNG)
-      .SetMethod("toJpeg", &NativeImage::ToJPEG);
+      .SetMethod("addRepresentation", &NativeImage::AddRepresentation);
 }
 
 }  // namespace api
