@@ -844,11 +844,6 @@ disables that behaviour.
 
 This method can only be called before app is ready.
 
-### `app.getAppMemoryInfo()` _Deprecated_
-
-Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.
-**Note:** This method is deprecated, use `app.getAppMetrics()` instead.
-
 ### `app.getAppMetrics()`
 
 Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and cpu usage statistics of all the processes associated with the app.

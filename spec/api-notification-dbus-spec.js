@@ -8,7 +8,6 @@
 
 const assert = require('assert')
 const dbus = require('dbus-native')
-const util = require('util')
 const Promise = require('bluebird')
 
 const {remote} = require('electron')
@@ -33,25 +32,14 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     const bus = dbus.sessionBus()
     console.log('session bus: ' + process.env.DBUS_SESSION_BUS_ADDRESS)
     const service = bus.getService(serviceName)
-    console.log('service')
-    console.log(util.inspect(service))
     const getInterface = Promise.promisify(service.getInterface, {context: service})
-    console.log('getInterface')
-    console.log(util.inspect(getInterface))
     mock = await getInterface(path, iface)
-    console.log('mock')
-    console.log(util.inspect(mock))
     getCalls = Promise.promisify(mock.GetCalls, {context: mock})
-    console.log('getCalls')
-    console.log(util.inspect(getCalls))
     reset = Promise.promisify(mock.Reset, {context: mock})
-    console.log('reset')
-    console.log(util.inspect(reset))
   })
 
   after(async () => {
     // cleanup dbus
-    console.log('in after')
     await reset()
     // cleanup app
     app.setName(realAppName)
@@ -94,7 +82,6 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     }
 
     before((done) => {
-      console.log('in before-test')
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
       Notification = require('electron').remote.Notification

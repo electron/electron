@@ -407,9 +407,7 @@ void WebFrame::BuildPrototype(
       .SetMethod("setIsolatedWorldHumanReadableName",
                  &WebFrame::SetIsolatedWorldHumanReadableName)
       .SetMethod("getResourceUsage", &WebFrame::GetResourceUsage)
-      .SetMethod("clearCache", &WebFrame::ClearCache)
-      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-      .SetMethod("setZoomLevelLimits", &WebFrame::SetVisualZoomLevelLimits);
+      .SetMethod("clearCache", &WebFrame::ClearCache);
 }
 
 }  // namespace api

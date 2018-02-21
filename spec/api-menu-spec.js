@@ -383,6 +383,11 @@ describe('Menu module', () => {
       assert.equal(y, 101)
     })
 
+    it('works with a given BrowserWindow, no options, and a callback', (done) => {
+      menu.popup(w, () => done())
+      menu.closePopup()
+    })
+
     it('calls the callback', (done) => {
       menu.popup({}, () => done())
       menu.closePopup()
@@ -425,7 +430,7 @@ describe('Menu module', () => {
           }
         }
       ])
-      menu.delegate.executeCommand({}, menu.items[0].commandId)
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
     })
   })
 
@@ -438,7 +443,7 @@ describe('Menu module', () => {
         }
       ])
       assert.equal(menu.items[0].checked, false)
-      menu.delegate.executeCommand({}, menu.items[0].commandId)
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 
@@ -449,9 +454,9 @@ describe('Menu module', () => {
           type: 'radio'
         }
       ])
-      menu.delegate.executeCommand({}, menu.items[0].commandId)
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
-      menu.delegate.executeCommand({}, menu.items[0].commandId)
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
       assert.equal(menu.items[0].checked, true)
     })
 
@@ -471,7 +476,7 @@ describe('Menu module', () => {
         })
       }
       const menu = Menu.buildFromTemplate(template)
-      menu.delegate.menuWillShow()
+      menu.delegate.menuWillShow(menu)
       assert.equal(menu.items[0].checked, true)
       assert.equal(menu.items[12].checked, true)
     })

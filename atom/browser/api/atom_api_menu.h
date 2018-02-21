@@ -93,12 +93,14 @@ class Menu : public mate::TrackableObject<Menu>,
   bool IsVisibleAt(int index) const;
 
   // Stored delegate methods.
-  base::Callback<bool(int)> is_checked_;
-  base::Callback<bool(int)> is_enabled_;
-  base::Callback<bool(int)> is_visible_;
-  base::Callback<v8::Local<v8::Value>(int, bool)> get_accelerator_;
-  base::Callback<void(v8::Local<v8::Value>, int)> execute_command_;
-  base::Callback<void()> menu_will_show_;
+  base::Callback<bool(v8::Local<v8::Value>, int)> is_checked_;
+  base::Callback<bool(v8::Local<v8::Value>, int)> is_enabled_;
+  base::Callback<bool(v8::Local<v8::Value>, int)> is_visible_;
+  base::Callback<v8::Local<v8::Value>(v8::Local<v8::Value>, int, bool)>
+      get_accelerator_;
+  base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>, int)>
+      execute_command_;
+  base::Callback<void(v8::Local<v8::Value>)> menu_will_show_;
 
   DISALLOW_COPY_AND_ASSIGN(Menu);
 };

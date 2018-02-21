@@ -42,8 +42,10 @@ class EventEmitter : public Wrappable<T> {
 
   // Make the convinient methods visible:
   // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-  v8::Local<v8::Object> GetWrapper() { return Wrappable<T>::GetWrapper(); }
   v8::Isolate* isolate() const { return Wrappable<T>::isolate(); }
+  v8::Local<v8::Object> GetWrapper() const {
+    return Wrappable<T>::GetWrapper();
+  }
 
   // this.emit(name, event, args...);
   template<typename... Args>
