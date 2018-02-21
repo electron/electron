@@ -138,6 +138,9 @@
               '-D__STRICT_ANSI__',
               '-fno-rtti',
             ],
+            'ldflags': [
+              '-Wl,-z,noexecstack',
+            ],
           }],  # OS=="linux"
           ['OS=="mac"', {
             'defines': [
@@ -291,6 +294,7 @@
             'ldflags': [
               '-flto=thin',
               '-fuse-ld=lld',  # Chromium Clang uses lld for doing LTO
+              '-Wl,--icf=all',
               '-Wl,--lto-O0',  # this could be removed in future; see https://codereview.chromium.org/2939923004
               '-Wl,-mllvm,-function-sections',
               '-Wl,-mllvm,-data-sections',
