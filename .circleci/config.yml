@@ -262,6 +262,7 @@ jobs:
       - run: npm run lint
       - run:
          name: Build
+         no_output_timeout: 30m
          command: |
            if [ "$ELECTRON_RELEASE" == "1" ]; then
               echo 'Building Electron for release'
