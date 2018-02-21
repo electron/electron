@@ -3,7 +3,7 @@
 On many Linux environments, you can add custom entries to its launcher
 by modifying the `.desktop` file. For Canonical's Unity documentation,
 see [Adding Shortcuts to a Launcher][unity-launcher]. For details on a
-more generic implementation, see the [Free Desktop Specification][spec].
+more generic implementation, see the [freedesktop.org Specification][spec].
 
 __Launcher shortcuts of Audacious:__
 

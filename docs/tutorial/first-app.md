@@ -37,9 +37,9 @@ run the main process. An example of your `package.json` might look like this:
 
 ```json
 {
-  "name"    : "your-app",
-  "version" : "0.1.0",
-  "main"    : "main.js"
+  "name": "your-app",
+  "version": "0.1.0",
+  "main": "main.js"
 }
 ```
 
@@ -50,11 +50,11 @@ to execute the current package:
 
 ```json
 {
-  "name"    : "your-app",
-  "version" : "0.1.0",
-  "main"    : "main.js",
-  "scripts" : {
-    "start" : "node ."
+  "name": "your-app",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "node ."
   }
 }
 ```
@@ -64,11 +64,11 @@ merely replace the `node` runtime with the `electron` runtime.
 
 ```json
 {
-  "name"    : "your-app",
-  "version" : "0.1.0",
-  "main"    : "main.js",
-  "scripts" : {
-    "start" : "electron ."
+  "name": "your-app",
+  "version": "0.1.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
   }
 }
 ```
@@ -99,9 +99,9 @@ Node.js module:
 const electron = require('electron')
 ```
 
-The `electron` module exposes is feature in namespaces. The lifecycle of the
-application is managed through `electron.app`, windows can be created using
-the `electron.BrowserWindow` class. A simple `main.js` file might just wait
+The `electron` module exposes features in namespaces. As examples, the lifecycle
+of the application is managed through `electron.app`, windows can be created
+using the `electron.BrowserWindow` class. A simple `main.js` file might just wait
 for the application to be ready and open a window:
 
 ```javascript

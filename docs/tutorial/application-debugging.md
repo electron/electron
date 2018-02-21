@@ -6,8 +6,8 @@ bottlenecks, or optimization opportunities.
 
 ## Renderer Process
 
-The most comprehensive tool to debug individual renderer processes are the
-Chromium Developer Tools. They are available for all renderer processes,
+The most comprehensive tool to debug individual renderer processes is the
+Chromium Developer Toolset. It is available for all renderer processes,
 including instances of `BrowserWindow`, `BrowserView`, and `WebView`. You
 can open them programmatically by calling the `openDevTools()` API on the
 `webContents` of the instance:

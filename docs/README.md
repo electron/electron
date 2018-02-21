@@ -52,11 +52,16 @@ an issue:
   * [Spectron](tutorial/accessibility.md#spectron)
   * [Devtron](tutorial/accessibility.md#devtron)
   * [Enabling Accessibility](tutorial/accessibility.md#enabling-accessibility)
+* [Application Testing and Debugging](tutorial/application-debugging.md)
+  * [Debugging the Main Process](tutorial/debugging-main-process.md)
+  * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
+  * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
+  * [DevTools Extension](tutorial/devtools-extension.md)
 * [Application Distribution](tutorial/application-distribution.md)
+  * [Supported Platforms](tutorial/supported-platforms.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
-  * [Supported Platforms](tutorial/supported-platforms.md)
 * [Application Security](tutorial/security.md)
   * [Reporting Security Issues](tutorial/security.md#reporting-security-issues)
   * [Chromium Security Issues and Upgrades](tutorial/security.md#chromium-security-issues-and-upgrades)
@@ -66,15 +71,10 @@ an issue:
   * [Deploying an Update Server](tutorial/updates.md#deploying-an-update-server)
   * [Implementing Updates in Your App](tutorial/updates.md#implementing-updates-in-your-app)
   * [Applying Updates](tutorial/updates.md#applying-updates)
-* [Application Debugging](tutorial/application-debugging.md)
-  * [Debugging the Main Process](tutorial/debugging-main-process.md)
-  * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
-  * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
-  * [DevTools Extension](tutorial/devtools-extension.md)
 
 ## Detailed Tutorials
 
-These individual tutorial expand on topics discussed in the guide above.
+These individual tutorials expand on topics discussed in the guide above.
 
 * [In Detail: Installing Electron](tutorial/installation.md)
   * [Global versus Local Installation](tutorial/installation.md#global-versus-local-installation)

@@ -8,7 +8,7 @@ the app and build pipeline they need.
 
 That level of modularity and extendability ensures that all developers working
 with Electron, both big and small in team-size, are never restricted in what
-they can or cannot do at any time during their development life-cycle. However,
+they can or cannot do at any time during their development lifecycle. However,
 for many developers, one of the community-driven boilerplates or command line
 tools might make it dramatically easier to compile, package, and release an
 app.
@@ -42,7 +42,7 @@ You can find more information and documentation on [electronforge.io][forge].
 
 A "complete solution to package and build a ready-for-distribution Electron app"
 that focuses on an integrated experience. [`electron-builder`][builder] adds one
-single dependency focuses on simplicity and manages all further requirments
+single dependency focused on simplicity and manages all further requirements
 internally.
 
 `electron-builder` replaces features and modules used by the Electron
