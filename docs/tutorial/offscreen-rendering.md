@@ -14,7 +14,7 @@ performance loss.
 
 **Note:** An offscreen window is always created as a [Frameless Window](../api/frameless-window.md).
 
-## Two modes of rendering
+## Rendering Modes
 
 ### GPU accelerated
 
@@ -35,17 +35,19 @@ To enable this mode GPU acceleration has to be disabled by calling the
 ## Usage
 
 ``` javascript
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 
 app.disableHardwareAcceleration()
 
 let win
+
 app.once('ready', () => {
   win = new BrowserWindow({
     webPreferences: {
       offscreen: true
     }
   })
+
   win.loadURL('http://github.com')
   win.webContents.on('paint', (event, dirty, image) => {
     // updateBitmap(dirty, image.getBitmap())

@@ -489,16 +489,16 @@ const mainWindow = new BrowserWindow()
 
 _Recommendation is Electron's default_
 
-If you are using [`WebViews`](web-view), you might need the pages and scripts
+If you are using [`WebViews`][web-view], you might need the pages and scripts
 loaded in your `<webview>` tag to open new windows. The `allowpopups` attribute
-enables them to create new [`BrowserWindows`](browser-window) using the
+enables them to create new [`BrowserWindows`][browser-window] using the
 `window.open()` method. `WebViews` are otherwise not allowed to create new
 windows.
 
 ### Why?
 
 If you do not need popups, you are better off not allowing the creation of
-new [`BrowserWindows`](browser-window) by default. This follows the principle
+new [`BrowserWindows`][browser-window] by default. This follows the principle
 of minimally required access: Don't let a website create new popups unless
 you know it needs that feature.
 
@@ -519,7 +519,7 @@ A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
 always create an independent renderer process with its own `webPreferences`.
 
-It is a good idea to control the creation of new [`WebViews`](web-view) from
+It is a good idea to control the creation of new [`WebViews`][web-view] from
 the main process and to verify that their webPreferences do not disable
 security features.
 
@@ -531,11 +531,11 @@ website even if Node.js integration is otherwise disabled.
 Electron enables developers to disable various security features that control
 a renderer process. In most cases, developers do not need to disable any of
 those features - and you should therefore not allow different configurations
-for newly created [`<WebView>`](web-view) tags.
+for newly created [`<WebView>`][web-view] tags.
 
 ### How?
 
-Before a [`<WebView>`](web-view) tag is attached, Electron will fire the
+Before a [`<WebView>`][web-view] tag is attached, Electron will fire the
 `will-attach-webview` event on the hosting `webContents`. Use the event to
 prevent the creation of WebViews with possibly insecure options.
 
@@ -562,4 +562,4 @@ is to display a website, a browser will be a more secure option.
 
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
-[web-view]: ../api/web-view
+[web-view]: ../api/web-view.md
