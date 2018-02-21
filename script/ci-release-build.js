@@ -12,8 +12,7 @@ const circleCIJobs = [
 ]
 
 const jenkinsJobs = [
-  'electron-mas-x64-release',
-  'electron-osx-x64-release'
+  'electron-release'
 ]
 
 async function makeRequest (requestOptions, parseResponse) {
