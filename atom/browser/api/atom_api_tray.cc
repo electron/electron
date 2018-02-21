@@ -39,6 +39,18 @@ struct Converter<atom::TrayIcon::HighlightMode> {
         return true;
       }
     }
+
+    // Support old boolean parameter
+    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
+    bool highlight;
+    if (ConvertFromV8(isolate, val, &highlight)) {
+      if (highlight)
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+      else
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+      return true;
+    }
+
     return false;
   }
 };
