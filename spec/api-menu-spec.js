@@ -344,15 +344,11 @@ describe('Menu module', () => {
     })
 
     it('returns immediately', () => {
-      const { browserWindow, x, y } = menu.popup({
-        window: w,
-        x: 100,
-        y: 101
-      })
-
-      assert.equal(browserWindow, w)
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      const input = {window: w, x: 100, y: 101}
+      const output = menu.popup(input)
+      assert.equal(output.x, input.x)
+      assert.equal(output.y, input.y)
+      assert.equal(output.browserWindow, input.window)
     })
 
     it('works without a given BrowserWindow and options', () => {
