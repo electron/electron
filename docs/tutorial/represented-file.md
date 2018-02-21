@@ -1,4 +1,4 @@
-# Represented File for macOS Windows
+# Represented File for macOS BrowserWindows
 
 On macOS a window can set its represented file, so the file's icon can show in
 the title bar and when users Command-Click or Control-Click on the title a path
