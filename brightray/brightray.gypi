@@ -138,6 +138,9 @@
               '-D__STRICT_ANSI__',
               '-fno-rtti',
             ],
+            'ldflags': [
+              '-Wl,-z,noexecstack',
+            ],
           }],  # OS=="linux"
           ['OS=="mac"', {
             'defines': [
