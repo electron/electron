@@ -69,20 +69,18 @@ either `process.env` or the `window` object.
 This is not bulletproof, but at the least, you should follow these steps to
 improve the security of your application.
 
-1) [Only load secure content](#only-load-secure-content)
-2) [Disable the Node.js integration in all renderers that display remote content](#disable-node.js-integration-for-remote-content)
-3) [Enable context isolation in all renderers that display remote content](#enable-context-isolation-for-remote-content)
-4) [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#handle-session-permission-requests-from-remote-content)
-5) [Do not disable `webSecurity`](#do-not-disable-websecurity)
-6) [Define a `Content-Security-Policy`](#define-a-content-security-policy)
-  and use restrictive rules (i.e. `script-src 'self'`)
-7) [Override and disable `eval`](#override-and-disable-eval)
-, which allows strings to be executed as code.
-8) [Do not set `allowRunningInsecureContent` to `true`](#do-not-set-allowRunningInsecureContent-to-true)
-9) [Do not enable experimental features](#do-not-enable-experimental-features)
-10) [Do not use `blinkFeatures`](#do-not-use-blinkfeatures)
-11) [WebViews: Do not use `allowpopups`](#do-not-use-allowpopups)
-12) [WebViews: Verify the options and params of all `<webview>` tags](#verify-webview-options-before-creation)
+1. [Only load secure content](#only-load-secure-content)
+2. [Disable the Node.js integration in all renderers that display remote content](#disable-node.js-integration-for-remote-content)
+3. [Enable context isolation in all renderers that display remote content](#enable-context-isolation-for-remote-content)
+4. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#handle-session-permission-requests-from-remote-content)
+5. [Do not disable `webSecurity`](#do-not-disable-websecurity)
+6. [Define a `Content-Security-Policy`](#define-a-content-security-policy) and use restrictive rules (i.e. `script-src 'self'`)
+7. [Override and disable `eval`](#override-and-disable-eval), which allows strings to be executed as code.
+8. [Do not set `allowRunningInsecureContent` to `true`](#do-not-set-allowRunningInsecureContent-to-true)
+9. [Do not enable experimental features](#do-not-enable-experimental-features)
+10. [Do not use `blinkFeatures`](#do-not-use-blinkfeatures)
+11. [WebViews: Do not use `allowpopups`](#do-not-use-allowpopups)
+12. [WebViews: Verify the options and params of all `<webview>` tags](#verify-webview-options-before-creation)
 
 
 ## 1) Only Load Secure Content
