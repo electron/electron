@@ -1256,7 +1256,6 @@ void App::BuildPrototype(
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
-      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       #if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
@@ -1266,7 +1265,7 @@ void App::BuildPrototype(
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
       #endif
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
+      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 
 }  // namespace api
