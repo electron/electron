@@ -108,14 +108,13 @@ void Browser::SetVersion(const std::string& version) {
 }
 
 std::string Browser::GetName() const {
-  std::string ret = name_override_;
+  std::string ret = brightray::GetOverriddenApplicationName();
   if (ret.empty())
     ret = GetExecutableFileProductName();
   return ret;
 }
 
 void Browser::SetName(const std::string& name) {
-  name_override_ = name;
   brightray::OverrideApplicationName(name);
 }
 
