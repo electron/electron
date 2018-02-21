@@ -47,15 +47,21 @@ void Menu::AfterInit(v8::Isolate* isolate) {
 }
 
 bool Menu::IsCommandIdChecked(int command_id) const {
-  return is_checked_.Run(command_id);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  return is_checked_.Run(GetWrapper(), command_id);
 }
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
-  return is_enabled_.Run(command_id);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  return is_enabled_.Run(GetWrapper(), command_id);
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
-  return is_visible_.Run(command_id);
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  return is_visible_.Run(GetWrapper(), command_id);
 }
 
 bool Menu::GetAcceleratorForCommandIdWithParams(
@@ -65,18 +71,23 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   v8::Local<v8::Value> val = get_accelerator_.Run(
-      command_id, use_default_accelerator);
+      GetWrapper(), command_id, use_default_accelerator);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
 void Menu::ExecuteCommand(int command_id, int flags) {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
   execute_command_.Run(
+      GetWrapper(),
       mate::internal::CreateEventFromFlags(isolate(), flags),
       command_id);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
-  menu_will_show_.Run();
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  menu_will_show_.Run(GetWrapper());
 }
 
 void Menu::InsertItemAt(

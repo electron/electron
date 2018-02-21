@@ -12,13 +12,14 @@
 
 #include "atom/common/atom_version.h"
 #include "base/environment.h"
+#include "base/logging.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 
 namespace {
 
 GDesktopAppInfo* get_desktop_app_info() {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  std::string desktop_id = libgtkui::GetDesktopName(env.get());
+  const std::string desktop_id = libgtkui::GetDesktopName(env.get());
   return desktop_id.empty() ? nullptr
                             : g_desktop_app_info_new(desktop_id.c_str());
 }
@@ -64,7 +65,7 @@ std::string GetApplicationVersion() {
 
   // no known version number; return some safe fallback
   if (ret.empty()) {
-    g_warning("%s No version found. Was app.setVersion() called?", G_STRLOC);
+    LOG(WARNING) << "No version found. Was app.setVersion() called?";
     ret = "0.0";
   }
 
