@@ -6,7 +6,7 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: arm
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - run:
@@ -63,7 +63,7 @@ jobs:
       - image: electronbuilds/electron:0.0.3
         environment:
           TARGET_ARCH: arm64
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - run:
