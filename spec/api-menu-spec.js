@@ -334,21 +334,21 @@ describe('Menu module', () => {
 
     it('should emit menu-will-show event', (done) => {
       menu.on('menu-will-show', () => { done() })
-      menu.popup(w)
+      menu.popup({window: w})
     })
 
     it('should emit menu-will-close event', (done) => {
       menu.on('menu-will-close', () => { done() })
-      menu.popup(w)
+      menu.popup({window: w})
       menu.closePopup()
     })
 
     it('returns immediately', () => {
-      const { browserWindow, x, y } = menu.popup(w, {x: 100, y: 101})
-
-      assert.equal(browserWindow, w)
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      const input = {window: w, x: 100, y: 101}
+      const output = menu.popup(input)
+      assert.equal(output.x, input.x)
+      assert.equal(output.y, input.y)
+      assert.equal(output.browserWindow, input.window)
     })
 
     it('works without a given BrowserWindow and options', () => {
@@ -359,42 +359,21 @@ describe('Menu module', () => {
       assert.equal(y, 101)
     })
 
-    it('works without a given BrowserWindow', () => {
-      const { browserWindow, x, y } = menu.popup(100, 101)
+    it('works with a given BrowserWindow, options and callback', (done) => {
+      const {x, y} = menu.popup({
+        window: w,
+        x: 100,
+        y: 101,
+        callback: () => done()
+      })
 
-      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
       assert.equal(x, 100)
       assert.equal(y, 101)
-    })
-
-    it('works without a given BrowserWindow and 0 options', () => {
-      const { browserWindow, x, y } = menu.popup(0, 1)
-
-      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
-      assert.equal(x, 0)
-      assert.equal(y, 1)
-    })
-
-    it('works with a given BrowserWindow and no options', () => {
-      const { browserWindow, x, y } = menu.popup(w, 100, 101)
-
-      assert.equal(browserWindow, w)
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      menu.closePopup()
     })
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
-      menu.popup(w, () => done())
-      menu.closePopup()
-    })
-
-    it('calls the callback', (done) => {
-      menu.popup({}, () => done())
-      menu.closePopup()
-    })
-
-    it('works with old style', (done) => {
-      menu.popup(w, 100, 101, () => done())
+      menu.popup({window: w, callback: () => done()})
       menu.closePopup()
     })
   })
