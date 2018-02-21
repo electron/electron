@@ -36,6 +36,8 @@ def main():
   args = parse_args()
   config = args.configuration
 
+  os.environ['ELECTRON_ENABLE_LOGGING'] = '1'
+
   if args.verbose:
     enable_verbose_mode()
     os.environ['ELECTRON_ENABLE_LOGGING'] = '1'

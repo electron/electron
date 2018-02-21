@@ -30,6 +30,7 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
     const bus = dbus.sessionBus()
+    console.log('session bus: ' + process.env.DBUS_SESSION_BUS_ADDRESS)
     const service = bus.getService(serviceName)
     const getInterface = Promise.promisify(service.getInterface, {context: service})
     mock = await getInterface(path, iface)
@@ -48,8 +49,10 @@ const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRE
   describe('Notification module using ' + serviceName, () => {
     function onMethodCalled (done) {
       function cb (name) {
+        console.log('onMethodCalled: ' + name)
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb)
+          console.log('done')
           done()
         }
       }
