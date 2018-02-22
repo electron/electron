@@ -89,6 +89,11 @@
 #include "ui/aura/window.h"
 #endif
 
+#if defined(OS_LINUX) || defined(OS_WIN)
+#include "content/public/common/renderer_preferences.h"
+#include "ui/gfx/font_render_params.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
 namespace {
@@ -411,6 +416,19 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   InitWithWebContents(web_contents, session->browser_context());
 
   managed_web_contents()->GetView()->SetDelegate(this);
+
+#if defined(OS_LINUX) || defined(OS_WIN)
+  // Update font settings.
+  auto* prefs = web_contents->GetMutableRendererPrefs();
+  CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
+#endif
 
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
