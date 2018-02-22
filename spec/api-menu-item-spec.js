@@ -318,9 +318,8 @@ describe('MenuItems', () => {
 
   describe('MenuItem editMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({
-        role: 'editMenu'
-      })
+      const item = new MenuItem({role: 'editMenu'})
+
       assert.equal(item.label, 'Edit')
       assert.equal(item.submenu.items[0].role, 'undo')
       assert.equal(item.submenu.items[1].role, 'redo')
@@ -356,9 +355,8 @@ describe('MenuItems', () => {
 
   describe('MenuItem windowMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({
-        role: 'windowMenu'
-      })
+      const item = new MenuItem({role: 'windowMenu'})
+
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'minimize')
       assert.equal(item.submenu.items[1].role, 'close')
@@ -372,10 +370,9 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'windowMenu',
-        submenu: [{
-          role: 'copy'
-        }]
+        submenu: [{role: 'copy'}]
       })
+
       assert.equal(item.label, 'Window')
       assert.equal(item.submenu.items[0].role, 'copy')
     })

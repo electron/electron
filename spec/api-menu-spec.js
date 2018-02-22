@@ -17,13 +17,8 @@ describe('Menu module', () => {
     })
 
     it('does not modify the specified template', () => {
-      const template = [
-        {
-          label: 'text',
-          submenu: [{label: 'sub'}]
-        }
-      ]
-      const result = ipcRenderer.sendSync('eval', `const template = ${template}\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
+      const template = [{label: 'text', submenu: [{label: 'sub'}]}]
+      const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
       assert.deepStrictEqual(result, template)
     })
 
