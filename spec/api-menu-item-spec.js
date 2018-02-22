@@ -47,6 +47,30 @@ describe('MenuItems', () => {
     describe('MenuItem group properties', () => {
       let template = []
 
+      const findRadioGroups = (template) => {
+        let groups = []
+        let cur = null
+        for (let i = 0; i <= template.length; i++) {
+          if (cur && ((i === template.length) || (template[i].type !== 'radio'))) {
+            cur.end = i
+            groups.push(cur)
+            cur = null
+          } else if (!cur && i < template.length && template[i].type === 'radio') {
+            cur = { begin: i }
+          }
+        }
+        return groups
+      }
+
+      // returns array of checked menuitems in [begin,end)
+      const findChecked = (menuItems, begin, end) => {
+        let checked = []
+        for (let i = begin; i < end; i++) {
+          if (menuItems[i].checked) checked.push(i)
+        }
+        return checked
+      }
+
       beforeEach(() => {
         for (let i = 0; i <= 10; i++) {
           template.push({
@@ -68,47 +92,46 @@ describe('MenuItems', () => {
       it('at least have one item checked in each group', () => {
         const menu = Menu.buildFromTemplate(template)
         menu.delegate.menuWillShow(menu)
-        assert.equal(menu.items[0].checked, true)
-        assert.equal(menu.items[12].checked, true)
+
+        const groups = findRadioGroups(template)
+
+        groups.forEach(g => {
+          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.begin])
+        })
       })
 
       it('should assign groupId automatically', () => {
         const menu = Menu.buildFromTemplate(template)
-        const groupId = menu.items[0].groupId
-        for (let i = 0; i <= 10; i++) {
-          assert.equal(menu.items[i].groupId, groupId)
-        }
-        for (let i = 12; i <= 20; i++) {
-          assert.equal(menu.items[i].groupId, groupId + 1)
-        }
+
+        let usedGroupIds = new Set()
+        const groups = findRadioGroups(template)
+        groups.forEach(g => {
+          const groupId = menu.items[g.begin].groupId
+
+          // groupId should be previously unused
+          assert(!usedGroupIds.has(groupId))
+          usedGroupIds.add(groupId)
+
+          // everything in the group should have the same id
+          for (let i = g.begin; i < g.end; ++i) {
+            assert.equal(menu.items[i].groupId, groupId)
+          }
+        })
       })
 
       it("setting 'checked' should flip other items' 'checked' property", () => {
         const menu = Menu.buildFromTemplate(template)
 
-        const checkValues = (start, end) => {
-          for (let i = start; i <= end; i++) {
-            assert.equal(menu.items[i].checked, false)
-          }
-        }
+        const groups = findRadioGroups(template)
+        groups.forEach(g => {
+          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [])
 
-        checkValues(0, 10)
-        menu.items[0].checked = true
-        assert.equal(menu.items[0].checked, true)
+          menu.items[g.begin].checked = true
+          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.begin])
 
-        checkValues(1, 10)
-        menu.items[10].checked = true
-        assert.equal(menu.items[10].checked, true)
-
-        checkValues(0, 9)
-        checkValues(12, 20)
-        menu.items[12].checked = true
-        assert.equal(menu.items[10].checked, true)
-
-        checkValues(0, 9)
-        assert.equal(menu.items[12].checked, true)
-
-        checkValues(13, 20)
+          menu.items[g.end - 1].checked = true
+          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.end - 1])
+        })
       })
     })
   })
