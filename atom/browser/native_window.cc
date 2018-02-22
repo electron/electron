@@ -38,7 +38,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/gl/gpu_switching_manager.h"
 
 #if defined(OS_LINUX) || defined(OS_WIN)
 #include "content/public/common/renderer_preferences.h"
@@ -86,10 +85,6 @@ NativeWindow::NativeWindow(
   prefs->use_bitmaps = params.use_bitmaps;
   prefs->subpixel_rendering = params.subpixel_rendering;
 #endif
-
-  // Tell the content module to initialize renderer widget with transparent
-  // mode.
-  ui::GpuSwitchingManager::SetTransparent(transparent_);
 
   WindowList::AddWindow(this);
 }

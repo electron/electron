@@ -30,6 +30,7 @@
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gl/gpu_switching_manager.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "atom/browser/native_window_views.h"
@@ -154,6 +155,10 @@ void BrowserWindow::Init(v8::Isolate* isolate,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
   window_->set_is_offscreen_dummy(api_web_contents_->IsOffScreen());
+
+  // Tell the content module to initialize renderer widget with transparent
+  // mode.
+  ui::GpuSwitchingManager::SetTransparent(window_->transparent());
 
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
