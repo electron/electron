@@ -13,6 +13,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/ui/autofill_popup.h"
+#include "base/observer_list.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/web_contents.h"
@@ -52,6 +53,7 @@ namespace api {
 // Certain events are only in WebContentsDelegate, provide our own Observer to
 // dispatch those events.
 class ExtendedWebContentsObserver {
+ public:
   virtual void OnRendererResponsive() {}
 };
 
@@ -237,6 +239,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
+
+  void AddObserver(ExtendedWebContentsObserver* obs) {
+    observers_.AddObserver(obs);
+  }
+  void RemoveObserver(ExtendedWebContentsObserver* obs) {
+    observers_.RemoveObserver(obs);
+  }
 
  protected:
   WebContents(v8::Isolate* isolate,
@@ -427,6 +436,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
+
+  // Observers of this WebContents.
+  base::ObserverList<ExtendedWebContentsObserver> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

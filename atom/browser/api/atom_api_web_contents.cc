@@ -642,6 +642,8 @@ void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
   if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
     owner_window()->RendererResponsive(source);
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnRendererResponsive();
 }
 
 bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {

@@ -10,16 +10,13 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
 #include "base/memory/weak_ptr.h"
-#include "content/public/browser/web_contents_observer.h"
-#include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/gfx/image/image.h"
 
 class GURL;
 
@@ -40,6 +37,7 @@ namespace api {
 
 class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
                       public content::WebContentsObserver,
+                      public ExtendedWebContentsObserver,
                       public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
@@ -66,6 +64,9 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void DidFirstVisuallyNonEmptyPaint() override;
   bool OnMessageReceived(const IPC::Message& message,
                          content::RenderFrameHost* rfh) override;
+
+  // ExtendedWebContentsObserver:
+  void OnRendererResponsive() override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;

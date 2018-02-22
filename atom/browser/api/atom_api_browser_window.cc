@@ -134,6 +134,7 @@ void BrowserWindow::Init(v8::Isolate* isolate,
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
   Observe(web_contents->web_contents());
+  api_web_contents_->AddObserver(this);
 
   // Keep a copy of the options for later use.
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
@@ -174,6 +175,8 @@ void BrowserWindow::Init(v8::Isolate* isolate,
 BrowserWindow::~BrowserWindow() {
   if (!window_->IsClosed())
     window_->CloseContents(nullptr);
+
+  api_web_contents_->RemoveObserver(this);
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
@@ -220,6 +223,9 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
+}
+
+void BrowserWindow::OnRendererResponsive() {
 }
 
 void BrowserWindow::WillCloseWindow(bool* prevent_default) {
