@@ -205,7 +205,8 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::Bind([](base::WeakPtr<BrowserWindow> self) {
-        self->Emit("ready-to-show");
+        if (self)
+          self->Emit("ready-to-show");
       }, GetWeakPtr()));
 }
 
