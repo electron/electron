@@ -489,7 +489,7 @@ void NativeWindow::RendererUnresponsive(content::WebContents* source) {
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   for (NativeWindowObserver& observer : observers_)
-    observer.OnRendererResponsive();
+    observer.OnWindowResponsive();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -727,7 +727,7 @@ void NativeWindow::NotifyWindowUnresponsive() {
 
   if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled()) {
     for (NativeWindowObserver& observer : observers_)
-      observer.OnRendererUnresponsive();
+      observer.OnWindowUnresponsive();
   }
 }
 

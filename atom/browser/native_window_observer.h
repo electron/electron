@@ -86,10 +86,10 @@ class NativeWindowObserver {
   #endif
 
   // Called when renderer is hung.
-  virtual void OnRendererUnresponsive() {}
+  virtual void OnWindowUnresponsive() {}
 
   // Called when renderer recovers.
-  virtual void OnRendererResponsive() {}
+  virtual void OnWindowResponsive() {}
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}

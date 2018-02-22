@@ -15,6 +15,7 @@
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 #include "ui/gfx/image/image.h"
@@ -36,9 +37,8 @@ class NativeWindow;
 
 namespace api {
 
-class WebContents;
-
 class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
+                      public content::WebContentsObserver,
                       public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
@@ -87,8 +87,8 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
-  void OnRendererUnresponsive() override;
-  void OnRendererResponsive() override;
+  void OnWindowUnresponsive() override;
+  void OnWindowResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;

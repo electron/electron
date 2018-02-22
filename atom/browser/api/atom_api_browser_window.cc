@@ -129,6 +129,7 @@ void BrowserWindow::Init(v8::Isolate* isolate,
                          mate::Handle<class WebContents> web_contents) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
+  Observe(web_contents->web_contents());
 
   // Keep a copy of the options for later use.
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
@@ -303,11 +304,11 @@ void BrowserWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
-void BrowserWindow::OnRendererUnresponsive() {
+void BrowserWindow::OnWindowUnresponsive() {
   Emit("unresponsive");
 }
 
-void BrowserWindow::OnRendererResponsive() {
+void BrowserWindow::OnWindowResponsive() {
   Emit("responsive");
 }
 
