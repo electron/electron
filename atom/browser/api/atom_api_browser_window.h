@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_WINDOW_H_
-#define ATOM_BROWSER_API_ATOM_API_WINDOW_H_
+#ifndef ATOM_BROWSER_API_ATOM_API_BROWSER_WINDOW_H_
+#define ATOM_BROWSER_API_ATOM_API_BROWSER_WINDOW_H_
 
 #include <map>
 #include <memory>
@@ -38,8 +38,8 @@ namespace api {
 
 class WebContents;
 
-class Window : public mate::TrackableObject<Window>,
-               public NativeWindowObserver {
+class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
+                      public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
@@ -55,9 +55,10 @@ class Window : public mate::TrackableObject<Window>,
   int32_t ID() const;
 
  protected:
-  Window(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
-         const mate::Dictionary& options);
-  ~Window() override;
+  BrowserWindow(v8::Isolate* isolate,
+                v8::Local<v8::Object> wrapper,
+                const mate::Dictionary& options);
+  ~BrowserWindow() override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -249,7 +250,7 @@ class Window : public mate::TrackableObject<Window>,
 
   std::unique_ptr<NativeWindow> window_;
 
-  DISALLOW_COPY_AND_ASSIGN(Window);
+  DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };
 
 }  // namespace api
@@ -269,8 +270,8 @@ struct Converter<atom::NativeWindow*> {
       return true;
     }
 
-    atom::api::Window* window;
-    if (!Converter<atom::api::Window*>::FromV8(isolate, val, &window))
+    atom::api::BrowserWindow* window;
+    if (!Converter<atom::api::BrowserWindow*>::FromV8(isolate, val, &window))
       return false;
     *out = window->window();
     return true;
@@ -279,4 +280,4 @@ struct Converter<atom::NativeWindow*> {
 
 }  // namespace mate
 
-#endif  // ATOM_BROWSER_API_ATOM_API_WINDOW_H_
+#endif  // ATOM_BROWSER_API_ATOM_API_BROWSER_WINDOW_H_

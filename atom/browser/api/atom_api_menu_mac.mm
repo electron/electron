@@ -27,7 +27,8 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuMac::PopupAt(Window* window, int x, int y, int positioning_item,
+void MenuMac::PopupAt(BrowserWindow* window,
+                      int x, int y, int positioning_item,
                       const base::Closure& callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)

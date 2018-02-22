@@ -21,7 +21,8 @@ MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
+void MenuViews::PopupAt(BrowserWindow* window,
+                        int x, int y, int positioning_item,
                         const base::Closure& callback) {
   NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
   if (!native_window)

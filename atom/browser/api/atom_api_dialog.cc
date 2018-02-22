@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
