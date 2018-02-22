@@ -671,15 +671,6 @@ bool NativeWindow::OnMessageReceived(const IPC::Message& message,
   return handled;
 }
 
-void NativeWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
-  // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
-    return;
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
-}
-
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresposive_closure_.IsCancelled())
     return;

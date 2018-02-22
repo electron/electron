@@ -1072,6 +1072,64 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
+gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) const {
+  if (!has_frame())
+    return bounds;
+
+  gfx::Rect window_bounds(bounds);
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
+  window_bounds = display::win::ScreenWin::ScreenToDIPRect(
+      hwnd,
+      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+#endif
+
+  if (menu_bar_ && menu_bar_visible_) {
+    window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
+    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+  }
+  return window_bounds;
+}
+
+gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
+    const gfx::Rect& bounds) const {
+  if (!has_frame())
+    return bounds;
+
+  gfx::Rect content_bounds(bounds);
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  content_bounds.set_size(
+      display::win::ScreenWin::DIPToScreenSize(hwnd, content_bounds.size()));
+  RECT rect;
+  SetRectEmpty(&rect);
+  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
+  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
+  content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
+  content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
+  content_bounds.set_size(
+      display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
+#endif
+
+  if (menu_bar_ && menu_bar_visible_) {
+    content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
+    content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
+  }
+  return content_bounds;
+}
+
+void NativeWindowViews::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
+    const std::vector<DraggableRegion>& regions) {
+  // Draggable region is not supported for non-frameless window.
+  if (has_frame())
+    return;
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
+}
+
 #if defined(OS_WIN)
 void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   // We are responsible for storing the images.
@@ -1268,55 +1326,6 @@ views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
 
 void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();
-}
-
-gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) const {
-  if (!has_frame())
-    return bounds;
-
-  gfx::Rect window_bounds(bounds);
-#if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
-  window_bounds = display::win::ScreenWin::ScreenToDIPRect(
-      hwnd,
-      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
-#endif
-
-  if (menu_bar_ && menu_bar_visible_) {
-    window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
-    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
-  }
-  return window_bounds;
-}
-
-gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) const {
-  if (!has_frame())
-    return bounds;
-
-  gfx::Rect content_bounds(bounds);
-#if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  content_bounds.set_size(
-      display::win::ScreenWin::DIPToScreenSize(hwnd, content_bounds.size()));
-  RECT rect;
-  SetRectEmpty(&rect);
-  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
-  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
-  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
-  content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
-  content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
-  content_bounds.set_size(
-      display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
-#endif
-
-  if (menu_bar_ && menu_bar_visible_) {
-    content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
-    content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
-  }
-  return content_bounds;
 }
 
 void NativeWindowViews::HandleKeyboardEvent(

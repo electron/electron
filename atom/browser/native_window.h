@@ -216,6 +216,17 @@ class NativeWindow : public base::SupportsUserData,
                            const std::string& display_name);
   virtual void CloseFilePreview();
 
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
+
+  // Called when the window needs to update its draggable region.
+  virtual void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
+      const std::vector<DraggableRegion>& regions) = 0;
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -287,7 +298,6 @@ class NativeWindow : public base::SupportsUserData,
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
   bool transparent() const { return transparent_; }
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
   void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
@@ -304,17 +314,6 @@ class NativeWindow : public base::SupportsUserData,
   // Convert draggable regions in raw format to SkRegion format. Caller is
   // responsible for deleting the returned SkRegion instance.
   std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
-      const std::vector<DraggableRegion>& regions);
-
-  // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(
-      const gfx::Rect& bounds) const = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(
-      const gfx::Rect& bounds) const = 0;
-
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
@@ -334,10 +333,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window is transparent.
   bool transparent_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;
