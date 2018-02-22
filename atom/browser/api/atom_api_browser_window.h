@@ -62,6 +62,7 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   ~BrowserWindow() override;
 
   // content::WebContentsObserver:
+  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
 
   // NativeWindowObserver:

@@ -318,7 +318,6 @@ class NativeWindow : public base::SupportsUserData,
       const std::vector<DraggableRegion>& regions);
 
   // content::WebContentsObserver:
-  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void BeforeUnloadDialogCancelled() override;
   bool OnMessageReceived(const IPC::Message& message,
                          content::RenderFrameHost* rfh) override;

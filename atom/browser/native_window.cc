@@ -24,7 +24,6 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "components/prefs/pref_service.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
@@ -651,18 +650,6 @@ std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
-}
-
-void NativeWindow::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
-  if (!transparent_)
-    return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
-  if (impl)
-    impl->SetBackgroundOpaque(false);
 }
 
 void NativeWindow::BeforeUnloadDialogCancelled() {

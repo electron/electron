@@ -20,7 +20,9 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
@@ -175,6 +177,18 @@ BrowserWindow::~BrowserWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+void BrowserWindow::RenderViewCreated(
+    content::RenderViewHost* render_view_host) {
+  if (!window_->transparent())
+    return;
+
+  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (impl)
+    impl->SetBackgroundOpaque(false);
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
