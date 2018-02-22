@@ -474,17 +474,6 @@ void NativeWindow::CloseContents(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
 }
 
-void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon. This could happen after the whole application had
-  // blocked for a while.
-  // Also notice that when closing this event would be ignored because we have
-  // explicitly started a close timeout counter. This is on purpose because we
-  // don't want the unresponsive event to be sent too early when user is closing
-  // the window.
-  ScheduleUnresponsiveEvent(50);
-}
-
 void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   for (NativeWindowObserver& observer : observers_)
@@ -657,6 +646,17 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 
   // Cancel unresponsive event when window close is cancelled.
   window_unresposive_closure_.Cancel();
+}
+
+void NativeWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicitly started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

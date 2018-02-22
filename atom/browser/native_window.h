@@ -235,7 +235,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Methods called by the WebContents.
   virtual void CloseContents(content::WebContents* source);
-  virtual void RendererUnresponsive(content::WebContents* source);
   virtual void RendererResponsive(content::WebContents* source);
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -317,6 +316,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // content::WebContentsObserver:
   void BeforeUnloadDialogCancelled() override;
+  void OnRendererUnresponsive(content::RenderWidgetHost*) override;
 
  private:
   // Schedule a notification unresponsive event.

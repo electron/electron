@@ -49,6 +49,13 @@ class WebViewGuestDelegate;
 
 namespace api {
 
+// Certain events are only in WebContentsDelegate, provide our own Observer to
+// dispatch those events.
+class ExtendedWebContentsObserver {
+  virtual void OnRendererResponsive() {}
+};
+
+// Wrapper around the content::WebContents.
 class WebContents : public mate::TrackableObject<WebContents>,
                     public CommonWebContentsDelegate,
                     public content::WebContentsObserver {
