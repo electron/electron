@@ -296,7 +296,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  shell_->UpdateDraggableRegionViews();
+  shell_->UpdateDraggableRegions(nullptr, shell_->draggable_regions());
   shell_->NotifyWindowResize();
 }
 
@@ -1789,6 +1789,90 @@ void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& it
   [window_ setEscapeTouchBarItem:item];
 }
 
+gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) const {
+  if (has_frame()) {
+    gfx::Rect window_bounds(
+        [window_ frameRectForContentRect:bounds.ToCGRect()]);
+    int frame_height = window_bounds.height() - bounds.height();
+    window_bounds.set_y(window_bounds.y() - frame_height);
+    return window_bounds;
+  } else {
+    return bounds;
+  }
+}
+
+gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
+    const gfx::Rect& bounds) const {
+  if (has_frame()) {
+    gfx::Rect content_bounds(
+        [window_ contentRectForFrameRect:bounds.ToCGRect()]);
+    int frame_height = bounds.height() - content_bounds.height();
+    content_bounds.set_y(content_bounds.y() + frame_height);
+    return content_bounds;
+  } else {
+    return bounds;
+  }
+}
+
+void NativeWindowMac::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
+    const std::vector<DraggableRegion>& regions) {
+  if (has_frame())
+    return;
+
+  // All ControlRegionViews should be added as children of the WebContentsView,
+  // because WebContentsView will be removed and re-added when entering and
+  // leaving fullscreen mode.
+  NSView* webView = web_contents()->GetNativeView();
+  NSInteger webViewWidth = NSWidth([webView bounds]);
+  NSInteger webViewHeight = NSHeight([webView bounds]);
+
+  if ([webView respondsToSelector:@selector(setMouseDownCanMoveWindow:)]) {
+    [webView setMouseDownCanMoveWindow:YES];
+  }
+
+  // Remove all ControlRegionViews that are added last time.
+  // Note that [webView subviews] returns the view's mutable internal array and
+  // it should be copied to avoid mutating the original array while enumerating
+  // it.
+  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
+  for (NSView* subview in subviews.get())
+    if ([subview isKindOfClass:[ControlRegionView class]])
+      [subview removeFromSuperview];
+
+  // Draggable regions is implemented by having the whole web view draggable
+  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
+  draggable_regions_ = regions;
+  std::vector<gfx::Rect> system_drag_exclude_areas =
+      CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
+
+  if (browser_view_)
+    browser_view_->UpdateDraggableRegions(system_drag_exclude_areas);
+
+  // Create and add a ControlRegionView for each region that needs to be
+  // excluded from the dragging.
+  for (std::vector<gfx::Rect>::const_iterator iter =
+           system_drag_exclude_areas.begin();
+       iter != system_drag_exclude_areas.end();
+       ++iter) {
+    base::scoped_nsobject<NSView> controlRegion(
+        [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
+    [controlRegion setFrame:NSMakeRect(iter->x(),
+                                       webViewHeight - iter->bottom(),
+                                       iter->width(),
+                                       iter->height())];
+    [webView addSubview:controlRegion];
+  }
+
+  // AppKit will not update its cache of mouseDownCanMoveWindow unless something
+  // changes. Previously we tried adding an NSView and removing it, but for some
+  // reason it required reposting the mouse-down event, and didn't always work.
+  // Calling the below seems to be an effective solution.
+  [window_ setMovableByWindowBackground:NO];
+  [window_ setMovableByWindowBackground:YES];
+}
+
 void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
   switch (event.GetType()) {
     case blink::WebInputEvent::kGestureScrollBegin:
@@ -1823,40 +1907,6 @@ std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
     }
   }
   return result;
-}
-
-gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) const {
-  if (has_frame()) {
-    gfx::Rect window_bounds(
-        [window_ frameRectForContentRect:bounds.ToCGRect()]);
-    int frame_height = window_bounds.height() - bounds.height();
-    window_bounds.set_y(window_bounds.y() - frame_height);
-    return window_bounds;
-  } else {
-    return bounds;
-  }
-}
-
-gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) const {
-  if (has_frame()) {
-    gfx::Rect content_bounds(
-        [window_ contentRectForFrameRect:bounds.ToCGRect()]);
-    int frame_height = bounds.height() - content_bounds.height();
-    content_bounds.set_y(content_bounds.y() + frame_height);
-    return content_bounds;
-  } else {
-    return bounds;
-  }
-}
-
-void NativeWindowMac::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
-  NativeWindow::UpdateDraggableRegions(rfh, regions);
-  draggable_regions_ = regions;
-  UpdateDraggableRegionViews(regions);
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach) {
@@ -1942,63 +1992,6 @@ void NativeWindowMac::InstallView() {
 void NativeWindowMac::UninstallView() {
   NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
   [view removeFromSuperview];
-}
-
-void NativeWindowMac::UpdateDraggableRegionViews(
-    const std::vector<DraggableRegion>& regions) {
-  if (has_frame())
-    return;
-
-  // All ControlRegionViews should be added as children of the WebContentsView,
-  // because WebContentsView will be removed and re-added when entering and
-  // leaving fullscreen mode.
-  NSView* webView = web_contents()->GetNativeView();
-  NSInteger webViewWidth = NSWidth([webView bounds]);
-  NSInteger webViewHeight = NSHeight([webView bounds]);
-
-  if ([webView respondsToSelector:@selector(setMouseDownCanMoveWindow:)]) {
-    [webView setMouseDownCanMoveWindow:YES];
-  }
-
-  // Remove all ControlRegionViews that are added last time.
-  // Note that [webView subviews] returns the view's mutable internal array and
-  // it should be copied to avoid mutating the original array while enumerating
-  // it.
-  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
-  for (NSView* subview in subviews.get())
-    if ([subview isKindOfClass:[ControlRegionView class]])
-      [subview removeFromSuperview];
-
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  std::vector<gfx::Rect> system_drag_exclude_areas =
-      CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
-
-  if (browser_view_) {
-    browser_view_->UpdateDraggableRegions(system_drag_exclude_areas);
-  }
-
-  // Create and add a ControlRegionView for each region that needs to be
-  // excluded from the dragging.
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas.begin();
-       iter != system_drag_exclude_areas.end();
-       ++iter) {
-    base::scoped_nsobject<NSView> controlRegion(
-        [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
-                                       iter->width(),
-                                       iter->height())];
-    [webView addSubview:controlRegion];
-  }
-
-  // AppKit will not update its cache of mouseDownCanMoveWindow unless something
-  // changes. Previously we tried adding an NSView and removing it, but for some
-  // reason it required reposting the mouse-down event, and didn't always work.
-  // Calling the below seems to be an effective solution.
-  [window_ setMovableByWindowBackground:NO];
-  [window_ setMovableByWindowBackground:YES];
 }
 
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {

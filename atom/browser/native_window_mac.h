@@ -119,17 +119,18 @@ class NativeWindowMac : public NativeWindow,
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
 
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
+  void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
+      const std::vector<DraggableRegion>& regions) override;
+
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
 
   // content::WebContentsObserver:
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
-
-  // Refresh the DraggableRegion views.
-  void UpdateDraggableRegionViews() {
-    UpdateDraggableRegionViews(draggable_regions_);
-  }
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
@@ -144,10 +145,11 @@ class NativeWindowMac : public NativeWindow,
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
-
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
-
   bool simple_fullscreen() const { return always_simple_fullscreen_; }
+  const std::vector<DraggableRegion>& draggable_regions() const {
+    return draggable_regions_;
+  }
 
  protected:
   // Return a vector of non-draggable regions that fill a window of size
@@ -156,22 +158,11 @@ class NativeWindowMac : public NativeWindow,
       const std::vector<DraggableRegion>& regions, int width, int height);
 
  private:
-  // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
-  void UpdateDraggableRegions(
-      content::RenderFrameHost* rfh,
-      const std::vector<DraggableRegion>& regions) override;
-
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
   void InstallView();
   void UninstallView();
-
-  // Install the drag view, which will cover the whole window and decides
-  // whether we can drag.
-  void UpdateDraggableRegionViews(const std::vector<DraggableRegion>& regions);
 
   void RegisterInputEventObserver(content::RenderViewHost* host);
   void UnregisterInputEventObserver(content::RenderViewHost* host);
