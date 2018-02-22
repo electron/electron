@@ -12,7 +12,6 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
-#include "content/public/browser/render_widget_host.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -20,8 +19,7 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow,
-                        public content::RenderWidgetHost::InputEventObserver {
+class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
                   const mate::Dictionary& options,
@@ -124,13 +122,6 @@ class NativeWindowMac : public NativeWindow,
   void UpdateDraggableRegions(
       const std::vector<DraggableRegion>& regions) override;
 
-  // content::RenderWidgetHost::InputEventObserver:
-  void OnInputEvent(const blink::WebInputEvent& event) override;
-
-  // content::WebContentsObserver:
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
-
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
@@ -162,9 +153,6 @@ class NativeWindowMac : public NativeWindow,
 
   void InstallView();
   void UninstallView();
-
-  void RegisterInputEventObserver(content::RenderViewHost* host);
-  void UnregisterInputEventObserver(content::RenderViewHost* host);
 
   void SetRenderWidgetHostOpaque(bool opaque);
 

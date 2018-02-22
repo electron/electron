@@ -17,6 +17,7 @@
 #include "atom/common/key_weak_map.h"
 #include "base/cancelable_callback.h"
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/render_widget_host.h"
 #include "native_mate/persistent_dictionary.h"
 
 class GURL;
@@ -37,6 +38,7 @@ class NativeWindow;
 namespace api {
 
 class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
+                      public content::RenderWidgetHost::InputEventObserver,
                       public content::WebContentsObserver,
                       public ExtendedWebContentsObserver,
                       public NativeWindowObserver {
@@ -60,7 +62,12 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
                 const mate::Dictionary& options);
   ~BrowserWindow() override;
 
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
+
   // content::WebContentsObserver:
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
@@ -90,7 +97,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
-  void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;

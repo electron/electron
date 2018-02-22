@@ -530,11 +530,6 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
     observer.OnWindowScrollTouchEnd();
 }
 
-void NativeWindow::NotifyWindowScrollTouchEdge() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEdge();
-}
-
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);

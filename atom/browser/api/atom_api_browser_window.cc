@@ -172,6 +172,10 @@ void BrowserWindow::Init(v8::Isolate* isolate,
   // window's JS wrapper gets initialized.
   if (!parent.IsEmpty())
     parent->child_windows_.Set(isolate, ID(), wrapper);
+
+  auto* host = web_contents->web_contents()->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->AddInputEventObserver(this);
 }
 
 BrowserWindow::~BrowserWindow() {
@@ -183,6 +187,26 @@ BrowserWindow::~BrowserWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kGestureScrollBegin:
+    case blink::WebInputEvent::kGestureScrollUpdate:
+    case blink::WebInputEvent::kGestureScrollEnd:
+      Emit("scroll-touch-edge");
+      break;
+    default:
+      break;
+  }
+}
+
+void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                          content::RenderViewHost* new_host) {
+  if (old_host)
+    old_host->GetWidget()->RemoveInputEventObserver(this);
+  if (new_host)
+    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void BrowserWindow::RenderViewCreated(
@@ -384,10 +408,6 @@ void BrowserWindow::OnWindowScrollTouchBegin() {
 
 void BrowserWindow::OnWindowScrollTouchEnd() {
   Emit("scroll-touch-end");
-}
-
-void BrowserWindow::OnWindowScrollTouchEdge() {
-  Emit("scroll-touch-edge");
 }
 
 void BrowserWindow::OnWindowSwipe(const std::string& direction) {

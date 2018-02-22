@@ -1038,9 +1038,6 @@ NativeWindowMac::NativeWindowMac(
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);
-
-  RegisterInputEventObserver(
-      web_contents->GetWebContents()->GetRenderViewHost());
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -1869,25 +1866,6 @@ void NativeWindowMac::UpdateDraggableRegions(
   [window_ setMovableByWindowBackground:YES];
 }
 
-void NativeWindowMac::OnInputEvent(const blink::WebInputEvent& event) {
-  switch (event.GetType()) {
-    case blink::WebInputEvent::kGestureScrollBegin:
-    case blink::WebInputEvent::kGestureScrollUpdate:
-    case blink::WebInputEvent::kGestureScrollEnd:
-        this->NotifyWindowScrollTouchEdge();
-      break;
-    default:
-      break;
-  }
-}
-
-void NativeWindowMac::RenderViewHostChanged(
-    content::RenderViewHost* old_host,
-    content::RenderViewHost* new_host) {
-  UnregisterInputEventObserver(old_host);
-  RegisterInputEventObserver(new_host);
-}
-
 std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
     const std::vector<DraggableRegion>& regions, int width, int height) {
   std::vector<gfx::Rect> result;
@@ -2014,18 +1992,6 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable);
-}
-
-void NativeWindowMac::RegisterInputEventObserver(
-    content::RenderViewHost* host) {
-  if (host)
-    host->GetWidget()->AddInputEventObserver(this);
-}
-
-void NativeWindowMac::UnregisterInputEventObserver(
-    content::RenderViewHost* host) {
-  if (host)
-    host->GetWidget()->RemoveInputEventObserver(this);
 }
 
 // static
