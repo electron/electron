@@ -203,127 +203,90 @@ describe('MenuItems', () => {
 
   describe('MenuItem role', () => {
     it('returns undefined for items without default accelerator', () => {
-      let item = new MenuItem({role: 'about'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
+      const roleList = [
+        'close',
+        'copy',
+        'cut',
+        'forcereload',
+        'hide',
+        'hideothers',
+        'minimize',
+        'paste',
+        'pasteandmatchstyle',
+        'quit',
+        'redo',
+        'reload',
+        'resetzoom',
+        'selectall',
+        'toggledevtools',
+        'togglefullscreen',
+        'undo',
+        'zoomin',
+        'zoomout'
+      ]
 
-      item = new MenuItem({role: 'delete'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'front'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'help'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'services'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'recentdocuments'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'clearrecentdocuments'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'startspeaking'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'stopspeaking'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'unhide'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'window'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
-
-      item = new MenuItem({role: 'zoom'})
-      assert.equal(item.getDefaultRoleAccelerator(), undefined)
+      for (let role in roleList) {
+        const item = new MenuItem({role})
+        assert.equal(item.getDefaultRoleAccelerator(), undefined)
+      }
     })
 
-    it('returns the correct default accelerator and label', () => {
-      let item = new MenuItem({role: 'close'})
-      assert.equal(item.label, process.platform === 'darwin' ? 'Close Window' : 'Close')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
-
-      item = new MenuItem({role: 'copy'})
-      assert.equal(item.label, 'Copy')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+C')
-
-      item = new MenuItem({role: 'cut'})
-      assert.equal(item.label, 'Cut')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+X')
-
-      item = new MenuItem({role: 'forcereload'})
-      assert.equal(item.label, 'Force Reload')
-      assert.equal(item.getDefaultRoleAccelerator(), 'Shift+CmdOrCtrl+R')
-
-      item = new MenuItem({role: 'hide'})
-      assert.equal(item.label, 'Hide Electron Test')
-      assert.equal(item.getDefaultRoleAccelerator(), 'Command+H')
-
-      item = new MenuItem({role: 'hideothers'})
-      assert.equal(item.label, 'Hide Others')
-      assert.equal(item.getDefaultRoleAccelerator(), 'Command+Alt+H')
-
-      item = new MenuItem({role: 'minimize'})
-      assert.equal(item.label, 'Minimize')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+M')
-
-      item = new MenuItem({role: 'paste'})
-      assert.equal(item.label, 'Paste')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+V')
-
-      item = new MenuItem({role: 'pasteandmatchstyle'})
-      assert.equal(item.label, 'Paste and Match Style')
-      assert.equal(item.getDefaultRoleAccelerator(), 'Shift+CommandOrControl+V')
-
-      let label
-      item = new MenuItem({role: 'quit'})
-      if (process.platform === 'darwin') {
-        label = `Quit ${app.getName()}`
-      } else if (process.platform === 'win32') {
-        label = 'Exit'
-      } else {
-        label = 'Quit'
+    it('returns the correct default label', () => {
+      const roleList = {
+        'close': process.platform === 'darwin' ? 'Close Window' : 'Close',
+        'copy': 'Copy',
+        'cut': 'Cut',
+        'forcereload': 'Force Reload',
+        'hide': 'Hide Electron Test',
+        'hideothers': 'Hide Others',
+        'minimize': 'Minimize',
+        'paste': 'Paste',
+        'pasteandmatchstyle': 'Paste and Match Style',
+        'quit': (process.platform === 'darwin') ? `Quit ${app.getName()}` : (process.platform === 'win32') ? 'Exit' : 'Quit',
+        'redo': 'Redo',
+        'reload': 'Reload',
+        'resetzoom': 'Actual Size',
+        'selectall': 'Select All',
+        'toggledevtools': 'Toggle Developer Tools',
+        'togglefullscreen': 'Toggle Full Screen',
+        'undo': 'Undo',
+        'zoomin': 'Zoom In',
+        'zoomout': 'Zoom Out'
       }
-      assert.equal(item.label, label)
-      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'win32' ? null : 'CommandOrControl+Q')
 
-      item = new MenuItem({role: 'redo'})
-      assert.equal(item.label, 'Redo')
-      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z')
+      for (let role in roleList) {
+        const item = new MenuItem({role})
+        assert.equal(item.label, roleList[role])
+      }
+    })
 
-      item = new MenuItem({role: 'reload'})
-      assert.equal(item.label, 'Reload')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CmdOrCtrl+R')
+    it('returns the correct default accelerator', () => {
+      const roleList = {
+        'close': 'CommandOrControl+W',
+        'copy': 'CommandOrControl+C',
+        'cut': 'CommandOrControl+X',
+        'forcereload': 'Shift+CmdOrCtrl+R',
+        'hide': 'Command+H',
+        'hideothers': 'Command+Alt+H',
+        'minimize': 'CommandOrControl+M',
+        'paste': 'CommandOrControl+V',
+        'pasteandmatchstyle': 'Shift+CommandOrControl+V',
+        'quit': process.platform === 'win32' ? null : 'CommandOrControl+Q',
+        'redo': process.platform === 'win32' ? 'Control+Y' : 'Shift+CommandOrControl+Z',
+        'reload': 'CmdOrCtrl+R',
+        'resetzoom': 'CommandOrControl+0',
+        'selectall': 'CommandOrControl+A',
+        'toggledevtools': process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
+        'togglefullscreen': process.platform === 'darwin' ? 'Control+Command+F' : 'F11',
+        'undo': 'CommandOrControl+Z',
+        'zoomin': 'CommandOrControl+Plus',
+        'zoomout': 'CommandOrControl+-'
+      }
 
-      item = new MenuItem({role: 'resetzoom'})
-      assert.equal(item.label, 'Actual Size')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+0')
-
-      item = new MenuItem({role: 'selectall'})
-      assert.equal(item.label, 'Select All')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+A')
-
-      item = new MenuItem({role: 'toggledevtools'})
-      assert.equal(item.label, 'Toggle Developer Tools')
-      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I')
-
-      item = new MenuItem({role: 'togglefullscreen'})
-      assert.equal(item.label, 'Toggle Full Screen')
-      assert.equal(item.getDefaultRoleAccelerator(), process.platform === 'darwin' ? 'Control+Command+F' : 'F11')
-
-      item = new MenuItem({role: 'undo'})
-      assert.equal(item.label, 'Undo')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+Z')
-
-      item = new MenuItem({role: 'zoomin'})
-      assert.equal(item.label, 'Zoom In')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+Plus')
-
-      item = new MenuItem({role: 'zoomout'})
-      assert.equal(item.label, 'Zoom Out')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+-')
+      for (let role in roleList) {
+        const item = new MenuItem({role})
+        assert.equal(item.getDefaultRoleAccelerator(), roleList[role])
+      }
     })
 
     it('allows a custom accelerator and label to be set', () => {
