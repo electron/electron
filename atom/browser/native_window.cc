@@ -11,7 +11,6 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -426,52 +425,6 @@ void NativeWindow::PreviewFile(const std::string& path,
 void NativeWindow::CloseFilePreview() {
 }
 
-void NativeWindow::RequestToClosePage() {
-  // Assume the window is not responding if it doesn't cancel the close and is
-  // not closed in 5s, in this way we can quickly show the unresponsive
-  // dialog when the window is busy executing some script withouth waiting for
-  // the unresponsive timeout.
-  if (window_unresposive_closure_.IsCancelled())
-    ScheduleUnresponsiveEvent(5000);
-
-  if (!web_contents())
-    // Already closed by renderer
-    return;
-
-  if (web_contents()->NeedToFireBeforeUnload())
-    web_contents()->DispatchBeforeUnload();
-  else
-    web_contents()->Close();
-}
-
-void NativeWindow::CloseContents(content::WebContents* source) {
-  if (!inspectable_web_contents_)
-    return;
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
-  inspectable_web_contents_ = nullptr;
-  Observe(nullptr);
-
-  for (NativeWindowObserver& observer : observers_)
-    observer.WillDestroyNativeObject();
-
-  // When the web contents is gone, close the window immediately, but the
-  // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers. If you
-  // want to free memory when the window is closed, you can do deleting by
-  // overriding the OnWindowClosed method in the observer.
-  CloseImmediately();
-
-  // Do not sent "unresponsive" event after window is closed.
-  window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::RendererResponsive(content::WebContents* source) {
-  window_unresposive_closure_.Cancel();
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowResponsive();
-}
-
 void NativeWindow::NotifyWindowCloseButtonClicked() {
   // First ask the observers whether we want to close.
   bool prevent_default = false;
@@ -650,46 +603,6 @@ std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
-}
-
-void NativeWindow::BeforeUnloadDialogCancelled() {
-  WindowList::WindowCloseCancelled(this);
-
-  // Cancel unresponsive event when window close is cancelled.
-  window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
-  // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon. This could happen after the whole application had
-  // blocked for a while.
-  // Also notice that when closing this event would be ignored because we have
-  // explicitly started a close timeout counter. This is on purpose because we
-  // don't want the unresponsive event to be sent too early when user is closing
-  // the window.
-  ScheduleUnresponsiveEvent(50);
-}
-
-void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
-  if (!window_unresposive_closure_.IsCancelled())
-    return;
-
-  window_unresposive_closure_.Reset(
-      base::Bind(&NativeWindow::NotifyWindowUnresponsive,
-                 weak_factory_.GetWeakPtr()));
-  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
-      FROM_HERE,
-      window_unresposive_closure_.callback(),
-      base::TimeDelta::FromMilliseconds(ms));
-}
-
-void NativeWindow::NotifyWindowUnresponsive() {
-  window_unresposive_closure_.Cancel();
-
-  if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled()) {
-    for (NativeWindowObserver& observer : observers_)
-      observer.OnWindowUnresponsive();
-  }
 }
 
 }  // namespace atom

@@ -13,7 +13,6 @@
 #include "atom/browser/native_window_observer.h"
 #include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
-#include "base/cancelable_callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
@@ -230,12 +229,7 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
-  // Requests the WebContents to close, can be cancelled by the page.
-  virtual void RequestToClosePage();
-
   // Methods called by the WebContents.
-  virtual void CloseContents(content::WebContents* source);
-  virtual void RendererResponsive(content::WebContents* source);
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
@@ -315,17 +309,7 @@ class NativeWindow : public base::SupportsUserData,
   std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
       const std::vector<DraggableRegion>& regions);
 
-  // content::WebContentsObserver:
-  void BeforeUnloadDialogCancelled() override;
-  void OnRendererUnresponsive(content::RenderWidgetHost*) override;
-
  private:
-  // Schedule a notification unresponsive event.
-  void ScheduleUnresponsiveEvent(int ms);
-
-  // Dispatch unresponsive event to observers.
-  void NotifyWindowUnresponsive();
-
   // Whether window has standard frame.
   bool has_frame_;
 
@@ -340,10 +324,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The windows has been closed.
   bool is_closed_;
-
-  // Closure that would be called when window is unresponsive when closing,
-  // it should be cancelled when we can prove that the window is responsive.
-  base::CancelableClosure window_unresposive_closure_;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
   // on macOS.

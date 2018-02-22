@@ -15,6 +15,7 @@
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
+#include "base/cancelable_callback.h"
 #include "base/memory/weak_ptr.h"
 #include "native_mate/persistent_dictionary.h"
 
@@ -62,15 +63,17 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
+  void BeforeUnloadDialogCancelled() override;
+  void OnRendererUnresponsive(content::RenderWidgetHost*) override;
   bool OnMessageReceived(const IPC::Message& message,
                          content::RenderFrameHost* rfh) override;
 
   // ExtendedWebContentsObserver:
+  void OnCloseContents() override;
   void OnRendererResponsive() override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
-  void WillDestroyNativeObject() override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowEndSession() override;
@@ -95,8 +98,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
-  void OnWindowUnresponsive() override;
-  void OnWindowResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
@@ -253,10 +254,20 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
       content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions);
 
+  // Schedule a notification unresponsive event.
+  void ScheduleUnresponsiveEvent(int ms);
+
+  // Dispatch unresponsive event to observers.
+  void NotifyWindowUnresponsive();
+
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;
 #endif
+
+  // Closure that would be called when window is unresponsive when closing,
+  // it should be cancelled when we can prove that the window is responsive.
+  base::CancelableClosure window_unresposive_closure_;
 
   v8::Global<v8::Value> browser_view_;
   v8::Global<v8::Value> web_contents_;

@@ -34,9 +34,6 @@ class NativeWindowObserver {
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
 
-  // Called before the native window object is going to be destroyed.
-  virtual void WillDestroyNativeObject() {}
-
   // Called when closed button is clicked.
   virtual void OnCloseButtonClicked(bool* prevent_default) {}
 
@@ -84,12 +81,6 @@ class NativeWindowObserver {
   #if defined(OS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
-
-  // Called when renderer is hung.
-  virtual void OnWindowUnresponsive() {}
-
-  // Called when renderer recovers.
-  virtual void OnWindowResponsive() {}
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}

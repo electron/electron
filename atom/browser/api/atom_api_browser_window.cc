@@ -9,7 +9,9 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -174,7 +176,7 @@ void BrowserWindow::Init(v8::Isolate* isolate,
 
 BrowserWindow::~BrowserWindow() {
   if (!window_->IsClosed())
-    window_->CloseContents(nullptr);
+    window_->CloseImmediately();
 
   api_web_contents_->RemoveObserver(this);
 
@@ -214,6 +216,23 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
       }, GetWeakPtr()));
 }
 
+void BrowserWindow::BeforeUnloadDialogCancelled() {
+  WindowList::WindowCloseCancelled(window_.get());
+  // Cancel unresponsive event when window close is cancelled.
+  window_unresposive_closure_.Cancel();
+}
+
+void BrowserWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicitly started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
+}
+
 bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
                                       content::RenderFrameHost* rfh) {
   bool handled = true;
@@ -225,14 +244,11 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
   return handled;
 }
 
-void BrowserWindow::OnRendererResponsive() {
-}
+void BrowserWindow::OnCloseContents() {
+  if (!web_contents())
+    return;
+  Observe(nullptr);
 
-void BrowserWindow::WillCloseWindow(bool* prevent_default) {
-  *prevent_default = Emit("close");
-}
-
-void BrowserWindow::WillDestroyNativeObject() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
@@ -241,6 +257,25 @@ void BrowserWindow::WillDestroyNativeObject() {
     if (mate::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window_->CloseImmediately();
   }
+
+  // When the web contents is gone, close the window immediately, but the
+  // memory will not be freed until you call delete.
+  // In this way, it would be safe to manage windows via smart pointers. If you
+  // want to free memory when the window is closed, you can do deleting by
+  // overriding the OnWindowClosed method in the observer.
+  window_->CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresposive_closure_.Cancel();
+}
+
+void BrowserWindow::OnRendererResponsive() {
+  window_unresposive_closure_.Cancel();
+  Emit("responsive");
+}
+
+void BrowserWindow::WillCloseWindow(bool* prevent_default) {
+  *prevent_default = Emit("close");
 }
 
 void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
@@ -248,7 +283,22 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   // not close the window immediately, instead we try to close the web page
   // first, and when the web page is closed the window will also be closed.
   *prevent_default = true;
-  window_->RequestToClosePage();
+
+  // Assume the window is not responding if it doesn't cancel the close and is
+  // not closed in 5s, in this way we can quickly show the unresponsive
+  // dialog when the window is busy executing some script withouth waiting for
+  // the unresponsive timeout.
+  if (window_unresposive_closure_.IsCancelled())
+    ScheduleUnresponsiveEvent(5000);
+
+  if (!web_contents())
+    // Already closed by renderer
+    return;
+
+  if (web_contents()->NeedToFireBeforeUnload())
+    web_contents()->DispatchBeforeUnload();
+  else
+    web_contents()->Close();
 }
 
 void BrowserWindow::OnWindowClosed() {
@@ -358,14 +408,6 @@ void BrowserWindow::OnWindowEnterHtmlFullScreen() {
 
 void BrowserWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
-}
-
-void BrowserWindow::OnWindowUnresponsive() {
-  Emit("unresponsive");
-}
-
-void BrowserWindow::OnWindowResponsive() {
-  Emit("responsive");
 }
 
 void BrowserWindow::OnExecuteWindowsCommand(const std::string& command_name) {
@@ -1069,6 +1111,26 @@ void BrowserWindow::UpdateDraggableRegions(
     content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
   window_->UpdateDraggableRegions(regions);
+}
+
+void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
+  if (!window_unresposive_closure_.IsCancelled())
+    return;
+
+  window_unresposive_closure_.Reset(
+      base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+      FROM_HERE,
+      window_unresposive_closure_.callback(),
+      base::TimeDelta::FromMilliseconds(ms));
+}
+
+void BrowserWindow::NotifyWindowUnresponsive() {
+  window_unresposive_closure_.Cancel();
+  if (!window_->IsClosed() && window_->IsEnabled() &&
+      !IsUnresponsiveEventSuppressed()) {
+    Emit("unresponsive");
+  }
 }
 
 // static

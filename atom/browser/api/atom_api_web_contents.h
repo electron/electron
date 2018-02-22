@@ -54,6 +54,7 @@ namespace api {
 // dispatch those events.
 class ExtendedWebContentsObserver {
  public:
+  virtual void OnCloseContents() {}
   virtual void OnRendererResponsive() {}
 };
 
