@@ -77,7 +77,8 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 BrowserWindow::BrowserWindow(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper,
-                             const mate::Dictionary& options) {
+                             const mate::Dictionary& options)
+    : weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
@@ -176,6 +177,24 @@ BrowserWindow::~BrowserWindow() {
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
 }
 
+void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (window_->IsVisible())
+    return;
+
+  // When there is a non-empty first paint, resize the RenderWidget to force
+  // Chromium to draw.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->Show();
+  view->SetSize(window_->GetContentSize());
+
+  // Emit the ReadyToShow event in next tick in case of pending drawing work.
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::Bind([](base::WeakPtr<BrowserWindow> self) {
+        self->Emit("ready-to-show");
+      }, GetWeakPtr()));
+}
+
 void BrowserWindow::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
@@ -230,10 +249,6 @@ void BrowserWindow::OnWindowShow() {
 
 void BrowserWindow::OnWindowHide() {
   Emit("hide");
-}
-
-void BrowserWindow::OnReadyToShow() {
-  Emit("ready-to-show");
 }
 
 void BrowserWindow::OnWindowMaximize() {

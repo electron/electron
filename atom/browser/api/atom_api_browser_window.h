@@ -15,6 +15,7 @@
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
@@ -60,6 +61,9 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
                 const mate::Dictionary& options);
   ~BrowserWindow() override;
 
+  // content::WebContentsObserver:
+  void DidFirstVisuallyNonEmptyPaint() override;
+
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void WillDestroyNativeObject() override;
@@ -69,7 +73,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowFocus() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
-  void OnReadyToShow() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -98,11 +101,16 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
+  base::WeakPtr<BrowserWindow> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   void Init(v8::Isolate* isolate,
             v8::Local<v8::Object> wrapper,
             const mate::Dictionary& options,
             mate::Handle<class WebContents> web_contents);
+
   // APIs for NativeWindow.
   void Close();
   void Focus();
@@ -249,6 +257,8 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   api::WebContents* api_web_contents_;
 
   std::unique_ptr<NativeWindow> window_;
+
+  base::WeakPtrFactory<BrowserWindow> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };

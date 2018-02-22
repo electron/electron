@@ -55,9 +55,6 @@ class NativeWindowObserver {
   // Called when window is hidden.
   virtual void OnWindowHide() {}
 
-  // Called when window is ready to show.
-  virtual void OnReadyToShow() {}
-
   // Called when window state changed.
   virtual void OnWindowMaximize() {}
   virtual void OnWindowUnmaximize() {}
