@@ -1122,7 +1122,6 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
 }
 
 void NativeWindowViews::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
   // Draggable region is not supported for non-frameless window.
   if (has_frame())

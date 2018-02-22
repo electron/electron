@@ -64,6 +64,8 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   // content::WebContentsObserver:
   void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* rfh) override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -243,6 +245,11 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
 
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
+
+  // Called when the window needs to update its draggable region.
+  void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
+      const std::vector<DraggableRegion>& regions);
 
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;

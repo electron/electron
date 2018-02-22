@@ -224,7 +224,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-      content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions) = 0;
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
@@ -318,8 +317,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // content::WebContentsObserver:
   void BeforeUnloadDialogCancelled() override;
-  bool OnMessageReceived(const IPC::Message& message,
-                         content::RenderFrameHost* rfh) override;
 
  private:
   // Schedule a notification unresponsive event.

@@ -10,6 +10,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -208,6 +209,17 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
         if (self)
           self->Emit("ready-to-show");
       }, GetWeakPtr()));
+}
+
+bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
+                                      content::RenderFrameHost* rfh) {
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(BrowserWindow, message, rfh)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
+                        UpdateDraggableRegions)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+  return handled;
 }
 
 void BrowserWindow::WillCloseWindow(bool* prevent_default) {
@@ -1037,6 +1049,12 @@ void BrowserWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(ID());
+}
+
+void BrowserWindow::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
+    const std::vector<DraggableRegion>& regions) {
+  window_->UpdateDraggableRegions(regions);
 }
 
 // static

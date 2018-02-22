@@ -13,7 +13,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/api/api_messages.h"
+#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
@@ -657,18 +657,6 @@ void NativeWindow::BeforeUnloadDialogCancelled() {
 
   // Cancel unresponsive event when window close is cancelled.
   window_unresposive_closure_.Cancel();
-}
-
-bool NativeWindow::OnMessageReceived(const IPC::Message& message,
-                                     content::RenderFrameHost* rfh) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, rfh)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
-                        UpdateDraggableRegions)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
 }
 
 void NativeWindow::ScheduleUnresponsiveEvent(int ms) {

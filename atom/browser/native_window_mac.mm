@@ -296,7 +296,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  shell_->UpdateDraggableRegions(nullptr, shell_->draggable_regions());
+  shell_->UpdateDraggableRegions(shell_->draggable_regions());
   shell_->NotifyWindowResize();
 }
 
@@ -1816,7 +1816,6 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 }
 
 void NativeWindowMac::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
   if (has_frame())
     return;

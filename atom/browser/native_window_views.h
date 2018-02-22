@@ -129,7 +129,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void UpdateDraggableRegions(
-      content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions) override;
 
 #if defined(OS_WIN)
