@@ -7,9 +7,9 @@
 #include <set>
 #include <string>
 
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -963,7 +963,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // For webview only #1 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
-// by api::Window.
+// by api::BrowserWindow.
 // For #1, the destructor will do the cleanup work and we only need to make
 // sure "destroyed" event is emitted. For #3, the content::WebContents will
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
@@ -1773,7 +1773,7 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
   if (owner_window())
-    return Window::From(isolate(), owner_window());
+    return BrowserWindow::From(isolate(), owner_window());
   else
     return v8::Null(isolate());
 }
