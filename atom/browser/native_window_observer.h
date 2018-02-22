@@ -37,6 +37,9 @@ class NativeWindowObserver {
   // Called before the native window object is going to be destroyed.
   virtual void WillDestroyNativeObject() {}
 
+  // Called when closed button is clicked.
+  virtual void OnCloseButtonClicked(bool* prevent_default) {}
+
   // Called when the window is closed.
   virtual void OnWindowClosed() {}
 

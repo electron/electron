@@ -71,6 +71,7 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void WillDestroyNativeObject() override;
+  void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowEndSession() override;
   void OnWindowBlur() override;

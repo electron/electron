@@ -243,6 +243,14 @@ void BrowserWindow::WillDestroyNativeObject() {
   }
 }
 
+void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
+  // When user tries to close the window by clicking the close button, we do
+  // not close the window immediately, instead we try to close the web page
+  // first, and when the web page is closed the window will also be closed.
+  *prevent_default = true;
+  window_->RequestToClosePage();
+}
+
 void BrowserWindow::OnWindowClosed() {
   api_web_contents_->DestroyWebContents(true /* async */);
 

@@ -427,14 +427,6 @@ void NativeWindow::CloseFilePreview() {
 }
 
 void NativeWindow::RequestToClosePage() {
-  bool prevent_default = false;
-  for (NativeWindowObserver& observer : observers_)
-    observer.WillCloseWindow(&prevent_default);
-  if (prevent_default) {
-    WindowList::WindowCloseCancelled(this);
-    return;
-  }
-
   // Assume the window is not responding if it doesn't cancel the close and is
   // not closed in 5s, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
@@ -478,6 +470,25 @@ void NativeWindow::RendererResponsive(content::WebContents* source) {
   window_unresposive_closure_.Cancel();
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResponsive();
+}
+
+void NativeWindow::NotifyWindowCloseButtonClicked() {
+  // First ask the observers whether we want to close.
+  bool prevent_default = false;
+  for (NativeWindowObserver& observer : observers_)
+    observer.WillCloseWindow(&prevent_default);
+  if (prevent_default) {
+    WindowList::WindowCloseCancelled(this);
+    return;
+  }
+
+  // Then ask the observers how should we close the window.
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnCloseButtonClicked(&prevent_default);
+  if (prevent_default)
+    return;
+
+  CloseImmediately();
 }
 
 void NativeWindow::NotifyWindowClosed() {

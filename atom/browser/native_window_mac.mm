@@ -415,10 +415,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (BOOL)windowShouldClose:(id)window {
-  // When user tries to close the window by clicking the close button, we do
-  // not close the window immediately, instead we try to close the web page
-  // first, and when the web page is closed the window will also be closed.
-  shell_->RequestToClosePage();
+  shell_->NotifyWindowCloseButtonClicked();
   return NO;
 }
 
