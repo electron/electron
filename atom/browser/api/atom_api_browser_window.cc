@@ -136,8 +136,8 @@ void BrowserWindow::Init(v8::Isolate* isolate,
                          mate::Handle<class WebContents> web_contents) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
-  Observe(web_contents->web_contents());
   api_web_contents_->AddObserver(this);
+  Observe(api_web_contents_->web_contents());
 
   // Keep a copy of the options for later use.
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
@@ -248,7 +248,7 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
 void BrowserWindow::BeforeUnloadDialogCancelled() {
   WindowList::WindowCloseCancelled(window_.get());
   // Cancel unresponsive event when window close is cancelled.
-  window_unresposive_closure_.Cancel();
+  window_unresponsive_closure_.Cancel();
 }
 
 void BrowserWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
@@ -295,11 +295,11 @@ void BrowserWindow::OnCloseContents() {
   window_->CloseImmediately();
 
   // Do not sent "unresponsive" event after window is closed.
-  window_unresposive_closure_.Cancel();
+  window_unresponsive_closure_.Cancel();
 }
 
 void BrowserWindow::OnRendererResponsive() {
-  window_unresposive_closure_.Cancel();
+  window_unresponsive_closure_.Cancel();
   Emit("responsive");
 }
 
@@ -317,7 +317,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   // not closed in 5s, in this way we can quickly show the unresponsive
   // dialog when the window is busy executing some script withouth waiting for
   // the unresponsive timeout.
-  if (window_unresposive_closure_.IsCancelled())
+  if (window_unresponsive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
   if (!web_contents())
@@ -1139,19 +1139,19 @@ void BrowserWindow::UpdateDraggableRegions(
 }
 
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
-  if (!window_unresposive_closure_.IsCancelled())
+  if (!window_unresponsive_closure_.IsCancelled())
     return;
 
-  window_unresposive_closure_.Reset(
+  window_unresponsive_closure_.Reset(
       base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
       FROM_HERE,
-      window_unresposive_closure_.callback(),
+      window_unresponsive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
 }
 
 void BrowserWindow::NotifyWindowUnresponsive() {
-  window_unresposive_closure_.Cancel();
+  window_unresponsive_closure_.Cancel();
   if (!window_->IsClosed() && window_->IsEnabled() &&
       !IsUnresponsiveEventSuppressed()) {
     Emit("unresponsive");

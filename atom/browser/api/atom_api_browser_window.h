@@ -273,7 +273,7 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
-  base::CancelableClosure window_unresposive_closure_;
+  base::CancelableClosure window_unresponsive_closure_;
 
   v8::Global<v8::Value> browser_view_;
   v8::Global<v8::Value> web_contents_;
