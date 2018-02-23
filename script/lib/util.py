@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-import urllib2
+import urllib3
 import os
 import zipfile
 
@@ -82,7 +82,7 @@ def download(text, url, path):
     if hasattr(ssl, '_create_unverified_context'):
       ssl._create_default_https_context = ssl._create_unverified_context
 
-    web_file = urllib2.urlopen(url)
+    web_file = urllib3.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
     block_size = 128
