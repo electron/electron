@@ -11,9 +11,8 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
-#include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/api/api_messages.h"
+#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
@@ -24,7 +23,6 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "components/prefs/pref_service.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
@@ -40,12 +38,6 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/geometry/size_conversions.h"
-#include "ui/gl/gpu_switching_manager.h"
-
-#if defined(OS_LINUX) || defined(OS_WIN)
-#include "content/public/common/renderer_preferences.h"
-#include "ui/gfx/font_render_params.h"
-#endif
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -74,24 +66,6 @@ NativeWindow::NativeWindow(
 
   if (parent)
     options.Get("modal", &is_modal_);
-
-#if defined(OS_LINUX) || defined(OS_WIN)
-  auto* prefs = web_contents()->GetMutableRendererPrefs();
-
-  // Update font settings.
-  CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
-      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
-  prefs->should_antialias_text = params.antialiasing;
-  prefs->use_subpixel_positioning = params.subpixel_positioning;
-  prefs->hinting = params.hinting;
-  prefs->use_autohinter = params.autohinter;
-  prefs->use_bitmaps = params.use_bitmaps;
-  prefs->subpixel_rendering = params.subpixel_rendering;
-#endif
-
-  // Tell the content module to initialize renderer widget with transparent
-  // mode.
-  ui::GpuSwitchingManager::SetTransparent(transparent_);
 
   WindowList::AddWindow(this);
 }
@@ -427,7 +401,8 @@ void NativeWindow::PreviewFile(const std::string& path,
 void NativeWindow::CloseFilePreview() {
 }
 
-void NativeWindow::RequestToClosePage() {
+void NativeWindow::NotifyWindowCloseButtonClicked() {
+  // First ask the observers whether we want to close.
   bool prevent_default = false;
   for (NativeWindowObserver& observer : observers_)
     observer.WillCloseWindow(&prevent_default);
@@ -436,60 +411,13 @@ void NativeWindow::RequestToClosePage() {
     return;
   }
 
-  // Assume the window is not responding if it doesn't cancel the close and is
-  // not closed in 5s, in this way we can quickly show the unresponsive
-  // dialog when the window is busy executing some script withouth waiting for
-  // the unresponsive timeout.
-  if (window_unresposive_closure_.IsCancelled())
-    ScheduleUnresponsiveEvent(5000);
-
-  if (!web_contents())
-    // Already closed by renderer
-    return;
-
-  if (web_contents()->NeedToFireBeforeUnload())
-    web_contents()->DispatchBeforeUnload();
-  else
-    web_contents()->Close();
-}
-
-void NativeWindow::CloseContents(content::WebContents* source) {
-  if (!inspectable_web_contents_)
-    return;
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
-  inspectable_web_contents_ = nullptr;
-  Observe(nullptr);
-
+  // Then ask the observers how should we close the window.
   for (NativeWindowObserver& observer : observers_)
-    observer.WillDestroyNativeObject();
+    observer.OnCloseButtonClicked(&prevent_default);
+  if (prevent_default)
+    return;
 
-  // When the web contents is gone, close the window immediately, but the
-  // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers. If you
-  // want to free memory when the window is closed, you can do deleting by
-  // overriding the OnWindowClosed method in the observer.
   CloseImmediately();
-
-  // Do not sent "unresponsive" event after window is closed.
-  window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::RendererUnresponsive(content::WebContents* source) {
-  // Schedule the unresponsive shortly later, since we may receive the
-  // responsive event soon. This could happen after the whole application had
-  // blocked for a while.
-  // Also notice that when closing this event would be ignored because we have
-  // explicitly started a close timeout counter. This is on purpose because we
-  // don't want the unresponsive event to be sent too early when user is closing
-  // the window.
-  ScheduleUnresponsiveEvent(50);
-}
-
-void NativeWindow::RendererResponsive(content::WebContents* source) {
-  window_unresposive_closure_.Cancel();
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnRendererResponsive();
 }
 
 void NativeWindow::NotifyWindowClosed() {
@@ -578,11 +506,6 @@ void NativeWindow::NotifyWindowScrollTouchEnd() {
     observer.OnWindowScrollTouchEnd();
 }
 
-void NativeWindow::NotifyWindowScrollTouchEdge() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEdge();
-}
-
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);
@@ -651,89 +574,6 @@ std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
   return sk_region;
-}
-
-void NativeWindow::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
-  if (!transparent_)
-    return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
-  if (impl)
-    impl->SetBackgroundOpaque(false);
-}
-
-void NativeWindow::BeforeUnloadDialogCancelled() {
-  WindowList::WindowCloseCancelled(this);
-
-  // Cancel unresponsive event when window close is cancelled.
-  window_unresposive_closure_.Cancel();
-}
-
-void NativeWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (IsVisible())
-    return;
-
-  // When there is a non-empty first paint, resize the RenderWidget to force
-  // Chromium to draw.
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  view->Show();
-  view->SetSize(GetContentSize());
-
-  // Emit the ReadyToShow event in next tick in case of pending drawing work.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE,
-      base::Bind(&NativeWindow::NotifyReadyToShow, GetWeakPtr()));
-}
-
-bool NativeWindow::OnMessageReceived(const IPC::Message& message,
-                                     content::RenderFrameHost* rfh) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, rfh)
-    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
-                        UpdateDraggableRegions)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
-void NativeWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
-  // Draggable region is not supported for non-frameless window.
-  if (has_frame_)
-    return;
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
-}
-
-void NativeWindow::ScheduleUnresponsiveEvent(int ms) {
-  if (!window_unresposive_closure_.IsCancelled())
-    return;
-
-  window_unresposive_closure_.Reset(
-      base::Bind(&NativeWindow::NotifyWindowUnresponsive,
-                 weak_factory_.GetWeakPtr()));
-  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
-      FROM_HERE,
-      window_unresposive_closure_.callback(),
-      base::TimeDelta::FromMilliseconds(ms));
-}
-
-void NativeWindow::NotifyWindowUnresponsive() {
-  window_unresposive_closure_.Cancel();
-
-  if (!is_closed_ && !IsUnresponsiveEventSuppressed() && IsEnabled()) {
-    for (NativeWindowObserver& observer : observers_)
-      observer.OnRendererUnresponsive();
-  }
-}
-
-void NativeWindow::NotifyReadyToShow() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnReadyToShow();
 }
 
 }  // namespace atom

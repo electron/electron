@@ -9,7 +9,10 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/browser/window_list.h"
+#include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -20,11 +23,14 @@
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_view_host.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gl/gpu_switching_manager.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "atom/browser/native_window_views.h"
@@ -77,7 +83,8 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 
 BrowserWindow::BrowserWindow(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper,
-                             const mate::Dictionary& options) {
+                             const mate::Dictionary& options)
+    : weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
@@ -129,6 +136,8 @@ void BrowserWindow::Init(v8::Isolate* isolate,
                          mate::Handle<class WebContents> web_contents) {
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
+  api_web_contents_->AddObserver(this);
+  Observe(api_web_contents_->web_contents());
 
   // Keep a copy of the options for later use.
   mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
@@ -147,6 +156,10 @@ void BrowserWindow::Init(v8::Isolate* isolate,
   web_contents->SetOwnerWindow(window_.get());
   window_->set_is_offscreen_dummy(api_web_contents_->IsOffScreen());
 
+  // Tell the content module to initialize renderer widget with transparent
+  // mode.
+  ui::GpuSwitchingManager::SetTransparent(window_->transparent());
+
 #if defined(TOOLKIT_VIEWS)
   // Sets the window icon.
   mate::Handle<NativeImage> icon;
@@ -164,22 +177,107 @@ void BrowserWindow::Init(v8::Isolate* isolate,
   // window's JS wrapper gets initialized.
   if (!parent.IsEmpty())
     parent->child_windows_.Set(isolate, ID(), wrapper);
+
+  auto* host = web_contents->web_contents()->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->AddInputEventObserver(this);
 }
 
 BrowserWindow::~BrowserWindow() {
   if (!window_->IsClosed())
-    window_->CloseContents(nullptr);
+    window_->CloseImmediately();
+
+  api_web_contents_->RemoveObserver(this);
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
 }
 
-void BrowserWindow::WillCloseWindow(bool* prevent_default) {
-  *prevent_default = Emit("close");
+void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
+  switch (event.GetType()) {
+    case blink::WebInputEvent::kGestureScrollBegin:
+    case blink::WebInputEvent::kGestureScrollUpdate:
+    case blink::WebInputEvent::kGestureScrollEnd:
+      Emit("scroll-touch-edge");
+      break;
+    default:
+      break;
+  }
 }
 
-void BrowserWindow::WillDestroyNativeObject() {
+void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                          content::RenderViewHost* new_host) {
+  if (old_host)
+    old_host->GetWidget()->RemoveInputEventObserver(this);
+  if (new_host)
+    new_host->GetWidget()->AddInputEventObserver(this);
+}
+
+void BrowserWindow::RenderViewCreated(
+    content::RenderViewHost* render_view_host) {
+  if (!window_->transparent())
+    return;
+
+  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
+      render_view_host->GetProcess()->GetID(),
+      render_view_host->GetRoutingID());
+  if (impl)
+    impl->SetBackgroundOpaque(false);
+}
+
+void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
+  if (window_->IsVisible())
+    return;
+
+  // When there is a non-empty first paint, resize the RenderWidget to force
+  // Chromium to draw.
+  const auto view = web_contents()->GetRenderWidgetHostView();
+  view->Show();
+  view->SetSize(window_->GetContentSize());
+
+  // Emit the ReadyToShow event in next tick in case of pending drawing work.
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::Bind([](base::WeakPtr<BrowserWindow> self) {
+        if (self)
+          self->Emit("ready-to-show");
+      }, GetWeakPtr()));
+}
+
+void BrowserWindow::BeforeUnloadDialogCancelled() {
+  WindowList::WindowCloseCancelled(window_.get());
+  // Cancel unresponsive event when window close is cancelled.
+  window_unresponsive_closure_.Cancel();
+}
+
+void BrowserWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
+  // Schedule the unresponsive shortly later, since we may receive the
+  // responsive event soon. This could happen after the whole application had
+  // blocked for a while.
+  // Also notice that when closing this event would be ignored because we have
+  // explicitly started a close timeout counter. This is on purpose because we
+  // don't want the unresponsive event to be sent too early when user is closing
+  // the window.
+  ScheduleUnresponsiveEvent(50);
+}
+
+bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
+                                      content::RenderFrameHost* rfh) {
+  bool handled = true;
+  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(BrowserWindow, message, rfh)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_UpdateDraggableRegions,
+                        UpdateDraggableRegions)
+    IPC_MESSAGE_UNHANDLED(handled = false)
+  IPC_END_MESSAGE_MAP()
+  return handled;
+}
+
+void BrowserWindow::OnCloseContents() {
+  if (!web_contents())
+    return;
+  Observe(nullptr);
+
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
@@ -188,6 +286,48 @@ void BrowserWindow::WillDestroyNativeObject() {
     if (mate::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window_->CloseImmediately();
   }
+
+  // When the web contents is gone, close the window immediately, but the
+  // memory will not be freed until you call delete.
+  // In this way, it would be safe to manage windows via smart pointers. If you
+  // want to free memory when the window is closed, you can do deleting by
+  // overriding the OnWindowClosed method in the observer.
+  window_->CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresponsive_closure_.Cancel();
+}
+
+void BrowserWindow::OnRendererResponsive() {
+  window_unresponsive_closure_.Cancel();
+  Emit("responsive");
+}
+
+void BrowserWindow::WillCloseWindow(bool* prevent_default) {
+  *prevent_default = Emit("close");
+}
+
+void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
+  // When user tries to close the window by clicking the close button, we do
+  // not close the window immediately, instead we try to close the web page
+  // first, and when the web page is closed the window will also be closed.
+  *prevent_default = true;
+
+  // Assume the window is not responding if it doesn't cancel the close and is
+  // not closed in 5s, in this way we can quickly show the unresponsive
+  // dialog when the window is busy executing some script withouth waiting for
+  // the unresponsive timeout.
+  if (window_unresponsive_closure_.IsCancelled())
+    ScheduleUnresponsiveEvent(5000);
+
+  if (!web_contents())
+    // Already closed by renderer
+    return;
+
+  if (web_contents()->NeedToFireBeforeUnload())
+    web_contents()->DispatchBeforeUnload();
+  else
+    web_contents()->Close();
 }
 
 void BrowserWindow::OnWindowClosed() {
@@ -229,10 +369,6 @@ void BrowserWindow::OnWindowShow() {
 
 void BrowserWindow::OnWindowHide() {
   Emit("hide");
-}
-
-void BrowserWindow::OnReadyToShow() {
-  Emit("ready-to-show");
 }
 
 void BrowserWindow::OnWindowMaximize() {
@@ -279,10 +415,6 @@ void BrowserWindow::OnWindowScrollTouchEnd() {
   Emit("scroll-touch-end");
 }
 
-void BrowserWindow::OnWindowScrollTouchEdge() {
-  Emit("scroll-touch-edge");
-}
-
 void BrowserWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
@@ -301,14 +433,6 @@ void BrowserWindow::OnWindowEnterHtmlFullScreen() {
 
 void BrowserWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
-}
-
-void BrowserWindow::OnRendererUnresponsive() {
-  Emit("unresponsive");
-}
-
-void BrowserWindow::OnRendererResponsive() {
-  Emit("responsive");
 }
 
 void BrowserWindow::OnExecuteWindowsCommand(const std::string& command_name) {
@@ -1006,6 +1130,32 @@ void BrowserWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(ID());
+}
+
+void BrowserWindow::UpdateDraggableRegions(
+    content::RenderFrameHost* rfh,
+    const std::vector<DraggableRegion>& regions) {
+  window_->UpdateDraggableRegions(regions);
+}
+
+void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
+  if (!window_unresponsive_closure_.IsCancelled())
+    return;
+
+  window_unresponsive_closure_.Reset(
+      base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+      FROM_HERE,
+      window_unresponsive_closure_.callback(),
+      base::TimeDelta::FromMilliseconds(ms));
+}
+
+void BrowserWindow::NotifyWindowUnresponsive() {
+  window_unresponsive_closure_.Cancel();
+  if (!window_->IsClosed() && window_->IsEnabled() &&
+      !IsUnresponsiveEventSuppressed()) {
+    Emit("unresponsive");
+  }
 }
 
 // static

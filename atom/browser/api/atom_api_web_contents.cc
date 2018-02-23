@@ -89,6 +89,11 @@
 #include "ui/aura/window.h"
 #endif
 
+#if defined(OS_LINUX) || defined(OS_WIN)
+#include "content/public/common/renderer_preferences.h"
+#include "ui/gfx/font_render_params.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
 namespace {
@@ -412,6 +417,19 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
+#if defined(OS_LINUX) || defined(OS_WIN)
+  // Update font settings.
+  auto* prefs = web_contents->GetMutableRendererPrefs();
+  CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
+#endif
+
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
@@ -446,6 +464,8 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 WebContents::~WebContents() {
   // The destroy() is called.
   if (managed_web_contents()) {
+    managed_web_contents()->GetView()->SetDelegate(nullptr);
+
     // For webview we need to tell content module to do some cleanup work before
     // destroying it.
     if (type_ == WEB_VIEW)
@@ -457,7 +477,8 @@ WebContents::~WebContents() {
       DestroyWebContents(false /* async */);
     } else {
       if (type_ == BROWSER_WINDOW && owner_window()) {
-        owner_window()->CloseContents(nullptr);
+        for (ExtendedWebContentsObserver& observer : observers_)
+          observer.OnCloseContents();
       } else {
         DestroyWebContents(true /* async */);
       }
@@ -565,9 +586,10 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->CloseContents(source);
+  if (managed_web_contents())
+    managed_web_contents()->GetView()->SetDelegate(nullptr);
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnCloseContents();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -636,14 +658,12 @@ void WebContents::RendererUnresponsive(
     content::WebContents* source,
     const content::WebContentsUnresponsiveState& unresponsive_state) {
   Emit("unresponsive");
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->RendererUnresponsive(source);
 }
 
 void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->RendererResponsive(source);
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnRendererResponsive();
 }
 
 bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {

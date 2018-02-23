@@ -10,14 +10,15 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/trackable_object.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/key_weak_map.h"
-#include "native_mate/handle.h"
+#include "base/cancelable_callback.h"
+#include "base/memory/weak_ptr.h"
+#include "content/public/browser/render_widget_host.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/gfx/image/image.h"
 
 class GURL;
 
@@ -36,9 +37,10 @@ class NativeWindow;
 
 namespace api {
 
-class WebContents;
-
 class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
+                      public content::RenderWidgetHost::InputEventObserver,
+                      public content::WebContentsObserver,
+                      public ExtendedWebContentsObserver,
                       public NativeWindowObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
@@ -60,16 +62,32 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
                 const mate::Dictionary& options);
   ~BrowserWindow() override;
 
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
+
+  // content::WebContentsObserver:
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
+  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void DidFirstVisuallyNonEmptyPaint() override;
+  void BeforeUnloadDialogCancelled() override;
+  void OnRendererUnresponsive(content::RenderWidgetHost*) override;
+  bool OnMessageReceived(const IPC::Message& message,
+                         content::RenderFrameHost* rfh) override;
+
+  // ExtendedWebContentsObserver:
+  void OnCloseContents() override;
+  void OnRendererResponsive() override;
+
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
-  void WillDestroyNativeObject() override;
+  void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowEndSession() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
-  void OnReadyToShow() override;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -79,7 +97,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
   void OnWindowScrollTouchEnd() override;
-  void OnWindowScrollTouchEdge() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;
@@ -87,8 +104,6 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
-  void OnRendererUnresponsive() override;
-  void OnRendererResponsive() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
@@ -98,11 +113,16 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
+  base::WeakPtr<BrowserWindow> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
  private:
   void Init(v8::Isolate* isolate,
             v8::Local<v8::Object> wrapper,
             const mate::Dictionary& options,
             mate::Handle<class WebContents> web_contents);
+
   // APIs for NativeWindow.
   void Close();
   void Focus();
@@ -235,10 +255,25 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
+  // Called when the window needs to update its draggable region.
+  void UpdateDraggableRegions(
+      content::RenderFrameHost* rfh,
+      const std::vector<DraggableRegion>& regions);
+
+  // Schedule a notification unresponsive event.
+  void ScheduleUnresponsiveEvent(int ms);
+
+  // Dispatch unresponsive event to observers.
+  void NotifyWindowUnresponsive();
+
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;
 #endif
+
+  // Closure that would be called when window is unresponsive when closing,
+  // it should be cancelled when we can prove that the window is responsive.
+  base::CancelableClosure window_unresponsive_closure_;
 
   v8::Global<v8::Value> browser_view_;
   v8::Global<v8::Value> web_contents_;
@@ -249,6 +284,8 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   api::WebContents* api_web_contents_;
 
   std::unique_ptr<NativeWindow> window_;
+
+  base::WeakPtrFactory<BrowserWindow> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };
