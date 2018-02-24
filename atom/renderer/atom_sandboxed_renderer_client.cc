@@ -16,6 +16,8 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
@@ -163,9 +165,12 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
     return;
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string preload_script = command_line->GetSwitchValueASCII(
+  base::FilePath preload_script_path = command_line->GetSwitchValuePath(
       switches::kPreloadScript);
-  if (preload_script.empty())
+  if (preload_script_path.empty())
+    return;
+
+  if (!base::PathExists(preload_script_path))
     return;
 
   auto isolate = context->GetIsolate();
@@ -191,7 +196,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {
     binding,
-    mate::ConvertToV8(isolate, preload_script)
+    mate::ConvertToV8(isolate, preload_script_path.value())
   };
   // Execute the function with proper arguments
   ignore_result(func->Call(context, v8::Null(isolate), 2, args));
