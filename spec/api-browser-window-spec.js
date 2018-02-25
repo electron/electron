@@ -1186,7 +1186,24 @@ describe('BrowserWindow module', () => {
         w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
       })
 
-      it('exposes "exit" event to preload script', (done) => {
+      it('exposes ipcRenderer to preload script (path has special chars)', function (done) {
+        const preloadSpecialChars = path.join(fixtures, 'module', 'preload-sandboxæø åü.js')
+        ipcMain.once('answer', function (event, test) {
+          assert.equal(test, 'preload')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preloadSpecialChars
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
+
+      it('exposes "exit" event to preload script', function (done) {
         w.destroy()
         w = new BrowserWindow({
           show: false,
