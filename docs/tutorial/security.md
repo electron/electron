@@ -57,7 +57,7 @@ the [`webview`][web-view] tag and make sure to disable the `nodeIntegration`.
 ## Electron Security Warnings
 
 From Electron 2.0 on, developers will see warnings and recommendations printed
-to the developer console. They only show op when the binary's name is Electron,
+to the developer console. They only show up when the binary's name is Electron,
 indicating that a developer is currently looking at the console.
 
 You can force-enable or force-disable these warnings by setting
