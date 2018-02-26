@@ -102,15 +102,17 @@ bool NativeWindowViews::PreHandleMSG(
     case WM_GETOBJECT: {
       if (checked_for_a11y_support_) return false;
 
-      const DWORD obj_id = static_cast<DWORD>(l_param);
+      const DWORD obj_id = static_cast<DWORD>(static_cast<DWORD_PTR>(l_param));
 
-      if (obj_id != OBJID_CLIENT) {
+      const DWORD OBJID_WIN10_CLIENT = 0xFFFFFFE7;
+
+      if (obj_id != OBJID_CLIENT && obj_id != OBJID_WIN10_CLIENT) {
         return false;
       }
 
-      if (!IsScreenReaderActive()) {
-        return false;
-      }
+      //if (!IsScreenReaderActive()) {
+      //  return false;
+      //}
 
       checked_for_a11y_support_ = true;
 
