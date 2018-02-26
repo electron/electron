@@ -1672,8 +1672,12 @@ void NativeWindowMac::ToggleTabBar() {
 }
 
 void NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
-  if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
-    [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
+  if (window_.get() == window->GetNativeWindow()) {
+    NSLog(@"Error: AddTabbedWindow cannot be called by a window on itself.");
+  } else {
+    if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
+      [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
+    }
   }
 }
 
