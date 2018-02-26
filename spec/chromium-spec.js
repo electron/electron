@@ -268,6 +268,26 @@ describe('chromium feature', () => {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
+    it('disables webviewTag when node integration it is disabled on the parent window', (done) => {
+      let b
+      listener = (event) => {
+        assert.equal(event.data.isWebViewUndefined, true)
+        b.close()
+        done()
+      }
+      window.addEventListener('message', listener)
+
+      const windowUrl = require('url').format({
+        pathname: `${fixtures}/pages/window-opener-no-web-view-tag.html`,
+        protocol: 'file',
+        query: {
+          p: `${fixtures}/pages/window-opener-web-view.html`
+        },
+        slashes: true
+      })
+      b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
+    })
+
     it('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
       let b
       app.once('web-contents-created', (event, contents) => {
