@@ -170,9 +170,6 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   if (preload_script_path.empty())
     return;
 
-  if (!base::PathExists(preload_script_path))
-    return;
-
   auto isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
