@@ -71,6 +71,15 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
   return nullptr;
 }
 
+bool GetBooleanAndSetDefault(base::DictionaryValue& web_preferences,
+                             const std::string key, bool defaultVal) {
+  bool tmp = defaultVal;
+  if (!web_preferences.GetBoolean(key, &tmp)) {
+    web_preferences.SetBoolean(key, defaultVal);
+  }
+  return tmp;
+}
+
 // static
 void WebContentsPreferences::AppendExtraCommandLineSwitches(
     content::WebContents* web_contents, base::CommandLine* command_line) {
@@ -80,45 +89,53 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   base::DictionaryValue& web_preferences = self->web_preferences_;
 
-  bool b;
   // Check if plugins are enabled.
-  if (web_preferences.GetBoolean("plugins", &b) && b)
+  if (GetBooleanAndSetDefault(web_preferences, "plugins", false))
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // Experimental flags.
-  if (web_preferences.GetBoolean(options::kExperimentalFeatures, &b) && b)
+  if (GetBooleanAndSetDefault(web_preferences, options::kExperimentalFeatures,
+                              false))
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
-  if (web_preferences.GetBoolean(options::kExperimentalCanvasFeatures, &b) && b)
+
+  if (GetBooleanAndSetDefault(web_preferences,
+                              options::kExperimentalCanvasFeatures, false))
     command_line->AppendSwitch(::switches::kEnableExperimentalCanvasFeatures);
 
   // Check if we have node integration specified.
-  bool node_integration = true;
-  web_preferences.GetBoolean(options::kNodeIntegration, &node_integration);
+  bool node_integration = GetBooleanAndSetDefault(
+                            web_preferences,
+                            options::kNodeIntegration,
+                            true
+  );
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
   // Whether to enable node integration in Worker.
-  if (web_preferences.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
+  if (GetBooleanAndSetDefault(web_preferences,
+                              options::kNodeIntegrationInWorker, false))
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // Check if webview tag creation is enabled, default to nodeIntegration value.
   // TODO(kevinsawicki): Default to false in 2.0
-  bool webview_tag = node_integration;
-  web_preferences.GetBoolean(options::kWebviewTag, &webview_tag);
+  bool webview_tag = GetBooleanAndSetDefault(
+                        web_preferences,
+                        options::kWebviewTag,
+                        node_integration
+  );
   command_line->AppendSwitchASCII(switches::kWebviewTag,
                                   webview_tag ? "true" : "false");
 
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  bool sandbox = false;
-  if (web_preferences.GetBoolean("sandbox", &sandbox) && sandbox) {
+  if (GetBooleanAndSetDefault(web_preferences, "sandbox", false)) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(::switches::kNoSandbox);
   }
-  if (web_preferences.GetBoolean("nativeWindowOpen", &b) && b)
+  if (GetBooleanAndSetDefault(web_preferences, "nativeWindowOpen", false))
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
@@ -149,9 +166,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 
   // Run Electron APIs and preload script in isolated world
-  bool isolated;
-  if (web_preferences.GetBoolean(options::kContextIsolation, &isolated) &&
-      isolated)
+  if (GetBooleanAndSetDefault(web_preferences, options::kContextIsolation,
+                              false))
     command_line->AppendSwitch(switches::kContextIsolation);
 
   // --background-color.
@@ -248,21 +264,22 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (!self)
     return;
 
-  bool b;
-  if (self->web_preferences_.GetBoolean("javascript", &b))
-    prefs->javascript_enabled = b;
-  if (self->web_preferences_.GetBoolean("images", &b))
-    prefs->images_enabled = b;
-  if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
-    prefs->text_areas_are_resizable = b;
-  if (self->web_preferences_.GetBoolean("webgl", &b))
-    prefs->experimental_webgl_enabled = b;
-  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
-    prefs->web_security_enabled = b;
-    prefs->allow_running_insecure_content = !b;
-  }
-  if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
-    prefs->allow_running_insecure_content = b;
+  prefs->javascript_enabled = GetBooleanAndSetDefault(
+    self->web_preferences_, "javascript", true);
+  prefs->images_enabled = GetBooleanAndSetDefault(
+    self->web_preferences_, "images", true);
+  prefs->text_areas_are_resizable = GetBooleanAndSetDefault(
+    self->web_preferences_, "textAreasAreResizable", true);
+  prefs->experimental_webgl_enabled = GetBooleanAndSetDefault(
+    self->web_preferences_, "webgl", true);
+  bool webSecurity = GetBooleanAndSetDefault(
+    self->web_preferences_, "webSecurity", true);
+  prefs->allow_running_insecure_content = !webSecurity;
+  prefs->web_security_enabled = webSecurity;
+  prefs->allow_running_insecure_content = GetBooleanAndSetDefault(
+    self->web_preferences_, "allowRunningInsecureContent", false
+  );
+
   const base::DictionaryValue* fonts = nullptr;
   if (self->web_preferences_.GetDictionary("defaultFontFamily", &fonts)) {
     base::string16 font;
