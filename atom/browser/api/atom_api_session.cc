@@ -441,14 +441,15 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
 }
 
 void SetDevToolsNetworkEmulationClientIdInIO(
-    brightray::URLRequestContextGetter* context_getter,
+    brightray::URLRequestContextGetter* url_request_context_getter,
     const std::string& client_id) {
-  if (!context_getter)
+  if (!url_request_context_getter)
     return;
-  auto network_delegate =
-      static_cast<AtomNetworkDelegate*>(context_getter->network_delegate());
-  if (network_delegate)
-    network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
+  net::URLRequestContext* context =
+      url_request_context_getter->GetURLRequestContext();
+  AtomNetworkDelegate* network_delegate =
+      static_cast<AtomNetworkDelegate*>(context->network_delegate());
+  network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
 }
 
 }  // namespace
@@ -839,4 +840,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_session, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_session, Initialize)

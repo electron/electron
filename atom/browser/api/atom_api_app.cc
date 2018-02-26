@@ -1133,8 +1133,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   auto status = content::GetFeatureStatus();
-  return mate::ConvertToV8(isolate,
-                           status ? *status : base::DictionaryValue());
+  base::DictionaryValue temp;
+  return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
@@ -1342,4 +1342,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_app, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_app, Initialize)

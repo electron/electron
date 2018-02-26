@@ -31,10 +31,7 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   if (devnull < 0) return false;
 
   base::LaunchOptions options;
-
-  base::FileHandleMappingVector remap;
-  remap.push_back(std::make_pair(devnull, STDIN_FILENO));
-  options.fds_to_remap = &remap;
+  options.fds_to_remap.push_back(std::make_pair(devnull, STDIN_FILENO));
 
   base::Process process = base::LaunchProcess(argv, options);
   close(devnull);

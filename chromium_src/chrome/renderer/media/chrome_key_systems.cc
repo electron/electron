@@ -18,6 +18,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "media/base/eme_constants.h"
 #include "media/base/key_system_properties.h"
+#include "media/media_features.h"
 
 // #include "widevine_cdm_version.h" // In SHARED_INTERMEDIATE_DIR.
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
@@ -32,7 +33,7 @@
 using media::KeySystemProperties;
 using media::SupportedCodecs;
 
-#if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
 static const char kExternalClearKeyPepperType[] =
     "application/x-ppapi-clearkey-cdm";
 
@@ -264,15 +265,15 @@ static void AddPepperBasedWidevine(
 #endif  // defined(OS_CHROMEOS)
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
-#endif  // BUILDFLAG(ENABLE_PEPPER_CDMS)
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 void AddChromeKeySystems(
     std::vector<std::unique_ptr<KeySystemProperties>>* key_systems_properties) {
-#if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
   AddExternalClearKey(key_systems_properties);
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
   AddPepperBasedWidevine(key_systems_properties);
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
-#endif  // BUILDFLAG(ENABLE_PEPPER_CDMS)
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 }

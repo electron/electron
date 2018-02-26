@@ -7,9 +7,9 @@
 #include <set>
 #include <string>
 
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
-#include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -87,6 +87,11 @@
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
+#endif
+
+#if defined(OS_LINUX) || defined(OS_WIN)
+#include "content/public/common/renderer_preferences.h"
+#include "ui/gfx/font_render_params.h"
 #endif
 
 #include "atom/common/node_includes.h"
@@ -412,6 +417,19 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
+#if defined(OS_LINUX) || defined(OS_WIN)
+  // Update font settings.
+  auto* prefs = web_contents->GetMutableRendererPrefs();
+  CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
+      (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
+#endif
+
   // Save the preferences in C++.
   new WebContentsPreferences(web_contents, options);
 
@@ -446,6 +464,8 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 WebContents::~WebContents() {
   // The destroy() is called.
   if (managed_web_contents()) {
+    managed_web_contents()->GetView()->SetDelegate(nullptr);
+
     // For webview we need to tell content module to do some cleanup work before
     // destroying it.
     if (type_ == WEB_VIEW)
@@ -457,7 +477,8 @@ WebContents::~WebContents() {
       DestroyWebContents(false /* async */);
     } else {
       if (type_ == BROWSER_WINDOW && owner_window()) {
-        owner_window()->CloseContents(nullptr);
+        for (ExtendedWebContentsObserver& observer : observers_)
+          observer.OnCloseContents();
       } else {
         DestroyWebContents(true /* async */);
       }
@@ -565,9 +586,10 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
-
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->CloseContents(source);
+  if (managed_web_contents())
+    managed_web_contents()->GetView()->SetDelegate(nullptr);
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnCloseContents();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -636,14 +658,12 @@ void WebContents::RendererUnresponsive(
     content::WebContents* source,
     const content::WebContentsUnresponsiveState& unresponsive_state) {
   Emit("unresponsive");
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->RendererUnresponsive(source);
 }
 
 void WebContents::RendererResponsive(content::WebContents* source) {
   Emit("responsive");
-  if ((type_ == BROWSER_WINDOW || type_ == OFF_SCREEN) && owner_window())
-    owner_window()->RendererResponsive(source);
+  for (ExtendedWebContentsObserver& observer : observers_)
+    observer.OnRendererResponsive();
 }
 
 bool WebContents::HandleContextMenu(const content::ContextMenuParams& params) {
@@ -791,8 +811,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
-                              const base::string16& error_description,
-                              bool was_ignored_by_handler) {
+                              const base::string16& error_description) {
   bool is_main_frame = !render_frame_host->GetParent();
   Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
@@ -963,7 +982,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // For webview only #1 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
-// by api::Window.
+// by api::BrowserWindow.
 // For #1, the destructor will do the cleanup work and we only need to make
 // sure "destroyed" event is emitted. For #3, the content::WebContents will
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
@@ -1773,7 +1792,7 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
   if (owner_window())
-    return Window::From(isolate(), owner_window());
+    return BrowserWindow::From(isolate(), owner_window());
   else
     return v8::Null(isolate());
 }
@@ -2015,4 +2034,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_web_contents, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_web_contents, Initialize)

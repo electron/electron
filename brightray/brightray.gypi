@@ -31,7 +31,7 @@
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
-      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
+      'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',
       'MACOSX_DEPLOYMENT_TARGET': '10.9',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
       'USE_HEADER_MAP': 'NO',
@@ -137,6 +137,9 @@
             'cflags_cc': [
               '-D__STRICT_ANSI__',
               '-fno-rtti',
+            ],
+            'ldflags': [
+              '-Wl,-z,noexecstack',
             ],
           }],  # OS=="linux"
           ['OS=="mac"', {
@@ -291,6 +294,7 @@
             'ldflags': [
               '-flto=thin',
               '-fuse-ld=lld',  # Chromium Clang uses lld for doing LTO
+              '-Wl,--icf=all',
               '-Wl,--lto-O0',  # this could be removed in future; see https://codereview.chromium.org/2939923004
               '-Wl,-mllvm,-function-sections',
               '-Wl,-mllvm,-data-sections',
@@ -400,6 +404,7 @@
           4702, # unreachable code
           4715, # not all control paths return a value
           4819, # The file contains a character that cannot be represented in the current code page
+          4275, # non dll-interface class used as base for dll-interface class
         ],
       }],
     ],  # conditions

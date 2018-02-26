@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
@@ -140,4 +140,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_dialog, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_dialog, Initialize)

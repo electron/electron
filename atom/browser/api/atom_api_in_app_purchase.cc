@@ -112,4 +112,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_in_app_purchase, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_in_app_purchase, Initialize)

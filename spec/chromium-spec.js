@@ -147,6 +147,7 @@ describe('chromium feature', () => {
           }, () => done())
         }
       })
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')))
       w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
     })
 
@@ -184,6 +185,7 @@ describe('chromium feature', () => {
           })
         }
       })
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')))
       w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
     })
   })

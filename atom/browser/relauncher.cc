@@ -87,15 +87,12 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
                 internal::kRelauncherSyncFD != STDOUT_FILENO &&
                 internal::kRelauncherSyncFD != STDERR_FILENO,
                 "kRelauncherSyncFD must not conflict with stdio fds");
-
-  base::FileHandleMappingVector fd_map;
-  fd_map.push_back(
-      std::make_pair(pipe_write_fd.get(), internal::kRelauncherSyncFD));
 #endif
 
   base::LaunchOptions options;
 #if defined(OS_POSIX)
-  options.fds_to_remap = &fd_map;
+  options.fds_to_remap.push_back(
+      std::make_pair(pipe_write_fd.get(), internal::kRelauncherSyncFD));
   base::Process process = base::LaunchProcess(relaunch_argv, options);
 #elif defined(OS_WIN)
   base::Process process = base::LaunchProcess(

@@ -39,6 +39,16 @@ struct Converter<atom::TrayIcon::HighlightMode> {
         return true;
       }
     }
+
+    bool highlight;
+    if (ConvertFromV8(isolate, val, &highlight)) {
+      if (highlight)
+        *out = atom::TrayIcon::HighlightMode::SELECTION;
+      else
+        *out = atom::TrayIcon::HighlightMode::NEVER;
+      return true;
+    }
+
     return false;
   }
 };
@@ -240,4 +250,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_tray, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_tray, Initialize)

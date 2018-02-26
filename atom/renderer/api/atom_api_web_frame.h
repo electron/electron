@@ -38,6 +38,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
 
  private:
   explicit WebFrame(v8::Isolate* isolate);
+  explicit WebFrame(v8::Isolate* isolate, blink::WebLocalFrame* blink_frame);
   ~WebFrame() override;
 
   void SetName(const std::string& name);
@@ -92,6 +93,15 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);
   void ClearCache(v8::Isolate* isolate);
+
+  // Frame navigation
+  v8::Local<v8::Value> Opener() const;
+  v8::Local<v8::Value> Parent() const;
+  v8::Local<v8::Value> Top() const;
+  v8::Local<v8::Value> FirstChild() const;
+  v8::Local<v8::Value> NextSibling() const;
+  v8::Local<v8::Value> GetFrameForSelector(const std::string& selector) const;
+  v8::Local<v8::Value> FindFrameByName(const std::string& name) const;
 
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 

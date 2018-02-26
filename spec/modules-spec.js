@@ -28,7 +28,10 @@ describe('modules support', () => {
       })
     })
 
-    describe('ffi', () => {
+    // TODO(alexeykuzmin): Disabled during the Chromium 62 (Node.js 9) upgrade.
+    // Enable it back when "ffi" module supports Node.js 9.
+    // https://github.com/electron/electron/issues/11274
+    xdescribe('ffi', () => {
       before(function () {
         if (!nativeModulesEnabled || process.platform === 'win32') {
           this.skip()

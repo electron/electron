@@ -20,7 +20,7 @@ NodeDebugger::NodeDebugger(node::Environment* env)
 NodeDebugger::~NodeDebugger() {
 }
 
-void NodeDebugger::Start(node::NodePlatform* platform) {
+void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
   auto inspector = env_->inspector_agent();
   if (inspector == nullptr)
     return;
@@ -34,16 +34,16 @@ void NodeDebugger::Start(node::NodePlatform* platform) {
 #endif
   }
 
-  if (options.inspector_enabled()) {
-    // Set process._debugWaitConnect if --inspect-brk was specified to stop
-    // the debugger on the first line
-    if (options.wait_for_connect()) {
-      mate::Dictionary process(env_->isolate(), env_->process_object());
-      process.Set("_breakFirstLine", true);
-    }
-
-    inspector->Start(platform, nullptr, options);
+  // Set process._debugWaitConnect if --inspect-brk was specified to stop
+  // the debugger on the first line
+  if (options.wait_for_connect()) {
+    mate::Dictionary process(env_->isolate(), env_->process_object());
+    process.Set("_breakFirstLine", true);
   }
+
+  inspector->Start(static_cast<node::NodePlatform*>(platform), nullptr,
+                   options);
+  DCHECK(env_->inspector_agent()->IsStarted());
 }
 
 }  // namespace atom
