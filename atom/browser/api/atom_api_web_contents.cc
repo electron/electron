@@ -811,8 +811,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               const GURL& url,
                               int error_code,
-                              const base::string16& error_description,
-                              bool was_ignored_by_handler) {
+                              const base::string16& error_description) {
   bool is_main_frame = !render_frame_host->GetParent();
   Emit("did-fail-load", error_code, error_description, url, is_main_frame);
 }
@@ -2035,4 +2034,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_web_contents, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_web_contents, Initialize)

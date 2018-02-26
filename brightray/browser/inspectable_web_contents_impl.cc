@@ -608,7 +608,7 @@ void InspectableWebContentsImpl::GetPreferences(
 void InspectableWebContentsImpl::SetPreference(const std::string& name,
                                                const std::string& value) {
   DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->SetStringWithoutPathExpansion(name, value);
+  update.Get()->SetKey(name, base::Value(value));
 }
 
 void InspectableWebContentsImpl::RemovePreference(const std::string& name) {

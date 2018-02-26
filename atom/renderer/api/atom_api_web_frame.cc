@@ -20,6 +20,7 @@
 #include "third_party/WebKit/public/platform/WebCache.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
+#include "third_party/WebKit/public/web/WebImeTextSpan.h"
 #include "third_party/WebKit/public/web/WebInputMethodController.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptExecutionCallback.h"
@@ -263,7 +264,7 @@ void WebFrame::InsertText(const std::string& text) {
   web_frame_->FrameWidget()
             ->GetActiveWebInputMethodController()
             ->CommitText(blink::WebString::FromUTF8(text),
-                         blink::WebVector<blink::WebCompositionUnderline>(),
+                         blink::WebVector<blink::WebImeTextSpan>(),
                          blink::WebRange(),
                          0);
 }
@@ -428,4 +429,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_renderer_web_frame, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_renderer_web_frame, Initialize)

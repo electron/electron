@@ -10,7 +10,7 @@
 
     'variables': {
       # The minimum macOS SDK version to use.
-      'mac_sdk_min%': '10.10',
+      'mac_sdk_min%': '10.12',
 
       # Set ARM architecture version.
       'arm_version%': 7,
@@ -53,16 +53,16 @@
             ['target_arch=="arm"', {
               # sysroot needs to be an absolute path otherwise it generates
               # incorrect results when passed to pkg-config
-              'sysroot%': '<(source_root)/vendor/debian_jessie_arm-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_arm-sysroot',
             }],
             ['target_arch=="arm64"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_arm64-sysroot',
             }],
             ['target_arch=="ia32"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_i386-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_i386-sysroot',
             }],
             ['target_arch=="x64"', {
-              'sysroot%': '<(source_root)/vendor/debian_jessie_amd64-sysroot',
+              'sysroot%': '<(source_root)/vendor/debian_stretch_amd64-sysroot',
             }],
             ['target_arch=="mips64el"', {
               'sysroot%': '<(source_root)/vendor/debian_jessie_mips64-sysroot',
@@ -110,9 +110,6 @@
         ['CXX.host', '$(CXX)'],
       ],
       'target_defaults': {
-        'cflags_cc': [
-          '-std=c++11',
-        ],
         'xcode_settings': {
           'CC': '<(make_clang_dir)/bin/clang',
           'LDPLUSPLUS': '<(make_clang_dir)/bin/clang++',
@@ -122,15 +119,31 @@
 
           'GCC_C_LANGUAGE_STANDARD': 'c99',  # -std=c99
           'CLANG_CXX_LIBRARY': 'libc++',  # -stdlib=libc++
-          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',  # -std=c++11
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',  # -std=c++14
         },
         'target_conditions': [
-          ['_type in ["executable", "shared_library"]', {
+          ['OS=="mac" and _type in ["executable", "shared_library"]', {
             'xcode_settings': {
               # On some machines setting CLANG_CXX_LIBRARY doesn't work for
               # linker.
               'OTHER_LDFLAGS': [ '-stdlib=libc++' ],
             },
+          }],
+          ['OS=="linux" and _toolset=="target"', {
+            'cflags_cc': [
+              '-std=gnu++14',
+              '-nostdinc++',
+              '-isystem<(libchromiumcontent_src_dir)/buildtools/third_party/libc++/trunk/include',
+              '-isystem<(libchromiumcontent_src_dir)/buildtools/third_party/libc++abi/trunk/include',
+            ],
+            'ldflags': [
+              '-nostdlib++',
+            ],
+          }],
+          ['OS=="linux" and _toolset=="host"', {
+            'cflags_cc': [
+              '-std=gnu++14',
+            ],
           }],
         ],
       },
@@ -145,7 +158,7 @@
       ],
       'target_defaults': {
         'cflags_cc': [
-          '-std=c++11',
+          '-std=gnu++14',
         ],
       },
     }],
@@ -164,7 +177,11 @@
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="target"', {
-            'cflags': [
+            # Do not use 'cflags' to make sure sysroot is appended at last.
+            'cflags_cc': [
+              '--sysroot=<(sysroot)',
+            ],
+            'cflags_c': [
               '--sysroot=<(sysroot)',
             ],
             'ldflags': [

@@ -100,6 +100,11 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #else
   bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
 #endif
+#if defined(ARCH_CPU_ARM_FAMILY) && defined(ARCH_CPU_32_BITS)
+  // For 32bit ARM enabling stack printing would end up crashing.
+  // https://github.com/electron/electron/pull/11230#issuecomment-363232482
+  enable_stack_dumping = false;
+#endif
   if (enable_stack_dumping)
     base::debug::EnableInProcessStackDumping();
 

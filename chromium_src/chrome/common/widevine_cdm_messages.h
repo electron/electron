@@ -7,13 +7,13 @@
 #include <vector>
 
 #include "ipc/ipc_message_macros.h"
-#include "ppapi/features/features.h"
+#include "media/media_features.h"
 
 #define IPC_MESSAGE_START ChromeMsgStart
 
 // Renderer -> Browser messages.
 
-#if BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
 // Returns whether any internal plugin supporting |mime_type| is registered and
 // enabled. Does not determine whether the plugin can actually be instantiated
 // (e.g. whether it has all its dependencies).
@@ -26,6 +26,6 @@ IPC_SYNC_MESSAGE_CONTROL1_3(
     bool /* is_available */,
     std::vector<base::string16> /* additional_param_names */,
     std::vector<base::string16> /* additional_param_values */)
-#endif
+#endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 // Browser -> Renderer messages.
