@@ -84,11 +84,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
-  net::NetworkDelegate* network_delegate() const {
-    if (url_request_context_)
-      return url_request_context_->network_delegate();
-    return nullptr;
-  }
 
  private:
   Delegate* delegate_;
