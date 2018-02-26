@@ -62,11 +62,11 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   ~AtomNetworkDelegate() override;
 
   void SetSimpleListenerInIO(SimpleEvent type,
-                             const URLPatterns& patterns,
-                             const SimpleListener& callback);
+                             URLPatterns patterns,
+                             SimpleListener callback);
   void SetResponseListenerInIO(ResponseEvent type,
-                               const URLPatterns& patterns,
-                               const ResponseListener& callback);
+                               URLPatterns patterns,
+                               ResponseListener callback);
 
   void SetDevToolsNetworkEmulationClientId(const std::string& client_id);
 
