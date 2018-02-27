@@ -25,8 +25,10 @@ The `inAppPurchase` module has the following methods:
 
 * `productID` String - The id of the product to purchase. (the id of `com.example.app.product1` is `product1`).
 * `quantity` Integer (optional) - The number of items the user wants to purchase.
-* `callback` Function (optional) - The callback called when the payment is added to the PaymentQueue. (You should add a listener with `inAppPurchase.addTransactionsListener` to get the transaction status).
-  * `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.
+* `callback` Function (optional) - The callback called when the payment is added to the PaymentQueue.
+* `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.
+
+You should listen for the `transactions-updated` event as soon as possible in your app and before to call `purchaseProduct`. 
 
 ### `inAppPurchase.canMakePayments()`
 
