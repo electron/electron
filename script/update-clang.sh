@@ -24,6 +24,7 @@ STAMP_FILE="${LLVM_DIR}/../llvm-build/cr_build_revision"
 LLVM_REPO_URL=${LLVM_URL:-https://llvm.org/svn/llvm-project}
 
 CDS_URL=https://commondatastorage.googleapis.com/chromium-browser-clang
+S3_URL=https://s3.amazonaws.com/gh-contractor-zcbenz/clang
 
 
 # Die if any command dies, error on undefined variable expansions.
@@ -52,8 +53,14 @@ mkdir -p "${LLVM_BUILD_DIR}"
 CDS_FILES=("clang-${PACKAGE_VERSION}.tgz")
 CDS_OUT_DIR=$(mktemp -d -t clang_download.XXXXXX)
 if [ "${OS}" = "Linux" ]; then
-  CDS_FILES+=("llvmgold-${PACKAGE_VERSION}.tgz")
-  CDS_SUBDIR="Linux_x64"
+  ARCH="$(uname -m)"
+  if [ "${ARCH}" = "aarch64" ]; then
+    CDS_URL="${S3_URL}"
+    CDS_SUBDIR="arm64"
+  else
+    CDS_FILES+=("llvmgold-${PACKAGE_VERSION}.tgz")
+    CDS_SUBDIR="Linux_x64"
+  fi
 elif [ "${OS}" = "Darwin" ]; then
   CDS_SUBDIR="Mac"
 fi
