@@ -15,7 +15,7 @@ Emitted when one or more transactions have been updated.
 Returns:
 
 * `event` Event
-* `transactions` ([Transaction[]](structures/transaction.md) - Array of transactions.
+* `transactions` Transaction[] - Array of [`Transaction`](structures/transaction) objects.
 
 ## Methods
 
