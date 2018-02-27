@@ -61,6 +61,9 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 
+  // Set preference value to given bool if user did not provide value
+  bool SetDefaultBoolIfUndefined(const std::string key, bool val);
+
   // Get preferences value as integer possibly coercing it from a string
   bool GetInteger(const std::string& attributeName, int* intValue);
 
