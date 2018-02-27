@@ -1672,14 +1672,14 @@ void NativeWindowMac::ToggleTabBar() {
   }
 }
 
-void NativeWindowMac::AddTabbedWindow(NativeWindow* window, mate::Arguments* args) {
+bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   if (window_.get() == window->GetNativeWindow()) {
-    args->ThrowError("AddTabbedWindow cannot be called by a window on itself");
+    return false;
   } else {
-    if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
+    if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)])
       [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
-    }
   }
+  return true;
 }
 
 void NativeWindowMac::SetRenderWidgetHostOpaque(bool opaque) {

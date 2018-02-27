@@ -1084,7 +1084,9 @@ void BrowserWindow::ToggleTabBar() {
 
 void BrowserWindow::AddTabbedWindow(NativeWindow* window,
   mate::Arguments* args) {
-  window_->AddTabbedWindow(window, args);
+  const bool windowAdded = window_->AddTabbedWindow(window);
+  if (!windowAdded)
+    args->ThrowError("AddTabbedWindow cannot be called by a window on itself");
 }
 
 void BrowserWindow::SetVibrancy(mate::Arguments* args) {
