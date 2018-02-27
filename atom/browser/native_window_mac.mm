@@ -918,6 +918,7 @@ NativeWindowMac::NativeWindowMac(
   }
 
   if (transparent()) {
+    NSLog(@"Setting transparent");
     // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
@@ -1671,9 +1672,9 @@ void NativeWindowMac::ToggleTabBar() {
   }
 }
 
-void NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
+void NativeWindowMac::AddTabbedWindow(NativeWindow* window, mate::Arguments* args) {
   if (window_.get() == window->GetNativeWindow()) {
-    NSLog(@"Error: AddTabbedWindow cannot be called by a window on itself.");
+    args->ThrowError("AddTabbedWindow cannot be called by a window on itself");
   } else {
     if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)]) {
       [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];

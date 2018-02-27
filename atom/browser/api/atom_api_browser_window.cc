@@ -1082,8 +1082,13 @@ void BrowserWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BrowserWindow::AddTabbedWindow(NativeWindow* window) {
-  window_->AddTabbedWindow(window);
+void BrowserWindow::AddTabbedWindow(mate::Arguments* args) {
+  NativeWindow* window;
+  if (!args->GetNext(&window)) {
+    args->ThrowError("Insert good error message here");
+    return;
+  }
+  window_->AddTabbedWindow(window, args);
 }
 
 void BrowserWindow::SetVibrancy(mate::Arguments* args) {
