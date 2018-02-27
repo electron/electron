@@ -1082,12 +1082,7 @@ void BrowserWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BrowserWindow::AddTabbedWindow(mate::Arguments* args) {
-  NativeWindow* window;
-  if (!args->GetNext(&window)) {
-    args->ThrowError("Insert good error message here");
-    return;
-  }
+void BrowserWindow::AddTabbedWindow(NativeWindow* window, mate::Arguments* args) {
   window_->AddTabbedWindow(window, args);
 }
 
