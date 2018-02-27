@@ -336,7 +336,8 @@ void NativeWindow::MoveTabToNewWindow() {
 void NativeWindow::ToggleTabBar() {
 }
 
-void NativeWindow::AddTabbedWindow(NativeWindow* window, mate::Arguments* args) {
+void NativeWindow::AddTabbedWindow(NativeWindow* window,
+  mate::Arguments* args) {
 }
 
 void NativeWindow::SetVibrancy(const std::string& filename) {

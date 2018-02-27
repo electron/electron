@@ -1082,7 +1082,8 @@ void BrowserWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BrowserWindow::AddTabbedWindow(NativeWindow* window, mate::Arguments* args) {
+void BrowserWindow::AddTabbedWindow(NativeWindow* window,
+  mate::Arguments* args) {
   window_->AddTabbedWindow(window, args);
 }
 
