@@ -336,7 +336,8 @@ void NativeWindow::MoveTabToNewWindow() {
 void NativeWindow::ToggleTabBar() {
 }
 
-void NativeWindow::AddTabbedWindow(NativeWindow* window) {
+bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
+  return true;  // for non-Mac platforms
 }
 
 void NativeWindow::SetVibrancy(const std::string& filename) {
