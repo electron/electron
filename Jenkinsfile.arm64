@@ -1,0 +1,34 @@
+pipeline {
+  agent {
+    docker {
+      image 'electronbuilds/arm64v8:0.0.1'
+    }
+  }
+  environment {
+    TARGET_ARCH='arm64'
+    DISPLAY=':99.0'
+  }
+  stages {
+    stage('Bootstrap') {
+      steps {
+        sh 'script/bootstrap.py -v --dev --target_arch=$TARGET_ARCH'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'script/build.py -c D --ninja-path /usr/local/ninja/ninja'
+      }
+    }
+    stage('Test') {
+      steps {
+        sh '/etc/init.d/xvfb start'
+        sh 'script/test.py --ci'
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs()
+    }
+  }
+}
