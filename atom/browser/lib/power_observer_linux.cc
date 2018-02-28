@@ -54,16 +54,22 @@ void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
     LOG(WARNING) << kLogindServiceName << " not available";
     return;
   }
-  // listen sleep
+  // Connect to PrepareForShutdown/PrepareForSleep signals
+  logind_->ConnectToSignal(kLogindManagerInterface, "PrepareForShutdown",
+                           base::Bind(&PowerObserverLinux::OnPrepareForShutdown,
+                                      weak_ptr_factory_.GetWeakPtr()),
+                           base::Bind(&PowerObserverLinux::OnSignalConnected,
+                                      weak_ptr_factory_.GetWeakPtr()));
   logind_->ConnectToSignal(kLogindManagerInterface, "PrepareForSleep",
                            base::Bind(&PowerObserverLinux::OnPrepareForSleep,
                                       weak_ptr_factory_.GetWeakPtr()),
                            base::Bind(&PowerObserverLinux::OnSignalConnected,
                                       weak_ptr_factory_.GetWeakPtr()));
-  TakeSleepLock();
+  // Take sleep inhibit lock
+  BlockSleep();
 }
 
-void PowerObserverLinux::TakeSleepLock() {
+void PowerObserverLinux::BlockSleep() {
   dbus::MethodCall sleep_inhibit_call(kLogindManagerInterface, "Inhibit");
   dbus::MessageWriter inhibit_writer(&sleep_inhibit_call);
   inhibit_writer.AppendString("sleep");                               // what
@@ -78,6 +84,40 @@ void PowerObserverLinux::TakeSleepLock() {
                                  weak_ptr_factory_.GetWeakPtr(), &sleep_lock_));
 }
 
+void PowerObserverLinux::UnblockSleep() {
+  sleep_lock_.reset();
+}
+
+void PowerObserverLinux::BlockShutdown() {
+  if (shutdown_lock_.is_valid()) {
+    LOG(WARNING) << "Trying to subscribe to shutdown multiple times";
+    return;
+  }
+  dbus::MethodCall shutdown_inhibit_call(kLogindManagerInterface, "Inhibit");
+  dbus::MessageWriter inhibit_writer(&shutdown_inhibit_call);
+  inhibit_writer.AppendString("shutdown");                 // what
+  inhibit_writer.AppendString(lock_owner_name_);           // who
+  inhibit_writer.AppendString("Ensure a clean shutdown");  // why
+  inhibit_writer.AppendString("delay");                    // mode
+  logind_->CallMethod(
+      &shutdown_inhibit_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+      base::Bind(&PowerObserverLinux::OnInhibitResponse,
+                 weak_ptr_factory_.GetWeakPtr(), &shutdown_lock_));
+}
+
+void PowerObserverLinux::UnblockShutdown() {
+  if (!shutdown_lock_.is_valid()) {
+    LOG(WARNING)
+        << "Trying to unsubscribe to shutdown without being subscribed";
+    return;
+  }
+  shutdown_lock_.reset();
+}
+
+void PowerObserverLinux::SetShutdownHandler(base::Callback<bool()> handler) {
+  should_shutdown_ = std::move(handler);
+}
+
 void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
                                            dbus::Response* response) {
   dbus::MessageReader reader(response);
@@ -86,17 +126,33 @@ void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
 
 void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
   dbus::MessageReader reader(signal);
-  bool status;
-  if (!reader.PopBool(&status)) {
+  bool suspending;
+  if (!reader.PopBool(&suspending)) {
     LOG(ERROR) << "Invalid signal: " << signal->ToString();
     return;
   }
-  if (status) {
+  if (suspending) {
     OnSuspend();
-    sleep_lock_.reset();
+    UnblockSleep();
   } else {
-    TakeSleepLock();
+    BlockSleep();
     OnResume();
+  }
+}
+
+void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
+  dbus::MessageReader reader(signal);
+  bool shutting_down;
+  if (!reader.PopBool(&shutting_down)) {
+    LOG(ERROR) << "Invalid signal: " << signal->ToString();
+    return;
+  }
+  if (shutting_down) {
+    if (!should_shutdown_ || should_shutdown_.Run()) {
+      // The user didn't try to prevent shutdown. Release the lock and allow the
+      // shutdown to continue normally.
+      shutdown_lock_.reset();
+    }
   }
 }
 

@@ -15,7 +15,7 @@ If you want to show Notifications from a renderer process you should use the [HT
 Process: [Main](../glossary.md#main-process)
 
 `Notification` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `Notification` with native properties as set by the `options`.
 
@@ -39,7 +39,7 @@ Returns `Boolean` - Whether or not desktop notifications are supported on the cu
   * `replyPlaceholder` String (optional) _macOS_ - The placeholder to write in the inline reply input field.
   * `sound` String (optional) _macOS_ - The name of the sound file to play when the notification is shown.
   * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
-
+  * `closeButtonText` String (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
 
 ### Instance Events
 

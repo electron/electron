@@ -11,7 +11,7 @@
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
-#include "net/cookies/cookie_monster.h"
+#include "net/cookies/cookie_store.h"
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
@@ -48,9 +48,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() {
       return nullptr;
     }
-    virtual net::CookieMonsterDelegate* CreateCookieDelegate() {
-      return nullptr;
-    }
     virtual std::string GetUserAgent();
     virtual std::unique_ptr<net::URLRequestJobFactory>
     CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
@@ -60,6 +57,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
+    virtual void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                                    bool removed,
+                                    net::CookieStore::ChangeCause cause) {}
   };
 
   URLRequestContextGetter(
@@ -73,6 +73,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
 
+  // net::CookieStore::CookieChangedCallback implementation.
+  void OnCookieChanged(const net::CanonicalCookie& cookie,
+                       net::CookieStore::ChangeCause cause);
+
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
@@ -80,11 +84,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
-  net::NetworkDelegate* network_delegate() const {
-    if (url_request_context_)
-      return url_request_context_->network_delegate();
-    return nullptr;
-  }
 
  private:
   Delegate* delegate_;
@@ -104,6 +103,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
+  std::unique_ptr<net::CookieStore::CookieChangedSubscription>
+      cookie_change_sub_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

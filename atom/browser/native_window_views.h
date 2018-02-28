@@ -126,15 +126,21 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
 
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+  void UpdateDraggableRegions(
+      const std::vector<DraggableRegion>& regions) override;
+
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
 #elif defined(USE_X11)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  void SetEnabled(bool enable);
+  void SetEnabled(bool enable) override;
 
   views::Widget* widget() const { return window_.get(); }
+  SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if defined(OS_WIN)
   TaskbarHost& taskbar_host() { return taskbar_host_; }
@@ -183,8 +189,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // NativeWindow:
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
@@ -288,6 +292,10 @@ class NativeWindowViews : public NativeWindow,
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
+
+  // For custom drag, the whole window is non-draggable and the draggable region
+  // has to been explicitly provided.
+  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // How many times the Disable has been called.
   int disable_count_;

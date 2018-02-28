@@ -7,7 +7,7 @@ const path = require('path')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
-const {app, BrowserWindow, ipcMain} = remote
+const {app, BrowserWindow, Menu, ipcMain} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -155,6 +155,24 @@ describe('app module', () => {
       appProcess.on('close', function (code) {
         assert.equal(code, 123)
         done()
+      })
+    })
+
+    it('exits gracefully on macos', function (done) {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      const electronPath = remote.getGlobal('process').execPath
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+      appProcess.stdout.once('data', () => {
+        // The apple script will try to terminate the app
+        // If there's an error terminating the app, then it will print to stderr
+        ChildProcess.exec('osascript -e \'quit app "Electron"\'', (err, stdout, stderr) => {
+          assert(!err)
+          assert(!stderr.trim())
+          done()
+        })
       })
     })
   })
@@ -616,6 +634,54 @@ describe('app module', () => {
     })
   })
 
+  describe('app launch through uri', () => {
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
+
+    it('does not launch for blacklisted argument', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher=cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })
+    })
+
+    it('launches successfully for multiple uris in cmd args', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with code 123.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'http://electronjs.org', 'electron-test://testdata'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })
+    })
+
+    it('does not launch for encoded space', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher%20"cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })
+    })
+
+    it('launches successfully for argnames similar to blacklisted ones', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // inspect is blacklisted, but inspector should work, and app launch should succeed
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--inspector'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })
+    })
+  })
+
   describe('getFileIcon() API', () => {
     const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico')
     const sizes = {
@@ -813,6 +879,20 @@ describe('app module', () => {
       assert.throws(() => {
         app.disableDomainBlockingFor3DAPIs()
       }, /before app is ready/)
+    })
+  })
+
+  describe('dock.setMenu', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('keeps references to the menu', () => {
+      app.dock.setMenu(new Menu())
+      const v8Util = process.atomBinding('v8_util')
+      v8Util.requestGarbageCollectionForTesting()
     })
   })
 })

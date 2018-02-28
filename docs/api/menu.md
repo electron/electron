@@ -59,10 +59,10 @@ will become properties of the constructed menu items.
 
 The `menu` object has the following instance methods:
 
-#### `menu.popup([browserWindow, options, callback])`
+#### `menu.popup(options)`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
-* `options` Object (optional)
+* `options` Object
+  * `window` [BrowserWindow](browser-window.md) (optional) - Default is the focused window.
   * `x` Number (optional) - Default is the current mouse cursor position.
     Must be declared if `y` is declared.
   * `y` Number (optional) - Default is the current mouse cursor position.
@@ -70,7 +70,7 @@ The `menu` object has the following instance methods:
   * `positioningItem` Number (optional) _macOS_ - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
-* `callback` Function (optional) - Called when menu is closed.
+  * `callback` Function (optional) - Called when menu is closed.
 
 Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
 
@@ -98,6 +98,29 @@ Returns `MenuItem` the item with the specified `id`
 * `menuItem` [MenuItem](menu-item.md)
 
 Inserts the `menuItem` to the `pos` position of the menu.
+
+### Instance Events
+
+Objects created with `new Menu` emit the following events:
+
+**Note:** Some events are only available on specific operating systems and are
+labeled as such.
+
+#### Event: 'menu-will-show'
+
+Returns:
+
+* `event` Event
+
+Emitted when `menu.popup()` is called.
+
+#### Event: 'menu-will-close'
+
+Returns:
+
+* `event` Event
+
+Emitted when a popup is closed either manually or with `menu.closePopup()`.
 
 ### Instance Properties
 
@@ -236,7 +259,7 @@ menu.append(new MenuItem({label: 'MenuItem2', type: 'checkbox', checked: true}))
 
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault()
-  menu.popup(remote.getCurrentWindow())
+  menu.popup({window: remote.getCurrentWindow()})
 }, false)
 </script>
 ```

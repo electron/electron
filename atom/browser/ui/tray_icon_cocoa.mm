@@ -33,6 +33,7 @@ const CGFloat kVerticalTitleMargin = 2;
   base::scoped_nsobject<NSString> title_;
   base::scoped_nsobject<NSMutableAttributedString> attributedTitle_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
+  base::scoped_nsobject<NSTrackingArea> trackingArea_;
 }
 
 @end  // @interface StatusItemView
@@ -61,12 +62,12 @@ const CGFloat kVerticalTitleMargin = 2;
     [self updateDimensions];
 
     // Add NSTrackingArea for listening to mouseEnter, mouseExit, and mouseMove events
-    auto trackingArea = [[[NSTrackingArea alloc]
+    trackingArea_.reset([[NSTrackingArea alloc]
         initWithRect:[self bounds]
              options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveAlways
                owner:self
-            userInfo:nil] autorelease];
-    [self addTrackingArea:trackingArea];
+            userInfo:nil]);
+    [self addTrackingArea:trackingArea_];
   }
   return self;
 }
@@ -78,6 +79,11 @@ const CGFloat kVerticalTitleMargin = 2;
 }
 
 - (void)removeItem {
+  // Turn off tracking events to prevent crash
+  if (trackingArea_) {
+    [self removeTrackingArea:trackingArea_];
+    trackingArea_.reset();
+  }
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
   statusItem_.reset();
 }
@@ -455,7 +461,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
   return bounds;
 }
 
-void TrayIconCocoa::MenuWillClose() {
+void TrayIconCocoa::OnMenuWillClose() {
   [status_item_view_ setNeedsDisplay:YES];
 }
 

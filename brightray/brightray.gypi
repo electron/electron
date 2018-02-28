@@ -31,7 +31,7 @@
       'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
-      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
+      'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',
       'MACOSX_DEPLOYMENT_TARGET': '10.9',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
       'USE_HEADER_MAP': 'NO',
@@ -138,6 +138,9 @@
               '-D__STRICT_ANSI__',
               '-fno-rtti',
             ],
+            'ldflags': [
+              '-Wl,-z,noexecstack',
+            ],
           }],  # OS=="linux"
           ['OS=="mac"', {
             'defines': [
@@ -231,10 +234,8 @@
         'msvs_settings': {
           'VCCLCompilerTool': {
             'RuntimeLibrary': '2',  # /MD (nondebug DLL)
-            # 1, optimizeMinSpace, Minimize Size (/O1)
-            'Optimization': '1',
-            # 2, favorSize - Favor small code (/Os)
-            'FavorSizeOrSpeed': '2',
+            'Optimization': '2',  # /O2
+            'WholeProgramOptimization': 'true',  # /GL
             # See http://msdn.microsoft.com/en-us/library/47238hez(VS.71).aspx
             'InlineFunctionExpansion': '2',  # 2 = max
             # See http://msdn.microsoft.com/en-us/library/2kxx5t2c(v=vs.80).aspx
@@ -246,6 +247,9 @@
             # "/Oy /Oy-" and warnings about overriding.
             'AdditionalOptions': ['/Oy-', '/d2guard4'],
           },
+          'VCLibrarianTool': {
+            'LinkTimeCodeGeneration': 'true',  # /LTCG
+          },
           'VCLinkerTool': {
             # Control Flow Guard is a security feature in Windows
             # 8.1 and higher designed to prevent exploitation of
@@ -256,6 +260,9 @@
             'AdditionalOptions': ['/guard:cf'],
             # Turn off incremental linking to save binary size.
             'LinkIncremental': '1',  # /INCREMENTAL:NO
+            'LinkTimeCodeGeneration': '1',  # /LTCG
+            'OptimizeReferences': 2,  # /OPT:REF
+            'EnableCOMDATFolding': 2,  # /OPT:ICF
           },
         },
         'conditions': [
@@ -280,6 +287,19 @@
               '-Wl,--gc-sections',
             ],
           }],  # OS=="linux"
+          ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
+            'cflags': [
+              '-flto=thin',
+            ],
+            'ldflags': [
+              '-flto=thin',
+              '-fuse-ld=lld',  # Chromium Clang uses lld for doing LTO
+              '-Wl,--icf=all',
+              '-Wl,--lto-O0',  # this could be removed in future; see https://codereview.chromium.org/2939923004
+              '-Wl,-mllvm,-function-sections',
+              '-Wl,-mllvm,-data-sections',
+            ],
+          }],
         ],
       },  # Release_Base
       'conditions': [
@@ -384,6 +404,7 @@
           4702, # unreachable code
           4715, # not all control paths return a value
           4819, # The file contains a character that cannot be represented in the current code page
+          4275, # non dll-interface class used as base for dll-interface class
         ],
       }],
     ],  # conditions

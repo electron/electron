@@ -87,17 +87,6 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
 
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication*)sender {
-  atom::Browser* browser = atom::Browser::Get();
-  if (browser->is_quiting()) {
-    return NSTerminateNow;
-  } else {
-    // System started termination.
-    atom::Browser::Get()->Quit();
-    return NSTerminateCancel;
-  }
-}
-
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)theApplication
                     hasVisibleWindows:(BOOL)flag {
   atom::Browser* browser = atom::Browser::Get();

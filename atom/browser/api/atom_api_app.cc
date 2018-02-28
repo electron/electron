@@ -897,11 +897,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   }
 
   if (!override_argv) {
-#if defined(OS_WIN)
-    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
-#else
     const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
-#endif
     return relauncher::RelaunchApp(argv);
   }
 
@@ -1137,8 +1133,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   auto status = content::GetFeatureStatus();
-  return mate::ConvertToV8(isolate,
-                           status ? *status : base::DictionaryValue());
+  base::DictionaryValue temp;
+  return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
@@ -1260,13 +1256,16 @@ void App::BuildPrototype(
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
-      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       #if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       #endif
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
+      #if defined(MAS_BUILD)
+      .SetMethod("startAccessingSecurityScopedResource",
+                 &App::StartAccessingSecurityScopedResource)
+      #endif
+      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 
 }  // namespace api
@@ -1343,4 +1342,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_app, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_app, Initialize)

@@ -15,7 +15,7 @@ if sys.platform == 'linux2':
     # powerMonitor interaction with org.freedesktop.login1 service. The
     # dbus_mock module takes care of setting up the fake server with mock,
     # while also setting DBUS_SYSTEM_BUS_ADDRESS environment variable, which
-    # will be picked up by electron. 
+    # will be picked up by electron.
     try:
         import lib.dbus_mock
     except ImportError:
@@ -62,6 +62,7 @@ def main():
   try:
     if args.use_instrumented_asar:
       install_instrumented_asar_file(resources_path)
+    os.environ["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "1"
     subprocess.check_call([electron, 'spec'] + sys.argv[1:])
   except subprocess.CalledProcessError as e:
     returncode = e.returncode

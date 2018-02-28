@@ -112,7 +112,8 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (IsSandboxed(web_contents)) {
+  bool sandbox = false;
+  if (web_preferences.GetBoolean("sandbox", &sandbox) && sandbox) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(::switches::kNoSandbox);
@@ -134,6 +135,17 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kPreloadScript, preload_path);
     else
       LOG(ERROR) << "preload url must be file:// protocol.";
+  }
+
+  // Custom args for renderer process
+  base::Value* customArgs;
+  if ((web_preferences.Get(options::kCustomArgs, &customArgs))
+      && (customArgs->is_list())) {
+    for (const base::Value& customArg : customArgs->GetList()) {
+      if (customArg.is_string()) {
+        command_line->AppendArg(customArg.GetString());
+      }
+    }
   }
 
   // Run Electron APIs and preload script in isolated world
@@ -224,25 +236,6 @@ bool WebContentsPreferences::IsPreferenceEnabled(
   bool bool_value = false;
   web_preferences.GetBoolean(attribute_name, &bool_value);
   return bool_value;
-}
-
-bool WebContentsPreferences::IsSandboxed(content::WebContents* web_contents) {
-  return IsPreferenceEnabled("sandbox", web_contents);
-}
-
-bool WebContentsPreferences::UsesNativeWindowOpen(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("nativeWindowOpen", web_contents);
-}
-
-bool WebContentsPreferences::IsPluginsEnabled(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("plugins", web_contents);
-}
-
-bool WebContentsPreferences::DisablePopups(
-    content::WebContents* web_contents) {
-  return IsPreferenceEnabled("disablePopups", web_contents);
 }
 
 // static

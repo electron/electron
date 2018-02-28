@@ -105,6 +105,9 @@ class Browser : public WindowListObserver {
   LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
 
 #if defined(OS_MACOSX)
+  // Set the handler which decides whether to shutdown.
+  void SetShutdownHandler(base::Callback<bool()> handler);
+
   // Hide the application.
   void Hide();
 
@@ -270,14 +273,9 @@ class Browser : public WindowListObserver {
   // The browser is being shutdown.
   bool is_shutdown_;
 
-  std::string version_override_;
   std::string name_override_;
 
   int badge_count_ = 0;
-
-#if defined(OS_WIN)
-  base::string16 app_user_model_id_;
-#endif
 
 #if defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

@@ -90,9 +90,7 @@ void DevToolsManagerDelegate::StartHttpHandler() {
       CreateSocketFactory(),
       std::string(),
       base::FilePath(),
-      base::FilePath(),
-      std::string(),
-      GetBrightrayUserAgent());
+      base::FilePath());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate()

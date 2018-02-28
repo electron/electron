@@ -10,7 +10,7 @@ This document describes the process for releasing a new version of Electron.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
-notes.  The notes generated should help you determine if this is a major, minor,
+notes. The notes generated should help you determine if this is a major, minor,
 patch, or beta version change. Read the
 [Version Change Rules](../tutorial/electron-versioning.md#semver) for more information.
 
@@ -18,7 +18,7 @@ patch, or beta version change. Read the
 The prepare release script will do the following:
 1. Check if a release is already in process and if so it will halt.
 2. Create a release branch.
-3. Bump the version number in several files.  See [this bump commit] for an example.
+3. Bump the version number in several files. See [this bump commit] for an example.
 4. Create a draft release on GitHub with auto-generated release notes.
 5. Push the release branch.
 6. Call the APIs to run the release builds.
@@ -57,7 +57,7 @@ To monitor the build progress, see the following pages:
 
 - [mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity) for Mac App Store
 - [mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity) for OS X
-- [circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [circleci.com/gh/electron/electron](https://circleci.com/gh/electron) for Linux
 - [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
 
 ## Compile release notes
@@ -164,31 +164,14 @@ This release is published to [npm](https://www.npmjs.com/package/electron) under
 1. Uncheck the `prerelease` checkbox if you're publishing a stable release; leave it checked for beta releases.
 1. Click 'Save draft'. **Do not click 'Publish release'!**
 1. Wait for all builds to pass before proceeding.
-1. You can run `npm run release --validateRelease` to verify that all of the
+1. You can run `npm run release -- --validateRelease` to verify that all of the
 required files have been created for the release.
 
-## Merge temporary branch
-Once the release builds have finished, merge the `release` branch back into
-the source release branch using the `merge-release` script.
-If the branch cannot be successfully merged back this script will automatically
-rebase the `release` branch and push the changes which will trigger the release
-builds again, which means you will need to wait for the release builds to run
-again before proceeding.
-
-### Merging back into master
-```sh
-npm run merge-release -- master
-```
-
-### Merging back into old release branch
-```sh
-npm run merge-release -- 1-7-x
-```
 
 ## Publish the release
 
-Once the merge has finished successfully, run the `release` script
-via `npm run release` to finish the release process.  This script will do the
+Once the release builds have finished, run the `release` script
+via `npm run release` to finish the release process. This script will do the
 following:
 1. Build the project to validate that the correct version number is being released.
 2. Download the binaries and generate the node headers and the .lib linker used

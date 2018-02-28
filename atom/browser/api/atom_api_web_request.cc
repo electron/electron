@@ -37,6 +37,26 @@ namespace atom {
 
 namespace api {
 
+namespace {
+
+template<typename Method, typename Event, typename Listener>
+void CallNetworkDelegateMethod(
+    brightray::URLRequestContextGetter* url_request_context_getter,
+    Method method,
+    Event type,
+    URLPatterns patterns,
+    Listener listener) {
+  // Force creating network delegate.
+  net::URLRequestContext* context =
+      url_request_context_getter->GetURLRequestContext();
+  // Then call the method.
+  AtomNetworkDelegate* network_delegate =
+      static_cast<AtomNetworkDelegate*>(context->network_delegate());
+  (network_delegate->*method)(type, std::move(patterns), std::move(listener));
+}
+
+}  // namespace
+
 WebRequest::WebRequest(v8::Isolate* isolate,
                        AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
@@ -74,16 +94,15 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
     return;
   }
 
-  auto url_request_context_getter =
+  brightray::URLRequestContextGetter* url_request_context_getter =
       browser_context_->url_request_context_getter();
   if (!url_request_context_getter)
     return;
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(method,
-                 base::Unretained(static_cast<AtomNetworkDelegate*>(
-                     url_request_context_getter->network_delegate())),
-                 type, patterns, listener));
+      base::Bind(&CallNetworkDelegateMethod<Method, Event, Listener>,
+                 base::RetainedRef(url_request_context_getter),
+                 method, type, std::move(patterns), std::move(listener)));
 }
 
 // static

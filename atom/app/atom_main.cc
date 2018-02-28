@@ -4,7 +4,8 @@
 
 #include "atom/app/atom_main.h"
 
-#include <stdlib.h>
+#include <cstdlib>
+#include <vector>
 
 #if defined(OS_WIN)
 #include <windows.h>  // windows.h must be included first
@@ -15,9 +16,11 @@
 #include <tchar.h>
 
 #include "atom/app/atom_main_delegate.h"
+#include "atom/app/command_line_args.h"
 #include "atom/common/crash_reporter/win/crash_service_main.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
@@ -35,7 +38,9 @@
 
 namespace {
 
+#ifdef ENABLE_RUN_AS_NODE
 const auto kRunAsNode = "ELECTRON_RUN_AS_NODE";
+#endif
 
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
@@ -52,18 +57,23 @@ bool IsEnvSet(const char* name) {
 
 #if defined(OS_WIN)
 int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
-  int argc = 0;
-  wchar_t** wargv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+  struct Arguments {
+    int argc = 0;
+    wchar_t** argv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
-  bool run_as_node = IsEnvSet(kRunAsNode);
+    ~Arguments() { LocalFree(argv); }
+  } arguments;
+
+  if (!arguments.argv)
+    return -1;
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
   static const auto kCI = "ELECTRON_CI";
   bool is_ci = IsEnvSet(kCI);
   if (!is_ci) {
-    for (int i = 0; i < argc; ++i) {
-      if (!_wcsicmp(wargv[i], L"--ci")) {
+    for (int i = 0; i < arguments.argc; ++i) {
+      if (!_wcsicmp(arguments.argv[i], L"--ci")) {
         is_ci = true;
         _putenv_s(kCI, "1");  // set flag for child processes
         break;
@@ -81,43 +91,15 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   }
 #endif
 
+#ifdef ENABLE_RUN_AS_NODE
+  bool run_as_node = IsEnvSet(kRunAsNode);
+#else
+  bool run_as_node = false;
+#endif
+
   // Make sure the output is printed to console.
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
     base::RouteStdioToConsole(false);
-
-  // Convert argv to to UTF8
-  char** argv = new char*[argc];
-  for (int i = 0; i < argc; i++) {
-    // Compute the size of the required buffer
-    DWORD size = WideCharToMultiByte(CP_UTF8,
-                                     0,
-                                     wargv[i],
-                                     -1,
-                                     NULL,
-                                     0,
-                                     NULL,
-                                     NULL);
-    if (size == 0) {
-      // This should never happen.
-      fprintf(stderr, "Could not convert arguments to utf8.");
-      exit(1);
-    }
-    // Do the actual conversion
-    argv[i] = new char[size];
-    DWORD result = WideCharToMultiByte(CP_UTF8,
-                                       0,
-                                       wargv[i],
-                                       -1,
-                                       argv[i],
-                                       size,
-                                       NULL,
-                                       NULL);
-    if (result == 0) {
-      // This should never happen.
-      fprintf(stderr, "Could not convert arguments to utf8.");
-      exit(1);
-    }
-  }
 
 #ifndef DEBUG
   // Chromium has its own TLS subsystem which supports automatic destruction
@@ -138,14 +120,27 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   });
 #endif
 
+#ifdef ENABLE_RUN_AS_NODE
   if (run_as_node) {
-    // Now that argv conversion is done, we can finally start.
+    std::vector<char*> argv(arguments.argc);
+    std::transform(
+        arguments.argv, arguments.argv + arguments.argc, argv.begin(),
+        [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
+
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
-    return atom::NodeMain(argc, argv);
-  } else if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
+    auto ret = atom::NodeMain(argv.size(), argv.data());
+    std::for_each(argv.begin(), argv.end(), free);
+    return ret;
+  }
+#endif
+
+  if (IsEnvSet("ELECTRON_INTERNAL_CRASH_SERVICE")) {
     return crash_service::Main(cmd);
   }
+
+  if (!atom::CheckCommandLineArguments(arguments.argc, arguments.argv))
+    return -1;
 
   sandbox::SandboxInterfaceInfo sandbox_info = {0};
   content::InitializeSandboxInfo(&sandbox_info);
@@ -154,34 +149,37 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  atom::AtomCommandLine::Init(argc, argv);
-  atom::AtomCommandLine::InitW(argc, wargv);
+  atom::AtomCommandLine::Init(arguments.argc, arguments.argv);
   return content::ContentMain(params);
 }
 
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+#ifdef ENABLE_RUN_AS_NODE
   if (IsEnvSet(kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
-    return atom::NodeMain(argc, const_cast<char**>(argv));
+    return atom::NodeMain(argc, argv);
   }
+#endif
 
   atom::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
   params.argc = argc;
-  params.argv = argv;
+  params.argv = const_cast<const char**>(argv);
   atom::AtomCommandLine::Init(argc, argv);
   return content::ContentMain(params);
 }
 
 #else  // defined(OS_LINUX)
 
-int main(int argc, const char* argv[]) {
+int main(int argc, char* argv[]) {
+#ifdef ENABLE_RUN_AS_NODE
   if (IsEnvSet(kRunAsNode)) {
-    return AtomInitializeICUandStartNode(argc, const_cast<char**>(argv));
+    return AtomInitializeICUandStartNode(argc, argv);
   }
+#endif
 
   return AtomMain(argc, argv);
 }

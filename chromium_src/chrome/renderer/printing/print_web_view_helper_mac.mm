@@ -22,7 +22,7 @@ using blink::WebLocalFrame;
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
     WebLocalFrame* frame) {
-  PdfMetafileSkia metafile(PDF_SKIA_DOCUMENT_TYPE);
+  PdfMetafileSkia metafile(SkiaDocumentType::PDF);
   CHECK(metafile.Init());
 
   int page_number = params.page_number;
@@ -60,7 +60,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
                          is_print_ready_metafile_sent_;
 
   if (render_to_draft) {
-    draft_metafile.reset(new PdfMetafileSkia(PDF_SKIA_DOCUMENT_TYPE));
+    draft_metafile.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
     CHECK(draft_metafile->Init());
     initial_render_metafile = draft_metafile.get();
   }
@@ -80,7 +80,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
       DCHECK(!draft_metafile.get());
       draft_metafile =
           print_preview_context_.metafile()->GetMetafileForCurrentPage(
-              PDF_SKIA_DOCUMENT_TYPE);
+              SkiaDocumentType::PDF);
     }
   }
   return PreviewPageRendered(page_number, draft_metafile.get());

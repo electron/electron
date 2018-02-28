@@ -95,7 +95,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   if (modification_is_removal)
     host_zoom_dictionary->RemoveWithoutPathExpansion(change.host, nullptr);
   else
-    host_zoom_dictionary->SetDoubleWithoutPathExpansion(change.host, level);
+    host_zoom_dictionary->SetKey(change.host, base::Value(level));
 }
 
 void ZoomLevelDelegate::ExtractPerHostZoomLevels(

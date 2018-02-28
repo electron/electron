@@ -4,6 +4,10 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+`webFrame` export of the electron module is an instance of the `WebFrame`
+class representing the top frame of the current `BrowserWindow`. Sub-frames can
+be retrieved by certain properties and methods (e.g. `webFrame.firstChild`).
+
 An example of zooming current page to 200%.
 
 ```javascript
@@ -14,7 +18,7 @@ webFrame.setZoomFactor(2)
 
 ## Methods
 
-The `webFrame` module has the following methods:
+The `WebFrame` class has the following instance methods:
 
 ### `webFrame.setZoomFactor(factor)`
 
@@ -38,14 +42,6 @@ limits of 300% and 50% of original size, respectively.
 ### `webFrame.getZoomLevel()`
 
 Returns `Number` - The current zoom level.
-
-### `webFrame.setZoomLevelLimits(minimumLevel, maximumLevel)`
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-**Deprecated:** Call `setVisualZoomLevelLimits` instead to set the visual zoom
-level limits. This method will be removed in Electron 2.0.
 
 ### `webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -222,3 +218,49 @@ memory (i.e. you have navigated from a super heavy page to a mostly empty one,
 and intend to stay there).
 
 [spellchecker]: https://github.com/atom/node-spellchecker
+
+### `webFrame.getFrameForSelector(selector)`
+
+* `selector` String - CSS selector for a frame element.
+
+Returns `WebFrame` - The frame element in `webFrame's` document selected by
+`selector`, `null` would be returned if `selector` does not select a frame or
+if the frame is not in the current renderer process.
+
+### `webFrame.findFrameByName(name)`
+
+* `name` String
+
+Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
+would be returned if there's no such frame or if the frame is not in the current
+renderer process.
+
+## Properties
+
+### `webFrame.top`
+
+A `WebFrame` representing top frame in frame hierarchy to which `webFrame`
+belongs, the property would be `null` if top frame is not in the current
+renderer process.
+
+### `webFrame.opener`
+
+A `WebFrame` representing the frame which opened `webFrame`, the property would
+be `null` if there's no opener or opener is not in the current renderer process.
+
+### `webFrame.parent`
+
+A `WebFrame` representing parent frame of `webFrame`, the property would be
+`null` if `webFrame` is top or parent is not in the current renderer process.
+
+### `webFrame.firstChild`
+
+A `WebFrame` representing the first child frame of `webFrame`, the property
+would be `null` if `webFrame` has no children or if first child is not in the
+current renderer process.
+
+### `webFrame.nextSibling`
+
+A `WebFrame` representing next sibling frame, the property would be `null` if
+`webFrame` is the last frame its parent or if the next sibling is not in the
+current renderer process.

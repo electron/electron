@@ -29,7 +29,6 @@
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
-#include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -100,8 +99,7 @@ URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
       net::DISK_CACHE,
       net::CACHE_BACKEND_DEFAULT,
       cache_path,
-      max_size,
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::CACHE));
+      max_size);
 }
 
 std::unique_ptr<net::CertVerifier>
@@ -156,6 +154,21 @@ URLRequestContextGetter::URLRequestContextGetter(
 URLRequestContextGetter::~URLRequestContextGetter() {
 }
 
+void URLRequestContextGetter::OnCookieChanged(
+    const net::CanonicalCookie& cookie,
+    net::CookieStore::ChangeCause cause) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+
+  if (!delegate_)
+    return;
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(
+          &Delegate::NotifyCookieChange, base::Unretained(delegate_), cookie,
+          !(cause == net::CookieStore::ChangeCause::INSERTED), cause));
+}
+
 net::HostResolver* URLRequestContextGetter::host_resolver() {
   return url_request_context_->host_resolver();
 }
@@ -184,12 +197,17 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     auto cookie_config = content::CookieStoreConfig(
         cookie_path,
         content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-        nullptr,
-        delegate_->CreateCookieDelegate());
+        nullptr);
     cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
     std::unique_ptr<net::CookieStore> cookie_store =
         content::CreateCookieStore(cookie_config);
     storage_->set_cookie_store(std::move(cookie_store));
+    // Cookie store will outlive notifier by order of declaration
+    // in the header.
+    cookie_change_sub_ =
+        url_request_context_->cookie_store()->AddCallbackForAllChanges(
+            base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
+
     storage_->set_channel_id_service(base::MakeUnique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
 

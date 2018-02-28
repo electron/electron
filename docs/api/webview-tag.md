@@ -528,7 +528,7 @@ can be obtained by subscribing to [`found-in-page`](webview-tag.md#event-found-i
 ### `<webview>.stopFindInPage(action)`
 
 * `action` String - Specifies the action to take place when ending
-  [`<webview>.findInPage`](webview-tag.md#webviewtagfindinpage) request.
+  [`<webview>.findInPage`](#webviewfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -579,7 +579,7 @@ Send an asynchronous message to renderer process via `channel`, you can also
 send arbitrary arguments. The renderer process can handle the message by
 listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
 
-See [webContents.send](web-contents.md#webcontentssendchannel-args) for
+See [webContents.send](web-contents.md#contentssendchannel-arg1-arg2-) for
 examples.
 
 ### `<webview>.sendInputEvent(event)`
@@ -588,7 +588,7 @@ examples.
 
 Sends an input `event` to the page.
 
-See [webContents.sendInputEvent](web-contents.md#webcontentssendinputeventevent)
+See [webContents.sendInputEvent](web-contents.md#contentssendinputeventevent)
 for detailed description of `event` object.
 
 ### `<webview>.setZoomFactor(factor)`
@@ -752,7 +752,7 @@ Returns:
   * `finalUpdate` Boolean
 
 Fired when a result is available for
-[`webview.findInPage`](webview-tag.md#webviewtagfindinpage) request.
+[`webview.findInPage`](#webviewfindinpagetext-options) request.
 
 ```javascript
 const webview = document.querySelector('webview')

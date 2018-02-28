@@ -21,8 +21,17 @@
 #include "base/logging.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
+#include "ipc/ipc_features.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+
+#if BUILDFLAG(IPC_MESSAGE_LOG_ENABLED)
+#define IPC_MESSAGE_MACROS_LOG_ENABLED
+#include "content/public/common/content_ipc_logging.h"
+#define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
+  content::RegisterIPCLogger(msg_id, logger)
+#include "atom/common/common_message_generator.h"
+#endif
 
 namespace atom {
 
@@ -86,9 +95,15 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   logging::SetLogItems(true, false, true, false);
 
   // Enable convient stack printing.
-  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
 #if defined(DEBUG) && defined(OS_LINUX)
-  enable_stack_dumping = true;
+  bool enable_stack_dumping = true;
+#else
+  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
+#endif
+#if defined(ARCH_CPU_ARM_FAMILY) && defined(ARCH_CPU_32_BITS)
+  // For 32bit ARM enabling stack printing would end up crashing.
+  // https://github.com/electron/electron/pull/11230#issuecomment-363232482
+  enable_stack_dumping = false;
 #endif
   if (enable_stack_dumping)
     base::debug::EnableInProcessStackDumping();

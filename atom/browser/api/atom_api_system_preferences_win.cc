@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <iomanip>
+
 #include "atom/browser/api/atom_api_system_preferences.h"
 
 #include "atom/common/color_util.h"
@@ -26,10 +28,10 @@ bool SystemPreferences::IsAeroGlassEnabled() {
 }
 
 std::string hexColorDWORDToRGBA(DWORD color) {
+  DWORD rgba = color << 8 | color >> 24;
   std::ostringstream stream;
-  stream << std::hex << color;
-  std::string hexColor = stream.str();
-  return hexColor.substr(2) + hexColor.substr(0, 2);
+  stream << std::hex << std::setw(8) << std::setfill('0') << rgba;
+  return stream.str();
 }
 
 std::string SystemPreferences::GetAccentColor() {

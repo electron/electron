@@ -221,16 +221,16 @@ Converter<scoped_refptr<ResourceRequestBody>>::ToV8(
       post_data_dict->Set("bytes", std::move(bytes));
     } else if (type == ResourceRequestBody::Element::TYPE_FILE) {
       post_data_dict->SetString("type", "file");
-      post_data_dict->SetStringWithoutPathExpansion(
-          "filePath", element.path().AsUTF8Unsafe());
+      post_data_dict->SetKey("filePath",
+                             base::Value(element.path().AsUTF8Unsafe()));
       post_data_dict->SetInteger("offset", static_cast<int>(element.offset()));
       post_data_dict->SetInteger("length", static_cast<int>(element.length()));
       post_data_dict->SetDouble(
           "modificationTime", element.expected_modification_time().ToDoubleT());
     } else if (type == ResourceRequestBody::Element::TYPE_FILE_FILESYSTEM) {
       post_data_dict->SetString("type", "fileSystem");
-      post_data_dict->SetStringWithoutPathExpansion(
-          "fileSystemURL", element.filesystem_url().spec());
+      post_data_dict->SetKey("fileSystemURL",
+                             base::Value(element.filesystem_url().spec()));
       post_data_dict->SetInteger("offset", static_cast<int>(element.offset()));
       post_data_dict->SetInteger("length", static_cast<int>(element.length()));
       post_data_dict->SetDouble(

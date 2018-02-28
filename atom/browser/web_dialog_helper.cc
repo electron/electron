@@ -53,7 +53,13 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   ~FileSelectHelper() override {}
 
-  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths) {
+#if defined(MAS_BUILD)
+  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths,
+                        const std::vector<std::string>& bookmarks)
+#else
+  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths)
+#endif
+  {
     std::vector<content::FileChooserFileInfo> file_info;
     if (result) {
       for (auto& path : paths) {
@@ -73,7 +79,13 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     OnFilesSelected(file_info);
   }
 
-  void OnSaveDialogDone(bool result, const base::FilePath& path) {
+#if defined(MAS_BUILD)
+  void OnSaveDialogDone(bool result, const base::FilePath& path,
+                        const std::string& bookmark)
+#else
+  void OnSaveDialogDone(bool result, const base::FilePath& path)
+#endif
+  {
     std::vector<content::FileChooserFileInfo> file_info;
     if (result) {
       content::FileChooserFileInfo info;

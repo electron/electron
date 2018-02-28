@@ -189,7 +189,7 @@ feature. We are still not aware of the security implications of exposing some
 electron renderer APIs to the preload script, but here are some things to
 consider before rendering untrusted content:
 
-- A preload script can accidentaly leak privileged APIs to untrusted code.
+- A preload script can accidentally leak privileged APIs to untrusted code.
 - Some bug in V8 engine may allow malicious code to access the renderer preload
   APIs, effectively granting full access to the system through the `remote`
   module.

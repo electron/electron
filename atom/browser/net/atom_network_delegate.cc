@@ -108,7 +108,7 @@ void ToDictionary(base::DictionaryValue* details,
   std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
-    dict->SetStringWithoutPathExpansion(it.name(), it.value());
+    dict->SetKey(it.name(), base::Value(it.value()));
   details->Set("requestHeaders", std::move(dict));
 }
 
@@ -227,22 +227,22 @@ AtomNetworkDelegate::~AtomNetworkDelegate() {
 
 void AtomNetworkDelegate::SetSimpleListenerInIO(
     SimpleEvent type,
-    const URLPatterns& patterns,
-    const SimpleListener& callback) {
+    URLPatterns patterns,
+    SimpleListener callback) {
   if (callback.is_null())
     simple_listeners_.erase(type);
   else
-    simple_listeners_[type] = { patterns, callback };
+    simple_listeners_[type] = { std::move(patterns), std::move(callback) };
 }
 
 void AtomNetworkDelegate::SetResponseListenerInIO(
     ResponseEvent type,
-    const URLPatterns& patterns,
-    const ResponseListener& callback) {
+    URLPatterns patterns,
+    ResponseListener callback) {
   if (callback.is_null())
     response_listeners_.erase(type);
   else
-    response_listeners_[type] = { patterns, callback };
+    response_listeners_[type] = { std::move(patterns), std::move(callback) };
 }
 
 void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(

@@ -30,11 +30,11 @@ class Clipboard {
   static base::string16 ReadText(mate::Arguments* args);
   static void WriteText(const base::string16& text, mate::Arguments* args);
 
-  static base::string16 ReadRtf(mate::Arguments* args);
-  static void WriteRtf(const std::string& text, mate::Arguments* args);
+  static base::string16 ReadRTF(mate::Arguments* args);
+  static void WriteRTF(const std::string& text, mate::Arguments* args);
 
-  static base::string16 ReadHtml(mate::Arguments* args);
-  static void WriteHtml(const base::string16& html, mate::Arguments* args);
+  static base::string16 ReadHTML(mate::Arguments* args);
+  static void WriteHTML(const base::string16& html, mate::Arguments* args);
 
   static v8::Local<v8::Value> ReadBookmark(mate::Arguments* args);
   static void WriteBookmark(const base::string16& title,

@@ -187,7 +187,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Examples:
      "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
 
-*  `IP_LITERAL "/" PREFIX_LENGHT_IN_BITS`
+* `IP_LITERAL "/" PREFIX_LENGTH_IN_BITS`
 
    Match any URL that is to an IP literal that falls between the
    given range. IP range is specified using CIDR notation.
@@ -195,7 +195,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Examples:
      "192.168.1.1/16", "fefe:13::abc/33".
 
-*  `<local>`
+* `<local>`
 
    Match local addresses. The meaning of `<local>` is whether the
    host matches one of: "127.0.0.1", "::1", "localhost".
@@ -319,7 +319,7 @@ Clears the host resolver cache.
 
 #### `ses.allowNTLMCredentialsForDomains(domains)`
 
-* `domains` String - A comma-seperated list of servers for which
+* `domains` String - A comma-separated list of servers for which
   integrated authentication is enabled.
 
 Dynamically sets whether to always send credentials for HTTP NTLM or Negotiate
@@ -357,8 +357,6 @@ Returns `String` - The user agent for this session.
 * `identifier` String - Valid UUID.
 * `callback` Function
   * `result` Buffer - Blob data.
-
-Returns `Blob` - The blob data associated with the `identifier`.
 
 #### `ses.createInterruptedDownload(options)`
 

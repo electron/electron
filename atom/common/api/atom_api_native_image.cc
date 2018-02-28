@@ -456,7 +456,7 @@ void NativeImage::AddRepresentation(const mate::Dictionary& options) {
   // Re-initialize image when first representation is added to an empty image
   if (skia_rep_added && IsEmpty()) {
     gfx::Image image(image_skia);
-    image_.SwapRepresentations(&image);
+    image_ = std::move(image);
   }
 }
 
@@ -583,10 +583,7 @@ void NativeImage::BuildPrototype(
       .SetMethod("resize", &NativeImage::Resize)
       .SetMethod("crop", &NativeImage::Crop)
       .SetMethod("getAspectRatio", &NativeImage::GetAspectRatio)
-      .SetMethod("addRepresentation", &NativeImage::AddRepresentation)
-      // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-      .SetMethod("toPng", &NativeImage::ToPNG)
-      .SetMethod("toJpeg", &NativeImage::ToJPEG);
+      .SetMethod("addRepresentation", &NativeImage::AddRepresentation);
 }
 
 }  // namespace api
@@ -639,4 +636,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_native_image, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_native_image, Initialize)

@@ -135,8 +135,8 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
 
   // Create the global environment.
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(js_env_->context());
+  node::Environment* env = node_bindings_->CreateEnvironment(
+      js_env_->context(), js_env_->platform());
   node_env_.reset(new NodeEnvironment(env));
 
   // Enable support for v8 inspector
@@ -154,9 +154,12 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 }
 
 int AtomBrowserMainParts::PreCreateThreads() {
-  fake_browser_process_->SetApplicationLocale(
-      l10n_util::GetApplicationLocale(""));
-  return brightray::BrowserMainParts::PreCreateThreads();
+  const int result = brightray::BrowserMainParts::PreCreateThreads();
+  if (!result) {
+    fake_browser_process_->SetApplicationLocale(
+        brightray::BrowserClient::Get()->GetApplicationLocale());
+  }
+  return result;
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
