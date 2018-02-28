@@ -733,6 +733,12 @@ describe('BrowserWindow module', () => {
         done()
       })
     })
+
+    it('throws when called on itself', () => {
+      assert.throws(() => {
+        w.addTabbedWindow(w)
+      }, /AddTabbedWindow cannot be called by a window on itself./)
+    })
   })
 
   describe('BrowserWindow.setVibrancy(type)', () => {

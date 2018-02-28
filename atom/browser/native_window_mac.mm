@@ -918,7 +918,6 @@ NativeWindowMac::NativeWindowMac(
   }
 
   if (transparent()) {
-    NSLog(@"Setting transparent");
     // Setting the background color to clear will also hide the shadow.
     [window_ setBackgroundColor:[NSColor clearColor]];
   }
