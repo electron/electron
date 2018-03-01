@@ -60,6 +60,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   // implemetation. This is a known and wontFix issue in webrtc (see:
   // http://code.google.com/p/webrtc/issues/detail?id=3373)
   options.set_disable_effects(false);
+  options.set_allow_directx_capturer(true);
 #endif
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
