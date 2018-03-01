@@ -109,7 +109,7 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
   * `event` String
   * `userInfo` Object
 
-Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter` for local defaults.
+Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
 
 ### `systemPreferences.unsubscribeNotification(id)` _macOS_
