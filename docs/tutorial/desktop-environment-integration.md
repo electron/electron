@@ -22,7 +22,7 @@ See the [Progress Bar documentation](progress-bar.md).
 
 ## Unity Launcher
 
-See the [Unity Launcher documentation](unity-launcher.md).
+See the [Unity Launcher documentation][unity-launcher].
 
 ## Represented File for macOS Window
 
@@ -31,3 +31,5 @@ See the [Represented File documentation](represented-file.md).
 ## Dragging files out of the window
 
 See the [Native File Drag & Drop documentation](native-file-drag-drop.md).
+
+[unity-launcher]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
