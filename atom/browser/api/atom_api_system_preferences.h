@@ -26,6 +26,14 @@ namespace atom {
 
 namespace api {
 
+#if defined(OS_MACOSX)
+enum NotificationCenterKind {
+  kNSDistributedNotificationCenter = 0,
+  kNSNotificationCenter,
+  kNSWorkspaceNotificationCenter,
+};  
+#endif
+
 class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
     , public BrowserObserver
@@ -63,14 +71,19 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   void PostNotification(const std::string& name,
                         const base::DictionaryValue& user_info);
-  void PostLocalNotification(const std::string& name,
-                             const base::DictionaryValue& user_info);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
+  void PostLocalNotification(const std::string& name,
+                             const base::DictionaryValue& user_info);
   int SubscribeLocalNotification(const std::string& name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
+  void PostWorkspaceNotification(const std::string& name,
+                             const base::DictionaryValue& user_info);
+  int SubscribeWorkspaceNotification(const std::string& name,
+                                 const NotificationCallback& callback);
+  void UnsubscribeWorkspaceNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
   void RegisterDefaults(mate::Arguments* args);
@@ -90,11 +103,11 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_MACOSX)
   void DoPostNotification(const std::string& name,
                           const base::DictionaryValue& user_info,
-                          bool is_local);
+                          NotificationCenterKind kind);
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
-                              bool is_local);
-  void DoUnsubscribeNotification(int request_id, bool is_local);
+                              NotificationCenterKind kind);
+  void DoUnsubscribeNotification(int request_id, NotificationCenterKind kind);
 #endif
 
  private:

@@ -55,16 +55,22 @@ void SystemPreferences::BuildPrototype(
 #elif defined(OS_MACOSX)
       .SetMethod("postNotification",
                  &SystemPreferences::PostNotification)
-      .SetMethod("postLocalNotification",
-                 &SystemPreferences::PostLocalNotification)
       .SetMethod("subscribeNotification",
                  &SystemPreferences::SubscribeNotification)
       .SetMethod("unsubscribeNotification",
                  &SystemPreferences::UnsubscribeNotification)
+      .SetMethod("postLocalNotification",
+                 &SystemPreferences::PostLocalNotification)
       .SetMethod("subscribeLocalNotification",
                  &SystemPreferences::SubscribeLocalNotification)
       .SetMethod("unsubscribeLocalNotification",
                  &SystemPreferences::UnsubscribeLocalNotification)
+      .SetMethod("postWorkspaceNotification",
+                 &SystemPreferences::PostWorkspaceNotification)
+      .SetMethod("subscribeWorkspaceNotification",
+                 &SystemPreferences::SubscribeWorkspaceNotification)
+      .SetMethod("unsubscribeWorkspaceNotification",
+                 &SystemPreferences::UnsubscribeWorkspaceNotification)
       .SetMethod("registerDefaults", &SystemPreferences::RegisterDefaults)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
       .SetMethod("setUserDefault", &SystemPreferences::SetUserDefault)
