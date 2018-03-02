@@ -19,7 +19,7 @@
     'openssl_fips': '',
     'openssl_no_asm': 1,
     'use_openssl_def': 0,
-    'OPENSSL_PRODUCT': 'libopenssl.a',
+    'openssl_product': 'libopenssl.a',
     'node_release_urlbase': 'https://atom.io/download/electron',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
