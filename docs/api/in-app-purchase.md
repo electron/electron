@@ -28,7 +28,7 @@ The `inAppPurchase` module has the following methods:
 * `callback` Function (optional) - The callback called when the payment is added to the PaymentQueue.
 * `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.
 
-You should listen for the `transactions-updated` event as soon as possible in your app and before to call `purchaseProduct`. 
+You should listen for the `transactions-updated` event as soon as possible and certainly before you call `purchaseProduct`.
 
 ### `inAppPurchase.canMakePayments()`
 
