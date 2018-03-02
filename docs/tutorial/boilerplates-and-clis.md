@@ -3,7 +3,7 @@
 Electron development is un-opinionated - there is no "one true way" to develop,
 build, package, or release an Electron application. Additional features for
 Electron, both for build- and run-time, can usually be found on
-[npm][npm-modules] in individual packages, allowing developers to build both
+[npm](https://www.npmjs.com/search?q=electron) in individual packages, allowing developers to build both
 the app and build pipeline they need.
 
 That level of modularity and extendability ensures that all developers working
@@ -31,17 +31,17 @@ unifies the existing (and well maintained) build tools for Electron development
 into a simple, easy to use package so that anyone can jump right in to Electron
 development.
 
-Forge comes with [ready-to-use templates][forge-templates] for popular
+Forge comes with [ready-to-use templates](https://electronforge.io/templates) for popular
 frameworks like React, Vue, or Angular. It uses the same core modules used by the
-greater Electron community (like [`electron-packager`][electron-packager]) – 
+greater Electron community (like [`electron-packager`](https://github.com/electron-userland/electron-packager)) – 
 changes made by Electron maintainers (like Slack) benefit Forge's users, too.
 
-You can find more information and documentation on [electronforge.io][forge].
+You can find more information and documentation on [electronforge.io](https://electronforge.io/).
 
 ## electron-builder
 
 A "complete solution to package and build a ready-for-distribution Electron app"
-that focuses on an integrated experience. [`electron-builder`][builder] adds one
+that focuses on an integrated experience. [`electron-builder`](https://github.com/electron-userland/electron-builder) adds one
 single dependency focused on simplicity and manages all further requirements
 internally.
 
@@ -50,25 +50,17 @@ maintainers (such as the auto-updater) with custom ones. They are generally
 tighter integrated but will have less in common with popular Electron apps
 like Atom, Visual Studio Code, or Slack.
 
-You can find more information and documentation in [the repository][builder].
+You can find more information and documentation in [the repository](https://github.com/electron-userland/electron-builder).
 
 ## electron-react-boilerplate
 
 If you don't want any tools but simply a solid boilerplate to build from,
-CT Lin's [`electron-react-boilerplate`][boilerplate] might be worth
+CT Lin's [`electron-react-boilerplate`](https://github.com/chentsulin/electron-react-boilerplate) might be worth
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
 
 ## Other Tools and Boilerplates
 
-The ["Awesome Electron" list][awesome] contains more tools and boilerplates
+The ["Awesome Electron" list](https://github.com/sindresorhus/awesome-electron#boilerplates) contains more tools and boilerplates
 to choose from. If you find the length of the list intimidating, don't
 forget that adding tools as you go along is a valid approach, too.
-
-[npm-modules]: https://www.npmjs.com/search?q=electron
-[forge]: https://electronforge.io/
-[forge-templates]: https://electronforge.io/templates
-[builder]: https://github.com/electron-userland/electron-builder
-[electron-packager]: https://github.com/electron-userland/electron-packager
-[boilerplate]: https://github.com/chentsulin/electron-react-boilerplate
-[awesome]: https://github.com/sindresorhus/awesome-electron#boilerplates
