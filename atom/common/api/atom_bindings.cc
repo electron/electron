@@ -103,11 +103,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
     if (callback_scope.in_makecallback())
       continue;
     node::Environment::TickInfo* tick_info = env->tick_info();
-    if (tick_info->length() == 0)
+    if (!tick_info->has_scheduled())
       env->isolate()->RunMicrotasks();
     v8::Local<v8::Object> process = env->process_object();
-    if (tick_info->length() == 0)
-      tick_info->set_index(0);
+    if (!tick_info->has_scheduled())
+      return;
     env->tick_callback_function()->Call(process, 0, nullptr).IsEmpty();
   }
 
