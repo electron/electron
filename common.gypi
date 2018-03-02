@@ -44,7 +44,7 @@
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
-    'V8_BASE': '',
+    'v8_base': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
     'v8_enable_inspector': '1',
@@ -52,7 +52,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node", "zlib", "nghttp2"]', {
+      ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node_lib", "zlib", "nghttp2"]', {
         'msvs_disabled_warnings': [
           4003,  # not enough actual parameters for macro 'V'
           4013,  # 'free' undefined; assuming extern returning int
@@ -136,7 +136,7 @@
           }],
         ],
       }],
-      ['_target_name=="node"', {
+      ['_target_name=="node_lib"', {
         'include_dirs': [
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
@@ -245,7 +245,7 @@
           }],  # OS=="win"
         ],
       }],
-      ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node"]', {
+      ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node_lib"]', {
         'conditions': [
           ['libchromiumcontent_component==0', {
             'libraries': [
