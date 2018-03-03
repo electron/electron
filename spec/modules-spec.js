@@ -30,7 +30,8 @@ describe('modules support', () => {
 
     describe('ffi', () => {
       before(function () {
-        if (!nativeModulesEnabled || process.platform === 'win32') {
+        if (!nativeModulesEnabled || process.platform === 'win32' ||
+            process.arch === 'arm64') {
           this.skip()
         }
       })
