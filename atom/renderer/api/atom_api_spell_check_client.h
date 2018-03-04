@@ -18,7 +18,7 @@
 namespace blink {
 struct WebTextCheckingResult;
 class WebTextCheckingCompletion;
-}
+}  // namespace blink
 
 namespace atom {
 
@@ -34,6 +34,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   virtual ~SpellCheckClient();
 
  private:
+  class SpellcheckRequest;
   // blink::WebTextCheckClient:
   void CheckSpelling(
       const blink::WebString& text,

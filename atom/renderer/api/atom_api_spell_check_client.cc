@@ -37,6 +37,27 @@ bool HasWordCharacters(const base::string16& text, int index) {
 
 }  // namespace
 
+class SpellCheckClient::SpellcheckRequest {
+ public:
+  SpellcheckRequest(const base::string16& text,
+                    blink::WebTextCheckingCompletion* completion)
+      : text_(text), completion_(completion) {
+    DCHECK(completion);
+  }
+  ~SpellcheckRequest() {}
+
+  base::string16 text() { return text_; }
+  blink::WebTextCheckingCompletion* completion() { return completion_; }
+
+ private:
+  base::string16 text_;  // Text to be checked in this task.
+
+  // The interface to send the misspelled ranges to WebKit.
+  blink::WebTextCheckingCompletion* completion_;
+
+  DISALLOW_COPY_AND_ASSIGN(SpellcheckRequest);
+};
+
 SpellCheckClient::SpellCheckClient(const std::string& language,
                                    bool auto_spell_correct_turned_on,
                                    v8::Isolate* isolate,
