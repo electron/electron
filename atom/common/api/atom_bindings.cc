@@ -106,8 +106,6 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
     if (!tick_info->has_scheduled())
       env->isolate()->RunMicrotasks();
     v8::Local<v8::Object> process = env->process_object();
-    if (!tick_info->has_scheduled())
-      return;
     env->tick_callback_function()->Call(process, 0, nullptr).IsEmpty();
   }
 
