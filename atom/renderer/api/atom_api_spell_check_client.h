@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/callback.h"
+#include "base/memory/weak_ptr.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/scoped_persistent.h"
 #include "third_party/WebKit/public/platform/WebSpellCheckPanelHostClient.h"
@@ -25,7 +26,8 @@ namespace atom {
 namespace api {
 
 class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
-                         public blink::WebTextCheckClient {
+                         public blink::WebTextCheckClient,
+                         public base::SupportsWeakPtr<SpellCheckClient> {
  public:
   SpellCheckClient(const std::string& language,
                    bool auto_spell_correct_turned_on,
@@ -74,6 +76,9 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   bool IsValidContraction(const SpellCheckScope& scope,
                           const base::string16& word);
 
+  // Performs spell checking from the request queue.
+  void PerformSpellCheck(SpellcheckRequest* param);
+
   // Represents character attributes used for filtering out characters which
   // are not supported by this SpellCheck object.
   SpellcheckCharAttribute character_attributes_;
@@ -85,6 +90,11 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // consisting only of correct words as a correct word.
   SpellcheckWordIterator text_iterator_;
   SpellcheckWordIterator contraction_iterator_;
+
+  // The parameters of a pending background-spellchecking request.
+  // (When WebKit sends two or more requests, we cancel the previous
+  // requests so we do not have to use vectors.)
+  std::unique_ptr<SpellcheckRequest> pending_request_param_;
 
   v8::Isolate* isolate_;
   v8::Persistent<v8::Context> context_;
