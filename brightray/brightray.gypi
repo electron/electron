@@ -361,6 +361,12 @@
           '-Wl,--no-keep-memory',
         ],
       }],
+      ['OS=="linux" and target_arch=="arm64" and _toolset=="target"', {
+        'ldflags': [
+          # To match the settings in Chromium.
+          '-Wl,-z,max-page-size=4096',
+        ],
+      }],
     ],  # target_conditions
     # Ignored compiler warnings of Chromium/Node.js
     'conditions': [
