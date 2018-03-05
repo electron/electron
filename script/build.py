@@ -5,7 +5,8 @@ import os
 import subprocess
 import sys
 
-from lib.config import MIPS64EL_GCC, get_target_arch, build_env
+from lib.config import MIPS64EL_GCC, get_target_arch, build_env, \
+                       enable_verbose_mode, is_verbose_mode
 from lib.util import electron_gyp, import_vs_env
 
 
@@ -20,14 +21,20 @@ GCLIENT_DONE = os.path.join(SOURCE_ROOT, '.gclient_done')
 def main():
   os.chdir(SOURCE_ROOT)
 
+  args = parse_args()
+  if args.verbose:
+    enable_verbose_mode()
+
   # Update the VS build env.
   import_vs_env(get_target_arch())
 
-  ninja = os.path.join('vendor', 'depot_tools', 'ninja')
+  ninja_exec = os.path.join('vendor', 'depot_tools', 'ninja')
   if sys.platform == 'win32':
-    ninja += '.exe'
+    ninja_exec += '.exe'
+  ninja = [ninja_exec]
+  if is_verbose_mode():
+    ninja.append('-v')
 
-  args = parse_args()
   if args.libcc:
     if ('D' not in args.configuration
         or not os.path.exists(GCLIENT_DONE)
@@ -39,12 +46,12 @@ def main():
     script = os.path.join(LIBCC_SOURCE_ROOT, 'script', 'build')
     subprocess.check_call([sys.executable, script, '-D', '-t',
                            get_target_arch()])
-    subprocess.check_call([ninja, '-C', LIBCC_DIST_MAIN])
+    subprocess.check_call(ninja + ['-C', LIBCC_DIST_MAIN])
 
   env = build_env()
   for config in args.configuration:
     build_path = os.path.join('out', config[0])
-    ret = subprocess.call([ninja, '-C', build_path, args.target], env=env)
+    ret = subprocess.call(ninja + ['-C', build_path, args.target], env=env)
     if ret != 0:
       sys.exit(ret)
 
@@ -56,6 +63,11 @@ def parse_args():
                       nargs='+',
                       default=CONFIGURATIONS,
                       required=False)
+  parser.add_argument('-v', '--verbose',
+                      action='store_true',
+                      default=False,
+                      #dest='only_changed',
+                      help='Verbose output')
   parser.add_argument('-t', '--target',
                       help='Build specified target',
                       default=electron_gyp()['project_name%'],
