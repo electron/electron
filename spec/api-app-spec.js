@@ -169,8 +169,8 @@ describe('app module', () => {
         // The apple script will try to terminate the app
         // If there's an error terminating the app, then it will print to stderr
         ChildProcess.exec('osascript -e \'quit app "Electron"\'', (err, stdout, stderr) => {
-          assert(!err)
-          assert(!stderr.trim())
+          assert(!err, ['err:', err, 'stdout:', stdout, 'stderr:', stderr].join('\n'))
+          assert(!stderr.trim(), ['stdout:', stdout, 'stderr:', stderr].join('\n'))
           done()
         })
       })
