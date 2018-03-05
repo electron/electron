@@ -38,6 +38,9 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 // eslint-disable-next-line
 process.stdout
 
+// Adding a variable for sandbox process.env test validation
+process.env.sandboxmain = ''
+
 // Access console to reproduce #3482.
 // eslint-disable-next-line
 console
