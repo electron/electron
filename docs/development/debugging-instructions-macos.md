@@ -5,6 +5,8 @@ by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky, especially for developers not used to native/C++
 debugging. However, using lldb, and the Electron source code, it is fairly easy
 to enable step-through debugging with breakpoints inside Electron's source code.
+You can also use [XCode for debugging](debugging-instructions-macos-xcode.md) if
+you prefer a graphical interface.
 
 ## Requirements
 
