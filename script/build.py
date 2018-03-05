@@ -28,10 +28,15 @@ def main():
   # Update the VS build env.
   import_vs_env(get_target_arch())
 
-  ninja_exec = os.path.join('vendor', 'depot_tools', 'ninja')
-  if sys.platform == 'win32':
-    ninja_exec += '.exe'
-  ninja = [ninja_exec]
+  # decide which ninja executable to use
+  ninja_path = args.ninja_path
+  if not ninja_path:
+    ninja_path = os.path.join('vendor', 'depot_tools', 'ninja')
+    if sys.platform == 'win32':
+      ninja_path += '.exe'
+
+  # decide how to invoke ninja
+  ninja = [ninja_path]
   if is_verbose_mode():
     ninja.append('-v')
 
@@ -78,6 +83,9 @@ def parse_args():
                         '-d --debug_libchromiumcontent.'
                       ),
                       action='store_true', default=False)
+  parser.add_argument('--ninja-path',
+                      help='Path of ninja command to use.',
+                      required=False)
   return parser.parse_args()
 
 
