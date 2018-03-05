@@ -66,7 +66,6 @@ def parse_args():
   parser.add_argument('-v', '--verbose',
                       action='store_true',
                       default=False,
-                      #dest='only_changed',
                       help='Verbose output')
   parser.add_argument('-t', '--target',
                       help='Build specified target',
