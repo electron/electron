@@ -14,9 +14,9 @@ two documents:
 [Main and Renderer Processes][processes].
 
 If you just came here to learn about Electron, check out the
-[official guides][readme].
+[official guides][tutorial].
 
 [first-app]: ./first-app.md
 [processes]: ./application-architecture.md#main-and-renderer-processes
-[readme]: ../README.md
+[tutorial]: ../tutorial.md
 
