@@ -31,7 +31,7 @@ enum NotificationCenterKind {
   kNSDistributedNotificationCenter = 0,
   kNSNotificationCenter,
   kNSWorkspaceNotificationCenter,
-};  
+};
 #endif
 
 class SystemPreferences : public mate::EventEmitter<SystemPreferences>
