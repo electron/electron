@@ -356,6 +356,23 @@ assistive technologies, such as screen readers, are enabled or disabled.
 See https://www.chromium.org/developers/design-documents/accessibility for more
 details.
 
+### Event: 'session-created'
+
+Returns:
+
+* `event` Event
+* `session` [Session](session.md)
+
+Emitted when Electron has created a new `session`.
+
+```javascript
+const {app} = require('electron')
+
+app.on('session-created', (event, session) => {
+  console.log(session)  
+})
+```
+
 ## Methods
 
 The `app` object has the following methods:
