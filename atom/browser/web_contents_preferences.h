@@ -40,9 +40,9 @@ class WebContentsPreferences
   static bool IsPreferenceEnabled(const std::string& attribute_name,
                                   content::WebContents* web_contents);
 
-  static bool GetString(const std::string& attributeName,
-                 std::string* stringValue,
-                 content::WebContents* web_contents);
+  static bool GetString(const std::string& attribute_name,
+                        std::string* string_value,
+                        content::WebContents* web_contents);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(

@@ -17,11 +17,13 @@
 
 using content::JavaScriptDialogType;
 
-namespace {
-  constexpr int USER_WANTS_NO_MORE_DIALOGS = -1;
-}
-
 namespace atom {
+
+namespace {
+
+constexpr int kUserWantsNoMoreDialogs = -1;
+
+}  // namespace
 
 AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
     api::WebContents* api_web_contents)
@@ -36,11 +38,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     const DialogClosedCallback& callback,
     bool* did_suppress_message) {
   const std::string origin = origin_url.GetOrigin().spec();
-  if (origin_counts_.find(origin) == origin_counts_.end()) {
-    origin_counts_[origin] = 0;
-  }
-
-  if (origin_counts_[origin] == USER_WANTS_NO_MORE_DIALOGS) {
+  if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
     return callback.Run(false, base::string16());
   }
 
@@ -97,7 +95,7 @@ void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     int code,
     bool checkbox_checked) {
   if (checkbox_checked) {
-    (*origin_counts_)[origin] = USER_WANTS_NO_MORE_DIALOGS;
+    (*origin_counts_)[origin] = kUserWantsNoMoreDialogs;
   }
   callback.Run(code == 0, base::string16());
 }

@@ -42,6 +42,7 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
                                    std::map<std::string, int>* origins_,
                                    int code,
                                    bool checkbox_checked);
+
   api::WebContents* api_web_contents_;
   std::map<std::string, int> origin_counts_;
 };
