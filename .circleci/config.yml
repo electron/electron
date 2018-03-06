@@ -236,7 +236,7 @@ jobs:
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
-    resource_class: xlarge
+    resource_class: 2xlarge
     steps:
       - checkout
       - run:
