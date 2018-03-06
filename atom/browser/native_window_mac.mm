@@ -213,8 +213,6 @@ bool ScopedDisableResize::disable_resize_ = false;
   // Get preferred width from observers. Usually the page width.
   int preferred_width = 0;
   shell_->NotifyWindowRequestPreferredWith(&preferred_width);
-  if (preferred_width <= 0)
-    return frame;
 
   // Never shrink from the current size on zoom.
   NSRect window_frame = [window frame];
