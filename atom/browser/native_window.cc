@@ -8,35 +8,12 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
-#include "base/files/file_util.h"
-#include "base/json/json_writer.h"
-#include "base/message_loop/message_loop.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
-#include "components/prefs/pref_service.h"
-#include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/plugin_service.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "content/public/common/content_switches.h"
-#include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/geometry/point.h"
-#include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/geometry/size.h"
-#include "ui/gfx/geometry/size_conversions.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -46,8 +23,7 @@ NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
-      has_frame_(true),
+    : has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),

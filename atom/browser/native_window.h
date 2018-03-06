@@ -11,20 +11,13 @@
 #include <vector>
 
 #include "atom/browser/native_window_observer.h"
-#include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
-#include "content/public/browser/readback_types.h"
-#include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/gfx/geometry/rect_f.h"
-#include "ui/gfx/image/image.h"
-#include "ui/gfx/image/image_skia.h"
 
 class SkRegion;
 
@@ -37,8 +30,10 @@ struct NativeWebKeyboardEvent;
 }
 
 namespace gfx {
+class Image;
 class Point;
 class Rect;
+class RectF;
 class Size;
 }
 
@@ -52,8 +47,7 @@ class NativeBrowserView;
 
 struct DraggableRegion;
 
-class NativeWindow : public base::SupportsUserData,
-                     public content::WebContentsObserver {
+class NativeWindow : public base::SupportsUserData {
  public:
   ~NativeWindow() override;
 
