@@ -379,6 +379,9 @@ void BrowserWindow::OnWindowFocus() {
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(true);
+#else
+  if (!api_web_contents_->IsDevToolsOpened())
+    web_contents()->Focus();
 #endif
 
   Emit("focus");
