@@ -218,16 +218,16 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
     return frame;
 
-  content::WebContents* web_contents = shell_->web_contents();
-  if (!web_contents)
+  // Get preferred width from observers. Usually the page width.
+  int preferred_width = 0;
+  shell_->NotifyWindowRequestPreferredWith(&preferred_width);
+  if (preferred_width <= 0)
     return frame;
 
-  CGFloat page_width = static_cast<CGFloat>(
-      web_contents->GetPreferredSize().width());
-  NSRect window_frame = [window frame];
-
   // Never shrink from the current size on zoom.
-  CGFloat zoomed_width = std::max(page_width, NSWidth(window_frame));
+  NSRect window_frame = [window frame];
+  CGFloat zoomed_width = std::max(static_cast<CGFloat>(preferred_width),
+                                  NSWidth(window_frame));
 
   // |frame| determines our maximum extents. We need to set the origin of the
   // frame -- and only move it left if necessary.

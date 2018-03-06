@@ -34,6 +34,9 @@ class NativeWindowObserver {
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
 
+  // Called when the window wants to know the preferred width.
+  virtual void RequestPreferredWidth(int* width) {}
+
   // Called when closed button is clicked.
   virtual void OnCloseButtonClicked(bool* prevent_default) {}
 

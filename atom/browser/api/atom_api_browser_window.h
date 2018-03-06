@@ -81,6 +81,7 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
+  void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowEndSession() override;

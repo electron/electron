@@ -307,6 +307,10 @@ void BrowserWindow::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
 }
 
+void BrowserWindow::RequestPreferredWidth(int* width) {
+  *width = web_contents()->GetPreferredSize().width();
+}
+
 void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   // When user tries to close the window by clicking the close button, we do
   // not close the window immediately, instead we try to close the web page

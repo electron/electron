@@ -402,6 +402,11 @@ void NativeWindow::PreviewFile(const std::string& path,
 void NativeWindow::CloseFilePreview() {
 }
 
+void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.RequestPreferredWidth(width);
+}
+
 void NativeWindow::NotifyWindowCloseButtonClicked() {
   // First ask the observers whether we want to close.
   bool prevent_default = false;
