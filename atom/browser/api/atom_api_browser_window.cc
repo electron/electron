@@ -803,15 +803,16 @@ double BrowserWindow::GetOpacity() {
 }
 
 void BrowserWindow::FocusOnWebView() {
-  window_->FocusOnWebView();
+  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
 
 void BrowserWindow::BlurWebView() {
-  window_->BlurWebView();
+  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 bool BrowserWindow::IsWebViewFocused() {
-  return window_->IsWebViewFocused();
+  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
+  return host_view && host_view->HasFocus();
 }
 
 void BrowserWindow::SetRepresentedFilename(const std::string& filename) {

@@ -354,19 +354,6 @@ void NativeWindow::SetEscapeTouchBarItem(
     const mate::PersistentDictionary& item) {
 }
 
-void NativeWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
-}
-
-void NativeWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
-}
-
-bool NativeWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
-  return host_view && host_view->HasFocus();
-}
-
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
 }
 

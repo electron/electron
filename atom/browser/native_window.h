@@ -194,11 +194,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ToggleTabBar();
   virtual bool AddTabbedWindow(NativeWindow* window);
 
-  // Webview APIs.
-  virtual void FocusOnWebView();
-  virtual void BlurWebView();
-  virtual bool IsWebViewFocused();
-
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
   virtual bool IsMenuBarAutoHide();
