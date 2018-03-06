@@ -154,8 +154,6 @@ class NativeWindowMac : public NativeWindow {
   void InstallView();
   void UninstallView();
 
-  void SetRenderWidgetHostOpaque(bool opaque);
-
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
 

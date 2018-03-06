@@ -1116,8 +1116,17 @@ void BrowserWindow::AddTabbedWindow(NativeWindow* window,
 
 void BrowserWindow::SetVibrancy(mate::Arguments* args) {
   std::string type;
-
   args->GetNext(&type);
+
+  auto* render_view_host = web_contents()->GetRenderViewHost();
+  if (render_view_host) {
+    auto* impl = content::RenderWidgetHostImpl::FromID(
+        render_view_host->GetProcess()->GetID(),
+        render_view_host->GetRoutingID());
+    if (impl)
+      impl->SetBackgroundOpaque(type.empty() ? !window_->transparent() : false);
+  }
+
   window_->SetVibrancy(type);
 }
 

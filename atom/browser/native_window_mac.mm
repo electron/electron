@@ -20,12 +20,7 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "brightray/browser/mac/event_dispatching_window.h"
-#include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/browser_accessibility_state.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/web_contents.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/skia/include/core/SkRegion.h"
@@ -1652,20 +1647,6 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   return true;
 }
 
-void NativeWindowMac::SetRenderWidgetHostOpaque(bool opaque) {
-  if (!web_contents()) return;
-
-  auto render_view_host = web_contents()->GetRenderViewHost();
-  if (!render_view_host) return;
-
-  content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
-  if (!impl) return;
-
-  impl->SetBackgroundOpaque(opaque);
-}
-
 void NativeWindowMac::SetVibrancy(const std::string& type) {
   if (!base::mac::IsAtLeastOS10_10()) return;
 
@@ -1676,7 +1657,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [window_ setBackgroundColor:background_color_before_vibrancy_];
       [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
     }
-    SetRenderWidgetHostOpaque(!transparent());
     if (vibrant_view == nil) return;
 
     [vibrant_view removeFromSuperview];
@@ -1685,7 +1665,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  SetRenderWidgetHostOpaque(false);
   background_color_before_vibrancy_.reset([window_ backgroundColor]);
   transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
 
