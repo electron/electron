@@ -34,7 +34,6 @@ NativeWindow::NativeWindow(
       is_modal_(false),
       is_osr_dummy_(false),
       browser_view_(nullptr),
-      inspectable_web_contents_(inspectable_web_contents),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);

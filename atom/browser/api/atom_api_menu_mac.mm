@@ -48,10 +48,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                         base::Closure callback) {
   if (!native_window)
     return;
-  brightray::InspectableWebContents* web_contents =
-      native_window->inspectable_web_contents();
-  if (!web_contents)
-    return;
+  NSWindow* nswindow = native_window->GetNativeWindow();
 
   auto close_callback = base::Bind(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
@@ -59,7 +56,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
       [[AtomMenuController alloc] initWithModel:model()
                           useDefaultAccelerator:NO]);
   NSMenu* menu = [popup_controllers_[window_id] menu];
-  NSView* view = web_contents->GetView()->GetNativeView();
+  NSView* view = [nswindow contentView];
 
   // Which menu item to show.
   NSMenuItem* item = nil;
@@ -69,7 +66,6 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   // (-1, -1) means showing on mouse location.
   NSPoint position;
   if (x == -1 || y == -1) {
-    NSWindow* nswindow = native_window->GetNativeWindow();
     position = [view convertPoint:[nswindow mouseLocationOutsideOfEventStream]
                          fromView:nil];
   } else {

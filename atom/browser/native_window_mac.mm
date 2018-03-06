@@ -953,7 +953,7 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
+  NSView* view = web_contents->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   // Use an NSEvent monitor to listen for the wheel event.

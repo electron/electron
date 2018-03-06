@@ -265,10 +265,6 @@ class NativeWindow : public base::SupportsUserData {
     observers_.RemoveObserver(obs);
   }
 
-  brightray::InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_;
-  }
-
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
@@ -328,9 +324,6 @@ class NativeWindow : public base::SupportsUserData {
 
   // The browser view layer.
   NativeBrowserView* browser_view_;
-
-  // The page this window is viewing.
-  brightray::InspectableWebContents* inspectable_web_contents_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
