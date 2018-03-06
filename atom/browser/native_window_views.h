@@ -128,8 +128,8 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
+
+  void UpdateDraggableRegions(std::unique_ptr<SkRegion> region);
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);

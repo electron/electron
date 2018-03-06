@@ -11,7 +11,9 @@ namespace api {
 void BrowserWindow::UpdateDraggableRegions(
     content::RenderFrameHost* rfh,
     const std::vector<DraggableRegion>& regions) {
-  window_->UpdateDraggableRegions(regions);
+  if (window_->has_frame())
+    return;
+  window_->UpdateDraggableRegions(DraggableRegionsToSkRegion(regions));
 }
 
 }  // namespace api

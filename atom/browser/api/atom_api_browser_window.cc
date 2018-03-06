@@ -409,6 +409,10 @@ void BrowserWindow::OnWindowRestore() {
 }
 
 void BrowserWindow::OnWindowResize() {
+#if defined(OS_MACOSX)
+  if (!draggable_regions_.empty())
+    UpdateDraggableRegions(nullptr, draggable_regions_);
+#endif
   Emit("resize");
 }
 
@@ -1167,6 +1171,21 @@ void BrowserWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(ID());
+}
+
+// Convert draggable regions in raw format to SkRegion format.
+std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
+    const std::vector<DraggableRegion>& regions) {
+  std::unique_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region;
 }
 
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {

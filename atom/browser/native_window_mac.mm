@@ -12,7 +12,6 @@
 #include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
@@ -23,7 +22,6 @@
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skia_util.h"
 
 namespace {
@@ -270,7 +268,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
-  shell_->UpdateDraggableRegions(shell_->draggable_regions());
   shell_->NotifyWindowResize();
 }
 
@@ -717,21 +714,6 @@ enum {
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];
-}
-
-@end
-
-@interface ControlRegionView : NSView
-@end
-
-@implementation ControlRegionView
-
-- (BOOL)mouseDownCanMoveWindow {
-  return NO;
-}
-
-- (NSView*)hitTest:(NSPoint)aPoint {
-  return nil;
 }
 
 @end
@@ -1757,73 +1739,6 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   } else {
     return bounds;
   }
-}
-
-void NativeWindowMac::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
-  // All ControlRegionViews should be added as children of the WebContentsView,
-  // because WebContentsView will be removed and re-added when entering and
-  // leaving fullscreen mode.
-  NSView* webView = web_contents()->GetNativeView();
-  NSInteger webViewWidth = NSWidth([webView bounds]);
-  NSInteger webViewHeight = NSHeight([webView bounds]);
-
-  // Remove all ControlRegionViews that are added last time.
-  // Note that [webView subviews] returns the view's mutable internal array and
-  // it should be copied to avoid mutating the original array while enumerating
-  // it.
-  base::scoped_nsobject<NSArray> subviews([[webView subviews] copy]);
-  for (NSView* subview in subviews.get())
-    if ([subview isKindOfClass:[ControlRegionView class]])
-      [subview removeFromSuperview];
-
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  draggable_regions_ = regions;
-  std::vector<gfx::Rect> system_drag_exclude_areas =
-      CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
-
-  if (browser_view_)
-    browser_view_->UpdateDraggableRegions(system_drag_exclude_areas);
-
-  // Create and add a ControlRegionView for each region that needs to be
-  // excluded from the dragging.
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas.begin();
-       iter != system_drag_exclude_areas.end();
-       ++iter) {
-    base::scoped_nsobject<NSView> controlRegion(
-        [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
-                                       iter->width(),
-                                       iter->height())];
-    [webView addSubview:controlRegion];
-  }
-
-  // AppKit will not update its cache of mouseDownCanMoveWindow unless something
-  // changes. Previously we tried adding an NSView and removing it, but for some
-  // reason it required reposting the mouse-down event, and didn't always work.
-  // Calling the below seems to be an effective solution.
-  [window_ setMovableByWindowBackground:NO];
-  [window_ setMovableByWindowBackground:YES];
-}
-
-std::vector<gfx::Rect> NativeWindowMac::CalculateNonDraggableRegions(
-    const std::vector<DraggableRegion>& regions, int width, int height) {
-  std::vector<gfx::Rect> result;
-  if (regions.empty()) {
-    result.push_back(gfx::Rect(0, 0, width, height));
-  } else {
-    std::unique_ptr<SkRegion> draggable(DraggableRegionsToSkRegion(regions));
-    std::unique_ptr<SkRegion> non_draggable(new SkRegion);
-    non_draggable->op(0, 0, width, height, SkRegion::kUnion_Op);
-    non_draggable->op(*draggable, SkRegion::kDifference_Op);
-    for (SkRegion::Iterator it(*non_draggable); !it.done(); it.next()) {
-      result.push_back(gfx::SkIRectToRect(it.rect()));
-    }
-  }
-  return result;
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach) {

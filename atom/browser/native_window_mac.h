@@ -119,8 +119,6 @@ class NativeWindowMac : public NativeWindow {
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
@@ -137,15 +135,7 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool simple_fullscreen() const { return always_simple_fullscreen_; }
-  const std::vector<DraggableRegion>& draggable_regions() const {
-    return draggable_regions_;
-  }
-
- protected:
-  // Return a vector of non-draggable regions that fill a window of size
-  // |width| by |height|, but leave gaps where the window should be draggable.
-  std::vector<gfx::Rect> CalculateNonDraggableRegions(
-      const std::vector<DraggableRegion>& regions, int width, int height);
+  NativeBrowserView* browser_view() const { return browser_view_; }
 
  private:
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
@@ -164,8 +154,6 @@ class NativeWindowMac : public NativeWindow {
   base::scoped_nsobject<FullSizeContentView> content_view_;
 
   NativeBrowserView* browser_view_;
-
-  std::vector<DraggableRegion> draggable_regions_;
 
   bool is_kiosk_;
 

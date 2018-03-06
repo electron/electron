@@ -221,10 +221,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Rect WindowBoundsToContentBounds(
       const gfx::Rect& bounds) const = 0;
 
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) = 0;
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -303,11 +299,6 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options,
                NativeWindow* parent);
-
-  // Convert draggable regions in raw format to SkRegion format. Caller is
-  // responsible for deleting the returned SkRegion instance.
-  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
-      const std::vector<DraggableRegion>& regions);
 
  private:
   // Whether window has standard frame.

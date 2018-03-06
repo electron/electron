@@ -13,7 +13,6 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
-#include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
@@ -33,7 +32,6 @@
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -568,19 +566,5 @@ void NativeWindow::NotifyWindowMessage(
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
-
-std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  std::unique_ptr<SkRegion> sk_region(new SkRegion);
-  for (const DraggableRegion& region : regions) {
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
-}
 
 }  // namespace atom
