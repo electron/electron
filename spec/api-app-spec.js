@@ -158,21 +158,22 @@ describe('app module', () => {
       })
     })
 
-    it('exits gracefully on macos', function (done) {
-      if (process.platform !== 'darwin') {
+    it('exits gracefully', function (done) {
+      if (!['darwin', 'linux'].includes(process.platform)) {
         this.skip()
       }
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+
       const electronPath = remote.getGlobal('process').execPath
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       appProcess = ChildProcess.spawn(electronPath, [appPath])
-      appProcess.stdout.once('data', () => {
-        // The apple script will try to terminate the app
-        // If there's an error terminating the app, then it will print to stderr
-        ChildProcess.exec('osascript -e \'quit app "Electron"\'', (err, stdout, stderr) => {
-          assert(!err, ['err:', err, 'stdout:', stdout, 'stderr:', stderr].join('\n'))
-          assert(!stderr.trim(), ['stdout:', stdout, 'stderr:', stderr].join('\n'))
-          done()
-        })
+
+      // singleton will send us greeting data to let us know it's running.
+      // when we receive that, test that it exits cleanly when asked to close
+      appProcess.stdout.on('data', (data) => appProcess.kill())
+      appProcess.on('exit', (code, sig) => {
+        assert.equal(code, 0)
+        assert.equal(sig, null)
+        done()
       })
     })
   })
