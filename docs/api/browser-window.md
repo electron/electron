@@ -587,7 +587,7 @@ Returns `BrowserWindow[]` - An array of all opened browser windows.
 
 #### `BrowserWindow.getFocusedWindow()`
 
-Returns `BrowserWindow` - The window that is focused in this application, otherwise returns `null`.
+Returns `BrowserWindow | null` - The window that is focused in this application, otherwise returns `null`.
 
 #### `BrowserWindow.fromWebContents(webContents)`
 
