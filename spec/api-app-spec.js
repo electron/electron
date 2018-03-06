@@ -163,8 +163,8 @@ describe('app module', () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       appProcess = ChildProcess.spawn(electronPath, [appPath])
 
-      // singleton will send us greeting data to let us know it's running.
-      // when we receive that, test that it exits cleanly when asked to close
+      // Singleton will send us greeting data to let us know it's running.
+      // After that, ask it to exit gracefully and confirm that it does.
       appProcess.stdout.on('data', (data) => appProcess.kill())
       appProcess.on('exit', (code, sig) => {
         assert.equal(code, 0)
