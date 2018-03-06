@@ -140,7 +140,7 @@ class NativeWindowMac : public NativeWindow {
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
-  void InstallView();
+  void InstallView(NSView* view);
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
