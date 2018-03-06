@@ -8,7 +8,7 @@
 [![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 
 :memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹.
-View these docs in other languages at [electron/electron-i18n](https://github.com/electron/electron-i18n/tree/master/content/).
+View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
@@ -85,7 +85,7 @@ const child = proc.spawn(electron)
 
 ## Documentation Translations
 
-Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
+Find documentation translations in [electron/i18n](https://github.com/electron/i18n).
 
 ## Community
 
