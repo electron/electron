@@ -993,9 +993,6 @@ NativeWindowMac::NativeWindowMac(
       if ([[event window] windowNumber] != [window_ windowNumber])
         return event;
 
-      if (!web_contents)
-        return event;
-
       if (!began && (([event phase] == NSEventPhaseMayBegin) ||
                                  ([event phase] == NSEventPhaseBegan))) {
         this->NotifyWindowScrollTouchBegin();
