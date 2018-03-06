@@ -369,7 +369,7 @@ Emitted when Electron has created a new `session`.
 const {app} = require('electron')
 
 app.on('session-created', (event, session) => {
-  console.log(session)  
+  console.log(session)
 })
 ```
 
