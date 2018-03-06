@@ -214,6 +214,7 @@ class NativeWindowViews : public NativeWindow,
 
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
+  views::View* focused_view_;  // The view should be focused by default.
 
   std::unique_ptr<AutofillPopup> autofill_popup_;
 

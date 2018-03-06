@@ -140,7 +140,8 @@ NativeWindowViews::NativeWindowViews(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
-      web_view_(inspectable_web_contents()->GetView()->GetView()),
+      web_view_(web_contents->GetView()->GetView()),
+      focused_view_(web_contents->GetView()->GetWebView()),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -1235,7 +1236,7 @@ void NativeWindowViews::DeleteDelegate() {
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
-  return inspectable_web_contents()->GetView()->GetWebView();
+  return focused_view_;
 }
 
 bool NativeWindowViews::CanResize() const {
