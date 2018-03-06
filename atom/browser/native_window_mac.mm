@@ -1546,7 +1546,7 @@ void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
 }
 
 gfx::NativeView NativeWindowMac::GetNativeView() const {
-  return inspectable_web_contents()->GetView()->GetNativeView();
+  return [window_ contentView];
 }
 
 gfx::NativeWindow NativeWindowMac::GetNativeWindow() const {
