@@ -364,18 +364,22 @@ void BrowserWindow::OnWindowEndSession() {
 
 void BrowserWindow::OnWindowBlur() {
   web_contents()->StoreFocus();
+#if defined(OS_MACOSX)
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(false);
+#endif
 
   Emit("blur");
 }
 
 void BrowserWindow::OnWindowFocus() {
   web_contents()->RestoreFocus();
+#if defined(OS_MACOSX)
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(true);
+#endif
 
   Emit("focus");
 }
