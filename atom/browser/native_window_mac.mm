@@ -990,7 +990,6 @@ NativeWindowMac::NativeWindowMac(
 
 NativeWindowMac::~NativeWindowMac() {
   [NSEvent removeMonitor:wheel_event_monitor_];
-  Observe(nullptr);
 }
 
 void NativeWindowMac::Close() {
