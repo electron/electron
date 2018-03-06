@@ -1088,10 +1088,6 @@ describe('chromium feature', () => {
       assert.throws(() => {
         window.alert({toString: null})
       }, /Cannot convert object to primitive value/)
-
-      assert.throws(() => {
-        window.alert('message', {toString: 3})
-      }, /Cannot convert object to primitive value/)
     })
   })
 
@@ -1099,10 +1095,6 @@ describe('chromium feature', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
       assert.throws(() => {
         window.confirm({toString: null}, 'title')
-      }, /Cannot convert object to primitive value/)
-
-      assert.throws(() => {
-        window.confirm('message', {toString: 3})
       }, /Cannot convert object to primitive value/)
     })
   })
