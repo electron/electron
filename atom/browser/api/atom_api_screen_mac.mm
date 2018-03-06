@@ -9,6 +9,7 @@ namespace atom {
 
 namespace api {
 
+//TODO(codebytere): deprecated; remove in 3.0
 int Screen::getMenuBarHeight() {
   return [[NSApp mainMenu] menuBarHeight];
 }
