@@ -64,9 +64,6 @@ class NativeWindow : public base::SupportsUserData,
       const mate::Dictionary& options,
       NativeWindow* parent = nullptr);
 
-  // Find a window from its WebContents
-  static NativeWindow* FromWebContents(content::WebContents* web_contents);
-
   void InitFromOptions(const mate::Dictionary& options);
 
   virtual void Close() = 0;

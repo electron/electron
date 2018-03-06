@@ -64,8 +64,10 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
       checkbox_string = "Prevent this app from creating additional dialogs";
     }
   }
+
+  auto* relay = NativeWindowRelay::FromWebContents(web_contents);
   atom::ShowMessageBox(
-      NativeWindow::FromWebContents(web_contents),
+      relay ? relay->window.get() : nullptr,
       atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
       atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
       base::UTF16ToUTF8(message_text), "", checkbox_string,

@@ -76,16 +76,6 @@ NativeWindow::~NativeWindow() {
   NotifyWindowClosed();
 }
 
-// static
-NativeWindow* NativeWindow::FromWebContents(
-    content::WebContents* web_contents) {
-  for (const auto& window : WindowList::GetWindows()) {
-    if (window->web_contents() == web_contents)
-      return window;
-  }
-  return nullptr;
-}
-
 void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   // Setup window from options.
   int x = -1, y = -1;
