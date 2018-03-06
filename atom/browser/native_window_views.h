@@ -215,8 +215,6 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
-  NativeBrowserView* browser_view_;
-
   std::unique_ptr<AutofillPopup> autofill_popup_;
 
   std::unique_ptr<MenuBar> menu_bar_;

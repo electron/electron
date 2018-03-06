@@ -782,7 +782,6 @@ NativeWindowMac::NativeWindowMac(
     const mate::Dictionary& options,
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
-      browser_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -1494,20 +1493,19 @@ void NativeWindowMac::SetContentProtection(bool enable) {
                                  : NSWindowSharingReadOnly];
 }
 
-void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
-    [browser_view_->GetInspectableWebContentsView()->GetNativeView()
+void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
+  if (browser_view()) {
+    [browser_view()->GetInspectableWebContentsView()->GetNativeView()
             removeFromSuperview];
-    browser_view_ = nullptr;
+    set_browser_view(nullptr);
   }
 
-  if (!browser_view) {
+  if (!view) {
     return;
   }
 
-  browser_view_ = browser_view;
-  auto* native_view =
-      browser_view->GetInspectableWebContentsView()->GetNativeView();
+  set_browser_view(view);
+  auto* native_view = view->GetInspectableWebContentsView()->GetNativeView();
   [[window_ contentView] addSubview:native_view
                          positioned:NSWindowAbove
                          relativeTo:nil];

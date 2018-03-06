@@ -141,7 +141,6 @@ NativeWindowViews::NativeWindowViews(
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
-      browser_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -948,22 +947,21 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
-void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
+void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
+  if (browser_view()) {
     web_view_->RemoveChildView(
-        browser_view_->GetInspectableWebContentsView()->GetView());
-    browser_view_ = nullptr;
+        browser_view()->GetInspectableWebContentsView()->GetView());
+    set_browser_view(nullptr);
   }
 
-  if (!browser_view) {
+  if (!view) {
     return;
   }
 
   // Add as child of the main web view to avoid (0, 0) origin from overlapping
   // with menu bar.
-  browser_view_ = browser_view;
-  web_view_->AddChildView(
-      browser_view->GetInspectableWebContentsView()->GetView());
+  set_browser_view(view);
+  web_view_->AddChildView(view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1203,9 +1201,9 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    if (browser_view_) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
-                             ->GetAutoResizeFlags();
+    if (browser_view()) {
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())->
+          GetAutoResizeFlags();
       int width_delta = 0;
       int height_delta = 0;
       if (flags & kAutoResizeWidth) {
@@ -1215,7 +1213,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(
         height_delta = new_bounds.height() - widget_size_.height();
       }
 
-      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+      auto* view = browser_view()->GetInspectableWebContentsView()->GetView();
       auto new_view_size = view->size();
       new_view_size.set_width(new_view_size.width() + width_delta);
       new_view_size.set_height(new_view_size.height() + height_delta);

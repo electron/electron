@@ -135,7 +135,6 @@ class NativeWindowMac : public NativeWindow {
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool simple_fullscreen() const { return always_simple_fullscreen_; }
-  NativeBrowserView* browser_view() const { return browser_view_; }
 
  private:
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
@@ -152,8 +151,6 @@ class NativeWindowMac : public NativeWindow {
 
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;
-
-  NativeBrowserView* browser_view_;
 
   bool is_kiosk_;
 

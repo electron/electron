@@ -6,8 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "atom/browser/native_browser_view_mac.h"
-#include "atom/browser/native_window_mac.h"
+#include "atom/browser/native_browser_view.h"
 #include "atom/common/draggable_region.h"
 #include "base/mac/scoped_nsobject.h"
 
@@ -90,9 +89,8 @@ void BrowserWindow::UpdateDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
-  NativeWindowMac* window = static_cast<NativeWindowMac*>(window_.get());
-  if (window->browser_view())
-    window->browser_view()->UpdateDraggableRegions(system_drag_exclude_areas);
+  if (window_->browser_view())
+    window_->browser_view()->UpdateDraggableRegions(system_drag_exclude_areas);
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.

@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_browser_window.h"
 
+#include "atom/browser/native_window_views.h"
+
 namespace atom {
 
 namespace api {
@@ -13,7 +15,8 @@ void BrowserWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   if (window_->has_frame())
     return;
-  window_->UpdateDraggableRegions(DraggableRegionsToSkRegion(regions));
+  static_cast<NativeWindowViews*>(window_.get())->UpdateDraggableRegions(
+      DraggableRegionsToSkRegion(regions));
 }
 
 }  // namespace api

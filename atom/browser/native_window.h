@@ -292,6 +292,7 @@ class NativeWindow : public base::SupportsUserData,
   void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
   bool is_offscreen_dummy() const { return is_osr_dummy_; }
 
+  NativeBrowserView* browser_view() const { return browser_view_; }
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
@@ -299,6 +300,10 @@ class NativeWindow : public base::SupportsUserData,
   NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
                const mate::Dictionary& options,
                NativeWindow* parent);
+
+  void set_browser_view(NativeBrowserView* browser_view) {
+    browser_view_ = browser_view;
+  }
 
  private:
   // Whether window has standard frame.
@@ -334,6 +339,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Is this a dummy window for an offscreen WebContents.
   bool is_osr_dummy_;
+
+  // The browser view layer.
+  NativeBrowserView* browser_view_;
 
   // The page this window is viewing.
   brightray::InspectableWebContents* inspectable_web_contents_;
