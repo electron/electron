@@ -159,10 +159,6 @@ describe('app module', () => {
     })
 
     it('exits gracefully', function (done) {
-      if (!['darwin', 'linux'].includes(process.platform)) {
-        this.skip()
-      }
-
       const electronPath = remote.getGlobal('process').execPath
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       appProcess = ChildProcess.spawn(electronPath, [appPath])
