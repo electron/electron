@@ -37,11 +37,10 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
                      bool reset_state) override;
 
  private:
-  static void OnMessageBoxCallback(const DialogClosedCallback& callback,
-                                   const std::string& origin,
-                                   std::map<std::string, int>* origins_,
-                                   int code,
-                                   bool checkbox_checked);
+  void OnMessageBoxCallback(const DialogClosedCallback& callback,
+                            const std::string& origin,
+                            int code,
+                            bool checkbox_checked);
 
   api::WebContents* api_web_contents_;
   std::map<std::string, int> origin_counts_;

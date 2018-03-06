@@ -64,13 +64,14 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
       checkbox_string = "Prevent this app from creating additional dialogs";
     }
   }
-  atom::ShowMessageBox(NativeWindow::FromWebContents(web_contents),
-                       atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1,
-                       0, atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
-                       base::UTF16ToUTF8(message_text), "", checkbox_string,
-                       false, gfx::ImageSkia(),
-                       base::Bind(&OnMessageBoxCallback, callback, origin,
-                                  &origin_counts_));
+  atom::ShowMessageBox(
+      NativeWindow::FromWebContents(web_contents),
+      atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
+      atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
+      base::UTF16ToUTF8(message_text), "", checkbox_string,
+      false, gfx::ImageSkia(),
+      base::Bind(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
+                 base::Unretained(this), callback, origin));
 }
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
@@ -87,16 +88,13 @@ void AtomJavaScriptDialogManager::CancelDialogs(
     bool reset_state) {
 }
 
-// static
 void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     const DialogClosedCallback& callback,
     const std::string& origin,
-    std::map<std::string, int>* origin_counts_,
     int code,
     bool checkbox_checked) {
-  if (checkbox_checked) {
-    (*origin_counts_)[origin] = kUserWantsNoMoreDialogs;
-  }
+  if (checkbox_checked)
+    origin_counts_[origin] = kUserWantsNoMoreDialogs;
   callback.Run(code == 0, base::string16());
 }
 
