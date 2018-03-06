@@ -79,7 +79,7 @@ class NativeWindowMac : public NativeWindow {
   bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
-  void SetBackgroundColor(const std::string& color_name) override;
+  void SetBackgroundColor(SkColor color) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetOpacity(const double opacity) override;

@@ -12,6 +12,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/options_switches.h"
@@ -172,10 +173,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(color);
+    SetBackgroundColor(ParseHexColor(color));
   } else if (!transparent()) {
     // For normal window, use white as default background.
-    SetBackgroundColor("#FFFF");
+    SetBackgroundColor(SK_ColorWHITE);
   }
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);

@@ -13,6 +13,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -770,7 +771,11 @@ bool BrowserWindow::IsKiosk() {
 }
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
-  window_->SetBackgroundColor(color_name);
+  SkColor color = ParseHexColor(color_name);
+  window_->SetBackgroundColor(color);
+  auto* view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->SetBackgroundColor(color);
 }
 
 void BrowserWindow::SetHasShadow(bool has_shadow) {

@@ -12,7 +12,6 @@
 #include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -1475,15 +1474,10 @@ bool NativeWindowMac::IsKiosk() {
   return is_kiosk_;
 }
 
-void NativeWindowMac::SetBackgroundColor(const std::string& color_name) {
-  SkColor color = ParseHexColor(color_name);
+void NativeWindowMac::SetBackgroundColor(SkColor color) {
   base::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
   [[[window_ contentView] layer] setBackgroundColor:cgcolor];
-
-  const auto view = web_contents()->GetRenderWidgetHostView();
-  if (view)
-    view->SetBackgroundColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {

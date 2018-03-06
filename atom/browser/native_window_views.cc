@@ -16,7 +16,6 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
@@ -792,9 +791,8 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
-void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  SkColor background_color = ParseHexColor(color_name);
   SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
