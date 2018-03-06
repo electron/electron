@@ -167,8 +167,9 @@ describe('app module', () => {
       // After that, ask it to exit gracefully and confirm that it does.
       appProcess.stdout.on('data', (data) => appProcess.kill())
       appProcess.on('exit', (code, sig) => {
-        assert.equal(code, 0)
-        assert.equal(sig, null)
+        let message = ['code:', code, 'sig:', sig].join('\n')
+        assert.equal(code, 0, message)
+        assert.equal(sig, null, message)
         done()
       })
     })
