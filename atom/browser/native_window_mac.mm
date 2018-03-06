@@ -243,30 +243,10 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->web_contents();
-  if (!web_contents)
-    return;
-
-  web_contents->RestoreFocus();
-
-  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(true);
-
   shell_->NotifyWindowFocus();
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
-  content::WebContents* web_contents = shell_->web_contents();
-  if (!web_contents)
-    return;
-
-  web_contents->StoreFocus();
-
-  content::RenderWidgetHostView* rwhv = web_contents->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(false);
-
   shell_->NotifyWindowBlur();
 }
 

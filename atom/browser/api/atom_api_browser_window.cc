@@ -276,7 +276,6 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
 void BrowserWindow::OnCloseContents() {
   if (!web_contents())
     return;
-  Observe(nullptr);
 
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -296,6 +295,9 @@ void BrowserWindow::OnCloseContents() {
 
   // Do not sent "unresponsive" event after window is closed.
   window_unresponsive_closure_.Cancel();
+
+  // Clear the web_contents() at last.
+  Observe(nullptr);
 }
 
 void BrowserWindow::OnRendererResponsive() {
@@ -360,10 +362,20 @@ void BrowserWindow::OnWindowEndSession() {
 }
 
 void BrowserWindow::OnWindowBlur() {
+  web_contents()->StoreFocus();
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(false);
+
   Emit("blur");
 }
 
 void BrowserWindow::OnWindowFocus() {
+  web_contents()->RestoreFocus();
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(true);
+
   Emit("focus");
 }
 
