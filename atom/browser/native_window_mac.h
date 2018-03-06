@@ -141,7 +141,6 @@ class NativeWindowMac : public NativeWindow {
   void ShowWindowButton(NSWindowButton button);
 
   void InstallView();
-  void UninstallView();
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;

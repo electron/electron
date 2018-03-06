@@ -1819,11 +1819,6 @@ void NativeWindowMac::InstallView() {
   }
 }
 
-void NativeWindowMac::UninstallView() {
-  NSView* view = inspectable_web_contents()->GetView()->GetNativeView();
-  [view removeFromSuperview];
-}
-
 void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   // Changing the styleMask of a frameless windows causes it to change size so
   // we explicitly disable resizing while setting it.
