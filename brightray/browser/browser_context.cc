@@ -101,13 +101,11 @@ BrowserContext::~BrowserContext() {
 
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   PrefServiceFactory prefs_factory;
   scoped_refptr<JsonPrefStore> pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
-  {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    pref_store->ReadPrefs();  // Synchronous.
-  }
+  pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
 
   auto registry = make_scoped_refptr(new PrefRegistrySimple);
