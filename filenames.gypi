@@ -163,6 +163,8 @@
       'atom/browser/api/atom_api_web_view_manager.cc',
       'atom/browser/api/atom_api_browser_window.cc',
       'atom/browser/api/atom_api_browser_window.h',
+      'atom/browser/api/atom_api_browser_window_mac.mm',
+      'atom/browser/api/atom_api_browser_window_views.cc',
       'atom/browser/api/event.cc',
       'atom/browser/api/event.h',
       'atom/browser/api/event_emitter.cc',

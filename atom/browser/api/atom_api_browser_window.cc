@@ -1169,12 +1169,6 @@ void BrowserWindow::RemoveFromParentChildWindows() {
   parent->child_windows_.Remove(ID());
 }
 
-void BrowserWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
-    const std::vector<DraggableRegion>& regions) {
-  window_->UpdateDraggableRegions(regions);
-}
-
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;

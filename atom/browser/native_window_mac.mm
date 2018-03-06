@@ -736,10 +736,6 @@ enum {
 
 @end
 
-@interface NSView (WebContentsView)
-- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
-@end
-
 @interface AtomProgressBar : NSProgressIndicator
 @end
 
@@ -1765,19 +1761,12 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 
 void NativeWindowMac::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
-  if (has_frame())
-    return;
-
   // All ControlRegionViews should be added as children of the WebContentsView,
   // because WebContentsView will be removed and re-added when entering and
   // leaving fullscreen mode.
   NSView* webView = web_contents()->GetNativeView();
   NSInteger webViewWidth = NSWidth([webView bounds]);
   NSInteger webViewHeight = NSHeight([webView bounds]);
-
-  if ([webView respondsToSelector:@selector(setMouseDownCanMoveWindow:)]) {
-    [webView setMouseDownCanMoveWindow:YES];
-  }
 
   // Remove all ControlRegionViews that are added last time.
   // Note that [webView subviews] returns the view's mutable internal array and
