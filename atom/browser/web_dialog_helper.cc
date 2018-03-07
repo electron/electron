@@ -53,7 +53,13 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
 
   ~FileSelectHelper() override {}
 
-  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths) {
+#if defined(MAS_BUILD)
+  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths,
+                        const std::vector<std::string>& bookmarks)
+#else
+  void OnOpenDialogDone(bool result, const std::vector<base::FilePath>& paths)
+#endif
+  {
     std::vector<content::FileChooserFileInfo> file_info;
     if (result) {
       for (auto& path : paths) {
@@ -73,7 +79,13 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
     OnFilesSelected(file_info);
   }
 
-  void OnSaveDialogDone(bool result, const base::FilePath& path) {
+#if defined(MAS_BUILD)
+  void OnSaveDialogDone(bool result, const base::FilePath& path,
+                        const std::string& bookmark)
+#else
+  void OnSaveDialogDone(bool result, const base::FilePath& path)
+#endif
+  {
     std::vector<content::FileChooserFileInfo> file_info;
     if (result) {
       content::FileChooserFileInfo info;
@@ -223,12 +235,8 @@ void WebDialogHelper::RunFileChooser(
         NOTREACHED();
     }
 
-    AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-        window_->web_contents()->GetBrowserContext());
-    if (!browser_context) {
-      browser_context = static_cast<atom::AtomBrowserContext*>(
-          render_frame_host->GetProcess()->GetBrowserContext());
-    }
+    auto* browser_context = static_cast<atom::AtomBrowserContext*>(
+        render_frame_host->GetProcess()->GetBrowserContext());
     settings.default_path = browser_context->prefs()->GetFilePath(
         prefs::kSelectFileLastDirectory).Append(params.default_file_name);
     settings.properties = flags;

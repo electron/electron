@@ -70,6 +70,7 @@ Notification::Notification(v8::Isolate* isolate,
     opts.Get("hasReply", &has_reply_);
     opts.Get("actions", &actions_);
     opts.Get("sound", &sound_);
+    opts.Get("closeButtonText", &close_button_text_);
   }
 }
 
@@ -104,20 +105,24 @@ bool Notification::GetSilent() const {
   return silent_;
 }
 
+bool Notification::GetHasReply() const {
+  return has_reply_;
+}
+
 base::string16 Notification::GetReplyPlaceholder() const {
   return reply_placeholder_;
 }
 
-bool Notification::GetHasReply() const {
-  return has_reply_;
+base::string16 Notification::GetSound() const {
+  return sound_;
 }
 
 std::vector<brightray::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
-base::string16 Notification::GetSound() const {
-  return sound_;
+base::string16 Notification::GetCloseButtonText() const {
+  return close_button_text_;
 }
 
 // Setters
@@ -137,12 +142,16 @@ void Notification::SetSilent(bool new_silent) {
   silent_ = new_silent;
 }
 
+void Notification::SetHasReply(bool new_has_reply) {
+  has_reply_ = new_has_reply;
+}
+
 void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
   reply_placeholder_ = new_placeholder;
 }
 
-void Notification::SetHasReply(bool new_has_reply) {
-  has_reply_ = new_has_reply;
+void Notification::SetSound(const base::string16& new_sound) {
+  sound_ = new_sound;
 }
 
 void Notification::SetActions(
@@ -150,8 +159,8 @@ void Notification::SetActions(
   actions_ = actions;
 }
 
-void Notification::SetSound(const base::string16& new_sound) {
-  sound_ = new_sound;
+void Notification::SetCloseButtonText(const base::string16& text) {
+  close_button_text_ = text;
 }
 
 void Notification::NotificationAction(int index) {
@@ -201,6 +210,7 @@ void Notification::Show() {
       options.reply_placeholder = reply_placeholder_;
       options.actions = actions_;
       options.sound = sound_;
+      options.close_button_text = close_button_text_;
       notification_->Show(options);
     }
   }
@@ -222,15 +232,18 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)
       .SetProperty("body", &Notification::GetBody, &Notification::SetBody)
-      .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
-      .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
-                   &Notification::SetReplyPlaceholder)
+      .SetProperty("silent", &Notification::GetSilent,
+                   &Notification::SetSilent)
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
+      .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
+                   &Notification::SetReplyPlaceholder)
+      .SetProperty("sound", &Notification::GetSound,
+                   &Notification::SetSound)
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
-      .SetProperty("sound", &Notification::GetSound,
-                   &Notification::SetSound);
+      .SetProperty("closeButtonText", &Notification::GetCloseButtonText,
+                   &Notification::SetCloseButtonText);
 }
 
 }  // namespace api
@@ -257,4 +270,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_notification, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_notification, Initialize)

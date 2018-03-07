@@ -94,25 +94,27 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     request->default_result = net::ErrorToString(error);
     request->error_code = error;
     request->certificate = params_.certificate();
+    auto response_callback = base::Bind(&CertVerifierRequest::OnResponseInUI,
+                                        weak_ptr_factory_.GetWeakPtr());
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
         base::Bind(&CertVerifierRequest::OnVerifyRequestInUI,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   cert_verifier_->verify_proc(),
-                   base::Passed(&request)));
+                   cert_verifier_->verify_proc(), base::Passed(&request),
+                   response_callback));
   }
 
-  void OnVerifyRequestInUI(const AtomCertVerifier::VerifyProc& verify_proc,
-                           std::unique_ptr<VerifyRequestParams> request) {
-    verify_proc.Run(*(request.get()),
-                    base::Bind(&CertVerifierRequest::OnResponseInUI,
-                               weak_ptr_factory_.GetWeakPtr()));
+  static void OnVerifyRequestInUI(
+      const AtomCertVerifier::VerifyProc& verify_proc,
+      std::unique_ptr<VerifyRequestParams> request,
+      const base::Callback<void(int)>& response_callback) {
+    verify_proc.Run(*(request.get()), response_callback);
   }
 
-  void OnResponseInUI(int result) {
-    BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                            base::Bind(&CertVerifierRequest::NotifyResponseInIO,
-                                       weak_ptr_factory_.GetWeakPtr(), result));
+  static void OnResponseInUI(base::WeakPtr<CertVerifierRequest> self,
+                             int result) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::Bind(&CertVerifierRequest::NotifyResponseInIO, self, result));
   }
 
   void NotifyResponseInIO(int result) {

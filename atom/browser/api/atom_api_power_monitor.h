@@ -6,8 +6,8 @@
 #define ATOM_BROWSER_API_ATOM_API_POWER_MONITOR_H_
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/lib/power_observer.h"
 #include "base/compiler_specific.h"
-#include "base/power_monitor/power_observer.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -15,7 +15,7 @@ namespace atom {
 namespace api {
 
 class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
-                     public base::PowerObserver {
+                     public PowerObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
@@ -25,6 +25,15 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
  protected:
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
+
+  // Called by native calles.
+  bool ShouldShutdown();
+
+#if defined(OS_LINUX)
+  // Private JS APIs.
+  void BlockShutdown();
+  void UnblockShutdown();
+#endif
 
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;

@@ -72,10 +72,10 @@ std::unique_ptr<base::DictionaryValue>
 CreateFailureResponse(int id, const std::string& param) {
   auto response = base::MakeUnique<base::DictionaryValue>();
   auto error_object = base::MakeUnique<base::DictionaryValue>();
-  response->Set(kError, std::move(error_object));
   error_object->SetInteger(params::kErrorCode, kErrorInvalidParams);
   error_object->SetString(params::kErrorMessage,
       base::StringPrintf("Missing or Invalid '%s' parameter", param.c_str()));
+  response->Set(kError, std::move(error_object));
   return response;
 }
 

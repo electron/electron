@@ -1,12 +1,14 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-[![Travis Build Status](https://travis-ci.org/electron/electron.svg?branch=master)](https://travis-ci.org/electron/electron)
-[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/bc56v83355fi3369/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron/branch/master)
+
+[![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
+[![AppVeyor Build Status](https://windows-ci.electronjs.org/api/projects/status/nilyf07hcef14dvj/branch/master?svg=true)](https://windows-ci.electronjs.org/project/AppVeyor/electron/branch/master)
+[![Jenkins Build Status](https://mac-ci.electronjs.org/buildStatus/icon?job=Electron%20org/electron/master)](https://mac-ci.electronjs.org/blue/organizations/jenkins/Electron%20org%2Felectron/activity?branch=master)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 
 :memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹.
-View these docs in other languages at [electron/electron-i18n](https://github.com/electron/electron-i18n/tree/master/content/).
+View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
@@ -33,10 +35,10 @@ npm install electron --save-dev --save-exact
 
 The `--save-exact` flag is recommended as Electron does not follow semantic
 versioning. For info on how to manage Electron versions in your apps, see
-[Electron versioning](https://electronjs.org/docs/tutorial/electron-versioning).
+[Electron versioning](docs/tutorial/electron-versioning.md).
 
 For more installation options and troubleshooting tips, see
-[installation](https://electronjs.org/docs/tutorial/installation).
+[installation](docs/tutorial/installation.md).
 
 ## Quick start
 
@@ -83,7 +85,7 @@ const child = proc.spawn(electron)
 
 ## Documentation Translations
 
-Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
+Find documentation translations in [electron/i18n](https://github.com/electron/i18n).
 
 ## Community
 
@@ -99,6 +101,7 @@ forums
 - [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
 - [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
 - [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
+- [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
 for a community maintained list of useful example apps, tools and resources.

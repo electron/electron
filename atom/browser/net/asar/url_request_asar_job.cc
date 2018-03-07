@@ -101,24 +101,20 @@ void URLRequestAsarJob::InitializeFileJob(
 }
 
 void URLRequestAsarJob::Start() {
-  if (type_ == TYPE_ASAR) {
-    int flags = base::File::FLAG_OPEN |
-                base::File::FLAG_READ |
-                base::File::FLAG_ASYNC;
-    int rv = stream_->Open(archive_->path(), flags,
-                           base::Bind(&URLRequestAsarJob::DidOpen,
-                                      weak_ptr_factory_.GetWeakPtr()));
-    if (rv != net::ERR_IO_PENDING)
-      DidOpen(rv);
-  } else if (type_ == TYPE_FILE) {
+  if (type_ == TYPE_ASAR || type_ == TYPE_FILE) {
     auto* meta_info = new FileMetaInfo();
+    if (type_ == TYPE_ASAR) {
+      meta_info->file_path = archive_->path();
+      meta_info->file_exists = true;
+      meta_info->is_directory = false;
+      meta_info->file_size = file_info_.size;
+    }
     file_task_runner_->PostTaskAndReply(
         FROM_HERE,
-        base::Bind(&URLRequestAsarJob::FetchMetaInfo, file_path_,
+        base::Bind(&URLRequestAsarJob::FetchMetaInfo, file_path_, type_,
                    base::Unretained(meta_info)),
         base::Bind(&URLRequestAsarJob::DidFetchMetaInfo,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   base::Owned(meta_info)));
+                   weak_ptr_factory_.GetWeakPtr(), base::Owned(meta_info)));
   } else {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE,
@@ -194,15 +190,11 @@ std::unique_ptr<net::SourceStream> URLRequestAsarJob::SetUpSourceStream() {
 }
 
 bool URLRequestAsarJob::GetMimeType(std::string* mime_type) const {
-  if (type_ == TYPE_ASAR) {
-    return net::GetMimeTypeFromFile(file_path_, mime_type);
-  } else {
-    if (meta_info_.mime_type_result) {
-      *mime_type = meta_info_.mime_type;
-      return true;
-    }
-    return false;
+  if (meta_info_.mime_type_result) {
+    *mime_type = meta_info_.mime_type;
+    return true;
   }
+  return false;
 }
 
 void URLRequestAsarJob::SetExtraRequestHeaders(
@@ -238,12 +230,16 @@ void URLRequestAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
 }
 
 void URLRequestAsarJob::FetchMetaInfo(const base::FilePath& file_path,
+                                      JobType type,
                                       FileMetaInfo* meta_info) {
-  base::File::Info file_info;
-  meta_info->file_exists = base::GetFileInfo(file_path, &file_info);
-  if (meta_info->file_exists) {
-    meta_info->file_size = file_info.size;
-    meta_info->is_directory = file_info.is_directory;
+  if (type == TYPE_FILE) {
+    base::File::Info file_info;
+    meta_info->file_exists = base::GetFileInfo(file_path, &file_info);
+    if (meta_info->file_exists) {
+      meta_info->file_path = file_path;
+      meta_info->file_size = file_info.size;
+      meta_info->is_directory = file_info.is_directory;
+    }
   }
   // On Windows GetMimeTypeFromFile() goes to the registry. Thus it should be
   // done in WorkerPool.
@@ -261,9 +257,9 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
   int flags = base::File::FLAG_OPEN |
               base::File::FLAG_READ |
               base::File::FLAG_ASYNC;
-  int rv = stream_->Open(file_path_, flags,
-                         base::Bind(&URLRequestAsarJob::DidOpen,
-                                    weak_ptr_factory_.GetWeakPtr()));
+  int rv = stream_->Open(
+      meta_info_.file_path, flags,
+      base::Bind(&URLRequestAsarJob::DidOpen, weak_ptr_factory_.GetWeakPtr()));
   if (rv != net::ERR_IO_PENDING)
     DidOpen(rv);
 }

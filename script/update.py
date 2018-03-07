@@ -28,8 +28,11 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Update build configurations')
   parser.add_argument('--defines', default='',
                       help='The build variables passed to gyp')
-  parser.add_argument('--msvs', action='store_true',
+  group = parser.add_mutually_exclusive_group(required=False)
+  group.add_argument('--msvs', action='store_true',
                       help='Generate Visual Studio project')
+  group.add_argument('--xcode', action='store_true',
+                      help='Generate XCode project')
   return parser.parse_args()
 
 
@@ -91,6 +94,8 @@ def run_gyp(target_arch, component):
   generator = 'ninja'
   if args.msvs:
     generator = 'msvs-ninja'
+  elif args.xcode:
+    generator = 'xcode-ninja'
 
   return subprocess.call([python, gyp, '-f', generator, '--depth', '.',
                           'electron.gyp', '-Icommon.gypi'] + defines, env=env)

@@ -97,6 +97,17 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
                                          int signal_strength_level) {
   DeviceInfo info = {device_id, device_name};
   device_list_.push_back(info);
+
+  // Emit a select-bluetooth-device handler to allow for user to listen for
+  // bluetooth device found.
+  bool prevent_default = api_web_contents_->Emit("select-bluetooth-device",
+                device_list_, base::Bind(&OnDeviceChosen, event_handler_));
+
+  // If emit not implimented select first device that matches the filters
+  //  provided.
+  if (!prevent_default) {
+    event_handler_.Run(Event::SELECTED, device_id);
+  }
 }
 
 void BluetoothChooser::RemoveDevice(const std::string& device_id) {

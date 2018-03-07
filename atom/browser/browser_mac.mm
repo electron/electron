@@ -17,9 +17,14 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "net/base/mac/url_conversions.h"
+#include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
 namespace atom {
+
+void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
+  [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
+}
 
 void Browser::Focus() {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:YES];

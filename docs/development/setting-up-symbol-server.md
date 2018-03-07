@@ -5,7 +5,7 @@ about the functions contained in executables and dynamic libraries and provide
 you with information to get clean call stacks. A Symbol Server allows the
 debugger to load the correct symbols, binaries and sources automatically without
 forcing users to download large debugging files. The server functions like
-[Microsoft's symbol server](http://support.microsoft.com/kb/311503) so the
+[Microsoft's symbol server](https://support.microsoft.com/kb/311503) so the
 documentation there can be useful.
 
 Note that because released Electron builds are heavily optimized, debugging is
@@ -38,7 +38,7 @@ or by typing the `.sympath` command. If you would like to get symbols from
 Microsoft's symbol server as well, you should list that first:
 
 ```powershell
-SRV*c:\code\symbols\*http://msdl.microsoft.com/download/symbols;SRV*c:\code\symbols\*https://electron-symbols.githubapp.com
+SRV*c:\code\symbols\*https://msdl.microsoft.com/download/symbols;SRV*c:\code\symbols\*https://electron-symbols.githubapp.com
 ```
 
 ## Using the symbol server in Visual Studio

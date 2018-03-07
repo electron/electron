@@ -188,7 +188,7 @@ void ShowMessageBox(NativeWindow* parent_window,
   if (!parent_window || !parent_window->GetNativeWindow() ||
       parent_window->is_offscreen_dummy()) {
     int ret = [[alert autorelease] runModal];
-    callback.Run(ret, false);
+    callback.Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     ModalDelegate* delegate = [[ModalDelegate alloc] initWithCallback:callback
                                                              andAlert:alert

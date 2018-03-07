@@ -4,6 +4,7 @@
 
 #include "atom/common/node_bindings.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -25,44 +27,71 @@
 
 #include "atom/common/node_includes.h"
 
-// Force all builtin modules to be referenced so they can actually run their
-// DSO constructors, see http://git.io/DRIqCg.
-#define REFERENCE_MODULE(name) \
-  extern "C" void _register_ ## name(void); \
-  void (*fp_register_ ## name)(void) = _register_ ## name
-// Electron's builtin modules.
-REFERENCE_MODULE(atom_browser_app);
-REFERENCE_MODULE(atom_browser_auto_updater);
-REFERENCE_MODULE(atom_browser_browser_view);
-REFERENCE_MODULE(atom_browser_content_tracing);
-REFERENCE_MODULE(atom_browser_debugger);
-REFERENCE_MODULE(atom_browser_desktop_capturer);
-REFERENCE_MODULE(atom_browser_dialog);
-REFERENCE_MODULE(atom_browser_download_item);
-REFERENCE_MODULE(atom_browser_global_shortcut);
-REFERENCE_MODULE(atom_browser_menu);
-REFERENCE_MODULE(atom_browser_net);
-REFERENCE_MODULE(atom_browser_power_monitor);
-REFERENCE_MODULE(atom_browser_power_save_blocker);
-REFERENCE_MODULE(atom_browser_protocol);
-REFERENCE_MODULE(atom_browser_render_process_preferences);
-REFERENCE_MODULE(atom_browser_session);
-REFERENCE_MODULE(atom_browser_system_preferences);
-REFERENCE_MODULE(atom_browser_tray);
-REFERENCE_MODULE(atom_browser_web_contents);
-REFERENCE_MODULE(atom_browser_web_view_manager);
-REFERENCE_MODULE(atom_browser_window);
-REFERENCE_MODULE(atom_common_asar);
-REFERENCE_MODULE(atom_common_clipboard);
-REFERENCE_MODULE(atom_common_crash_reporter);
-REFERENCE_MODULE(atom_common_native_image);
-REFERENCE_MODULE(atom_common_notification);
-REFERENCE_MODULE(atom_common_screen);
-REFERENCE_MODULE(atom_common_shell);
-REFERENCE_MODULE(atom_common_v8_util);
-REFERENCE_MODULE(atom_renderer_ipc);
-REFERENCE_MODULE(atom_renderer_web_frame);
-#undef REFERENCE_MODULE
+#define ELECTRON_BUILTIN_MODULES(V)          \
+  V(atom_browser_app)                        \
+  V(atom_browser_auto_updater)               \
+  V(atom_browser_browser_view)               \
+  V(atom_browser_content_tracing)            \
+  V(atom_browser_debugger)                   \
+  V(atom_browser_desktop_capturer)           \
+  V(atom_browser_dialog)                     \
+  V(atom_browser_download_item)              \
+  V(atom_browser_global_shortcut)            \
+  V(atom_browser_in_app_purchase)            \
+  V(atom_browser_menu)                       \
+  V(atom_browser_net)                        \
+  V(atom_browser_power_monitor)              \
+  V(atom_browser_power_save_blocker)         \
+  V(atom_browser_protocol)                   \
+  V(atom_browser_render_process_preferences) \
+  V(atom_browser_session)                    \
+  V(atom_browser_system_preferences)         \
+  V(atom_browser_tray)                       \
+  V(atom_browser_web_contents)               \
+  V(atom_browser_web_view_manager)           \
+  V(atom_browser_window)                     \
+  V(atom_common_asar)                        \
+  V(atom_common_clipboard)                   \
+  V(atom_common_crash_reporter)              \
+  V(atom_common_native_image)                \
+  V(atom_common_notification)                \
+  V(atom_common_screen)                      \
+  V(atom_common_shell)                       \
+  V(atom_common_v8_util)                     \
+  V(atom_renderer_ipc)                       \
+  V(atom_renderer_web_frame)
+
+// This is used to load built-in modules. Instead of using
+// __attribute__((constructor)), we call the _register_<modname>
+// function for each built-in modules explicitly. This is only
+// forward declaration. The definitions are in each module's
+// implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
+#define V(modname) void _register_##modname();
+ELECTRON_BUILTIN_MODULES(V)
+#undef V
+
+namespace {
+
+void stop_and_close_uv_loop(uv_loop_t* loop) {
+  // Close any active handles
+  uv_stop(loop);
+  uv_walk(loop, [](uv_handle_t* handle, void*){
+    if (!uv_is_closing(handle)) {
+      uv_close(handle, nullptr);
+    }
+  }, nullptr);
+
+  // Run the loop to let it finish all the closing handles
+  // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
+  for (;;)
+    if (!uv_run(loop, UV_RUN_DEFAULT))
+      break;
+
+  DCHECK(!uv_loop_alive(loop));
+  uv_loop_close(loop);
+}
+
+}  // namespace
 
 namespace atom {
 
@@ -100,10 +129,15 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_(browser_env),
-      uv_loop_(browser_env == WORKER ? uv_loop_new() : uv_default_loop()),
       embed_closed_(false),
       uv_env_(nullptr),
       weak_factory_(this) {
+  if (browser_env == WORKER) {
+    uv_loop_init(&worker_loop_);
+    uv_loop_ = &worker_loop_;
+  } else {
+    uv_loop_ = uv_default_loop();
+  }
 }
 
 NodeBindings::~NodeBindings() {
@@ -119,9 +153,15 @@ NodeBindings::~NodeBindings() {
   uv_sem_destroy(&embed_sem_);
   uv_close(reinterpret_cast<uv_handle_t*>(&dummy_uv_handle_), nullptr);
 
-  // Destroy loop.
-  if (uv_loop_ != uv_default_loop())
-    uv_loop_delete(uv_loop_);
+  // Clean up worker loop
+  if (uv_loop_ == &worker_loop_)
+    stop_and_close_uv_loop(uv_loop_);
+}
+
+void NodeBindings::RegisterBuiltinModules() {
+#define V(modname) _register_##modname();
+  ELECTRON_BUILTIN_MODULES(V)
+#undef V
 }
 
 void NodeBindings::Initialize() {
@@ -134,6 +174,9 @@ void NodeBindings::Initialize() {
   if (browser_env_ != BROWSER)
     AtomCommandLine::InitializeFromCommandLine();
 #endif
+
+  // Explicitly register electron's builtin modules.
+  RegisterBuiltinModules();
 
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
@@ -149,8 +192,16 @@ void NodeBindings::Initialize() {
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
-    v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context,
+    node::MultiIsolatePlatform* platform) {
+#if defined(OS_WIN)
+  auto& atom_args = AtomCommandLine::argv();
+  std::vector<std::string> args(atom_args.size());
+  std::transform(atom_args.cbegin(), atom_args.cend(), args.begin(),
+                 [](auto& a) { return base::WideToUTF8(a); });
+#else
   auto args = AtomCommandLine::argv();
+#endif
 
   // Feed node the path to initialization script.
   base::FilePath::StringType process_type;
@@ -170,13 +221,12 @@ node::Environment* NodeBindings::CreateEnvironment(
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
                     .Append(process_type)
                     .Append(FILE_PATH_LITERAL("init.js"));
-  std::string script_path_str = script_path.AsUTF8Unsafe();
-  args.insert(args.begin() + 1, script_path_str.c_str());
+  args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
 
   std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
-      new node::IsolateData(context->GetIsolate(), uv_loop_), context,
-      args.size(), c_argv.get(), 0, nullptr);
+      node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
+      context, args.size(), c_argv.get(), 0, nullptr);
 
   if (browser_env_ == BROWSER) {
     // SetAutorunMicrotasks is no longer called in node::CreateEnvironment

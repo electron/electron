@@ -135,6 +135,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     [self updateSegmentedControl:(NSCustomTouchBarItem*)item withSettings:settings];
   } else if (item_type == "scrubber") {
     [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
+  } else if (item_type == "group") {
+    [self updateGroup:(NSGroupTouchBarItem*)item withSettings:settings];
   }
 }
 
@@ -169,18 +171,31 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   auto identifier = [self identifierFromID:item_id type:item_type];
   if (!identifier) return;
 
-  std::vector<std::string> popover_ids;
-  settings.Get("_popover", &popover_ids);
-  for (auto& popover_id : popover_ids) {
-    auto popoverIdentifier = [self identifierFromID:popover_id type:"popover"];
-    if (!popoverIdentifier) continue;
+  std::vector<mate::Dictionary> parents;
+  settings.Get("_parents", &parents);
+  for (auto& parent : parents) {
+    std::string parent_type;
+    std::string parent_id;
+    if (!parent.Get("type", &parent_type) || !parent.Get("id", &parent_id))
+      continue;
+    auto parentIdentifier = [self identifierFromID:parent_id type:parent_type];
+    if (!parentIdentifier) continue;
 
-    NSPopoverTouchBarItem* popoverItem =
-        [touchBar itemForIdentifier:popoverIdentifier];
-    [self refreshTouchBarItem:popoverItem.popoverTouchBar
-                           id:identifier
-                     withType:item_type
-                 withSettings:settings];
+    if (parent_type == "popover") {
+      NSPopoverTouchBarItem* popoverItem =
+        [touchBar itemForIdentifier:parentIdentifier];
+      [self refreshTouchBarItem:popoverItem.popoverTouchBar
+                            id:identifier
+                      withType:item_type
+                  withSettings:settings];
+    } else if (parent_type == "group") {
+      NSGroupTouchBarItem* groupItem =
+        [touchBar itemForIdentifier:parentIdentifier];
+      [self refreshTouchBarItem:groupItem.groupTouchBar
+                             id:identifier
+                       withType:item_type
+                   withSettings:settings];
+    }
   }
 
   [self refreshTouchBarItem:touchBar
@@ -476,6 +491,17 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   }
   return [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier
                                                                       items:generatedItems];
+}
+
+- (void)updateGroup:(NSGroupTouchBarItem*)item
+    withSettings:(const mate::PersistentDictionary&)settings {
+  
+  mate::PersistentDictionary child;
+  if (!settings.Get("child", &child)) return;
+  std::vector<mate::PersistentDictionary> items;
+  if (!child.Get("ordereredItems", &items)) return;
+
+  item.groupTouchBar = [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
 }
 
 - (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id

@@ -82,13 +82,12 @@ int LaunchProgram(const StringVector& relauncher_args,
   // Redirect the stdout of child process to /dev/null, otherwise after
   // relaunch the child process will raise exception when writing to stdout.
   base::ScopedFD devnull(HANDLE_EINTR(open("/dev/null", O_WRONLY)));
-  base::FileHandleMappingVector no_stdout;
-  no_stdout.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
-  no_stdout.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
 
   base::LaunchOptions options;
   options.new_process_group = true;  // detach
-  options.fds_to_remap = &no_stdout;
+  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
+  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
+
   base::Process process = base::LaunchProcess(argv, options);
   return process.IsValid() ? 0 : 1;
 }

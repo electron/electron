@@ -68,6 +68,7 @@ extern const char kBlinkFeatures[];
 extern const char kDisableBlinkFeatures[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
+extern const char kCustomArgs[];
 
 }   // namespace options
 
@@ -91,6 +92,7 @@ extern const char kAppPath[];
 extern const char kBackgroundColor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];
+extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];

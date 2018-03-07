@@ -10,6 +10,20 @@ from lib.config import enable_verbose_mode
 from lib.util import electron_gyp, execute_stdout, rm_rf
 
 
+if sys.platform == 'linux2':
+    # On Linux we use python-dbusmock to create a fake system bus and test
+    # powerMonitor interaction with org.freedesktop.login1 service. The
+    # dbus_mock module takes care of setting up the fake server with mock,
+    # while also setting DBUS_SYSTEM_BUS_ADDRESS environment variable, which
+    # will be picked up by electron.
+    try:
+        import lib.dbus_mock
+    except ImportError:
+        # If not available, the powerMonitor tests will be skipped since
+        # DBUS_SYSTEM_BUS_ADDRESS will not be set
+        pass
+
+
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 PROJECT_NAME = electron_gyp()['project_name%']
@@ -48,6 +62,7 @@ def main():
   try:
     if args.use_instrumented_asar:
       install_instrumented_asar_file(resources_path)
+    os.environ["ELECTRON_DISABLE_SECURITY_WARNINGS"] = "1"
     subprocess.check_call([electron, 'spec'] + sys.argv[1:])
   except subprocess.CalledProcessError as e:
     returncode = e.returncode

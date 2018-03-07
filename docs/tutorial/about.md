@@ -27,7 +27,11 @@ In Electron, Node.js and Chromium share a single V8 instance—usually the versi
 
 ### Versioning
 
-Due to the hard dependency on Node.js and Chromium, Electron is in a tricky versioning position and [does not follow `semver`](http://semver.org). You should therefore always reference a specific version of Electron. [Read more about Electron's versioning](https://electronjs.org/docs/tutorial/electron-versioning) or see the [versions currently in use](https://electronjs.org/#electron-versions).
+As of version 2.0 Electron [follows `semver`](https://semver.org).
+For most applications, and using any recent version of npm,
+running `$ npm install electron` will do the right thing.
+
+The version update process is detailed explicitly in our [Versioning Doc](electron-versioning.md).
 
 ### LTS
 
@@ -50,8 +54,8 @@ Below are milestones in Electron's history.
 | :calendar: | :tada: |
 | --- | --- |
 | **April 2013**| [Atom Shell is started](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
-| **May 2014** | [Atom Shell is open sourced](http://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
+| **May 2014** | [Atom Shell is open sourced](https://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
 | **April 2015** | [Atom Shell is re-named Electron](https://github.com/electron/electron/pull/1389). |
 | **May 2016** | [Electron releases `v1.0.0`](https://electronjs.org/blog/electron-1-0).|
-| **May 2016** | [Electron apps compatible with Mac App Store](https://electronjs.org/docs/tutorial/mac-app-store-submission-guide).|
-| **August 2016** | [Windows Store support for Electron apps](https://electronjs.org/docs/tutorial/windows-store-guide).|
+| **May 2016** | [Electron apps compatible with Mac App Store](mac-app-store-submission-guide.md).|
+| **August 2016** | [Windows Store support for Electron apps](windows-store-guide.md).|

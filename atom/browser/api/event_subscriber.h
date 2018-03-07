@@ -73,6 +73,13 @@ class EventSubscriber : internal::EventSubscriberBase {
           content::BrowserThread::UI, FROM_HERE,
           base::Bind(
               [](EventSubscriber<HandlerType>* subscriber) {
+                {
+                  // It is possible that this function will execute in the UI
+                  // thread before the outer function has returned and destroyed
+                  // its auto_lock. We need to acquire the lock before deleting
+                  // or risk a crash.
+                  base::AutoLock auto_lock(subscriber->handler_lock_);
+                }
                 delete subscriber;
               },
               ptr));

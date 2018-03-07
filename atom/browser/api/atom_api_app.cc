@@ -532,7 +532,6 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
-  content::BrowserChildProcessObserver::Add(this);
   base::ProcessId pid = base::GetCurrentProcId();
   std::unique_ptr<atom::ProcessMetric> process_metric(
       new atom::ProcessMetric(
@@ -599,6 +598,7 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
 }
 
 void App::OnPreMainMessageLoopRun() {
+  content::BrowserChildProcessObserver::Add(this);
   if (process_singleton_) {
     process_singleton_->OnBrowserReady();
   }
@@ -667,25 +667,33 @@ void App::OnLogin(LoginHandler* login_handler,
     login_handler->CancelAuth();
 }
 
-void App::OnCreateWindow(
+bool App::CanCreateWindow(
+    content::RenderFrameHost* opener,
+    const GURL& opener_url,
+    const GURL& opener_top_level_frame_url,
+    const GURL& source_origin,
+    content::mojom::WindowContainerType container_type,
     const GURL& target_url,
+    const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
-    const std::vector<std::string>& features,
+    const blink::mojom::WindowFeatures& features,
+    const std::vector<std::string>& additional_features,
     const scoped_refptr<content::ResourceRequestBody>& body,
-    content::RenderFrameHost* opener) {
+    bool user_gesture,
+    bool opener_suppressed,
+    bool* no_javascript_access) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url,
-                                     frame_name,
-                                     disposition,
-                                     features,
-                                     body);
+    api_web_contents->OnCreateWindow(target_url, frame_name, disposition,
+                                     additional_features, body);
   }
+
+  return false;
 }
 
 void App::AllowCertificateError(
@@ -843,7 +851,7 @@ void App::SetDesktopName(const std::string& desktop_name) {
 }
 
 std::string App::GetLocale() {
-  return l10n_util::GetApplicationLocale("");
+  return g_browser_process->GetApplicationLocale();
 }
 
 bool App::MakeSingleInstance(
@@ -859,9 +867,10 @@ bool App::MakeSingleInstance(
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
-    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED:
+    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
       return true;
+    }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
       return false;
@@ -888,11 +897,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
   }
 
   if (!override_argv) {
-#if defined(OS_WIN)
-    const relauncher::StringVector& argv = atom::AtomCommandLine::wargv();
-#else
     const relauncher::StringVector& argv = atom::AtomCommandLine::argv();
-#endif
     return relauncher::RelaunchApp(argv);
   }
 
@@ -1128,8 +1133,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   auto status = content::GetFeatureStatus();
-  return mate::ConvertToV8(isolate,
-                           status ? *status : base::DictionaryValue());
+  base::DictionaryValue temp;
+  return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
@@ -1251,13 +1256,16 @@ void App::BuildPrototype(
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
-      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox)
       // TODO(juturu): Remove in 2.0, deprecate before then with warnings
       #if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       #endif
-      .SetMethod("getAppMemoryInfo", &App::GetAppMetrics);
+      #if defined(MAS_BUILD)
+      .SetMethod("startAccessingSecurityScopedResource",
+                 &App::StartAccessingSecurityScopedResource)
+      #endif
+      .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 
 }  // namespace api
@@ -1334,4 +1342,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_app, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_app, Initialize)

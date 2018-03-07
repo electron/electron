@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_SESSION_H_
 
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
@@ -81,6 +82,8 @@ class Session: public mate::TrackableObject<Session>,
   void GetBlobData(const std::string& uuid,
                    const AtomBlobReader::CompletionCallback& callback);
   void CreateInterruptedDownload(const mate::Dictionary& options);
+  void SetPreloads(const std::vector<base::FilePath::StringType>& preloads);
+  std::vector<base::FilePath::StringType> GetPreloads() const;
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);

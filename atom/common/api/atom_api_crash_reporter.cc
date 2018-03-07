@@ -31,15 +31,6 @@ struct Converter<CrashReporter::UploadReportResult> {
 
 namespace {
 
-// TODO(2.0) Remove
-void SetExtraParameter(const std::string& key, mate::Arguments* args) {
-  std::string value;
-  if (args->GetNext(&value))
-    CrashReporter::GetInstance()->AddExtraParameter(key, value);
-  else
-    CrashReporter::GetInstance()->RemoveExtraParameter(key);
-}
-
 void AddExtraParameter(const std::string& key, const std::string& value) {
   CrashReporter::GetInstance()->AddExtraParameter(key, value);
 }
@@ -57,7 +48,6 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary dict(context->GetIsolate(), exports);
   auto reporter = base::Unretained(CrashReporter::GetInstance());
   dict.SetMethod("start", base::Bind(&CrashReporter::Start, reporter));
-  dict.SetMethod("setExtraParameter", &SetExtraParameter);
   dict.SetMethod("addExtraParameter", &AddExtraParameter);
   dict.SetMethod("removeExtraParameter", &RemoveExtraParameter);
   dict.SetMethod("getParameters", &GetParameters);
@@ -71,4 +61,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_common_crash_reporter, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_common_crash_reporter, Initialize)

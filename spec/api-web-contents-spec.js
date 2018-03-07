@@ -92,6 +92,22 @@ describe('webContents module', () => {
     })
   })
 
+  describe('setDevToolsWebCotnents() API', () => {
+    it('sets arbitry webContents as devtools', (done) => {
+      let devtools = new BrowserWindow({show: false})
+      devtools.webContents.once('dom-ready', () => {
+        assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+        devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
+          assert.ok(name, 'InspectorFrontendHostImpl')
+          devtools.destroy()
+          done()
+        })
+      })
+      w.webContents.setDevToolsWebContents(devtools.webContents)
+      w.webContents.openDevTools()
+    })
+  })
+
   describe('isFocused() API', () => {
     it('returns false when the window is hidden', () => {
       BrowserWindow.getAllWindows().forEach((window) => {

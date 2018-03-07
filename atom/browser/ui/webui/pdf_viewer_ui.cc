@@ -9,9 +9,9 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/loader/layered_resource_handler.h"
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
+#include "atom/common/api/api_messages.h"
 #include "atom/common/atom_constants.h"
 #include "base/sequenced_task_runner_helpers.h"
-#include "components/pdf/common/pdf_messages.h"
 #include "content/browser/loader/resource_dispatcher_host_impl.h"
 #include "content/browser/loader/resource_request_info_impl.h"
 #include "content/browser/loader/stream_resource_handler.h"
@@ -78,11 +78,13 @@ class BundledDataSource : public content::URLDataSource {
   }
 
   std::string GetMimeType(const std::string& path) const override {
-    std::string filename = PathWithoutParams(path);
+    base::FilePath::StringType ext =
+        base::FilePath::FromUTF8Unsafe(PathWithoutParams(path)).Extension();
     std::string mime_type;
-    net::GetMimeTypeFromFile(
-        base::FilePath::FromUTF8Unsafe(filename), &mime_type);
-    return mime_type;
+    if (!ext.empty() &&
+        net::GetWellKnownMimeTypeFromExtension(ext.substr(1), &mime_type))
+      return mime_type;
+    return "text/html";
   }
 
   bool ShouldAddContentSecurityPolicy() const override { return false; }
@@ -215,7 +217,7 @@ bool PdfViewerUI::OnMessageReceived(
     content::RenderFrameHost* render_frame_host) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(PdfViewerUI, message)
-    IPC_MESSAGE_HANDLER(PDFHostMsg_PDFSaveURLAs, OnSaveURLAs)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_PDFSaveURLAs, OnSaveURLAs)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;

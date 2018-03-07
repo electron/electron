@@ -8,12 +8,14 @@
 
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
+#include "base/task_scheduler/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 
 #include "atom/common/node_includes.h"
+#include "vendor/node/src/tracing/trace_event.h"
 
 namespace atom {
 
@@ -44,9 +46,17 @@ bool JavascriptEnvironment::Initialize() {
   if (!js_flags.empty())
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
+  // The V8Platform of gin relies on Chromium's task schedule, which has not
+  // been started at this point, so we have to rely on Node's V8Platform.
+  platform_ = node::CreatePlatform(
+      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0), nullptr);
+  v8::V8::InitializePlatform(platform_);
+  node::tracing::TraceEventHelper::SetTracingController(
+      new v8::TracingController());
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::IsolateHolder::kStableV8Extras,
-                                 gin::ArrayBufferAllocator::SharedInstance());
+                                 gin::ArrayBufferAllocator::SharedInstance(),
+                                 false);
   return true;
 }
 

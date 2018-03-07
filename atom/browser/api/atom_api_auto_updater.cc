@@ -99,10 +99,8 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(const std::string& url, mate::Arguments* args) {
-  auto_updater::AutoUpdater::HeaderMap headers;
-  args->GetNext(&headers);
-  auto_updater::AutoUpdater::SetFeedURL(url, headers);
+void AutoUpdater::SetFeedURL(mate::Arguments* args) {
+  auto_updater::AutoUpdater::SetFeedURL(args);
 }
 
 void AutoUpdater::QuitAndInstall() {
@@ -152,4 +150,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_auto_updater, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_auto_updater, Initialize)

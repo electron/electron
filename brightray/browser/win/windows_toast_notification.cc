@@ -11,6 +11,7 @@
 #include <shlobj.h>
 #include <vector>
 
+#include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/win/notification_presenter_win.h"
@@ -30,15 +31,8 @@ namespace brightray {
 
 namespace {
 
-bool GetAppUserModelId(ScopedHString* app_id) {
-  PWSTR current_app_id;
-  if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
-    app_id->Reset(current_app_id);
-    CoTaskMemFree(current_app_id);
-  } else {
-    app_id->Reset(base::UTF8ToUTF16(GetApplicationName()));
-  }
-  return app_id->success();
+bool IsDebuggingNotifications() {
+  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 }
 
 }  // namespace
@@ -65,7 +59,7 @@ bool WindowsToastNotification::Initialize() {
     return false;
 
   ScopedHString app_id;
-  if (!GetAppUserModelId(&app_id))
+  if (!GetAppUserModelID(&app_id))
     return false;
 
   return SUCCEEDED(
@@ -129,11 +123,14 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
     return;
   }
 
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification created";
+
   if (delegate())
     delegate()->NotificationDisplayed();
 }
 
 void WindowsToastNotification::Dismiss() {
+  if (IsDebuggingNotifications()) LOG(INFO) << "Hiding notification";
   toast_notifier_->Hide(toast_notification_.Get());
 }
 
@@ -164,16 +161,28 @@ bool WindowsToastNotification::GetToastXml(
             ? ABI::Windows::UI::Notifications::ToastTemplateType_ToastText02
             : ABI::Windows::UI::Notifications::
                   ToastTemplateType_ToastImageAndText02;
-    if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml)))
+    if (FAILED(toastManager->GetTemplateContent(template_type, toast_xml))) {
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Fetching XML template failed";
       return false;
-    if (!SetXmlText(*toast_xml, title, msg))
+    }
+
+    if (!SetXmlText(*toast_xml, title, msg)) {
+      if (IsDebuggingNotifications())
+        LOG(INFO) << "Setting text fields on template failed";
       return false;
+    }
   }
 
   // Configure the toast's notification sound
   if (silent) {
-    if (FAILED(SetXmlAudioSilent(*toast_xml)))
+    if (FAILED(SetXmlAudioSilent(*toast_xml))) {
+      if (IsDebuggingNotifications()) {
+        LOG(INFO) << "Setting \"silent\" option on notification failed";
+      }
+
       return false;
+    }
   }
 
   // Configure the toast's image
@@ -398,6 +407,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationClicked, notification_));
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification clicked";
+
   return S_OK;
 }
 
@@ -407,6 +418,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationDismissed, notification_));
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification dismissed";
+
   return S_OK;
 }
 
@@ -416,6 +429,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationFailed, notification_));
+  if (IsDebuggingNotifications()) LOG(INFO) << "Notification failed";
+
   return S_OK;
 }
 

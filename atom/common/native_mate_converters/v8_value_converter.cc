@@ -320,8 +320,12 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   if (val->IsInt32())
     return new base::Value(val->ToInt32()->Value());
 
-  if (val->IsNumber())
-    return new base::Value(val->ToNumber()->Value());
+  if (val->IsNumber()) {
+    double val_as_double = val->ToNumber()->Value();
+    if (!std::isfinite(val_as_double))
+      return nullptr;
+    return new base::Value(val_as_double);
+  }
 
   if (val->IsString()) {
     v8::String::Utf8Value utf8(val->ToString());

@@ -65,6 +65,7 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::SubscribeLocalNotification)
       .SetMethod("unsubscribeLocalNotification",
                  &SystemPreferences::UnsubscribeLocalNotification)
+      .SetMethod("registerDefaults", &SystemPreferences::RegisterDefaults)
       .SetMethod("getUserDefault", &SystemPreferences::GetUserDefault)
       .SetMethod("setUserDefault", &SystemPreferences::SetUserDefault)
       .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
@@ -95,4 +96,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_system_preferences, Initialize);
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_system_preferences, Initialize);

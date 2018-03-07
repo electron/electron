@@ -17,6 +17,7 @@
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/net/atom_cert_verifier.h"
+#include "atom/browser/session_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -32,6 +33,7 @@
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
@@ -438,6 +440,18 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       std::vector<content::DownloadItem::ReceivedSlice>());
 }
 
+void SetDevToolsNetworkEmulationClientIdInIO(
+    brightray::URLRequestContextGetter* url_request_context_getter,
+    const std::string& client_id) {
+  if (!url_request_context_getter)
+    return;
+  net::URLRequestContext* context =
+      url_request_context_getter->GetURLRequestContext();
+  AtomNetworkDelegate* network_delegate =
+      static_cast<AtomNetworkDelegate*>(context->network_delegate());
+  network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
+}
+
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
@@ -446,6 +460,8 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
   // Observe DownloadManager to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)->
       AddObserver(this);
+
+  new SessionPreferences(browser_context);
 
   Init(isolate);
   AttachAsUserData(browser_context);
@@ -545,16 +561,24 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      devtools_network_emulation_client_id_);
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          devtools_network_emulation_client_id_));
 }
 
 void Session::DisableNetworkEmulation() {
   std::unique_ptr<brightray::DevToolsNetworkConditions> conditions;
   browser_context_->network_controller_handle()->SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
-  browser_context_->network_delegate()->SetDevToolsNetworkEmulationClientId(
-      std::string());
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::Bind(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          std::string()));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -620,7 +644,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            mate::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
 
-  std::string accept_lang = l10n_util::GetApplicationLocale("");
+  std::string accept_lang = g_browser_process->GetApplicationLocale();
   args->GetNext(&accept_lang);
 
   scoped_refptr<brightray::URLRequestContextGetter> getter(
@@ -678,6 +702,19 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   download_manager->GetDelegate()->GetNextId(base::Bind(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
+}
+
+void Session::SetPreloads(
+    const std::vector<base::FilePath::StringType>& preloads) {
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  prefs->set_preloads(preloads);
+}
+
+std::vector<base::FilePath::StringType> Session::GetPreloads() const {
+  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
+  DCHECK(prefs);
+  return prefs->preloads();
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
@@ -766,6 +803,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("createInterruptedDownload",
                  &Session::CreateInterruptedDownload)
+      .SetMethod("setPreloads", &Session::SetPreloads)
+      .SetMethod("getPreloads", &Session::GetPreloads)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
@@ -801,4 +840,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_session, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_session, Initialize)

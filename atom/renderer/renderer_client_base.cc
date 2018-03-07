@@ -113,6 +113,11 @@ void RendererClientBase::RenderThreadStarted() {
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
+  // Allow file scheme to handle service worker by default.
+  // FIXME(zcbenz): Can this be moved elsewhere?
+  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
+  blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI("file");
+
   preferences_manager_.reset(new PreferencesManager);
 
 #if defined(OS_WIN)
@@ -145,10 +150,6 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
-  // Allow file scheme to handle service worker by default.
-  // FIXME(zcbenz): Can this be moved elsewhere?
-  blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers("file");
-
   // This is required for widevine plugin detection provided during runtime.
   blink::ResetPluginCache();
 
@@ -166,10 +167,8 @@ void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
   if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
     web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
   } else {  // normal window.
-    // If backgroundColor is specified then use it.
     std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-    // Otherwise use white background.
-    SkColor color = name.empty() ? SK_ColorWHITE : ParseHexColor(name);
+    SkColor color = name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
     web_frame_widget->SetBaseBackgroundColor(color);
   }
 }

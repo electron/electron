@@ -77,7 +77,6 @@
 #include "base/rand_util.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "base/single_thread_task_runner.h"
-#include "base/single_thread_task_runner.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -85,6 +84,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/platform_thread.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
@@ -722,6 +722,7 @@ ProcessSingleton::ProcessSingleton(
     : notification_callback_(notification_callback),
       current_pid_(base::GetCurrentProcId()) {
   // The user_data_dir may have not been created yet.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 
   socket_path_ = user_data_dir.Append(kSingletonSocketFilename);
@@ -734,6 +735,10 @@ ProcessSingleton::ProcessSingleton(
 
 ProcessSingleton::~ProcessSingleton() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  // Manually free resources with IO explicitly allowed.
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  watcher_ = nullptr;
+  ignore_result(socket_dir_.Delete());
 }
 
 ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
@@ -960,6 +965,7 @@ void ProcessSingleton::DisablePromptForTesting() {
 }
 
 bool ProcessSingleton::Create() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   int sock;
   sockaddr_un addr;
 

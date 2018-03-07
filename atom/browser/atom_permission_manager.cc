@@ -97,11 +97,28 @@ int AtomPermissionManager::RequestPermission(
     const GURL& requesting_origin,
     bool user_gesture,
     const StatusCallback& response_callback) {
-  return RequestPermissions(
+  return RequestPermissionWithDetails(
+      permission,
+      render_frame_host,
+      requesting_origin,
+      user_gesture,
+      nullptr,
+      response_callback);
+}
+
+int AtomPermissionManager::RequestPermissionWithDetails(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    bool user_gesture,
+    const base::DictionaryValue* details,
+    const StatusCallback& response_callback) {
+  return RequestPermissionsWithDetails(
       std::vector<content::PermissionType>(1, permission),
       render_frame_host,
       requesting_origin,
       user_gesture,
+      details,
       base::Bind(&PermissionRequestResponseCallbackWrapper, response_callback));
 }
 
@@ -110,6 +127,18 @@ int AtomPermissionManager::RequestPermissions(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
+    const StatusesCallback& response_callback) {
+  return RequestPermissionsWithDetails(
+    permissions, render_frame_host, requesting_origin,
+    user_gesture, nullptr, response_callback);
+}
+
+int AtomPermissionManager::RequestPermissionsWithDetails(
+    const std::vector<content::PermissionType>& permissions,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    bool user_gesture,
+    const base::DictionaryValue* details,
     const StatusesCallback& response_callback) {
   if (permissions.empty()) {
     response_callback.Run(std::vector<blink::mojom::PermissionStatus>());
@@ -143,7 +172,12 @@ int AtomPermissionManager::RequestPermissions(
     const auto callback =
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
-    request_handler_.Run(web_contents, permission, callback);
+    if (details == nullptr) {
+      request_handler_.Run(web_contents, permission, callback,
+                           base::DictionaryValue());
+    } else {
+      request_handler_.Run(web_contents, permission, callback, *details);
+    }
   }
 
   return request_id;

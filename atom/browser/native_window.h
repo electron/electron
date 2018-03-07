@@ -11,21 +11,13 @@
 #include <vector>
 
 #include "atom/browser/native_window_observer.h"
-#include "atom/browser/ui/accelerator_util.h"
 #include "atom/browser/ui/atom_menu_model.h"
-#include "base/cancelable_callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
-#include "content/public/browser/readback_types.h"
-#include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "native_mate/persistent_dictionary.h"
-#include "ui/gfx/geometry/rect_f.h"
-#include "ui/gfx/image/image.h"
-#include "ui/gfx/image/image_skia.h"
 
 class SkRegion;
 
@@ -38,8 +30,10 @@ struct NativeWebKeyboardEvent;
 }
 
 namespace gfx {
+class Image;
 class Point;
 class Rect;
+class RectF;
 class Size;
 }
 
@@ -53,8 +47,7 @@ class NativeBrowserView;
 
 struct DraggableRegion;
 
-class NativeWindow : public base::SupportsUserData,
-                     public content::WebContentsObserver {
+class NativeWindow : public base::SupportsUserData {
  public:
   ~NativeWindow() override;
 
@@ -64,9 +57,6 @@ class NativeWindow : public base::SupportsUserData,
       brightray::InspectableWebContents* inspectable_web_contents,
       const mate::Dictionary& options,
       NativeWindow* parent = nullptr);
-
-  // Find a window from its WebContents
-  static NativeWindow* FromWebContents(content::WebContents* web_contents);
 
   void InitFromOptions(const mate::Dictionary& options);
 
@@ -80,6 +70,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Hide() = 0;
   virtual bool IsVisible() = 0;
   virtual bool IsEnabled() = 0;
+  virtual void SetEnabled(bool enable) = 0;
   virtual void Maximize() = 0;
   virtual void Unmaximize() = 0;
   virtual bool IsMaximized() = 0;
@@ -138,7 +129,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsSimpleFullScreen() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
-  virtual void SetBackgroundColor(const std::string& color_name) = 0;
+  virtual void SetBackgroundColor(SkColor color) = 0;
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() = 0;
   virtual void SetOpacity(const double opacity) = 0;
@@ -192,12 +183,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MergeAllWindows();
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
-  virtual void AddTabbedWindow(NativeWindow* window);
-
-  // Webview APIs.
-  virtual void FocusOnWebView();
-  virtual void BlurWebView();
-  virtual bool IsWebViewFocused();
+  virtual bool AddTabbedWindow(NativeWindow* window);
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
@@ -215,17 +201,17 @@ class NativeWindow : public base::SupportsUserData,
                            const std::string& display_name);
   virtual void CloseFilePreview();
 
+  // Converts between content bounds and window bounds.
+  virtual gfx::Rect ContentBoundsToWindowBounds(
+      const gfx::Rect& bounds) const = 0;
+  virtual gfx::Rect WindowBoundsToContentBounds(
+      const gfx::Rect& bounds) const = 0;
+
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
 
-  // Requests the WebContents to close, can be cancelled by the page.
-  virtual void RequestToClosePage();
-
   // Methods called by the WebContents.
-  virtual void CloseContents(content::WebContents* source);
-  virtual void RendererUnresponsive(content::WebContents* source);
-  virtual void RendererResponsive(content::WebContents* source);
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
@@ -239,6 +225,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
+  void NotifyWindowRequestPreferredWith(int* width);
+  void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
   void NotifyWindowEndSession();
   void NotifyWindowBlur();
@@ -254,7 +242,6 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
   void NotifyWindowScrollTouchEnd();
-  void NotifyWindowScrollTouchEdge();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowSheetBegin();
   void NotifyWindowSheetEnd();
@@ -278,20 +265,16 @@ class NativeWindow : public base::SupportsUserData,
     observers_.RemoveObserver(obs);
   }
 
-  brightray::InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_;
-  }
-
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
   bool transparent() const { return transparent_; }
-  SkRegion* draggable_region() const { return draggable_region_.get(); }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
   void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
   bool is_offscreen_dummy() const { return is_osr_dummy_; }
 
+  NativeBrowserView* browser_view() const { return browser_view_; }
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
 
@@ -300,46 +283,16 @@ class NativeWindow : public base::SupportsUserData,
                const mate::Dictionary& options,
                NativeWindow* parent);
 
-  // Convert draggable regions in raw format to SkRegion format. Caller is
-  // responsible for deleting the returned SkRegion instance.
-  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
-      const std::vector<DraggableRegion>& regions);
-
-  // Converts between content bounds and window bounds.
-  virtual gfx::Rect ContentBoundsToWindowBounds(
-      const gfx::Rect& bounds) const = 0;
-  virtual gfx::Rect WindowBoundsToContentBounds(
-      const gfx::Rect& bounds) const = 0;
-
-  // Called when the window needs to update its draggable region.
-  virtual void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions);
-
-  // content::WebContentsObserver:
-  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
-  void BeforeUnloadDialogCancelled() override;
-  void DidFirstVisuallyNonEmptyPaint() override;
-  bool OnMessageReceived(const IPC::Message& message) override;
+  void set_browser_view(NativeBrowserView* browser_view) {
+    browser_view_ = browser_view;
+  }
 
  private:
-  // Schedule a notification unresponsive event.
-  void ScheduleUnresponsiveEvent(int ms);
-
-  // Dispatch unresponsive event to observers.
-  void NotifyWindowUnresponsive();
-
-  // Dispatch ReadyToShow event to observers.
-  void NotifyReadyToShow();
-
   // Whether window has standard frame.
   bool has_frame_;
 
   // Whether window is transparent.
   bool transparent_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;
@@ -349,10 +302,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The windows has been closed.
   bool is_closed_;
-
-  // Closure that would be called when window is unresponsive when closing,
-  // it should be cancelled when we can prove that the window is responsive.
-  base::CancelableClosure window_unresposive_closure_;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
   // on macOS.
@@ -373,8 +322,8 @@ class NativeWindow : public base::SupportsUserData,
   // Is this a dummy window for an offscreen WebContents.
   bool is_osr_dummy_;
 
-  // The page this window is viewing.
-  brightray::InspectableWebContents* inspectable_web_contents_;
+  // The browser view layer.
+  NativeBrowserView* browser_view_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
@@ -390,6 +339,10 @@ class NativeWindowRelay :
  public:
   explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
     : key(UserDataKey()), window(window) {}
+
+  static void* UserDataKey() {
+    return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
+  }
 
   void* key;
   base::WeakPtr<NativeWindow> window;

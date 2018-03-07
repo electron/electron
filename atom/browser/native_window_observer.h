@@ -34,8 +34,11 @@ class NativeWindowObserver {
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
 
-  // Called before the native window object is going to be destroyed.
-  virtual void WillDestroyNativeObject() {}
+  // Called when the window wants to know the preferred width.
+  virtual void RequestPreferredWidth(int* width) {}
+
+  // Called when closed button is clicked.
+  virtual void OnCloseButtonClicked(bool* prevent_default) {}
 
   // Called when the window is closed.
   virtual void OnWindowClosed() {}
@@ -55,9 +58,6 @@ class NativeWindowObserver {
   // Called when window is hidden.
   virtual void OnWindowHide() {}
 
-  // Called when window is ready to show.
-  virtual void OnReadyToShow() {}
-
   // Called when window state changed.
   virtual void OnWindowMaximize() {}
   virtual void OnWindowUnmaximize() {}
@@ -68,7 +68,6 @@ class NativeWindowObserver {
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
   virtual void OnWindowScrollTouchEnd() {}
-  virtual void OnWindowScrollTouchEdge() {}
   virtual void OnWindowSwipe(const std::string& direction) {}
   virtual void OnWindowSheetBegin() {}
   virtual void OnWindowSheetEnd() {}
@@ -84,12 +83,6 @@ class NativeWindowObserver {
   #if defined(OS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
   #endif
-
-  // Called when renderer is hung.
-  virtual void OnRendererUnresponsive() {}
-
-  // Called when renderer recovers.
-  virtual void OnRendererResponsive() {}
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}

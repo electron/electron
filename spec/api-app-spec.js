@@ -7,7 +7,7 @@ const path = require('path')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
-const {app, BrowserWindow, ipcMain} = remote
+const {app, BrowserWindow, Menu, ipcMain} = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -44,7 +44,7 @@ describe('app module', () => {
   let server, secureUrl
   const certPath = path.join(__dirname, 'fixtures', 'certificates')
 
-  before(() => {
+  before((done) => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -69,11 +69,12 @@ describe('app module', () => {
     server.listen(0, '127.0.0.1', () => {
       const port = server.address().port
       secureUrl = `https://127.0.0.1:${port}`
+      done()
     })
   })
 
-  after(() => {
-    server.close()
+  after((done) => {
+    server.close(() => done())
   })
 
   describe('app.getVersion()', () => {
@@ -154,6 +155,26 @@ describe('app module', () => {
       appProcess = ChildProcess.spawn(electronPath, [appPath])
       appProcess.on('close', function (code) {
         assert.equal(code, 123)
+        done()
+      })
+    })
+
+    it('exits gracefully', function (done) {
+      if (!['darwin', 'linux'].includes(process.platform)) {
+        this.skip()
+      }
+
+      const electronPath = remote.getGlobal('process').execPath
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
+      appProcess = ChildProcess.spawn(electronPath, [appPath])
+
+      // Singleton will send us greeting data to let us know it's running.
+      // After that, ask it to exit gracefully and confirm that it does.
+      appProcess.stdout.on('data', (data) => appProcess.kill())
+      appProcess.on('exit', (code, sig) => {
+        let message = ['code:', code, 'sig:', sig].join('\n')
+        assert.equal(code, 0, message)
+        assert.equal(sig, null, message)
         done()
       })
     })
@@ -487,7 +508,6 @@ describe('app module', () => {
     it('can respond with empty certificate list', (done) => {
       w.webContents.on('did-finish-load', () => {
         assert.equal(w.webContents.getTitle(), 'denied')
-        server.close()
         done()
       })
 
@@ -504,9 +524,34 @@ describe('app module', () => {
       '--process-start-args', `"--hidden"`
     ]
 
+    let Winreg
+    let classesKey
+
     before(function () {
       if (process.platform !== 'win32') {
         this.skip()
+      } else {
+        Winreg = require('winreg')
+
+        classesKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: '\\Software\\Classes\\'
+        })
+      }
+    })
+
+    after(function (done) {
+      if (process.platform !== 'win32') {
+        done()
+      } else {
+        const protocolKey = new Winreg({
+          hive: Winreg.HKCU,
+          key: `\\Software\\Classes\\${protocol}`
+        })
+
+        // The last test leaves the registry dirty,
+        // delete the protocol key for those of us who test at home
+        protocolKey.destroy(() => done())
       }
     })
 
@@ -533,6 +578,109 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
       assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
       assert.equal(app.isDefaultProtocolClient(protocol), false)
+    })
+
+    it('creates a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, true)
+
+        done()
+      })
+    })
+
+    it('completely removes a registry entry for the protocol class', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+      app.removeAsDefaultProtocolClient(protocol)
+
+      classesKey.keys((error, keys) => {
+        if (error) {
+          throw error
+        }
+
+        const exists = !!keys.find((key) => key.key.includes(protocol))
+        assert.equal(exists, false)
+
+        done()
+      })
+    })
+
+    it('only unsets a class registry key if it contains other data', (done) => {
+      app.setAsDefaultProtocolClient(protocol)
+
+      const protocolKey = new Winreg({
+        hive: Winreg.HKCU,
+        key: `\\Software\\Classes\\${protocol}`
+      })
+
+      protocolKey.set('test-value', 'REG_BINARY', '123', () => {
+        app.removeAsDefaultProtocolClient(protocol)
+
+        classesKey.keys((error, keys) => {
+          if (error) {
+            throw error
+          }
+
+          const exists = !!keys.find((key) => key.key.includes(protocol))
+          assert.equal(exists, true)
+
+          done()
+        })
+      })
+    })
+  })
+
+  describe('app launch through uri', () => {
+    before(function () {
+      if (process.platform !== 'win32') {
+        this.skip()
+      }
+    })
+
+    it('does not launch for blacklisted argument', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher=cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })
+    })
+
+    it('launches successfully for multiple uris in cmd args', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with code 123.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'http://electronjs.org', 'electron-test://testdata'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })
+    })
+
+    it('does not launch for encoded space', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // App should exit with non 123 code.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher%20"cmd.exe /c start calc'])
+      first.once('exit', (code) => {
+        assert.notEqual(code, 123)
+        done()
+      })
+    })
+
+    it('launches successfully for argnames similar to blacklisted ones', function (done) {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
+      // inspect is blacklisted, but inspector should work, and app launch should succeed
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--inspector'])
+      first.once('exit', (code) => {
+        assert.equal(code, 123)
+        done()
+      })
     })
   })
 
@@ -733,6 +881,20 @@ describe('app module', () => {
       assert.throws(() => {
         app.disableDomainBlockingFor3DAPIs()
       }, /before app is ready/)
+    })
+  })
+
+  describe('dock.setMenu', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('keeps references to the menu', () => {
+      app.dock.setMenu(new Menu())
+      const v8Util = process.atomBinding('v8_util')
+      v8Util.requestGarbageCollectionForTesting()
     })
   })
 })

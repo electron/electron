@@ -10,6 +10,7 @@
 
 namespace node {
 class Environment;
+class MultiIsolatePlatform;
 }
 
 namespace atom {
@@ -22,6 +23,7 @@ class JavascriptEnvironment {
   void OnMessageLoopCreated();
   void OnMessageLoopDestroying();
 
+  node::MultiIsolatePlatform* platform() const { return platform_; }
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
@@ -29,6 +31,9 @@ class JavascriptEnvironment {
 
  private:
   bool Initialize();
+
+  // Leaked on exit.
+  node::MultiIsolatePlatform* platform_;
 
   bool initialized_;
   gin::IsolateHolder isolate_holder_;

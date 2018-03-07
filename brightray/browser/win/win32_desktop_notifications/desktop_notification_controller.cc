@@ -174,7 +174,7 @@ void DesktopNotificationController::AnimateAll() {
         if (SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0)) {
             ScreenMetrics metrics;
             POINT origin = { work_area.right,
-                             work_area.bottom - metrics.Y(toast_margin_<int>) };
+                             work_area.bottom - metrics.Y(toast_margin_) };
 
             auto hdwp =
                 BeginDeferWindowPos(static_cast<int>(instances_.size()));
@@ -231,7 +231,7 @@ void DesktopNotificationController::AnimateAll() {
     // Set new toast positions
     if (!instances_.empty()) {
         ScreenMetrics metrics;
-        auto margin = metrics.Y(toast_margin_<int>);
+        auto margin = metrics.Y(toast_margin_);
 
         int target_pos = 0;
         for (auto&& inst : instances_) {
@@ -305,7 +305,7 @@ void DesktopNotificationController::CreateToast(NotificationLink&& data) {
             auto toast = Toast::Get(item.hwnd);
             toast_pos = toast->GetVerticalPosition() +
                         toast->GetHeight() +
-                        scr.Y(toast_margin_<int>);
+                        scr.Y(toast_margin_);
         }
 
         instances_.push_back({ hwnd, move(data) });

@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_
 #define ATOM_BROWSER_ATOM_JAVASCRIPT_DIALOG_MANAGER_H_
 
+#include <map>
 #include <string>
 
 #include "content/public/browser/javascript_dialog_manager.h"
@@ -36,10 +37,13 @@ class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
                      bool reset_state) override;
 
  private:
-  static void OnMessageBoxCallback(const DialogClosedCallback& callback,
-                                   int code,
-                                   bool checkbox_checked);
+  void OnMessageBoxCallback(const DialogClosedCallback& callback,
+                            const std::string& origin,
+                            int code,
+                            bool checkbox_checked);
+
   api::WebContents* api_web_contents_;
+  std::map<std::string, int> origin_counts_;
 };
 
 }  // namespace atom

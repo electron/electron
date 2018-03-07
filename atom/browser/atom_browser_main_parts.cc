@@ -24,6 +24,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
@@ -38,7 +39,10 @@ namespace {
 // A provider of Geolocation services to override AccessTokenStore.
 class AtomGeolocationDelegate : public device::GeolocationDelegate {
  public:
-  AtomGeolocationDelegate() = default;
+  AtomGeolocationDelegate() {
+    device::GeolocationProvider::GetInstance()
+        ->UserDidOptIntoLocationServices();
+  }
 
   scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
     return new AtomAccessTokenStore();
@@ -131,13 +135,13 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
 
   // Create the global environment.
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(js_env_->context());
+  node::Environment* env = node_bindings_->CreateEnvironment(
+      js_env_->context(), js_env_->platform());
   node_env_.reset(new NodeEnvironment(env));
 
   // Enable support for v8 inspector
   node_debugger_.reset(new NodeDebugger(env));
-  node_debugger_->Start();
+  node_debugger_->Start(js_env_->platform());
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -147,6 +151,15 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);
+}
+
+int AtomBrowserMainParts::PreCreateThreads() {
+  const int result = brightray::BrowserMainParts::PreCreateThreads();
+  if (!result) {
+    fake_browser_process_->SetApplicationLocale(
+        brightray::BrowserClient::Get()->GetApplicationLocale());
+  }
+  return result;
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
@@ -185,6 +198,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
   Browser::Get()->DidFinishLaunching(*empty_info);
 #endif
 
+  // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 }
 

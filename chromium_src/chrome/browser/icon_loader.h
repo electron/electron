@@ -12,6 +12,7 @@
 #include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/single_thread_task_runner.h"
+#include "base/task_scheduler/task_traits.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/image/image.h"
@@ -66,12 +67,18 @@ class IconLoader {
   // Given a file path, get the group for the given file.
   static IconGroup GroupForFilepath(const base::FilePath& file_path);
 
-  // The thread ReadIcon() should be called on.
-  static content::BrowserThread::ID ReadIconThreadID();
+  // The TaskRunner that ReadIcon() must be called on.
+  static scoped_refptr<base::TaskRunner> GetReadIconTaskRunner();
 
   void ReadGroup();
-  void OnReadGroup();
   void ReadIcon();
+
+  // The traits of the tasks posted by this class. These operations may block,
+  // because they are fetching icons from the disk, yet the result will be seen
+  // by the user so they should be prioritized accordingly.
+  static constexpr base::TaskTraits traits() {
+    return {base::MayBlock(), base::TaskPriority::USER_VISIBLE};
+  }
 
   // The task runner object of the thread in which we notify the delegate.
   scoped_refptr<base::SingleThreadTaskRunner> target_task_runner_;
@@ -81,8 +88,6 @@ class IconLoader {
   IconGroup group_;
 
   IconSize icon_size_;
-
-  std::unique_ptr<gfx::Image> image_;
 
   IconLoadedCallback callback_;
 

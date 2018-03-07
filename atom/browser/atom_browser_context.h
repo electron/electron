@@ -8,9 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/net/atom_cookie_delegate.h"
+#include "base/callback_list.h"
 #include "brightray/browser/browser_context.h"
-#include "net/cookies/cookie_monster.h"
 
 namespace atom {
 
@@ -19,6 +18,7 @@ class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
 class WebViewManager;
+struct CookieDetails;
 
 class AtomBrowserContext : public brightray::BrowserContext {
  public:
@@ -30,10 +30,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
       const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
+  // Register callbacks that needs to notified on any cookie store changes.
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+  RegisterCookieChangeCallback(
+      const base::Callback<void(const CookieDetails*)>& cb);
 
   // brightray::URLRequestContextGetter::Delegate:
-  net::NetworkDelegate* CreateNetworkDelegate() override;
-  net::CookieMonsterDelegate* CreateCookieDelegate() override;
+  std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() override;
   std::string GetUserAgent() override;
   std::unique_ptr<net::URLRequestJobFactory> CreateURLRequestJobFactory(
       content::ProtocolHandlerMap* protocol_handlers) override;
@@ -42,6 +45,9 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<net::CertVerifier> CreateCertVerifier(
       brightray::RequireCTDelegate* ct_delegate) override;
   std::vector<std::string> GetCookieableSchemes() override;
+  void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                          bool removed,
+                          net::CookieStore::ChangeCause cause) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
@@ -52,10 +58,6 @@ class AtomBrowserContext : public brightray::BrowserContext {
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
   AtomBlobReader* GetBlobReader();
-  AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
-  AtomCookieDelegate* cookie_delegate() const {
-    return cookie_delegate_.get();
-  }
 
  protected:
   AtomBrowserContext(const std::string& partition, bool in_memory,
@@ -70,9 +72,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::string user_agent_;
   bool use_cache_;
 
-  // Managed by brightray::BrowserContext.
-  AtomNetworkDelegate* network_delegate_;
-  scoped_refptr<AtomCookieDelegate> cookie_delegate_;
+  base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

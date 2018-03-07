@@ -17,6 +17,7 @@
 #include "base/logging.h"
 #include "base/memory/singleton.h"
 #include "base/process/memory.h"
+#include "base/threading/thread_restrictions.h"
 #include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
 #include "vendor/breakpad/src/common/linux/linux_libc_support.h"
 
@@ -90,8 +91,10 @@ bool CrashReporterLinux::GetUploadToServer() {
 }
 
 void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
-  base::CreateDirectory(crashes_dir);
-
+  {
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    base::CreateDirectory(crashes_dir);
+  }
   std::string log_file = crashes_dir.Append("uploads.log").value();
   strncpy(g_crash_log_path, log_file.c_str(), sizeof(g_crash_log_path));
 

@@ -14,7 +14,7 @@ LINUX_DEPS = [
   'libdbus-1-dev',
   'libgconf2-dev',
   'libgnome-keyring-dev',
-  'libgtk2.0-dev',
+  'libgtk-3-dev',
   'libnotify-dev',
   'libnss3-dev',
   'libxtst-dev',
@@ -56,19 +56,6 @@ def main():
   target_arch = 'x64'
   if os.environ.has_key('TARGET_ARCH'):
     target_arch = os.environ['TARGET_ARCH']
-
-  is_travis = (os.getenv('TRAVIS') == 'true')
-  if is_travis and PLATFORM == 'linux':
-    print 'Setup travis CI'
-    execute(['sudo', 'apt-get', 'update'])
-    deps = LINUX_DEPS
-    if target_arch == 'arm':
-      deps += LINUX_DEPS_ARM
-    elif target_arch == 'arm64':
-      deps += LINUX_DEPS_ARM64
-    else:
-      deps += LINUX_DEPS_NO_ARM
-    execute(['sudo', 'apt-get', 'install'] + deps)
 
   if PLATFORM == 'linux' and target_arch == 'x64':
     os.environ['DISPLAY'] = ':99.0'

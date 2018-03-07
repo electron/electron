@@ -139,6 +139,8 @@ const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 // Enable the web view tag.
 const char kWebviewTag[] = "webviewTag";
 
+const char kCustomArgs[] = "additionalArguments";
+
 }  // namespace options
 
 namespace switches {
@@ -180,6 +182,7 @@ const char kAppPath[] = "app-path";
 const char kBackgroundColor[]  = "background-color";
 const char kPreloadScript[]    = "preload";
 const char kPreloadURL[]       = "preload-url";
+const char kPreloadScripts[]   = "preload-scripts";
 const char kNodeIntegration[]  = "node-integration";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[]  = "guest-instance-id";

@@ -133,7 +133,7 @@ state is `hidden` in order to minimize power consumption.
 Process: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an
-[EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter).
+[EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
@@ -220,7 +220,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
       the top left.
-    * `hidden-inset` - Deprecated, use `hiddenInset` instead.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
     * `customButtonsOnHover` Boolean (optional) - Draw custom close, minimize,
@@ -229,7 +228,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       buttons prevent issues with mouse events that occur with the standard
       window toolbar buttons. **Note:** This option is currently experimental.
   * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
-    tile bar in full screen mode on macOS for all `titleBarStyle` options.
+    title bar in full screen mode on macOS for all `titleBarStyle` options.
     Default is `false`.
   * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
     Windows, which adds standard window frame. Setting it to `false` will remove
@@ -280,6 +279,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       same `partition`. If there is no `persist:` prefix, the page will use an
       in-memory session. By assigning the same `partition`, multiple pages can share
       the same session. Default is the default session.
+    * `affinity` String (optional) - When specified, web pages with the same
+      `affinity` will run in the same renderer process. Note that due to reusing
+      the renderer process, certain `webPreferences` options will also be shared
+      between the web pages even when you specified different values for them,
+      including but not limited to `preload`, `sandbox` and `nodeIntegration`.
+      So it is suggested to use exact same `webPreferences` for web pages with
+      the same `affinity`.
     * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
       `300%`. Default is `1.0`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
@@ -343,7 +349,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `false`.  **Note:** This option is currently
+      `window.open()`. Defaults to `false`. **Note:** This option is currently
       experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
@@ -353,6 +359,15 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
       to strip away the `preload` script and to validate or alter the
       `<webview>`'s initial settings.
+    * `additionArguments` String[] (optional) - A list of strings that will be appended
+      to `process.argv` in the renderer process of this app.  Useful for passing small
+      bits of data down to renderer process preload scripts.
+    * `safeDialogs` Boolean (optional) - Whether to enable browser style
+      consecutive dialog protection. Default is `false`.
+    * `safeDialogsMessage` String (optional) - The message to display when
+      consecutive dialog protection is triggered. If not defined the default
+      message would be used, note that currently the default message is in
+      English and not localized.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -572,7 +587,7 @@ Returns `BrowserWindow[]` - An array of all opened browser windows.
 
 #### `BrowserWindow.getFocusedWindow()`
 
-Returns `BrowserWindow` - The window that is focused in this application, otherwise returns `null`.
+Returns `BrowserWindow | null` - The window that is focused in this application, otherwise returns `null`.
 
 #### `BrowserWindow.fromWebContents(webContents)`
 
@@ -846,6 +861,12 @@ the supplied bounds.
 #### `win.getContentBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md)
+
+#### `win.setEnabled(enable)`
+
+* `enable` Boolean
+
+Disable or enable the window.
 
 #### `win.setSize(width, height[, animate])`
 
@@ -1159,6 +1180,14 @@ win.loadURL('http://localhost:8000/post', {
 })
 ```
 
+#### `win.loadFile(filePath)`
+
+* `filePath` String
+
+Same as `webContents.loadFile`, `filePath` should be a path to an HTML
+file relative to the root of your application.  See the `webContents` docs
+for more information.
+
 #### `win.reload()`
 
 Same as `webContents.reload`.
@@ -1459,6 +1488,6 @@ removed in future Electron releases.
 [blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
-[vibrancy-docs]: https://developer.apple.com/reference/appkit/nsvisualeffectview?language=objc
+[vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/reference/appkit/nswindow/1664726-window_levels
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment

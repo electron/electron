@@ -15,6 +15,7 @@
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/browser/net/cookie_details.h"
 #include "atom/browser/net/http_protocol_handler.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
@@ -70,9 +71,7 @@ std::string RemoveWhitespace(const std::string& str) {
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
-    : brightray::BrowserContext(partition, in_memory),
-      network_delegate_(new AtomNetworkDelegate),
-      cookie_delegate_(new AtomCookieDelegate) {
+    : brightray::BrowserContext(partition, in_memory) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -104,12 +103,15 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-net::NetworkDelegate* AtomBrowserContext::CreateNetworkDelegate() {
-  return network_delegate_;
+std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+AtomBrowserContext::RegisterCookieChangeCallback(
+    const base::Callback<void(const CookieDetails*)>& cb) {
+  return cookie_change_sub_list_.Add(cb);
 }
 
-net::CookieMonsterDelegate* AtomBrowserContext::CreateCookieDelegate() {
-  return cookie_delegate();
+std::unique_ptr<net::NetworkDelegate>
+AtomBrowserContext::CreateNetworkDelegate() {
+  return base::MakeUnique<AtomNetworkDelegate>();
 }
 
 std::string AtomBrowserContext::GetUserAgent() {
@@ -201,6 +203,14 @@ std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   default_schemes.insert(default_schemes.end(),
                          standard_schemes.begin(), standard_schemes.end());
   return default_schemes;
+}
+
+void AtomBrowserContext::NotifyCookieChange(
+    const net::CanonicalCookie& cookie,
+    bool removed,
+    net::CookieStore::ChangeCause cause) {
+  CookieDetails cookie_details(&cookie, removed, cause);
+  cookie_change_sub_list_.Notify(&cookie_details);
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {

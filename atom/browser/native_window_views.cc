@@ -16,7 +16,6 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
@@ -124,7 +123,8 @@ class NativeWindowClientView : public views::ClientView {
   virtual ~NativeWindowClientView() {}
 
   bool CanClose() override {
-    static_cast<NativeWindowViews*>(contents_view())->RequestToClosePage();
+    static_cast<NativeWindowViews*>(contents_view())->
+        NotifyWindowCloseButtonClicked();
     return false;
   }
 
@@ -140,8 +140,8 @@ NativeWindowViews::NativeWindowViews(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
-      web_view_(inspectable_web_contents()->GetView()->GetView()),
-      browser_view_(nullptr),
+      web_view_(web_contents->GetView()->GetView()),
+      focused_view_(web_contents->GetView()->GetWebView()),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -302,9 +302,6 @@ NativeWindowViews::NativeWindowViews(
   }
 
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
-  // Window without thick frame has to have WS_EX_COMPOSITED style.
-  if (!thick_frame_)
-    ex_style |= WS_EX_COMPOSITED;
   if (window_type == "toolbar")
     ex_style |= WS_EX_TOOLWINDOW;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
@@ -794,9 +791,8 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
-void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  SkColor background_color = ParseHexColor(color_name);
   SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
@@ -952,22 +948,21 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
-void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
+void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
+  if (browser_view()) {
     web_view_->RemoveChildView(
-        browser_view_->GetInspectableWebContentsView()->GetView());
-    browser_view_ = nullptr;
+        browser_view()->GetInspectableWebContentsView()->GetView());
+    set_browser_view(nullptr);
   }
 
-  if (!browser_view) {
+  if (!view) {
     return;
   }
 
   // Add as child of the main web view to avoid (0, 0) origin from overlapping
   // with menu bar.
-  browser_view_ = browser_view;
-  web_view_->AddChildView(
-      browser_view->GetInspectableWebContentsView()->GetView());
+  set_browser_view(view);
+  web_view_->AddChildView(view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1075,6 +1070,60 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
+gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
+    const gfx::Rect& bounds) const {
+  if (!has_frame())
+    return bounds;
+
+  gfx::Rect window_bounds(bounds);
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
+  window_bounds = display::win::ScreenWin::ScreenToDIPRect(
+      hwnd,
+      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+#endif
+
+  if (menu_bar_ && menu_bar_visible_) {
+    window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
+    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+  }
+  return window_bounds;
+}
+
+gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
+    const gfx::Rect& bounds) const {
+  if (!has_frame())
+    return bounds;
+
+  gfx::Rect content_bounds(bounds);
+#if defined(OS_WIN)
+  HWND hwnd = GetAcceleratedWidget();
+  content_bounds.set_size(
+      display::win::ScreenWin::DIPToScreenSize(hwnd, content_bounds.size()));
+  RECT rect;
+  SetRectEmpty(&rect);
+  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
+  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
+  content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
+  content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
+  content_bounds.set_size(
+      display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
+#endif
+
+  if (menu_bar_ && menu_bar_visible_) {
+    content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
+    content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
+  }
+  return content_bounds;
+}
+
+void NativeWindowViews::UpdateDraggableRegions(
+    std::unique_ptr<SkRegion> region) {
+  draggable_region_ = std::move(region);
+}
+
 #if defined(OS_WIN)
 void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   // We are responsible for storing the images.
@@ -1135,10 +1184,6 @@ void NativeWindowViews::OnWidgetActivationChanged(
                           &NativeWindow::NotifyWindowBlur,
                  GetWeakPtr()));
 
-  if (active && inspectable_web_contents() &&
-      !inspectable_web_contents()->IsDevToolsViewShowing())
-    web_contents()->Focus();
-
   // Hide menu bar when window is blured.
   if (!active && menu_bar_autohide_ && menu_bar_visible_)
     SetMenuBarVisibility(false);
@@ -1153,9 +1198,9 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    if (browser_view_) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
-                             ->GetAutoResizeFlags();
+    if (browser_view()) {
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())->
+          GetAutoResizeFlags();
       int width_delta = 0;
       int height_delta = 0;
       if (flags & kAutoResizeWidth) {
@@ -1165,7 +1210,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(
         height_delta = new_bounds.height() - widget_size_.height();
       }
 
-      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+      auto* view = browser_view()->GetInspectableWebContentsView()->GetView();
       auto new_view_size = view->size();
       new_view_size.set_width(new_view_size.width() + width_delta);
       new_view_size.set_height(new_view_size.height() + height_delta);
@@ -1191,7 +1236,7 @@ void NativeWindowViews::DeleteDelegate() {
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
-  return inspectable_web_contents()->GetView()->GetWebView();
+  return focused_view_;
 }
 
 bool NativeWindowViews::CanResize() const {
@@ -1273,55 +1318,6 @@ void NativeWindowViews::OnWidgetMove() {
   NotifyWindowMove();
 }
 
-gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
-    const gfx::Rect& bounds) const {
-  if (!has_frame())
-    return bounds;
-
-  gfx::Rect window_bounds(bounds);
-#if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
-  window_bounds = display::win::ScreenWin::ScreenToDIPRect(
-      hwnd,
-      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
-#endif
-
-  if (menu_bar_ && menu_bar_visible_) {
-    window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
-    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
-  }
-  return window_bounds;
-}
-
-gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
-    const gfx::Rect& bounds) const {
-  if (!has_frame())
-    return bounds;
-
-  gfx::Rect content_bounds(bounds);
-#if defined(OS_WIN)
-  HWND hwnd = GetAcceleratedWidget();
-  content_bounds.set_size(
-      display::win::ScreenWin::DIPToScreenSize(hwnd, content_bounds.size()));
-  RECT rect;
-  SetRectEmpty(&rect);
-  DWORD style = ::GetWindowLong(hwnd, GWL_STYLE);
-  DWORD ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
-  AdjustWindowRectEx(&rect, style, FALSE, ex_style);
-  content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
-  content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
-  content_bounds.set_size(
-      display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
-#endif
-
-  if (menu_bar_ && menu_bar_visible_) {
-    content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
-    content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
-  }
-  return content_bounds;
-}
-
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
@@ -1369,22 +1365,26 @@ void NativeWindowViews::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
-  const auto* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents)->web_preferences();
-
   bool is_offsceen = false;
-  web_preferences->GetBoolean("offscreen", &is_offsceen);
-  int guest_instance_id = 0;
-  web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
-
   bool is_embedder_offscreen = false;
-  if (guest_instance_id) {
-    auto manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
-            "offscreen", embedder);
+
+  auto* web_contents_preferences =
+      WebContentsPreferences::FromWebContents(web_contents);
+  if (web_contents_preferences) {
+    const auto* web_preferences = web_contents_preferences->web_preferences();
+
+    web_preferences->GetBoolean("offscreen", &is_offsceen);
+    int guest_instance_id = 0;
+    web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
+
+    if (guest_instance_id) {
+      auto manager = WebViewManager::GetWebViewManager(web_contents);
+      if (manager) {
+        auto embedder = manager->GetEmbedder(guest_instance_id);
+        if (embedder) {
+          is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
+              "offscreen", embedder);
+        }
       }
     }
   }

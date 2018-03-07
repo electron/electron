@@ -16,7 +16,7 @@ function getDate () {
 
 function getInfoForCurrentVersion () {
   var json = {}
-  json.version = process.versions['atom-shell']
+  json.version = process.versions.electron
   json.date = getDate()
 
   var names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']

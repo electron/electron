@@ -48,6 +48,7 @@ class InspectableWebContentsImpl :
 
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
+  void SetDevToolsWebContents(content::WebContents* devtools) override;
   void SetDockState(const std::string& state) override;
   void ShowDevTools() override;
   void CloseDevTools() override;
@@ -192,7 +193,13 @@ class InspectableWebContentsImpl :
   PrefService* pref_service_;  // weak reference.
 
   std::unique_ptr<content::WebContents> web_contents_;
-  std::unique_ptr<content::WebContents> devtools_web_contents_;
+
+  // The default devtools created by this class when we don't have an external
+  // one assigned by SetDevToolsWebContents.
+  std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
+  // The external devtools assigned by SetDevToolsWebContents.
+  content::WebContents* external_devtools_web_contents_ = nullptr;
+
   std::unique_ptr<InspectableWebContentsView> view_;
 
   using ExtensionsAPIs = std::map<std::string, std::string>;

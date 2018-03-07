@@ -14,9 +14,9 @@
 #include "base/memory/ptr_util.h"
 #include "base/single_thread_task_runner.h"
 #include "base/time/time.h"
-#include "cc/output/copy_output_request.h"
-#include "cc/scheduler/delay_based_time_source.h"
+#include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
+#include "components/viz/common/quads/copy_output_request.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -124,14 +124,14 @@ class AtomCopyFrameGenerator {
   }
 
   void GenerateCopyFrame(const gfx::Rect& damage_rect) {
-    if (!view_->render_widget_host())
+    if (!view_->render_widget_host() || !view_->IsPainting())
       return;
 
-    std::unique_ptr<cc::CopyOutputRequest> request =
-        cc::CopyOutputRequest::CreateBitmapRequest(base::Bind(
-            &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
-            weak_ptr_factory_.GetWeakPtr(),
-            damage_rect));
+    std::unique_ptr<viz::CopyOutputRequest> request =
+        viz::CopyOutputRequest::CreateBitmapRequest(base::Bind(
+             &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
+             weak_ptr_factory_.GetWeakPtr(),
+             damage_rect));
 
     request->set_area(gfx::Rect(view_->GetPhysicalBackingSize()));
     view_->GetRootLayer()->RequestCopyOfOutput(std::move(request));
@@ -145,7 +145,7 @@ class AtomCopyFrameGenerator {
  private:
   void CopyFromCompositingSurfaceHasResult(
       const gfx::Rect& damage_rect,
-      std::unique_ptr<cc::CopyOutputResult> result) {
+      std::unique_ptr<viz::CopyOutputResult> result) {
     if (result->IsEmpty() || result->size().IsEmpty() ||
         !view_->render_widget_host()) {
       OnCopyFrameCaptureFailure(damage_rect);
@@ -194,7 +194,7 @@ class AtomCopyFrameGenerator {
 
   void OnCopyFrameCaptureSuccess(
       const gfx::Rect& damage_rect,
-      std::shared_ptr<SkBitmap> bitmap) {
+      const std::shared_ptr<SkBitmap>& bitmap) {
     base::AutoLock lock(onPaintLock_);
     view_->OnPaint(damage_rect, *bitmap);
   }
@@ -214,12 +214,12 @@ class AtomCopyFrameGenerator {
   DISALLOW_COPY_AND_ASSIGN(AtomCopyFrameGenerator);
 };
 
-class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
+class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
  public:
   AtomBeginFrameTimer(int frame_rate_threshold_us,
                       const base::Closure& callback)
       : callback_(callback) {
-    time_source_.reset(new cc::DelayBasedTimeSource(
+    time_source_.reset(new viz::DelayBasedTimeSource(
         content::BrowserThread::GetTaskRunnerForThread(
             content::BrowserThread::UI).get()));
     time_source_->SetTimebaseAndInterval(
@@ -248,13 +248,15 @@ class AtomBeginFrameTimer : public cc::DelayBasedTimeSourceClient {
   }
 
   const base::Closure callback_;
-  std::unique_ptr<cc::DelayBasedTimeSource> time_source_;
+  std::unique_ptr<viz::DelayBasedTimeSource> time_source_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBeginFrameTimer);
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
+    bool painting,
+    int frame_rate,
     const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     OffScreenRenderWidgetHostView* parent_host_view,
@@ -268,17 +270,18 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       transparent_(transparent),
       callback_(callback),
       parent_callback_(nullptr),
-      frame_rate_(60),
+      frame_rate_(frame_rate),
       frame_rate_threshold_us_(0),
       last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
       size_(native_window->GetSize()),
-      painting_(true),
+      painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       is_destroyed_(false),
       popup_position_(gfx::Rect()),
       hold_resize_(false),
       pending_resize_(false),
+      paint_callback_running_(false),
       renderer_compositor_frame_sink_(nullptr),
       background_color_(SkColor()),
       weak_ptr_factory_(this) {
@@ -300,10 +303,14 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   ui::ContextFactoryPrivate* context_factory_private =
       factory->GetContextFactoryPrivate();
   compositor_.reset(
-      new ui::Compositor(context_factory_private->AllocateFrameSinkId(),
-        content::GetContextFactory(), context_factory_private,
-        base::ThreadTaskRunnerHandle::Get(), false));
-  compositor_->SetAcceleratedWidget(native_window_->GetAcceleratedWidget());
+      new ui::Compositor(
+          context_factory_private->AllocateFrameSinkId(),
+          content::GetContextFactory(),
+          context_factory_private,
+          base::ThreadTaskRunnerHandle::Get(),
+          false /* enable_surface_synchronization */,
+          false /* enable_pixel_canvas */));
+  compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetRootLayer(root_layer_.get());
 #endif
   GetCompositor()->SetDelegate(this);
@@ -370,11 +377,11 @@ void OffScreenRenderWidgetHostView::SendBeginFrame(
 
   base::TimeTicks deadline = display_time - estimated_browser_composite_time;
 
-  const cc::BeginFrameArgs& begin_frame_args =
-      cc::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE,
-                                 begin_frame_source_.source_id(),
-                                 begin_frame_number_, frame_time, deadline,
-                                 vsync_period, cc::BeginFrameArgs::NORMAL);
+  const viz::BeginFrameArgs& begin_frame_args =
+      viz::BeginFrameArgs::Create(BEGINFRAME_FROM_HERE,
+                                  begin_frame_source_.source_id(),
+                                  begin_frame_number_, frame_time, deadline,
+                                  vsync_period, viz::BeginFrameArgs::NORMAL);
   DCHECK(begin_frame_args.IsValid());
   begin_frame_number_++;
 
@@ -527,7 +534,7 @@ void OffScreenRenderWidgetHostView::UnlockMouse() {
 }
 
 void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
-    cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
+    viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
   renderer_compositor_frame_sink_ = renderer_compositor_frame_sink;
   if (GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->DidCreateNewRendererCompositorFrameSink(
@@ -737,6 +744,8 @@ content::RenderWidgetHostViewBase*
 
   return new OffScreenRenderWidgetHostView(
       transparent_,
+      true,
+      embedder_host_view->GetFrameRate(),
       callback_,
       render_widget_host,
       embedder_host_view,
@@ -928,7 +937,7 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
 
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(
     bool needs_begin_frames) {
-  SetupFrameRate(false);
+  SetupFrameRate(true);
 
   begin_frame_timer_->SetActive(needs_begin_frames);
 
@@ -999,7 +1008,9 @@ void OffScreenRenderWidgetHostView::OnPaint(
     }
 
     damage.Intersect(GetViewBounds());
+    paint_callback_running_ = true;
     callback_.Run(damage, bitmap);
+    paint_callback_running_ = false;
 
     for (size_t i = 0; i < damages.size(); i++) {
       CopyBitmapTo(bitmap, originals[i], damages[i]);
@@ -1147,7 +1158,7 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
   if (software_output_device_) {
-    software_output_device_->SetActive(painting_, true);
+    software_output_device_->SetActive(painting_, !paint_callback_running_);
   }
 }
 
@@ -1164,16 +1175,16 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
-    if (frame_rate > 60)
-      frame_rate = 60;
+    if (frame_rate > 240)
+      frame_rate = 240;
 
     frame_rate_ = frame_rate;
   }
 
+  SetupFrameRate(true);
+
   for (auto guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);
-
-  SetupFrameRate(true);
 }
 
 int OffScreenRenderWidgetHostView::GetFrameRate() const {
@@ -1201,7 +1212,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  GetCompositor()->vsync_manager()->SetAuthoritativeVSyncInterval(
+  GetCompositor()->SetAuthoritativeVSyncInterval(
       base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
 
   if (copy_frame_generator_.get()) {

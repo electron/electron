@@ -24,8 +24,8 @@ if (process.platform === 'win32') {
 
 setImmediate(() => {
   if (process.platform === 'darwin') {
-    crashReporter.setExtraParameter('extra2', 'extra2')
-    crashReporter.setExtraParameter('extra3', null)
+    crashReporter.addExtraParameter('extra2', 'extra2')
+    crashReporter.removeExtraParameter('extra3')
   } else {
     crashReporter.start({
       productName: 'Zombies',

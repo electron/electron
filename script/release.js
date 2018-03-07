@@ -6,7 +6,6 @@ const assert = require('assert')
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
-const { GitProcess } = require('dugite')
 const nugget = require('nugget')
 const pkg = require('../package.json')
 const pkgVersion = `v${pkg.version}`
@@ -24,28 +23,24 @@ const github = new GitHub({
   followRedirects: false
 })
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
-const gitDir = path.resolve(__dirname, '..')
 
 async function getDraftRelease (version, skipValidation) {
   let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: 'electron'})
   let drafts
   let versionToCheck
   if (version) {
-    drafts = releaseInfo.data
-      .filter(release => release.tag_name === version)
     versionToCheck = version
   } else {
-    drafts = releaseInfo.data
-      .filter(release => release.draft)
     versionToCheck = pkgVersion
   }
-
+  drafts = releaseInfo.data
+    .filter(release => release.tag_name === versionToCheck &&
+      release.draft === true)
   const draft = drafts[0]
   if (!skipValidation) {
     failureCount = 0
     check(drafts.length === 1, 'one draft exists', true)
-    check(draft.tag_name === versionToCheck, `draft release version matches local package.json (${versionToCheck})`)
-    if (versionToCheck.indexOf('beta')) {
+    if (versionToCheck.indexOf('beta') > -1) {
       check(draft.prerelease, 'draft is a prerelease')
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes')
@@ -54,8 +49,8 @@ async function getDraftRelease (version, skipValidation) {
   return draft
 }
 
-async function validateReleaseAssets (release) {
-  const requiredAssets = assetsForVersion(release.tag_name).sort()
+async function validateReleaseAssets (release, validatingRelease) {
+  const requiredAssets = assetsForVersion(release.tag_name, validatingRelease).sort()
   const extantAssets = release.assets.map(asset => asset.name).sort()
   const downloadUrls = release.assets.map(asset => asset.browser_download_url).sort()
 
@@ -65,16 +60,18 @@ async function validateReleaseAssets (release) {
   })
   check((failureCount === 0), `All required GitHub assets exist for release`, true)
 
-  if (release.draft) {
-    await verifyAssets(release)
-  } else {
-    await verifyShasums(downloadUrls)
-      .catch(err => {
-        console.log(`${fail} error verifyingShasums`, err)
-      })
+  if (!validatingRelease || !release.draft) {
+    if (release.draft) {
+      await verifyAssets(release)
+    } else {
+      await verifyShasums(downloadUrls)
+        .catch(err => {
+          console.log(`${fail} error verifyingShasums`, err)
+        })
+    }
+    const s3Urls = s3UrlsForVersion(release.tag_name)
+    await verifyShasums(s3Urls, true)
   }
-  const s3Urls = s3UrlsForVersion(release.tag_name)
-  await verifyShasums(s3Urls, true)
 }
 
 function check (condition, statement, exitIfFail = false) {
@@ -87,7 +84,7 @@ function check (condition, statement, exitIfFail = false) {
   }
 }
 
-function assetsForVersion (version) {
+function assetsForVersion (version, validatingRelease) {
   const patterns = [
     `electron-${version}-darwin-x64-dsym.zip`,
     `electron-${version}-darwin-x64-symbols.zip`,
@@ -123,9 +120,11 @@ function assetsForVersion (version) {
     `ffmpeg-${version}-linux-x64.zip`,
     `ffmpeg-${version}-mas-x64.zip`,
     `ffmpeg-${version}-win32-ia32.zip`,
-    `ffmpeg-${version}-win32-x64.zip`,
-    `SHASUMS256.txt`
+    `ffmpeg-${version}-win32-x64.zip`
   ]
+  if (!validatingRelease) {
+    patterns.push('SHASUMS256.txt')
+  }
   return patterns
 }
 
@@ -259,9 +258,14 @@ async function publishRelease (release) {
 
 async function makeRelease (releaseToValidate) {
   if (releaseToValidate) {
-    console.log(`Validating release ${args.validateRelease}`)
-    let release = await getDraftRelease(args.validateRelease)
-    await validateReleaseAssets(release)
+    if (releaseToValidate === true) {
+      releaseToValidate = pkgVersion
+    } else {
+      console.log('Release to validate !=== true')
+    }
+    console.log(`Validating release ${releaseToValidate}`)
+    let release = await getDraftRelease(releaseToValidate)
+    await validateReleaseAssets(release, true)
   } else {
     checkVersion()
     let draftRelease = await getDraftRelease()
@@ -272,7 +276,6 @@ async function makeRelease (releaseToValidate) {
     draftRelease = await getDraftRelease(pkgVersion, true)
     await validateReleaseAssets(draftRelease)
     await publishRelease(draftRelease)
-    await cleanupReleaseBranch()
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       `"npm run publish-to-npm" to publish release to npm.`)
   }
@@ -438,27 +441,6 @@ async function validateChecksums (validationArgs) {
     })
   console.log(`${pass} All files from ${validationArgs.fileSource} match ` +
     `shasums defined in ${validationArgs.shaSumFile}.`)
-}
-
-async function cleanupReleaseBranch () {
-  console.log(`Cleaning up release branch.`)
-  let errorMessage = `Could not delete local release branch.`
-  let successMessage = `Successfully deleted local release branch.`
-  await callGit(['branch', '-D', 'release'], errorMessage, successMessage)
-  errorMessage = `Could not delete remote release branch.`
-  successMessage = `Successfully deleted remote release branch.`
-  return callGit(['push', 'origin', ':release'], errorMessage, successMessage)
-}
-
-async function callGit (args, errorMessage, successMessage) {
-  let gitResult = await GitProcess.exec(args, gitDir)
-  if (gitResult.exitCode === 0) {
-    console.log(`${pass} ${successMessage}`)
-    return true
-  } else {
-    console.log(`${fail} ${errorMessage} ${gitResult.stderr}`)
-    process.exit(1)
-  }
 }
 
 makeRelease(args.validateRelease)

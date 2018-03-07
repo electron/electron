@@ -39,10 +39,10 @@ class WebContentsPreferences
 
   static bool IsPreferenceEnabled(const std::string& attribute_name,
                                   content::WebContents* web_contents);
-  static bool IsSandboxed(content::WebContents* web_contents);
-  static bool UsesNativeWindowOpen(content::WebContents* web_contents);
-  static bool DisablePopups(content::WebContents* web_contents);
-  static bool IsPluginsEnabled(content::WebContents* web_contents);
+
+  static bool GetString(const std::string& attribute_name,
+                        std::string* string_value,
+                        content::WebContents* web_contents);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(
@@ -61,13 +61,13 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
 
+  // Get preferences value as integer possibly coercing it from a string
+  bool GetInteger(const std::string& attributeName, int* intValue);
+
   static std::vector<WebContentsPreferences*> instances_;
 
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
-
-  // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const std::string& attributeName, int* intValue);
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

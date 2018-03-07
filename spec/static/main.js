@@ -29,6 +29,9 @@ app.commandLine.appendSwitch('js-flags', '--expose_gc')
 app.commandLine.appendSwitch('ignore-certificate-errors')
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 
+// Disable security warnings (the security warnings test will enable them)
+process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
+
 // Accessing stdout in the main process will result in the process.stdout
 // throwing UnknownSystemError in renderer process sometimes. This line makes
 // sure we can reproduce it in renderer process.

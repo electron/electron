@@ -2,8 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import "base/mac/scoped_sending_event.h"
-#import "base/mac/scoped_nsobject.h"
+#include "base/callback.h"
+#include "base/mac/scoped_sending_event.h"
+#include "base/mac/scoped_nsobject.h"
 
 @interface AtomApplication : NSApplication<CrAppProtocol,
                                            CrAppControlProtocol,
@@ -13,9 +14,12 @@
   base::scoped_nsobject<NSUserActivity> currentActivity_;
   NSCondition* handoffLock_;
   BOOL updateReceived_;
+  base::Callback<bool()> shouldShutdown_;
 }
 
 + (AtomApplication*)sharedApplication;
+
+- (void)setShutdownHandler:(base::Callback<bool()>)handler;
 
 // CrAppProtocol:
 - (BOOL)isHandlingSendEvent;

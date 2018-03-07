@@ -291,7 +291,7 @@ Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
 and the menu shortcuts.
 
 To only prevent the menu shortcuts, use
-[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcuts):
+[`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore-experimental):
 
 ```javascript
 const {BrowserWindow} = require('electron')
@@ -625,6 +625,28 @@ const options = {extraHeaders: 'pragma: no-cache\n'}
 webContents.loadURL('https://github.com', options)
 ```
 
+#### `contents.loadFile(filePath)`
+
+* `filePath` String
+
+Loads the given file in the window, `filePath` should be a path to
+an HTML file relative to the root of your application.  For instance
+an app structure like this:
+
+```sh
+| root
+| - package.json
+| - src
+|   - main.js
+|   - index.html
+```
+
+Would require code like this
+
+```js
+win.loadFile('src/index.html')
+```
+
 #### `contents.downloadURL(url)`
 
 * `url` String
@@ -809,7 +831,8 @@ Sends a request to get current zoom factor, the `callback` will be called with
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+limits of 300% and 50% of original size, respectively. The formula for this is
+`scale := 1.2 ^ level`.
 
 #### `contents.getZoomLevel(callback)`
 
@@ -818,14 +841,6 @@ limits of 300% and 50% of original size, respectively.
 
 Sends a request to get current zoom level, the `callback` will be called with
 `callback(zoomLevel)`.
-
-#### `contents.setZoomLevelLimits(minimumLevel, maximumLevel)`
-
-* `minimumLevel` Number
-* `maximumLevel` Number
-
-**Deprecated:** Call `setVisualZoomLevelLimits` instead to set the visual zoom
-level limits. This method will be removed in Electron 2.0.
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -1074,6 +1089,68 @@ win.webContents.on('devtools-opened', () => {
 
 Removes the specified path from DevTools workspace.
 
+#### `contents.setDevToolsWebContents(devToolsWebContents)`
+
+* `devToolsWebContents` WebContents
+
+Uses the `devToolsWebContents` as the target `WebContents` to show devtools.
+
+The `devToolsWebContents` must not have done any navigation, and it should not
+be used for other purposes after the call.
+
+By default Electron manages the devtools by creating an internal `WebContents`
+with native view, which developers have very limited control of. With the
+`setDevToolsWebContents` method, developers can use any `WebContents` to show
+the devtools in it, including `BrowserWindow`, `BrowserView` and `<webview>`
+tag.
+
+Note that closing the devtools does not destroy the `devToolsWebContents`, it
+is caller's responsibility to destroy `devToolsWebContents`.
+
+An example of showing devtools in a `<webview>` tag:
+
+```html
+<html>
+<head>
+  <style type="text/css">
+    * { margin: 0; }
+    #browser { height: 70%; }
+    #devtools { height: 30%; }
+  </style>
+</head>
+<body>
+  <webview id="browser" src="https://github.com"></webview>
+  <webview id="devtools"></webview>
+  <script>
+    const browserView = document.getElementById('browser')
+    const devtoolsView = document.getElementById('devtools')
+    browserView.addEventListener('dom-ready', () => {
+      const browser = browserView.getWebContents()
+      browser.setDevToolsWebContents(devtoolsView.getWebContents())
+      browser.openDevTools()
+    })
+  </script>
+</body>
+</html>
+```
+
+An example of showing devtools in a `BrowserWindow`:
+
+```js
+const {app, BrowserWindow} = require('electron')
+
+let win = null
+let devtools = null
+
+app.once('ready', () => {
+  win = new BrowserWindow()
+  devtools = new BrowserWindow()
+  win.loadURL('https://github.com')
+  win.webContents.setDevToolsWebContents(devtools.webContents)
+  win.webContents.openDevTools({mode: 'detach'})
+})
+```
+
 #### `contents.openDevTools([options])`
 
 * `options` Object (optional)
@@ -1082,6 +1159,9 @@ Removes the specified path from DevTools workspace.
   In `undocked` mode it's possible to dock back. In `detach` mode it's not.
 
 Opens the devtools.
+
+When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
+explicitly passing an empty `mode` can force using last used dock state.
 
 #### `contents.closeDevTools()`
 
@@ -1288,7 +1368,7 @@ Set the size of the page. This is only supported for `<webview>` guest contents.
 
 * `options` Object
   * `normal` Object (optional) - Normal size of the page. This can be used in
-    combination with the [`disableguestresize`](web-view-tag.md#disableguestresize)
+    combination with the [`disableguestresize`](webview-tag.md#disableguestresize)
     attribute to manually resize the webview guest contents.
     * `width` Integer
     * `height` Integer

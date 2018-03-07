@@ -1,120 +1,150 @@
 # Electron Versioning
 
-## Overview of Semantic Versioning
+> A detailed look at our versioning policy and implementation.
 
-If you've been using Node and npm for a while, you are probably aware of [Semantic Versioning], or SemVer for short. It's a convention for specifying version numbers for software that helps communicate intentions to the users of your software.
-
-Semantic versions are always made up of three numbers:
+As of version 2.0.0, Electron follows [semver](#semver). The following command will install the most recent stable build of Electron:
 
 ```sh
-major.minor.patch
+npm install --save-dev electron
 ```
 
-Semantic version numbers are bumped (incremented) using the following rules:
-
-* **Major** is for changes that break backwards compatibility.
-* **Minor** is for new features that don't break backwards compatibility.
-* **Patch** is for bug fixes and other minor changes.
-
-A simple mnemonic for remembering this scheme is as follows:
+To update an existing project to use the latest stable version:
 
 ```sh
-breaking.feature.fix
+npm install --save-dev electron@latest
 ```
 
-## Before Version 2
+## Version 1.x
 
-Before version 2 of Electron we didn't follow SemVer, instead the following was used:
+Electron versions *< 2.0* did not conform to the [semver](http://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
 
-- **Major**: Breaking changes to Electron's API
-- **Minor**: Major Chrome, minor node or "significant" Electron changes
-- **Patch**: New features and bug fixes
+Here is an example of the 1.x strategy:
 
-This system had a number of drawbacks, such as:
+![](../images/versioning-sketch-0.png)
 
-- New bugs could be introduced into a new patch version because patch versions added features
-- It didn't follow SemVer so it could confuse consumers
-- It wasn't clear what the differences between stable and beta builds were
-- The lack of a formalized stabilization process and release schedule lead to sporadic releases and betas that could last several months
+An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
 
-## Version 2 and Beyond
+## Version 2.0 and Beyond
 
-From version 2.0.0, Electron will attempt to adhere to SemVer and follow a
-release schedule and stabilization process similar to that of Chromium.
+There are several major changes from our 1.x strategy outlined below. Each change is intended to satisfy the needs and priorities of developers/maintainers and app developers.
 
-### Version Change Rules
+1. Strict use of semver
+2. Introduction of semver-compliant `-beta` tags
+3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
+4. Clearly defined stabilization branches
+5. The `master` branch is versionless; only stabilization branches contain version information
 
-Here are the general rules that apply when releasing new versions:
+We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
 
-| Type of change | Version increase
-|---|---
-| Chromium version update | Major
-| Node *major* version update | Major
-| Electron breaking API change | Major
-| Any other changes deemed "risky" | Major
-| Node *minor* version update | Minor
-| Electron non-breaking API change | Minor
-| Electron bug fix | Patch
+# semver
 
-When you install an npm module with the `--save` or `--save-dev` flags, it
-will be prefixed with a caret `^` in package.json:
+From 2.0 onward, Electron will follow semver.
 
-```json
-{
-  "devDependencies": {
-    "electron": "^2.0.0"
-  }
-}
+Below is a table explicitly mapping types of changes to their corresponding category of semver (e.g. Major, Minor, Patch).
+
+| Major Version Increments        | Minor Version Increments           | Patch Version Increments      |
+| ------------------------------- | ---------------------------------- | ----------------------------- |
+| Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
+| Node.js major version updates   | Node.js minor version updates      | Node.js patch version updates |
+| Chromium version updates        |                                    | fix-related chromium patches  |
+
+
+Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
+
+# Stabilization Branches
+
+Stabilization branches are branches that run parallel to master, taking in only cherry-picked commits that are related to security or stability. These branches are never merged back to master.
+
+![](../images/versioning-sketch-1.png)
+
+Stabilization branches are always either **major** or **minor** version lines, and named against the following template `$MAJOR-$MINOR-x` e.g. `2-0-x`.
+
+We allow for multiple stabilization branches to exist simultaneously, and intend to support at least two in parallel at all times, backporting security fixes as necessary.
+![](../images/versioning-sketch-2.png)
+
+Older lines will not be supported by GitHub, but other groups can take ownership and backport stability and security fixes on their own. We discourage this, but recognize that it makes life easier for many app developers.
+
+# Beta Releases and Bug Fixes
+
+Developers want to know which releases are _safe_ to use. Even seemingly innocent features can introduce regressions in complex applications. At the same time, locking to a fixed version is dangerous because you’re ignoring security patches and bug fixes that may have come out since your version. Our goal is to allow the following standard semver ranges in `package.json` :
+
+* Use `~2.0.0` to admit only stability or security related fixes to your `2.0.0` release.
+* Use `^2.0.0` to admit non-breaking _reasonably stable_ feature work as well as security and bug fixes.
+
+What’s important about the second point is that apps using `^` should still be able to expect a reasonable level of stability. To accomplish this, semver allows for a _pre-release identifier_ to indicate a particular version is not yet _safe_ or _stable_.
+
+Whatever you choose, you will periodically have to bump the version in your `package.json` as breaking changes are a fact of Chromium life.
+
+The process is as follows:
+
+1. All new major and minor releases lines begin with a `-beta.N` tag for `N >= 1`. At that point, the feature set is **locked**. That release line admits no further features, and focuses only on security and stability.
+e.g. `2.0.0-beta.1`.
+2. Bug fixes, regression fixes, and security patches can be admitted. Upon doing so, a new beta is released incrementing `N`.
+e.g. `2.0.0-beta.2`
+3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information.
+e.g. `2.0.0`.
+4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented accordingly
+e.g. `2.0.1`.
+
+For each major and minor bump, you should expect to see something like the following:
+
+```text
+2.0.0-beta.1
+2.0.0-beta.2
+2.0.0-beta.3
+2.0.0
+2.0.1
+2.0.2
 ```
 
-The [caret semver range](https://docs.npmjs.com/misc/semver#caret-ranges-123-025-004)
-allows minor- and patch-level changes to be installed, i.e. non-breaking
-features and bug fixes.
+An example lifecycle in pictures:
 
-Alternatively, a more conservative approach is to use the
-[tilde semver range](https://docs.npmjs.com/misc/semver#tilde-ranges-123-12-1)
-`~`, which will only allow patch-level upgrades, i.e. bug fixes.
+* A new release branch is created that includes the latest set of features. It is published as `2.0.0-beta.1`.
+![](../images/versioning-sketch-3.png)
+* A bug fix comes into master that can be backported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
+![](../images/versioning-sketch-4.png)
+* The beta is considered _generally stable_ and it is published again as a non-beta under `2.0.0`.
+![](../images/versioning-sketch-5.png)
+* Later, a zero-day exploit is revealed and a fix is applied to master. We backport the fix to the `2-0-x` line and release `2.0.1`.
+![](../images/versioning-sketch-6.png)
 
+A few examples of how various semver ranges will pick up new releases:
 
-### The Release Schedule
+![](../images/versioning-sketch-7.png)
 
-**Note: The schedule outlined here is _aspirational_. We are not yet cutting
-releases at a weekly cadence, but we hope to get there eventually.**
+# Missing Features: Alphas, and Nightly
+Our strategy has a few tradeoffs, which for now we feel are appropriate. Most importantly that new features in master may take a while before reaching a stable release line. If you want to try a new feature immediately, you will have to build Electron yourself.
 
-<img style="width:100%;margin:20px 0;" src="https://cdn.rawgit.com/electron/electron/master/docs/images/tutorial-release-schedule.svg">
+As a future consideration, we may introduce one or both of the following:
 
-Here are some important points to call out:
+* nightly builds off of master; these would allow folks to test new features quickly and give feedback
+* alpha releases that have looser stability constraints to betas; for example it would be allowable to admit new features while a stability channel is in _alpha_
 
-- A new release is performed approximately weekly.
-- Minor versions are branched off of master for stabilization.
-- The stabilization period is approximately weekly.
-- Important bug fixes are cherry-picked to stabilization branches after landing
-  in master.
-- Features are not cherry picked; a minor version should only get *more stable*
-  with its patch versions.
-- There is little difference in the release schedule between a major and minor
-  release, other than the risk/effort it may take for third parties to adopt
-- Chromium updates will be performed as fast as the team can manage. In an ideal
-  world this would happen every 6 weeks to align with
-  [Chromium's release schedule][Chromium release].
-- Excluding exceptional circumstances, only the previous stable build will
-  get backported bug fixes.
+# Feature Flags
+Feature flags are a common practice in Chromium, and are well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft branch** must have the following properties:
 
-### The Beta Process
+* it is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag
+* it completely segments new and old code paths; refactoring old code to support a new feature _violates_ the feature-flag contract
+* feature flags are eventually removed after the soft-branch is merged
 
-Electron relies on its consumers getting involved in stabilization. The short
-target stabilization period and rapid release cadence was designed for shipping
-security and bug fixes out fast and to encourage the automation of testing.
+We reconcile flagged code with our versioning strategy as follows:
 
-You can install the beta by specifying the `beta` dist tag when installing via
-npm:
+1. we do not consider iterating on feature-flagged code in a stability branch; even judicious use of feature flags is not without risk
+2. you may break API contracts in feature-flagged code without bumping the major version. Flagged code does not adhere to semver
 
-```sh
-npm install electron@beta
-```
+# Semantic Commits
 
-[Semantic Versioning]: http://semver.org
-[pre-release identifier]: http://semver.org/#spec-item-9
-[npm dist tag]: https://docs.npmjs.com/cli/dist-tag
-[normal version]: http://semver.org/#spec-item-2
-[Chromium release]: https://www.chromium.org/developers/calendar
+We seek to increase clarity at all levels of the update and releases process. Starting with `2.0.0` we will require pull requests adhere to the [Conventional Commits](https://conventionalcommits.org/) spec, which can be summarized as follows:
+
+* Commits that would result in a semver **major** bump must start with `BREAKING CHANGE:`.
+* Commits that would result in a semver **minor** bump must start with `feat:`.
+* Commits that would result in a semver **patch** bump must start with `fix:`.
+
+* We allow squashing of commits, provided that the squashed message adheres the the above message format.
+* It is acceptable for some commits in a pull request to not include a semantic prefix, as long as a later commit in the same pull request contains a meaningful encompassing semantic message.
+
+# Versionless `master`
+
+- The `master` branch will always contain `0.0.0-dev` in its `package.json`
+- Release branches are never merged back to master
+- Release branches _do_ contain the correct version in their `package.json`

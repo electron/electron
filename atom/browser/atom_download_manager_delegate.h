@@ -24,13 +24,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
   explicit AtomDownloadManagerDelegate(content::DownloadManager* manager);
   virtual ~AtomDownloadManagerDelegate();
 
-  // Generate default file path to save the download.
-  void CreateDownloadPath(const GURL& url,
-                          const std::string& suggested_filename,
-                          const std::string& content_disposition,
-                          const std::string& mime_type,
-                          const base::FilePath& path,
-                          const CreateDownloadPathCallback& callback);
   void OnDownloadPathGenerated(uint32_t download_id,
                                const content::DownloadTargetCallback& callback,
                                const base::FilePath& default_path);

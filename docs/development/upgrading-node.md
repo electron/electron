@@ -3,8 +3,8 @@
 ## Discussion
 
 One upgrade issue is building all of Electron with a single copy
-of V8 to ensure compatability. This is important because
-upstream Node and [libchromiumcontent](upgrading-chrome.md)
+of V8 to ensure compatibility. This is important because
+upstream Node and [libchromiumcontent](upgrading-chromium.md)
 both use their own versions of V8.
 
 Upgrading Node is much easier than upgrading libchromiumcontent,
@@ -38,9 +38,10 @@ So in short, the primary steps are:
 
 ## Updating Electron's Node [fork](https://github.com/electron/node)
 
-1. Create a branch in https://github.com/electron/node: `electron-node-vX.X.X`
+1. Ensure that `master` on `electron/node` has updated release tags from `nodejs/node`
+2. Create a branch in https://github.com/electron/node: `electron-node-vX.X.X` where the base that you're branching from is the tag for the desired update
   - `vX.X.X` Must use a version of node compatible with our current version of chromium
-2. Re-apply our commits from the previous version of node we were using (`vY.Y.Y`) to `v.X.X.X`
+3. Re-apply our commits from the previous version of node we were using (`vY.Y.Y`) to `v.X.X.X`
   - Check release tag and select the range of commits we need to re-apply
   - Cherry-pick commit range:
     1. Checkout both `vY.Y.Y` & `v.X.X.X`
@@ -82,7 +83,7 @@ We need to generate a patch file from each patch applied to V8.
      Manually edit the `.patch` file to match upstream V8's directory:
     - If a diff section has no instances of `deps/V8`, remove it altogether.
       - We don’t want those patches because we’re only patching V8.
-    - Replace instances of `a/deps/v8`/filename.ext` with `a/filename.ext`
+    - Replace instances of `a/deps/v8/filename.ext` with `a/filename.ext`
       - This is needed because upstream Node keeps its V8 files in a subdirectory
   - Ensure that local status is clean: `git status` to make sure there are no unstaged changes.
   - Confirm that the patch applies cleanly with
@@ -96,7 +97,7 @@ We need to generate a patch file from each patch applied to V8.
      - `mv test.patch patches/v8/xxx-patch_name.patch`
   - Add the patched code to the index _without_ committing:
      - `cd src/v8 && git add . && cd ../..`
-     -  We don't want to commit the changes (they're kept in the patchfiles)
+     - We don't want to commit the changes (they're kept in the patchfiles)
         but need them locally so that they don't show up in subsequent diffs
         while we iterate through more patches
   - Add the patch file to the index:
@@ -105,20 +106,20 @@ We need to generate a patch file from each patch applied to V8.
      - `git commit patches/v8/`
 8. Update `patches/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
-   - ```sh
-     cd electron/vendor/node
-     electron/vendor/node$ git fetch
-     electron/vendor/node$ git checkout electron-node-vA.B.C
-     electron/vendor/node$ cd ../libchromiumcontent
-     electron/vendor/libchromiumcontent$ git fetch
-     electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
-     electron/vendor/libchromiumcontent$ cd ../..
-     electron$ git add vendor
-     electron$ git commit -m "update submodule referefences for node and libc"
-     electron$ git pso upgrade-to-chromium-62
-     electron$ script/bootstrap.py -d
-     electron$ script/build.py -c -D
-     ```
+  ```sh
+  $ cd electron/vendor/node
+  electron/vendor/node$ git fetch
+  electron/vendor/node$ git checkout electron-node-vA.B.C
+  electron/vendor/node$ cd ../libchromiumcontent
+  electron/vendor/libchromiumcontent$ git fetch
+  electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
+  electron/vendor/libchromiumcontent$ cd ../..
+  electron$ git add vendor
+  electron$ git commit -m "update submodule referefences for node and libc"
+  electron$ git pso upgrade-to-chromium-62
+  electron$ script/bootstrap.py -d
+  electron$ script/build.py -c -D
+  ```
 
 ## Notes
 
@@ -143,16 +144,3 @@ We need to generate a patch file from each patch applied to V8.
  - Building node:
    - There’s a chance we need to change our build configuration
    to match the build flags that node wants in `node/common.gypi`
-
-
-
-
-
-
-
-
-
-
-
-
-

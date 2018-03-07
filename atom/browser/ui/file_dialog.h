@@ -33,11 +33,25 @@ enum FileDialogProperty {
   FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY = 1 << 7,
 };
 
-typedef base::Callback<void(
-    bool result, const std::vector<base::FilePath>& paths)> OpenDialogCallback;
+#if defined(MAS_BUILD)
+  typedef base::Callback<void(
+      bool result,
+      const std::vector<base::FilePath>& paths,
+      const std::vector<std::string>& bookmarkData)> OpenDialogCallback;
 
-typedef base::Callback<void(
-    bool result, const base::FilePath& path)> SaveDialogCallback;
+  typedef base::Callback<void(
+      bool result,
+      const base::FilePath& path,
+      const std::string& bookmarkData)> SaveDialogCallback;
+#else
+  typedef base::Callback<void(
+      bool result,
+      const std::vector<base::FilePath>& paths)> OpenDialogCallback;
+
+  typedef base::Callback<void(
+      bool result,
+      const base::FilePath& path)> SaveDialogCallback;
+#endif
 
 struct DialogSettings {
   atom::NativeWindow* parent_window = nullptr;
@@ -50,6 +64,7 @@ struct DialogSettings {
   int properties = 0;
   bool shows_tag_field = true;
   bool force_detached = false;
+  bool security_scoped_bookmarks = false;
 };
 
 bool ShowOpenDialog(const DialogSettings& settings,

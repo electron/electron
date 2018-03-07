@@ -6,7 +6,7 @@ Follow the guidelines below for building Electron on macOS.
 
 * macOS >= 10.11.6
 * [Xcode](https://developer.apple.com/technologies/tools/) >= 8.2.1
-* [node.js](http://nodejs.org) (external)
+* [node.js](https://nodejs.org) (external)
 
 If you are using the Python downloaded by Homebrew, you also need to install
 the following Python modules:

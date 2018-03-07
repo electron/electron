@@ -134,7 +134,7 @@ describe('debugger module', () => {
       })
     })
 
-    it('handles invalid unicode characters in message', (done) => {
+    it('handles valid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
       } catch (err) {
@@ -145,9 +145,36 @@ describe('debugger module', () => {
         if (method === 'Network.loadingFinished') {
           w.webContents.debugger.sendCommand('Network.getResponseBody', {
             requestId: params.requestId
-          }, () => {
+          }, (_, data) => {
+            assert.equal(data.body, '\u0024')
             done()
           })
+        }
+      })
+
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.end('\u0024')
+      })
+
+      server.listen(0, '127.0.0.1', () => {
+        w.webContents.debugger.sendCommand('Network.enable')
+        w.loadURL(`http://127.0.0.1:${server.address().port}`)
+      })
+    })
+
+    it('does not crash for invalid unicode characters in message', (done) => {
+      try {
+        w.webContents.debugger.attach()
+      } catch (err) {
+        done(`unexpected error : ${err}`)
+      }
+
+      w.webContents.debugger.on('message', (event, method, params) => {
+        // loadingFinished indicates that page has been loaded and it did not
+        // crash because of invalid UTF-8 data
+        if (method === 'Network.loadingFinished') {
+          done()
         }
       })
 

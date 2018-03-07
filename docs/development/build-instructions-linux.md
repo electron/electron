@@ -8,7 +8,7 @@ Follow the guidelines below for building Electron on Linux.
 * Python 2.7.x. Some distributions like CentOS 6.x still use Python 2.6.x
   so you may need to check your Python version with `python -V`.
 * Node.js. There are various ways to install Node. You can download
-  source code from [nodejs.org](http://nodejs.org) and compile it.
+  source code from [nodejs.org](https://nodejs.org) and compile it.
   Doing so permits installing Node on your own home directory as a standard user.
   Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
 * [clang](https://clang.llvm.org/get_started.html) 3.4 or later.
@@ -17,7 +17,7 @@ Follow the guidelines below for building Electron on Linux.
 On Ubuntu, install the following libraries:
 
 ```sh
-$ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
+$ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
                        libnotify-dev libgnome-keyring-dev libgconf2-dev \
                        libasound2-dev libcap-dev libcups2-dev libxtst-dev \
                        libxss1 libnss3-dev gcc-multilib g++-multilib curl \
@@ -27,7 +27,7 @@ $ sudo apt-get install build-essential clang libdbus-1-dev libgtk2.0-dev \
 On RHEL / CentOS, install the following libraries:
 
 ```sh
-$ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
+$ sudo yum install clang dbus-devel gtk3-devel libnotify-devel \
                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
                    GConf2-devel nss-devel
@@ -36,7 +36,7 @@ $ sudo yum install clang dbus-devel gtk2-devel libnotify-devel \
 On Fedora, install the following libraries:
 
 ```sh
-$ sudo dnf install clang dbus-devel gtk2-devel libnotify-devel \
+$ sudo dnf install clang dbus-devel gtk3-devel libnotify-devel \
                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
                    GConf2-devel nss-devel
@@ -155,12 +155,12 @@ information may help you.
 
 ### Building `libchromiumcontent` locally
 
-To avoid using the prebuilt binaries of `libchromiumcontent`, you can build `libchromiumcontent` locally.  To do so, follow these steps:
+To avoid using the prebuilt binaries of `libchromiumcontent`, you can build `libchromiumcontent` locally. To do so, follow these steps:
 
 1. Install [depot_tools](https://chromium.googlesource.com/chromium/src/+/master/docs/linux_build_instructions.md#Install)
 2. Install [additional build dependencies](https://chromium.googlesource.com/chromium/src/+/master/docs/linux_build_instructions.md#Install-additional-build-dependencies)
 3. Fetch the git submodules:
-  
+
 ```sh
 $ git submodule update --init --recursive
 ```
@@ -179,11 +179,11 @@ $ ./script/build.py -c R
 
 ### Using system `clang` instead of downloaded `clang` binaries
 
-By default Electron is built with prebuilt 
+By default Electron is built with prebuilt
 [`clang`](https://clang.llvm.org/get_started.html) binaries provided by the
-Chromium project. If for some reason you want to build with the `clang` 
-installed in your system, you can call `bootstrap.py` with `--clang_dir=<path>` 
-switch. By passing it the build script will assume the `clang` binaries reside 
+Chromium project. If for some reason you want to build with the `clang`
+installed in your system, you can call `bootstrap.py` with `--clang_dir=<path>`
+switch. By passing it the build script will assume the `clang` binaries reside
 in `<path>/bin/`.
 
 For example if you installed `clang` under `/user/local/bin/clang`:
@@ -208,8 +208,8 @@ $ ./script/build.py -c R
 
 ### Environment variables
 
-Apart from `CC` and `CXX`, you can also set following environment variables to
-custom the building configurations:
+Apart from `CC` and `CXX`, you can also set the following environment variables to
+customise the build configuration:
 
 * `CPPFLAGS`
 * `CPPFLAGS_host`

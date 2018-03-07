@@ -87,7 +87,7 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StringPrintf(L"%s-%d", kWaitEventName, static_cast<int>(pid));
+  return base::StringPrintf(L"%ls-%d", kWaitEventName, static_cast<int>(pid));
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {

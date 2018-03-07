@@ -21,7 +21,8 @@
 #include "base/threading/thread.h"
 #include "base/time/time.h"
 #include "cc/output/compositor_frame.h"
-#include "cc/scheduler/begin_frame_source.h"
+#include "components/viz/common/frame_sinks/begin_frame_args.h"
+#include "components/viz/common/frame_sinks/begin_frame_source.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
@@ -74,6 +75,8 @@ class OffScreenRenderWidgetHostView
       public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool painting,
+                                int frame_rate,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 OffScreenRenderWidgetHostView* parent_host_view,
@@ -116,7 +119,7 @@ class OffScreenRenderWidgetHostView
 
   // content::RenderWidgetHostViewBase:
   void DidCreateNewRendererCompositorFrameSink(
-      cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
+      viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
   void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
                              cc::CompositorFrame frame) override;
@@ -315,6 +318,8 @@ class OffScreenRenderWidgetHostView
   bool hold_resize_;
   bool pending_resize_;
 
+  bool paint_callback_running_;
+
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
   std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
@@ -323,8 +328,8 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
 
   // Provides |source_id| for BeginFrameArgs that we create.
-  cc::StubBeginFrameSource begin_frame_source_;
-  uint64_t begin_frame_number_ = cc::BeginFrameArgs::kStartingFrameNumber;
+  viz::StubBeginFrameSource begin_frame_source_;
+  uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
 
 #if defined(OS_MACOSX)
   CALayer* background_layer_;
@@ -338,7 +343,7 @@ class OffScreenRenderWidgetHostView
   std::string selected_text_;
 #endif
 
-  cc::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
+  viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
 
   SkColor background_color_;
 

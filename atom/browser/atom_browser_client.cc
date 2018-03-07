@@ -17,6 +17,7 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -32,11 +33,13 @@
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/resource_dispatcher_host.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/resource_request_body.h"
 #include "content/public/common/url_constants.h"
@@ -165,11 +168,14 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   ProcessPreferences process_prefs;
-  process_prefs.sandbox = WebContentsPreferences::IsSandboxed(web_contents);
-  process_prefs.native_window_open
-      = WebContentsPreferences::UsesNativeWindowOpen(web_contents);
-  process_prefs.disable_popups
-      = WebContentsPreferences::DisablePopups(web_contents);
+  process_prefs.sandbox =
+      WebContentsPreferences::IsPreferenceEnabled("sandbox", web_contents);
+  process_prefs.native_window_open =
+      WebContentsPreferences::IsPreferenceEnabled("nativeWindowOpen",
+                                                  web_contents);
+  process_prefs.disable_popups =
+      WebContentsPreferences::IsPreferenceEnabled("disablePopups",
+                                                  web_contents);
   AddProcessPreferences(host->GetID(), process_prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
@@ -201,12 +207,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
 }
 
-std::string AtomBrowserClient::GetApplicationLocale() {
-  return l10n_util::GetApplicationLocale("");
-}
-
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* rfh,
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url,
@@ -216,32 +218,67 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
   }
 
-  if (!ShouldCreateNewSiteInstance(render_frame_host, browser_context,
-                                   current_instance, url))
+  if (!ShouldCreateNewSiteInstance(rfh, browser_context, current_instance, url))
     return;
 
-  scoped_refptr<content::SiteInstance> site_instance =
-      content::SiteInstance::CreateForURL(browser_context, url);
+  bool is_new_instance = true;
+  scoped_refptr<content::SiteInstance> site_instance;
+
+  // Do we have an affinity site to manage ?
+  std::string affinity;
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  auto* web_preferences = web_contents ?
+      WebContentsPreferences::FromWebContents(web_contents) : nullptr;
+  if (web_preferences &&
+      web_preferences->web_preferences()->GetString("affinity", &affinity) &&
+      !affinity.empty()) {
+    affinity = base::ToLowerASCII(affinity);
+    auto iter = site_per_affinities.find(affinity);
+    if (iter != site_per_affinities.end()) {
+      site_instance = iter->second;
+      is_new_instance = false;
+    } else {
+      // We must not provide the url.
+      // This site is "isolated" and must not be taken into account
+      // when Chromium looking at a candidate for an url.
+      site_instance = content::SiteInstance::Create(
+          browser_context);
+      site_per_affinities[affinity] = site_instance.get();
+    }
+  } else {
+    site_instance = content::SiteInstance::CreateForURL(
+        browser_context,
+        url);
+  }
   *new_instance = site_instance.get();
 
-  // Make sure the |site_instance| is not freed when this function returns.
-  // FIXME(zcbenz): We should adjust OverrideSiteInstanceForNavigation's
-  // interface to solve this.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&Noop, base::RetainedRef(site_instance)));
+  if (is_new_instance) {
+    // Make sure the |site_instance| is not freed
+    // when this function returns.
+    // FIXME(zcbenz): We should adjust
+    // OverrideSiteInstanceForNavigation's interface to solve this.
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::Bind(&Noop, base::RetainedRef(site_instance)));
 
-  // Remember the original web contents for the pending renderer process.
-  auto pending_process = (*new_instance)->GetProcess();
-  pending_processes_[pending_process->GetID()] =
-      content::WebContents::FromRenderFrameHost(render_frame_host);;
-  // Clear the entry in map when process ends.
-  pending_process->AddObserver(this);
+    // Remember the original web contents for the pending renderer process.
+    auto pending_process = site_instance->GetProcess();
+    pending_processes_[pending_process->GetID()] = web_contents;
+  }
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
     base::CommandLine* command_line,
     int process_id) {
+  // Make sure we're about to launch a known executable
+  {
+    base::FilePath child_path;
+    PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
+  }
+
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
   if (process_type != ::switches::kRendererProcess)
@@ -277,9 +314,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   }
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  if (web_contents)
+  if (web_contents) {
     WebContentsPreferences::AppendExtraCommandLineSwitches(
         web_contents, command_line);
+    SessionPreferences::AppendExtraCommandLineSwitches(
+        web_contents->GetBrowserContext(), command_line);
+  }
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(
@@ -347,8 +387,7 @@ bool AtomBrowserClient::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  // FIXME: Ensure the DCHECK doesn't fail and then re-enable
-  // DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   int opener_render_process_id = opener->GetProcess()->GetID();
 
@@ -369,15 +408,11 @@ bool AtomBrowserClient::CanCreateWindow(
   }
 
   if (delegate_) {
-    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&api::App::OnCreateWindow,
-                   base::Unretained(static_cast<api::App*>(delegate_)),
-                                    target_url,
-                                    frame_name,
-                                    disposition,
-                                    additional_features,
-                                    body,
-                                    opener));
+    return delegate_->CanCreateWindow(
+        opener, opener_url, opener_top_level_frame_url, source_origin,
+        container_type, target_url, referrer, frame_name, disposition, features,
+        additional_features, body, user_gesture, opener_suppressed,
+        no_javascript_access);
   }
 
   return false;
@@ -391,6 +426,19 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
                                schemes_list.begin(),
                                schemes_list.end());
   additional_schemes->push_back(content::kChromeDevToolsScheme);
+}
+
+void AtomBrowserClient::SiteInstanceDeleting(
+    content::SiteInstance* site_instance) {
+  // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
+  // when an instance is destroyed.
+  for (auto iter = site_per_affinities.begin();
+      iter != site_per_affinities.end(); ++iter) {
+    if (iter->second == site_instance) {
+      site_per_affinities.erase(iter);
+      break;
+    }
+  }
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

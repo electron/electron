@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/api/atom_api_window.h"
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/certificate_trust.h"
 #include "atom/browser/ui/file_dialog.h"
@@ -54,6 +54,9 @@ struct Converter<file_dialog::DialogSettings> {
     dict.Get("filters", &(out->filters));
     dict.Get("properties", &(out->properties));
     dict.Get("showsTagField", &(out->shows_tag_field));
+    #if defined(MAS_BUILD)
+    dict.Get("securityScopedBookmarks", &(out->security_scoped_bookmarks));
+    #endif
     return true;
   }
 };
@@ -137,4 +140,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_dialog, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_dialog, Initialize)

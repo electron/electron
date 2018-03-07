@@ -9,7 +9,7 @@ const http = require('http')
 const {closeWindow} = require('./window-helpers')
 
 const {ipcRenderer, remote, screen} = require('electron')
-const {app, ipcMain, BrowserWindow, BrowserView, protocol, webContents} = remote
+const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
@@ -84,6 +84,16 @@ describe('BrowserWindow module', () => {
 
   afterEach(() => {
     return closeWindow(w).then(() => { w = null })
+  })
+
+  describe('BrowserWindow constructor', () => {
+    it('allows passing void 0 as the webContents', () => {
+      w.close()
+      w = null
+      w = new BrowserWindow({
+        webContents: void 0
+      })
+    })
   })
 
   describe('BrowserWindow.close()', () => {
@@ -703,8 +713,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // FIXME(alexeykuzmin): Fails on Mac.
-  xdescribe('BrowserWindow.addTabbedWindow()', () => {
+  describe('BrowserWindow.addTabbedWindow()', () => {
     before(function () {
       if (process.platform !== 'darwin') {
         this.skip()
@@ -716,7 +725,19 @@ describe('BrowserWindow module', () => {
       assert.doesNotThrow(() => {
         w.addTabbedWindow(tabbedWindow)
       })
-      closeWindow(tabbedWindow).then(done)
+
+      assert.equal(BrowserWindow.getAllWindows().length, 3) // Test window + w + tabbedWindow
+
+      closeWindow(tabbedWindow, {assertSingleWindow: false}).then(() => {
+        assert.equal(BrowserWindow.getAllWindows().length, 2) // Test window + w
+        done()
+      })
+    })
+
+    it('throws when called on itself', () => {
+      assert.throws(() => {
+        w.addTabbedWindow(w)
+      }, /AddTabbedWindow cannot be called by a window on itself./)
     })
   })
 
@@ -912,7 +933,7 @@ describe('BrowserWindow module', () => {
         show: false,
         width: 400,
         height: 400,
-        titleBarStyle: 'hidden-inset'
+        titleBarStyle: 'hiddenInset'
       })
       const contentSize = w.getContentSize()
       assert.equal(contentSize[1], 400)
@@ -1018,6 +1039,79 @@ describe('BrowserWindow module', () => {
           }
         })
         w.loadURL(`file://${path.join(fixtures, 'api', 'preload.html')}`)
+      })
+    })
+
+    describe('session preload scripts', function () {
+      const preloads = [
+        path.join(fixtures, 'module', 'set-global-preload-1.js'),
+        path.join(fixtures, 'module', 'set-global-preload-2.js')
+      ]
+      const defaultSession = session.defaultSession
+
+      beforeEach(() => {
+        assert.deepEqual(defaultSession.getPreloads(), [])
+        defaultSession.setPreloads(preloads)
+      })
+      afterEach(() => {
+        defaultSession.setPreloads([])
+      })
+
+      it('can set multiple session preload script', function () {
+        assert.deepEqual(defaultSession.getPreloads(), preloads)
+      })
+
+      it('loads the script before other scripts in window including normal preloads', function (done) {
+        ipcMain.once('vars', function (event, preload1, preload2, preload3) {
+          assert.equal(preload1, 'preload-1')
+          assert.equal(preload2, 'preload-1-2')
+          assert.equal(preload3, 'preload-1-2-3')
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preloads.html'))
+      })
+    })
+
+    describe('"additionalArguments" option', () => {
+      it('adds extra args to process.argv in the renderer process', (done) => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        ipcMain.once('answer', (event, argv) => {
+          assert.ok(argv.includes('--my-magic-arg'))
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            additionalArguments: ['--my-magic-arg']
+          }
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)
+      })
+
+      it('adds extra value args to process.argv in the renderer process', (done) => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js')
+        ipcMain.once('answer', (event, argv) => {
+          assert.ok(argv.includes('--my-magic-arg=foo'))
+          done()
+        })
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: preload,
+            additionalArguments: ['--my-magic-arg=foo']
+          }
+        })
+        w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)
       })
     })
 

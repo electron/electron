@@ -24,6 +24,10 @@ following projects:
 * [socorro](https://github.com/mozilla/socorro)
 * [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
+Or use a 3rd party hosted solution:
+
+* [Backtrace I/O](https://backtrace.io/electron/)
+
 Crash reports are saved locally in an application-specific temp directory folder.
 For a `productName` of `YourName`, crash reports will be stored in a folder
 named `YourName Crashes` inside the temp directory. You can customize this temp
@@ -62,7 +66,7 @@ This will start the process that will monitor and send the crash reports. Replac
 and `crashesDirectory` with appropriate values.
 
 **Note:** If you need send additional/updated `extra` parameters after your
-first call `start` you can call `setExtraParameter` on macOS or call `start`
+first call `start` you can call `addExtraParameter` on macOS or call `start`
 again with the new/updated `extra` parameters on Linux and Windows.
 
 ```js

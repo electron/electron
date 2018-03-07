@@ -16,6 +16,13 @@ namespace atom {
 namespace api {
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
+#if defined(OS_LINUX)
+  SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
+                                base::Unretained(this)));
+#elif defined(OS_MACOSX)
+  Browser::Get()->SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
+                                                base::Unretained(this)));
+#endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
 }
@@ -23,6 +30,20 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 PowerMonitor::~PowerMonitor() {
   base::PowerMonitor::Get()->RemoveObserver(this);
 }
+
+bool PowerMonitor::ShouldShutdown() {
+  return !Emit("shutdown");
+}
+
+#if defined(OS_LINUX)
+void PowerMonitor::BlockShutdown() {
+  PowerObserverLinux::BlockShutdown();
+}
+
+void PowerMonitor::UnblockShutdown() {
+  PowerObserverLinux::UnblockShutdown();
+}
+#endif
 
 void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
   if (on_battery_power)
@@ -55,6 +76,11 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 void PowerMonitor::BuildPrototype(
     v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
+#if defined(OS_LINUX)
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
+      .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown);
+#endif
 }
 
 }  // namespace api
@@ -68,10 +94,6 @@ using atom::api::PowerMonitor;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
-#if defined(OS_MACOSX)
-  base::PowerMonitorDeviceSource::AllocateSystemIOPorts();
-#endif
-
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));
@@ -81,4 +103,4 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
 
 }  // namespace
 
-NODE_MODULE_CONTEXT_AWARE_BUILTIN(atom_browser_power_monitor, Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_power_monitor, Initialize)

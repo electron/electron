@@ -9,6 +9,8 @@
 #ifndef CHROME_RENDERER_SPELLCHECKER_SPELLCHECK_WORDITERATOR_H_
 #define CHROME_RENDERER_SPELLCHECKER_SPELLCHECK_WORDITERATOR_H_
 
+#include <stddef.h>
+
 #include <memory>
 #include <string>
 
@@ -19,8 +21,8 @@
 namespace base {
 namespace i18n {
 class BreakIterator;
-} // namespace i18n
-} // namespace base
+}  // namespace i18n
+}  // namespace base
 
 // A class which encapsulates language-specific operations used by
 // SpellcheckWordIterator. When we set the spellchecker language, this class
@@ -112,6 +114,17 @@ class SpellcheckCharAttribute {
 //
 class SpellcheckWordIterator {
  public:
+  enum WordIteratorStatus {
+    // The end of a sequence of text that the iterator recognizes as characters
+    // that can form a word.
+    IS_WORD,
+    // Non-word characters that the iterator can skip past, such as punctuation,
+    // whitespace, and characters from another character set.
+    IS_SKIPPABLE,
+    // The end of the text that the iterator is going over.
+    IS_END_OF_TEXT
+  };
+
   SpellcheckWordIterator();
   ~SpellcheckWordIterator();
 
@@ -130,19 +143,30 @@ class SpellcheckWordIterator {
   // without calling Initialize().
   bool SetText(const base::char16* text, size_t length);
 
-  // Retrieves a word (or a contraction), stores its copy to 'word_string', and
-  // stores the position and the length for input word to 'word_start'. Since
-  // this function normalizes the output word, the length of 'word_string' may
-  // be different from the 'word_length'. Therefore, when we call functions that
-  // changes the input text, such as string16::replace(), we need to use
-  // 'word_start' and 'word_length' as listed in the following snippet.
+  // Advances |iterator_| through |text_| and gets the current status of the
+  // word iterator within |text|:
   //
-  //   while(iterator.GetNextWord(&word, &offset, &length))
-  //     text.replace(offset, length, word);
+  //  - Returns IS_WORD if the iterator just found the end of a sequence of word
+  //    characters and it was able to normalize the sequence. This stores the
+  //    normalized string into |word_string| and stores the position and length
+  //    into |word_start| and |word_length| respectively. Keep in mind that
+  //    since this function normalizes the output word, the length of
+  //    |word_string| may be different from the |word_length|. Therefore, when
+  //    we call functions that change the input text, such as
+  //    string16::replace(), we need to use |word_start| and |word_length| as
+  //    listed in the following snippet:
   //
-  bool GetNextWord(base::string16* word_string,
-                   int* word_start,
-                   int* word_length);
+  //      while(iterator.GetNextWord(&word, &offset, &length))
+  //        text.replace(offset, length, word);
+  //
+  //  - Returns IS_SKIPPABLE if the iterator just found a character that the
+  //    iterator can skip past such as punctuation, whitespace, and characters
+  //    from another character set. This stores the character, position, and
+  //    length into |word_string|, |word_start|, and |word_length| respectively.
+  //
+  //  - Returns IS_END_OF_TEXT if the iterator has reached the end of |text_|.
+  SpellcheckWordIterator::WordIteratorStatus
+  GetNextWord(base::string16* word_string, int* word_start, int* word_length);
 
   // Releases all the resources attached to this object.
   void Reset();

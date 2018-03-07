@@ -11,10 +11,11 @@
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
-#include "net/cookies/cookie_monster.h"
+#include "net/cookies/cookie_store.h"
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
+#include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
 
 namespace base {
@@ -44,8 +45,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual net::NetworkDelegate* CreateNetworkDelegate() { return nullptr; }
-    virtual net::CookieMonsterDelegate* CreateCookieDelegate() {
+    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() {
       return nullptr;
     }
     virtual std::string GetUserAgent();
@@ -57,6 +57,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         RequireCTDelegate* ct_delegate);
     virtual net::SSLConfigService* CreateSSLConfigService();
     virtual std::vector<std::string> GetCookieableSchemes();
+    virtual void NotifyCookieChange(const net::CanonicalCookie& cookie,
+                                    bool removed,
+                                    net::CookieStore::ChangeCause cause) {}
   };
 
   URLRequestContextGetter(
@@ -69,6 +72,10 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
   virtual ~URLRequestContextGetter();
+
+  // net::CookieStore::CookieChangedCallback implementation.
+  void OnCookieChanged(const net::CanonicalCookie& cookie,
+                       net::CookieStore::ChangeCause cause);
 
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
@@ -91,12 +98,13 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   std::unique_ptr<RequireCTDelegate> ct_delegate_;
   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
-  std::unique_ptr<net::NetworkDelegate> network_delegate_;
   std::unique_ptr<net::URLRequestContextStorage> storage_;
   std::unique_ptr<net::URLRequestContext> url_request_context_;
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
+  std::unique_ptr<net::CookieStore::CookieChangedSubscription>
+      cookie_change_sub_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

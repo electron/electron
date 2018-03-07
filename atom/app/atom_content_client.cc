@@ -19,13 +19,14 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
+#include "media/media_features.h"
 #include "pdf/pdf.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
 
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 #include "chrome/common/widevine_cdm_constants.h"
 #endif
 
@@ -73,7 +74,7 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   return plugin;
 }
 
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
                                                 const std::string& version) {
   content::PepperPluginInfo widevine_cdm;
@@ -108,7 +109,7 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
 
   return widevine_cdm;
 }
-#endif
+#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   content::PepperPluginInfo pdf_info;
@@ -156,7 +157,7 @@ void AddPepperFlashFromCommandLine(
   plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
 
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 void AddWidevineCdmFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
@@ -176,7 +177,7 @@ void AddWidevineCdmFromCommandLine(
   plugins->push_back(CreateWidevineCdmInfo(widevine_cdm_path,
                                            widevine_cdm_version));
 }
-#endif
+#endif  //  defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 AtomContentClient::AtomContentClient() {
 }
@@ -216,9 +217,9 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   AddPepperFlashFromCommandLine(plugins);
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_PEPPER_CDMS)
+#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
   AddWidevineCdmFromCommandLine(plugins);
-#endif
+#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
   ComputeBuiltInPlugins(plugins);
 }
 

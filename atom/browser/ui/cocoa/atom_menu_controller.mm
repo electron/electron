@@ -9,10 +9,10 @@
 #include "base/logging.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-#include "content/public/browser/browser_thread.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/image/image.h"
 
@@ -44,7 +44,10 @@ Role kRolesMap[] = {
   { @selector(performClose:), "close" },
   { @selector(performZoom:), "zoom" },
   { @selector(terminate:), "quit" },
-  { @selector(toggleFullScreen:), "togglefullscreen" },
+  // ↓ is intentionally not `toggleFullScreen`. The macOS full screen menu item behaves weird.
+  // If we use `toggleFullScreen`, then the menu item will use the default label, and not take
+  // the one provided.
+  { @selector(toggleFullScreenMode:), "togglefullscreen" },
   { @selector(toggleTabBar:), "toggletabbar" },
   { @selector(selectNextTab:), "selectnexttab" },
   { @selector(selectPreviousTab:), "selectprevioustab" },
@@ -118,8 +121,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)cancel {
   if (isMenuOpen_) {
     [menu_ cancelTracking];
-    model_->MenuWillClose();
     isMenuOpen_ = NO;
+    model_->MenuWillClose();
+    closeCallback.Run();
   }
 }
 
@@ -177,6 +181,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   // Repopulate with items from the submenu to be replaced
   [self moveMenuItems:recentDocumentsMenuSwap_
                    to:recentDocumentsMenu];
+  // Update the submenu's title
+  [recentDocumentsMenu setTitle:[recentDocumentsMenuSwap_ title]];
   // Replace submenu
   [item setSubmenu:recentDocumentsMenu];
 
@@ -332,11 +338,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (isMenuOpen_) {
     isMenuOpen_ = NO;
     model_->MenuWillClose();
-
-    // Post async task so that itemSelected runs before the close callback
-    // deletes the controller from the map which deallocates it
-    if (!closeCallback.is_null())
+    // Post async task so that itemSelected runs before the close callback	
+    // deletes the controller from the map which deallocates it	
+    if (!closeCallback.is_null()) {
       BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, closeCallback);
+    }
   }
 }
 

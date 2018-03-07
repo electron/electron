@@ -75,15 +75,6 @@ class App : public AtomBrowserClient::Delegate,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  // Called when window with disposition needs to be created.
-  void OnCreateWindow(
-      const GURL& target_url,
-      const std::string& frame_name,
-      WindowOpenDisposition disposition,
-      const std::vector<std::string>& features,
-      const scoped_refptr<content::ResourceRequestBody>& body,
-      content::RenderFrameHost* opener);
-
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       std::unique_ptr<base::DictionaryValue> options,
@@ -152,6 +143,21 @@ class App : public AtomBrowserClient::Delegate,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList client_certs,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
+  bool CanCreateWindow(content::RenderFrameHost* opener,
+                       const GURL& opener_url,
+                       const GURL& opener_top_level_frame_url,
+                       const GURL& source_origin,
+                       content::mojom::WindowContainerType container_type,
+                       const GURL& target_url,
+                       const content::Referrer& referrer,
+                       const std::string& frame_name,
+                       WindowOpenDisposition disposition,
+                       const blink::mojom::WindowFeatures& features,
+                       const std::vector<std::string>& additional_features,
+                       const scoped_refptr<content::ResourceRequestBody>& body,
+                       bool user_gesture,
+                       bool opener_suppressed,
+                       bool* no_javascript_access) override;
 
   // content::GpuDataManagerObserver:
   void OnGpuProcessCrashed(base::TerminationStatus status) override;
@@ -202,6 +208,10 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(OS_MACOSX)
   bool MoveToApplicationsFolder(mate::Arguments* args);
   bool IsInApplicationsFolder();
+#endif
+#if defined(MAS_BUILD)
+  base::Callback<void()> StartAccessingSecurityScopedResource(
+    mate::Arguments* args);
 #endif
 
 #if defined(OS_WIN)

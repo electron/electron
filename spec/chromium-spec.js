@@ -4,7 +4,8 @@ const http = require('http')
 const path = require('path')
 const ws = require('ws')
 const url = require('url')
-const {ipcRenderer, remote, webFrame} = require('electron')
+const ChildProcess = require('child_process')
+const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
 const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
@@ -26,16 +27,31 @@ describe('chromium feature', () => {
     listener = null
   })
 
+  describe('command line switches', () => {
+    describe('--lang switch', () => {
+      const testLocale = (locale, result, done) => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
+        const electronPath = remote.getGlobal('process').execPath
+        let output = ''
+        let appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`])
+
+        appProcess.stdout.on('data', (data) => { output += data })
+        appProcess.stdout.on('end', () => {
+          output = output.replace(/(\r\n|\n|\r)/gm, '')
+          assert.equal(output, result)
+          done()
+        })
+      }
+
+      it('should set the locale', (done) => testLocale('fr', 'fr', done))
+      it('should not set an invalid locale', (done) => testLocale('asdfkl', 'en-US', done))
+    })
+  })
+
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
   describe('heap snapshot', () => {
     it('does not crash', function () {
-      if (process.env.TRAVIS === 'true') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
       process.atomBinding('v8_util').takeHeapSnapshot()
     })
   })
@@ -123,7 +139,7 @@ describe('chromium feature', () => {
         if (args[0] === 'reload') {
           w.webContents.reload()
         } else if (args[0] === 'error') {
-          done(`unexpected error : ${args[1]}`)
+          done(new Error(`unexpected error : ${JSON.stringify(args[1])}`))
         } else if (args[0] === 'response') {
           assert.equal(args[1], 'Hello from serviceWorker!')
           session.defaultSession.clearStorageData({
@@ -131,6 +147,7 @@ describe('chromium feature', () => {
           }, () => done())
         }
       })
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')))
       w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
     })
 
@@ -168,17 +185,12 @@ describe('chromium feature', () => {
           })
         }
       })
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')))
       w.loadURL(`file://${fixtures}/pages/service-worker/index.html`)
     })
   })
 
   describe('window.open', () => {
-    before(function () {
-      if (process.env.TRAVIS === 'true' && process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
     it('returns a BrowserWindowProxy object', () => {
       const b = window.open('about:blank', '', 'show=no')
       assert.equal(b.closed, false)
@@ -1035,7 +1047,7 @@ describe('chromium feature', () => {
         assert.equal(parsedURL.hostname, 'pdf-viewer')
         assert.equal(parsedURL.query.src, pdfSourceWithParams)
         assert.equal(parsedURL.query.b, undefined)
-        assert.equal(parsedURL.search, `?src=${pdfSource}%3Fa%3D1%26b%3D2`)
+        assert(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2'))
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
       w.webContents.loadURL(pdfSourceWithParams)
@@ -1055,13 +1067,6 @@ describe('chromium feature', () => {
     })
 
     it('should not open when pdf is requested as sub resource', (done) => {
-      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
-      webFrame.registerURLSchemeAsPrivileged('file', {
-        secure: false,
-        bypassCSP: false,
-        allowServiceWorkers: false,
-        corsEnabled: false
-      })
       fetch(pdfSource).then((res) => {
         assert.equal(res.status, 200)
         assert.notEqual(document.title, 'cat.pdf')
@@ -1083,10 +1088,6 @@ describe('chromium feature', () => {
       assert.throws(() => {
         window.alert({toString: null})
       }, /Cannot convert object to primitive value/)
-
-      assert.throws(() => {
-        window.alert('message', {toString: 3})
-      }, /Cannot convert object to primitive value/)
     })
   })
 
@@ -1094,10 +1095,6 @@ describe('chromium feature', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
       assert.throws(() => {
         window.confirm({toString: null}, 'title')
-      }, /Cannot convert object to primitive value/)
-
-      assert.throws(() => {
-        window.confirm('message', {toString: 3})
       }, /Cannot convert object to primitive value/)
     })
   })
