@@ -13,6 +13,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
@@ -276,7 +277,6 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
 void BrowserWindow::OnCloseContents() {
   if (!web_contents())
     return;
-  Observe(nullptr);
 
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -296,6 +296,9 @@ void BrowserWindow::OnCloseContents() {
 
   // Do not sent "unresponsive" event after window is closed.
   window_unresponsive_closure_.Cancel();
+
+  // Clear the web_contents() at last.
+  Observe(nullptr);
 }
 
 void BrowserWindow::OnRendererResponsive() {
@@ -305,6 +308,10 @@ void BrowserWindow::OnRendererResponsive() {
 
 void BrowserWindow::WillCloseWindow(bool* prevent_default) {
   *prevent_default = Emit("close");
+}
+
+void BrowserWindow::RequestPreferredWidth(int* width) {
+  *width = web_contents()->GetPreferredSize().width();
 }
 
 void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
@@ -356,10 +363,27 @@ void BrowserWindow::OnWindowEndSession() {
 }
 
 void BrowserWindow::OnWindowBlur() {
+  web_contents()->StoreFocus();
+#if defined(OS_MACOSX)
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(false);
+#endif
+
   Emit("blur");
 }
 
 void BrowserWindow::OnWindowFocus() {
+  web_contents()->RestoreFocus();
+#if defined(OS_MACOSX)
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (rwhv)
+    rwhv->SetActive(true);
+#else
+  if (!api_web_contents_->IsDevToolsOpened())
+    web_contents()->Focus();
+#endif
+
   Emit("focus");
 }
 
@@ -388,6 +412,10 @@ void BrowserWindow::OnWindowRestore() {
 }
 
 void BrowserWindow::OnWindowResize() {
+#if defined(OS_MACOSX)
+  if (!draggable_regions_.empty())
+    UpdateDraggableRegions(nullptr, draggable_regions_);
+#endif
   Emit("resize");
 }
 
@@ -754,7 +782,11 @@ bool BrowserWindow::IsKiosk() {
 }
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
-  window_->SetBackgroundColor(color_name);
+  SkColor color = ParseHexColor(color_name);
+  window_->SetBackgroundColor(color);
+  auto* view = web_contents()->GetRenderWidgetHostView();
+  if (view)
+    view->SetBackgroundColor(color);
 }
 
 void BrowserWindow::SetHasShadow(bool has_shadow) {
@@ -774,15 +806,16 @@ double BrowserWindow::GetOpacity() {
 }
 
 void BrowserWindow::FocusOnWebView() {
-  window_->FocusOnWebView();
+  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
 }
 
 void BrowserWindow::BlurWebView() {
-  window_->BlurWebView();
+  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 bool BrowserWindow::IsWebViewFocused() {
-  return window_->IsWebViewFocused();
+  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
+  return host_view && host_view->HasFocus();
 }
 
 void BrowserWindow::SetRepresentedFilename(const std::string& filename) {
@@ -1091,8 +1124,17 @@ void BrowserWindow::AddTabbedWindow(NativeWindow* window,
 
 void BrowserWindow::SetVibrancy(mate::Arguments* args) {
   std::string type;
-
   args->GetNext(&type);
+
+  auto* render_view_host = web_contents()->GetRenderViewHost();
+  if (render_view_host) {
+    auto* impl = content::RenderWidgetHostImpl::FromID(
+        render_view_host->GetProcess()->GetID(),
+        render_view_host->GetRoutingID());
+    if (impl)
+      impl->SetBackgroundOpaque(type.empty() ? !window_->transparent() : false);
+  }
+
   window_->SetVibrancy(type);
 }
 
@@ -1135,10 +1177,19 @@ void BrowserWindow::RemoveFromParentChildWindows() {
   parent->child_windows_.Remove(ID());
 }
 
-void BrowserWindow::UpdateDraggableRegions(
-    content::RenderFrameHost* rfh,
+// Convert draggable regions in raw format to SkRegion format.
+std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
-  window_->UpdateDraggableRegions(regions);
+  std::unique_ptr<SkRegion> sk_region(new SkRegion);
+  for (const DraggableRegion& region : regions) {
+    sk_region->op(
+        region.bounds.x(),
+        region.bounds.y(),
+        region.bounds.right(),
+        region.bounds.bottom(),
+        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
+  }
+  return sk_region;
 }
 
 void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {

@@ -101,7 +101,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsSimpleFullScreen() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
-  void SetBackgroundColor(const std::string& color_name) override;
+  void SetBackgroundColor(SkColor color) override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetOpacity(const double opacity) override;
@@ -128,8 +128,8 @@ class NativeWindowViews : public NativeWindow,
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
-  void UpdateDraggableRegions(
-      const std::vector<DraggableRegion>& regions) override;
+
+  void UpdateDraggableRegions(std::unique_ptr<SkRegion> region);
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
@@ -214,8 +214,7 @@ class NativeWindowViews : public NativeWindow,
 
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
-
-  NativeBrowserView* browser_view_;
+  views::View* focused_view_;  // The view should be focused by default.
 
   std::unique_ptr<AutofillPopup> autofill_popup_;
 

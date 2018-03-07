@@ -16,7 +16,6 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/color_util.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
@@ -141,8 +140,8 @@ NativeWindowViews::NativeWindowViews(
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
-      web_view_(inspectable_web_contents()->GetView()->GetView()),
-      browser_view_(nullptr),
+      web_view_(web_contents->GetView()->GetView()),
+      focused_view_(web_contents->GetView()->GetWebView()),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -792,9 +791,8 @@ bool NativeWindowViews::IsKiosk() {
   return IsFullscreen();
 }
 
-void NativeWindowViews::SetBackgroundColor(const std::string& color_name) {
+void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  SkColor background_color = ParseHexColor(color_name);
   SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
@@ -950,22 +948,21 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
-void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
+void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
+  if (browser_view()) {
     web_view_->RemoveChildView(
-        browser_view_->GetInspectableWebContentsView()->GetView());
-    browser_view_ = nullptr;
+        browser_view()->GetInspectableWebContentsView()->GetView());
+    set_browser_view(nullptr);
   }
 
-  if (!browser_view) {
+  if (!view) {
     return;
   }
 
   // Add as child of the main web view to avoid (0, 0) origin from overlapping
   // with menu bar.
-  browser_view_ = browser_view;
-  web_view_->AddChildView(
-      browser_view->GetInspectableWebContentsView()->GetView());
+  set_browser_view(view);
+  web_view_->AddChildView(view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1123,11 +1120,8 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
 }
 
 void NativeWindowViews::UpdateDraggableRegions(
-    const std::vector<DraggableRegion>& regions) {
-  // Draggable region is not supported for non-frameless window.
-  if (has_frame())
-    return;
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
+    std::unique_ptr<SkRegion> region) {
+  draggable_region_ = std::move(region);
 }
 
 #if defined(OS_WIN)
@@ -1190,10 +1184,6 @@ void NativeWindowViews::OnWidgetActivationChanged(
                           &NativeWindow::NotifyWindowBlur,
                  GetWeakPtr()));
 
-  if (active && inspectable_web_contents() &&
-      !inspectable_web_contents()->IsDevToolsViewShowing())
-    web_contents()->Focus();
-
   // Hide menu bar when window is blured.
   if (!active && menu_bar_autohide_ && menu_bar_visible_)
     SetMenuBarVisibility(false);
@@ -1208,9 +1198,9 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    if (browser_view_) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
-                             ->GetAutoResizeFlags();
+    if (browser_view()) {
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())->
+          GetAutoResizeFlags();
       int width_delta = 0;
       int height_delta = 0;
       if (flags & kAutoResizeWidth) {
@@ -1220,7 +1210,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(
         height_delta = new_bounds.height() - widget_size_.height();
       }
 
-      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
+      auto* view = browser_view()->GetInspectableWebContentsView()->GetView();
       auto new_view_size = view->size();
       new_view_size.set_width(new_view_size.width() + width_delta);
       new_view_size.set_height(new_view_size.height() + height_delta);
@@ -1246,7 +1236,7 @@ void NativeWindowViews::DeleteDelegate() {
 }
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
-  return inspectable_web_contents()->GetView()->GetWebView();
+  return focused_view_;
 }
 
 bool NativeWindowViews::CanResize() const {

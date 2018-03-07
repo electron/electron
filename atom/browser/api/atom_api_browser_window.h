@@ -81,6 +81,7 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
+  void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowClosed() override;
   void OnWindowEndSession() override;
@@ -260,6 +261,10 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
       content::RenderFrameHost* rfh,
       const std::vector<DraggableRegion>& regions);
 
+  // Convert draggable regions in raw format to SkRegion format.
+  std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
+      const std::vector<DraggableRegion>& regions);
+
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);
 
@@ -269,6 +274,10 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;
+#endif
+
+#if defined(OS_MACOSX)
+  std::vector<DraggableRegion> draggable_regions_;
 #endif
 
   // Closure that would be called when window is unresponsive when closing,

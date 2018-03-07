@@ -8,36 +8,12 @@
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/draggable_region.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/color_util.h"
 #include "atom/common/options_switches.h"
-#include "base/files/file_util.h"
-#include "base/json/json_writer.h"
-#include "base/message_loop/message_loop.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
-#include "components/prefs/pref_service.h"
-#include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/plugin_service.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "content/public/common/content_switches.h"
-#include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "third_party/skia/include/core/SkRegion.h"
-#include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/geometry/point.h"
-#include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/geometry/size.h"
-#include "ui/gfx/geometry/size_conversions.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -47,8 +23,7 @@ NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
-      has_frame_(true),
+    : has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
@@ -58,7 +33,7 @@ NativeWindow::NativeWindow(
       parent_(parent),
       is_modal_(false),
       is_osr_dummy_(false),
-      inspectable_web_contents_(inspectable_web_contents),
+      browser_view_(nullptr),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
@@ -74,16 +49,6 @@ NativeWindow::~NativeWindow() {
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
-}
-
-// static
-NativeWindow* NativeWindow::FromWebContents(
-    content::WebContents* web_contents) {
-  for (const auto& window : WindowList::GetWindows()) {
-    if (window->web_contents() == web_contents)
-      return window;
-  }
-  return nullptr;
 }
 
 void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
@@ -172,10 +137,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   }
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(color);
+    SetBackgroundColor(ParseHexColor(color));
   } else if (!transparent()) {
     // For normal window, use white as default background.
-    SetBackgroundColor("#FFFF");
+    SetBackgroundColor(SK_ColorWHITE);
   }
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
@@ -354,19 +319,6 @@ void NativeWindow::SetEscapeTouchBarItem(
     const mate::PersistentDictionary& item) {
 }
 
-void NativeWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
-}
-
-void NativeWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
-}
-
-bool NativeWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
-  return host_view && host_view->HasFocus();
-}
-
 void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
 }
 
@@ -400,6 +352,11 @@ void NativeWindow::PreviewFile(const std::string& path,
 }
 
 void NativeWindow::CloseFilePreview() {
+}
+
+void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.RequestPreferredWidth(width);
 }
 
 void NativeWindow::NotifyWindowCloseButtonClicked() {
@@ -562,19 +519,5 @@ void NativeWindow::NotifyWindowMessage(
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
-
-std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  std::unique_ptr<SkRegion> sk_region(new SkRegion);
-  for (const DraggableRegion& region : regions) {
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
-}
 
 }  // namespace atom
