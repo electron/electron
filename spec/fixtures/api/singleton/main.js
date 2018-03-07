@@ -1,6 +1,8 @@
 const {app} = require('electron')
 
-console.log('started')  // ping parent
+app.once('ready', () => {
+  console.log('started')  // ping parent
+})
 
 const shouldExit = app.makeSingleInstance(() => {
   process.nextTick(() => app.exit(0))
