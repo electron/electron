@@ -4,16 +4,15 @@ This document describes the process for releasing a new version of Electron.
 
 ## Determine which branch to release from
 
-- **If releasing beta,** create a new branch from `master`.
-- **If releasing a stable version,** create a new branch from the beta branch
+- **If releasing beta,** run the scripts below from `master`.
+- **If releasing a stable version,** run the scripts below from the branch
   you're stabilizing.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
-notes. The notes generated should help you determine if this is a major,
-minor, patch, or beta version change. Read the
-[Version Change Rules](../tutorial/electron-versioning.md#version-change-rules)
-for more information.
+notes. The notes generated should help you determine if this is a major, minor,
+patch, or beta version change. Read the
+[Version Change Rules](../tutorial/electron-versioning.md#semver) for more information.
 
 **NB:** If releasing from a branch, e.g. 1-8-x, check out the branch with
 `git checkout 1-8-x` rather than `git checkout -b remotes/origin/1-8-x`.
@@ -21,13 +20,9 @@ The scripts need `git rev-parse --abbrev-ref HEAD` to return a short name,
 e.g. no `remotes/origin/`
 
 ## Set your tokens and environment variables
-The Electron S3 Bucket in LastPass has environment variables needed for the
-release process. If you don't have access to this, make a request similar to
-these:
-[1](https://github.com/github/security/issues/2660),
-[2](https://github.com/github/security/issues/2951).
-When you find the bucket, click on 'edit'. In the notes will be four
-`ELECTRON_*` environment variables you need to export to your shell.
+You'll need Electron S3 credentials in order to create and
+upload an Electron release. Contact a team member for more
+information.
 
 There are a handful of `*_TOKEN` environment variables needed by the release
 scripts. Once you've generated these per-user tokens, you may want to keep
@@ -47,10 +42,11 @@ Are provided by a Jenkins admin
 The prepare release script will do the following:
 1. Check if a release is already in process and if so it will halt.
 2. Create a release branch.
-3. Bump the version number in several files. See [this bump commit] for an
-example.
-4. Create a draft release on GitHub with auto-generated release notes
-5. Push the release branch so that the release builds get built.
+3. Bump the version number in several files. See [this bump commit] for an example.
+4. Create a draft release on GitHub with auto-generated release notes.
+5. Push the release branch.
+6. Call the APIs to run the release builds.
+
 Once you have determined which type of version change is needed, run the
 `prepare-release` script with arguments according to your need:
 - `[major|minor|patch|beta]` to increment one of the version numbers, or
@@ -87,28 +83,23 @@ $ ./script/bump-version.py --bump minor --dry-run
 ```
 
 ## Wait for builds :hourglass_flowing_sand:
-
-The presence of the word [`Bump`](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/cibuild-linux#L3-L6) in the commit message created by the `bump-version` script
-will [trigger the release process](https://github.com/electron/electron/blob/7961a97d7ddbed657c6c867cc8426e02c236c077/script/cibuild#L82-L96).
-
+The `prepare-release` script will trigger the builds via API calls.
 To monitor the build progress, see the following pages:
 
-- [208.52.191.140:8080/view/All/builds](http://208.52.191.140:8080/view/All/builds) for Mac
-- [circleci.com/gh/electron](https://circleci.com/gh/electron) for Linux
+- [mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity) for Mac App Store
+- [mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity) for OS X
+- [circleci.com/gh/electron/electron](https://circleci.com/gh/electron) for Linux
 - [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
 
 ## Compile release notes
 
-Writing release notes is a good way to keep yourself busy while the builds
-are running. For prior art, see existing releases on [the releases page].
+Writing release notes is a good way to keep yourself busy while the builds are running.
+For prior art, see existing releases on [the releases page].
 
 Tips:
-- Each listed item should reference a PR on electron/electron, not an issue,
-nor a PR from another repo like libcc.
-- No need to use link markup when referencing PRs. Strings like `#123` will
-automatically be converted to links on github.com.
-- To see the version of Chromium, V8, and Node in every version of Electron,
-visit [atom.io/download/electron/index.json](https://atom.io/download/electron/index.json).
+- Each listed item should reference a PR on electron/electron, not an issue, nor a PR from another repo like libcc.
+- No need to use link markup when referencing PRs. Strings like `#123` will automatically be converted to links on github.com.
+- To see the version of Chromium, V8, and Node in every version of Electron, visit [atom.io/download/electron/index.json](https://atom.io/download/electron/index.json).
 
 ### Patch releases
 
@@ -282,7 +273,7 @@ you have trouble, try running with an older version of Node, e.g. a 6.x LTS.
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
-[electron-versioning]: /docs/tutorial/electron-versioning.md
+[versioning]: /docs/tutorial/electron-versioning.md
 
 ## Fix missing binaries of a release manually
 
