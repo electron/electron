@@ -160,8 +160,12 @@ bool NativeWindowViews::PreHandleMSG(
       if (LOWORD(w_param) == WM_CREATE) {
         // Because of reasons regarding legacy drivers and stuff, a window that
         // matches the client area is created and used internally by Chromium.
-        // This is used when forwarding mouse messages.
-        legacy_window_ = reinterpret_cast<HWND>(l_param);
+        // This is used when forwarding mouse messages. We only cache the first
+        // occurrence (the webview window) because dev tools also cause this
+        // message to be sent.
+        if (!legacy_window_) {
+          legacy_window_ = reinterpret_cast<HWND>(l_param);
+        }
       }
       return false;
     }
