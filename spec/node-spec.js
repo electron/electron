@@ -183,10 +183,13 @@ describe('node feature', () => {
 
     describe('setInterval called under Chromium event loop in browser process', () => {
       it('can be scheduled in time', (done) => {
-        let clear
-        let interval
-        clear = () => {
+        let interval = null
+        const clear = () => {
+          if (interval === null) {
+            return
+          }
           remote.getGlobal('clearInterval')(interval)
+          interval = null
           done()
         }
         interval = remote.getGlobal('setInterval')(clear, 10)

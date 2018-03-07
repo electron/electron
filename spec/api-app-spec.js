@@ -44,7 +44,7 @@ describe('app module', () => {
   let server, secureUrl
   const certPath = path.join(__dirname, 'fixtures', 'certificates')
 
-  before(() => {
+  before((done) => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -69,11 +69,12 @@ describe('app module', () => {
     server.listen(0, '127.0.0.1', () => {
       const port = server.address().port
       secureUrl = `https://127.0.0.1:${port}`
+      done()
     })
   })
 
-  after(() => {
-    server.close()
+  after((done) => {
+    server.close(() => done())
   })
 
   describe('app.getVersion()', () => {
@@ -507,7 +508,6 @@ describe('app module', () => {
     it('can respond with empty certificate list', (done) => {
       w.webContents.on('did-finish-load', () => {
         assert.equal(w.webContents.getTitle(), 'denied')
-        server.close()
         done()
       })
 

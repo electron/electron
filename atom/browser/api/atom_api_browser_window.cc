@@ -275,8 +275,7 @@ bool BrowserWindow::OnMessageReceived(const IPC::Message& message,
 }
 
 void BrowserWindow::OnCloseContents() {
-  if (!web_contents())
-    return;
+  DCHECK(web_contents());
 
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -296,9 +295,6 @@ void BrowserWindow::OnCloseContents() {
 
   // Do not sent "unresponsive" event after window is closed.
   window_unresponsive_closure_.Cancel();
-
-  // Clear the web_contents() at last.
-  Observe(nullptr);
 }
 
 void BrowserWindow::OnRendererResponsive() {
@@ -338,8 +334,13 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 }
 
 void BrowserWindow::OnWindowClosed() {
+  auto* host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->RemoveInputEventObserver(this);
+
   api_web_contents_->DestroyWebContents(true /* async */);
 
+  Observe(nullptr);
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 

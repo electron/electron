@@ -139,7 +139,7 @@ describe('chromium feature', () => {
         if (args[0] === 'reload') {
           w.webContents.reload()
         } else if (args[0] === 'error') {
-          done(`unexpected error : ${args[1]}`)
+          done(new Error(`unexpected error : ${JSON.stringify(args[1])}`))
         } else if (args[0] === 'response') {
           assert.equal(args[1], 'Hello from serviceWorker!')
           session.defaultSession.clearStorageData({
@@ -1047,7 +1047,7 @@ describe('chromium feature', () => {
         assert.equal(parsedURL.hostname, 'pdf-viewer')
         assert.equal(parsedURL.query.src, pdfSourceWithParams)
         assert.equal(parsedURL.query.b, undefined)
-        assert.equal(parsedURL.search, `?src=${pdfSource}%3Fa%3D1%26b%3D2`)
+        assert(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2'))
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
       w.webContents.loadURL(pdfSourceWithParams)
