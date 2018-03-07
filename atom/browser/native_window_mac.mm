@@ -23,6 +23,7 @@
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
+#include "ui/gl/gpu_switching_manager.h"
 
 namespace {
 
@@ -1634,15 +1635,19 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
     [vibrant_view removeFromSuperview];
     [window_ setVibrantView:nil];
+    ui::GpuSwitchingManager::SetTransparent(transparent());
 
     return;
   }
 
   background_color_before_vibrancy_.reset([window_ backgroundColor]);
   transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
+  ui::GpuSwitchingManager::SetTransparent(true);
 
-  [window_ setTitlebarAppearsTransparent:YES];
-  [window_ setBackgroundColor:[NSColor clearColor]];
+  if (title_bar_style_ != NORMAL) {
+    [window_ setTitlebarAppearsTransparent:YES];
+    [window_ setBackgroundColor:[NSColor clearColor]];
+  }
 
   NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
   if (effect_view == nil) {
