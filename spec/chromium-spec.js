@@ -1047,7 +1047,7 @@ describe('chromium feature', () => {
         assert.equal(parsedURL.hostname, 'pdf-viewer')
         assert.equal(parsedURL.query.src, pdfSourceWithParams)
         assert.equal(parsedURL.query.b, undefined)
-        assert.equal(parsedURL.search, `?src=${pdfSource}%3Fa%3D1%26b%3D2`)
+        assert(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2'))
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
       w.webContents.loadURL(pdfSourceWithParams)
