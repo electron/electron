@@ -139,7 +139,7 @@ describe('chromium feature', () => {
         if (args[0] === 'reload') {
           w.webContents.reload()
         } else if (args[0] === 'error') {
-          done(new Error(`unexpected error : ${args[1]}`))
+          done(new Error(`unexpected error : ${JSON.stringify(args[1])}`))
         } else if (args[0] === 'response') {
           assert.equal(args[1], 'Hello from serviceWorker!')
           session.defaultSession.clearStorageData({
