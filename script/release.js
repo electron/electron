@@ -148,7 +148,11 @@ function s3UrlsForVersion (version) {
 function checkVersion () {
   console.log(`Verifying that app version matches package version ${pkgVersion}.`)
   let startScript = path.join(__dirname, 'start.py')
-  let appVersion = runScript(startScript, ['--version']).trim()
+  let scriptArgs = ['--version']
+  if (args.automaticRelease) {
+    scriptArgs.unshift('-R')
+  }
+  let appVersion = runScript(startScript, scriptArgs).trim()
   check((pkgVersion.indexOf(appVersion) === 0), `App version ${appVersion} matches ` +
     `package version ${pkgVersion}.`, true)
 }

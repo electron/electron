@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 require('colors')
-const args = require('minimist')(process.argv.slice(2))
+const args = require('minimist')(process.argv.slice(2), {
+  boolean: ['automaticRelease', 'notesOnly', 'stable']
+})
 const assert = require('assert')
 const ciReleaseBuild = require('./ci-release-build')
 const { execSync } = require('child_process')
@@ -20,7 +22,7 @@ const versionType = args._[0]
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 if (!versionType && !args.notesOnly) {
   console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
-     ` (--stable) (--notesOnly)`)
+     ` (--stable) (--notesOnly) (--automaticRelease)`)
   process.exit(1)
 }
 
@@ -76,7 +78,10 @@ async function getReleaseNotes (currentBranch) {
     base: `v${pkg.version}`,
     head: currentBranch
   }
-  let releaseNotes = '(placeholder)\n'
+  let releaseNotes = ''
+  if (!args.automaticRelease) {
+    releaseNotes = '(placeholder)\n'
+  }
   console.log(`Checking for commits from ${pkg.version} to ${currentBranch}`)
   let commitComparison = await github.repos.compareCommits(githubOpts)
     .catch(err => {
@@ -85,10 +90,21 @@ async function getReleaseNotes (currentBranch) {
       process.exit(1)
     })
 
+  if (commitComparison.data.commits.length === 0) {
+    console.log(`${pass} There are no commits from ${pkg.version} to ` +
+      `${currentBranch}, skipping release.`)
+    process.exit(0)
+  }
   commitComparison.data.commits.forEach(commitEntry => {
     let commitMessage = commitEntry.commit.message
     if (commitMessage.toLowerCase().indexOf('merge') > -1) {
-      releaseNotes += `${commitMessage} \n`
+      let mergeRE = /Merge pull request (#\d+) from .*\n/
+      let prMatch = commitMessage.match(mergeRE)
+      commitMessage = commitMessage.replace(mergeRE, '').replace('\n', '')
+      if (commitMessage.substr(commitMessage.length - 1, commitMessage.length) !== '.') {
+        commitMessage += '.'
+      }
+      releaseNotes += `${commitMessage} ${prMatch[1]} \n\n`
     }
   })
   console.log(`${pass} Done generating release notes for ${currentBranch}.`)
@@ -152,7 +168,8 @@ async function pushRelease () {
 
 async function runReleaseBuilds (branch) {
   await ciReleaseBuild(branch, {
-    ghRelease: true
+    ghRelease: true,
+    automaticRelease: args.automaticRelease
   })
 }
 
@@ -193,6 +210,11 @@ async function promptForVersion (version) {
 }
 
 async function prepareRelease (isBeta, notesOnly) {
+  if (args.automaticRelease && (pkg.version.indexOf('beta') === -1 ||
+      versionType !== 'beta')) {
+    console.log(`${fail} Automatic release is only supported for beta releases`)
+    process.exit(1)
+  }
   let currentBranch = await getCurrentBranch(gitDir)
   if (notesOnly) {
     let releaseNotes = await getReleaseNotes(currentBranch)

@@ -59,6 +59,29 @@ jobs:
                 echo 'Skipping upload distribution because build is not for release'
              fi
       - run:
+          name: Optionally finish release
+          shell: /bin/sh
+          command: |
+            if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
+              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+              nvm install 8
+              nvm use 8
+              node script/release.js --automaticRelease
+              releaseExitCode=$?
+              if [ $? -eq 0 ]; then
+                echo 'Release successful, now publishing to npm'
+                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                nvm use system
+                npm run publish
+              else
+                echo 'Release is not complete, skipping publish for now.'
+              fi
+            else
+              echo 'Skipping release check'
+            fi
+      - run:
           name: Zip out directory
           command: |
             if [ "$ELECTRON_RELEASE" != "1" ]; then
