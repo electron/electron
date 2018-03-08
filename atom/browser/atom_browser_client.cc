@@ -208,8 +208,10 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_running_insecure_content = false;
 
   // Custom preferences of guest page.
-  auto web_contents = content::WebContents::FromRenderViewHost(host);
-  WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
+  auto* web_contents = content::WebContents::FromRenderViewHost(host);
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  if (web_preferences)
+    web_preferences->OverrideWebkitPrefs(prefs);
 }
 
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
@@ -319,8 +321,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    WebContentsPreferences::AppendExtraCommandLineSwitches(
-        web_contents, command_line);
+    auto* web_preferences = WebContentsPreferences::From(web_contents);
+    if (web_preferences)
+      web_preferences->AppendCommandLineSwitches(command_line);
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
 

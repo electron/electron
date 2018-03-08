@@ -34,14 +34,6 @@ class WebContentsPreferences
   // Get self from procese ID.
   static WebContentsPreferences* From(int process_id);
 
-  // Append command paramters according to |web_contents|'s preferences.
-  static void AppendExtraCommandLineSwitches(
-      content::WebContents* web_contents, base::CommandLine* command_line);
-
-  // Modify the WebPreferences according to |web_contents|'s preferences.
-  static void OverrideWebkitPrefs(
-      content::WebContents* web_contents, content::WebPreferences* prefs);
-
   WebContentsPreferences(content::WebContents* web_contents,
                          const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
@@ -51,6 +43,12 @@ class WebContentsPreferences
 
   // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
+
+  // Append command paramters according to preferences.
+  void AppendCommandLineSwitches(base::CommandLine* command_line);
+
+  // Modify the WebPreferences according to preferences.
+  void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
   // Returns the web preferences.
   base::DictionaryValue* dict() { return &dict_; }
