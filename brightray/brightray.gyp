@@ -157,7 +157,6 @@
                   '-ldl',
                   '-lresolv',
                   '-lfontconfig',
-                  '-lfreetype',
                   '-lexpat',
                 ],
               },
@@ -166,14 +165,6 @@
               'link_settings': {
                 'libraries!': [
                   '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
-                ],
-              },
-            }],
-            # On ARM64 libchromiumcontent always links to system libfreetype
-            ['target_arch=="arm64"', {
-              'link_settings': {
-                'libraries': [
-                  '-lfreetype',
                 ],
               },
             }],
