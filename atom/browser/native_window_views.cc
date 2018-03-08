@@ -1373,7 +1373,7 @@ void NativeWindowViews::ShowAutofillPopup(
   auto* web_contents_preferences =
       WebContentsPreferences::FromWebContents(web_contents);
   if (web_contents_preferences) {
-    const auto* web_preferences = web_contents_preferences->web_preferences();
+    const auto* web_preferences = web_contents_preferences->dict();
 
     web_preferences->GetBoolean("offscreen", &is_offsceen);
     int guest_instance_id = 0;

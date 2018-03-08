@@ -45,7 +45,7 @@ WebContentsPreferences::WebContentsPreferences(
   copied.Delete("isGuest");
   copied.Delete("session");
 
-  mate::ConvertFromV8(isolate, copied.GetHandle(), &web_preferences_);
+  mate::ConvertFromV8(isolate, copied.GetHandle(), &dict_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
 
   instances_.push_back(this);
@@ -70,7 +70,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
   #endif
   SetDefaultBoolIfUndefined("offscreen", false);
-  last_web_preferences_.MergeDictionary(&web_preferences_);
+
+  last_dict_.MergeDictionary(&web_preferences_);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -90,7 +91,7 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(const std::string key,
 }
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
-  web_preferences_.MergeDictionary(&extend);
+  dict_.MergeDictionary(&extend);
 }
 
 // static
@@ -111,13 +112,13 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   if (!self)
     return;
 
-  base::DictionaryValue& web_preferences = self->web_preferences_;
+  base::DictionaryValue& web_preferences = self->dict_;
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
-  self->last_web_preferences_.Clear();
-  self->last_web_preferences_.MergeDictionary(&web_preferences);
+  self->last_dict_.Clear();
+  self->last_dict_.MergeDictionary(&web_preferences);
 
   bool b;
   // Check if plugins are enabled.
@@ -274,7 +275,7 @@ bool WebContentsPreferences::IsPreferenceEnabled(
   if (!self)
     return false;
 
-  base::DictionaryValue& web_preferences = self->web_preferences_;
+  base::DictionaryValue& web_preferences = self->dict_;
   bool bool_value = false;
   web_preferences.GetBoolean(attribute_name, &bool_value);
   return bool_value;
@@ -288,24 +289,30 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     return;
 
   bool b;
-  if (self->web_preferences_.GetBoolean("javascript", &b))
+  if (self->dict_.GetBoolean("javascript", &b))
     prefs->javascript_enabled = b;
-  if (self->web_preferences_.GetBoolean("images", &b))
+  if (self->dict_.GetBoolean("images", &b))
     prefs->images_enabled = b;
-  if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
+  if (self->dict_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
+<<<<<<< HEAD
   if (self->web_preferences_.GetBoolean("webgl", &b)) {
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
   if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
+=======
+  if (self->dict_.GetBoolean("webgl", &b))
+    prefs->experimental_webgl_enabled = b;
+  if (self->dict_.GetBoolean("webSecurity", &b)) {
+>>>>>>> web_prefrences() => dict()
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
+  if (self->dict_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
   const base::DictionaryValue* fonts = nullptr;
-  if (self->web_preferences_.GetDictionary("defaultFontFamily", &fonts)) {
+  if (self->dict_.GetDictionary("defaultFontFamily", &fonts)) {
     base::string16 font;
     if (fonts->GetString("standard", &font))
       prefs->standard_font_family_map[content::kCommonScript] = font;
@@ -328,18 +335,18 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (self->GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
-  if (self->web_preferences_.GetString("defaultEncoding", &encoding))
+  if (self->dict_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
 }
 
 bool WebContentsPreferences::GetInteger(const std::string& attributeName,
                                         int* intValue) {
   // if it is already an integer, no conversion needed
-  if (web_preferences_.GetInteger(attributeName, intValue))
+  if (dict_.GetInteger(attributeName, intValue))
     return true;
 
   base::string16 stringValue;
-  if (web_preferences_.GetString(attributeName, &stringValue))
+  if (dict_.GetString(attributeName, &stringValue))
     return base::StringToInt(stringValue, intValue);
 
   return false;
@@ -351,7 +358,7 @@ bool WebContentsPreferences::GetString(const std::string& attribute_name,
   WebContentsPreferences* self = FromWebContents(web_contents);
   if (!self)
     return false;
-  return self->web_preferences()->GetString(attribute_name, string_value);
+  return self->dict()->GetString(attribute_name, string_value);
 }
 
 }  // namespace atom
