@@ -28,6 +28,8 @@ def main():
     ninja += '.exe'
 
   args = parse_args()
+  if args.ninja_path:
+    ninja = args.ninja_path
   if args.libcc:
     if ('D' not in args.configuration
         or not os.path.exists(GCLIENT_DONE)
@@ -67,6 +69,9 @@ def parse_args():
                         '-d --debug_libchromiumcontent.'
                       ),
                       action='store_true', default=False)
+  parser.add_argument('--ninja-path',
+                      help='Path of ninja command to use.',
+                      required=False)
   return parser.parse_args()
 
 
