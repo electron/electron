@@ -66,6 +66,9 @@ class WebContentsPreferences
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
 
+  // Set preference value to given bool if user did not provide value
+  bool SetDefaultBoolIfUndefined(const std::string key, bool val);
+
   // Get preferences value as integer possibly coercing it from a string
   bool GetInteger(const std::string& attributeName, int* intValue);
 

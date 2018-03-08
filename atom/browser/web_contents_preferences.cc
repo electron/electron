@@ -47,12 +47,43 @@ WebContentsPreferences::WebContentsPreferences(
   web_contents->SetUserData(UserDataKey(), this);
 
   instances_.push_back(this);
+
+  // Set WebPreferences defaults onto the JS object
+  SetDefaultBoolIfUndefined("plugins", false);
+  SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
+  SetDefaultBoolIfUndefined(options::kExperimentalCanvasFeatures, false);
+  bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
+  SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
+  SetDefaultBoolIfUndefined(options::kWebviewTag, node);
+  SetDefaultBoolIfUndefined("sandbox", false);
+  SetDefaultBoolIfUndefined("nativeWindowOpen", false);
+  SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined("javascript", true);
+  SetDefaultBoolIfUndefined("images", true);
+  SetDefaultBoolIfUndefined("textAreasAreResizable", true);
+  SetDefaultBoolIfUndefined("webgl", true);
+  SetDefaultBoolIfUndefined("webSecurity", true);
+  SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
+  #if defined(OS_MACOSX)
+  SetDefaultBoolIfUndefined(options::kScrollBounce, false);
+  #endif
+  SetDefaultBoolIfUndefined("offscreen", false);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
   instances_.erase(
       std::remove(instances_.begin(), instances_.end(), this),
       instances_.end());
+}
+
+bool WebContentsPreferences::SetDefaultBoolIfUndefined(const std::string key,
+                                                       bool val) {
+  bool existing;
+  if (!web_preferences_.GetBoolean(key, &existing)) {
+    web_preferences_.SetBoolean(key, val);
+    return val;
+  }
+  return existing;
 }
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
