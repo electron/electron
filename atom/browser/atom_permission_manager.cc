@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
@@ -19,11 +20,12 @@ namespace atom {
 namespace {
 
 bool WebContentsDestroyed(int process_id) {
-  auto contents =
-      WebContentsPreferences::GetWebContentsFromProcessID(process_id);
-  if (!contents)
+  content::WebContents* web_contents =
+      static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->
+          GetWebContentsFromProcessID(process_id);
+  if (!web_contents)
     return true;
-  return contents->IsBeingDestroyed();
+  return web_contents->IsBeingDestroyed();
 }
 
 void PermissionRequestResponseCallbackWrapper(
