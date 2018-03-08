@@ -222,7 +222,7 @@ class Window : public mate::TrackableObject<Window>,
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
-  void AddTabbedWindow(NativeWindow* window);
+  void AddTabbedWindow(NativeWindow* window, mate::Arguments* args);
 
   void SetVibrancy(mate::Arguments* args);
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);

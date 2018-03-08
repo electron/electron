@@ -111,7 +111,7 @@ class NativeWindowMac : public NativeWindow,
   void MergeAllWindows() override;
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
-  void AddTabbedWindow(NativeWindow* window) override;
+  bool AddTabbedWindow(NativeWindow* window) override;
 
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
