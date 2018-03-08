@@ -31,8 +31,6 @@ class WebContentsPreferences
  public:
   // Get self from WebContents.
   static WebContentsPreferences* From(content::WebContents* web_contents);
-  // Get self from procese ID.
-  static WebContentsPreferences* From(int process_id);
 
   WebContentsPreferences(content::WebContents* web_contents,
                          const mate::Dictionary& web_preferences);

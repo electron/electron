@@ -120,11 +120,6 @@ WebContentsPreferences* WebContentsPreferences::From(
   return FromWebContents(web_contents);
 }
 
-// static
-WebContentsPreferences* WebContentsPreferences::From(int process_id) {
-  return From(GetWebContentsFromProcessID(process_id));
-}
-
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line) {
   bool b;

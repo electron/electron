@@ -174,7 +174,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
   ProcessPreferences prefs;
-  auto* web_preferences = WebContentsPreferences::From(process_id);
+  auto* web_preferences = WebContentsPreferences::From(
+      GetWebContentsFromProcessID(process_id));
   if (web_preferences) {
     prefs.sandbox = web_preferences->IsEnabled("sandbox");
     prefs.native_window_open = web_preferences->IsEnabled("nativeWindowOpen");
