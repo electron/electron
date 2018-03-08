@@ -33,8 +33,7 @@ void MenuViews::PopupAt(BrowserWindow* window,
   if (x == -1 || y == -1) {
     location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
-    views::View* view = native_window;  // the instance is also its content view
-    gfx::Point origin = view->bounds().origin();
+    gfx::Point origin = native_window->GetContentBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
