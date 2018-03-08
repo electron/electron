@@ -1378,12 +1378,13 @@ void NativeWindowViews::ShowAutofillPopup(
                                         &guest_instance_id);
 
     if (guest_instance_id) {
-      auto manager = WebViewManager::GetWebViewManager(web_contents);
+      auto* manager = WebViewManager::GetWebViewManager(web_contents);
       if (manager) {
-        auto embedder = manager->GetEmbedder(guest_instance_id);
+        auto* embedder = manager->GetEmbedder(guest_instance_id);
         if (embedder) {
-          is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
-              "offscreen", embedder);
+          auto* embedder_prefs = WebContentsPreferences::From(embedder);
+          is_embedder_offscreen = embedder_prefs &&
+                                  embedder_prefs->IsEnabled("offscreen");
         }
       }
     }

@@ -80,14 +80,21 @@ WebContentsPreferences::~WebContentsPreferences() {
       instances_.end());
 }
 
-bool WebContentsPreferences::SetDefaultBoolIfUndefined(const std::string key,
-                                                       bool val) {
+bool WebContentsPreferences::SetDefaultBoolIfUndefined(
+    const base::StringPiece& key, bool val) {
   bool existing;
-  if (!web_preferences_.GetBoolean(key, &existing)) {
-    web_preferences_.SetBoolean(key, val);
+  if (!dict_.GetBoolean(key, &existing)) {
+    dict_.SetBoolean(key, val);
     return val;
   }
   return existing;
+}
+
+bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
+                                       bool default_value) {
+  bool bool_value = default_value;
+  dict_.GetBoolean(name, &bool_value);
+  return bool_value;
 }
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
@@ -111,6 +118,11 @@ WebContentsPreferences* WebContentsPreferences::From(
   if (!web_contents)
     return nullptr;
   return FromWebContents(web_contents);
+}
+
+// static
+WebContentsPreferences* WebContentsPreferences::From(int process_id) {
+  return From(GetWebContentsFromProcessID(process_id));
 }
 
 // static
@@ -272,23 +284,6 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 }
 
-bool WebContentsPreferences::IsPreferenceEnabled(
-    const std::string& attribute_name,
-    content::WebContents* web_contents) {
-  WebContentsPreferences* self;
-  if (!web_contents)
-    return false;
-
-  self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-
-  base::DictionaryValue& web_preferences = self->dict_;
-  bool bool_value = false;
-  web_preferences.GetBoolean(attribute_name, &bool_value);
-  return bool_value;
-}
-
 // static
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebContents* web_contents, content::WebPreferences* prefs) {
@@ -303,17 +298,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->images_enabled = b;
   if (self->dict_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
-<<<<<<< HEAD
-  if (self->web_preferences_.GetBoolean("webgl", &b)) {
+  if (self->dict_.GetBoolean("webgl", &b)) {
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
-  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
-=======
-  if (self->dict_.GetBoolean("webgl", &b))
-    prefs->experimental_webgl_enabled = b;
   if (self->dict_.GetBoolean("webSecurity", &b)) {
->>>>>>> web_prefrences() => dict()
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
@@ -347,26 +336,17 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->default_encoding = encoding;
 }
 
-bool WebContentsPreferences::GetInteger(const std::string& attributeName,
-                                        int* intValue) {
+bool WebContentsPreferences::GetInteger(const base::StringPiece& attribute_name,
+                                        int* val) {
   // if it is already an integer, no conversion needed
-  if (dict_.GetInteger(attributeName, intValue))
+  if (dict_.GetInteger(attribute_name, val))
     return true;
 
-  base::string16 stringValue;
-  if (dict_.GetString(attributeName, &stringValue))
-    return base::StringToInt(stringValue, intValue);
+  std::string str;
+  if (dict_.GetString(attribute_name, &str))
+    return base::StringToInt(str, val);
 
   return false;
-}
-
-bool WebContentsPreferences::GetString(const std::string& attribute_name,
-                                       std::string* string_value,
-                                       content::WebContents* web_contents) {
-  WebContentsPreferences* self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-  return self->dict()->GetString(attribute_name, string_value);
 }
 
 }  // namespace atom

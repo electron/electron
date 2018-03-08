@@ -35,17 +35,12 @@ class WebContentsPreferences
 
   // Get self from WebContents.
   static WebContentsPreferences* From(content::WebContents* web_contents);
+  // Get self from procese ID.
+  static WebContentsPreferences* From(int process_id);
 
   // Append command paramters according to |web_contents|'s preferences.
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);
-
-  static bool IsPreferenceEnabled(const std::string& attribute_name,
-                                  content::WebContents* web_contents);
-
-  static bool GetString(const std::string& attribute_name,
-                        std::string* string_value,
-                        content::WebContents* web_contents);
 
   // Modify the WebPreferences according to |web_contents|'s preferences.
   static void OverrideWebkitPrefs(
@@ -54,6 +49,9 @@ class WebContentsPreferences
   WebContentsPreferences(content::WebContents* web_contents,
                          const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
+
+  // A simple way to know whether a Boolean property is enabled.
+  bool IsEnabled(const base::StringPiece& name, bool default_value = false);
 
   // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
@@ -67,10 +65,10 @@ class WebContentsPreferences
   friend class content::WebContentsUserData<WebContentsPreferences>;
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(const std::string key, bool val);
+  bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
 
   // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const std::string& attributeName, int* intValue);
+  bool GetInteger(const base::StringPiece& attribute_name, int* val);
 
   static std::vector<WebContentsPreferences*> instances_;
 
