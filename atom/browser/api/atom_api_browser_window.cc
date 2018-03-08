@@ -115,7 +115,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
     // These preferences will be used when the webContent launches new
     // render processes.
     auto* existing_preferences =
-        WebContentsPreferences::FromWebContents(web_contents->web_contents());
+        WebContentsPreferences::From(web_contents->web_contents());
     base::DictionaryValue web_preferences_dict;
     if (mate::ConvertFromV8(isolate, web_preferences.GetHandle(),
                             &web_preferences_dict)) {

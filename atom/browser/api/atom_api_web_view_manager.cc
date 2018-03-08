@@ -34,7 +34,7 @@ void AddGuest(int guest_instance_id,
         ->SetDefaultZoomFactor(zoom_factor);
   }
 
-  WebContentsPreferences::FromWebContents(guest_web_contents)->Merge(options);
+  WebContentsPreferences::From(guest_web_contents)->Merge(options);
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {

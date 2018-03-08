@@ -33,6 +33,9 @@ class WebContentsPreferences
   // FIXME(zcbenz): This method does not belong here.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
+  // Get self from WebContents.
+  static WebContentsPreferences* From(content::WebContents* web_contents);
+
   // Append command paramters according to |web_contents|'s preferences.
   static void AppendExtraCommandLineSwitches(
       content::WebContents* web_contents, base::CommandLine* command_line);

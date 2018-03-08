@@ -106,6 +106,14 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
 }
 
 // static
+WebContentsPreferences* WebContentsPreferences::From(
+    content::WebContents* web_contents) {
+  if (!web_contents)
+    return nullptr;
+  return FromWebContents(web_contents);
+}
+
+// static
 void WebContentsPreferences::AppendExtraCommandLineSwitches(
     content::WebContents* web_contents, base::CommandLine* command_line) {
   WebContentsPreferences* self = FromWebContents(web_contents);

@@ -235,8 +235,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   // Do we have an affinity site to manage ?
   std::string affinity;
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* web_preferences = web_contents ?
-      WebContentsPreferences::FromWebContents(web_contents) : nullptr;
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences &&
       web_preferences->dict()->GetString("affinity", &affinity) &&
       !affinity.empty()) {
