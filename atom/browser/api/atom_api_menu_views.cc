@@ -23,11 +23,8 @@ MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
 
 void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
                         const base::Closure& callback) {
-  NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
+  auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
-    return;
-  auto* web_contents = native_window->inspectable_web_contents();
-  if (!web_contents)
     return;
 
   // (-1, -1) means showing on mouse location.
@@ -35,8 +32,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
   if (x == -1 || y == -1) {
     location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
-    auto* view = web_contents->GetView()->GetWebView();
-    gfx::Point origin = view->bounds().origin();
+    gfx::Point origin = native_window->GetContentBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
@@ -52,7 +48,7 @@ void MenuViews::PopupAt(Window* window, int x, int y, int positioning_item,
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
       model(), flags, close_callback));
   menu_runners_[window_id]->RunMenuAt(
-      static_cast<NativeWindowViews*>(window->window())->widget(),
+      native_window->widget(),
       NULL,
       gfx::Rect(location, gfx::Size()),
       views::MENU_ANCHOR_TOPLEFT,
