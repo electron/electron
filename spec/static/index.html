@@ -51,7 +51,11 @@
   if (!process.env.MOCHA_REPORTER) {
     mocha.ui('bdd').reporter(isCi ? 'tap' : 'html')
   }
-  mocha.timeout(isCi ? 30000 : 10000)
+  if (process.env.MOCHA_TIMEOUT && process.env.MOCHA_TIMEOUT > 0) {
+    mocha.timeout(process.env.MOCHA_TIMEOUT)
+  } else {
+    mocha.timeout(isCi ? 30000 : 10000)
+  }
 
   const query = Mocha.utils.parseQuery(window.location.search || '')
   if (query.grep) mocha.grep(query.grep)
