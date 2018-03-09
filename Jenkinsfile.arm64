@@ -8,6 +8,7 @@ pipeline {
   environment {
     TARGET_ARCH='arm64'
     DISPLAY=':99.0'
+    MOCHA_TIMEOUT='60000'
   }
   stages {
     stage('Bootstrap') {
