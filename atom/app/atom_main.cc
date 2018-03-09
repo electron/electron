@@ -42,6 +42,7 @@ namespace {
 const auto kRunAsNode = "ELECTRON_RUN_AS_NODE";
 #endif
 
+#if defined(ENABLE_RUN_AS_NODE) || defined(OS_WIN)
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
   size_t required_size;
@@ -52,6 +53,7 @@ bool IsEnvSet(const char* name) {
   return indicator && indicator[0] != '\0';
 #endif
 }
+#endif
 
 }  // namespace
 
