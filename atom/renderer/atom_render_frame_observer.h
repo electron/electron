@@ -6,8 +6,13 @@
 #define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
 #include "atom/renderer/renderer_client_base.h"
-#include "base/values.h"
+#include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "third_party/WebKit/public/web/WebLocalFrame.h"
+
+namespace base {
+class ListValue;
+}
 
 namespace atom {
 
@@ -48,8 +53,6 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void OnBrowserMessage(bool send_to_all,
                         const base::string16& channel,
                         const base::ListValue& args);
-
-  void OnOffscreen();
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;

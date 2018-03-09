@@ -14,21 +14,13 @@
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
-#include "atom/renderer/atom_render_view_observer.h"
+#include "atom/renderer/atom_render_frame_observer.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_view.h"
-#include "content/public/renderer/render_view_observer.h"
-#include "ipc/ipc_message_macros.h"
-#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
@@ -97,18 +89,17 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
 }
 
-class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
+class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
  public:
-  AtomSandboxedRenderViewObserver(content::RenderView* render_view,
-                                  AtomSandboxedRendererClient* renderer_client)
-    : AtomRenderViewObserver(render_view, nullptr),
-    v8_converter_(new atom::V8ValueConverter),
-    renderer_client_(renderer_client) {
-      v8_converter_->SetDisableNode(true);
-    }
+  AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
+                                   AtomSandboxedRendererClient* renderer_client)
+      : AtomRenderFrameObserver(render_frame, renderer_client),
+        v8_converter_(new atom::V8ValueConverter),
+        renderer_client_(renderer_client) {
+    v8_converter_->SetDisableNode(true);
+  }
 
  protected:
-  // TODO(MarshallOfSound): This needs to be `AtomRenderFrameObserver`
   void EmitIPCEvent(blink::WebLocalFrame* frame,
                     const base::string16& channel,
                     const base::ListValue& args) {
@@ -132,7 +123,7 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
  private:
   std::unique_ptr<atom::V8ValueConverter> v8_converter_;
   AtomSandboxedRendererClient* renderer_client_;
-  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderViewObserver);
+  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
 };
 
 }  // namespace
@@ -148,12 +139,12 @@ AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  new AtomSandboxedRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
-  new AtomSandboxedRenderViewObserver(render_view, this);
   RendererClientBase::RenderViewCreated(render_view);
 }
 

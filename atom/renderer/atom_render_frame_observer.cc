@@ -4,6 +4,7 @@
 
 #include "atom/renderer/atom_render_frame_observer.h"
 
+#include <string>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -12,23 +13,25 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
-#include "atom/renderer/atom_renderer_client.h"
-#include "base/command_line.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
+#include "net/base/net_module.h"
+#include "net/grit/net_resources.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebDraggableRegion.h"
 #include "third_party/WebKit/public/web/WebElement.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebView.h"
+#include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
+
+namespace {
 
 bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
@@ -54,13 +57,28 @@ std::vector<v8::Local<v8::Value>> ListValueToVector(
   return result;
 }
 
+base::StringPiece NetResourceProvider(int key) {
+  if (key == IDR_DIR_HEADER_HTML) {
+    base::StringPiece html_data =
+        ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
+            IDR_DIR_HEADER_HTML);
+    return html_data;
+  }
+  return base::StringPiece();
+}
+
+}  // namespace
+
 AtomRenderFrameObserver::AtomRenderFrameObserver(
     content::RenderFrame* frame,
     RendererClientBase* renderer_client)
-  : content::RenderFrameObserver(frame),
-    render_frame_(frame),
-    renderer_client_(renderer_client),
-    document_created_(false) {}
+    : content::RenderFrameObserver(frame),
+      render_frame_(frame),
+      renderer_client_(renderer_client),
+      document_created_(false) {
+  // Initialise resource for directory listing.
+  net::NetModule::SetResourceProvider(NetResourceProvider);
+}
 
 void AtomRenderFrameObserver::DidClearWindowObject() {
   renderer_client_->DidClearWindowObject(render_frame_);
@@ -145,21 +163,16 @@ bool AtomRenderFrameObserver::ShouldNotifyClient(int world_id) {
 bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_Message, OnBrowserMessage)
-    IPC_MESSAGE_HANDLER(AtomViewMsg_Offscreen, OnOffscreen)
+    IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
-void AtomRenderFrameObserver::OnOffscreen() {
-  blink::WebView::SetUseExternalPopupMenus(false);
-}
-
 void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
-                                              const base::string16& channel,
-                                              const base::ListValue& args) {
+                                               const base::string16& channel,
+                                               const base::ListValue& args) {
   // Don't handle browser messages before document element is created.
   // When we receive a message from the browser, we try to transfer it
   // to a web page, and when we do that Blink creates an empty
@@ -168,15 +181,11 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
   if (!document_created_)
     return;
 
-  if (!render_frame()->GetRenderView()->GetWebView())
+  blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
+  if (!frame || !render_frame_->IsMainFrame())
     return;
 
-  blink::WebFrame* frame =
-    render_frame()->GetRenderView()->GetWebView()->MainFrame();
-  if (!frame || !frame->IsWebLocalFrame())
-    return;
-
-  EmitIPCEvent(frame->ToWebLocalFrame(), channel, args);
+  EmitIPCEvent(frame, channel, args);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {

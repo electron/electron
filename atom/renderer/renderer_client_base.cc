@@ -13,6 +13,7 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
 #include "atom/renderer/atom_render_frame_observer.h"
+#include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
@@ -26,13 +27,13 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 #include "third_party/WebKit/public/web/WebCustomElement.h"
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #if defined(OS_MACOSX)
 #include "base/mac/mac_util.h"
@@ -144,7 +145,6 @@ void RendererClientBase::RenderThreadStarted() {
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
   new AutofillAgent(render_frame);
   new PepperHelper(render_frame);
   new ContentSettingsObserver(render_frame);
@@ -159,6 +159,7 @@ void RendererClientBase::RenderFrameCreated(
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
+  new AtomRenderViewObserver(render_view);
   blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
   if (!web_frame_widget)
     return;
