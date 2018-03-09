@@ -245,7 +245,7 @@
         'atom_js2c',
         'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
         'brightray/brightray.gyp:brightray',
-        'vendor/node/node.gyp:node',
+        'vendor/node/node.gyp:node_lib',
       ],
       'defines': [
         # We need to access internal implementations of Node.
