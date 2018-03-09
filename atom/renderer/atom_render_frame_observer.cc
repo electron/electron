@@ -171,7 +171,8 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
   if (!render_frame()->GetRenderView()->GetWebView())
     return;
 
-  blink::WebFrame* frame = render_frame()->GetRenderView()->GetWebView()->MainFrame();
+  blink::WebFrame* frame =
+    render_frame()->GetRenderView()->GetWebView()->MainFrame();
   if (!frame || !frame->IsWebLocalFrame())
     return;
 
