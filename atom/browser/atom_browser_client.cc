@@ -140,6 +140,11 @@ void AtomBrowserClient::RemoveProcessPreferences(int process_id) {
   process_preferences_.erase(process_id);
 }
 
+bool AtomBrowserClient::IsProcessObserved(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
+  return process_preferences_.find(process_id) != process_preferences_.end();
+}
+
 bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
@@ -160,7 +165,11 @@ bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
 
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
+  // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
+  if (IsProcessObserved(process_id))
+    return;
+
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
   host->AddFilter(

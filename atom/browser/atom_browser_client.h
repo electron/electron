@@ -126,6 +126,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   };
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
+  bool IsProcessObserved(int process_id);
   bool IsRendererSandboxed(int process_id);
   bool RendererUsesNativeWindowOpen(int process_id);
   bool RendererDisablesPopups(int process_id);
