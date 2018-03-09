@@ -16,6 +16,9 @@ RUN apt-get install -y wget
 # Install python-dbusmock
 RUN apt-get install -y python-dbusmock
 
+# Install libnotify
+RUN apt-get install -y libnotify-bin
+
 # Add xvfb init script
 ADD tools/xvfb-init.sh /etc/init.d/xvfb
 RUN chmod a+x /etc/init.d/xvfb
