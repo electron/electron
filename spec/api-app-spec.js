@@ -491,6 +491,12 @@ describe('app module', () => {
   describe('select-client-certificate event', () => {
     let w = null
 
+    before(function () {
+      if (process.platform === 'linux') {
+        this.skip()
+      }
+    })
+
     beforeEach(() => {
       w = new BrowserWindow({
         show: false,
