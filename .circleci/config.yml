@@ -3,7 +3,7 @@ version: 2
 jobs:
   electron-linux-arm:
     docker:
-      - image: electronbuilds/electron:0.0.6
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm
     resource_class: 2xlarge
@@ -63,23 +63,19 @@ jobs:
           shell: /bin/sh
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
-              curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.8/install.sh | bash
-              export NVM_DIR="$HOME/.nvm"
-              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-              nvm install 8
-              nvm use 8
+              echo 'Trying to finish release'
               node script/release.js --automaticRelease
               releaseExitCode=$?
-              if [ $? -eq 0 ]; then
+              if [ $releaseExitCode -eq 0 ]; then
                 echo 'Release successful, now publishing to npm'
                 echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                nvm use system
-                npm run publish
+                npm run publish-to-npm
+                echo 'Release has been published to npm'
               else
-                echo 'Release is not complete, skipping publish for now.'
+                echo 'Release is not complete, skipping publish for now'
               fi
             else
-              echo 'Skipping release check'
+              echo 'Skipping finishing release because build is not for release'
             fi
       - run:
           name: Zip out directory
@@ -119,7 +115,7 @@ jobs:
             fi
   electron-linux-arm64:
     docker:
-      - image: electronbuilds/electron:0.0.6
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm64
     resource_class: 2xlarge
@@ -175,6 +171,25 @@ jobs:
                 echo 'Skipping upload distribution because build is not for release'
              fi
       - run:
+          name: Optionally finish release
+          shell: /bin/sh
+          command: |
+            if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
+              echo 'Trying to finish release'
+              node script/release.js --automaticRelease
+              releaseExitCode=$?
+              if [ $releaseExitCode -eq 0 ]; then
+                echo 'Release successful, now publishing to npm'
+                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                npm run publish-to-npm
+                echo 'Release has been published to npm'
+              else
+                echo 'Release is not complete, skipping publish for now'
+              fi
+            else
+              echo 'Skipping finishing release because build is not for release'
+            fi
+      - run:
           name: Zip out directory
           command: |
             if [ "$ELECTRON_RELEASE" != "1" ]; then
@@ -212,7 +227,7 @@ jobs:
             fi
   electron-linux-ia32:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: ia32
           DISPLAY: ':99.0'
@@ -272,6 +287,25 @@ jobs:
                 echo 'Skipping upload distribution because build is not for release'
              fi
       - run:
+          name: Optionally finish release
+          shell: /bin/sh
+          command: |
+            if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
+              echo 'Trying to finish release'
+              node script/release.js --automaticRelease
+              releaseExitCode=$?
+              if [ $releaseExitCode -eq 0 ]; then
+                echo 'Release successful, now publishing to npm'
+                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                npm run publish-to-npm
+                echo 'Release has been published to npm'
+              else
+                echo 'Release is not complete, skipping publish for now'
+              fi
+            else
+              echo 'Skipping finishing release because build is not for release'
+            fi
+      - run:
           name: Test
           environment:
             MOCHA_FILE: junit/test-results.xml
@@ -296,7 +330,7 @@ jobs:
              fi
   electron-linux-mips64el:
     docker:
-      - image: electronbuilds/electron:0.0.6
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: mips64el
     resource_class: xlarge
@@ -351,10 +385,29 @@ jobs:
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
+      - run:
+          name: Optionally finish release
+          shell: /bin/sh
+          command: |
+            if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
+              echo 'Trying to finish release'
+              node script/release.js --automaticRelease
+              releaseExitCode=$?
+              if [ $releaseExitCode -eq 0 ]; then
+                echo 'Release successful, now publishing to npm'
+                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                npm run publish-to-npm
+                echo 'Release has been published to npm'
+              else
+                echo 'Release is not complete, skipping publish for now'
+              fi
+            else
+              echo 'Skipping finishing release because build is not for release'
+            fi
 
   electron-linux-x64:
     docker:
-      - image: electronbuilds/electron:0.0.6
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
@@ -413,6 +466,25 @@ jobs:
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
+      - run:
+          name: Optionally finish release
+          shell: /bin/sh
+          command: |
+            if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
+              echo 'Trying to finish release'
+              node script/release.js --automaticRelease
+              releaseExitCode=$?
+              if [ $releaseExitCode -eq 0 ]; then
+                echo 'Release successful, now publishing to npm'
+                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                npm run publish-to-npm
+                echo 'Release has been published to npm'
+              else
+                echo 'Release is not complete, skipping publish for now'
+              fi
+            else
+              echo 'Skipping finishing release because build is not for release'
+            fi
       - run:
           name: Test
           environment:
