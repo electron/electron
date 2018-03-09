@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+#include "atom/common/api/locker.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -97,8 +98,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
   for (std::list<node::Environment*>::const_iterator it =
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {
+    node::Environment* env = *it;
+    mate::Locker locker(env->isolate());
+    v8::Context::Scope context_scope(env->context());
     node::InternalCallbackScope scope(
-        *it,
+        env,
         v8::Local<v8::Object>(),
         {0, 0},
         node::InternalCallbackScope::kAllowEmptyResource);
