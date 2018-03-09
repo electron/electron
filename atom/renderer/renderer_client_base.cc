@@ -28,7 +28,7 @@
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/public/web/WebCustomElement.h"  // NOLINT(build/include_alpha)
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
