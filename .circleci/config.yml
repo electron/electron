@@ -3,7 +3,7 @@ version: 2
 jobs:
   electron-linux-arm:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.6
         environment:
           TARGET_ARCH: arm
     resource_class: 2xlarge
@@ -83,7 +83,7 @@ jobs:
               docker run --rm --privileged multiarch/qemu-user-static:register --reset
               docker run -it \
               --mount type=bind,source=/tmp/workspace,target=/tmp/workspace \
-              --rm electronbuilds/electronarm7:0.0.4 > version.txt
+              --rm electronbuilds/electronarm7:0.0.5 > version.txt
               cat version.txt
               if grep -q `script/get-version.py` version.txt; then
                 echo "Versions match"
@@ -96,7 +96,7 @@ jobs:
             fi
   electron-linux-arm64:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.6
         environment:
           TARGET_ARCH: arm64
     resource_class: 2xlarge
@@ -176,7 +176,7 @@ jobs:
               docker run --rm --privileged multiarch/qemu-user-static:register --reset
               docker run -it \
               --mount type=bind,source=/tmp/workspace,target=/tmp/workspace \
-              --rm electronbuilds/electronarm64:0.0.5 > version.txt
+              --rm electronbuilds/electronarm64:0.0.6 > version.txt
               cat version.txt
               if grep -q `script/get-version.py` version.txt; then
                 echo "Versions match"
@@ -278,7 +278,7 @@ jobs:
           path: junit
   electron-linux-mips64el:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.6
         environment:
           TARGET_ARCH: mips64el
     resource_class: xlarge
@@ -336,7 +336,7 @@ jobs:
 
   electron-linux-x64:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.6
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
