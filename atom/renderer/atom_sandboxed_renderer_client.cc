@@ -108,9 +108,10 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
     }
 
  protected:
+  // TODO(MarshallOfSound): This needs to be `AtomRenderFrameObserver`
   void EmitIPCEvent(blink::WebLocalFrame* frame,
                     const base::string16& channel,
-                    const base::ListValue& args) override {
+                    const base::ListValue& args) {
     if (!frame)
       return;
 

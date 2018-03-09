@@ -6,6 +6,7 @@
 #define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
 #include "atom/renderer/renderer_client_base.h"
+#include "base/values.h"
 #include "content/public/renderer/render_frame_observer.h"
 
 namespace atom {
@@ -31,15 +32,28 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
+  bool OnMessageReceived(const IPC::Message& message) override;
+  void DidCreateDocumentElement() override;
+
+ protected:
+  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
+                            const base::string16& channel,
+                            const base::ListValue& args);
 
  private:
   bool ShouldNotifyClient(int world_id);
   void CreateIsolatedWorldContext();
   bool IsMainWorld(int world_id);
   bool IsIsolatedWorld(int world_id);
+  void OnBrowserMessage(bool send_to_all,
+                        const base::string16& channel,
+                        const base::ListValue& args);
+
+  void OnOffscreen();
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
+  bool document_created_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };

@@ -25,22 +25,8 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
  protected:
   virtual ~AtomRenderViewObserver();
 
-  virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
-                            const base::string16& channel,
-                            const base::ListValue& args);
-
  private:
-  // content::RenderViewObserver implementation.
-  bool OnMessageReceived(const IPC::Message& message) override;
   void OnDestruct() override;
-
-  void OnBrowserMessage(bool send_to_all,
-                        const base::string16& channel,
-                        const base::ListValue& args);
-
-  void OnOffscreen();
-
-  AtomRendererClient* renderer_client_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderViewObserver);
 };
