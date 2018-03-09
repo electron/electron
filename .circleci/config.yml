@@ -193,6 +193,7 @@ jobs:
         environment:
           TARGET_ARCH: ia32
           DISPLAY: ':99.0'
+          ELECTRON_ENABLE_LOGGING: 'true'
     resource_class: xlarge
     steps:
       - checkout
@@ -271,6 +272,10 @@ jobs:
              else
                 echo 'Skipping verify ffmpeg on release build'
              fi
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
   electron-linux-mips64el:
     docker:
       - image: electronbuilds/electron:0.0.4
