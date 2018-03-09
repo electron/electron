@@ -140,8 +140,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // list of site per affinity. weak_ptr to prevent instance locking
   std::map<std::string, content::SiteInstance*> site_per_affinities;
 
-  base::Lock process_preferences_lock_;
-
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
 
