@@ -36,8 +36,11 @@ def main():
   args = parse_args()
   config = args.configuration
 
+  os.environ['ELECTRON_ENABLE_LOGGING'] = '1'
+
   if args.verbose:
     enable_verbose_mode()
+    os.environ['ELECTRON_ENABLE_LOGGING'] = '1'
 
   spec_modules = os.path.join(SOURCE_ROOT, 'spec', 'node_modules')
   if args.rebuild_native_modules or not os.path.isdir(spec_modules):
