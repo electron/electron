@@ -1,13 +1,15 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2018 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "brightray/common/util.h"
+#include "brightray/common/platform_util.h"
 
 #include "base/environment.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 
-namespace util {
+namespace brightray {
+
+namespace platform_util {
 
 bool GetDesktopName(std::string* setme) {
   bool found = false;
@@ -23,4 +25,6 @@ bool GetDesktopName(std::string* setme) {
   return found;
 }
 
-}  // namespace util
+}  // namespace platform_util
+
+}  // namespace brightray

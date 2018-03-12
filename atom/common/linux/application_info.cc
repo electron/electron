@@ -13,7 +13,7 @@
 #include "atom/common/atom_version.h"
 #include "base/environment.h"
 #include "base/logging.h"
-#include "brightray/common/util.h"
+#include "brightray/common/platform_util.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 
 namespace {
@@ -22,7 +22,7 @@ GDesktopAppInfo* get_desktop_app_info() {
   GDesktopAppInfo * ret = nullptr;
 
   std::string desktop_id;
-  if (util::GetDesktopName(&desktop_id))
+  if (brightray::platform_util::GetDesktopName(&desktop_id))
     ret = g_desktop_app_info_new(desktop_id.c_str());
 
   return ret;

@@ -1,13 +1,15 @@
-// Copyright (c) 2013 GitHub, Inc.
+// Copyright (c) 2018 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_COMMON_UTIL_H_
-#define BRIGHTRAY_COMMON_UTIL_H_
+#ifndef BRIGHTRAY_COMMON_PLATFORM_UTIL_H_
+#define BRIGHTRAY_COMMON_PLATFORM_UTIL_H_
 
 #include <string>
 
-namespace util {
+namespace brightray {
+
+namespace platform_util {
 
 #if defined(OS_LINUX)
 // Returns a success flag.
@@ -15,6 +17,8 @@ namespace util {
 bool GetDesktopName(std::string* setme);
 #endif
 
-}  // namespace util
+}  // namespace platform_util
 
-#endif  // BRIGHTRAY_COMMON_UTIL_H_
+}  // namespace brightray
+
+#endif  // BRIGHTRAY_COMMON_PLATFORM_UTIL_H_
