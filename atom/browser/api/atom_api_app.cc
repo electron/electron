@@ -484,7 +484,7 @@ int ImportIntoCertStore(
     const base::DictionaryValue& options) {
   std::string file_data, cert_path;
   base::string16 password;
-  net::CertificateList imported_certs;
+  net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
   options.GetString("certificate", &cert_path);
   options.GetString("password", &password);
