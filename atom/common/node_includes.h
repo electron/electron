@@ -6,7 +6,7 @@
 #define ATOM_COMMON_NODE_INCLUDES_H_
 
 #include "base/logging.h"
-#include "v8-platform.h"
+#include "v8-platform.h" // NOLINT
 
 // Include common headers for using node APIs.
 
