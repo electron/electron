@@ -12,7 +12,6 @@
 #include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
-#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "url/gurl.h"
 
 
@@ -68,20 +67,6 @@ bool XDGEmail(const std::string& email, const bool wait_for_exit) {
 }  // namespace
 
 namespace platform_util {
-
-bool GetDesktopName(std::string& setme) {
-  bool found = false;
-
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  constexpr char const* libcc_default_id = "chromium-browser.desktop";
-  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
-    setme = desktop_id;
-    found = true;
-  }
-
-  return found;
-}
 
 // TODO(estade): It would be nice to be able to select the file in the file
 // manager, but that probably requires extending xdg-open. For now just
