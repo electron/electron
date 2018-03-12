@@ -132,7 +132,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // The desktop-entry is the part before the .desktop
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  if (!desktop_id.empty()) {
+  constexpr char * libcc_default_id = "chromium-browser.desktop";
+  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
     const std::string suffix{".desktop"};
     if (base::EndsWith(desktop_id, suffix,
                        base::CompareCase::INSENSITIVE_ASCII)) {
