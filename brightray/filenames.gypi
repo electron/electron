@@ -124,6 +124,8 @@
       'common/main_delegate_mac.mm',
       'common/switches.cc',
       'common/switches.h',
+      'common/platform_util_linux.cc',
+      'common/platform_util.h',
     ],
   },
 }
