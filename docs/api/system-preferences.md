@@ -133,7 +133,7 @@ Some popular `key` and `type`s are:
 ### `systemPreferences.setUserDefault(key, type, value)` _macOS_
 
 * `key` String
-* `type` String - See [`getUserDefault`][#systempreferencesgetuserdefaultkey-type-macos].
+* `type` String - See [`getUserDefault`](#systempreferencesgetuserdefaultkey-type-macos).
 * `value` String
 
 Set the value of `key` in `NSUserDefaults`.
