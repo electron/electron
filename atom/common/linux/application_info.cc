@@ -11,6 +11,7 @@
 #include <string>
 
 #include "atom/common/atom_version.h"
+#include "atom/common/platform_util.h"
 #include "base/environment.h"
 #include "base/logging.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
@@ -20,10 +21,8 @@ namespace {
 GDesktopAppInfo* get_desktop_app_info() {
   GDesktopAppInfo * ret = nullptr;
 
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  const std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  const char * libcc_default_id = "chromium-browser.desktop";
-  if (!desktop_id.empty() && (desktop_id != libcc_default_id))
+  std::string desktop_id;
+  if (platform_util::GetDesktopName(desktop_id))
     ret = g_desktop_app_info_new(desktop_id.c_str());
 
   return ret;

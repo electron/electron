@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/common/platform_util.h"
 #include "base/environment.h"
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
@@ -130,10 +131,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
 
   // Send the desktop name to identify the application
   // The desktop-entry is the part before the .desktop
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  std::string desktop_id = libgtkui::GetDesktopName(env.get());
-  constexpr char const * libcc_default_id = "chromium-browser.desktop";
-  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
+  std::string desktop_id;
+  if (platform_util::GetDesktopName(desktop_id)) {
     const std::string suffix{".desktop"};
     if (base::EndsWith(desktop_id, suffix,
                        base::CompareCase::INSENSITIVE_ASCII)) {
