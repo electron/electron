@@ -97,18 +97,11 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
   for (std::list<node::Environment*>::const_iterator it =
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {
-    node::Environment* env = *it;
-    // KickNextTick, copied from node.cc:
-    node::Environment::AsyncCallbackScope callback_scope(env);
-    if (callback_scope.in_makecallback())
-      continue;
-    node::Environment::TickInfo* tick_info = env->tick_info();
-    if (!tick_info->has_scheduled())
-      env->isolate()->RunMicrotasks();
-    v8::Local<v8::Object> process = env->process_object();
-    if (!tick_info->has_scheduled())
-      return;
-    env->tick_callback_function()->Call(process, 0, nullptr).IsEmpty();
+    node::InternalCallbackScope scope(
+        *it,
+        v8::Local<v8::Object>(),
+        {0, 0},
+        node::InternalCallbackScope::kAllowEmptyResource);
   }
 
   self->pending_next_ticks_.clear();

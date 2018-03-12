@@ -61,6 +61,7 @@
           4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4065,  # switch statement contains 'default' but no 'case' labels
+          4129,  # unrecognized character escape sequence
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
@@ -74,6 +75,7 @@
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
           4295,  # array is too small to include a terminating null character
+          4309,  # 'static_cast': truncation of constant value
           4311,  # 'type cast': pointer truncation from 'void *const ' to 'unsigned long'
           4389,  # '==' : signed/unsigned mismatch
           4456,  # declaration of 'm' hides previous local declaration
