@@ -142,6 +142,11 @@
               '-Wl,-z,noexecstack',
             ],
           }],  # OS=="linux"
+          ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
+            'ldflags': [
+              '-fuse-ld=lld',  # Chromium Clang uses lld for linking
+            ],
+          }],  # OS=="linux" and target_arch in ["ia32", "x64", "arm64"]
           ['OS=="mac"', {
             'defines': [
               # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
@@ -293,7 +298,6 @@
             ],
             'ldflags': [
               '-flto=thin',
-              '-fuse-ld=lld',  # Chromium Clang uses lld for doing LTO
               '-Wl,--icf=all',
               '-Wl,--lto-O0',  # this could be removed in future; see https://codereview.chromium.org/2939923004
               '-Wl,-mllvm,-function-sections',

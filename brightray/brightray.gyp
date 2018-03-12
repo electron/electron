@@ -129,7 +129,6 @@
                   '<(libchromiumcontent_dir)/libpdf.a',
                   '<(libchromiumcontent_dir)/libppapi_cpp_objects.a',
                   '<(libchromiumcontent_dir)/libppapi_internal_module.a',
-                  '<(libchromiumcontent_dir)/libjpeg.a',
                   '<(libchromiumcontent_dir)/libpdfium.a',
                   '<(libchromiumcontent_dir)/libfdrm.a',
                   '<(libchromiumcontent_dir)/libformfiller.a',
