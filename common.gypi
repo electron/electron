@@ -110,6 +110,7 @@
             '-Wno-gnu-folding-constant',
             '-Wno-shift-negative-value',
             '-Wno-varargs', # https://git.io/v6Olj
+            '-Wno-unused-private-field',
           ],
         },
         'conditions': [
@@ -134,6 +135,8 @@
               '-Wno-string-plus-int',
               '-Wno-shift-negative-value',
               '-Wno-reserved-user-defined-literal',
+              '-Wno-implicit-function-declaration',
+              '-Wno-long-long',
             ],
           }],
         ],
