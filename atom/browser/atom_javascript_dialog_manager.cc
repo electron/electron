@@ -95,13 +95,9 @@ void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     const std::string& origin,
     int code,
     bool checkbox_checked) {
-<<<<<<< HEAD
   if (checkbox_checked)
     origin_counts_[origin] = kUserWantsNoMoreDialogs;
   callback.Run(code == 0, base::string16());
-=======
-  std::move(callback).Run(code == 0, base::string16());
->>>>>>> Calling non-const callbacks requires some tricks
 }
 
 }  // namespace atom
