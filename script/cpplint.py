@@ -19,6 +19,7 @@ IGNORE_FILES = set(os.path.join(*components) for components in [
   ['atom', 'common', 'api', 'api_messages.h'],
   ['atom', 'common', 'common_message_generator.cc'],
   ['atom', 'common', 'common_message_generator.h'],
+  ['atom', 'common', 'node_includes.h'],
   ['atom', 'node', 'osfhandle.cc'],
   ['brightray', 'browser', 'mac', 'bry_inspectable_web_contents_view.h'],
   ['brightray', 'browser', 'mac', 'event_dispatching_window.h'],
