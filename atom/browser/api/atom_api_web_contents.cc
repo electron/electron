@@ -277,6 +277,27 @@ void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
 
 }  // namespace
 
+struct WebContents::FrameDispatchHelper {
+  WebContents* api_web_contents;
+  content::RenderFrameHost* rfh;
+
+  bool Send(IPC::Message* msg) { return rfh->Send(msg); }
+
+  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg) {
+    api_web_contents->OnSetTemporaryZoomLevel(rfh, level, reply_msg);
+  }
+
+  void OnGetZoomLevel(IPC::Message* reply_msg) {
+    api_web_contents->OnGetZoomLevel(rfh, reply_msg);
+  }
+
+  void OnRendererMessageSync(const base::string16& channel,
+                             const base::ListValue& args,
+                             IPC::Message* message) {
+    api_web_contents->OnRendererMessageSync(rfh, channel, args, message);
+  }
+};
+
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents,
                          Type type)
@@ -923,13 +944,6 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER(AtomViewHostMsg_Message, OnRendererMessage)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_Message_Sync,
-                                    OnRendererMessageSync)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_SetTemporaryZoomLevel,
-                                    OnSetTemporaryZoomLevel)
-    IPC_MESSAGE_HANDLER_DELAY_REPLY(AtomViewHostMsg_GetZoomLevel,
-                                    OnGetZoomLevel)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
       handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
@@ -939,17 +953,28 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
 }
 
 bool WebContents::OnMessageReceived(const IPC::Message& message,
-    content::RenderFrameHost* frame_host) {
+                                    content::RenderFrameHost* frame_host) {
   bool handled = true;
+  FrameDispatchHelper helper = {this, frame_host};
   auto relay = NativeWindowRelay::FromWebContents(web_contents());
-  if (!relay)
-    return false;
+  if (relay) {
+    IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
+      IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
+                          relay->window.get(), NativeWindow::HideAutofillPopup)
+      IPC_MESSAGE_UNHANDLED(handled = false)
+    IPC_END_MESSAGE_MAP()
+  }
+
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message, OnRendererMessage)
+    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_Message_Sync, &helper,
+                                    FrameDispatchHelper::OnRendererMessageSync)
+    IPC_MESSAGE_FORWARD_DELAY_REPLY(
+        AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
+        FrameDispatchHelper::OnSetTemporaryZoomLevel)
+    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
+                                    FrameDispatchHelper::OnGetZoomLevel)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
-  IPC_END_MESSAGE_MAP()
-  IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
-    IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
-      relay->window.get(), NativeWindow::HideAutofillPopup)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1468,7 +1493,12 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool all_frames,
                                  const base::string16& channel,
                                  const base::ListValue& args) {
-  return Send(new AtomViewMsg_Message(routing_id(), all_frames, channel, args));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    return frame_host->Send(new AtomFrameMsg_Message(
+        frame_host->GetRoutingID(), all_frames, channel, args));
+  }
+  return false;
 }
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
@@ -1752,17 +1782,20 @@ double WebContents::GetZoomFactor() {
   return content::ZoomLevelToZoomFactor(level);
 }
 
-void WebContents::OnSetTemporaryZoomLevel(double level,
+void WebContents::OnSetTemporaryZoomLevel(content::RenderFrameHost* rfh,
+                                          double level,
                                           IPC::Message* reply_msg) {
   zoom_controller_->SetTemporaryZoomLevel(level);
   double new_level = zoom_controller_->GetZoomLevel();
-  AtomViewHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg, new_level);
-  Send(reply_msg);
+  AtomFrameHostMsg_SetTemporaryZoomLevel::WriteReplyParams(reply_msg,
+                                                           new_level);
+  rfh->Send(reply_msg);
 }
 
-void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
-  AtomViewHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
-  Send(reply_msg);
+void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
+                                 IPC::Message* reply_msg) {
+  AtomFrameHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
+  rfh->Send(reply_msg);
 }
 
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
@@ -1955,17 +1988,19 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
   return static_cast<AtomBrowserContext*>(web_contents()->GetBrowserContext());
 }
 
-void WebContents::OnRendererMessage(const base::string16& channel,
+void WebContents::OnRendererMessage(content::RenderFrameHost* frame_host,
+                                    const base::string16& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
   Emit(base::UTF16ToUTF8(channel), args);
 }
 
-void WebContents::OnRendererMessageSync(const base::string16& channel,
+void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
+                                        const base::string16& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
-  EmitWithSender(base::UTF16ToUTF8(channel), web_contents(), message, args);
+  EmitWithSender(base::UTF16ToUTF8(channel), frame_host, message, args);
 }
 
 // static
