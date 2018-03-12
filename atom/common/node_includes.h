@@ -6,10 +6,25 @@
 #define ATOM_COMMON_NODE_INCLUDES_H_
 
 #include "base/logging.h"
+#include "v8-platform.h"
 
 // Include common headers for using node APIs.
 
 #define BUILDING_NODE_EXTENSION
+
+// The following define makes sure that we do not include the macros
+// again. But we still need the tracing functions, so declaring them.
+#define SRC_TRACING_TRACE_EVENT_H_
+namespace node {
+namespace tracing {
+class TraceEventHelper {
+ public:
+  static v8::TracingController* GetTracingController();
+  static void SetTracingController(v8::TracingController* controller);
+};
+
+}
+}
 
 #undef ASSERT
 #undef CHECK
