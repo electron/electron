@@ -47,10 +47,7 @@ PCWSTR GetRawAppUserModelID() {
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
       g_app_user_model_id = current_app_id;
     } else {
-      std::string name = GetOverriddenApplicationName();
-      if (name.empty()) {
-        name = GetApplicationName();
-      }
+      std::string name = GetApplicationName();
       base::string16 generated_app_id = base::ReplaceStringPlaceholders(
         kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
       SetAppUserModelID(generated_app_id);
