@@ -75,7 +75,7 @@ bool GetDesktopName(std::string& setme) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string desktop_id = libgtkui::GetDesktopName(env.get());
   constexpr char const* libcc_default_id = "chromium-browser.desktop";
-  if (desktop_id != libcc_default_id) {
+  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
     setme = desktop_id;
     found = true;
   }
