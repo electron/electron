@@ -62,7 +62,6 @@ bool GetLoginItemEnabled();
 void SetLoginItemEnabled(bool enabled);
 #endif
 
-
 }  // namespace platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_

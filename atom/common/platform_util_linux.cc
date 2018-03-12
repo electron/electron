@@ -14,7 +14,6 @@
 #include "base/process/launch.h"
 #include "url/gurl.h"
 
-
 #define ELECTRON_TRASH "ELECTRON_TRASH"
 #define ELECTRON_DEFAULT_TRASH "gvfs-trash"
 
