@@ -125,46 +125,6 @@ void AtomRenderFrameObserver::OnDestruct() {
   delete this;
 }
 
-bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
-    IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
-void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
-                                               const base::string16& channel,
-                                               const base::ListValue& args) {
-  blink::WebLocalFrame* frame = render_frame_->GetWebFrame();
-  if (!frame || !render_frame_->IsMainFrame())
-    return;
-
-  // Don't handle browser messages before document element is created.
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  blink::WebDocument document = frame->GetDocument();
-  blink::WebElement html_element = document.DocumentElement();
-  if (html_element.IsNull()) {
-    return;
-  }
-
-  EmitIPCEvent(frame, channel, args);
-
-  // Also send the message to all sub-frames.
-  if (send_to_all) {
-    for (blink::WebFrame* child = frame->FirstChild(); child;
-         child = child->NextSibling())
-      if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), channel, args);
-      }
-  }
-}
-
 void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
   auto frame = render_frame_->GetWebFrame();
 
