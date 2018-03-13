@@ -134,7 +134,12 @@ describe('chromium feature', () => {
 
   describe('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'sw-file-scheme-spec'
+        }
+      })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
           w.webContents.reload()
@@ -142,7 +147,7 @@ describe('chromium feature', () => {
           done(`unexpected error : ${args[1]}`)
         } else if (args[0] === 'response') {
           assert.equal(args[1], 'Hello from serviceWorker!')
-          session.defaultSession.clearStorageData({
+          session.fromPartition('sw-file-scheme-spec').clearStorageData({
             storages: ['serviceworkers']
           }, () => done())
         }
