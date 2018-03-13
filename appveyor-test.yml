@@ -7,6 +7,8 @@ skip_branch_with_pr: true
 image: libcc-20-vs2017
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
+  APPVEYOR_RDP_PASSWORD:
+    secure: RCKgcu5XLpoU2i08YuN/btpiqqjS2/gN1ZZHfLW8F6o=
   matrix:
   - TARGET_ARCH: ia32
   - TARGET_ARCH: x64
@@ -75,3 +77,5 @@ deploy_script:
     } else {
       Write-Output "Skipping upload distribution because build is not for release"
     }
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
