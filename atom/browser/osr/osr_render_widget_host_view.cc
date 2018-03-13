@@ -923,9 +923,9 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
   if (transparent_) {
     SetBackgroundColor(SkColor());
 #if defined(OS_MACOSX)
-    browser_compositor_->SetHasTransparentBackground(true);
+    browser_compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
 #else
-    compositor_->SetHostHasTransparentBackground(true);
+    compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
 #endif
     return true;
   }
