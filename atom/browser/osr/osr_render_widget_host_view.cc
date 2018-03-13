@@ -128,8 +128,9 @@ class AtomCopyFrameGenerator {
     if (!view_->render_widget_host() || !view_->IsPainting())
       return;
 
-    std::unique_ptr<viz::CopyOutputRequest> request =
-        viz::CopyOutputRequest::CreateBitmapRequest(base::Bind(
+    auto request = std::make_unique<viz::CopyOutputRequest>(
+         viz::CopyOutputRequest::ResultFormat::RGBA_BITMAP,
+         base::BindOnce(
              &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
              weak_ptr_factory_.GetWeakPtr(),
              damage_rect));
@@ -153,9 +154,9 @@ class AtomCopyFrameGenerator {
       return;
     }
 
-    DCHECK(result->HasBitmap());
-    std::unique_ptr<SkBitmap> source = result->TakeBitmap();
-    DCHECK(source);
+    DCHECK(!result->IsEmpty());
+    auto source = std::make_unique<SkBitmap>(result->AsSkBitmap());
+    DCHECK(source->readyToDraw());
     if (source) {
       base::AutoLock autolock(lock_);
       std::shared_ptr<SkBitmap> bitmap(source.release());
