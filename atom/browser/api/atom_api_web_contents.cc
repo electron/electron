@@ -1768,6 +1768,8 @@ void WebContents::OnGetZoomLevel(IPC::Message* reply_msg) {
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   WebContentsPreferences* web_preferences =
       WebContentsPreferences::FromWebContents(web_contents());
+  if (!web_preferences)
+    return v8::Null(isolate);
   return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
 }
 
