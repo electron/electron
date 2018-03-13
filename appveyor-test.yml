@@ -5,7 +5,6 @@ branches:
 build_cloud: libcc-20
 skip_branch_with_pr: true
 image: libcc-20-vs2017
-clone_folder: c:\build
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
   matrix:
