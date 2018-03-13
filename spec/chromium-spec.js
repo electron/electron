@@ -223,9 +223,9 @@ describe('chromium feature', () => {
       b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no')
     })
 
-    for (const show in [true, false]) {
+    for (const show of [true, false]) {
       it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
-        let w = new BrowserWindow({show: show})
+        const w = new BrowserWindow({show})
 
         // toggle visibility
         if (show) {
