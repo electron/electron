@@ -208,6 +208,26 @@ describe('chromium feature', () => {
       b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no')
     })
 
+    for (const show in [true, false]) {
+      it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
+        let w = new BrowserWindow({show: show})
+
+        // toggle visibility
+        if (show) {
+          w.hide()
+        } else {
+          w.show()
+        }
+
+        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+          assert.equal(options.show, w.isVisible())
+          w.close()
+          done()
+        })
+        w.loadURL(`file://${fixtures}/pages/window-open.html`)
+      })
+    }
+
     it('disables node integration when it is disabled on the parent window', (done) => {
       let b
       listener = (event) => {
