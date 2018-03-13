@@ -116,6 +116,16 @@ describe('webContents module', () => {
     })
   })
 
+  describe('getWebPreferences() API', () => {
+    it('should not crash when called for devTools webContents', (done) => {
+      w.webContents.openDevTools()
+      w.webContents.once('devtools-opened', () => {
+        assert(!w.devToolsWebContents.getWebPreferences())
+        done()
+      })
+    })
+  })
+
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', (done) => {
       w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'key-events.html')}`)
