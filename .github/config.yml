@@ -28,4 +28,12 @@ newPRWelcomeComment: |
 firstPRMergeComment: >
   Congrats on merging your first pull request! 🎉🎉🎉
 
-# It is recommend to include as many gifs and emojis as possible
+# Configuration for trop - https://github.com/codebytere/trop
+
+watchedProject:
+  name: Backports
+
+backportWhitelist:
+  - ckerr
+  - MarshallOfSound
+  - codebytere
