@@ -178,6 +178,22 @@
               '-ldbghelp.lib',
               '-lshlwapi.lib',
             ],
+            'msvs_settings': {
+              # Change location of some hard-coded paths.
+              'VCLinkerTool': {
+                'AdditionalOptions!': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libuv<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libopenssl<(openssl_product)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\<(openssl_product)',
+                ],
+                'AdditionalOptions': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\zlib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\uv\\libuv<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\openssl\\openssl<(STATIC_LIB_SUFFIX)',
+                ],
+              },
+            },
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
             # Prevent the linker from stripping symbols.
