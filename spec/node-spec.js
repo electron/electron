@@ -321,9 +321,7 @@ describe('node feature', () => {
       assert.equal(buffer.length, 4096)
     })
 
-    // TODO(deepak1556): Disabled during Ch63 upgrade.
-    // Fix it and enable back.
-    xit('does not crash for crypto operations', () => {
+    it('does not crash for crypto operations', () => {
       const crypto = require('crypto')
       const data = 'lG9E+/g4JmRmedDAnihtBD4Dfaha/GFOjd+xUOQI05UtfVX3DjUXvrS98p7kZQwY3LNhdiFo7MY5rGft8yBuDhKuNNag9vRx/44IuClDhdQ='
       const key = 'q90K9yBqhWZnAMCMTOJfPQ=='
