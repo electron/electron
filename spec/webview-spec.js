@@ -1482,10 +1482,17 @@ describe('<webview> tag', function () {
 
       webview.addEventListener('resize', function onResize (event) {
         webview.removeEventListener('resize', onResize)
-        assert.equal(event.newWidth, 1234)
-        assert.equal(event.newHeight, 789)
+        assert.equal(event.newWidth, 100)
+        assert.equal(event.newHeight, 10)
         assert.equal(event.target, webview)
-        done()
+        webview.addEventListener('resize', function onResizeAgain (event) {
+          // This will be triggered after setting the new div width and height.
+          webview.removeEventListener('resize', onResizeAgain)
+          assert.equal(event.newWidth, 1234)
+          assert.equal(event.newHeight, 789)
+          assert.equal(event.target, webview)
+          done()
+        })
       })
 
       webview.src = `file://${fixtures}/pages/a.html`
