@@ -33,7 +33,7 @@ firstPRMergeComment: >
 watchedProject:
   name: Backports
 
-backportWhitelist:
+authorizedUsers:
   - ckerr
   - MarshallOfSound
   - codebytere
