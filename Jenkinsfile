@@ -9,7 +9,6 @@ pipeline {
             }
             steps {
               timeout(60) {
-                sh 'nvm use 8'
                 sh 'script/bootstrap.py --target_arch=x64 --dev'
                 sh 'npm run lint'
                 sh 'script/build.py -c D'
@@ -31,7 +30,6 @@ pipeline {
           }
           steps {
             timeout(60) {
-              sh 'nvm use 8'
               sh 'script/bootstrap.py --target_arch=x64 --dev'
               sh 'npm run lint'
               sh 'script/build.py -c D'
