@@ -259,8 +259,11 @@ describe('crashReporter module', () => {
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
       const reports = crashReporter.getUploadedReports()
-      const lastReport = reports[0]
+      const lastReport = crashReporter.getLastCrashReport()
+
+      // In our case, the first report is actually the newest\
       assert(lastReport != null)
+      assert(lastReport === reports[0])
     })
   })
 
