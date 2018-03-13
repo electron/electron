@@ -1,2 +1,78 @@
+version: 1.0.{build}
+branches:
+  except:
+  - /^release$|^release-\d-\d-x$/
 build_cloud: libcc-20
+skip_branch_with_pr: true
 image: libcc-20-vs2017
+clone_folder: c:\build
+environment:
+  DISABLE_CRASH_REPORTER_TESTS: true
+  matrix:
+  - TARGET_ARCH: ia32
+  - TARGET_ARCH: x64
+build_script:
+- ps: >-
+    Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
+
+    $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
+
+    $Message = (git log --format=%B -n 1 HEAD) | Out-String
+
+    if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
+      $env:ELECTRON_RELEASE = '1'
+      Write-Output "release build triggered from api"
+    }
+
+    if ((Test-Path Env:\ELECTRON_RELEASE)) {
+      Write-Output "Running release build"
+      python script\bootstrap.py --target_arch=$env:TARGET_ARCH
+      python script\build.py -c R
+      python script\create-dist.py
+    } else {
+      Write-Output "Running debug build"
+      python script\bootstrap.py --target_arch=$env:TARGET_ARCH --dev
+      python script\build.py -c D
+    }
+
+    if ($? -ne 'True') {
+      throw "Build failed with exit code $?"
+    } else {
+      "Build succeeded."
+    }
+test_script:
+- ps: >-
+    if (Test-Path Env:\ELECTRON_RELEASE) {
+      Write-Output "Skipping tests for release build"
+    } else {
+      Write-Output "Running tests for debug build"
+      python script\test.py --ci
+      if ($LASTEXITCODE -ne '0') {
+        throw "Tests failed with exit code $LASTEXITCODE"
+      } else {
+        Write-Output "Tests succeeded."
+      }
+      python script\verify-ffmpeg.py
+
+      if ($LASTEXITCODE -ne '0') {
+        throw "Verify ffmpeg failed with exit code $LASTEXITCODE"
+      } else {
+        "Verify ffmpeg succeeded."
+      }
+    }
+artifacts:
+- path: test-results.xml
+  name: test-results.xml
+deploy_script:
+- ps: >-
+    if (Test-Path Env:\ELECTRON_RELEASE) {
+      if (Test-Path Env:\RUN_RELEASE_BUILD) {
+        Write-Output "Uploading Electron release distribution to s3"
+        & python script\upload.py --upload_to_s3
+      } else {
+        Write-Output "Uploading Electron release distribution to github releases"
+        & python script\upload.py
+      }
+    } else {
+      Write-Output "Skipping upload distribution because build is not for release"
+    }
