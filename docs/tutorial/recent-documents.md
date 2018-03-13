@@ -46,3 +46,4 @@ of `app` module will be emitted for it.
 [dock-menu-image]: https://cloud.githubusercontent.com/assets/639601/5069610/2aa80758-6e97-11e4-8cfb-c1a414a10774.png
 [addrecentdocument]: ../api/app.md#appaddrecentdocumentpath-macos-windows
 [clearrecentdocuments]: ../api/app.md#appclearrecentdocuments-macos-windows
+[app-registration]: https://msdn.microsoft.com/en-us/library/cc144104(VS.85).aspx
