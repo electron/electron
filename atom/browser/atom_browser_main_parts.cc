@@ -24,6 +24,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
+#include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8-debug.h"
 
@@ -159,6 +160,11 @@ int AtomBrowserMainParts::PreCreateThreads() {
     fake_browser_process_->SetApplicationLocale(
         brightray::BrowserClient::Get()->GetApplicationLocale());
   }
+
+  #if defined(OS_MACOSX)
+    ui::InitIdleMonitor();
+  #endif
+
   return result;
 }
 
