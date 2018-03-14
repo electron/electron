@@ -269,8 +269,10 @@ describe('crashReporter module', () => {
           : acc
       }, { timestamp: 0 })
 
-      assert(lastReport != null)
-      assert(lastReport.date.toString() === newestReport.report.date.toString())
+      assert(reports.length > 1, 'has more than 1 report')
+      assert(lastReport != null, 'found a last report')
+      assert(lastReport.date.toString() === newestReport.report.date.toString(),
+        'last report is correct')
     })
   })
 
