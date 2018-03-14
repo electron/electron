@@ -209,7 +209,10 @@ void CrashReporterWin::SetUploadParameters() {
 int CrashReporterWin::CrashForException(EXCEPTION_POINTERS* info) {
   if (breakpad_) {
     breakpad_->WriteMinidumpForException(info);
-    TerminateProcessWithoutDump();
+    if (skip_system_crash_handler_)
+      TerminateProcessWithoutDump();
+    else
+      RaiseFailFastException(info->ExceptionRecord, info->ContextRecord, 0);
   }
   return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -229,7 +232,7 @@ bool CrashReporterWin::MinidumpCallback(const wchar_t* dump_path,
                                         MDRawAssertionInfo* assertion,
                                         bool succeeded) {
   CrashReporterWin* self = static_cast<CrashReporterWin*>(context);
-  if (succeeded && !self->skip_system_crash_handler_)
+  if (succeeded && self->skip_system_crash_handler_)
     return true;
   else
     return false;
