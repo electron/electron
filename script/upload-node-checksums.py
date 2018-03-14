@@ -48,26 +48,26 @@ def parse_args():
                       required=False)
   return parser.parse_args()
 
-
 def get_files_list(version):
   return [
-    ['node-{0}.tar.gz'.format(version), True],
-    ['iojs-{0}.tar.gz'.format(version), True],
-    ['iojs-{0}-headers.tar.gz'.format(version), True],
-    ['node.lib', False],
-    ['x64/node.lib', False],
-    ['win-x86/iojs.lib', False],
-    ['win-x64/iojs.lib', False]
+    { "filename": 'node-{0}.tar.gz'.format(version), "required": True },
+    { "filename": 'iojs-{0}.tar.gz'.format(version), "required": True },
+    { "filename": 'iojs-{0}-headers.tar.gz'.format(version), "required": True },
+    { "filename": 'node.lib', "required": False },
+    { "filename": 'x64/node.lib', "required": False },
+    { "filename": 'win-x86/iojs.lib', "required": False },
+    { "filename": 'win-x64/iojs.lib', "required": False }
   ]
 
 
 def download_files(url, files):
   directory = tempfile.mkdtemp(prefix='electron-tmp')
   result = []
-  for f in files:
-    required = f[1]
+  for optional_f in files:
+    required = optional_f.required
+    f = optional_f.filename
     try:
-      result.append(download(f[0], url + f[0], os.path.join(directory, f[0])))
+      result.append(download(f, url + f, os.path.join(directory, f)))
     except Exception:
       if required:
         raise
