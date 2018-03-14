@@ -261,9 +261,17 @@ describe('crashReporter module', () => {
       const reports = crashReporter.getUploadedReports()
       const lastReport = crashReporter.getLastCrashReport()
 
+      // Let's find the newest report
+      const newestReport = reports.reduce((acc, cur) => {
+        const timestamp = new Date(cur.timestamp).getTime();
+        return (timestamp > acc.timestamp)
+          ? { report: cur, timestamp: timestamp }
+          : acc
+      }, { timestamp: 0 })
+
       // In our case, the first report is actually the newest
       assert(lastReport != null)
-      assert(lastReport === reports[0])
+      assert(lastReport === newestReport.report)
     })
   })
 
