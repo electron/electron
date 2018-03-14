@@ -53,7 +53,8 @@ Removes all listeners, or those of the specified `channel`.
 
 Send a message to the main process asynchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
-hence no functions or prototype chain will be included.
+hence no functions or prototype chain will be included (ArrayBuffer's are
+passed directly, even if they are values inside of a JSON serialized).
 
 The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module.
 
@@ -66,7 +67,8 @@ Returns `any` - The value sent back by the [`ipcMain`](ipc-main.md) handler.
 
 Send a message to the main process synchronously via `channel`, you can also
 send arbitrary arguments. Arguments will be serialized in JSON internally and
-hence no functions or prototype chain will be included.
+hence no functions or prototype chain will be included (ArrayBuffer's are
+passed directly, even if they are values inside of a JSON serialized).
 
 The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module,
 and replies by setting `event.returnValue`.
