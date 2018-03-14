@@ -16,7 +16,7 @@ def main():
   else:
     tutorial = "build instructions for your operation system in ./docs/development/"
 
-  if tls == "TLS 1.2":
+  if tls == "TLS 1.0":
     print "Your system/python combination is using an outdated security protocol and will not"
     print "be able to compile Electron. Please see " + tutorial + "."
     print "for instructions on how to update Python."
