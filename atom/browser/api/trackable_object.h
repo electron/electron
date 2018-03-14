@@ -37,18 +37,13 @@ class TrackableObjectBase {
   virtual ~TrackableObjectBase();
 
   // Returns a closure that can destroy the native class.
-  base::Closure GetDestroyClosure();
-
-  // Register a callback that should be destroyed before JavaScript environment
-  // gets destroyed.
-  static base::Closure RegisterDestructionCallback(const base::Closure& c);
+  base::OnceClosure GetDestroyClosure();
 
   int32_t weak_map_id_;
 
  private:
   void Destroy();
 
-  base::Closure cleanup_;
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);

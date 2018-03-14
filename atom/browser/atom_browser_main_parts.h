@@ -41,7 +41,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // Register a callback that should be destroyed before JavaScript environment
   // gets destroyed.
   // Returns a closure that can be used to remove |callback| from the list.
-  base::Closure RegisterDestructionCallback(const base::Closure& callback);
+  void RegisterDestructionCallback(base::OnceClosure callback);
 
   Browser* browser() { return browser_.get(); }
 
@@ -89,7 +89,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   base::Timer gc_timer_;
 
   // List of callbacks should be executed before destroying JS env.
-  std::list<base::Closure> destructors_;
+  std::list<base::OnceClosure> destructors_;
 
   static AtomBrowserMainParts* self_;
 

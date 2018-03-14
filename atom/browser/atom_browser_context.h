@@ -59,6 +59,13 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   AtomBlobReader* GetBlobReader();
 
+  void set_cookie_change_subscription(
+      std::unique_ptr<
+          base::CallbackList<void(const CookieDetails*)>::Subscription>
+          subscription) {
+    cookie_change_subscription_.swap(subscription);
+  }
+
  protected:
   AtomBrowserContext(const std::string& partition, bool in_memory,
                      const base::DictionaryValue& options);
@@ -73,6 +80,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   bool use_cache_;
 
   base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+      cookie_change_subscription_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

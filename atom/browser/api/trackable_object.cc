@@ -31,15 +31,16 @@ class IDUserData : public base::SupportsUserData::Data {
 
 TrackableObjectBase::TrackableObjectBase()
     : weak_map_id_(0), weak_factory_(this) {
-  cleanup_ = RegisterDestructionCallback(GetDestroyClosure());
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      GetDestroyClosure());
 }
 
 TrackableObjectBase::~TrackableObjectBase() {
-  cleanup_.Run();
 }
 
-base::Closure TrackableObjectBase::GetDestroyClosure() {
-  return base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr());
+base::OnceClosure TrackableObjectBase::GetDestroyClosure() {
+  return base::BindOnce(&TrackableObjectBase::Destroy,
+                        weak_factory_.GetWeakPtr());
 }
 
 void TrackableObjectBase::Destroy() {
@@ -60,12 +61,6 @@ int32_t TrackableObjectBase::GetIDFromWrappedClass(
       return *id;
   }
   return 0;
-}
-
-// static
-base::Closure TrackableObjectBase::RegisterDestructionCallback(
-    const base::Closure& c) {
-  return atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(c);
 }
 
 }  // namespace mate

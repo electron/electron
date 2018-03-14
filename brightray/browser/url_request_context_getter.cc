@@ -130,7 +130,8 @@ URLRequestContextGetter::URLRequestContextGetter(
       in_memory_(in_memory),
       io_task_runner_(io_task_runner),
       protocol_interceptors_(std::move(protocol_interceptors)),
-      job_factory_(nullptr) {
+      job_factory_(nullptr),
+      context_shutting_down_(false) {
   // Must first be created on the UI thread.
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
@@ -150,12 +151,24 @@ URLRequestContextGetter::URLRequestContextGetter(
 URLRequestContextGetter::~URLRequestContextGetter() {
 }
 
+void URLRequestContextGetter::NotifyContextShutdownOnIO() {
+  context_shutting_down_ = true;
+  cookie_change_sub_.reset();
+  http_network_session_.reset();
+  http_auth_preferences_.reset();
+  host_mapping_rules_.reset();
+  url_request_context_.reset();
+  storage_.reset();
+  ct_delegate_.reset();
+  net::URLRequestContextGetter::NotifyContextShuttingDown();
+}
+
 void URLRequestContextGetter::OnCookieChanged(
     const net::CanonicalCookie& cookie,
     net::CookieStore::ChangeCause cause) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-  if (!delegate_)
+  if (!delegate_ || context_shutting_down_)
     return;
 
   content::BrowserThread::PostTask(
@@ -171,6 +184,9 @@ net::HostResolver* URLRequestContextGetter::host_resolver() {
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  if (context_shutting_down_)
+    return nullptr;
 
   if (!url_request_context_.get()) {
     ct_delegate_.reset(new RequireCTDelegate);
@@ -342,14 +358,14 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // Set up interceptors in the reverse order.
     std::unique_ptr<net::URLRequestJobFactory> top_job_factory =
         std::move(job_factory);
-    content::URLRequestInterceptorScopedVector::reverse_iterator it;
-    for (it = protocol_interceptors_.rbegin();
-         it != protocol_interceptors_.rend();
-         ++it) {
-      top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
-          std::move(top_job_factory), std::move(*it)));
+    if (!protocol_interceptors_.empty()) {
+      for (auto it = protocol_interceptors_.rbegin();
+           it != protocol_interceptors_.rend(); ++it) {
+        top_job_factory.reset(new net::URLRequestInterceptingJobFactory(
+            std::move(top_job_factory), std::move(*it)));
+      }
+      protocol_interceptors_.clear();
     }
-    protocol_interceptors_.clear();
 
     storage_->set_job_factory(std::move(top_job_factory));
   }
