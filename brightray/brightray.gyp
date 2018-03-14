@@ -395,6 +395,7 @@
                       'dbghelp.lib',
                       'dwmapi.lib',
                       'gdi32.lib',
+                      'hid.lib',
                       'netapi32.lib',
                       'oleacc.lib',
                       'user32.lib',
