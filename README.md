@@ -19,7 +19,7 @@ announcements.
 This project adheres to the Contributor Covenant
 [code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
-behavior to [electron@github.com](mailto:electron@github.com).
+behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
 ## Installation
 
