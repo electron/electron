@@ -1539,6 +1539,23 @@ describe('BrowserWindow module', () => {
           done()
         })
       })
+
+      it('validate process.env access in sandbox renderer', (done) => {
+        ipcMain.once('answer', function (event, test) {
+          assert.equal(test, 'foo')
+          done()
+        })
+        remote.process.env.sandboxmain = 'foo'
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload
+          }
+        })
+        w.loadURL('file://' + path.join(fixtures, 'api', 'preload.html'))
+      })
     })
 
     describe('nativeWindowOpen option', () => {
