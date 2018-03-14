@@ -29,6 +29,7 @@ describe('chromium feature', () => {
 
   describe('command line switches', () => {
     describe('--lang switch', () => {
+      const currentLocale = app.getLocale()
       const testLocale = (locale, result, done) => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
         const electronPath = remote.getGlobal('process').execPath
@@ -44,7 +45,7 @@ describe('chromium feature', () => {
       }
 
       it('should set the locale', (done) => testLocale('fr', 'fr', done))
-      it('should not set an invalid locale', (done) => testLocale('asdfkl', 'en-US', done))
+      it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done))
     })
   })
 
