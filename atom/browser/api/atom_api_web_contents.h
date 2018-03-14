@@ -383,6 +383,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                          const std::vector<base::string16>& labels);
 
  private:
+  struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
 
   uint32_t GetNextRequestId() {
@@ -393,21 +394,26 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnCursorChange(const content::WebCursor& cursor);
 
   // Called when received a message from renderer.
-  void OnRendererMessage(const base::string16& channel,
+  void OnRendererMessage(content::RenderFrameHost* frame_host,
+                         const base::string16& channel,
                          const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
-  void OnRendererMessageSync(const base::string16& channel,
+  void OnRendererMessageSync(content::RenderFrameHost* frame_host,
+                             const base::string16& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
 
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.
-  void OnSetTemporaryZoomLevel(double level, IPC::Message* reply_msg);
+  void OnSetTemporaryZoomLevel(content::RenderFrameHost* frame_host,
+                               double level,
+                               IPC::Message* reply_msg);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.
-  void OnGetZoomLevel(IPC::Message* reply_msg);
+  void OnGetZoomLevel(content::RenderFrameHost* frame_host,
+                      IPC::Message* reply_msg);
 
   void InitZoomController(content::WebContents* web_contents,
                           const mate::Dictionary& options);

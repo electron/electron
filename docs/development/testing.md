@@ -8,7 +8,7 @@ all ship apps with fewer bugs.
 
 This repository comes with linting rules for both JavaScript and C++ –
 as well as unit and integration tests. To learn more about Electron's
-coding style, please see the [coding-style(coding-style.md) document.
+coding style, please see the [coding-style](coding-style.md) document.
 
 ## Linting
 To ensure that your JavaScript is in compliance with the Electron coding

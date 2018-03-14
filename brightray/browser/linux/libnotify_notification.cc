@@ -14,6 +14,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/common/application_info.h"
+#include "brightray/common/platform_util.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
@@ -124,6 +126,19 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   } else if (HasCapability("x-canonical-append")) {
     libnotify_loader_.notify_notification_set_hint_string(
         notification_, "x-canonical-append", "true");
+  }
+
+  // Send the desktop name to identify the application
+  // The desktop-entry is the part before the .desktop
+  std::string desktop_id;
+  if (platform_util::GetDesktopName(&desktop_id)) {
+    const std::string suffix{".desktop"};
+    if (base::EndsWith(desktop_id, suffix,
+                       base::CompareCase::INSENSITIVE_ASCII)) {
+      desktop_id.resize(desktop_id.size() - suffix.size());
+    }
+    libnotify_loader_.notify_notification_set_hint_string(
+        notification_, "desktop-entry", desktop_id.c_str());
   }
 
   GError* error = nullptr;

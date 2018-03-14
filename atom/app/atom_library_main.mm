@@ -14,7 +14,6 @@
 #include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/app/content_main.h"
 
-#if defined(OS_MACOSX)
 int AtomMain(int argc, char* argv[]) {
   atom::AtomMainDelegate delegate;
   content::ContentMainParams params(&delegate);
@@ -24,6 +23,7 @@ int AtomMain(int argc, char* argv[]) {
   return content::ContentMain(params);
 }
 
+#ifdef ENABLE_RUN_AS_NODE
 int AtomInitializeICUandStartNode(int argc, char *argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
@@ -35,4 +35,4 @@ int AtomInitializeICUandStartNode(int argc, char *argv[]) {
   base::i18n::InitializeICU();
   return atom::NodeMain(argc, argv);
 }
-#endif  // OS_MACOSX
+#endif

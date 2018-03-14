@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 
+#include "atom/common/api/locker.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -98,17 +99,13 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
            self->pending_next_ticks_.begin();
        it != self->pending_next_ticks_.end(); ++it) {
     node::Environment* env = *it;
-    // KickNextTick, copied from node.cc:
-    node::Environment::AsyncCallbackScope callback_scope(env);
-    if (callback_scope.in_makecallback())
-      continue;
-    node::Environment::TickInfo* tick_info = env->tick_info();
-    if (tick_info->length() == 0)
-      env->isolate()->RunMicrotasks();
-    v8::Local<v8::Object> process = env->process_object();
-    if (tick_info->length() == 0)
-      tick_info->set_index(0);
-    env->tick_callback_function()->Call(process, 0, nullptr).IsEmpty();
+    mate::Locker locker(env->isolate());
+    v8::Context::Scope context_scope(env->context());
+    node::InternalCallbackScope scope(
+        env,
+        v8::Local<v8::Object>(),
+        {0, 0},
+        node::InternalCallbackScope::kAllowEmptyResource);
   }
 
   self->pending_next_ticks_.clear();

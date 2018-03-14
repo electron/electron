@@ -134,15 +134,20 @@ describe('chromium feature', () => {
 
   describe('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'sw-file-scheme-spec'
+        }
+      })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
           w.webContents.reload()
         } else if (args[0] === 'error') {
-          done(new Error(`unexpected error : ${JSON.stringify(args[1])}`))
+          done(args[1])
         } else if (args[0] === 'response') {
           assert.equal(args[1], 'Hello from serviceWorker!')
-          session.defaultSession.clearStorageData({
+          session.fromPartition('sw-file-scheme-spec').clearStorageData({
             storages: ['serviceworkers']
           }, () => done())
         }
@@ -222,6 +227,26 @@ describe('chromium feature', () => {
       window.addEventListener('message', listener)
       b = window.open(`file://${fixtures}/pages/window-open-size.html`, '', 'show=no')
     })
+
+    for (const show of [true, false]) {
+      it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
+        const w = new BrowserWindow({show})
+
+        // toggle visibility
+        if (show) {
+          w.hide()
+        } else {
+          w.show()
+        }
+
+        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
+          assert.equal(options.show, w.isVisible())
+          w.close()
+          done()
+        })
+        w.loadURL(`file://${fixtures}/pages/window-open.html`)
+      })
+    }
 
     it('disables node integration when it is disabled on the parent window', (done) => {
       let b

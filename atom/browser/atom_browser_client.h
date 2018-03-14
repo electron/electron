@@ -126,6 +126,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   };
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
+  bool IsProcessObserved(int process_id);
   bool IsRendererSandboxed(int process_id);
   bool RendererUsesNativeWindowOpen(int process_id);
   bool RendererDisablesPopups(int process_id);
@@ -138,8 +139,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   // list of site per affinity. weak_ptr to prevent instance locking
   std::map<std::string, content::SiteInstance*> site_per_affinities;
-
-  base::Lock process_preferences_lock_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;

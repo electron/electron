@@ -9,6 +9,7 @@
 #include "atom/browser/lib/power_observer.h"
 #include "base/compiler_specific.h"
 #include "native_mate/handle.h"
+#include "ui/base/idle/idle.h"
 
 namespace atom {
 
@@ -41,6 +42,11 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   void OnResume() override;
 
  private:
+  void QuerySystemIdleState(v8::Isolate* isolate,
+                            int idle_threshold,
+                            const ui::IdleCallback& callback);
+  void QuerySystemIdleTime(const ui::IdleTimeCallback& callback);
+
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
 

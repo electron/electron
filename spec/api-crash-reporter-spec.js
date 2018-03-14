@@ -259,8 +259,20 @@ describe('crashReporter module', () => {
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
       const reports = crashReporter.getUploadedReports()
-      const lastReport = reports[0]
-      assert(lastReport != null)
+      const lastReport = crashReporter.getLastCrashReport()
+
+      // Let's find the newest report
+      const newestReport = reports.reduce((acc, cur) => {
+        const timestamp = new Date(cur.date).getTime()
+        return (timestamp > acc.timestamp)
+          ? { report: cur, timestamp: timestamp }
+          : acc
+      }, { timestamp: 0 })
+
+      assert(reports.length > 1, 'has more than 1 report')
+      assert(lastReport != null, 'found a last report')
+      assert(lastReport.date.toString() === newestReport.report.date.toString(),
+        'last report is correct')
     })
   })
 
