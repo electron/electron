@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import errno
 import hashlib
 import os
 import shutil
 import tempfile
 
 from lib.config import s3_config
-from lib.util import download, rm_rf, s3put
+from lib.util import download, rm_rf, s3put, safe_mkdir
 
 
 DIST_URL = 'https://atom.io/download/electron/'
@@ -17,7 +16,7 @@ DIST_URL = 'https://atom.io/download/electron/'
 def main():
   args = parse_args()
   dist_url = args.dist_url
-  if dist_url[len(dist_url) - 1] != "/":
+  if dist_url[-1] != "/":
     dist_url += "/"
 
   url = dist_url + args.version + '/'
@@ -41,9 +40,11 @@ def parse_args():
   parser = argparse.ArgumentParser(description='upload sumsha file')
   parser.add_argument('-v', '--version', help='Specify the version',
                       required=True)
-  parser.add_argument('-u', '--dist-url', help='Specify the dist url for downloading',
+  parser.add_argument('-u', '--dist-url',
+                      help='Specify the dist url for downloading',
                       required=False, default=DIST_URL)
-  parser.add_argument('-t', '--target-dir', help='Specify target dir of checksums',
+  parser.add_argument('-t', '--target-dir',
+                      help='Specify target dir of checksums',
                       required=False)
   return parser.parse_args()
 
@@ -67,7 +68,7 @@ def download_files(url, files):
     required = f[1]
     try:
       result.append(download(f[0], url + f[0], os.path.join(directory, f[0])))
-    except:
+    except Exception:
       if required:
         raise
 
@@ -92,14 +93,6 @@ def copy_files(source_files, output_dir):
     output_path = os.path.join(output_dir, os.path.basename(source_file))
     safe_mkdir(os.path.dirname(output_path))
     shutil.copy2(source_file, output_path)
-
-def safe_mkdir(path):
-  try:
-    os.makedirs(path)
-  except OSError as e:
-    if e.errno != errno.EEXIST:
-      raise
-
 
 if __name__ == '__main__':
   import sys

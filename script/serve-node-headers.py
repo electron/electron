@@ -25,8 +25,10 @@ def main():
                   '--directory', header_dir])
 
   # Launch server
-  script_path = os.path.join(SOURCE_ROOT, 'node_modules', 'serve', 'bin', 'serve.js')
-  server = Popen(['node', script_path, '--port=' + args.port], stdout=PIPE, cwd=DIST_DIR)
+  script_path = os.path.join(SOURCE_ROOT, 'node_modules', 'serve', 'bin',
+                            'serve.js')
+  server = Popen(['node', script_path, '--port=' + args.port], stdout=PIPE,
+                 cwd=DIST_DIR)
   def cleanup():
     server.kill()
   atexit.register(cleanup)
