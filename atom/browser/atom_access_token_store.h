@@ -9,23 +9,17 @@
 
 namespace atom {
 
-namespace internal {
-class GeoURLRequestContextGetter;
-}
-
 class AtomAccessTokenStore : public device::AccessTokenStore {
  public:
-  AtomAccessTokenStore();
-  ~AtomAccessTokenStore();
+  AtomAccessTokenStore() = default;
+  ~AtomAccessTokenStore() = default;
 
   // device::AccessTokenStore:
-  void LoadAccessTokens(
-      const LoadAccessTokensCallback& callback) override;
+  void LoadAccessTokens(const LoadAccessTokensCallback& callback) override {}
   void SaveAccessToken(const GURL& server_url,
-                       const base::string16& access_token) override;
+                       const base::string16& access_token) override {}
 
  private:
-  scoped_refptr<internal::GeoURLRequestContextGetter> request_context_getter_;
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 
