@@ -57,9 +57,15 @@ class WebContentsPreferences
 
   // Returns the web preferences.
   base::DictionaryValue* web_preferences() { return &web_preferences_; }
+  base::DictionaryValue* last_web_preferences() {
+    return &last_web_preferences_;
+  }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
+
+  // Set preference value to given bool if user did not provide value
+  bool SetDefaultBoolIfUndefined(const std::string key, bool val);
 
   // Get preferences value as integer possibly coercing it from a string
   bool GetInteger(const std::string& attributeName, int* intValue);
@@ -68,6 +74,7 @@ class WebContentsPreferences
 
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
+  base::DictionaryValue last_web_preferences_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
