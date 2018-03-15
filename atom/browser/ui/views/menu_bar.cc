@@ -27,8 +27,8 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 MenuBar::MenuBar(NativeWindow* window)
     : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {
-  UpdateColorCache();
-  UpdateMenuBarView();
+  RefreshColorCache();
+  UpdateViewColors();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
 }
 
@@ -37,7 +37,7 @@ MenuBar::~MenuBar() {}
 void MenuBar::AddedToWidget() {
   auto fm = GetFocusManager();
   fm->AddFocusChangeListener(this);
-  // NB: we don't own fm! This manages the *connection*
+  // Note, we don't own fm! This manages the =connection=
   focus_manager_.reset(fm, [this](views::FocusManager* fm) {
     fm->RemoveFocusChangeListener(this);
   });
@@ -49,7 +49,7 @@ void MenuBar::RemovedFromWidget() {
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
-  UpdateMenuBarView();
+  RebuildChildren();
 }
 
 void MenuBar::SetAcceleratorVisibility(bool visible) {
@@ -127,7 +127,7 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
   menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source);
 }
 
-void MenuBar::UpdateColorCache(const ui::NativeTheme* theme) {
+void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (!theme)
     theme = ui::NativeTheme::GetInstanceForNativeUi();
   if (theme) {
@@ -146,8 +146,8 @@ void MenuBar::UpdateColorCache(const ui::NativeTheme* theme) {
 }
 
 void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
-  UpdateColorCache(theme);
-  UpdateMenuBarView();
+  RefreshColorCache(theme);
+  UpdateViewColors();
 }
 
 void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
@@ -155,22 +155,32 @@ void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
   const auto had_focus = has_focus_;
   has_focus_ = focused_now != nullptr;
   if (has_focus_ != had_focus)
-    UpdateMenuBarView();
+    UpdateViewColors();
 }
 
-void MenuBar::UpdateMenuBarView() {
-  // set menubar background color
-  SetBackground(views::CreateSolidBackground(background_color_));
-
-  // set child colors
+void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   if (menu_model_ != nullptr) {
     for (int i = 0; i < menu_model_->GetItemCount(); ++i) {
       auto button = new SubmenuButton(menu_model_->GetLabelAt(i), this,
                                       background_color_);
       button->set_tag(i);
+      AddChildView(button);
+    }
+  }
+  UpdateViewColors();
+}
+
+void MenuBar::UpdateViewColors() {
+  // set menubar background color
+  SetBackground(views::CreateSolidBackground(background_color_));
+
+  // set child colors
+  if (menu_model_ != nullptr) {
+    for (int i = 0; i < child_count(); ++i) {
+      auto button = static_cast<SubmenuButton*>(child_at(i));
 #if defined(USE_X11)
-      const auto textColor = has_focus_ ? enabled_color_ : disabled_color_;
+      const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
       button->SetTextColor(views::Button::STATE_NORMAL, textColor);
       button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
       button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
@@ -179,7 +189,6 @@ void MenuBar::UpdateMenuBarView() {
 #elif defined(OS_WIN)
       button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
 #endif
-      AddChildView(button);
     }
   }
 }
