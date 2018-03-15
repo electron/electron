@@ -66,9 +66,10 @@ class MenuBar : public views::View,
   void OnWillChangeFocus(View* focused_before, View* focused_now) override {}
 
  private:
-  void UpdateMenuBarView();
+  void RebuildChildren();
+  void UpdateViewColors();
 
-  void UpdateColorCache(const ui::NativeTheme* theme = nullptr);
+  void RefreshColorCache(const ui::NativeTheme* theme = nullptr);
   SkColor background_color_;
 #if defined(USE_X11)
   SkColor enabled_color_;
