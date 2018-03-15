@@ -2861,7 +2861,7 @@ describe('BrowserWindow module', () => {
     })
     it('enables context isolation on child windows', (done) => {
       app.once('browser-window-created', (event, window) => {
-        assert.equal(window.webContents.getWebPreferences().contextIsolation, true)
+        assert.equal(window.webContents.getLastWebPreferences().contextIsolation, true)
         done()
       })
       w.loadURL(`file://${fixtures}/pages/window-open.html`)
