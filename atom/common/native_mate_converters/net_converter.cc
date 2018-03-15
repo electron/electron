@@ -62,9 +62,6 @@ v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
 // static
 v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     v8::Isolate* isolate, const scoped_refptr<net::X509Certificate>& val) {
-#if defined(ARCH_CPU_MIPS64EL)
-  return v8::Undefined(isolate);
-#else
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(
@@ -95,15 +92,11 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   }
 
   return dict.GetHandle();
-#endif
 }
 
 bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
     v8::Isolate* isolate, v8::Local<v8::Value> val,
     scoped_refptr<net::X509Certificate>* out) {
-#if defined(ARCH_CPU_MIPS64EL)
-  return false;
-#else
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -130,7 +123,6 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   }
 
   return true;
-#endif
 }
 
 // static
