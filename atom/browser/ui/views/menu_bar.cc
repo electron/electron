@@ -169,12 +169,12 @@ void MenuBar::UpdateMenuBarView() {
   // set child colors
   RemoveAllChildViews(true);
   if (menu_model_ != nullptr) {
-    const auto textColor = has_focus_ ? enabled_color_ : disabled_color_;
     for (int i = 0; i < menu_model_->GetItemCount(); ++i) {
       auto button = new SubmenuButton(menu_model_->GetLabelAt(i), this,
                                       background_color_);
       button->set_tag(i);
 #if defined(USE_X11)
+      const auto textColor = has_focus_ ? enabled_color_ : disabled_color_;
       button->SetTextColor(views::Button::STATE_NORMAL, textColor);
       button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
       button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
