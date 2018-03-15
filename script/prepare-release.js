@@ -11,6 +11,7 @@ const GitHub = require('github')
 const pass = '\u2713'.green
 const path = require('path')
 const pkg = require('../package.json')
+const readline = require('readline')
 const versionType = args._[0]
 
 // TODO (future) automatically determine version based on conventional commits
@@ -45,18 +46,23 @@ async function createReleaseBranch () {
   }
 }
 
-function getNewVersion () {
+function getNewVersion (dryRun) {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
   let scriptArgs = [bumpScript, `--bump ${versionType}`]
   if (args.stable) {
     scriptArgs.push('--stable')
   }
+  if (dryRun) {
+    scriptArgs.push('--dry-run')
+  }
   try {
     let bumpVersion = execSync(scriptArgs.join(' '), {encoding: 'UTF-8'})
     bumpVersion = bumpVersion.substr(bumpVersion.indexOf(':') + 1).trim()
     let newVersion = `v${bumpVersion}`
-    console.log(`${pass} Successfully bumped version to ${newVersion}`)
+    if (!dryRun) {
+      console.log(`${pass} Successfully bumped version to ${newVersion}`)
+    }
     return newVersion
   } catch (err) {
     console.log(`${fail} Could not bump version, error was:`, err)
@@ -88,22 +94,59 @@ async function getReleaseNotes (currentBranch) {
     base: `v${pkg.version}`,
     head: currentBranch
   }
-  let releaseNotes = '(placeholder)\n'
+  let releaseNotes
+  if (args.automaticRelease) {
+    releaseNotes = '## Bug Fixes/Changes \n\n'
+  } else {
+    releaseNotes = '(placeholder)\n'
+  }
   console.log(`Checking for commits from ${pkg.version} to ${currentBranch}`)
   let commitComparison = await github.repos.compareCommits(githubOpts)
     .catch(err => {
-      console.log(`{$fail} Error checking for commits from ${pkg.version} to ` +
+      console.log(`${fail} Error checking for commits from ${pkg.version} to ` +
         `${currentBranch}`, err)
       process.exit(1)
     })
 
+  if (commitComparison.data.commits.length === 0) {
+    console.log(`${pass} There are no commits from ${pkg.version} to ` +
+      `${currentBranch}, skipping release.`)
+    process.exit(0)
+  }
+
+  let prCount = 0
+  const mergeRE = /Merge pull request #(\d+) from .*\n/
+  const newlineRE = /(.*)\n*.*/
+  const prRE = /(.* )\(#(\d+)\)(?:.*)/
   commitComparison.data.commits.forEach(commitEntry => {
     let commitMessage = commitEntry.commit.message
-    if (commitMessage.toLowerCase().indexOf('merge') > -1) {
-      releaseNotes += `${commitMessage} \n`
+    if (commitMessage.indexOf('#') > -1) {
+      let prMatch = commitMessage.match(mergeRE)
+      let prNumber
+      if (prMatch) {
+        commitMessage = commitMessage.replace(mergeRE, '').replace('\n', '')
+        let newlineMatch = commitMessage.match(newlineRE)
+        if (newlineMatch) {
+          commitMessage = newlineMatch[1]
+        }
+        prNumber = prMatch[1]
+      } else {
+        prMatch = commitMessage.match(prRE)
+        if (prMatch) {
+          commitMessage = prMatch[1].trim()
+          prNumber = prMatch[2]
+        }
+      }
+      if (prMatch) {
+        if (commitMessage.substr(commitMessage.length - 1, commitMessage.length) !== '.') {
+          commitMessage += '.'
+        }
+        releaseNotes += `* ${commitMessage} #${prNumber} \n\n`
+        prCount++
+      }
     }
   })
-  console.log(`${pass} Done generating release notes for ${currentBranch}.`)
+  console.log(`${pass} Done generating release notes for ${currentBranch}. Found ${prCount} PRs.`)
   return releaseNotes
 }
 
@@ -127,16 +170,17 @@ async function createRelease (branchToTarget, isBeta) {
     process.exit(1)
   }
   console.log(`${pass} A draft release does not exist; creating one.`)
-  githubOpts.body = releaseNotes
   githubOpts.draft = true
   githubOpts.name = `electron ${newVersion}`
   if (isBeta) {
     githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
       `for any bugs you find in it.\n \n This release is published to npm ` +
       `under the beta tag and can be installed via npm install electron@beta, ` +
-      `or npm i electron@${newVersion.substr(1)}.`
+      `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
     githubOpts.name = `${githubOpts.name}`
     githubOpts.prerelease = true
+  } else {
+    githubOpts.body = releaseNotes
   }
   githubOpts.tag_name = newVersion
   githubOpts.target_commitish = branchToTarget
@@ -166,12 +210,37 @@ async function runReleaseBuilds () {
   })
 }
 
+async function verifyNewVersion () {
+  let newVersion = await getNewVersion(true)
+  let response = await promptForVersion(newVersion)
+  if (response.match(/^y/i)) {
+    console.log(`${pass} Starting release of ${newVersion}`)
+  } else {
+    console.log(`${fail} Aborting release of ${newVersion}`)
+    process.exit()
+  }
+}
+
+async function promptForVersion (version) {
+  return new Promise((resolve, reject) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    })
+    rl.question(`Do you want to create the release ${version.green} (y/N)? `, (answer) => {
+      rl.close()
+      resolve(answer)
+    })
+  })
+}
+
 async function prepareRelease (isBeta, notesOnly) {
   let currentBranch = await getCurrentBranch(gitDir)
   if (notesOnly) {
     let releaseNotes = await getReleaseNotes(currentBranch)
     console.log(`Draft release notes are: ${releaseNotes}`)
   } else {
+    await verifyNewVersion()
     await createReleaseBranch()
     await createRelease(currentBranch, isBeta)
     await pushRelease()
