@@ -407,6 +407,7 @@
       'atom/common/api/atom_bindings.h',
       'atom/common/api/event_emitter_caller.cc',
       'atom/common/api/event_emitter_caller.h',
+      'atom/common/api/features.cc',
       'atom/common/api/locker.cc',
       'atom/common/api/locker.h',
       'atom/common/api/object_life_monitor.cc',

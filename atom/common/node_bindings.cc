@@ -53,6 +53,7 @@
   V(atom_common_asar)                        \
   V(atom_common_clipboard)                   \
   V(atom_common_crash_reporter)              \
+  V(atom_common_features)                    \
   V(atom_common_native_image)                \
   V(atom_common_notification)                \
   V(atom_common_screen)                      \

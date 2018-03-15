@@ -3,7 +3,7 @@
   'variables': {
     'variables': {
       'enable_osr%': 0,  # FIXME(alexeykuzmin)
-      'enable_pdf_viewer%': 0,
+      'enable_pdf_viewer%': 1,
       'enable_run_as_node%': 1,
     },
     'enable_osr%': '<(enable_osr)',
