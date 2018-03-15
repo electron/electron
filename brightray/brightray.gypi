@@ -277,14 +277,10 @@
               # Specifically tell the linker to perform optimizations.
               # See http://lwn.net/Articles/192624/ .
               '-Wl,-O1',
+              '-Wl,--as-needed',
               '-Wl,--gc-sections',
             ],
           }],  # OS=="linux"
-          ['OS=="linux" and target_arch!="mips64el"', {
-            'ldflags': [
-              '-Wl,--as-needed',
-            ],
-          }],
           ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
             'cflags': [
               '-flto',
