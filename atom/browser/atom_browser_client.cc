@@ -47,9 +47,6 @@
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_builder.h"
-#include "net/url_request/url_request_context_getter.h"
 #include "ppapi/host/ppapi_host.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
@@ -69,45 +66,6 @@ std::string g_custom_service_worker_schemes = "";
 void Noop(scoped_refptr<content::SiteInstance>) {
 }
 
-class GeoURLRequestContextGetter : public net::URLRequestContextGetter {
- public:
-  GeoURLRequestContextGetter() = default;
-  ~GeoURLRequestContextGetter() override {
-    if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
-      BrowserThread::PostTask(
-          BrowserThread::IO, FROM_HERE,
-          base::Bind(&GeoURLRequestContextGetter::NotifyContextShutdownOnIO,
-                     this));
-    }
-  }
-
-  void NotifyContextShutdownOnIO() {
-    url_request_context_.reset();
-    net::URLRequestContextGetter::NotifyContextShuttingDown();
-  }
-
-  net::URLRequestContext* GetURLRequestContext() override {
-    DCHECK_CURRENTLY_ON(BrowserThread::IO);
-    if (!url_request_context_.get()) {
-      net::URLRequestContextBuilder builder;
-      builder.set_proxy_config_service(
-          net::ProxyService::CreateSystemProxyConfigService(
-              BrowserThread::GetTaskRunnerForThread(BrowserThread::IO)));
-      url_request_context_ = builder.Build();
-    }
-    return url_request_context_.get();
-  }
-
-  scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
-      const override {
-    return BrowserThread::GetTaskRunnerForThread(BrowserThread::IO);
-  }
-
- private:
-  std::unique_ptr<net::URLRequestContext> url_request_context_;
-  DISALLOW_COPY_AND_ASSIGN(GeoURLRequestContextGetter);
-};
-
 }  // namespace
 
 // static
@@ -120,9 +78,7 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
   g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient()
-    : delegate_(nullptr),
-      geo_request_context_getter_(new GeoURLRequestContextGetter) {}
+AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {}
 
 AtomBrowserClient::~AtomBrowserClient() {
 }
@@ -384,20 +340,14 @@ void AtomBrowserClient::DidCreatePpapiPlugin(
       base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
-scoped_refptr<net::URLRequestContextGetter>
-AtomBrowserClient::GetGeoRequestContextGetterFromUIThread() {
-  DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  return geo_request_context_getter_;
-}
-
 void AtomBrowserClient::GetGeolocationRequestContext(
     base::OnceCallback<void(scoped_refptr<net::URLRequestContextGetter>)>
         callback) {
-  BrowserThread::PostTaskAndReplyWithResult(
-      BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&AtomBrowserClient::GetGeoRequestContextGetterFromUIThread,
-                     base::Unretained(this)),
-      std::move(callback));
+  auto io_thread = AtomBrowserMainParts::Get()->io_thread();
+  auto context = io_thread->GetRequestContext();
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::BindOnce(std::move(callback), base::RetainedRef(context)));
 }
 
 std::string AtomBrowserClient::GetGeolocationApiKey() {

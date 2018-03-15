@@ -12,6 +12,7 @@
 
 namespace net {
 class URLRequestContext;
+class URLRequestContextGetter;
 }
 
 namespace brightray {
@@ -21,6 +22,10 @@ class IOThread : public content::BrowserThreadDelegate {
   IOThread();
   ~IOThread() override;
 
+  net::URLRequestContextGetter* GetRequestContext() {
+    return url_request_context_getter_;
+  }
+
  protected:
   // BrowserThreadDelegate Implementation, runs on the IO thread.
   void Init() override;
@@ -28,6 +33,7 @@ class IOThread : public content::BrowserThreadDelegate {
 
  private:
   std::unique_ptr<net::URLRequestContext> url_request_context_;
+  net::URLRequestContextGetter* url_request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };

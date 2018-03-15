@@ -35,6 +35,8 @@ class BrowserMainParts : public content::BrowserMainParts {
   BrowserMainParts();
   ~BrowserMainParts();
 
+  IOThread* io_thread() const { return io_thread_.get(); }
+
  protected:
   // content::BrowserMainParts:
   void PreEarlyInitialization() override;

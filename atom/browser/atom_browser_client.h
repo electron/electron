@@ -21,7 +21,6 @@ class ClientCertificateDelegate;
 
 namespace net {
 class SSLCertRequestInfo;
-class URLRequestContextGetter;
 }
 
 namespace atom {
@@ -134,8 +133,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
   bool IsRendererSandboxed(int process_id);
   bool RendererUsesNativeWindowOpen(int process_id);
   bool RendererDisablesPopups(int process_id);
-  scoped_refptr<net::URLRequestContextGetter>
-  GetGeoRequestContextGetterFromUIThread();
 
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
@@ -150,8 +147,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_;
-
-  scoped_refptr<net::URLRequestContextGetter> geo_request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };
