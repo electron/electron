@@ -4,7 +4,7 @@ import json
 import urllib2
 import sys
 
-def main():
+def check_tls(verbose):
   response = json.load(urllib2.urlopen('https://www.howsmyssl.com/a/check'))
   tls = response['tls_version']
 
@@ -25,9 +25,10 @@ def main():
       + "for instructions on how to update Python."
     sys.exit(1)
   else:
-    print "Your Python is using " + tls + ", which is sufficient for" \
-      + "building Electron."
-    sys.exit(0)
+    if verbose:
+      print "Your Python is using " + tls + ", which is sufficient for" \
+        + "building Electron."
 
 if __name__ == '__main__':
-  main()
+  check_tls(True)
+  sys.exit(0)

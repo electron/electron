@@ -12,7 +12,7 @@ from lib.config import BASE_URL, PLATFORM, MIPS64EL_SYSROOT_URL, \
                        is_verbose_mode, get_target_arch
 from lib.util import execute, execute_stdout, get_electron_version, \
                      scoped_cwd, download, update_node_modules
-
+from tls import check_tls
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
@@ -30,6 +30,8 @@ def main():
     enable_verbose_mode()
   if sys.platform == 'cygwin':
     update_win32_python()
+
+  check_tls(args.verbose)
 
   update_submodules()
 
