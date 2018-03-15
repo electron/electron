@@ -11,6 +11,8 @@
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
 
+#include <memory>
+
 namespace views {
 class MenuButton;
 }
@@ -49,8 +51,9 @@ class MenuBar : public views::View,
 
  protected:
   // views::View:
+  void AddedToWidget() override;
   const char* GetClassName() const override;
-  void ViewHierarchyChanged(const ViewHierarchyChangedDetails&) override;
+  void RemovedFromWidget() override;
 
   // views::MenuButtonListener:
   void OnMenuButtonClicked(views::MenuButton* source,
@@ -75,6 +78,7 @@ class MenuBar : public views::View,
   NativeWindow* window_;
   AtomMenuModel* menu_model_;
 
+  std::shared_ptr<views::FocusManager> focus_manager_;
   bool has_focus_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
