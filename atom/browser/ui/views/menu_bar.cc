@@ -178,7 +178,7 @@ void MenuBar::UpdateMenuBarView() {
       button->SetTextColor(views::Button::STATE_NORMAL, textColor);
       button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
       button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
-      button->SetTextColor(views::Button::STATE_HOVERED, enabled_color_);
+      button->SetTextColor(views::Button::STATE_HOVERED, textColor);
       button->SetUnderlineColor(textColor);
 #elif defined(OS_WIN)
       button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
