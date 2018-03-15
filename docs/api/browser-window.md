@@ -1378,10 +1378,10 @@ Returns `Boolean` - Whether the window is visible on all workspaces.
 
 * `ignore` Boolean
 * `options` Object (optional)
-  * `forward` Boolean (optional) _Windows_ - If true, forwards mouse move
+  * `forward` Boolean (optional) _macOS_ _Windows_ - If true, forwards mouse move
     messages to Chromium, enabling mouse related events such as `mouseleave`.
-	Only used when `ignore` is true. If `ignore` is false, forwarding is always
-	disabled regardless of this value.
+    Only used when `ignore` is true. If `ignore` is false, forwarding is always
+    disabled regardless of this value.
 
 Makes the window ignore all mouse events.
 
