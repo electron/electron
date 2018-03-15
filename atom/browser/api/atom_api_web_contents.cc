@@ -1721,6 +1721,14 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, *web_preferences->web_preferences());
 }
 
+v8::Local<v8::Value> WebContents::GetLastWebPreferences(v8::Isolate* isolate) {
+  WebContentsPreferences* web_preferences =
+      WebContentsPreferences::FromWebContents(web_contents());
+  if (!web_preferences)
+    return v8::Null(isolate);
+  return mate::ConvertToV8(isolate, *web_preferences->last_web_preferences());
+}
+
 v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
   if (owner_window())
     return Window::From(isolate(), owner_window());
@@ -1851,6 +1859,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("_getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
+      .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("hasServiceWorker", &WebContents::HasServiceWorker)
       .SetMethod("unregisterServiceWorker",
