@@ -33,22 +33,19 @@ MenuBar::MenuBar(NativeWindow* window)
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
 }
 
-MenuBar::~MenuBar() {
+MenuBar::~MenuBar() {}
+
+void MenuBar::AddedToWidget() {
   auto fm = GetFocusManager();
-  if (fm)
+  fm->AddFocusChangeListener(this);
+  // NB: we don't own fm! This manages the *connection*
+  focus_manager_.reset(fm, [this](views::FocusManager* fm) {
     fm->RemoveFocusChangeListener(this);
+  });
 }
 
-void MenuBar::ViewHierarchyChanged(const ViewHierarchyChangedDetails& details) {
-  // The focus manager is tied to our parent view.
-  // So when we change parents, keep our FocusChange listening in sync.
-  if ((details.child == this) && (details.parent != nullptr)) {
-    auto fm = details.parent->GetFocusManager();
-    if (details.is_add)
-      fm->AddFocusChangeListener(this);
-    else
-      fm->RemoveFocusChangeListener(this);
-  }
+void MenuBar::RemovedFromWidget() {
+  focus_manager_.reset();
 }
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
