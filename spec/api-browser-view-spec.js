@@ -30,6 +30,22 @@ describe('BrowserView module', () => {
     return closeWindow(w).then(() => { w = null })
   })
 
+  describe('BrowserView.destroy()', () => {
+    it('does not throw', () => {
+      view = new BrowserView()
+      view.destroy()
+    })
+  })
+
+  describe('BrowserView.isDestroyed()', () => {
+    it('returns correct value', () => {
+      view = new BrowserView()
+      assert.ok(!view.isDestroyed())
+      view.destroy()
+      assert.ok(view.isDestroyed())
+    })
+  })
+
   describe('BrowserView.setBackgroundColor()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()
