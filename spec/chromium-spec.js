@@ -280,7 +280,7 @@ describe('chromium feature', function () {
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
           app.once('browser-window-created', (event, window) => {
-            const preferences = window.webContents.getWebPreferences()
+            const preferences = window.webContents.getLastWebPreferences()
             assert.equal(preferences.javascript, false)
             window.destroy()
             b.close()
@@ -506,7 +506,7 @@ describe('chromium feature', function () {
         done()
       }
       window.addEventListener('message', listener)
-      w = window.open(url, '', 'show=no')
+      w = window.open(url, '', 'show=no,nodeIntegration=no')
     })
 
     it('works when origin matches', function (done) {
@@ -515,7 +515,7 @@ describe('chromium feature', function () {
         done()
       }
       window.addEventListener('message', listener)
-      w = window.open(`file://${fixtures}/pages/window-opener-location.html`, '', 'show=no')
+      w = window.open(`file://${fixtures}/pages/window-opener-location.html`, '', 'show=no,nodeIntegration=no')
     })
 
     it('works when origin does not match opener but has node integration', function (done) {

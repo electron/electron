@@ -2691,10 +2691,9 @@ describe('BrowserWindow module', function () {
       })
       w.loadURL('file://' + fixtures + '/api/isolated.html')
     })
-
-    it('enables context isolation on child windows', function (done) {
-      app.once('browser-window-created', function (event, window) {
-        assert.equal(window.webContents.getWebPreferences().contextIsolation, true)
+    it('enables context isolation on child windows', (done) => {
+      app.once('browser-window-created', (event, window) => {
+        assert.equal(window.webContents.getLastWebPreferences().contextIsolation, true)
         done()
       })
       w.loadURL('file://' + fixtures + '/pages/window-open.html')

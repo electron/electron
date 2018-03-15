@@ -68,6 +68,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
   #endif
   SetDefaultBoolIfUndefined("offscreen", false);
+  last_web_preferences_.MergeDictionary(&web_preferences_);
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -109,6 +110,12 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
     return;
 
   base::DictionaryValue& web_preferences = self->web_preferences_;
+
+  // We are appending args to a webContents so let's save the current state
+  // of our preferences object so that during the lifetime of the WebContents
+  // we can fetch the options used to initally configure the WebContents
+  self->last_web_preferences_.Clear();
+  self->last_web_preferences_.MergeDictionary(&web_preferences);
 
   bool b;
   // Check if plugins are enabled.
