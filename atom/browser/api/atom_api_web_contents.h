@@ -214,6 +214,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate);
 
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow();

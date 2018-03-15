@@ -53,6 +53,9 @@ class WebContentsPreferences
 
   // Returns the web preferences.
   base::DictionaryValue* web_preferences() { return &web_preferences_; }
+  base::DictionaryValue* last_web_preferences() {
+    return &last_web_preferences_;
+  }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -67,6 +70,7 @@ class WebContentsPreferences
 
   content::WebContents* web_contents_;
   base::DictionaryValue web_preferences_;
+  base::DictionaryValue last_web_preferences_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
