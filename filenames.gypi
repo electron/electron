@@ -649,8 +649,6 @@
       'chromium_src/library_loaders/libspeechd.h',
       '<@(native_mate_files)',
       '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
-      '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
-      '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.h',
     ],
     'lib_sources_linux': [
       'chromium_src/chrome/browser/icon_loader_auralinux.cc',
@@ -734,6 +732,8 @@
           'atom/browser/ui/webui/pdf_viewer_ui.h',
           'chromium_src/components/pdf/renderer/pepper_pdf_host.cc',
           'chromium_src/components/pdf/renderer/pepper_pdf_host.h',
+          '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.cc',
+          '<(SHARED_INTERMEDIATE_DIR)/grit/pdf_viewer_resources_map.h',
         ],
       }],  # enable_pdf_viewer
       ['enable_run_as_node==1', {
