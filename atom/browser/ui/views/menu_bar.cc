@@ -176,21 +176,24 @@ void MenuBar::UpdateViewColors() {
   SetBackground(views::CreateSolidBackground(background_color_));
 
   // set child colors
-  if (menu_model_ != nullptr) {
-    for (int i = 0; i < child_count(); ++i) {
-      auto button = static_cast<SubmenuButton*>(child_at(i));
+  if (menu_model_ == nullptr)
+    return;
 #if defined(USE_X11)
-      const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
-      button->SetTextColor(views::Button::STATE_NORMAL, textColor);
-      button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
-      button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
-      button->SetTextColor(views::Button::STATE_HOVERED, textColor);
-      button->SetUnderlineColor(textColor);
-#elif defined(OS_WIN)
-      button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
-#endif
-    }
+  for (int i = 0; i < child_count(); ++i) {
+    auto button = static_cast<SubmenuButton*>(child_at(i));
+    const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
+    button->SetTextColor(views::Button::STATE_NORMAL, textColor);
+    button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
+    button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
+    button->SetTextColor(views::Button::STATE_HOVERED, textColor);
+    button->SetUnderlineColor(textColor);
   }
+#elif defined(OS_WIN)
+  for (int i = 0; i < child_count(); ++i) {
+    auto button = static_cast<SubmenuButton*>(child_at(i));
+    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
+  }
+#endif
 }
 
 }  // namespace atom
