@@ -64,21 +64,19 @@ void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
 void AtomRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   // Inform the document start pharse.
-  node::Environment* env = node_bindings_->uv_env();
-  if (env) {
-    v8::HandleScope handle_scope(env->isolate());
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = GetEnvironment(render_frame);
+  if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "document-start");
-  }
 }
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   // Inform the document end pharse.
-  node::Environment* env = node_bindings_->uv_env();
-  if (env) {
-    v8::HandleScope handle_scope(env->isolate());
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = GetEnvironment(render_frame);
+  if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "document-end");
-  }
 }
 
 void AtomRendererClient::DidCreateScriptContext(
@@ -87,6 +85,8 @@ void AtomRendererClient::DidCreateScriptContext(
   // extension page.
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
     return;
+
+  injected_frames_.insert(render_frame);
 
   // Prepare the node bindings.
   if (!node_integration_initialized_) {
@@ -102,6 +102,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
+  environments_.insert(env);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
@@ -121,14 +122,14 @@ void AtomRendererClient::DidCreateScriptContext(
 
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
-  // Only allow node integration for the main frame, unless it is a devtools
-  // extension page.
-  if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
-    return;
+  injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  if (environments_.find(env) == environments_.end())
+    return;
+  environments_.erase(env);
+
+  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
@@ -209,5 +210,16 @@ void AtomRendererClient::SetupMainWorldOverrides(
   ignore_result(func->Call(context, v8::Null(isolate), 1, args));
 }
 
+node::Environment* AtomRendererClient::GetEnvironment(
+    content::RenderFrame* render_frame) const {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return nullptr;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = node::Environment::GetCurrent(
+      render_frame->GetWebFrame()->MainWorldScriptContext());
+  if (environments_.find(env) == environments_.end())
+    return nullptr;
+  return env;
+}
 
 }  // namespace atom
