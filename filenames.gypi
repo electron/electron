@@ -354,10 +354,6 @@
       'atom/browser/ui/views/submenu_button.h',
       'atom/browser/ui/views/win_frame_view.cc',
       'atom/browser/ui/views/win_frame_view.h',
-      'atom/browser/ui/webui/pdf_viewer_handler.cc',
-      'atom/browser/ui/webui/pdf_viewer_handler.h',
-      'atom/browser/ui/webui/pdf_viewer_ui.cc',
-      'atom/browser/ui/webui/pdf_viewer_ui.h',
       'atom/browser/ui/win/atom_desktop_native_widget_aura.cc',
       'atom/browser/ui/win/atom_desktop_native_widget_aura.h',
       'atom/browser/ui/win/atom_desktop_window_tree_host_win.cc',
@@ -644,8 +640,6 @@
       'chromium_src/chrome/renderer/tts_dispatcher.cc',
       'chromium_src/chrome/renderer/tts_dispatcher.h',
       'chromium_src/chrome/utility/utility_message_handler.h',
-      'chromium_src/components/pdf/renderer/pepper_pdf_host.cc',
-      'chromium_src/components/pdf/renderer/pepper_pdf_host.h',
       'chromium_src/extensions/browser/app_window/size_constraints.cc',
       'chromium_src/extensions/browser/app_window/size_constraints.h',
       'chromium_src/extensions/common/url_pattern.cc',
@@ -731,7 +725,17 @@
           'atom/browser/osr/osr_view_proxy.h',
         ],
       }],  # enable_osr==1
-      ['enable_run_as_node', {
+      ['enable_pdf_viewer==1', {
+        'lib_sources': [
+          'atom/browser/ui/webui/pdf_viewer_handler.cc',
+          'atom/browser/ui/webui/pdf_viewer_handler.h',
+          'atom/browser/ui/webui/pdf_viewer_ui.cc',
+          'atom/browser/ui/webui/pdf_viewer_ui.h',
+          'chromium_src/components/pdf/renderer/pepper_pdf_host.cc',
+          'chromium_src/components/pdf/renderer/pepper_pdf_host.h',
+        ],
+      }],  # enable_pdf_viewer
+      ['enable_run_as_node==1', {
         'lib_sources': [
           'atom/app/node_main.cc',
           'atom/app/node_main.h',

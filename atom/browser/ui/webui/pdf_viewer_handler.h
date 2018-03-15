@@ -2,6 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef ENABLE_PDF_VIEWER
+#error("This header can only be used when enable_pdf_viewer gyp flag is enabled")
+#endif  // defined(ENABLE_PDF_VIEWER)
+
 #ifndef ATOM_BROWSER_UI_WEBUI_PDF_VIEWER_HANDLER_H_
 #define ATOM_BROWSER_UI_WEBUI_PDF_VIEWER_HANDLER_H_
 

@@ -6,12 +6,14 @@
 
 #include <string>
 
+#if defined(ENABLE_PDF_VIEWER)
 #include "atom/browser/ui/webui/pdf_viewer_ui.h"
 #include "atom/common/atom_constants.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/web_contents.h"
 #include "net/base/escape.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -27,9 +29,11 @@ AtomWebUIControllerFactory::~AtomWebUIControllerFactory() {}
 content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) const {
+#if defined(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     return const_cast<AtomWebUIControllerFactory*>(this);
   }
+#endif  // defined(ENABLE_PDF_VIEWER)
 
   return content::WebUI::kNoWebUI;
 }
@@ -49,6 +53,7 @@ bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
 content::WebUIController*
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
                                                         const GURL& url) const {
+#if defined(ENABLE_PDF_VIEWER)
   if (url.host() == kPdfViewerUIHost) {
     base::StringPairs toplevel_params;
     base::SplitStringIntoKeyValuePairs(url.query(), '=', '&', &toplevel_params);
@@ -70,6 +75,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return new PdfViewerUI(browser_context, web_ui, src);
   }
+#endif  // defined(ENABLE_PDF_VIEWER)
   return nullptr;
 }
 
