@@ -131,14 +131,14 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (!theme)
     theme = ui::NativeTheme::GetInstanceForNativeUi();
   if (theme) {
+    background_color_ =
+        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
 #if defined(USE_X11)
     enabled_color_ = theme->GetSystemColor(
         ui::NativeTheme::kColorId_EnabledMenuItemForegroundColor);
     disabled_color_ = theme->GetSystemColor(
         ui::NativeTheme::kColorId_DisabledMenuItemForegroundColor);
 #endif
-    background_color_ =
-        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
   }
 #if defined(OS_WINDOWS)
   background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
@@ -179,9 +179,9 @@ void MenuBar::UpdateViewColors() {
   if (menu_model_ == nullptr)
     return;
 #if defined(USE_X11)
+  const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
   for (int i = 0; i < child_count(); ++i) {
     auto button = static_cast<SubmenuButton*>(child_at(i));
-    const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
     button->SetTextColor(views::Button::STATE_NORMAL, textColor);
     button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
     button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
