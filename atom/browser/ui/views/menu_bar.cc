@@ -4,63 +4,20 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 
-#if defined(USE_X11)
-#include "gtk/gtk.h"
-#endif
-
 #include "atom/browser/ui/views/menu_delegate.h"
 #include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
+#include "ui/views/focus/focus_manager.h"
 #include "ui/views/layout/box_layout.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/color_utils.h"
-#elif defined(USE_X11)
-#include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #endif
 
 namespace atom {
 
 namespace {
-
-#if defined(USE_X11)
-
-SkColor GdkRgbaToSkColor(const GdkRGBA& rgba) {
-  return SkColorSetARGB(rgba.alpha * 255, rgba.red * 255, rgba.green * 255,
-                        rgba.blue * 255);
-}
-
-SkColor GetStyleContextFgColor(GtkStyleContext* style_context,
-                               GtkStateFlags state) {
-  GdkRGBA rgba;
-  gtk_style_context_get_color(style_context, state, &rgba);
-  return GdkRgbaToSkColor(rgba);
-}
-
-SkColor GetStyleContextBgColor(GtkStyleContext* style_context,
-                               GtkStateFlags state) {
-  GdkRGBA rgba;
-  gtk_style_context_get_background_color(style_context, state, &rgba);
-  return GdkRgbaToSkColor(rgba);
-}
-
-void GetMenuBarColor(SkColor* enabled,
-                     SkColor* disabled,
-                     SkColor* highlight,
-                     SkColor* hover,
-                     SkColor* background) {
-  GtkWidget* menu_bar = gtk_menu_bar_new();
-  GtkStyleContext* sc = gtk_widget_get_style_context(menu_bar);
-  *enabled = GetStyleContextFgColor(sc, GTK_STATE_FLAG_NORMAL);
-  *disabled = GetStyleContextFgColor(sc, GTK_STATE_FLAG_INSENSITIVE);
-  *highlight = GetStyleContextFgColor(sc, GTK_STATE_FLAG_SELECTED);
-  *hover = GetStyleContextFgColor(sc, GTK_STATE_FLAG_PRELIGHT);
-  *background = GetStyleContextBgColor(sc, GTK_STATE_FLAG_NORMAL);
-  gtk_widget_destroy(GTK_WIDGET(menu_bar));
-}
-
-#endif  // USE_X11
 
 const char kViewClassName[] = "ElectronMenuBar";
 
@@ -71,33 +28,32 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 MenuBar::MenuBar(NativeWindow* window)
     : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {
-  UpdateMenuBarColor();
+  UpdateColorCache();
+  UpdateMenuBarView();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
 }
 
-MenuBar::~MenuBar() {}
+MenuBar::~MenuBar() {
+  auto fm = GetFocusManager();
+  if (fm)
+    fm->RemoveFocusChangeListener(this);
+}
+
+void MenuBar::ViewHierarchyChanged(const ViewHierarchyChangedDetails& details) {
+  // The focus manager is tied to our parent view.
+  // So when we change parents, keep our FocusChange listening in sync.
+  if ((details.child == this) && (details.parent != nullptr)) {
+    auto fm = details.parent->GetFocusManager();
+    if (details.is_add)
+      fm->AddFocusChangeListener(this);
+    else
+      fm->RemoveFocusChangeListener(this);
+  }
+}
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
-  RemoveAllChildViews(true);
-
-  for (int i = 0; i < model->GetItemCount(); ++i) {
-    SubmenuButton* button =
-        new SubmenuButton(model->GetLabelAt(i), this, background_color_);
-    button->set_tag(i);
-
-#if defined(USE_X11)
-    button->SetTextColor(views::Button::STATE_NORMAL, enabled_color_);
-    button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
-    button->SetTextColor(views::Button::STATE_PRESSED, highlight_color_);
-    button->SetTextColor(views::Button::STATE_HOVERED, hover_color_);
-    button->SetUnderlineColor(enabled_color_);
-#elif defined(OS_WIN)
-    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
-#endif
-
-    AddChildView(button);
-  }
+  UpdateMenuBarView();
 }
 
 void MenuBar::SetAcceleratorVisibility(bool visible) {
@@ -175,18 +131,61 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
   menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source);
 }
 
-void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
-  UpdateMenuBarColor();
+void MenuBar::UpdateColorCache(const ui::NativeTheme* theme) {
+  if (!theme)
+    theme = ui::NativeTheme::GetInstanceForNativeUi();
+  if (theme) {
+#if defined(USE_X11)
+    enabled_color_ = theme->GetSystemColor(
+        ui::NativeTheme::kColorId_EnabledMenuItemForegroundColor);
+    disabled_color_ = theme->GetSystemColor(
+        ui::NativeTheme::kColorId_DisabledMenuItemForegroundColor);
+#endif
+    background_color_ =
+        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
+  }
+#if defined(OS_WINDOWS)
+  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
+#endif
 }
 
-void MenuBar::UpdateMenuBarColor() {
-#if defined(OS_WIN)
-  background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
-#elif defined(USE_X11)
-  GetMenuBarColor(&enabled_color_, &disabled_color_, &highlight_color_,
-                  &hover_color_, &background_color_);
-#endif
+void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
+  UpdateColorCache(theme);
+  UpdateMenuBarView();
+}
+
+void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
+  // if we've changed focus, update our view
+  const auto had_focus = has_focus_;
+  has_focus_ = focused_now != nullptr;
+  if (has_focus_ != had_focus)
+    UpdateMenuBarView();
+}
+
+void MenuBar::UpdateMenuBarView() {
+  // set menubar background color
   SetBackground(views::CreateSolidBackground(background_color_));
+
+  // set child colors
+  RemoveAllChildViews(true);
+  if (menu_model_ != nullptr) {
+    const auto textColor = has_focus_ ? enabled_color_ : disabled_color_;
+    for (int i = 0; i < menu_model_->GetItemCount(); ++i) {
+      auto button = new SubmenuButton(menu_model_->GetLabelAt(i), this,
+                                      background_color_);
+      button->set_tag(i);
+#if defined(USE_X11)
+      button->SetTextColor(views::Button::STATE_NORMAL, textColor);
+      button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
+      button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
+      button->SetTextColor(views::Button::STATE_HOVERED, enabled_color_);
+      button->SetUnderlineColor(textColor);
+#elif defined(OS_WIN)
+      button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
+#endif
+      AddChildView(button);
+    }
+  }
 }
 
 }  // namespace atom
