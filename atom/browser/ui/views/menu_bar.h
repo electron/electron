@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include <memory>
+
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
-
-#include <memory>
 
 namespace views {
 class MenuButton;

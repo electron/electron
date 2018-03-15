@@ -8,7 +8,6 @@
 #include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
-#include "ui/views/focus/focus_manager.h"
 #include "ui/views/layout/box_layout.h"
 
 #if defined(OS_WIN)
