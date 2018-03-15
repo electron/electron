@@ -189,13 +189,9 @@ def execute_stdout(argv, env=os.environ, cwd=None):
 def electron_gyp():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
-  features_gyp = os.path.join(SOURCE_ROOT, 'features.gypi')
-  obj = {}
   with open(gyp) as f:
-    obj = eval(f.read())['variables']
-    with open(features_gyp) as g:
-      obj.update(eval(g.read())['variables']['variables'])
-      return obj
+    obj = eval(f.read());
+    return obj['variables']
 
 
 def get_electron_version():

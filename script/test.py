@@ -28,7 +28,6 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
-PDF_VIEWER_ENABLED = electron_gyp()['enable_pdf_viewer%']
 
 
 def main():
@@ -36,7 +35,6 @@ def main():
 
   args = parse_args()
   config = args.configuration
-  os.environ['PDF_VIEWER_ENABLED'] = str(PDF_VIEWER_ENABLED)
 
   if args.verbose:
     enable_verbose_mode()

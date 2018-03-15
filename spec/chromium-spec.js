@@ -7,10 +7,9 @@ const url = require('url')
 const ChildProcess = require('child_process')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
-
 const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
-
 const isCI = remote.getGlobal('isCi')
+const features = process.atomBinding('features')
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -999,16 +998,19 @@ describe('chromium feature', () => {
 
   describe('PDF Viewer', () => {
     before(function () {
-      if (!parseInt(process.env.PDF_VIEWER_ENABLED)) {
+      if (!features.isPDFViewerEnabled()) {
         return this.skip()
       }
+    })
 
-      const pdfSource = url.format({
+    beforeEach(() => {
+      this.pdfSource = url.format({
         pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
         protocol: 'file',
         slashes: true
       })
-      const pdfSourceWithParams = url.format({
+
+      this.pdfSourceWithParams = url.format({
         pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
         query: {
           a: 1,
@@ -1018,7 +1020,7 @@ describe('chromium feature', () => {
         slashes: true
       })
 
-      function createBrowserWindow ({plugins, preload}) {
+      this.createBrowserWindow = ({plugins, preload}) => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -1028,14 +1030,14 @@ describe('chromium feature', () => {
         })
       }
 
-      function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
+      this.testPDFIsLoadedInSubFrame = (page, preloadFile, done) => {
         const pagePath = url.format({
           pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
           protocol: 'file',
           slashes: true
         })
 
-        createBrowserWindow({plugins: true, preload: preloadFile})
+        this.createBrowserWindow({plugins: true, preload: preloadFile})
         ipcMain.once('pdf-loaded', (event, state) => {
           assert.equal(state, 'success')
           done()
@@ -1052,7 +1054,7 @@ describe('chromium feature', () => {
     })
 
     it('opens when loading a pdf resource as top level navigation', (done) => {
-      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
+      this.createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', (event, state) => {
         assert.equal(state, 'success')
         done()
@@ -1061,14 +1063,14 @@ describe('chromium feature', () => {
         const parsedURL = url.parse(w.webContents.getURL(), true)
         assert.equal(parsedURL.protocol, 'chrome:')
         assert.equal(parsedURL.hostname, 'pdf-viewer')
-        assert.equal(parsedURL.query.src, pdfSource)
+        assert.equal(parsedURL.query.src, this.pdfSource)
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
-      w.webContents.loadURL(pdfSource)
+      w.webContents.loadURL(this.pdfSource)
     })
 
     it('opens a pdf link given params, the query string should be escaped', (done) => {
-      createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
+      this.createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', (event, state) => {
         assert.equal(state, 'success')
         done()
@@ -1077,16 +1079,16 @@ describe('chromium feature', () => {
         const parsedURL = url.parse(w.webContents.getURL(), true)
         assert.equal(parsedURL.protocol, 'chrome:')
         assert.equal(parsedURL.hostname, 'pdf-viewer')
-        assert.equal(parsedURL.query.src, pdfSourceWithParams)
+        assert.equal(parsedURL.query.src, this.pdfSourceWithParams)
         assert.equal(parsedURL.query.b, undefined)
         assert(parsedURL.search.endsWith('%3Fa%3D1%26b%3D2'))
         assert.equal(w.webContents.getTitle(), 'cat.pdf')
       })
-      w.webContents.loadURL(pdfSourceWithParams)
+      w.webContents.loadURL(this.pdfSourceWithParams)
     })
 
     it('should download a pdf when plugins are disabled', (done) => {
-      createBrowserWindow({plugins: false, preload: 'preload-pdf-loaded.js'})
+      this.createBrowserWindow({plugins: false, preload: 'preload-pdf-loaded.js'})
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
         assert.equal(state, 'completed')
@@ -1095,11 +1097,11 @@ describe('chromium feature', () => {
         fs.unlinkSync(path.join(fixtures, 'mock.pdf'))
         done()
       })
-      w.webContents.loadURL(pdfSource)
+      w.webContents.loadURL(this.pdfSource)
     })
 
     it('should not open when pdf is requested as sub resource', (done) => {
-      fetch(pdfSource).then((res) => {
+      fetch(this.pdfSource).then((res) => {
         assert.equal(res.status, 200)
         assert.notEqual(document.title, 'cat.pdf')
         done()
@@ -1107,11 +1109,11 @@ describe('chromium feature', () => {
     })
 
     it('opens when loading a pdf resource in a iframe', (done) => {
-      testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
+      this.testPDFIsLoadedInSubFrame('pdf-in-iframe.html', 'preload-pdf-loaded-in-subframe.js', done)
     })
 
     it('opens when loading a pdf resource in a nested iframe', (done) => {
-      testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
+      this.testPDFIsLoadedInSubFrame('pdf-in-nested-iframe.html', 'preload-pdf-loaded-in-nested-subframe.js', done)
     })
   })
 
