@@ -8,6 +8,7 @@
 #include "net/proxy/proxy_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
+#include "net/url_request/url_request_context_getter.h"
 
 #if defined(USE_NSS_CERTS)
 #include "net/cert_net/nss_ocsp.h"
@@ -28,8 +29,10 @@ IOThread::~IOThread() {
 void IOThread::Init() {
   net::URLRequestContextBuilder builder;
   builder.set_proxy_service(net::ProxyService::CreateDirect());
-  builder.DisableHttpCache();
   url_request_context_ = builder.Build();
+  url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
+      url_request_context_.get(), base::ThreadTaskRunnerHandle::Get());
+  url_request_context_getter_->AddRef();
 
 #if defined(USE_NSS_CERTS)
   net::SetMessageLoopForNSSHttpIO();
@@ -42,6 +45,8 @@ void IOThread::CleanUp() {
   net::ShutdownNSSHttpIO();
   net::SetURLRequestContextForNSSHttpIO(nullptr);
 #endif
+  // Explicitly release before the IO thread gets destroyed.
+  url_request_context_getter_->Release();
   url_request_context_.reset();
 }
 
