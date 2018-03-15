@@ -64,8 +64,8 @@ def download_files(url, files):
   directory = tempfile.mkdtemp(prefix='electron-tmp')
   result = []
   for optional_f in files:
-    required = optional_f.required
-    f = optional_f.filename
+    required = optional_f['required']
+    f = optional_f['filename']
     try:
       result.append(download(f, url + f, os.path.join(directory, f)))
     except Exception:
