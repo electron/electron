@@ -10,7 +10,6 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
-#include "atom/common/atom_constants.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"

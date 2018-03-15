@@ -9,7 +9,6 @@
 #include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/javascript_environment.h"
@@ -32,6 +31,10 @@
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
+
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/browser/atom_web_ui_controller_factory.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -186,8 +189,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
       base::Bind(&v8::Isolate::LowMemoryNotification,
                  base::Unretained(js_env_->isolate())));
 
+#if defined(ENABLE_PDF_VIEWER)
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
+#endif  // defined(ENABLE_PDF_VIEWER)
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

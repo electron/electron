@@ -8,17 +8,13 @@
 #include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
-#include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
 #include "net/ssl/client_cert_store.h"
-#include "net/url_request/url_request.h"
 #include "url/gurl.h"
 
 #if defined(USE_NSS_CERTS)
@@ -28,6 +24,14 @@
 #elif defined(OS_MACOSX)
 #include "net/ssl/client_cert_store_mac.h"
 #endif
+
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/common/atom_constants.h"
+#include "base/strings/stringprintf.h"
+#include "content/public/browser/stream_info.h"
+#include "net/url_request/url_request.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
+
 
 using content::BrowserThread;
 
@@ -65,6 +69,7 @@ void HandleExternalProtocolInUI(
                                                    url);
 }
 
+#if defined(ENABLE_PDF_VIEWER)
 void OnPdfResourceIntercepted(
     const GURL& original_url,
     int render_process_host_id,
@@ -102,6 +107,7 @@ void OnPdfResourceIntercepted(
   params.frame_tree_node_id = frame_host->GetFrameTreeNodeId();
   web_contents->GetController().LoadURLWithParams(params);
 }
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 }  // namespace
 
@@ -145,6 +151,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     const std::string& mime_type,
     GURL* origin,
     std::string* payload) {
+#if defined(ENABLE_PDF_VIEWER)
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
 
@@ -164,6 +171,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
                    info->GetWebContentsGetterForRequest()));
     return true;
   }
+#endif  // defined(ENABLE_PDF_VIEWER)
   return false;
 }
 

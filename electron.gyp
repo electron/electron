@@ -28,7 +28,12 @@
           'ENABLE_OSR',
         ],
       }],  # enable_osr==1
-      ['enable_run_as_node', {
+      ['enable_pdf_viewer==1', {
+        'defines': [
+          'ENABLE_PDF_VIEWER',
+        ],
+      }],  # enable_pdf_viewer
+      ['enable_run_as_node==1', {
         'defines': [
           'ENABLE_RUN_AS_NODE',
         ],
@@ -243,7 +248,6 @@
       'type': 'static_library',
       'dependencies': [
         'atom_js2c',
-        'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
         'brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node_lib',
       ],
@@ -313,6 +317,11 @@
         'brightray/brightray.gyp:brightray',
       ],
       'conditions': [
+        ['enable_pdf_viewer==1', {
+          'dependencies': [
+            'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
+          ],
+        }],  # enable_pdf_viewer
         ['libchromiumcontent_component', {
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
@@ -614,7 +623,6 @@
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
-            '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
@@ -682,6 +690,11 @@
             },
           ],
           'conditions': [
+            ['enable_pdf_viewer==1', {
+              'mac_bundle_resources': [
+                '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
+              ],
+            }],  # enable_pdf_viewer
             ['mas_build==0', {
               'link_settings': {
                 'libraries': [

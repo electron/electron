@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#ifndef ENABLE_PDF_VIEWER
+#error("This header can only be used when enable_pdf_viewer gyp flag is enabled")
+#endif  // defined(ENABLE_PDF_VIEWER)
+
 #include "components/pdf/renderer/pepper_pdf_host.h"
 
 #include "atom/common/api/api_messages.h"

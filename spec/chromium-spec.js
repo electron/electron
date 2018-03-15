@@ -998,52 +998,58 @@ describe('chromium feature', () => {
   })
 
   describe('PDF Viewer', () => {
-    const pdfSource = url.format({
-      pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
-      protocol: 'file',
-      slashes: true
-    })
-    const pdfSourceWithParams = url.format({
-      pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
-      query: {
-        a: 1,
-        b: 2
-      },
-      protocol: 'file',
-      slashes: true
-    })
+    before(function () {
+      if (!parseInt(process.env.PDF_VIEWER_ENABLED)) {
+        return this.skip()
+      }
 
-    function createBrowserWindow ({plugins, preload}) {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: path.join(fixtures, 'module', preload),
-          plugins: plugins
-        }
+      const pdfSource = url.format({
+        pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
       })
-    }
-
-    function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
-      const pagePath = url.format({
-        pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
+      const pdfSourceWithParams = url.format({
+        pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
+        query: {
+          a: 1,
+          b: 2
+        },
         protocol: 'file',
         slashes: true
       })
 
-      createBrowserWindow({plugins: true, preload: preloadFile})
-      ipcMain.once('pdf-loaded', (event, state) => {
-        assert.equal(state, 'success')
-        done()
-      })
-      w.webContents.on('page-title-updated', () => {
-        const parsedURL = url.parse(w.webContents.getURL(), true)
-        assert.equal(parsedURL.protocol, 'chrome:')
-        assert.equal(parsedURL.hostname, 'pdf-viewer')
-        assert.equal(parsedURL.query.src, pagePath)
-        assert.equal(w.webContents.getTitle(), 'cat.pdf')
-      })
-      w.webContents.loadURL(pagePath)
-    }
+      function createBrowserWindow ({plugins, preload}) {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'module', preload),
+            plugins: plugins
+          }
+        })
+      }
+
+      function testPDFIsLoadedInSubFrame (page, preloadFile, done) {
+        const pagePath = url.format({
+          pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
+          protocol: 'file',
+          slashes: true
+        })
+
+        createBrowserWindow({plugins: true, preload: preloadFile})
+        ipcMain.once('pdf-loaded', (event, state) => {
+          assert.equal(state, 'success')
+          done()
+        })
+        w.webContents.on('page-title-updated', () => {
+          const parsedURL = url.parse(w.webContents.getURL(), true)
+          assert.equal(parsedURL.protocol, 'chrome:')
+          assert.equal(parsedURL.hostname, 'pdf-viewer')
+          assert.equal(parsedURL.query.src, pagePath)
+          assert.equal(w.webContents.getTitle(), 'cat.pdf')
+        })
+        w.webContents.loadURL(pagePath)
+      }
+    })
 
     it('opens when loading a pdf resource as top level navigation', (done) => {
       createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
