@@ -25,6 +25,7 @@
 #include "atom/common/google_api_key.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
