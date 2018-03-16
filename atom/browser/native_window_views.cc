@@ -1337,7 +1337,7 @@ void NativeWindowViews::HandleKeyboardEvent(
   if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
       !IsAltKey(event) && IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
-        (menu_bar_->GetAcceleratorIndex(event.windows_key_code) != -1))
+        (menu_bar_->HasAccelerator(event.windows_key_code)))
       SetMenuBarVisibility(true);
     menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;
@@ -1445,12 +1445,9 @@ void NativeWindowViews::RegisterAccelerators(AtomMenuModel* menu_model) {
 
   // Register accelerators with focus manager.
   accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
-  accelerator_util::AcceleratorTable::const_iterator iter;
-  for (iter = accelerator_table_.begin();
-       iter != accelerator_table_.end();
-       ++iter) {
+  for (const auto& iter : accelerator_table_) {
     focus_manager->RegisterAccelerator(
-        iter->first, ui::AcceleratorManager::kNormalPriority, this);
+        iter.first, ui::AcceleratorManager::kNormalPriority, this);
   }
 }
 
