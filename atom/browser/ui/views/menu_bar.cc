@@ -79,15 +79,11 @@ int MenuBar::GetItemCount() const {
   return menu_model_->GetItemCount();
 }
 
-bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& point,
+bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
                                            AtomMenuModel** menu_model,
                                            views::MenuButton** button) {
-  gfx::Point location(point);
-  views::View::ConvertPointFromScreen(this, &location);
-
-  if (location.x() < 0 || location.x() >= width() || location.y() < 0 ||
-      location.y() >= height())
-    return false;
+  if (!GetBoundsInScreen().Contains(screenPoint))
+    return;
 
   for (int i = 0; i < child_count(); ++i) {
     views::View* view = child_at(i);
