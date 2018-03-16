@@ -1338,7 +1338,7 @@ void NativeWindowViews::HandleKeyboardEvent(
   if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
       !IsAltKey(event) && IsAltModifier(event)) {
     if (!menu_bar_visible_ &&
-        (menu_bar_->GetAcceleratorIndex(event.windows_key_code) != -1))
+        (menu_bar_->HasAccelerator(event.windows_key_code)))
       SetMenuBarVisibility(true);
     menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;

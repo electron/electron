@@ -37,7 +37,7 @@ MenuBar::~MenuBar() {}
 void MenuBar::AddedToWidget() {
   auto fm = GetFocusManager();
   fm->AddFocusChangeListener(this);
-  // Note, we don't own fm! This manages the =connection=
+  // Note that we don't own fm -- this manages the _connection_
   focus_manager_.reset(fm, [this](views::FocusManager* fm) {
     fm->RemoveFocusChangeListener(this);
   });
@@ -53,23 +53,26 @@ void MenuBar::SetMenu(AtomMenuModel* model) {
 }
 
 void MenuBar::SetAcceleratorVisibility(bool visible) {
-  for (int i = 0; i < child_count(); ++i)
-    static_cast<SubmenuButton*>(child_at(i))->SetAcceleratorVisibility(visible);
+  for (auto* child : GetChildrenInZOrder())
+    static_cast<SubmenuButton*>(child)->SetAcceleratorVisibility(visible);
 }
 
-int MenuBar::GetAcceleratorIndex(base::char16 key) {
-  for (int i = 0; i < child_count(); ++i) {
-    SubmenuButton* button = static_cast<SubmenuButton*>(child_at(i));
-    if (button->accelerator() == key)
-      return i;
+MenuBar::View* MenuBar::FindAccelChild(base::char16 key) {
+  for (auto* child : GetChildrenInZOrder()) {
+    if (static_cast<SubmenuButton*>(child)->accelerator() == key)
+      return child;
   }
-  return -1;
+  return nullptr;
+}
+
+bool MenuBar::HasAccelerator(base::char16 key) {
+  return FindAccelChild(key) != nullptr;
 }
 
 void MenuBar::ActivateAccelerator(base::char16 key) {
-  int i = GetAcceleratorIndex(key);
-  if (i != -1)
-    static_cast<SubmenuButton*>(child_at(i))->Activate(nullptr);
+  auto child = FindAccelChild(key);
+  if (child)
+    static_cast<SubmenuButton*>(child)->Activate(nullptr);
 }
 
 int MenuBar::GetItemCount() const {
@@ -180,8 +183,8 @@ void MenuBar::UpdateViewColors() {
     return;
 #if defined(USE_X11)
   const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
-  for (int i = 0; i < child_count(); ++i) {
-    auto button = static_cast<SubmenuButton*>(child_at(i));
+  for (auto* child : GetChildrenInZOrder()) {
+    auto button = static_cast<SubmenuButton*>(child);
     button->SetTextColor(views::Button::STATE_NORMAL, textColor);
     button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
     button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);
@@ -189,8 +192,8 @@ void MenuBar::UpdateViewColors() {
     button->SetUnderlineColor(textColor);
   }
 #elif defined(OS_WIN)
-  for (int i = 0; i < child_count(); ++i) {
-    auto button = static_cast<SubmenuButton*>(child_at(i));
+  for (auto* child : GetChildrenInZOrder()) {
+    auto button = static_cast<SubmenuButton*>(child);
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
   }
 #endif
