@@ -4,6 +4,7 @@
     if (navigator.serviceWorker.controller) {
       var xhr = new XMLHttpRequest();
       xhr.open('GET', 'http://dummy/echo');
+      xhr.overrideMimeType("text/javascript");
       xhr.setRequestHeader('X-Mock-Response', 'yes');
       xhr.addEventListener('load', function() {
         ipcRenderer.send('response', xhr.responseText);
