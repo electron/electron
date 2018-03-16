@@ -1,7 +1,7 @@
 const assert = require('assert')
 const {dialog} = require('electron').remote
 
-describe('dialog module', () => {
+describe.only('dialog module', () => {
   describe('showOpenDialog', () => {
     it('throws errors when the options are invalid', () => {
       assert.throws(() => {
@@ -53,11 +53,11 @@ describe('dialog module', () => {
   describe('showMessageBox', () => {
     it('throws errors when the options are invalid', () => {
       assert.throws(() => {
-        dialog.showMessageBox(undefined, {type: 'not-a-valid-type'})
+        dialog.showMessageBox({type: 'not-a-valid-type'})
       }, /Invalid message box type/)
 
       assert.throws(() => {
-        dialog.showMessageBox(null, {buttons: false})
+        dialog.showMessageBox({buttons: false})
       }, /Buttons must be an array/)
 
       assert.throws(() => {
@@ -105,7 +105,7 @@ describe('dialog module', () => {
       }, /certificate must be an object/)
 
       assert.throws(() => {
-        dialog.showCertificateTrustDialog({certificate: {}, message: false})
+        dialog.showCertificateTrustDialog({certificate: {}, message: false, callback: () => {}})
       }, /message must be a string/)
     })
   })
