@@ -85,7 +85,7 @@ void BrowserWindow::UpdateDraggableRegions(
     system_drag_exclude_areas.push_back(
         gfx::Rect(0, 0, webViewWidth, webViewHeight));
   } else {
-    CalculateNonDraggableRegions(
+    system_drag_exclude_areas = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
