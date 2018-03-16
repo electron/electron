@@ -1445,12 +1445,9 @@ void NativeWindowViews::RegisterAccelerators(AtomMenuModel* menu_model) {
 
   // Register accelerators with focus manager.
   accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
-  accelerator_util::AcceleratorTable::const_iterator iter;
-  for (iter = accelerator_table_.begin();
-       iter != accelerator_table_.end();
-       ++iter) {
+  for (const auto& iter : accelerator_table_) {
     focus_manager->RegisterAccelerator(
-        iter->first, ui::AcceleratorManager::kNormalPriority, this);
+        iter.first, ui::AcceleratorManager::kNormalPriority, this);
   }
 }
 
