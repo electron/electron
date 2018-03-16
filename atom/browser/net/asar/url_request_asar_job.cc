@@ -245,10 +245,21 @@ void URLRequestAsarJob::FetchMetaInfo(const base::FilePath& file_path,
     meta_info->file_size = file_info.size;
     meta_info->is_directory = file_info.is_directory;
   }
-  // On Windows GetMimeTypeFromFile() goes to the registry. Thus it should be
-  // done in WorkerPool.
-  meta_info->mime_type_result =
-      net::GetMimeTypeFromFile(file_path, &meta_info->mime_type);
+
+  // We use GetWellKnownMimeTypeFromExtension() to ensure that configurations
+  // that may have been set by other programs on a user's machine don't affect
+  // the mime type returned (in particular, JS should always be
+  // (application/javascript). See https://crbug.com/797712. Using an accurate
+  // mime type is necessary at least for modules and sw, which enforce strict
+  // mime type requirements.
+  // TODO(deepak1556): Revert this when sw support is removed for file scheme.
+  base::FilePath::StringType file_extension = file_path.Extension();
+  if (file_extension.empty()) {
+    meta_info->mime_type_result = false;
+  } else {
+    meta_info->mime_type_result = net::GetWellKnownMimeTypeFromExtension(
+        file_extension.substr(1), &meta_info->mime_type);
+  }
 }
 
 void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
