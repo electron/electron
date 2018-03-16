@@ -34,9 +34,8 @@ class MenuBar : public views::View,
   // Shows underline under accelerators.
   void SetAcceleratorVisibility(bool visible);
 
-  // Returns which submenu has accelerator |key|, -1 would be returned when
-  // there is no matching submenu.
-  int GetAcceleratorIndex(base::char16 key);
+  // Returns true if the submenu has accelerator |key|
+  bool HasAccelerator(base::char16 key);
 
   // Shows the submenu whose accelerator is |key|.
   void ActivateAccelerator(base::char16 key);
@@ -78,6 +77,8 @@ class MenuBar : public views::View,
 
   NativeWindow* window_;
   AtomMenuModel* menu_model_;
+
+  View* FindAccelChild(base::char16 key);
 
   std::shared_ptr<views::FocusManager> focus_manager_;
   bool has_focus_ = true;
