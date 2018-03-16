@@ -76,7 +76,7 @@ void MenuBar::ActivateAccelerator(base::char16 key) {
 }
 
 int MenuBar::GetItemCount() const {
-  return menu_model_->GetItemCount();
+  return menu_model_ ? menu_model_->GetItemCount() : 0;
 }
 
 bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
