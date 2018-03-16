@@ -139,7 +139,7 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
         ui::NativeTheme::kColorId_DisabledMenuItemForegroundColor);
 #endif
   }
-#if defined(OS_WINDOWS)
+#if defined(OS_WIN)
   background_color_ = color_utils::GetSysSkColor(COLOR_MENUBAR);
 #endif
 }
@@ -188,7 +188,7 @@ void MenuBar::UpdateViewColors() {
 #elif defined(OS_WIN)
   for (auto* child : GetChildrenInZOrder()) {
     auto button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_GRAYTEXT));
+    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
 }
