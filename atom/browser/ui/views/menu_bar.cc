@@ -83,14 +83,14 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
                                            AtomMenuModel** menu_model,
                                            views::MenuButton** button) {
   if (!GetBoundsInScreen().Contains(screenPoint))
-    return;
+    return false;
 
-  for (int i = 0; i < child_count(); ++i) {
-    views::View* view = child_at(i);
-    if (view->GetMirroredBounds().Contains(location) &&
+  auto children = GetChildrenInZOrder();
+  for (int i = 0; i < children.size(); ++i) {
+    if (children[i]->GetBoundsInScreen().Contains(screenPoint) &&
         (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
-      *button = static_cast<views::MenuButton*>(view);
+      *button = static_cast<views::MenuButton*>(children[i]);
       return true;
     }
   }
