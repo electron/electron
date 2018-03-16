@@ -33,9 +33,9 @@ class SubmenuButton : public views::MenuButton {
  private:
   bool GetUnderlinePosition(const base::string16& text,
                             base::char16* accelerator,
-                            int* start, int* end);
+                            int* start, int* end) const;
   void GetCharacterPosition(
-      const base::string16& text, int index, int* pos);
+      const base::string16& text, int index, int* pos) const;
 
   base::char16 accelerator_;
 
