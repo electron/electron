@@ -21,9 +21,6 @@ class SubmenuButton : public views::MenuButton {
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
-  void SetEnabledColor(SkColor color);
-  void SetBackgroundColor(SkColor color);
-
   base::char16 accelerator() const { return accelerator_; }
 
   // views::MenuButton:
