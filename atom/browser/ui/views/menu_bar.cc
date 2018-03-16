@@ -159,13 +159,11 @@ void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
 
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
-  if (menu_model_ != nullptr) {
-    for (int i = 0; i < menu_model_->GetItemCount(); ++i) {
-      auto button = new SubmenuButton(menu_model_->GetLabelAt(i), this,
-                                      background_color_);
-      button->set_tag(i);
-      AddChildView(button);
-    }
+  for (int i = 0, n = GetItemCount(); i < n; ++i) {
+    auto button = new SubmenuButton(menu_model_->GetLabelAt(i), this,
+                                    background_color_);
+    button->set_tag(i);
+    AddChildView(button);
   }
   UpdateViewColors();
 }
