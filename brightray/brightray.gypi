@@ -118,10 +118,16 @@
             'defines': [
               'USE_OPENSSL',
             ],
+          }, {
+            'defines': [
+              'USE_X11',
+              # "use_nss_certs" is set to 1 in libchromiumcontent.
+              'USE_NSS_CERTS',
+              'USE_NSS',  # deprecated after Chrome 45.
+            ],
           }],
           ['OS=="linux"', {
             'defines': [
-              'USE_X11',
               '_LARGEFILE_SOURCE',
               '_LARGEFILE64_SOURCE',
               '_FILE_OFFSET_BITS=64',
@@ -131,11 +137,6 @@
               '-fno-rtti',
             ],
           }],  # OS=="linux"
-          ['OS=="linux" and target_arch!="mips64el"', {
-            'defines': [
-              'USE_NSS_CERTS',
-            ],
-          }],  # OS=="linux" and target_arch!="mips64el"
           ['OS=="mac"', {
             'defines': [
               # The usage of "webrtc/modules/desktop_capture/desktop_capture_options.h"
@@ -276,14 +277,10 @@
               # Specifically tell the linker to perform optimizations.
               # See http://lwn.net/Articles/192624/ .
               '-Wl,-O1',
+              '-Wl,--as-needed',
               '-Wl,--gc-sections',
             ],
           }],  # OS=="linux"
-          ['OS=="linux" and target_arch!="mips64el"', {
-            'ldflags': [
-              '-Wl,--as-needed',
-            ],
-          }],
           ['OS=="linux" and target_arch in ["ia32", "x64", "arm64"]', {
             'cflags': [
               '-flto',
