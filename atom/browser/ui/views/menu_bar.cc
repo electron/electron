@@ -86,7 +86,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
     return false;
 
   auto children = GetChildrenInZOrder();
-  for (int i = 0; i < children.size(); ++i) {
+  for (int i = 0, n = children.size(); i < n; ++i) {
     if (children[i]->GetBoundsInScreen().Contains(screenPoint) &&
         (menu_model_->GetTypeAt(i) == AtomMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
