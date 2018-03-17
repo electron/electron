@@ -791,7 +791,7 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
 }
 
-viz::LocalSurfaceId CefRenderWidgetHostViewOSR::GetLocalSurfaceId() const {
+viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
   return local_surface_id_;
 }
 
