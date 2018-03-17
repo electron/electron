@@ -53,9 +53,18 @@ example, mailto: URLs in the user's default mail agent).
 
 * `fullPath` String
 
+Returns `Promise` - Which is resolved to `undefined` in case of success or
+rejected with `Error` in case of failure.
+
+Asynchronously move the given file or directory to trash.
+
+### `shell.moveItemToTrashSync(fullPath)`
+
+* `fullPath` String
+
 Returns `Boolean` - Whether the item was successfully moved to the trash.
 
-Move the given file to trash and returns a boolean status for the operation.
+Move the given file or directory to trash and return a boolean status for the operation.
 
 ### `shell.beep()`
 
