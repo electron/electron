@@ -5,9 +5,12 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include <memory>
+
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/button/menu_button_listener.h"
+#include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
 
 namespace views {
@@ -19,7 +22,8 @@ namespace atom {
 class MenuDelegate;
 
 class MenuBar : public views::View,
-                public views::MenuButtonListener {
+                public views::MenuButtonListener,
+                public views::FocusChangeListener {
  public:
   explicit MenuBar(NativeWindow* window);
   virtual ~MenuBar();
@@ -30,9 +34,8 @@ class MenuBar : public views::View,
   // Shows underline under accelerators.
   void SetAcceleratorVisibility(bool visible);
 
-  // Returns which submenu has accelerator |key|, -1 would be returned when
-  // there is no matching submenu.
-  int GetAcceleratorIndex(base::char16 key);
+  // Returns true if the submenu has accelerator |key|
+  bool HasAccelerator(base::char16 key);
 
   // Shows the submenu whose accelerator is |key|.
   void ActivateAccelerator(base::char16 key);
@@ -47,7 +50,9 @@ class MenuBar : public views::View,
 
  protected:
   // views::View:
+  void AddedToWidget() override;
   const char* GetClassName() const override;
+  void RemovedFromWidget() override;
 
   // views::MenuButtonListener:
   void OnMenuButtonClicked(views::MenuButton* source,
@@ -55,20 +60,28 @@ class MenuBar : public views::View,
                            const ui::Event* event) override;
   void OnNativeThemeChanged(const ui::NativeTheme* theme) override;
 
+  // views::FocusChangeListener:
+  void OnDidChangeFocus(View* focused_before, View* focused_now) override;
+  void OnWillChangeFocus(View* focused_before, View* focused_now) override {}
+
  private:
-  void UpdateMenuBarColor();
+  void RebuildChildren();
+  void UpdateViewColors();
 
+  void RefreshColorCache(const ui::NativeTheme* theme = nullptr);
   SkColor background_color_;
-
 #if defined(USE_X11)
   SkColor enabled_color_;
   SkColor disabled_color_;
-  SkColor highlight_color_;
-  SkColor hover_color_;
 #endif
 
   NativeWindow* window_;
   AtomMenuModel* menu_model_;
+
+  View* FindAccelChild(base::char16 key);
+
+  std::shared_ptr<views::FocusManager> focus_manager_;
+  bool has_focus_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };

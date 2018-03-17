@@ -91,7 +91,7 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
 
 bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
                                          base::char16* accelerator,
-                                         int* start, int* end) {
+                                         int* start, int* end) const {
   int pos, span;
   base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
   if (pos > -1 && span != 0) {
@@ -105,7 +105,7 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
 }
 
 void SubmenuButton::GetCharacterPosition(
-    const base::string16& text, int index, int* pos) {
+    const base::string16& text, int index, int* pos) const {
   int height = 0;
   gfx::Canvas::SizeStringInt(text.substr(0, index), gfx::FontList(), pos,
                              &height, 0, 0);
