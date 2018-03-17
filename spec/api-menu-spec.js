@@ -332,6 +332,12 @@ describe('Menu module', () => {
       return closeWindow(w).then(() => { w = null })
     })
 
+    it('throws an error if options is not an object', () => {
+      assert.throws(() => {
+        menu.popup()
+      }, /Options must be an object/)
+    })
+
     it('should emit menu-will-show event', (done) => {
       menu.on('menu-will-show', () => { done() })
       menu.popup({window: w})
