@@ -100,7 +100,7 @@ void OpenExternal(const GURL& url,
   callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
 }
 
-std::vector<std::string> MoveItemToTrashCommand(const base::FilePath& full_path) {
+std::vector<std::string> MoveItemToTrashArgs(const base::FilePath& full_path) {
   std::string trash;
   if (getenv(ELECTRON_TRASH) != NULL) {
     trash = getenv(ELECTRON_TRASH);
@@ -141,9 +141,9 @@ std::vector<std::string> MoveItemToTrashCommand(const base::FilePath& full_path)
 }
 
 bool MoveItemToTrashSync(const base::FilePath& full_path) {
-  auto command = MoveItemToTrashCommand(full_path);
+  auto command = MoveItemToTrashArgs(full_path);
   std::string* out = new std::string;
-  // TODO: actually pass output to reject call in case of failure
+  // TODO(YurySolovyov): actually pass output to reject call in case of failure
   return base::GetAppOutputAndError(command, out);
 }
 
@@ -153,8 +153,7 @@ void MoveItemToTrash(const base::FilePath& full_path,
     FROM_HERE,
     {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
     base::Bind(&MoveItemToTrashSync, full_path),
-    callback
-  );
+    callback);
 }
 
 void Beep() {

@@ -54,7 +54,7 @@ class MoveItemToTrashRequest {
   MoveItemToTrashRequest(v8::Isolate* isolate,
                          mate::Arguments* args,
                          const base::FilePath& file_path)
-    : isolate_(isolate), args_(args), file_path_(file_path) {};
+    : isolate_(isolate), args_(args), file_path_(file_path) {}
 
   ~MoveItemToTrashRequest();
 
@@ -67,8 +67,9 @@ class MoveItemToTrashRequest {
 
     args_->Return(resolver_.Get(isolate_)->GetPromise().As<v8::Value>());
 
-    auto callback = base::Bind(&MoveItemToTrashRequest::OnMoveItemToTrashFinished,
-                               base::Unretained(this));
+    auto callback = base::Bind(
+      &MoveItemToTrashRequest::OnMoveItemToTrashFinished,
+      base::Unretained(this));
     platform_util::MoveItemToTrash(file_path_, callback);
   }
 
@@ -78,16 +79,17 @@ class MoveItemToTrashRequest {
     v8::HandleScope handle_scope(isolate_);
 
     if (result) {
-      resolver_.Get(isolate_)->Resolve(v8::Null(isolate_));
+      resolver_.Get(isolate_)->Resolve(v8::Undefined(isolate_));
     } else {
-      printf("Rejected");
-      auto message = mate::StringToV8(isolate_, "Underlying command returned error message code");
-      resolver_.Get(isolate_)->Reject(v8::Exception::Error(message));
+      auto message = "Underlying command returned error message code";
+      auto error = v8::Exception::Error(mate::StringToV8(isolate_, message));
+      resolver_.Get(isolate_)->Reject(error);
     }
 
     resolver_.Reset();
   }
 
+ private:
   v8::Isolate* isolate_;
   mate::Arguments* args_;
   v8::Persistent<v8::Promise::Resolver> resolver_;

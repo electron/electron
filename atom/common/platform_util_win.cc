@@ -400,8 +400,7 @@ void MoveItemToTrash(const base::FilePath& full_path,
     FROM_HERE,
     {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
     base::Bind(&MoveItemToTrashSync, full_path),
-    callback
-  );
+    callback);
 }
 
 void Beep() {
