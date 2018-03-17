@@ -55,6 +55,7 @@
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/favicon_status.h"
@@ -1726,7 +1727,8 @@ void WebContents::StartPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  const auto* wc_impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents());
   auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
   if (osr_wcv)
     osr_wcv->SetPainting(true);
@@ -1738,7 +1740,8 @@ void WebContents::StopPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  const auto* wc_impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents());
   auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
   if (osr_wcv)
     osr_wcv->SetPainting(false);
@@ -1750,7 +1753,8 @@ bool WebContents::IsPainting() const {
     return false;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  const auto* wc_impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents());
   auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
   return osr_wcv && osr_wcv->IsPainting();
@@ -1764,7 +1768,8 @@ void WebContents::SetFrameRate(int frame_rate) {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  const auto* wc_impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents());
   auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
   if (osr_wcv)
@@ -1777,7 +1782,8 @@ int WebContents::GetFrameRate() const {
     return 0;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
+  const auto* wc_impl =
+    reinterpret_cast<content::WebContentsImpl*>(web_contents());
   auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
 
   return osr_wcv ? osr_wcv->GetFrameRate() : 0;

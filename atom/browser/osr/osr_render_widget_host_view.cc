@@ -291,10 +291,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   bool is_guest_view_hack = parent_host_view_ != nullptr;
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
-      AllocateFrameSinkId(is_guest_view_hack), this);
+      AllocateFrameSinkId(is_guest_view_hack), this,
+      false /* enable_surface_synchronization */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
+
+  local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
 #if defined(OS_MACOSX)
   CreatePlatformWidget(is_guest_view_hack);
@@ -721,7 +724,7 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetPhysicalBackingSize() const {
-  return gfx::ConvertSizeToPixel(scale_factor_, GetRequestedRendererSize());
+  return gfx::ScaleToCeiledSize(GetRequestedRendererSize(), scale_factor_);
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
@@ -786,6 +789,10 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   HoldResize();
   const gfx::Size& desired_size = GetRootLayer()->bounds().size();
   return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
+}
+
+viz::LocalSurfaceId CefRenderWidgetHostViewOSR::GetLocalSurfaceId() const {
+  return local_surface_id_;
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrame() {
@@ -1261,6 +1268,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
 
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(scale_factor_, size);
+
+  local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);
