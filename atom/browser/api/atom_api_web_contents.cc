@@ -1033,11 +1033,15 @@ void WebContents::NavigationEntryCommitted(
        details.is_same_document, details.did_replace_entry);
 }
 
-int64_t WebContents::GetID() const {
-  int64_t process_id = web_contents()->GetRenderProcessHost()->GetID();
-  int64_t routing_id = web_contents()->GetRenderViewHost()->GetRoutingID();
+int64_t WebContents::GetIDForContents(content::WebContents* web_contents) {
+  int64_t process_id = web_contents->GetRenderProcessHost()->GetID();
+  int64_t routing_id = web_contents->GetMainFrame()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
+}
+
+int64_t WebContents::GetID() const {
+  return WebContents::GetIDForContents(web_contents());
 }
 
 int WebContents::GetProcessID() const {
