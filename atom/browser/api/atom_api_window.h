@@ -137,6 +137,7 @@ class Window : public mate::TrackableObject<Window>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
+  void MoveTop();
   bool IsMovable();
   void SetMinimizable(bool minimizable);
   bool IsMinimizable();
