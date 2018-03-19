@@ -194,7 +194,7 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 }
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
-    const std::vector<gfx::Rect>& system_drag_exclude_areas) {
+    const std::vector<gfx::Rect>& drag_exclude_rects) {
   NSView* webView = GetInspectableWebContentsView()->GetNativeView();
 
   NSInteger superViewHeight = NSHeight([webView.superview bounds]);
@@ -230,15 +230,13 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
                                     webViewHeight)];
 
   // Then, on top of that, add "exclusion zones"
-  for (auto iter = system_drag_exclude_areas.begin();
-       iter != system_drag_exclude_areas.end();
-       ++iter) {
+  for (const auto& rect : drag_exclude_rects) {
     base::scoped_nsobject<NSView> controlRegion(
         [[ExcludeDragRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x() - webViewX,
-                                       webViewHeight - iter->bottom() + webViewY,
-                                       iter->width(),
-                                       iter->height())];
+    [controlRegion setFrame:NSMakeRect(rect.x() - webViewX,
+                                       webViewHeight - rect.bottom() + webViewY,
+                                       rect.width(),
+                                       rect.height())];
     [dragRegion addSubview:controlRegion];
   }
 

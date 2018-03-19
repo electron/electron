@@ -1932,25 +1932,20 @@ void NativeWindowMac::UpdateDraggableRegionViews(
 
   // Draggable regions is implemented by having the whole web view draggable
   // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  std::vector<gfx::Rect> system_drag_exclude_areas =
+  std::vector<gfx::Rect> drag_exclude_rects =
       CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
 
   if (browser_view_) {
-    browser_view_->UpdateDraggableRegions(system_drag_exclude_areas);
+    browser_view_->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas.begin();
-       iter != system_drag_exclude_areas.end();
-       ++iter) {
+  for (const auto& rect : drag_exclude_rects) {
     base::scoped_nsobject<NSView> controlRegion(
         [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
-                                       iter->width(),
-                                       iter->height())];
+    [controlRegion setFrame:NSMakeRect(rect.x(), webViewHeight - rect.bottom(),
+                                       rect.width(), rect.height())];
     [webView addSubview:controlRegion];
   }
 
