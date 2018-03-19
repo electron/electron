@@ -230,8 +230,13 @@ const CGFloat kVerticalTitleMargin = 2;
     return;
   }
 
+  // check title_ being nil
+  NSString *title = @"";
+  if (title_)
+    title = title_;
+
   attributedTitle_.reset([[NSMutableAttributedString alloc]
-                             initWithString:title_
+                             initWithString:title
                                  attributes:attributes]);
 
   //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
