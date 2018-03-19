@@ -195,13 +195,14 @@ void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {
 
 void NativeBrowserViewMac::UpdateDraggableRegions(
     const std::vector<gfx::Rect>& drag_exclude_rects) {
+  NSView* web_view = GetWebContents()->GetNativeView();
   NSView* inspectable_view = GetInspectableWebContentsView()->GetNativeView();
   NSView* window_content_view = inspectable_view.superview;
   const auto window_content_view_height = NSHeight(window_content_view.bounds);
 
   // Remove all DragRegionViews that were added last time. Note that we need
   // to copy the `subviews` array to avoid mutation during iteration.
-  base::scoped_nsobject<NSArray> subviews([[inspectable_view subviews] copy]);
+  base::scoped_nsobject<NSArray> subviews([[web_view subviews] copy]);
   for (NSView* subview in subviews.get()) {
     if ([subview isKindOfClass:[DragRegionView class]]) {
       [subview removeFromSuperview];
@@ -210,8 +211,8 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
 
   // Create one giant NSView that is draggable.
   base::scoped_nsobject<NSView> drag_region_view(
-      [[DragRegionView alloc] initWithFrame:inspectable_view.bounds]);
-  [inspectable_view addSubview:drag_region_view];
+      [[DragRegionView alloc] initWithFrame:web_view.bounds]);
+  [web_view addSubview:drag_region_view];
 
   // Then, on top of that, add "exclusion zones"
   for (const auto& rect : drag_exclude_rects) {
