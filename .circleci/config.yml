@@ -3,7 +3,7 @@ version: 2
 jobs:
   electron-linux-arm:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm
     resource_class: 2xlarge
@@ -58,11 +58,111 @@ jobs:
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
+      - run:
+          name: Zip out directory
+          command: |
+            if [ "$ELECTRON_RELEASE" != "1" ]; then
+              zip -r electron.zip out/D
+            fi
+      - persist_to_workspace:
+          root: /home/builduser
+          paths:
+            - project/out
+      - store_artifacts:
+          path: electron.zip
   electron-linux-ia32:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: ia32
+          DISPLAY: ':99.0'
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Setup for headless testing
+          command: sh -e /etc/init.d/xvfb start
+      - run:
+          name: Check for release
+          command: |
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
+                script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+      - run:
+          name: Test
+          environment:
+            MOCHA_FILE: junit/test-results.xml
+            MOCHA_REPORTER: mocha-junit-reporter
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Testing Electron debug build'
+                out/D/electron --version
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules
+             else
+                echo 'Skipping testing on release build'
+             fi
+      - run:
+          name: Verify FFmpeg
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Verifying ffmpeg on debug build'
+                script/verify-ffmpeg.py
+             else
+                echo 'Skipping verify ffmpeg on release build'
+             fi
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
+  electron-linux-mips64el:
+    docker:
+      - image: electronbuilds/electron:0.0.7
+        environment:
+          TARGET_ARCH: mips64el
     resource_class: xlarge
     steps:
       - checkout
@@ -115,9 +215,10 @@ jobs:
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
+
   electron-linux-x64:
     docker:
-      - image: electronbuilds/electron:0.0.4
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
