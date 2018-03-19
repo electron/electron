@@ -29,13 +29,8 @@ RUN apt-get update && apt-get install -y\
  wget \
  xvfb
 
-# Install node.js
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
-RUN apt-get update && apt-get install -y nodejs
-
 ADD tools/xvfb-init.sh /etc/init.d/xvfb
 RUN chmod a+x /etc/init.d/xvfb
 ADD tools/run-electron.sh /run-electron.sh
 RUN chmod a+x /run-electron.sh
-
 CMD sh /run-electron.sh
