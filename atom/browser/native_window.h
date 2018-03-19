@@ -237,6 +237,8 @@ class NativeWindow : public base::SupportsUserData,
     const std::vector<base::string16>& labels) {}
   virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
 
+  virtual void UpdateDraggableRegionViews() {}
+
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
   void NotifyWindowClosed();
