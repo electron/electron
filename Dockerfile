@@ -7,7 +7,7 @@ ENV HOME=/home
 RUN chmod a+rwx /home
 
 # Install node.js
-RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 
 # Install wget used by crash reporter
