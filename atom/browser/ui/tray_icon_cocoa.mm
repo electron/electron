@@ -433,7 +433,6 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconCocoa::SetTitle(const std::string& title) {
-  printf("STRING IS %s\n", title.c_str());
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
