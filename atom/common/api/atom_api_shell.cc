@@ -56,16 +56,16 @@ class MoveItemToTrashRequest {
                          const base::FilePath& file_path)
     : isolate_(isolate), args_(args), file_path_(file_path) {}
 
-  ~MoveItemToTrashRequest();
+  ~MoveItemToTrashRequest() = default;
 
   void Start() {
     v8::Locker locker(isolate_);
     v8::Isolate::Scope isolate_scope(isolate_);
     v8::HandleScope handle_scope(isolate_);
 
-    resolver_.Reset(isolate_, v8::Promise::Resolver::New(isolate_));
+    resolver_handle_.Reset(isolate_, v8::Promise::Resolver::New(isolate_));
 
-    args_->Return(resolver_.Get(isolate_)->GetPromise().As<v8::Value>());
+    args_->Return(resolver_handle_.Get(isolate_)->GetPromise().As<v8::Value>());
 
     auto callback = base::Bind(
       &MoveItemToTrashRequest::OnMoveItemToTrashFinished,
@@ -79,20 +79,20 @@ class MoveItemToTrashRequest {
     v8::HandleScope handle_scope(isolate_);
 
     if (result) {
-      resolver_.Get(isolate_)->Resolve(v8::Undefined(isolate_));
+      resolver_handle_.Get(isolate_)->Resolve(v8::Undefined(isolate_));
     } else {
       auto message = "Underlying command returned error message code";
       auto error = v8::Exception::Error(mate::StringToV8(isolate_, message));
-      resolver_.Get(isolate_)->Reject(error);
+      resolver_handle_.Get(isolate_)->Reject(error);
     }
 
-    resolver_.Reset();
+    delete this;
   }
 
  private:
   v8::Isolate* isolate_;
   mate::Arguments* args_;
-  v8::Persistent<v8::Promise::Resolver> resolver_;
+  v8::CopyablePersistentTraits<v8::Promise::Resolver>::CopyablePersistent resolver_handle_;
   base::FilePath file_path_;
 
   DISALLOW_COPY_AND_ASSIGN(MoveItemToTrashRequest);
