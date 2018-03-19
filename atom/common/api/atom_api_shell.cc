@@ -43,6 +43,9 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
+typedef v8::CopyablePersistentTraits<v8::Promise::Resolver>::CopyablePersistent
+  PromiseResolverPersistent;
+
 class MoveItemToTrashRequest {
  public:
   static MoveItemToTrashRequest* Create(v8::Isolate* isolate,
@@ -92,7 +95,7 @@ class MoveItemToTrashRequest {
  private:
   v8::Isolate* isolate_;
   mate::Arguments* args_;
-  v8::CopyablePersistentTraits<v8::Promise::Resolver>::CopyablePersistent resolver_handle_;
+  PromiseResolverPersistent resolver_handle_;
   base::FilePath file_path_;
 
   DISALLOW_COPY_AND_ASSIGN(MoveItemToTrashRequest);
