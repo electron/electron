@@ -230,8 +230,13 @@ const CGFloat kVerticalTitleMargin = 2;
     return;
   }
 
+  // check title_ being nil
+  NSString *title = @"";
+  if (title_)
+    title = title_;
+
   attributedTitle_.reset([[NSMutableAttributedString alloc]
-                             initWithString:title_
+                             initWithString:title
                                  attributes:attributes]);
 
   //NSFontAttributeName:[NSFont menuBarFontOfSize:0],
@@ -428,6 +433,7 @@ void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
 }
 
 void TrayIconCocoa::SetTitle(const std::string& title) {
+  printf("STRING IS %s\n", title.c_str());
   [status_item_view_ setTitle:base::SysUTF8ToNSString(title)];
 }
 
