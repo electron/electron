@@ -127,7 +127,7 @@ class NativeWindowMac : public NativeWindow,
                              content::RenderViewHost* new_host) override;
 
   // Refresh the DraggableRegion views.
-  void UpdateDraggableRegionViews() {
+  void UpdateDraggableRegionViews() override {
     UpdateDraggableRegionViews(draggable_regions_);
   }
 

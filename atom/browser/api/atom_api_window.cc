@@ -893,6 +893,8 @@ void Window::SetBrowserView(v8::Local<v8::Value> value) {
     window_->SetBrowserView(browser_view->view());
     browser_view->web_contents()->SetOwnerWindow(window_.get());
     browser_view_.Reset(isolate(), value);
+
+    window_->UpdateDraggableRegionViews();
   }
 }
 
