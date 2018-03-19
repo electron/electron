@@ -3,7 +3,7 @@ version: 2
 jobs:
   electron-linux-arm:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm
     resource_class: 2xlarge
@@ -60,7 +60,7 @@ jobs:
              fi
   electron-linux-arm64:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm64
     resource_class: 2xlarge
@@ -117,7 +117,7 @@ jobs:
              fi
   electron-linux-ia32:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: ia32
     resource_class: xlarge
@@ -174,7 +174,7 @@ jobs:
              fi
   electron-linux-mips64el:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: mips64el
     resource_class: xlarge
@@ -232,7 +232,7 @@ jobs:
 
   electron-linux-x64:
     docker:
-      - image: electronbuilds/electron:0.0.3
+      - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
