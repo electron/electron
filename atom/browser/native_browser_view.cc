@@ -22,4 +22,8 @@ NativeBrowserView::GetInspectableWebContentsView() {
   return inspectable_web_contents_->GetView();
 }
 
+content::WebContents* NativeBrowserView::GetWebContents() {
+  return inspectable_web_contents_->GetWebContents();
+}
+
 }  // namespace atom

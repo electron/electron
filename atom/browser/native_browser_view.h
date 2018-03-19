@@ -9,6 +9,7 @@
 
 #include "atom/common/draggable_region.h"
 #include "base/macros.h"
+#include "content/public/browser/web_contents.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace brightray {
@@ -39,6 +40,7 @@ class NativeBrowserView {
   }
 
   brightray::InspectableWebContentsView* GetInspectableWebContentsView();
+  content::WebContents* GetWebContents();
 
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
