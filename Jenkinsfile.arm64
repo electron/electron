@@ -1,13 +1,14 @@
 pipeline {
   agent {
     docker {
-      image 'electronbuilds/arm64v8:0.0.1'
+      image 'electronbuilds/arm64v8:0.0.2'
       args '--privileged'
     }
   }
   environment {
     TARGET_ARCH='arm64'
     DISPLAY=':99.0'
+    MOCHA_TIMEOUT='60000'
   }
   stages {
     stage('Bootstrap') {
