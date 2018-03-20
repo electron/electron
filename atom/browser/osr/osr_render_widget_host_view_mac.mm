@@ -16,7 +16,10 @@ class MacHelper :
     public content::BrowserCompositorMacClient,
     public ui::AcceleratedWidgetMacNSView {
  public:
-  explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {}
+  explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {
+    [this->AcceleratedWidgetGetNSView() setWantsLayer:YES];
+  }
+
   virtual ~MacHelper() {}
 
   // content::BrowserCompositorMacClient:
@@ -39,6 +42,10 @@ class MacHelper :
   }
 
   void BrowserCompositorMacOnBeginFrame() override {}
+
+  viz::LocalSurfaceId GetLocalSurfaceId() const override {
+    return view_->local_surface_id();
+  }
 
   // ui::AcceleratedWidgetMacNSView:
   NSView* AcceleratedWidgetGetNSView() const override {

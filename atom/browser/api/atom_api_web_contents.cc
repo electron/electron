@@ -55,7 +55,6 @@
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/browser/web_contents/web_contents_impl.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/favicon_status.h"
@@ -893,10 +892,20 @@ void WebContents::DidFinishNavigation(
   }
 }
 
-void WebContents::TitleWasSet(content::NavigationEntry* entry,
-                              bool explicit_set) {
-  auto title = entry ? entry->GetTitle() : base::string16();
-  Emit("page-title-updated", title, explicit_set);
+void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+  base::string16 final_title;
+  bool explicit_set = true;
+  if (entry) {
+    auto title = entry->GetTitle();
+    auto url = entry->GetURL();
+    if (url.SchemeIsFile() && title.empty()) {
+      final_title = base::UTF8ToUTF16(url.ExtractFileName());
+      explicit_set = false;
+    } else {
+      final_title = title;
+    }
+  }
+  Emit("page-title-updated", final_title, explicit_set);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -964,7 +973,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
     IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
-      handled = false)
+                             handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -1034,7 +1043,7 @@ void WebContents::NavigationEntryCommitted(
 }
 
 int64_t WebContents::GetIDForContents(content::WebContents* web_contents) {
-  int64_t process_id = web_contents->GetRenderProcessHost()->GetID();
+  int64_t process_id = web_contents->GetMainFrame()->GetProcess()->GetID();
   int64_t routing_id = web_contents->GetMainFrame()->GetRoutingID();
   int64_t rv = (process_id << 32) + routing_id;
   return rv;
@@ -1045,11 +1054,12 @@ int64_t WebContents::GetID() const {
 }
 
 int WebContents::GetProcessID() const {
-  return web_contents()->GetRenderProcessHost()->GetID();
+  return web_contents()->GetMainFrame()->GetProcess()->GetID();
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  auto process_handle = web_contents()->GetRenderProcessHost()->GetHandle();
+  auto process_handle =
+      web_contents()->GetMainFrame()->GetProcess()->GetHandle();
   return base::GetProcId(process_handle);
 }
 
@@ -1267,14 +1277,30 @@ void WebContents::EnableDeviceEmulation(
   if (type_ == REMOTE)
     return;
 
-  Send(new ViewMsg_EnableDeviceEmulation(routing_id(), params));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    auto widget_host =
+        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
+    if (!widget_host)
+      return;
+    widget_host->Send(
+        new ViewMsg_EnableDeviceEmulation(widget_host->GetRoutingID(), params));
+  }
 }
 
 void WebContents::DisableDeviceEmulation() {
   if (type_ == REMOTE)
     return;
 
-  Send(new ViewMsg_DisableDeviceEmulation(routing_id()));
+  auto frame_host = web_contents()->GetMainFrame();
+  if (frame_host) {
+    auto widget_host =
+        frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
+    if (!widget_host)
+      return;
+    widget_host->Send(
+        new ViewMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+  }
 }
 
 void WebContents::ToggleDevTools() {
@@ -1700,8 +1726,7 @@ void WebContents::StartPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
+  auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetPainting(true);
 #endif
@@ -1712,8 +1737,7 @@ void WebContents::StopPainting() {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
+  auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetPainting(false);
 #endif
@@ -1724,9 +1748,7 @@ bool WebContents::IsPainting() const {
     return false;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
-
+  auto* osr_wcv = GetOffScreenWebContentsView();
   return osr_wcv && osr_wcv->IsPainting();
 #else
   return false;
@@ -1738,9 +1760,7 @@ void WebContents::SetFrameRate(int frame_rate) {
     return;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
-
+  auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetFrameRate(frame_rate);
 #endif
@@ -1751,9 +1771,7 @@ int WebContents::GetFrameRate() const {
     return 0;
 
 #if defined(ENABLE_OSR)
-  const auto* wc_impl = static_cast<content::WebContentsImpl*>(web_contents());
-  auto* osr_wcv = static_cast<OffScreenWebContentsView*>(wc_impl->GetView());
-
+  auto* osr_wcv = GetOffScreenWebContentsView();
   return osr_wcv ? osr_wcv->GetFrameRate() : 0;
 #else
   return 0;

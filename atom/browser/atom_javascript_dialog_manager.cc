@@ -35,16 +35,16 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     JavaScriptDialogType dialog_type,
     const base::string16& message_text,
     const base::string16& default_prompt_text,
-    const DialogClosedCallback& callback,
+    DialogClosedCallback callback,
     bool* did_suppress_message) {
-  const std::string origin = origin_url.GetOrigin().spec();
+  const std::string& origin = origin_url.GetOrigin().spec();
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
-    return callback.Run(false, base::string16());
+    return std::move(callback).Run(false, base::string16());
   }
 
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
-    callback.Run(false, base::string16());
+    std::move(callback).Run(false, base::string16());
     return;
   }
 
@@ -73,15 +73,17 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
       base::UTF16ToUTF8(message_text), "", checkbox_string,
       false, gfx::ImageSkia(),
       base::Bind(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
-                 base::Unretained(this), callback, origin));
+                 base::Unretained(this),
+                 base::Passed(std::move(callback)),
+                 origin));
 }
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
     bool is_reload,
-    const DialogClosedCallback& callback) {
+    DialogClosedCallback callback) {
   bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
-  callback.Run(default_prevented, base::string16());
+  std::move(callback).Run(default_prevented, base::string16());
   return;
 }
 
@@ -91,13 +93,13 @@ void AtomJavaScriptDialogManager::CancelDialogs(
 }
 
 void AtomJavaScriptDialogManager::OnMessageBoxCallback(
-    const DialogClosedCallback& callback,
+    DialogClosedCallback callback,
     const std::string& origin,
     int code,
     bool checkbox_checked) {
   if (checkbox_checked)
     origin_counts_[origin] = kUserWantsNoMoreDialogs;
-  callback.Run(code == 0, base::string16());
+  std::move(callback).Run(code == 0, base::string16());
 }
 
 }  // namespace atom

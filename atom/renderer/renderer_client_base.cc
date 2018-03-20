@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/atom_constants.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
@@ -43,6 +42,10 @@
 #if defined(OS_WIN)
 #include <shlobj.h>
 #endif
+
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/common/atom_constants.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -153,9 +156,11 @@ void RendererClientBase::RenderFrameCreated(
   // This is required for widevine plugin detection provided during runtime.
   blink::ResetPluginCache();
 
+#if defined(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
+#endif  // defined(ENABLE_PDF_VIEWER)
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
@@ -192,7 +197,9 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
+#if defined(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
+#endif  // defined(ENABLE_PDF_VIEWER)
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 

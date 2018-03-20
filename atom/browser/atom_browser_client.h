@@ -62,6 +62,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
+  void GetGeolocationRequestContext(
+      base::OnceCallback<void(scoped_refptr<net::URLRequestContextGetter>)>
+          callback) override;
+  std::string GetGeolocationApiKey() override;
   content::QuotaPermissionContext* CreateQuotaPermissionContext() override;
   void AllowCertificateError(
       content::WebContents* web_contents,
@@ -69,7 +73,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
       const net::SSLInfo& ssl_info,
       const GURL& request_url,
       content::ResourceType resource_type,
-      bool overridable,
       bool strict_enforcement,
       bool expired_previous_decision,
       const base::Callback<void(content::CertificateRequestResultType)>&

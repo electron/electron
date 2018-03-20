@@ -48,6 +48,10 @@ class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 
+#if defined(ENABLE_OSR)
+class OffScreenWebContentsView;
+#endif
+
 namespace api {
 
 // Certain events are only in WebContentsDelegate, provide our own Observer to
@@ -361,7 +365,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
-  void TitleWasSet(content::NavigationEntry* entry, bool explicit_set) override;
+  void TitleWasSet(content::NavigationEntry* entry) override;
   void DidUpdateFaviconURL(
       const std::vector<content::FaviconURL>& urls) override;
   void PluginCrashed(const base::FilePath& plugin_path,
@@ -392,6 +396,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32_t GetNextRequestId() {
     return ++request_id_;
   }
+
+#if defined(ENABLE_OSR)
+  OffScreenWebContentsView* GetOffScreenWebContentsView() const;
+#endif
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);

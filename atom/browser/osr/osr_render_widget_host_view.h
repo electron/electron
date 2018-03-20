@@ -20,9 +20,10 @@
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
-#include "cc/output/compositor_frame.h"
 #include "components/viz/common/frame_sinks/begin_frame_args.h"
 #include "components/viz/common/frame_sinks/begin_frame_source.h"
+#include "components/viz/common/quads/compositor_frame.h"
+#include "components/viz/common/surfaces/local_surface_id_allocator.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
@@ -122,7 +123,7 @@ class OffScreenRenderWidgetHostView
       viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
   void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
-                             cc::CompositorFrame frame) override;
+                             viz::CompositorFrame frame) override;
 
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView *rwhv, const gfx::Rect& rect)
@@ -179,6 +180,7 @@ class OffScreenRenderWidgetHostView
   bool DelegatedFrameCanCreateResizeLock() const override;
   std::unique_ptr<content::CompositorResizeLock>
   DelegatedFrameHostCreateResizeLock() override;
+  viz::LocalSurfaceId GetLocalSurfaceId() const override;
   void OnBeginFrame() override;
   // CompositorResizeLockClient implementation.
   std::unique_ptr<ui::CompositorLock> GetCompositorLock(
@@ -196,7 +198,7 @@ class OffScreenRenderWidgetHostView
       gfx::Point* transformed_point) override;
 
   // ui::CompositorDelegate:
-  std::unique_ptr<cc::SoftwareOutputDevice> CreateSoftwareOutputDevice(
+  std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
       ui::Compositor* compositor) override;
 
   bool InstallTransparency();
@@ -274,6 +276,10 @@ class OffScreenRenderWidgetHostView
     child_host_view_ = child_view;
   }
 
+  viz::LocalSurfaceId local_surface_id() const {
+    return local_surface_id_;
+  }
+
  private:
   void SetupFrameRate(bool force);
   void ResizeRootLayer();
@@ -319,6 +325,9 @@ class OffScreenRenderWidgetHostView
   bool pending_resize_;
 
   bool paint_callback_running_;
+
+  viz::LocalSurfaceId local_surface_id_;
+  viz::LocalSurfaceIdAllocator local_surface_id_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;

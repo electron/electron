@@ -28,7 +28,12 @@
           'ENABLE_OSR',
         ],
       }],  # enable_osr==1
-      ['enable_run_as_node', {
+      ['enable_pdf_viewer==1', {
+        'defines': [
+          'ENABLE_PDF_VIEWER',
+        ],
+      }],  # enable_pdf_viewer
+      ['enable_run_as_node==1', {
         'defines': [
           'ENABLE_RUN_AS_NODE',
         ],
@@ -243,7 +248,6 @@
       'type': 'static_library',
       'dependencies': [
         'atom_js2c',
-        'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
         'brightray/brightray.gyp:brightray',
         'vendor/node/node.gyp:node_lib',
       ],
@@ -268,6 +272,9 @@
         # See Chromium src/third_party/protobuf/BUILD.gn
         'GOOGLE_PROTOBUF_NO_RTTI',
         'GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER',
+
+        # Enables SkBitmap size 64 operations
+        'SK_SUPPORT_LEGACY_SAFESIZE64',
       ],
       'sources': [
         '<@(lib_sources)',
@@ -295,6 +302,11 @@
         '<(libchromiumcontent_src_dir)/components/cdm',
         '<(libchromiumcontent_src_dir)/third_party/widevine',
         '<(libchromiumcontent_src_dir)/third_party/protobuf/src',
+        # The 'third_party/webrtc/modules/desktop_capture/desktop_capture_options.h' is using 'rtc_base/constructormagic.h'.
+        '<(libchromiumcontent_src_dir)/third_party/webrtc',
+        # leveldb includes are required
+        '<(libchromiumcontent_src_dir)/third_party/leveldatabase/src',
+        '<(libchromiumcontent_src_dir)/third_party/leveldatabase/src/include',
       ],
       'direct_dependent_settings': {
         'include_dirs': [
@@ -305,6 +317,11 @@
         'brightray/brightray.gyp:brightray',
       ],
       'conditions': [
+        ['enable_pdf_viewer==1', {
+          'dependencies': [
+            'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
+          ],
+        }],  # enable_pdf_viewer
         ['libchromiumcontent_component', {
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
@@ -606,7 +623,6 @@
             '<(libchromiumcontent_dir)/icudtl.dat',
             '<(libchromiumcontent_dir)/natives_blob.bin',
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
-            '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',
@@ -674,6 +690,11 @@
             },
           ],
           'conditions': [
+            ['enable_pdf_viewer==1', {
+              'mac_bundle_resources': [
+                '<(PRODUCT_DIR)/pdf_viewer_resources.pak',
+              ],
+            }],  # enable_pdf_viewer
             ['mas_build==0', {
               'link_settings': {
                 'libraries': [

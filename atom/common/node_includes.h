@@ -11,6 +11,10 @@
 
 #define BUILDING_NODE_EXTENSION
 
+// The following define makes sure that we do not include the macros
+// again. But we still need the tracing functions, so declaring them.
+#define SRC_TRACING_TRACE_EVENT_H_
+
 #undef ASSERT
 #undef CHECK
 #undef CHECK_EQ
@@ -32,5 +36,17 @@
 #include "vendor/node/src/node_debug_options.h"
 #include "vendor/node/src/node_internals.h"
 #include "vendor/node/src/node_platform.h"
+
+namespace node {
+namespace tracing {
+
+class TraceEventHelper {
+ public:
+  static v8::TracingController* GetTracingController();
+  static void SetTracingController(v8::TracingController* controller);
+};
+
+}  // namespace tracing
+}  // namespace node
 
 #endif  // ATOM_COMMON_NODE_INCLUDES_H_

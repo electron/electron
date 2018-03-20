@@ -111,7 +111,7 @@
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
-                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/librtc_base_generic.a',
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libinit_webrtc.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
@@ -129,7 +129,6 @@
                   '<(libchromiumcontent_dir)/libpdf.a',
                   '<(libchromiumcontent_dir)/libppapi_cpp_objects.a',
                   '<(libchromiumcontent_dir)/libppapi_internal_module.a',
-                  '<(libchromiumcontent_dir)/libjpeg.a',
                   '<(libchromiumcontent_dir)/libpdfium.a',
                   '<(libchromiumcontent_dir)/libfdrm.a',
                   '<(libchromiumcontent_dir)/libformfiller.a',
@@ -167,6 +166,9 @@
             }],
             ['target_arch=="arm"', {
               'link_settings': {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/libjpeg.a',
+                ],
                 'libraries!': [
                   '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                 ],
@@ -194,7 +196,7 @@
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
-                  '<(libchromiumcontent_dir)/librtc_base_approved.a',
+                  '<(libchromiumcontent_dir)/librtc_base_generic.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libinit_webrtc.a',
@@ -278,6 +280,10 @@
           'link_settings': {
             'msvs_settings': {
               'VCLinkerTool': {
+                'AdditionalOptions': [
+                  # warning /DELAYLOAD:dll ignored; no imports found from dll
+                  '/ignore:4199',
+                ],
                 'AdditionalDependencies': [
                   'delayimp.lib',
                 ],
@@ -328,7 +334,7 @@
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
-                  '<(libchromiumcontent_dir)/rtc_base_approved.lib',
+                  '<(libchromiumcontent_dir)/rtc_base_generic.lib',
                   '<(libchromiumcontent_dir)/system_wrappers.lib',
                   '<(libchromiumcontent_dir)/webrtc_common.lib',
                   '<(libchromiumcontent_dir)/init_webrtc.lib',
@@ -393,6 +399,7 @@
                       'dbghelp.lib',
                       'dwmapi.lib',
                       'gdi32.lib',
+                      'hid.lib',
                       'netapi32.lib',
                       'oleacc.lib',
                       'user32.lib',

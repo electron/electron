@@ -27,8 +27,8 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/task_scheduler/post_task.h"
 #include "base/threading/sequenced_worker_pool.h"
-#include "base/threading/worker_pool.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -135,9 +135,11 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
-      url::kFileScheme, base::WrapUnique(new asar::AsarProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
+      url::kFileScheme,
+      base::WrapUnique(
+          new asar::AsarProtocolHandler(base::CreateTaskRunnerWithTraits(
+              {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+               base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}))));
   job_factory->SetProtocolHandler(
       url::kHttpScheme,
       base::WrapUnique(new HttpProtocolHandler(url::kHttpScheme)));

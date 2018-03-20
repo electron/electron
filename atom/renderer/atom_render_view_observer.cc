@@ -14,7 +14,8 @@ namespace atom {
 AtomRenderViewObserver::AtomRenderViewObserver(content::RenderView* render_view)
     : content::RenderViewObserver(render_view) {}
 
-AtomRenderViewObserver::~AtomRenderViewObserver() {}
+AtomRenderViewObserver::~AtomRenderViewObserver() {
+}
 
 bool AtomRenderViewObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;

@@ -246,7 +246,7 @@ def import_vs_env(target_arch):
     vs_arch = 'amd64_x86'
   else:
     vs_arch = 'x86_amd64'
-  env = get_vs_env('14.0', vs_arch)
+  env = get_vs_env('2017', vs_arch)
   os.environ.update(env)
 
 

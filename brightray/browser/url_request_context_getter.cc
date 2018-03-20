@@ -10,11 +10,8 @@
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/threading/sequenced_worker_pool.h"
-#include "base/threading/worker_pool.h"
+#include "base/task_scheduler/post_task.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/net/devtools_network_controller_handle.h"
-#include "brightray/browser/net/devtools_network_transaction_factory.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net_log.h"
 #include "brightray/browser/network_delegate.h"
@@ -22,6 +19,7 @@
 #include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
+#include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
@@ -40,7 +38,6 @@
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
-#include "net/proxy/proxy_service_v8.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
@@ -79,9 +76,10 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
       url::kDataScheme, base::WrapUnique(new net::DataProtocolHandler));
   job_factory->SetProtocolHandler(
       url::kFileScheme,
-      base::WrapUnique(new net::FileProtocolHandler(
-          BrowserThread::GetBlockingPool()->GetTaskRunnerWithShutdownBehavior(
-              base::SequencedWorkerPool::SKIP_ON_SHUTDOWN))));
+      base::WrapUnique(
+          new net::FileProtocolHandler(base::CreateTaskRunnerWithTraits(
+              {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+               base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}))));
 
   return std::move(job_factory);
 }
@@ -120,7 +118,6 @@ URLRequestContextGetter::Delegate::GetCookieableSchemes() {
 
 URLRequestContextGetter::URLRequestContextGetter(
     Delegate* delegate,
-    DevToolsNetworkControllerHandle* handle,
     NetLog* net_log,
     const base::FilePath& base_path,
     bool in_memory,
@@ -128,7 +125,6 @@ URLRequestContextGetter::URLRequestContextGetter(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : delegate_(delegate),
-      network_controller_handle_(handle),
       net_log_(net_log),
       base_path_(base_path),
       in_memory_(in_memory),
@@ -230,7 +226,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     }
 
     // --proxy-server
-    net::DhcpProxyScriptFetcherFactory dhcp_factory;
     if (command_line.HasSwitch(switches::kNoProxyServer)) {
       storage_->set_proxy_service(net::ProxyService::CreateDirect());
     } else if (command_line.HasSwitch(switches::kProxyServer)) {
@@ -248,13 +243,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
           proxy_config));
     } else {
       storage_->set_proxy_service(
-          net::CreateProxyServiceUsingV8ProxyResolver(
+          net::ProxyService::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_),
-              new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-              dhcp_factory.Create(url_request_context_.get()),
-              host_resolver.get(),
-              nullptr,
-              url_request_context_->network_delegate()));
+              net_log_));
     }
 
     std::vector<std::string> schemes;
@@ -339,20 +330,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       backend.reset(delegate_->CreateHttpCacheBackendFactory(base_path_));
     }
 
-    if (network_controller_handle_) {
-      storage_->set_http_transaction_factory(base::WrapUnique(
-          new net::HttpCache(
-              base::WrapUnique(new DevToolsNetworkTransactionFactory(
-                  network_controller_handle_->GetController(),
-                  http_network_session_.get())),
-              std::move(backend),
-              false)));
-    } else {
-      storage_->set_http_transaction_factory(base::WrapUnique(
-          new net::HttpCache(http_network_session_.get(),
-                             std::move(backend),
-                             false)));
-    }
+    storage_->set_http_transaction_factory(base::MakeUnique<net::HttpCache>(
+        content::CreateDevToolsNetworkTransactionFactory(
+            http_network_session_.get()),
+        std::move(backend), false));
 
     std::unique_ptr<net::URLRequestJobFactory> job_factory =
         delegate_->CreateURLRequestJobFactory(&protocol_handlers_);

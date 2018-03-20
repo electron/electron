@@ -22,8 +22,10 @@
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/google_api_key.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -50,6 +52,8 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
+using content::BrowserThread;
+
 namespace atom {
 
 namespace {
@@ -75,8 +79,7 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
   g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {
-}
+AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {}
 
 AtomBrowserClient::~AtomBrowserClient() {
 }
@@ -203,7 +206,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->application_cache_enabled = true;
   prefs->allow_universal_access_from_file_urls = true;
   prefs->allow_file_access_from_file_urls = true;
-  prefs->experimental_webgl_enabled = true;
+  prefs->webgl1_enabled = true;
+  prefs->webgl2_enabled = true;
   prefs->allow_running_insecure_content = false;
 
   // Custom preferences of guest page.
@@ -261,8 +265,8 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     // when this function returns.
     // FIXME(zcbenz): We should adjust
     // OverrideSiteInstanceForNavigation's interface to solve this.
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
+    BrowserThread::PostTask(
+        BrowserThread::UI, FROM_HERE,
         base::Bind(&Noop, base::RetainedRef(site_instance)));
 
     // Remember the original web contents for the pending renderer process.
@@ -337,6 +341,24 @@ void AtomBrowserClient::DidCreatePpapiPlugin(
       base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
 
+void AtomBrowserClient::GetGeolocationRequestContext(
+    base::OnceCallback<void(scoped_refptr<net::URLRequestContextGetter>)>
+        callback) {
+  auto io_thread = AtomBrowserMainParts::Get()->io_thread();
+  auto context = io_thread->GetRequestContext();
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::BindOnce(std::move(callback), base::RetainedRef(context)));
+}
+
+std::string AtomBrowserClient::GetGeolocationApiKey() {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  std::string api_key;
+  if (!env->GetVar("GOOGLE_API_KEY", &api_key))
+    api_key = GOOGLEAPIS_API_KEY;
+  return api_key;
+}
+
 content::QuotaPermissionContext*
     AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
@@ -348,7 +370,6 @@ void AtomBrowserClient::AllowCertificateError(
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
     content::ResourceType resource_type,
-    bool overridable,
     bool strict_enforcement,
     bool expired_previous_decision,
     const base::Callback<void(content::CertificateRequestResultType)>&
@@ -356,7 +377,7 @@ void AtomBrowserClient::AllowCertificateError(
   if (delegate_) {
     delegate_->AllowCertificateError(
         web_contents, cert_error, ssl_info, request_url,
-        resource_type, overridable, strict_enforcement,
+        resource_type, strict_enforcement,
         expired_previous_decision, callback);
   }
 }
@@ -396,7 +417,7 @@ bool AtomBrowserClient::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   int opener_render_process_id = opener->GetProcess()->GetID();
 

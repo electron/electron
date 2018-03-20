@@ -11,7 +11,6 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "brightray/browser/media/media_device_id_salt.h"
-#include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/permission_manager.h"
 #include "brightray/browser/url_request_context_getter.h"
 #include "content/public/browser/browser_context.h"
@@ -54,6 +53,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   content::PushMessagingService* GetPushMessagingService() override;
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
   content::PermissionManager* GetPermissionManager() override;
+  content::BackgroundFetchDelegate* GetBackgroundFetchDelegate() override;
   content::BackgroundSyncController* GetBackgroundSyncController() override;
   content::BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate()
       override;
@@ -73,10 +73,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   URLRequestContextGetter* url_request_context_getter() const {
     return url_request_getter_.get();
-  }
-
-  DevToolsNetworkControllerHandle* network_controller_handle() {
-    return &network_controller_handle_;
   }
 
   void InitPrefs();
@@ -124,8 +120,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   base::FilePath path_;
   bool in_memory_;
-
-  DevToolsNetworkControllerHandle network_controller_handle_;
 
   std::unique_ptr<ResourceContext> resource_context_;
   scoped_refptr<URLRequestContextGetter> url_request_getter_;

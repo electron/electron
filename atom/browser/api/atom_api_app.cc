@@ -484,7 +484,7 @@ int ImportIntoCertStore(
     const base::DictionaryValue& options) {
   std::string file_data, cert_path;
   base::string16 password;
-  net::CertificateList imported_certs;
+  net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
   options.GetString("certificate", &cert_path);
   options.GetString("password", &password);
@@ -659,7 +659,7 @@ void App::OnLogin(LoginHandler* login_handler,
              request_details,
              login_handler->auth_info(),
              base::Bind(&PassLoginInformation,
-                        make_scoped_refptr(login_handler)));
+                        WrapRefCounted(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
@@ -702,7 +702,6 @@ void App::AllowCertificateError(
     const net::SSLInfo& ssl_info,
     const GURL& request_url,
     content::ResourceType resource_type,
-    bool overridable,
     bool strict_enforcement,
     bool expired_previous_decision,
     const base::Callback<void(content::CertificateRequestResultType)>&

@@ -14,9 +14,10 @@
 #include "base/memory/ptr_util.h"
 #include "base/single_thread_task_runner.h"
 #include "base/time/time.h"
+#include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
-#include "components/viz/common/quads/copy_output_request.h"
+#include "components/viz/common/quads/render_pass.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -127,8 +128,9 @@ class AtomCopyFrameGenerator {
     if (!view_->render_widget_host() || !view_->IsPainting())
       return;
 
-    std::unique_ptr<viz::CopyOutputRequest> request =
-        viz::CopyOutputRequest::CreateBitmapRequest(base::Bind(
+    auto request = std::make_unique<viz::CopyOutputRequest>(
+         viz::CopyOutputRequest::ResultFormat::RGBA_BITMAP,
+         base::BindOnce(
              &AtomCopyFrameGenerator::CopyFromCompositingSurfaceHasResult,
              weak_ptr_factory_.GetWeakPtr(),
              damage_rect));
@@ -152,9 +154,9 @@ class AtomCopyFrameGenerator {
       return;
     }
 
-    DCHECK(result->HasBitmap());
-    std::unique_ptr<SkBitmap> source = result->TakeBitmap();
-    DCHECK(source);
+    DCHECK(!result->IsEmpty());
+    auto source = std::make_unique<SkBitmap>(result->AsSkBitmap());
+    DCHECK(source->readyToDraw());
     if (source) {
       base::AutoLock autolock(lock_);
       std::shared_ptr<SkBitmap> bitmap(source.release());
@@ -289,10 +291,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   bool is_guest_view_hack = parent_host_view_ != nullptr;
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
-      AllocateFrameSinkId(is_guest_view_hack), this);
+      AllocateFrameSinkId(is_guest_view_hack), this,
+      false /* enable_surface_synchronization */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
+
+  local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
 #if defined(OS_MACOSX)
   CreatePlatformWidget(is_guest_view_hack);
@@ -544,7 +549,7 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
 
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
-    cc::CompositorFrame frame) {
+    viz::CompositorFrame frame) {
   TRACE_EVENT0("electron",
     "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
 
@@ -573,7 +578,7 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
 
       // Determine the damage rectangle for the current frame. This is the same
       // calculation that SwapDelegatedFrame uses.
-      cc::RenderPass* root_pass = frame.render_pass_list.back().get();
+      viz::RenderPass* root_pass = frame.render_pass_list.back().get();
       gfx::Size frame_size = root_pass->output_rect.size();
       gfx::Rect damage_rect =
           gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
@@ -719,7 +724,7 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetPhysicalBackingSize() const {
-  return gfx::ConvertSizeToPixel(scale_factor_, GetRequestedRendererSize());
+  return gfx::ScaleToCeiledSize(GetRequestedRendererSize(), scale_factor_);
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
@@ -784,6 +789,10 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   HoldResize();
   const gfx::Size& desired_size = GetRootLayer()->bounds().size();
   return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
+}
+
+viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
+  return local_surface_id_;
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrame() {
@@ -902,7 +911,7 @@ void OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped(
   RegisterGuestViewFrameSwappedCallback(guest_host_view);
 }
 
-std::unique_ptr<cc::SoftwareOutputDevice>
+std::unique_ptr<viz::SoftwareOutputDevice>
   OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
     ui::Compositor* compositor) {
   DCHECK_EQ(GetCompositor(), compositor);
@@ -922,9 +931,9 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
   if (transparent_) {
     SetBackgroundColor(SkColor());
 #if defined(OS_MACOSX)
-    browser_compositor_->SetHasTransparentBackground(true);
+    browser_compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
 #else
-    compositor_->SetHostHasTransparentBackground(true);
+    compositor_->SetBackgroundColor(SK_ColorTRANSPARENT);
 #endif
     return true;
   }
@@ -1259,6 +1268,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
 
   const gfx::Size& size_in_pixels =
       gfx::ConvertSizeToPixel(scale_factor_, size);
+
+  local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
   GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels);

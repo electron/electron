@@ -14,7 +14,7 @@ using base::PlatformThreadRef;
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/sequenced_worker_pool.h"
+#include "base/task_scheduler/post_task.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
 #include "content/public/browser/browser_thread.h"
 #include "media/base/video_util.h"
@@ -37,7 +37,7 @@ const int kDefaultUpdatePeriod = 1000;
 // media source has changed.
 uint32_t GetFrameHash(webrtc::DesktopFrame* frame) {
   int data_size = frame->stride() * frame->size().height();
-  return base::SuperFastHash(reinterpret_cast<char*>(frame->data()), data_size);
+  return base::Hash(frame->data(), data_size);
 }
 
 gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
@@ -235,9 +235,8 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       view_dialog_id_(-1),
       observer_(NULL),
       weak_factory_(this) {
-  base::SequencedWorkerPool* worker_pool = BrowserThread::GetBlockingPool();
-  capture_task_runner_ = worker_pool->GetSequencedTaskRunner(
-      worker_pool->GetSequenceToken());
+  capture_task_runner_ = base::CreateSequencedTaskRunnerWithTraits(
+      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
 }
 
 NativeDesktopMediaList::~NativeDesktopMediaList() {

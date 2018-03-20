@@ -305,13 +305,21 @@ bool Converter<blink::WebFloatPoint>::FromV8(
   return dict.Get("x", &out->x) && dict.Get("y", &out->y);
 }
 
-bool Converter<blink::WebPoint>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebPoint* out) {
-  mate::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  return dict.Get("x", &out->x) && dict.Get("y", &out->y);
-}
+template<>
+struct Converter<base::Optional<blink::WebPoint>> {
+  static bool FromV8(
+      v8::Isolate* isolate, v8::Local<v8::Value> val,
+      base::Optional<blink::WebPoint>* out) {
+    mate::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    blink::WebPoint point;
+    bool success = dict.Get("x", &point.x) && dict.Get("y", &point.y);
+    if (!success) return false;
+    out->emplace(point);
+    return true;
+  }
+};
 
 bool Converter<blink::WebSize>::FromV8(
     v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebSize* out) {

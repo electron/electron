@@ -349,7 +349,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrintJobWorkerOwner* job) {
     return false;
 
   print_job_ = new PrintJob();
-  print_job_->Initialize(job, this, number_pages_);
+  print_job_->Initialize(job, RenderSourceName(), number_pages_);
   registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
                  content::Source<PrintJob>(print_job_.get()));
   printing_succeeded_ = false;
@@ -378,8 +378,10 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
+  auto host = web_contents()->GetRenderViewHost();
   if (print_job_.get()) {
-    Send(new PrintMsg_PrintingDone(routing_id(), success));
+    if (host)
+      host->Send(new PrintMsg_PrintingDone(host->GetRoutingID(), success));
   }
   if (!callback.is_null()) {
     callback.Run(success && print_job_);
@@ -414,7 +416,6 @@ void PrintViewManagerBase::ReleasePrintJob() {
 
   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
                     content::Source<PrintJob>(print_job_.get()));
-  print_job_->DisconnectSource();
   // Don't close the worker thread.
   print_job_ = NULL;
 }

@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/atom_constants.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/options_switches.h"
@@ -20,7 +19,6 @@
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
 #include "media/media_features.h"
-#include "pdf/pdf.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -29,6 +27,11 @@
 #if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 #include "chrome/common/widevine_cdm_constants.h"
 #endif
+
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/common/atom_constants.h"
+#include "pdf/pdf.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -111,6 +114,7 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
+#if defined(ENABLE_PDF_VIEWER)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
@@ -129,6 +133,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
 }
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
                                         const char* separator,
@@ -220,7 +225,9 @@ void AtomContentClient::AddPepperPlugins(
 #if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
   AddWidevineCdmFromCommandLine(plugins);
 #endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
+#if defined(ENABLE_PDF_VIEWER)
   ComputeBuiltInPlugins(plugins);
+#endif  // defined(ENABLE_PDF_VIEWER)
 }
 
 }  // namespace atom
