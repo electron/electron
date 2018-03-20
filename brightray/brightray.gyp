@@ -280,6 +280,10 @@
           'link_settings': {
             'msvs_settings': {
               'VCLinkerTool': {
+                'AdditionalOptions': [
+                  # warning /DELAYLOAD:dll ignored; no imports found from dll
+                  '/ignore:4199',
+                ],
                 'AdditionalDependencies': [
                   'delayimp.lib',
                 ],
