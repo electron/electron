@@ -89,13 +89,6 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
   return event.windows_key_code == ui::VKEY_MENU;
 }
-void MoveTop(){
-#if defined(OS_WIN)
-  gfx::Point pos = GetPosition();
-  gfx::Size size = GetSize();
-  SetWindowPos(0 , pos.x(), pos.y(), size.width(), size.height(), SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW); 
-#endif
-}
 bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
   typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
   int modifiers = event.GetModifiers();
@@ -630,7 +623,13 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
   resizable_ = resizable;
 }
-
+void NativeWindowViews::MoveTop(){
+#if defined(OS_WIN)
+  gfx::Point pos = GetPosition();
+  gfx::Size size = GetSize();
+  ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP , pos.x(), pos.y(), size.width(), size.height(), SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW); 
+#endif
+}
 bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
   if (has_frame())
