@@ -10,6 +10,7 @@
 
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_quota_permission_context.h"
@@ -318,6 +319,11 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
         web_contents, command_line);
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
+
+    auto context_id = atom::api::WebContents::GetIDForContents(
+      web_contents);
+    command_line->AppendSwitchASCII(switches::kContextId,
+      base::IntToString(context_id));
   }
 }
 
