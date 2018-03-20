@@ -712,6 +712,7 @@
       }],  # OS=="win"
       ['enable_osr==1', {
         'lib_sources': [
+          'atom/browser/api/atom_api_web_contents_osr.cc',
           'atom/browser/osr/osr_web_contents_view_mac.mm',
           'atom/browser/osr/osr_web_contents_view.cc',
           'atom/browser/osr/osr_web_contents_view.h',

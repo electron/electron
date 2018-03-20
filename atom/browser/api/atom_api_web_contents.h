@@ -48,6 +48,10 @@ class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 
+#if defined(ENABLE_OSR)
+class OffScreenWebContentsView;
+#endif
+
 namespace api {
 
 // Certain events are only in WebContentsDelegate, provide our own Observer to
@@ -392,6 +396,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32_t GetNextRequestId() {
     return ++request_id_;
   }
+
+#if defined(ENABLE_OSR)
+  OffScreenWebContentsView* GetOffScreenWebContentsView() const;
+#endif
 
   // Called when we receive a CursorChange message from chromium.
   void OnCursorChange(const content::WebCursor& cursor);
