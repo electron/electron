@@ -54,3 +54,7 @@ dependencies, and tools contained in the `electron/electron` repository.
 
 See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
 
+## Further Reading
+
+For more in-depth guides on developing Electron, see 
+[/docs/development](/docs/development/README.md)
