@@ -64,13 +64,17 @@ jobs:
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
               echo 'Trying to finish release'
-              node script/release.js --automaticRelease
+              node script/release.js --validateRelease --automaticRelease
               releaseExitCode=$?
               if [ $releaseExitCode -eq 0 ]; then
-                echo 'Release successful, now publishing to npm'
-                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                npm run publish-to-npm
-                echo 'Release has been published to npm'
+                echo 'Release is ready to go; releasing'
+                node script/release.js--automaticRelease
+                if [ $releaseExitCode -eq 0 ]; then
+                  echo 'Release successful, now publishing to npm'
+                  echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                  npm run publish-to-npm
+                  echo 'Release has been published to npm'
+                fi
               else
                 echo 'Release is not complete, skipping publish for now'
               fi
@@ -176,13 +180,17 @@ jobs:
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
               echo 'Trying to finish release'
-              node script/release.js --automaticRelease
+              node script/release.js --validateRelease --automaticRelease
               releaseExitCode=$?
               if [ $releaseExitCode -eq 0 ]; then
-                echo 'Release successful, now publishing to npm'
-                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                npm run publish-to-npm
-                echo 'Release has been published to npm'
+                echo 'Release is ready to go; releasing'
+                node script/release.js--automaticRelease
+                if [ $releaseExitCode -eq 0 ]; then
+                  echo 'Release successful, now publishing to npm'
+                  echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                  npm run publish-to-npm
+                  echo 'Release has been published to npm'
+                fi
               else
                 echo 'Release is not complete, skipping publish for now'
               fi
@@ -292,13 +300,17 @@ jobs:
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
               echo 'Trying to finish release'
-              node script/release.js --automaticRelease
+              node script/release.js --validateRelease --automaticRelease
               releaseExitCode=$?
               if [ $releaseExitCode -eq 0 ]; then
-                echo 'Release successful, now publishing to npm'
-                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                npm run publish-to-npm
-                echo 'Release has been published to npm'
+                echo 'Release is ready to go; releasing'
+                node script/release.js--automaticRelease
+                if [ $releaseExitCode -eq 0 ]; then
+                  echo 'Release successful, now publishing to npm'
+                  echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                  npm run publish-to-npm
+                  echo 'Release has been published to npm'
+                fi
               else
                 echo 'Release is not complete, skipping publish for now'
               fi
@@ -391,13 +403,17 @@ jobs:
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
               echo 'Trying to finish release'
-              node script/release.js --automaticRelease
+              node script/release.js --validateRelease --automaticRelease
               releaseExitCode=$?
               if [ $releaseExitCode -eq 0 ]; then
-                echo 'Release successful, now publishing to npm'
-                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                npm run publish-to-npm
-                echo 'Release has been published to npm'
+                echo 'Release is ready to go; releasing'
+                node script/release.js--automaticRelease
+                if [ $releaseExitCode -eq 0 ]; then
+                  echo 'Release successful, now publishing to npm'
+                  echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                  npm run publish-to-npm
+                  echo 'Release has been published to npm'
+                fi
               else
                 echo 'Release is not complete, skipping publish for now'
               fi
@@ -472,13 +488,17 @@ jobs:
           command: |
             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$AUTO_RELEASE" == "true" ]; then
               echo 'Trying to finish release'
-              node script/release.js --automaticRelease
+              node script/release.js --validateRelease --automaticRelease
               releaseExitCode=$?
               if [ $releaseExitCode -eq 0 ]; then
-                echo 'Release successful, now publishing to npm'
-                echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
-                npm run publish-to-npm
-                echo 'Release has been published to npm'
+                echo 'Release is ready to go; releasing'
+                node script/release.js--automaticRelease
+                if [ $releaseExitCode -eq 0 ]; then
+                  echo 'Release successful, now publishing to npm'
+                  echo "//registry.npmjs.org/:_authToken=$ELECTRON_NPM_TOKEN" >> ~/.npmrc
+                  npm run publish-to-npm
+                  echo 'Release has been published to npm'
+                fi
               else
                 echo 'Release is not complete, skipping publish for now'
               fi
