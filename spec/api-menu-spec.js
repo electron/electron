@@ -38,6 +38,116 @@ describe.only('Menu module', () => {
       })
     })
 
+    describe('Moves an item to a different group by merging groups', () => {
+      it('can move a group of one item', () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' },
+          { type: 'separator' },
+          { label: 'three', after: ['one'] },
+          { type: 'separator' }
+        ]
+
+        const expected = [
+          { label: 'one' },
+          { label: 'three', after: ['one'] },
+          { type: 'separator' },
+          { label: 'two' }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it("moves all items in the moving item's group", () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' },
+          { type: 'separator' },
+          { label: 'three', after: ['one'] },
+          { label: 'four' },
+          { type: 'separator' }
+        ]
+
+        const expected = [
+          { label: 'one' },
+          { label: 'three', after: ['one'] },
+          { label: 'four' },
+          { type: 'separator' },
+          { label: 'two' }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it("ignores positions relative to commands that don't exist", () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' },
+          { type: 'separator' },
+          { label: 'three', after: ['does-not-exist'] },
+          { label: 'four', after: ['one'] },
+          { type: 'separator' }
+        ]
+
+        const expected = [
+          { label: 'one' },
+          { label: 'three', after: ['does-not-exist'] },
+          { label: 'four', after: ['one'] },
+          { type: 'separator' },
+          { label: 'two' }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it('can handle recursive group merging', () => {
+        const items = [
+          { label: 'one', after: ['three'] },
+          { label: 'two', before: ['one'] },
+          { label: 'three' }
+        ]
+
+        const expected = [
+          { label: 'three' },
+          { label: 'two', before: ['one'] },
+          { label: 'one', after: ['three'] }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it('can merge multiple groups when given a list of before/after commands', () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' },
+          { type: 'separator' },
+          { label: 'three', after: ['one', 'two'] }
+        ]
+        const expected = [
+          { label: 'two' },
+          { label: 'one' },
+          { label: 'three', after: ['one', 'two'] }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it('can merge multiple groups based on both before/after commands', () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' },
+          { type: 'separator' },
+          { label: 'three', after: ['one'], before: ['two'] }
+        ]
+        const expected = [
+          { label: 'one' },
+          { label: 'three', after: ['one'], before: ['two'] },
+          { label: 'two' }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+    })
+
     describe('Menu.buildFromTemplate should reorder based on item position specifiers', () => {
       it('should position before existing item', () => {
         const menu = Menu.buildFromTemplate([
