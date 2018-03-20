@@ -23,6 +23,7 @@
       'lib/browser/api/in-app-purchase.js',
       'lib/browser/api/menu-item-roles.js',
       'lib/browser/api/menu-item.js',
+      'lib/browser/api/menu-utils.js',
       'lib/browser/api/menu.js',
       'lib/browser/api/module-list.js',
       'lib/browser/api/navigation-controller.js',
