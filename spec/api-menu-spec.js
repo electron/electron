@@ -242,7 +242,7 @@ describe.only('Menu module', () => {
         assert.equal(menu.items[2].label, '3')
       })
 
-      it('should position after existing item', () => {
+      it.only('should position after existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '1',
@@ -306,7 +306,7 @@ describe.only('Menu module', () => {
         assert.equal(menuTwo.items[2].label, 'c')
       })
 
-      it('should continue inserting items at next index when no specifier is present', () => {
+      it.only('should continue inserting items at next index when no specifier is present', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '4',
@@ -326,6 +326,7 @@ describe.only('Menu module', () => {
             id: '3'
           }
         ])
+
         assert.equal(menu.items[0].label, '1')
         assert.equal(menu.items[1].label, '2')
         assert.equal(menu.items[2].label, '3')
