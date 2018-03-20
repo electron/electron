@@ -9,9 +9,11 @@
 
 #include "atom/common/draggable_region.h"
 #include "base/macros.h"
+#include "content/public/browser/web_contents.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace brightray {
+class InspectableWebContents;
 class InspectableWebContentsView;
 }
 
@@ -31,11 +33,14 @@ class NativeBrowserView {
   virtual ~NativeBrowserView();
 
   static NativeBrowserView* Create(
-      brightray::InspectableWebContentsView* web_contents_view);
+      brightray::InspectableWebContents* inspectable_web_contents);
 
-  brightray::InspectableWebContentsView* GetInspectableWebContentsView() {
-    return web_contents_view_;
+  brightray::InspectableWebContents* GetInspectableWebContents() {
+    return inspectable_web_contents_;
   }
+
+  brightray::InspectableWebContentsView* GetInspectableWebContentsView();
+  content::WebContents* GetWebContents();
 
   virtual void SetAutoResizeFlags(uint8_t flags) = 0;
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
@@ -47,9 +52,9 @@ class NativeBrowserView {
 
  protected:
   explicit NativeBrowserView(
-      brightray::InspectableWebContentsView* web_contents_view);
+      brightray::InspectableWebContents* inspectable_web_contents);
 
-  brightray::InspectableWebContentsView* web_contents_view_;
+  brightray::InspectableWebContents* inspectable_web_contents_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);
