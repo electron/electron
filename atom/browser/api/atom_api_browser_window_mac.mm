@@ -80,30 +80,24 @@ void BrowserWindow::UpdateDraggableRegions(
   // Draggable regions is implemented by having the whole web view draggable
   // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
   draggable_regions_ = regions;
-  std::vector<gfx::Rect> system_drag_exclude_areas;
+  std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
-    system_drag_exclude_areas.push_back(
-        gfx::Rect(0, 0, webViewWidth, webViewHeight));
+    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
   } else {
-    system_drag_exclude_areas = CalculateNonDraggableRegions(
+    drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
   if (window_->browser_view())
-    window_->browser_view()->UpdateDraggableRegions(system_drag_exclude_areas);
+    window_->browser_view()->UpdateDraggableRegions(drag_exclude_rects);
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.
-  for (std::vector<gfx::Rect>::const_iterator iter =
-           system_drag_exclude_areas.begin();
-       iter != system_drag_exclude_areas.end();
-       ++iter) {
+  for (const auto& rect : drag_exclude_rects) {
     base::scoped_nsobject<NSView> controlRegion(
         [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(iter->x(),
-                                       webViewHeight - iter->bottom(),
-                                       iter->width(),
-                                       iter->height())];
+    [controlRegion setFrame:NSMakeRect(rect.x(), webViewHeight - rect.bottom(),
+                                       rect.width(), rect.height())];
     [webView addSubview:controlRegion];
   }
 

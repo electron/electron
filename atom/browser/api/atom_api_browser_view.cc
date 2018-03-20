@@ -68,8 +68,8 @@ void BrowserView::Init(v8::Isolate* isolate,
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
 
-  view_.reset(NativeBrowserView::Create(
-      api_web_contents_->managed_web_contents()->GetView()));
+  view_.reset(
+      NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
 
   InitWith(isolate, wrapper);
 }
