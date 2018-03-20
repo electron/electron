@@ -90,6 +90,27 @@ describe.only('Menu module', () => {
           ]
           assert.deepEqual(sortMenuItems(items), expected)
         })
+
+        it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
+          const items = [
+            { label: 'one' },
+            { type: 'separator' },
+            { label: 'three', beforeGroupContaining: ['one'] },
+            { label: 'four', afterGroupContaining: ['two'] },
+            { type: 'separator' },
+            { label: 'two' }
+          ]
+
+          const expected = [
+            { label: 'three', beforeGroupContaining: ['one'] },
+            { label: 'four', afterGroupContaining: ['two'] },
+            { type: 'separator' },
+            { label: 'one' },
+            { type: 'separator' },
+            { label: 'two' }
+          ]
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
       })
 
       describe('moves an item to a different group by merging groups', () => {
@@ -235,57 +256,10 @@ describe.only('Menu module', () => {
             after: ['1']
           }
         ])
+
         assert.equal(menu.items[0].label, '1')
         assert.equal(menu.items[1].label, '2')
         assert.equal(menu.items[2].label, '3')
-      })
-
-      it('should position at endof existing separator groups', () => {
-        const menu = Menu.buildFromTemplate([
-          {
-            label: 'first',
-            id: 'first'
-          }, {
-            type: 'separator',
-            id: 'numbers'
-          }, {
-            label: 'a',
-            id: 'a',
-            position: 'endof=letters'
-          }, {
-            type: 'separator',
-            id: 'letters'
-          }, {
-            label: '1',
-            id: '1',
-            position: 'endof=numbers'
-          }, {
-            label: 'b',
-            id: 'b',
-            position: 'endof=letters'
-          }, {
-            label: '2',
-            id: '2',
-            position: 'endof=numbers'
-          }, {
-            label: 'c',
-            id: 'c',
-            position: 'endof=letters'
-          }, {
-            label: '3',
-            id: '3',
-            position: 'endof=numbers'
-          }
-        ])
-
-        assert.equal(menu.items[1].id, 'numbers')
-        assert.equal(menu.items[2].label, '1')
-        assert.equal(menu.items[3].label, '2')
-        assert.equal(menu.items[4].label, '3')
-        assert.equal(menu.items[5].id, 'letters')
-        assert.equal(menu.items[6].label, 'a')
-        assert.equal(menu.items[7].label, 'b')
-        assert.equal(menu.items[8].label, 'c')
       })
 
       it('should filter excess menu separators', () => {
@@ -330,95 +304,6 @@ describe.only('Menu module', () => {
         assert.equal(menuTwo.items[0].label, 'a')
         assert.equal(menuTwo.items[1].label, 'b')
         assert.equal(menuTwo.items[2].label, 'c')
-      })
-
-      it('should create separator group if endof does not reference existing separator group', () => {
-        const menu = Menu.buildFromTemplate([
-          {
-            label: 'a',
-            id: 'a',
-            position: 'endof=letters'
-          }, {
-            label: '1',
-            id: '1',
-            position: 'endof=numbers'
-          }, {
-            label: 'b',
-            id: 'b',
-            position: 'endof=letters'
-          }, {
-            label: '2',
-            id: '2',
-            position: 'endof=numbers'
-          }, {
-            label: 'c',
-            id: 'c',
-            position: 'endof=letters'
-          }, {
-            label: '3',
-            id: '3',
-            position: 'endof=numbers'
-          }
-        ])
-        assert.equal(menu.items[0].id, 'letters')
-        assert.equal(menu.items[1].label, 'a')
-        assert.equal(menu.items[2].label, 'b')
-        assert.equal(menu.items[3].label, 'c')
-        assert.equal(menu.items[4].id, 'numbers')
-        assert.equal(menu.items[5].label, '1')
-        assert.equal(menu.items[6].label, '2')
-        assert.equal(menu.items[7].label, '3')
-      })
-
-      it('resolves cycles by ignoring things that conflict', () => {
-        const items = [
-          {
-            label: 'two',
-            afterGroupContaining: ['one']
-          },
-          { type: 'separator' },
-          {
-            label: 'one',
-            afterGroupContaining: ['two']
-          }
-        ]
-
-        const expected = [
-          {
-            label: 'one',
-            afterGroupContaining: ['two']
-          },
-          { type: 'separator' },
-          {
-            label: 'two',
-            afterGroupContaining: ['one']
-          }
-        ]
-
-        assert.deepEqual(sortMenuItems(items), expected)
-      })
-
-
-
-      it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
-        const items = [
-          { label: 'one' },
-          { type: 'separator' },
-          { label: 'three', beforeGroupContaining: ['one'] },
-          { label: 'four', afterGroupContaining: ['two'] },
-          { type: 'separator' },
-          { label: 'two' }
-        ]
-
-        const expected = [
-          { label: 'three', beforeGroupContaining: ['one'] },
-          { label: 'four', afterGroupContaining: ['two'] },
-          { type: 'separator' },
-          { label: 'one' },
-          { type: 'separator' },
-          { label: 'two' }
-        ]
-        assert.deepEqual(sortMenuItems(items), expected)
       })
 
       it('should continue inserting items at next index when no specifier is present', () => {
