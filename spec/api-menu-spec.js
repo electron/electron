@@ -2,9 +2,10 @@ const assert = require('assert')
 
 const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
+const {sortMenuItems} = require('../lib/browser/api/menu-utils')
 const {closeWindow} = require('./window-helpers')
 
-describe('Menu module', () => {
+describe.only('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
@@ -49,7 +50,7 @@ describe('Menu module', () => {
           }, {
             label: '1',
             id: '1',
-            position: 'before=2'
+            before: ['2']
           }
         ])
         assert.equal(menu.items[0].label, '1')
@@ -68,7 +69,7 @@ describe('Menu module', () => {
           }, {
             label: '2',
             id: '2',
-            position: 'after=1'
+            after: ['1']
           }
         ])
         assert.equal(menu.items[0].label, '1')
@@ -206,6 +207,76 @@ describe('Menu module', () => {
         assert.equal(menu.items[7].label, '3')
       })
 
+      it('resolves cycles by ignoring things that conflict', () => {
+        const items = [
+          {
+            label: 'two',
+            afterGroupContaining: ['one']
+          },
+          { type: 'separator' },
+          {
+            label: 'one',
+            afterGroupContaining: ['two']
+          }
+        ]
+
+        const expected = [
+          {
+            label: 'one',
+            afterGroupContaining: ['two']
+          },
+          { type: 'separator' },
+          {
+            label: 'two',
+            afterGroupContaining: ['one']
+          }
+        ]
+
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it('ignores references to commands that do not exist', () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          {
+            label: 'two',
+            afterGroupContaining: ['does-not-exist']
+          }
+        ]
+
+        const expected = [
+          { label: 'one' },
+          { type: 'separator' },
+          {
+            label: 'two',
+            afterGroupContaining: ['does-not-exist']
+          }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
+      it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
+        const items = [
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'three', beforeGroupContaining: ['one'] },
+          { label: 'four', afterGroupContaining: ['two'] },
+          { type: 'separator' },
+          { label: 'two' }
+        ]
+
+        const expected = [
+          { label: 'three', beforeGroupContaining: ['one'] },
+          { label: 'four', afterGroupContaining: ['two'] },
+          { type: 'separator' },
+          { label: 'one' },
+          { type: 'separator' },
+          { label: 'two' }
+        ]
+        assert.deepEqual(sortMenuItems(items), expected)
+      })
+
       it('should continue inserting items at next index when no specifier is present', () => {
         const menu = Menu.buildFromTemplate([
           {
@@ -217,7 +288,7 @@ describe('Menu module', () => {
           }, {
             label: '1',
             id: '1',
-            position: 'before=4'
+            before: ['4']
           }, {
             label: '2',
             id: '2'
@@ -243,7 +314,7 @@ describe('Menu module', () => {
           submenu: [
             {
               label: 'Enter Fullscreen',
-              accelerator: 'Control+Command+F',
+              accelerator: 'ControlCommandF',
               id: 'fullScreen'
             }
           ]
