@@ -527,12 +527,14 @@ bool WebContents::DidAddMessageToConsole(content::WebContents* source,
 
 void WebContents::OnCreateWindow(
     const GURL& target_url,
+    const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
     const scoped_refptr<content::ResourceRequestBody>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
-    Emit("-new-window", target_url, frame_name, disposition, features, body);
+    Emit("-new-window", target_url, referrer, frame_name, disposition, features,
+         body);
   else
     Emit("new-window", target_url, frame_name, disposition, features);
 }

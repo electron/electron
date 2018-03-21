@@ -9,6 +9,7 @@
 
 #include "content/public/browser/permission_type.h"
 #include "content/public/common/menu_item.h"
+#include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/platform/modules/permissions/permission_status.mojom.h"
@@ -69,6 +70,12 @@ struct Converter<content::WebContents*> {
                                    content::WebContents* val);
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
                      content::WebContents** out);
+};
+
+template<>
+struct Converter<content::Referrer> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::Referrer& val);
 };
 
 }  // namespace mate

@@ -318,4 +318,13 @@ bool Converter<content::WebContents*>::FromV8(
   return true;
 }
 
+// static
+v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
+    v8::Isolate* isolate, const content::Referrer& val) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.Set("url", ConvertToV8(isolate, val.url));
+  dict.Set("policy", ConvertToV8(isolate, static_cast<int>(val.policy)));
+  return mate::ConvertToV8(isolate, dict);
+}
+
 }  // namespace mate

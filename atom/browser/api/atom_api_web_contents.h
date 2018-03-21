@@ -223,6 +223,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Create window with the given disposition.
   void OnCreateWindow(
       const GURL& target_url,
+      const content::Referrer& referrer,
       const std::string& frame_name,
       WindowOpenDisposition disposition,
       const std::vector<std::string>& features,
