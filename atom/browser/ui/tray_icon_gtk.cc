@@ -7,6 +7,7 @@
 #include "atom/browser/browser.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "brightray/common/application_info.h"
 #include "chrome/browser/ui/libgtkui/app_indicator_icon.h"
 #include "chrome/browser/ui/libgtkui/gtk_status_icon.h"
 #include "ui/gfx/image/image.h"
@@ -32,16 +33,17 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
     return;
   }
 
-  base::string16 empty;
+  const auto toolTip = base::UTF8ToUTF16(brightray::GetApplicationName());
+
   if (libgtkui::AppIndicatorIcon::CouldOpen()) {
     ++indicators_count;
     icon_.reset(new libgtkui::AppIndicatorIcon(
         base::StringPrintf(
             "%s%d", Browser::Get()->GetName().c_str(), indicators_count),
         image.AsImageSkia(),
-        empty));
+        toolTip));
   } else {
-    icon_.reset(new libgtkui::Gtk2StatusIcon(image.AsImageSkia(), empty));
+    icon_.reset(new libgtkui::Gtk2StatusIcon(image.AsImageSkia(), toolTip));
   }
   icon_->set_delegate(this);
 }
