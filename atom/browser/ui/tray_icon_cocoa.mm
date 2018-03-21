@@ -98,7 +98,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
   // Draw the system bar background.
   [statusItem_ drawStatusBarBackgroundInRect:self.bounds
-                               withHighlight:[self isHighlighted]];
+                               withHighlight:[self shouldHighlight]];
 
   // Determine which image to use.
   NSImage* image = image_.get();
