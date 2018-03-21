@@ -15,7 +15,7 @@ def check_tls(verbose):
   elif sys.platform == "win32":
     tutorial = "./docs/development/build-instructions-windows.md"
   else:
-    tutorial = "build instructions for your operation system" \
+    tutorial = "build instructions for your operating system" \
       + "in ./docs/development/"
 
   if tls == "TLS 1.0":
