@@ -23,6 +23,19 @@ let windowA = new BrowserWindow(optionsA)
 // Replace with
 let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
 let windowB = new BrowserWindow(optionsB)
+
+// Deprecated
+window.on('app-command', (e, cmd) => {
+  if (cmd == 'media-play_pause') {
+    // do something
+  }
+})
+// Replace with
+window.on('app-command', (e, cmd) => {
+  if (cmd == 'media-play-pause') {
+    // do something
+  }
+})
 ```
 
 ## `clipboard`
