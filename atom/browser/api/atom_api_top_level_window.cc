@@ -243,8 +243,6 @@ void TopLevelWindow::OnWindowLeaveHtmlFullScreen() {
 }
 
 void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
-  if (command_name == "media-play-pause")
-    Emit("app-command", "media-play_pause");
   Emit("app-command", command_name);
 }
 
