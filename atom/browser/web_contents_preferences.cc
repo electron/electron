@@ -45,7 +45,7 @@ WebContentsPreferences::WebContentsPreferences(
   copied.Delete("isGuest");
   copied.Delete("session");
 
-  mate::ConvertFromV8(isolate, copied.GetHandle(), &web_preferences_);
+  mate::ConvertFromV8(isolate, copied.GetHandle(), &dict_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
 
   instances_.push_back(this);
@@ -70,7 +70,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
   #endif
   SetDefaultBoolIfUndefined("offscreen", false);
-  last_web_preferences_.MergeDictionary(&web_preferences_);
+
+  last_dict_ = std::move(*dict_.CreateDeepCopy());
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -79,18 +80,25 @@ WebContentsPreferences::~WebContentsPreferences() {
       instances_.end());
 }
 
-bool WebContentsPreferences::SetDefaultBoolIfUndefined(const std::string key,
-                                                       bool val) {
+bool WebContentsPreferences::SetDefaultBoolIfUndefined(
+    const base::StringPiece& key, bool val) {
   bool existing;
-  if (!web_preferences_.GetBoolean(key, &existing)) {
-    web_preferences_.SetBoolean(key, val);
+  if (!dict_.GetBoolean(key, &existing)) {
+    dict_.SetBoolean(key, val);
     return val;
   }
   return existing;
 }
 
+bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
+                                       bool default_value) {
+  bool bool_value = default_value;
+  dict_.GetBoolean(name, &bool_value);
+  return bool_value;
+}
+
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
-  web_preferences_.MergeDictionary(&extend);
+  dict_.MergeDictionary(&extend);
 }
 
 // static
@@ -105,69 +113,62 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
 }
 
 // static
-void WebContentsPreferences::AppendExtraCommandLineSwitches(
-    content::WebContents* web_contents, base::CommandLine* command_line) {
-  WebContentsPreferences* self = FromWebContents(web_contents);
-  if (!self)
-    return;
+WebContentsPreferences* WebContentsPreferences::From(
+    content::WebContents* web_contents) {
+  if (!web_contents)
+    return nullptr;
+  return FromWebContents(web_contents);
+}
 
-  base::DictionaryValue& web_preferences = self->web_preferences_;
-
-  // We are appending args to a webContents so let's save the current state
-  // of our preferences object so that during the lifetime of the WebContents
-  // we can fetch the options used to initally configure the WebContents
-  self->last_web_preferences_.Clear();
-  self->last_web_preferences_.MergeDictionary(&web_preferences);
-
+void WebContentsPreferences::AppendCommandLineSwitches(
+    base::CommandLine* command_line) {
   bool b;
   // Check if plugins are enabled.
-  if (web_preferences.GetBoolean("plugins", &b) && b)
+  if (dict_.GetBoolean("plugins", &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // Experimental flags.
-  if (web_preferences.GetBoolean(options::kExperimentalFeatures, &b) && b)
+  if (dict_.GetBoolean(options::kExperimentalFeatures, &b) && b)
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
-  if (web_preferences.GetBoolean(options::kExperimentalCanvasFeatures, &b) && b)
+  if (dict_.GetBoolean(options::kExperimentalCanvasFeatures, &b) && b)
     command_line->AppendSwitch(::switches::kEnableExperimentalCanvasFeatures);
 
   // Check if we have node integration specified.
   bool node_integration = true;
-  web_preferences.GetBoolean(options::kNodeIntegration, &node_integration);
+  dict_.GetBoolean(options::kNodeIntegration, &node_integration);
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
   // Whether to enable node integration in Worker.
-  if (web_preferences.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
+  if (dict_.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // Check if webview tag creation is enabled, default to nodeIntegration value.
   // TODO(kevinsawicki): Default to false in 2.0
   bool webview_tag = node_integration;
-  web_preferences.GetBoolean(options::kWebviewTag, &webview_tag);
+  dict_.GetBoolean(options::kWebviewTag, &webview_tag);
   command_line->AppendSwitchASCII(switches::kWebviewTag,
                                   webview_tag ? "true" : "false");
 
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  bool sandbox = false;
-  if (web_preferences.GetBoolean("sandbox", &sandbox) && sandbox) {
+  if (dict_.GetBoolean("sandbox", &b) && b)
     command_line->AppendSwitch(switches::kEnableSandbox);
-  } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
+  else if (!command_line->HasSwitch(switches::kEnableSandbox))
     command_line->AppendSwitch(::switches::kNoSandbox);
-  }
-  if (web_preferences.GetBoolean("nativeWindowOpen", &b) && b)
+  if (dict_.GetBoolean("nativeWindowOpen", &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (web_preferences.GetString(options::kPreloadScript, &preload)) {
+  if (dict_.GetString(options::kPreloadScript, &preload)) {
     if (base::FilePath(preload).IsAbsolute())
       command_line->AppendSwitchNative(switches::kPreloadScript, preload);
     else
       LOG(ERROR) << "preload script must have absolute path.";
-  } else if (web_preferences.GetString(options::kPreloadURL, &preload)) {
+  } else if (dict_.GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
     if (net::FileURLToFilePath(GURL(preload), &preload_path))
@@ -178,49 +179,44 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // Custom args for renderer process
   base::Value* customArgs;
-  if ((web_preferences.Get(options::kCustomArgs, &customArgs))
-      && (customArgs->is_list())) {
+  if (dict_.Get(options::kCustomArgs, &customArgs) &&
+      customArgs->is_list()) {
     for (const base::Value& customArg : customArgs->GetList()) {
-      if (customArg.is_string()) {
+      if (customArg.is_string())
         command_line->AppendArg(customArg.GetString());
-      }
     }
   }
 
   // Run Electron APIs and preload script in isolated world
-  bool isolated;
-  if (web_preferences.GetBoolean(options::kContextIsolation, &isolated) &&
-      isolated)
+  if (dict_.GetBoolean(options::kContextIsolation, &b) && b)
     command_line->AppendSwitch(switches::kContextIsolation);
 
   // --background-color.
-  std::string color;
-  if (web_preferences.GetString(options::kBackgroundColor, &color))
-    command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
+  std::string s;
+  if (dict_.GetString(options::kBackgroundColor, &s))
+    command_line->AppendSwitchASCII(switches::kBackgroundColor, s);
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
-  if (web_preferences.GetInteger(options::kGuestInstanceID, &guest_instance_id))
+  if (dict_.GetInteger(options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                     base::IntToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
-  if (web_preferences.GetInteger(options::kOpenerID, &opener_id))
+  if (dict_.GetInteger(options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::IntToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.
-  bool scroll_bounce;
-  if (web_preferences.GetBoolean(options::kScrollBounce, &scroll_bounce) &&
-      scroll_bounce)
+  if (dict_.GetBoolean(options::kScrollBounce, &b) && b)
     command_line->AppendSwitch(switches::kScrollBounce);
 #endif
 
   // Custom command line switches.
   const base::ListValue* args;
-  if (web_preferences.GetList("commandLineSwitches", &args)) {
+  if (dict_.GetList("commandLineSwitches", &args)) {
     for (size_t i = 0; i < args->GetSize(); ++i) {
       std::string arg;
       if (args->GetString(i, &arg) && !arg.empty())
@@ -229,26 +225,21 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
   }
 
   // Enable blink features.
-  std::string blink_features;
-  if (web_preferences.GetString(options::kBlinkFeatures, &blink_features))
-    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
-                                    blink_features);
+  if (dict_.GetString(options::kBlinkFeatures, &s))
+    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
 
   // Disable blink features.
-  std::string disable_blink_features;
-  if (web_preferences.GetString(options::kDisableBlinkFeatures,
-                                &disable_blink_features))
-    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
-                                    disable_blink_features);
+  if (dict_.GetString(options::kDisableBlinkFeatures, &s))
+    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures, s);
 
   if (guest_instance_id) {
     // Webview `document.visibilityState` tracks window visibility so we need
     // to let it know if the window happens to be hidden right now.
-    auto manager = WebViewManager::GetWebViewManager(web_contents);
+    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
     if (manager) {
-      auto embedder = manager->GetEmbedder(guest_instance_id);
+      auto* embedder = manager->GetEmbedder(guest_instance_id);
       if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(web_contents);
+        auto* relay = NativeWindowRelay::FromWebContents(embedder);
         if (relay) {
           auto* window = relay->window.get();
           if (window) {
@@ -261,51 +252,34 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
       }
     }
   }
+
+  // We are appending args to a webContents so let's save the current state
+  // of our preferences object so that during the lifetime of the WebContents
+  // we can fetch the options used to initally configure the WebContents
+  last_dict_ = std::move(*dict_.CreateDeepCopy());
 }
 
-bool WebContentsPreferences::IsPreferenceEnabled(
-    const std::string& attribute_name,
-    content::WebContents* web_contents) {
-  WebContentsPreferences* self;
-  if (!web_contents)
-    return false;
-
-  self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-
-  base::DictionaryValue& web_preferences = self->web_preferences_;
-  bool bool_value = false;
-  web_preferences.GetBoolean(attribute_name, &bool_value);
-  return bool_value;
-}
-
-// static
 void WebContentsPreferences::OverrideWebkitPrefs(
-    content::WebContents* web_contents, content::WebPreferences* prefs) {
-  WebContentsPreferences* self = FromWebContents(web_contents);
-  if (!self)
-    return;
-
+    content::WebPreferences* prefs) {
   bool b;
-  if (self->web_preferences_.GetBoolean("javascript", &b))
+  if (dict_.GetBoolean("javascript", &b))
     prefs->javascript_enabled = b;
-  if (self->web_preferences_.GetBoolean("images", &b))
+  if (dict_.GetBoolean("images", &b))
     prefs->images_enabled = b;
-  if (self->web_preferences_.GetBoolean("textAreasAreResizable", &b))
+  if (dict_.GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (self->web_preferences_.GetBoolean("webgl", &b)) {
+  if (dict_.GetBoolean("webgl", &b)) {
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
-  if (self->web_preferences_.GetBoolean("webSecurity", &b)) {
+  if (dict_.GetBoolean("webSecurity", &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (self->web_preferences_.GetBoolean("allowRunningInsecureContent", &b))
+  if (dict_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
   const base::DictionaryValue* fonts = nullptr;
-  if (self->web_preferences_.GetDictionary("defaultFontFamily", &fonts)) {
+  if (dict_.GetDictionary("defaultFontFamily", &fonts)) {
     base::string16 font;
     if (fonts->GetString("standard", &font))
       prefs->standard_font_family_map[content::kCommonScript] = font;
@@ -321,37 +295,28 @@ void WebContentsPreferences::OverrideWebkitPrefs(
       prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
   int size;
-  if (self->GetInteger("defaultFontSize", &size))
+  if (GetInteger("defaultFontSize", &size))
     prefs->default_font_size = size;
-  if (self->GetInteger("defaultMonospaceFontSize", &size))
+  if (GetInteger("defaultMonospaceFontSize", &size))
     prefs->default_fixed_font_size = size;
-  if (self->GetInteger("minimumFontSize", &size))
+  if (GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
-  if (self->web_preferences_.GetString("defaultEncoding", &encoding))
+  if (dict_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
 }
 
-bool WebContentsPreferences::GetInteger(const std::string& attributeName,
-                                        int* intValue) {
+bool WebContentsPreferences::GetInteger(const base::StringPiece& attribute_name,
+                                        int* val) {
   // if it is already an integer, no conversion needed
-  if (web_preferences_.GetInteger(attributeName, intValue))
+  if (dict_.GetInteger(attribute_name, val))
     return true;
 
-  base::string16 stringValue;
-  if (web_preferences_.GetString(attributeName, &stringValue))
-    return base::StringToInt(stringValue, intValue);
+  std::string str;
+  if (dict_.GetString(attribute_name, &str))
+    return base::StringToInt(str, val);
 
   return false;
-}
-
-bool WebContentsPreferences::GetString(const std::string& attribute_name,
-                                       std::string* string_value,
-                                       content::WebContents* web_contents) {
-  WebContentsPreferences* self = FromWebContents(web_contents);
-  if (!self)
-    return false;
-  return self->web_preferences()->GetString(attribute_name, string_value);
 }
 
 }  // namespace atom

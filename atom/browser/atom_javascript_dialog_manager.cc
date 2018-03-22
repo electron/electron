@@ -55,13 +55,13 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   origin_counts_[origin]++;
 
-  std::string checkbox_string;
-  if (origin_counts_[origin] > 1 &&
-      WebContentsPreferences::IsPreferenceEnabled("safeDialogs",
-                                                  web_contents)) {
-    if (!WebContentsPreferences::GetString("safeDialogsMessage",
-                                           &checkbox_string, web_contents)) {
-      checkbox_string = "Prevent this app from creating additional dialogs";
+  std::string checkbox;
+  if (origin_counts_[origin] > 1) {
+    auto* web_preferences = WebContentsPreferences::From(web_contents);
+    if (web_preferences &&
+        web_preferences->IsEnabled("safeDialogs") &&
+        !web_preferences->dict()->GetString("safeDialogsMessage", &checkbox)) {
+      checkbox = "Prevent this app from creating additional dialogs";
     }
   }
 
@@ -70,7 +70,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
       relay ? relay->window.get() : nullptr,
       atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
       atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
-      base::UTF16ToUTF8(message_text), "", checkbox_string,
+      base::UTF16ToUTF8(message_text), "", checkbox,
       false, gfx::ImageSkia(),
       base::Bind(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
                  base::Unretained(this),

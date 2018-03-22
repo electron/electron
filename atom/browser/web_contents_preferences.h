@@ -29,52 +29,49 @@ namespace atom {
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
-  // Get WebContents according to process ID.
-  // FIXME(zcbenz): This method does not belong here.
-  static content::WebContents* GetWebContentsFromProcessID(int process_id);
-
-  // Append command paramters according to |web_contents|'s preferences.
-  static void AppendExtraCommandLineSwitches(
-      content::WebContents* web_contents, base::CommandLine* command_line);
-
-  static bool IsPreferenceEnabled(const std::string& attribute_name,
-                                  content::WebContents* web_contents);
-
-  static bool GetString(const std::string& attribute_name,
-                        std::string* string_value,
-                        content::WebContents* web_contents);
-
-  // Modify the WebPreferences according to |web_contents|'s preferences.
-  static void OverrideWebkitPrefs(
-      content::WebContents* web_contents, content::WebPreferences* prefs);
+  // Get self from WebContents.
+  static WebContentsPreferences* From(content::WebContents* web_contents);
 
   WebContentsPreferences(content::WebContents* web_contents,
                          const mate::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
-  // $.extend(|web_preferences_|, |new_web_preferences|).
+  // A simple way to know whether a Boolean property is enabled.
+  bool IsEnabled(const base::StringPiece& name, bool default_value = false);
+
+  // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
 
+  // Append command paramters according to preferences.
+  void AppendCommandLineSwitches(base::CommandLine* command_line);
+
+  // Modify the WebPreferences according to preferences.
+  void OverrideWebkitPrefs(content::WebPreferences* prefs);
+
   // Returns the web preferences.
-  base::DictionaryValue* web_preferences() { return &web_preferences_; }
-  base::DictionaryValue* last_web_preferences() {
-    return &last_web_preferences_;
-  }
+  base::DictionaryValue* dict() { return &dict_; }
+  const base::DictionaryValue* dict() const { return &dict_; }
+  base::DictionaryValue* last_dict() { return &last_dict_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
+  friend class AtomBrowserClient;
+
+  // Get WebContents according to process ID.
+  static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(const std::string key, bool val);
+  bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
 
   // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const std::string& attributeName, int* intValue);
+  bool GetInteger(const base::StringPiece& attribute_name, int* val);
 
   static std::vector<WebContentsPreferences*> instances_;
 
   content::WebContents* web_contents_;
-  base::DictionaryValue web_preferences_;
-  base::DictionaryValue last_web_preferences_;
+
+  base::DictionaryValue dict_;
+  base::DictionaryValue last_dict_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

@@ -1370,22 +1370,21 @@ void NativeWindowViews::ShowAutofillPopup(
   bool is_offsceen = false;
   bool is_embedder_offscreen = false;
 
-  auto* web_contents_preferences =
-      WebContentsPreferences::FromWebContents(web_contents);
-  if (web_contents_preferences) {
-    const auto* web_preferences = web_contents_preferences->web_preferences();
-
-    web_preferences->GetBoolean("offscreen", &is_offsceen);
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  if (web_preferences) {
+    web_preferences->dict()->GetBoolean("offscreen", &is_offsceen);
     int guest_instance_id = 0;
-    web_preferences->GetInteger(options::kGuestInstanceID, &guest_instance_id);
+    web_preferences->dict()->GetInteger(options::kGuestInstanceID,
+                                        &guest_instance_id);
 
     if (guest_instance_id) {
-      auto manager = WebViewManager::GetWebViewManager(web_contents);
+      auto* manager = WebViewManager::GetWebViewManager(web_contents);
       if (manager) {
-        auto embedder = manager->GetEmbedder(guest_instance_id);
+        auto* embedder = manager->GetEmbedder(guest_instance_id);
         if (embedder) {
-          is_embedder_offscreen = WebContentsPreferences::IsPreferenceEnabled(
-              "offscreen", embedder);
+          auto* embedder_prefs = WebContentsPreferences::From(embedder);
+          is_embedder_offscreen = embedder_prefs &&
+                                  embedder_prefs->IsEnabled("offscreen");
         }
       }
     }

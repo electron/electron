@@ -118,15 +118,16 @@ class AtomBrowserClient : public brightray::BrowserClient,
                            int exit_code) override;
 
  private:
-  bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
-                                   content::BrowserContext* browser_context,
-                                   content::SiteInstance* current_instance,
-                                   const GURL& dest_url);
   struct ProcessPreferences {
     bool sandbox = false;
     bool native_window_open = false;
     bool disable_popups = false;
   };
+
+  bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
+                                   content::BrowserContext* browser_context,
+                                   content::SiteInstance* current_instance,
+                                   const GURL& dest_url);
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id);

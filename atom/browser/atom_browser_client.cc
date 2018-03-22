@@ -173,17 +173,15 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   host->AddFilter(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
-  content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
-  ProcessPreferences process_prefs;
-  process_prefs.sandbox =
-      WebContentsPreferences::IsPreferenceEnabled("sandbox", web_contents);
-  process_prefs.native_window_open =
-      WebContentsPreferences::IsPreferenceEnabled("nativeWindowOpen",
-                                                  web_contents);
-  process_prefs.disable_popups =
-      WebContentsPreferences::IsPreferenceEnabled("disablePopups",
-                                                  web_contents);
-  AddProcessPreferences(host->GetID(), process_prefs);
+  ProcessPreferences prefs;
+  auto* web_preferences = WebContentsPreferences::From(
+      GetWebContentsFromProcessID(process_id));
+  if (web_preferences) {
+    prefs.sandbox = web_preferences->IsEnabled("sandbox");
+    prefs.native_window_open = web_preferences->IsEnabled("nativeWindowOpen");
+    prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
+  }
+  AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
 }
@@ -211,8 +209,10 @@ void AtomBrowserClient::OverrideWebkitPrefs(
   prefs->allow_running_insecure_content = false;
 
   // Custom preferences of guest page.
-  auto web_contents = content::WebContents::FromRenderViewHost(host);
-  WebContentsPreferences::OverrideWebkitPrefs(web_contents, prefs);
+  auto* web_contents = content::WebContents::FromRenderViewHost(host);
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  if (web_preferences)
+    web_preferences->OverrideWebkitPrefs(prefs);
 }
 
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
@@ -235,10 +235,9 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   // Do we have an affinity site to manage ?
   std::string affinity;
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* web_preferences = web_contents ?
-      WebContentsPreferences::FromWebContents(web_contents) : nullptr;
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences &&
-      web_preferences->web_preferences()->GetString("affinity", &affinity) &&
+      web_preferences->dict()->GetString("affinity", &affinity) &&
       !affinity.empty()) {
     affinity = base::ToLowerASCII(affinity);
     auto iter = site_per_affinities.find(affinity);
@@ -323,8 +322,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 
   content::WebContents* web_contents = GetWebContentsFromProcessID(process_id);
   if (web_contents) {
-    WebContentsPreferences::AppendExtraCommandLineSwitches(
-        web_contents, command_line);
+    auto* web_preferences = WebContentsPreferences::From(web_contents);
+    if (web_preferences)
+      web_preferences->AppendCommandLineSwitches(command_line);
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
 
