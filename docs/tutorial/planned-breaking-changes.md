@@ -26,13 +26,13 @@ let windowB = new BrowserWindow(optionsB)
 
 // Deprecated
 window.on('app-command', (e, cmd) => {
-  if (cmd == 'media-play_pause') {
+  if (cmd === 'media-play_pause') {
     // do something
   }
 })
 // Replace with
 window.on('app-command', (e, cmd) => {
-  if (cmd == 'media-play-pause') {
+  if (cmd === 'media-play-pause') {
     // do something
   }
 })
