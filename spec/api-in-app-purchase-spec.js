@@ -4,8 +4,10 @@ const assert = require('assert')
 
 const {remote} = require('electron')
 
-describe('inAppPurchase module', () => {
+describe('inAppPurchase module', function () {
   if (process.platform !== 'darwin') return
+
+  this.timeout(3 * 60 * 1000)
 
   const {inAppPurchase} = remote
 
