@@ -283,8 +283,9 @@ void ShowOpenDialog(const DialogSettings& settings,
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
-    int chosen = [dialog runModal];
-    OpenDialogCompletion(chosen, dialog, settings, callback);
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      OpenDialogCompletion(chosen, dialog, settings, callback);
+    }];
   } else {
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
@@ -343,8 +344,9 @@ void ShowSaveDialog(const DialogSettings& settings,
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
-    int chosen = [dialog runModal];
-    SaveDialogCompletion(chosen, dialog, settings, callback);
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      SaveDialogCompletion(chosen, dialog, settings, callback);
+    }];
   } else {
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
