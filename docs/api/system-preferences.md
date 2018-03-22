@@ -61,6 +61,14 @@ that contains the user information dictionary sent along with the notification.
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
 
+### `systemPreferences.postWorkspaceNotification(event, userInfo)` _macOS_
+
+* `event` String
+* `userInfo` Object
+
+Posts `event` as native notifications of macOS. The `userInfo` is an Object
+that contains the user information dictionary sent along with the notification.
+
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
 * `event` String
@@ -84,12 +92,6 @@ example values of `event` are:
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
-### `systemPreferences.unsubscribeNotification(id)` _macOS_
-
-* `id` Integer
-
-Removes the subscriber with `id`.
-
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
 * `event` String
@@ -100,11 +102,33 @@ Removes the subscriber with `id`.
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
+### `systemPreferences.subscribeWorkspaceNotification(event, callback)` _macOS_
+
+* `event` String
+* `callback` Function
+  * `event` String
+  * `userInfo` Object
+
+Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
+This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
+
+### `systemPreferences.unsubscribeNotification(id)` _macOS_
+
+* `id` Integer
+
+Removes the subscriber with `id`.
+
 ### `systemPreferences.unsubscribeLocalNotification(id)` _macOS_
 
 * `id` Integer
 
 Same as `unsubscribeNotification`, but removes the subscriber from `NSNotificationCenter`.
+
+### `systemPreferences.unsubscribeWorkspaceNotification(id)` _macOS_
+
+* `id` Integer
+
+Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.sharedWorkspace.notificationCenter`.
 
 ### `systemPreferences.registerDefaults(defaults)` _macOS_		
 

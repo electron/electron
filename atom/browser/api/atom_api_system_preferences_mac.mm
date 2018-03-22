@@ -30,19 +30,59 @@ std::map<int, id> g_id_map;
 
 void SystemPreferences::PostNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
-  DoPostNotification(name, user_info, false);
+  DoPostNotification(name, user_info, kNSDistributedNotificationCenter);
+}
+
+int SystemPreferences::SubscribeNotification(
+    const std::string& name, const NotificationCallback& callback) {
+  return DoSubscribeNotification(name, callback, kNSDistributedNotificationCenter);
+}
+
+void SystemPreferences::UnsubscribeNotification(int request_id) {
+  DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
 }
 
 void SystemPreferences::PostLocalNotification(const std::string& name,
     const base::DictionaryValue& user_info) {
-  DoPostNotification(name, user_info, true);
+  DoPostNotification(name, user_info, kNSNotificationCenter);
+}
+
+int SystemPreferences::SubscribeLocalNotification(
+    const std::string& name, const NotificationCallback& callback) {
+  return DoSubscribeNotification(name, callback, kNSNotificationCenter);
+}
+
+void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
+  DoUnsubscribeNotification(request_id, kNSNotificationCenter);
+}
+
+void SystemPreferences::PostWorkspaceNotification(const std::string& name,
+    const base::DictionaryValue& user_info) {
+  DoPostNotification(name, user_info, kNSWorkspaceNotificationCenter);
+}
+
+int SystemPreferences::SubscribeWorkspaceNotification(
+    const std::string& name, const NotificationCallback& callback) {
+  return DoSubscribeNotification(name, callback, kNSWorkspaceNotificationCenter);
+}
+
+void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
+  DoUnsubscribeNotification(request_id, kNSWorkspaceNotificationCenter);
 }
 
 void SystemPreferences::DoPostNotification(const std::string& name,
-    const base::DictionaryValue& user_info, bool is_local) {
-  NSNotificationCenter* center = is_local ?
-    [NSNotificationCenter defaultCenter] :
-    [NSDistributedNotificationCenter defaultCenter];
+    const base::DictionaryValue& user_info, NotificationCenterKind kind) {
+  NSNotificationCenter* center;
+  switch (kind) {
+    case kNSDistributedNotificationCenter: 
+      center = [NSDistributedNotificationCenter defaultCenter]; break;      
+    case kNSNotificationCenter: 
+      center = [NSNotificationCenter defaultCenter]; break;
+    case kNSWorkspaceNotificationCenter: 
+      center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+    default:
+      break;
+  }
   [center
      postNotificationName:base::SysUTF8ToNSString(name)
                    object:nil
@@ -50,32 +90,22 @@ void SystemPreferences::DoPostNotification(const std::string& name,
   ];
 }
 
-int SystemPreferences::SubscribeNotification(
-    const std::string& name, const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, false);
-}
-
-void SystemPreferences::UnsubscribeNotification(int request_id) {
-  DoUnsubscribeNotification(request_id, false);
-}
-
-int SystemPreferences::SubscribeLocalNotification(
-    const std::string& name, const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, true);
-}
-
-void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
-  DoUnsubscribeNotification(request_id, true);
-}
-
 int SystemPreferences::DoSubscribeNotification(const std::string& name,
-  const NotificationCallback& callback, bool is_local) {
+  const NotificationCallback& callback, NotificationCenterKind kind) {
   int request_id = g_next_id++;
   __block NotificationCallback copied_callback = callback;
-  NSNotificationCenter* center = is_local ?
-    [NSNotificationCenter defaultCenter] :
-    [NSDistributedNotificationCenter defaultCenter];
-
+  NSNotificationCenter* center;
+  switch (kind) {
+    case kNSDistributedNotificationCenter: 
+      center = [NSDistributedNotificationCenter defaultCenter]; break;      
+    case kNSNotificationCenter: 
+      center = [NSNotificationCenter defaultCenter]; break;
+    case kNSWorkspaceNotificationCenter: 
+      center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+    default:
+      break;
+  }
+  
   g_id_map[request_id] = [center
     addObserverForName:base::SysUTF8ToNSString(name)
     object:nil
@@ -97,13 +127,21 @@ int SystemPreferences::DoSubscribeNotification(const std::string& name,
   return request_id;
 }
 
-void SystemPreferences::DoUnsubscribeNotification(int request_id, bool is_local) {
+void SystemPreferences::DoUnsubscribeNotification(int request_id, NotificationCenterKind kind) {
   auto iter = g_id_map.find(request_id);
   if (iter != g_id_map.end()) {
     id observer = iter->second;
-    NSNotificationCenter* center = is_local ?
-      [NSNotificationCenter defaultCenter] :
-      [NSDistributedNotificationCenter defaultCenter];
+    NSNotificationCenter* center;
+    switch (kind) {
+      case kNSDistributedNotificationCenter: 
+        center = [NSDistributedNotificationCenter defaultCenter]; break;      
+      case kNSNotificationCenter: 
+        center = [NSNotificationCenter defaultCenter]; break;
+      case kNSWorkspaceNotificationCenter: 
+        center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+      default:
+        break;
+    }
     [center removeObserver:observer];
     g_id_map.erase(iter);
   }
