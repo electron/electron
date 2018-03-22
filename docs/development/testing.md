@@ -37,8 +37,8 @@ its own `package.json` and that its dependencies are therefore not defined
 in the top-level `package.json`.
 
 To run only specific tests matching a pattern, run `npm run test --
--g=PATTERN`, replacing the `PATTERN` with a regex that matches the test suites
-you would like to run. As an example: If you want to run only IPC suites, you
+-g=PATTERN`, replacing the `PATTERN` with a regex that matches the tests
+you would like to run. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
 
 [standard-addons]: https://standardjs.com/#are-there-text-editor-plugins
