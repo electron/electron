@@ -22,7 +22,7 @@ const versionType = args._[0]
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 if (!versionType && !args.notesOnly) {
   console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
-     ` (--stable) (--notesOnly) (--automaticRelease)`)
+     ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
   process.exit(1)
 }
 
@@ -243,7 +243,12 @@ async function prepareRelease (isBeta, notesOnly) {
     console.log(`${fail} Automatic release is only supported for beta releases`)
     process.exit(1)
   }
-  let currentBranch = await getCurrentBranch(gitDir)
+  let currentBranch
+  if (args.branch) {
+    currentBranch = args.branch
+  } else {
+    currentBranch = await getCurrentBranch(gitDir)
+  }
   if (notesOnly) {
     let releaseNotes = await getReleaseNotes(currentBranch)
     console.log(`Draft release notes are: \n${releaseNotes}`)

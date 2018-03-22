@@ -183,7 +183,11 @@ function uploadNodeShasums () {
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
   let scriptPath = path.join(__dirname, 'upload-index-json.py')
-  runScript(scriptPath, [])
+  let scriptArgs = []
+  if (args.automaticRelease) {
+    scriptArgs.push('-R')
+  }
+  runScript(scriptPath, scriptArgs)
   console.log(`${pass} Done uploading index.json to S3.`)
 }
 
