@@ -481,4 +481,56 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
   return dict.GetHandle();
 }
 
+// static
+v8::Local<v8::Value> Converter<blink::WebReferrerPolicy>::ToV8(
+      v8::Isolate* isolate,
+      const blink::WebReferrerPolicy& in) {
+  switch (in) {
+    case blink::kWebReferrerPolicyDefault:
+      return mate::StringToV8(isolate, "default");
+    case blink::kWebReferrerPolicyAlways:
+      return mate::StringToV8(isolate, "unsafe-url");
+    case blink::kWebReferrerPolicyNoReferrerWhenDowngrade:
+      return mate::StringToV8(isolate, "no-referrer-when-downgrade");
+    case blink::kWebReferrerPolicyNever:
+      return mate::StringToV8(isolate, "no-referrer");
+    case blink::kWebReferrerPolicyOrigin:
+      return mate::StringToV8(isolate, "origin");
+    case blink::kWebReferrerPolicyNoReferrerWhenDowngradeOriginWhenCrossOrigin:
+      return mate::StringToV8(isolate, "strict-origin-when-cross-origin");
+    case blink::kWebReferrerPolicySameOrigin:
+      return mate::StringToV8(isolate, "same-origin");
+    case blink::kWebReferrerPolicyStrictOrigin:
+      return mate::StringToV8(isolate, "strict-origin");
+    default:
+      return mate::StringToV8(isolate, "no-referrer");
+  }
+}
+
+// static
+bool Converter<blink::WebReferrerPolicy>::FromV8(v8::Isolate* isolate,
+      v8::Handle<v8::Value> val, blink::WebReferrerPolicy* out) {
+  std::string policy = base::ToLowerASCII(V8ToString(val));
+  if (policy == "default")
+    *out = blink::kWebReferrerPolicyDefault;
+  else if (policy == "unsafe-url")
+    *out = blink::kWebReferrerPolicyAlways;
+  else if (policy == "no-referrer-when-downgrade")
+    *out = blink::kWebReferrerPolicyNoReferrerWhenDowngrade;
+  else if (policy == "no-referrer")
+    *out = blink::kWebReferrerPolicyNever;
+  else if (policy == "origin")
+    *out = blink::kWebReferrerPolicyOrigin;
+  else if (policy == "strict-origin-when-cross-origin")
+    *out =
+        blink::kWebReferrerPolicyNoReferrerWhenDowngradeOriginWhenCrossOrigin;
+  else if (policy == "same-origin")
+    *out = blink::kWebReferrerPolicySameOrigin;
+  else if (policy == "strict-origin")
+    *out = blink::kWebReferrerPolicyStrictOrigin;
+  else
+    return false;
+  return true;
+}
+
 }  // namespace mate

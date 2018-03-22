@@ -1089,10 +1089,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   content::NavigationController::LoadURLParams params(url);
 
-  GURL http_referrer;
-  if (options.Get("httpReferrer", &http_referrer))
-    params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
-                                        blink::kWebReferrerPolicyDefault);
+  if (!options.Get("httpReferrer", &params.referrer)) {
+    GURL http_referrer;
+    if (options.Get("httpReferrer", &http_referrer))
+      params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
+                                          blink::kWebReferrerPolicyDefault);
+  }
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))

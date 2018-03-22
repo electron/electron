@@ -119,6 +119,14 @@ struct Converter<blink::WebCache::ResourceTypeStats> {
       const blink::WebCache::ResourceTypeStats& stats);
 };
 
+template<>
+struct Converter<blink::WebReferrerPolicy> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+      const blink::WebReferrerPolicy& in);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+                     blink::WebReferrerPolicy* out);
+};
+
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
 

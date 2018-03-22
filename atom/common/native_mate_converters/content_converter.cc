@@ -323,8 +323,26 @@ v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate, const content::Referrer& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
-  dict.Set("policy", ConvertToV8(isolate, static_cast<int>(val.policy)));
+  dict.Set("policy", ConvertToV8(isolate, val.policy));
   return mate::ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<content::Referrer>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    content::Referrer* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  if (!dict.Get("url", &out->url))
+    return false;
+
+  if (!dict.Get("policy", &out->policy))
+    return false;
+
+  return true;
 }
 
 }  // namespace mate
