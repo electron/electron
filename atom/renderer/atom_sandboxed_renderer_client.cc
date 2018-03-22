@@ -38,7 +38,6 @@ namespace {
 const std::string kIpcKey = "ipcNative";
 const std::string kModuleCacheKey = "native-module-cache";
 
-
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
   v8::Local<v8::Value> cache;
@@ -158,8 +157,6 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   std::string preload_script = command_line->GetSwitchValueASCII(
       switches::kPreloadScript);
-  if (preload_script.empty())
-    return;
 
   auto isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
