@@ -125,10 +125,10 @@ bool DesktopCapturer::OnRefreshFinished() {
       }
     }
   }
-#elif defined(OS_MAC)
+#elif defined(OS_MACOSX)
   // On Mac, the IDs across the APIs match.
   for (auto& source : sources) {
-    source.screen_api_id = base::Int64ToString(source.id);
+    source.screen_api_id = base::Int64ToString(source.media_list_source.id.id);
   }
 #endif  // defined(OS_WIN)
 
