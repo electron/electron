@@ -62,8 +62,8 @@ describe('desktopCapturer', () => {
   })
 
   it('returns a populated screen_api_id for screen sources on Windows and Mac', (done) => {
-    if (process.platform !== 'win32' && process.platform !== 'mac') {
-      this.skip();
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+      done();
     }
     desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
       assert.equal(error, null)
