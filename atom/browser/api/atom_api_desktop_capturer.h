@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 #define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 
+#include <string>
+
 #include "atom/browser/api/event_emitter.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
 #include "chrome/browser/media/native_desktop_media_list.h"
