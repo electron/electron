@@ -17,6 +17,12 @@ namespace api {
 class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
                        public DesktopMediaListObserver {
  public:
+  struct Source {
+    DesktopMediaList::Source media_list_source;
+    // Will be an empty string if not available.
+    std::string screen_api_id;
+  };
+
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -40,6 +46,7 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
 
  private:
   std::unique_ptr<DesktopMediaList> media_list_;
+  bool using_directx_capturer_;
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
