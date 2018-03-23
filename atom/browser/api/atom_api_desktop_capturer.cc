@@ -24,19 +24,18 @@ using base::PlatformThreadRef;
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::api::DesktopCapturer::Source> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const atom::api::DesktopCapturer::Source& source) {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const atom::api::DesktopCapturer::Source& source) {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
     content::DesktopMediaID id = source.media_list_source.id;
     dict.Set("name", base::UTF16ToUTF8(source.media_list_source.name));
     dict.Set("id", id.ToString());
-    dict.Set(
-        "thumbnail",
-        atom::api::NativeImage::Create(
-            isolate,
-            gfx::Image(source.media_list_source.thumbnail)));
+    dict.Set("thumbnail",
+             atom::api::NativeImage::Create(
+                 isolate, gfx::Image(source.media_list_source.thumbnail)));
     dict.Set("screen_api_id", source.screen_api_id);
     return ConvertToV8(isolate, dict);
   }
@@ -96,8 +95,8 @@ bool DesktopCapturer::OnRefreshFinished() {
   const auto media_list_sources = media_list_->GetSources();
   std::vector<DesktopCapturer::Source> sources;
   for (const auto& media_list_source : media_list_sources) {
-    sources.emplace_back(DesktopCapturer::Source{media_list_source,
-                                                 std::string()});
+    sources.emplace_back(
+        DesktopCapturer::Source{media_list_source, std::string()});
   }
 
 #if defined(OS_WIN)
@@ -130,7 +129,8 @@ bool DesktopCapturer::OnRefreshFinished() {
   for (auto& source : sources) {
     if (source.media_list_source.id.type ==
         content::DesktopMediaID::TYPE_SCREEN) {
-      source.screen_api_id = base::Int64ToString(source.media_list_source.id.id);
+      source.screen_api_id =
+          base::Int64ToString(source.media_list_source.id.id);
     }
   }
 #endif  // defined(OS_WIN)
