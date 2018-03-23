@@ -56,7 +56,7 @@ struct Converter<bool> {
                      bool* out);
 };
 
-#if !defined(OS_LINUX)
+#if !defined(OS_LINUX) && !defined(OS_FREEBSD)
 template<>
 struct Converter<unsigned long> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
