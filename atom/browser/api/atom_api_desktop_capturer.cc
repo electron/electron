@@ -60,7 +60,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                     const gfx::Size& thumbnail_size) {
   webrtc::DesktopCaptureOptions options =
     content::CreateDesktopCaptureOptions();
+#if defined(OS_WIN)
   using_directx_capturer_ = options.allow_directx_capturer();
+#endif  // defined(OS_WIN)
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
       capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)

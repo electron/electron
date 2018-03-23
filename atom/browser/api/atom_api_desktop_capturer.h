@@ -46,7 +46,9 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
 
  private:
   std::unique_ptr<DesktopMediaList> media_list_;
+#if defined(OS_WIN)
   bool using_directx_capturer_;
+#endif  // defined(OS_WIN)
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
