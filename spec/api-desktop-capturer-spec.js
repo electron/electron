@@ -40,7 +40,7 @@ describe('desktopCapturer', () => {
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
   })
 
-  it('responds to subsequest calls of different options', (done) => {
+  it('responds to subsequent calls of different options', (done) => {
     let callCount = 0
     const callback = (error, sources) => {
       callCount++
@@ -50,5 +50,26 @@ describe('desktopCapturer', () => {
 
     desktopCapturer.getSources({types: ['window']}, callback)
     desktopCapturer.getSources({types: ['screen']}, callback)
+  })
+
+  it('returns an empty screen_api_id for window sources', (done) => {
+    desktopCapturer.getSources({types: ['window']}, (error, sources) => {
+      assert.equal(error, null)
+      assert.notEqual(sources.length, 0)
+      sources.forEach((source) => { assert.equal(source.screen_api_id.length, 0) })
+      done()
+    })
+  })
+
+  it('returns a populated screen_api_id for screen sources on Windows and Mac', (done) => {
+    if (process.platform !== 'win32' && process.platform !== 'mac') {
+      this.skip();
+    }
+    desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
+      assert.equal(error, null)
+      assert.notEqual(sources.length, 0)
+      sources.forEach((source) => { assert.notEqual(source.screen_api_id.length, 0) })
+      done()
+    })
   })
 })
