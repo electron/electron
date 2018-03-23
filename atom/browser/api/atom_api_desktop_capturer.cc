@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
+#include <vector>
+
 using base::PlatformThreadRef;
 
 #include "atom/common/api/atom_api_native_image.h"
