@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script>
+      function load() {
+        require('electron').ipcRenderer.send('nav-lang', navigator.languages)
+        document.write(navigator.languages)
+      }
+      window.onload = load;
+    </script>
+  </head>
+  <body>
+
+  </body>
+</html>

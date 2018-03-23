@@ -50,6 +50,7 @@
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -102,6 +103,27 @@ struct PrintSettings {
   bool print_background;
   base::string16 device_name;
 };
+
+// This function will take the application locale and will create the list
+// of accept languages by appending en-US and en to the list.
+std::string GetAcceptLanguages() {
+  std::string locale = g_browser_process->GetApplicationLocale();
+  std::string languages(locale);
+  if (locale.compare("en-US") != 0) {
+    languages += ",";
+    if (locale.find('-') != std::string::npos) {
+      if (locale[0] != 'e' && locale[1] != 'n') {
+        for (int i = 0; locale[i] != '-'; ++i) {
+          languages += locale[i];
+        }
+        languages += ",";
+      }
+    }
+    languages += "en-US";
+  }
+  languages += ",en";
+  return languages;
+}
 
 }  // namespace
 
@@ -437,9 +459,11 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
+  auto* prefs = web_contents->GetMutableRendererPrefs();
+  prefs->accept_languages = GetAcceptLanguages();
+
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
-  auto* prefs = web_contents->GetMutableRendererPrefs();
   CR_DEFINE_STATIC_LOCAL(const gfx::FontRenderParams, params,
       (gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr)));
   prefs->should_antialias_text = params.antialiasing;
