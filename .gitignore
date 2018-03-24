@@ -43,3 +43,8 @@
 node_modules/
 SHASUMS256.txt
 **/package-lock.json
+**/yarn.lock
+
+# npm package
+/npm/dist
+/npm/path.txt
