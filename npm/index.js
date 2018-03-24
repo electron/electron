@@ -3,7 +3,7 @@ var path = require('path')
 
 var pathFile = path.join(__dirname, 'path.txt')
 
-function getElectronPath() {
+function getElectronPath () {
   if (fs.existsSync(pathFile)) {
     var executablePath = fs.readFileSync(pathFile, 'utf-8')
     if (process.env.ELECTRON_OVERRIDE_DIST_PATH) {
