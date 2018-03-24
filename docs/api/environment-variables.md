@@ -85,3 +85,13 @@ This environment variable will not work if the `crashReporter` is started.
 Shows the Windows's crash dialog when Electron crashes.
 
 This environment variable will not work if the `crashReporter` is started.
+
+### `ELECTRON_OVERRIDE_DIST_PATH`
+
+When running from the `electron` package using this variable will point
+the `electron` command at a locally built version of Electron instead of
+the one that was downloading during `npm install`.  Usage is like:
+
+```bash
+export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/D
+```
