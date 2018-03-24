@@ -507,7 +507,7 @@ void Window::SetSheetOffset(double offsetY, mate::Arguments* args) {
   window_->SetSheetOffset(offsetX, offsetY);
 }
 
-void Window::MoveTop(){
+void Window::MoveTop() {
   window_->MoveTop();
 }
 void Window::SetResizable(bool resizable) {

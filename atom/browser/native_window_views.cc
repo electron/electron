@@ -623,11 +623,13 @@ void NativeWindowViews::SetResizable(bool resizable) {
 
   resizable_ = resizable;
 }
-void NativeWindowViews::MoveTop(){
+void NativeWindowViews::MoveTop() {
 #if defined(OS_WIN)
   gfx::Point pos = GetPosition();
   gfx::Size size = GetSize();
-  ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP , pos.x(), pos.y(), size.width(), size.height(), SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW); 
+  ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP,
+                pos.x(), pos.y(), size.width(), size.height(),
+                SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 #endif
 }
 bool NativeWindowViews::IsResizable() {
