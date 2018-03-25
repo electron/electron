@@ -5,7 +5,7 @@ const {BrowserWindow, Menu, MenuItem} = remote
 const {sortMenuItems} = require('../lib/browser/api/menu-utils')
 const {closeWindow} = require('./window-helpers')
 
-describe.only('Menu module', () => {
+describe('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
@@ -242,7 +242,7 @@ describe.only('Menu module', () => {
         assert.equal(menu.items[2].label, '3')
       })
 
-      it.only('should position after existing item', () => {
+      it('should position after existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '1',
@@ -306,7 +306,7 @@ describe.only('Menu module', () => {
         assert.equal(menuTwo.items[2].label, 'c')
       })
 
-      it.only('should continue inserting items at next index when no specifier is present', () => {
+      it('should continue inserting items at next index when no specifier is present', () => {
         const menu = Menu.buildFromTemplate([
           {
             label: '4',
