@@ -302,27 +302,20 @@ browser windows.
 
 ## Menu Item Position
 
-You can make use of `position` and `id` to control how the item will be placed
-when building a menu with `Menu.buildFromTemplate`.
+You can make use of `before/after`, `beforeGroupContaining/afterGroupContaining` and `id` to control how the item will be placed when building a menu with `Menu.buildFromTemplate`.
 
-The `position` attribute of `MenuItem` has the form `[placement]=[id]`, where
-`placement` is one of `before`, `after`, or `endof` and `id` is the unique ID of
-an existing item in the menu:
-
-* `before` - Inserts this item before the id referenced item. If the
+* `before` - Inserts this item before the label referenced item. If the
   referenced item doesn't exist the item will be inserted at the end of
-  the menu.
-* `after` - Inserts this item after id referenced item. If the referenced
-  item doesn't exist the item will be inserted at the end of the menu.
-* `endof` - Inserts this item at the end of the logical group containing
-  the id referenced item (groups are created by separator items). If
-  the referenced item doesn't exist, a new separator group is created with
-  the given id and this item is inserted after that separator.
+  the menu. Also implies that the menu item in question should be placed in the same “group” as the item
+* `after` - Inserts this item after the label referenced item. If the
+  referenced item doesn't exist the item will be inserted at the end of
+  the menu. Also implies that the menu item in question should be placed in the same “group” as the item
+* `beforeGroupContaining` - Provides a means for a single context menu to declare
+  the placement of their containing group after to the containing group of the label specified item.
+* `afterGroupContaining` Provides a means for a single context menu to declare
+  the placement of their containing group before the containing group of the label specified item.
 
-When an item is positioned, all un-positioned items are inserted after
-it until a new item is positioned. So if you want to position a group of
-menu items in the same location you only need to specify a position for
-the first item.
+By default, items will be inserted in the order they exist in the template unless one of the specified positioning keywords is utilized. 
 
 ### Examples
 
