@@ -507,9 +507,12 @@ void Window::SetSheetOffset(double offsetY, mate::Arguments* args) {
   window_->SetSheetOffset(offsetX, offsetY);
 }
 
+#if defined(OS_WIN) || defined(OS_MACOSX)
 void Window::MoveTop() {
   window_->MoveTop();
 }
+#endif
+
 void Window::SetResizable(bool resizable) {
   window_->SetResizable(resizable);
 }
@@ -1056,7 +1059,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getMaximumSize", &Window::GetMaximumSize)
       .SetMethod("setSheetOffset", &Window::SetSheetOffset)
       .SetMethod("setResizable", &Window::SetResizable)
+#if defined(OS_WIN) || defined(OS_MACOSX)
       .SetMethod("moveTop", &Window::MoveTop)
+#endif
       .SetMethod("isResizable", &Window::IsResizable)
       .SetMethod("setMovable", &Window::SetMovable)
       .SetMethod("isMovable", &Window::IsMovable)
