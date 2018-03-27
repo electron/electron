@@ -133,26 +133,10 @@ describe('chromium feature', () => {
   })
 
   describe('navigator.languages', (done) => {
-    it('should have "en-US,en" at the end', () => {
-      let langLength = navigator.languages.length
-      assert.equal(navigator.languages[langLength - 2], 'en-US')
-      assert.equal(navigator.languages[langLength - 1], 'en')
-    })
-
-    it('should have the system locale first in the list', () => {
+    it('should return the system locale only', () => {
       let appLocale = app.getLocale()
+      assert.equal(navigator.languages.length, 1)
       assert.equal(navigator.languages[0], appLocale)
-    })
-
-    it('should not repeat en for non US english locales like en-GB', (done) => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'navigator-languages')
-      const electronPath = remote.getGlobal('process').execPath
-      let appProcess = ChildProcess.spawn(electronPath, [appPath, '--lang=en-GB'])
-      appProcess.stdout.on('data', (data) => {
-        let sdata = data.toString().replace(/(\r\n|\n|\r)/gm, '')
-        assert.equal(sdata, "[ 'en-GB', 'en-US', 'en' ]")
-        done()
-      })
     })
   })
 

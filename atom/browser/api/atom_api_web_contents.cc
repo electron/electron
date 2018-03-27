@@ -103,28 +103,6 @@ struct PrintSettings {
   bool print_background;
   base::string16 device_name;
 };
-
-// This function will take the application locale and will create the list
-// of accept languages by appending en-US and en to the list.
-std::string GetAcceptLanguages() {
-  std::string locale = g_browser_process->GetApplicationLocale();
-  std::string languages(locale);
-  if (locale.compare("en-US") != 0) {
-    languages += ",";
-    if (locale.find('-') != std::string::npos) {
-      if (locale[0] != 'e' && locale[1] != 'n') {
-        for (int i = 0; locale[i] != '-'; ++i) {
-          languages += locale[i];
-        }
-        languages += ",";
-      }
-    }
-    languages += "en-US";
-  }
-  languages += ",en";
-  return languages;
-}
-
 }  // namespace
 
 namespace mate {
@@ -460,7 +438,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   managed_web_contents()->GetView()->SetDelegate(this);
 
   auto* prefs = web_contents->GetMutableRendererPrefs();
-  prefs->accept_languages = GetAcceptLanguages();
+  prefs->accept_languages = g_browser_process->GetApplicationLocale();
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
