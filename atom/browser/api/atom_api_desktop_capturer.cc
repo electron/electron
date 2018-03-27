@@ -38,7 +38,7 @@ struct Converter<atom::api::DesktopCapturer::Source> {
     dict.Set("thumbnail",
              atom::api::NativeImage::Create(
                  isolate, gfx::Image(source.media_list_source.thumbnail)));
-    dict.Set("screen_api_id", source.screen_api_id);
+    dict.Set("display_id", source.display_id);
     return ConvertToV8(isolate, dict);
   }
 };
@@ -122,7 +122,7 @@ bool DesktopCapturer::OnRefreshFinished() {
         const int64_t device_id =
             display::win::DisplayInfo::DeviceIdFromDeviceName(
                 wide_device_name.c_str());
-        source.screen_api_id = base::Int64ToString(device_id);
+        source.display_id = base::Int64ToString(device_id);
       }
     }
   }
@@ -131,11 +131,14 @@ bool DesktopCapturer::OnRefreshFinished() {
   for (auto& source : sources) {
     if (source.media_list_source.id.type ==
         content::DesktopMediaID::TYPE_SCREEN) {
-      source.screen_api_id =
+      source.display_id =
           base::Int64ToString(source.media_list_source.id.id);
     }
   }
 #endif  // defined(OS_WIN)
+// TODO: Add Linux support. The IDs across APIs differ but Chrome only supports
+// capturing the entire desktop on Linux. Revisit this if individual screen
+// support is added.
 
   Emit("finished", sources);
   return false;

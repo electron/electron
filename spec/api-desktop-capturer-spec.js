@@ -1,5 +1,5 @@
 const assert = require('assert')
-const {desktopCapturer, remote} = require('electron')
+const {desktopCapturer, remote, screen} = require('electron')
 
 const isCI = remote.getGlobal('isCi')
 
@@ -52,23 +52,27 @@ describe('desktopCapturer', () => {
     desktopCapturer.getSources({types: ['screen']}, callback)
   })
 
-  it('returns an empty screen_api_id for window sources', (done) => {
+  it('returns an empty display_id for window sources', (done) => {
     desktopCapturer.getSources({types: ['window']}, (error, sources) => {
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)
-      sources.forEach((source) => { assert.equal(source.screen_api_id.length, 0) })
+      sources.forEach((source) => { assert.equal(source.display_id.length, 0) })
       done()
     })
   })
 
-  it('returns a populated screen_api_id for screen sources on Windows and Mac', (done) => {
+  it('returns display_ids matching the Screen API on Windows and Mac', (done) => {
     if (process.platform !== 'win32' && process.platform !== 'darwin') {
       done()
     }
+    const displays = screen.getAllDisplays();
     desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)
-      sources.forEach((source) => { assert.notEqual(source.screen_api_id.length, 0) })
+      assert.equal(sources.length, displays.length)
+      for (let i = 0; i < sources.length; i++) {
+        assert.equal(sources[i].display_id, displays[i].id)
+      }
       done()
     })
   })

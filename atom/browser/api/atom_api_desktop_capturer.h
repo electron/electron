@@ -22,7 +22,7 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
   struct Source {
     DesktopMediaList::Source media_list_source;
     // Will be an empty string if not available.
-    std::string screen_api_id;
+    std::string display_id;
   };
 
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
