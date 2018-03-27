@@ -390,7 +390,7 @@ window.eval = global.eval = function () {
 
 _Recommendation is Electron's default_
 
-By default, Electron will now allow websites loaded over `HTTPS` to load and
+By default, Electron will not allow websites loaded over `HTTPS` to load and
 execute scripts, CSS, or plugins from insecure sources (`HTTP`). Setting the
 property `allowRunningInsecureContent` to `true` disables that protection.
 
