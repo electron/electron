@@ -65,7 +65,7 @@ describe('desktopCapturer', () => {
     if (process.platform !== 'win32' && process.platform !== 'darwin') {
       done()
     }
-    const displays = screen.getAllDisplays();
+    const displays = screen.getAllDisplays()
     desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)

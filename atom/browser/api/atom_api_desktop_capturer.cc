@@ -136,9 +136,9 @@ bool DesktopCapturer::OnRefreshFinished() {
     }
   }
 #endif  // defined(OS_WIN)
-// TODO: Add Linux support. The IDs across APIs differ but Chrome only supports
-// capturing the entire desktop on Linux. Revisit this if individual screen
-// support is added.
+// TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome only
+// supports capturing the entire desktop on Linux. Revisit this if individual
+// screen support is added.
 
   Emit("finished", sources);
   return false;
