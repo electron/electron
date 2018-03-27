@@ -52,7 +52,11 @@ describe('desktopCapturer', () => {
     desktopCapturer.getSources({types: ['screen']}, callback)
   })
 
-  it('returns an empty display_id for window sources', (done) => {
+  it('returns an empty display_id for window sources on Windows and Mac', (done) => {
+    // Linux doesn't return any window sources.
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+      return done()
+    }
     desktopCapturer.getSources({types: ['window']}, (error, sources) => {
       assert.equal(error, null)
       assert.notEqual(sources.length, 0)
@@ -63,7 +67,7 @@ describe('desktopCapturer', () => {
 
   it('returns display_ids matching the Screen API on Windows and Mac', (done) => {
     if (process.platform !== 'win32' && process.platform !== 'darwin') {
-      done()
+      return done()
     }
     const displays = screen.getAllDisplays()
     desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
