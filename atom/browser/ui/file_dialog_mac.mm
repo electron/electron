@@ -154,6 +154,18 @@ bool ShowOpenDialog(const DialogSettings& settings,
   return true;
 }
 
+void OpenDialogCompletion(int chosen, NSOpenPanel* dialog,
+                          const DialogSettings& settings,
+                          const OpenDialogCallback& callback) {
+  if (chosen == NSFileHandlingPanelCancelButton) {
+    callback.Run(false, std::vector<base::FilePath>());
+  } else {
+    std::vector<base::FilePath> paths;
+    ReadDialogPaths(dialog, &paths);
+    callback.Run(true, paths);
+  }
+}
+
 void ShowOpenDialog(const DialogSettings& settings,
                     const OpenDialogCallback& c) {
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
@@ -167,25 +179,14 @@ void ShowOpenDialog(const DialogSettings& settings,
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
-    int chosen = [dialog runModal];
-    if (chosen == NSFileHandlingPanelCancelButton) {
-      callback.Run(false, std::vector<base::FilePath>());
-    } else {
-      std::vector<base::FilePath> paths;
-      ReadDialogPaths(dialog, &paths);
-      callback.Run(true, paths);
-    }
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      OpenDialogCompletion(chosen, dialog, settings, callback);
+    }];
   } else {
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
-      if (chosen == NSFileHandlingPanelCancelButton) {
-        callback.Run(false, std::vector<base::FilePath>());
-      } else {
-        std::vector<base::FilePath> paths;
-        ReadDialogPaths(dialog, &paths);
-        callback.Run(true, paths);
-      }
+      OpenDialogCompletion(chosen, dialog, settings, callback);
     }];
   }
 }
@@ -205,6 +206,17 @@ bool ShowSaveDialog(const DialogSettings& settings,
   return true;
 }
 
+void SaveDialogCompletion(int chosen, NSSavePanel* dialog,
+                          const DialogSettings& settings,
+                          const SaveDialogCallback& callback) {
+  if (chosen == NSFileHandlingPanelCancelButton) {
+    callback.Run(false, base::FilePath());
+  } else {
+    std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
+    callback.Run(true, base::FilePath(path));
+  }
+}
+
 void ShowSaveDialog(const DialogSettings& settings,
                     const SaveDialogCallback& c) {
   NSSavePanel* dialog = [NSSavePanel savePanel];
@@ -216,23 +228,14 @@ void ShowSaveDialog(const DialogSettings& settings,
 
   if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
       settings.force_detached) {
-    int chosen = [dialog runModal];
-    if (chosen == NSFileHandlingPanelCancelButton) {
-      callback.Run(false, base::FilePath());
-    } else {
-      std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
-      callback.Run(true, base::FilePath(path));
-    }
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      SaveDialogCompletion(chosen, dialog, settings, callback);
+    }];
   } else {
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
-      if (chosen == NSFileHandlingPanelCancelButton) {
-        callback.Run(false, base::FilePath());
-      } else {
-        std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
-        callback.Run(true, base::FilePath(path));
-      }
+      SaveDialogCompletion(chosen, dialog, settings, callback);
     }];
   }
 }
