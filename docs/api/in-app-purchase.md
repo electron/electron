@@ -24,7 +24,7 @@ The `inAppPurchase` module has the following methods:
 
 ### `inAppPurchase.purchaseProduct(productID, quantity, callback)`
 
-* `productID` String - The identifiers of the product to purchase. (the identifier of `com.example.app.product1` is `product1`).
+* `productID` String - The identifiers of the product to purchase. (The identifier of `com.example.app.product1` is `product1`).
 * `quantity` Integer (optional) - The number of items the user wants to purchase.
 * `callback` Function (optional) - The callback called when the payment is added to the PaymentQueue.
     * `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.

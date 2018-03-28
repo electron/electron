@@ -3,7 +3,7 @@
 ## Preparing
 
 ### Paid Applications Agreement
-If it's not already done, you’ll need to sign the Paid Applications Agreement and set up your banking and tax information in iTunes Connect. 
+If you haven't already, you’ll need to sign the Paid Applications Agreement and set up your banking and tax information in iTunes Connect. 
 
 [iTunes Connect Developer Help: Agreements, tax, and banking overview](https://help.apple.com/itunes-connect/developer/#/devb6df5ee51)
 
@@ -15,7 +15,7 @@ Then, you'll need to configure your in-app purchases in iTunes Connect, and incl
 
 ### Change the CFBundleIdentifier
 
-To test In-App Purchase in developement with Electron you'll have to change the `CFBundleIdentifier` in `node_modules/electron/dist/Electron.app/Contents/Info.plist`. You have to replace `com.github.electron` by the budle identifier of the application you created with iTunes Connect.
+To test In-App Purchase in development with Electron you'll have to change the `CFBundleIdentifier` in `node_modules/electron/dist/Electron.app/Contents/Info.plist`. You have to replace `com.github.electron` by the bundle identifier of the application you created with iTunes Connect.
 
 ```xml
 <key>CFBundleIdentifier</key>
@@ -25,7 +25,7 @@ To test In-App Purchase in developement with Electron you'll have to change the 
 
 ## Code example
 
-Here is an example that shows how tu use In-App Purchase in Electron. You'll have to replace the product ids by the identifiers of the products created with iTunes Connect (the identifier of `com.example.app.product1` is `product1`). Note that you have to listen to the `transactions-updated` event as soon as possible in your app.
+Here is an example that shows how to use In-App Purchases in Electron. You'll have to replace the product ids by the identifiers of the products created with iTunes Connect (the identifier of `com.example.app.product1` is `product1`). Note that you have to listen to the `transactions-updated` event as soon as possible in your app.
 
 
 ```javascript
@@ -94,7 +94,7 @@ if (!inAppPurchase.canMakePayments()) {
   console.log('The user is not allowed to make in-app purchase.')
 }
 
-// Retrieve and display the product informations.
+// Retrieve and display the product descriptions.
 inAppPurchase.getProducts(PRODUCT_IDS, (products) => {
   // Check the parameters.
   if (!Array.isArray(products) || products.length <= 0) {
