@@ -240,6 +240,8 @@
       'atom/browser/mac/in_app_purchase.mm',
       'atom/browser/mac/in_app_purchase_observer.h',
       'atom/browser/mac/in_app_purchase_observer.mm',
+      'atom/browser/mac/in_app_purchase_product.h',
+      'atom/browser/mac/in_app_purchase_product.mm',
       'atom/browser/native_browser_view.cc',
       'atom/browser/native_browser_view.h',
       'atom/browser/native_browser_view_mac.h',
