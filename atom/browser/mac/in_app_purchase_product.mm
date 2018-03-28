@@ -8,9 +8,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 
-
 #import <StoreKit/StoreKit.h>
-
 
 // ============================================================================
 //                             InAppPurchaseProduct
@@ -18,13 +16,13 @@
 
 // --------------------------------- Interface --------------------------------
 
-
 @interface InAppPurchaseProduct : NSObject<SKProductsRequestDelegate> {
  @private
   in_app_purchase::InAppPurchaseProductsCallback callback_;
 }
 
-- (id)initWithCallback:(const in_app_purchase::InAppPurchaseProductsCallback&)callback;
+- (id)initWithCallback:
+    (const in_app_purchase::InAppPurchaseProductsCallback&)callback;
 
 @end
 
@@ -37,7 +35,8 @@
  *
  * @param callback - The callback that will be called to return the products.
  */
-- (id)initWithCallback:(const in_app_purchase::InAppPurchaseProductsCallback&)callback {
+- (id)initWithCallback:
+    (const in_app_purchase::InAppPurchaseProductsCallback&)callback {
   if ((self = [super init])) {
     callback_ = callback;
   }
@@ -50,11 +49,10 @@
  *
  * @param productIDs - The products' id to fetch.
  */
-- (void)getProducts:(NSSet *)productIDs {
-
+- (void)getProducts:(NSSet*)productIDs {
   SKProductsRequest* productsRequest;
-  productsRequest = [[SKProductsRequest alloc]
-      initWithProductIdentifiers:productIDs];
+  productsRequest =
+      [[SKProductsRequest alloc] initWithProductIdentifiers:productIDs];
 
   productsRequest.delegate = self;
   [productsRequest start];
@@ -65,7 +63,6 @@
  */
 - (void)productsRequest:(SKProductsRequest*)request
      didReceiveResponse:(SKProductsResponse*)response {
-
   // Release request object.
   [request release];
 
@@ -75,14 +72,14 @@
   // Convert the products.
   std::vector<in_app_purchase::Product> converted;
   converted.reserve([products count]);
-  
+
   for (SKProduct* product in products) {
     converted.push_back([self skProductToStruct:product]);
   }
 
   // Send the callback to the browser thread.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE, base::Bind(callback_, converted));
+  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                   base::Bind(callback_, converted));
 
   [self release];
 }
@@ -93,17 +90,16 @@
  * @param price - The price to format.
  * @param priceLocal - The local format.
  */
-- (NSString*)formatPrice:(NSDecimalNumber*)price withLocal:(NSLocale*)priceLocal
-{
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+- (NSString*)formatPrice:(NSDecimalNumber*)price
+               withLocal:(NSLocale*)priceLocal {
+  NSNumberFormatter* numberFormatter = [[NSNumberFormatter alloc] init];
 
-    [numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
-    [numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
-    [numberFormatter setLocale:priceLocal];
-    
-    return [numberFormatter stringFromNumber:price];
+  [numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
+  [numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
+  [numberFormatter setLocale:priceLocal];
+
+  return [numberFormatter stringFromNumber:price];
 }
-
 
 /**
  * Convert a skProduct object to Product structure.
@@ -120,7 +116,8 @@
 
   // Product Attributes
   if (product.localizedDescription != nil) {
-    productStruct.localizedDescription = [product.localizedDescription UTF8String];
+    productStruct.localizedDescription =
+        [product.localizedDescription UTF8String];
   }
   if (product.localizedTitle != nil) {
     productStruct.localizedTitle = [product.localizedTitle UTF8String];
@@ -129,37 +126,33 @@
     productStruct.contentVersion = [product.contentVersion UTF8String];
   }
   if (product.contentLengths != nil) {
-  
     productStruct.contentLengths.reserve([product.contentLengths count]);
 
-    for (NSNumber * contentLength in product.contentLengths) {
-        productStruct.contentLengths.push_back([contentLength longLongValue]);
+    for (NSNumber* contentLength in product.contentLengths) {
+      productStruct.contentLengths.push_back([contentLength longLongValue]);
     }
   }
-  
+
   // Pricing Information
   if (product.price != nil) {
     productStruct.price = [product.price doubleValue];
 
-    if (product.priceLocale != nil){
-        productStruct.formattedPrice = [[self formatPrice:product.price withLocal:product.priceLocale] UTF8String];
+    if (product.priceLocale != nil) {
+      productStruct.formattedPrice =
+          [[self formatPrice:product.price withLocal:product.priceLocale]
+              UTF8String];
     }
-
   }
-
 
   // Downloadable Content Information
   if (product.downloadable == true) {
     productStruct.downloadable = true;
   }
 
-
   return productStruct;
 }
 
-
 @end
-
 
 // ============================================================================
 //                             C++ in_app_purchase
@@ -169,12 +162,13 @@ namespace in_app_purchase {
 
 void GetProducts(const std::vector<std::string>& productIDs,
                  const InAppPurchaseProductsCallback& callback) {
-  auto * iapProduct = [[InAppPurchaseProduct alloc] initWithCallback:callback];
+  auto* iapProduct = [[InAppPurchaseProduct alloc] initWithCallback:callback];
 
   // Convert the products' id to NSSet.
-  NSMutableSet * productsIDSet = [NSMutableSet setWithCapacity:productIDs.size()];
-  
-  for (auto &productID : productIDs) {  
+  NSMutableSet* productsIDSet =
+      [NSMutableSet setWithCapacity:productIDs.size()];
+
+  for (auto& productID : productIDs) {
     [productsIDSet addObject:base::SysUTF8ToNSString(productID)];
   }
 

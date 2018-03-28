@@ -10,9 +10,7 @@
 
 #include "base/callback.h"
 
-
 namespace in_app_purchase {
-
 
 // --------------------------- Structures ---------------------------
 
@@ -21,25 +19,25 @@ struct Product {
   std::string productIdentifier = "";
 
   // Product Attributes
-  std::string   localizedDescription     = "";
-  std::string   localizedTitle           = "";
-  std::string   contentVersion           = "";
+  std::string localizedDescription = "";
+  std::string localizedTitle = "";
+  std::string contentVersion = "";
   std::vector<long long> contentLengths;
 
   // Pricing Information
-  double price                     = 0.0;
-  std::string    formattedPrice    = "";
+  double price = 0.0;
+  std::string formattedPrice = "";
 
   // Downloadable Content Information
-  bool          downloadable                    = false;
+  bool downloadable = false;
 };
 
 // --------------------------- Typedefs ---------------------------
 
-typedef base::Callback<void(const std::vector<in_app_purchase::Product>&)> InAppPurchaseProductsCallback;
+typedef base::Callback<void(const std::vector<in_app_purchase::Product>&)>
+    InAppPurchaseProductsCallback;
 
 // --------------------------- Functions ---------------------------
-
 
 void GetProducts(const std::vector<std::string>& productIDs,
                  const InAppPurchaseProductsCallback& callback);

@@ -18,8 +18,8 @@ namespace atom {
 
 namespace api {
 
-class InAppPurchase: public mate::EventEmitter<InAppPurchase>,
-                     public in_app_purchase::TransactionObserver {
+class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
+                      public in_app_purchase::TransactionObserver {
  public:
   static mate::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 

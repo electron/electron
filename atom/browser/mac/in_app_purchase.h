@@ -9,7 +9,6 @@
 
 #include "base/callback.h"
 
-
 namespace in_app_purchase {
 
 // --------------------------- Typedefs ---------------------------

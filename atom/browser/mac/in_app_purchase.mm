@@ -11,7 +11,6 @@
 #import <CommonCrypto/CommonCrypto.h>
 #import <StoreKit/StoreKit.h>
 
-
 // ============================================================================
 //                             InAppPurchase
 // ============================================================================
@@ -51,7 +50,6 @@
   return self;
 }
 
-
 /**
  * Start the in-app purchase process.
  *
@@ -69,8 +67,6 @@
   productsRequest.delegate = self;
   [productsRequest start];
 }
-
-
 
 /**
  * Process product informations and start the payment.
@@ -141,14 +137,13 @@ bool CanMakePayments() {
 }
 
 void FinishAllTransactions() {
-  for (SKPaymentTransaction *transaction in SKPaymentQueue.defaultQueue.transactions) {
-      [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
-    }
+  for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
+           .transactions) {
+    [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+  }
 }
 
 void FinishTransactionByDate(const std::string& date) {
-
-
   // Create the date formatter.
   NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
   NSLocale* enUSPOSIXLocale =
@@ -157,13 +152,16 @@ void FinishTransactionByDate(const std::string& date) {
   [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZZ"];
 
   // Remove the transaction.
-  NSString * transactionDate = base::SysUTF8ToNSString(date);
+  NSString* transactionDate = base::SysUTF8ToNSString(date);
 
-   for (SKPaymentTransaction *transaction in SKPaymentQueue.defaultQueue.transactions) {
-      if ([transactionDate isEqualToString:[dateFormatter stringFromDate:transaction.transactionDate]]) {
-        [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
-      }
+  for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
+           .transactions) {
+    if ([transactionDate
+            isEqualToString:[dateFormatter
+                                stringFromDate:transaction.transactionDate]]) {
+      [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
     }
+  }
 }
 
 std::string GetReceiptURL() {
