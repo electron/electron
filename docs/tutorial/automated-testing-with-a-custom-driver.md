@@ -6,12 +6,12 @@ To create a custom driver, we'll use nodejs' [child_process](https://nodejs.org/
 
 ```js
 var childProcess = require('child_process')
-var electron = require('./node_modules/electron')
+var electronPath = require('electron')
 
 // spawn the process
-var env = { ... }
+var env = { /*...*/ }
 var stdio = ['inherit', 'inherit', 'inherit', 'ipc']
-var appProcess = childProcess.spawn(electron, ['./app'], {stdio, env})
+var appProcess = childProcess.spawn(electronPath, ['./app'], {stdio, env})
 
 // listen for IPC messages from the app
 appProcess.on('message', (msg) => {
@@ -22,7 +22,7 @@ appProcess.on('message', (msg) => {
 appProcess.send({my: 'message'})
 ```
 
-From within the Electron app, you can listen for messages and send replies using the nodejs[process](https://nodejs.org/api/process.html) API:
+From within the Electron app, you can listen for messages and send replies using the nodejs [process](https://nodejs.org/api/process.html) API:
 
 ```js
 // listen for IPC messages from the test suite
@@ -90,7 +90,7 @@ if (process.env.APP_TEST_DRIVER) {
 
 async function onMessage ({msgId, cmd, args}) {
   var method = METHODS[cmd]
-  if (!method) method = () => new Error('Invalid method: '+cmd)
+  if (!method) method = () => new Error('Invalid method: ' + cmd)
   try {
     var resolve = await method(...args)
     process.send({msgId, resolve})
@@ -108,8 +108,7 @@ const METHODS = {
   isReady () {
     // do any setup needed
     return true
-  },
-  
+  }
   // define your RPC-able methods here
 }
 ```
@@ -118,10 +117,10 @@ Then, in your test suite, you can use your test-driver as follows:
 
 ```js
 var test = require('ava')
-var electron = require('./node_modules/electron')
+var electronPath = require('electron')
 
 var app = new TestDriver({
-  path: electron,
+  path: electronPath,
   args: ['./app'],
   env: {
     NODE_ENV: 'test'
