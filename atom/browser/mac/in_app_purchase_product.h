@@ -22,7 +22,7 @@ struct Product {
   std::string localizedDescription = "";
   std::string localizedTitle = "";
   std::string contentVersion = "";
-  std::vector<long long> contentLengths;
+  std::vector<uint32_t> contentLengths;
 
   // Pricing Information
   double price = 0.0;
