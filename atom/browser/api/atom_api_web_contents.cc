@@ -1151,11 +1151,7 @@ bool WebContents::IsLoading() const {
 }
 
 bool WebContents::IsLoadingMainFrame() const {
-  // Comparing site instances works because Electron always creates a new site
-  // instance when navigating, regardless of origin. See AtomBrowserClient.
-  return (web_contents()->GetLastCommittedURL().is_empty() ||
-          web_contents()->GetSiteInstance() !=
-          web_contents()->GetPendingSiteInstance()) && IsLoading();
+  return web_contents()->IsLoadingToDifferentDocument();
 }
 
 bool WebContents::IsWaitingForResponse() const {
