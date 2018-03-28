@@ -128,11 +128,6 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
-  // Set google API key.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  if (!env->HasVar("GOOGLE_API_KEY"))
-    env->SetVar("GOOGLE_API_KEY", GOOGLEAPIS_API_KEY);
-
   auto command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = command_line->GetSwitchValueASCII(
       ::switches::kProcessType);
