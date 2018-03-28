@@ -9,6 +9,7 @@
 
 #include "base/callback.h"
 
+
 namespace in_app_purchase {
 
 // --------------------------- Typedefs ---------------------------
@@ -18,6 +19,10 @@ typedef base::Callback<void(bool isProductValid)> InAppPurchaseCallback;
 // --------------------------- Functions ---------------------------
 
 bool CanMakePayments(void);
+
+void FinishAllTransactions(void);
+
+void FinishTransactionByDate(const std::string& date);
 
 std::string GetReceiptURL(void);
 
