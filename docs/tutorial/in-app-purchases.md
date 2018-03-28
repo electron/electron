@@ -17,7 +17,7 @@ Then, you'll need to configure your in-app purchases in iTunes Connect, and incl
 
 To test In-App Purchase in developement with Electron you'll have to change the `CFBundleIdentifier` in `node_modules/electron/dist/Electron.app/Contents/Info.plist`. You have to replace `com.github.electron` by the budle identifier of the application you created with iTunes Connect.
 
-```
+```xml
 <key>CFBundleIdentifier</key>
 <string>com.example.app</string>
 ```
@@ -122,5 +122,4 @@ inAppPurchase.getProducts(PRODUCT_IDS, (products) => {
     console.log('The payment has been added to the payment queue.')
   })
 })
-
 ```
