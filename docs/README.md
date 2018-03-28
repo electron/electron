@@ -59,6 +59,7 @@ an issue:
   * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
+  * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
 * [Application Distribution](tutorial/application-distribution.md)
   * [Supported Platforms](tutorial/supported-platforms.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
