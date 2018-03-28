@@ -41,7 +41,7 @@ describe('inAppPurchase module', function () {
     })
   })
 
-  it('getProducts() return an empty list when getting invalid product', (done) => {
+  it('getProducts() returns an empty list when getting invalid product', (done) => {
     inAppPurchase.getProducts(['non-exist'], (products) => {
       assert.ok(products.length === 0)
       done()
