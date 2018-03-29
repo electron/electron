@@ -159,6 +159,9 @@ class BrowserWindow : public mate::TrackableObject<BrowserWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
+  #if defined(OS_WIN) || defined(OS_MACOSX)
+  void MoveTop();
+  #endif
   bool IsMovable();
   void SetMinimizable(bool minimizable);
   bool IsMinimizable();
