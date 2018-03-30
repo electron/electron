@@ -238,11 +238,11 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }  // namespace
 
 Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : browser_context_(browser_context),
-      request_context_getter_(browser_context->url_request_context_getter()) {
+    : browser_context_(browser_context) {
   Init(isolate);
-  cookie_change_subscription_ = browser_context->RegisterCookieChangeCallback(
+  auto subscription = browser_context->RegisterCookieChangeCallback(
       base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
+  browser_context->set_cookie_change_subscription(std::move(subscription));
 }
 
 Cookies::~Cookies() {}
@@ -250,34 +250,38 @@ Cookies::~Cookies() {}
 void Cookies::Get(const base::DictionaryValue& filter,
                   const GetCallback& callback) {
   std::unique_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
-  auto getter = WrapRefCounted(request_context_getter_);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(GetCookiesOnIO, getter, Passed(&copied), callback));
+      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), Passed(&copied),
+                     callback));
 }
 
 void Cookies::Remove(const GURL& url, const std::string& name,
                      const base::Closure& callback) {
-  auto getter = WrapRefCounted(request_context_getter_);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(RemoveCookieOnIOThread, getter, url, name, callback));
+      base::BindOnce(RemoveCookieOnIOThread, base::RetainedRef(getter), url,
+                     name, callback));
 }
 
 void Cookies::Set(const base::DictionaryValue& details,
                   const SetCallback& callback) {
   std::unique_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
-  auto getter = WrapRefCounted(request_context_getter_);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(SetCookieOnIO, getter, Passed(&copied), callback));
+      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), Passed(&copied),
+                     callback));
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {
-  auto getter = WrapRefCounted(request_context_getter_);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(FlushCookieStoreOnIOThread, getter, callback));
+      base::BindOnce(FlushCookieStoreOnIOThread, base::RetainedRef(getter),
+                     callback));
 }
 
 void Cookies::OnCookieChanged(const CookieDetails* details) {

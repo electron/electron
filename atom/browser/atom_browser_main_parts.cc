@@ -110,10 +110,9 @@ int AtomBrowserMainParts::GetExitCode() {
   return exit_code_ != nullptr ? *exit_code_ : 0;
 }
 
-base::Closure AtomBrowserMainParts::RegisterDestructionCallback(
-    const base::Closure& callback) {
-  auto iter = destructors_.insert(destructors_.end(), callback);
-  return base::Bind(&Erase<std::list<base::Closure>>, &destructors_, iter);
+void AtomBrowserMainParts::RegisterDestructionCallback(
+    base::OnceClosure callback) {
+  destructors_.insert(destructors_.end(), std::move(callback));
 }
 
 void AtomBrowserMainParts::PreEarlyInitialization() {
@@ -242,9 +241,10 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
   // We don't use ranged for loop because iterators are getting invalided when
   // the callback runs.
   for (auto iter = destructors_.begin(); iter != destructors_.end();) {
-    base::Closure& callback = *iter;
+    base::OnceClosure callback = std::move(*iter);
+    if (!callback.is_null())
+      std::move(callback).Run();
     ++iter;
-    callback.Run();
   }
 }
 

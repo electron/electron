@@ -33,14 +33,6 @@ namespace {
 // List of registered custom standard schemes.
 std::vector<std::string> g_standard_schemes;
 
-// Clear protocol handlers in IO thread.
-void ClearJobFactoryInIO(
-    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
-  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
-      request_context_getter->job_factory());
-  job_factory->Clear();
-}
-
 }  // namespace
 
 std::vector<std::string> GetStandardSchemes() {
@@ -76,15 +68,11 @@ void RegisterStandardSchemes(const std::vector<std::string>& schemes,
 }
 
 Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : request_context_getter_(browser_context->GetRequestContext()),
-      weak_factory_(this) {
+    : browser_context_(browser_context), weak_factory_(this) {
   Init(isolate);
 }
 
 Protocol::~Protocol() {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
-      base::Bind(ClearJobFactoryInIO, request_context_getter_));
 }
 
 void Protocol::RegisterServiceWorkerSchemes(
@@ -96,12 +84,12 @@ void Protocol::UnregisterProtocol(
     const std::string& scheme, mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&Protocol::UnregisterProtocolInIO,
-                 request_context_getter_, scheme),
-      base::Bind(&Protocol::OnIOCompleted,
-                 GetWeakPtr(), callback));
+      base::BindOnce(&Protocol::UnregisterProtocolInIO,
+                     base::RetainedRef(getter), scheme),
+      base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
 }
 
 // static
@@ -118,10 +106,11 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
 
 void Protocol::IsProtocolHandled(const std::string& scheme,
                                  const BooleanCallback& callback) {
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&Protocol::IsProtocolHandledInIO,
-                 request_context_getter_, scheme),
+      base::Bind(&Protocol::IsProtocolHandledInIO, base::RetainedRef(getter),
+                 scheme),
       callback);
 }
 
@@ -136,12 +125,12 @@ void Protocol::UninterceptProtocol(
     const std::string& scheme, mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
+  auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&Protocol::UninterceptProtocolInIO,
-                 request_context_getter_, scheme),
-      base::Bind(&Protocol::OnIOCompleted,
-                 GetWeakPtr(), callback));
+      base::BindOnce(&Protocol::UninterceptProtocolInIO,
+                     base::RetainedRef(getter), scheme),
+      base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
 }
 
 // static
@@ -179,13 +168,6 @@ std::string Protocol::ErrorCodeToString(ProtocolError error) {
     case PROTOCOL_NOT_INTERCEPTED: return "The scheme has not been intercepted";
     default: return "Unexpected error";
   }
-}
-
-AtomURLRequestJobFactory* Protocol::GetJobFactoryInIO() const {
-  request_context_getter_->GetURLRequestContext();  // Force init.
-  return static_cast<AtomURLRequestJobFactory*>(
-      static_cast<brightray::URLRequestContextGetter*>(
-          request_context_getter_.get())->job_factory());
 }
 
 // static

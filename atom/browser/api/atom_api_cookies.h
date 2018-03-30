@@ -58,12 +58,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   void OnCookieChanged(const CookieDetails*);
 
  private:
-  // Store a reference to ensure this class gets destroyed before the context.
   scoped_refptr<AtomBrowserContext> browser_context_;
-  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
-      cookie_change_subscription_;
-
-  net::URLRequestContextGetter* request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

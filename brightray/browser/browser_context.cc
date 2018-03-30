@@ -92,11 +92,17 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 }
 
 BrowserContext::~BrowserContext() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
-  BrowserThread::DeleteSoon(BrowserThread::IO,
-                            FROM_HERE,
-                            resource_context_.release());
+  if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
+    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                              resource_context_.release());
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestContextGetter::NotifyContextShutdownOnIO,
+                       base::RetainedRef(url_request_getter_)));
+  }
 }
 
 void BrowserContext::InitPrefs() {
