@@ -1289,7 +1289,7 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPosition", &BrowserWindow::SetPosition)
       .SetMethod("getPosition", &BrowserWindow::GetPosition)
 #if defined(OS_WIN) || defined(OS_MACOSX)
-      .SetMethod("moveTop" , BrowserWindow::MoveTop)
+      .SetMethod("moveTop" , &BrowserWindow::MoveTop)
 #endif
       .SetMethod("setTitle", &BrowserWindow::SetTitle)
       .SetMethod("getTitle", &BrowserWindow::GetTitle)
