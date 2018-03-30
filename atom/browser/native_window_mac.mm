@@ -1192,6 +1192,9 @@ void NativeWindowMac::SetContentSizeConstraints(
   NativeWindow::SetContentSizeConstraints(size_constraints);
 }
 
+void NativeWindowMac::MoveTop(){
+  [window_ orderWindow:NSWindowAbove relativeTo:0];
+}
 void NativeWindowMac::SetResizable(bool resizable) {
   SetStyleMask(resizable, NSResizableWindowMask);
 }
