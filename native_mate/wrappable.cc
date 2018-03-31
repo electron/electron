@@ -10,9 +10,7 @@
 
 namespace mate {
 
-WrappableBase::WrappableBase()
-    : isolate_(nullptr), high_memory_(false) {
-}
+WrappableBase::WrappableBase() : isolate_(nullptr) {}
 
 WrappableBase::~WrappableBase() {
   if (wrapper_.IsEmpty())
@@ -38,9 +36,6 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   wrapper_.Reset(isolate, wrapper);
   wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
 
-  if (high_memory_)
-    wrapper_.MarkIndependent();
-
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
@@ -49,22 +44,12 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   AfterInit(isolate);
 }
 
-void WrappableBase::MarkHighMemoryUsage() {
-  high_memory_ = true;
-  if (!wrapper_.IsEmpty())
-    wrapper_.MarkIndependent();
-}
-
 // static
 void WrappableBase::FirstWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
   WrappableBase* wrappable = data.GetParameter();
   wrappable->wrapper_.Reset();
-  if (wrappable->high_memory_) {
-    delete wrappable;
-  } else {
-    data.SetSecondPassCallback(SecondWeakCallback);
-  }
+  data.SetSecondPassCallback(SecondWeakCallback);
 }
 
 // static
