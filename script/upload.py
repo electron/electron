@@ -85,12 +85,16 @@ def main():
   upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg),
                   args.upload_to_s3)
 
-  # Upload chromedriver and mksnapshot for minor version update.
-  if parse_version(args.version)[2] == '0':
-    chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
-    upload_electron(github, release, os.path.join(DIST_DIR, chromedriver),
-                    args.upload_to_s3)
-    mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
+  chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
+  upload_electron(github, release, os.path.join(DIST_DIR, chromedriver),
+                  args.upload_to_s3)
+  mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
+  upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
+                args.upload_to_s3)
+
+  if get_target_arch().startswith('arm'):
+    # Upload the x64 binary for arm/arm64 mksnapshot
+    mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
     upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
                     args.upload_to_s3)
 
