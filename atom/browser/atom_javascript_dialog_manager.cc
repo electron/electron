@@ -55,19 +55,25 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   origin_counts_[origin]++;
 
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
   std::string checkbox;
-  if (origin_counts_[origin] > 1) {
-    auto* web_preferences = WebContentsPreferences::From(web_contents);
-    if (web_preferences &&
-        web_preferences->IsEnabled("safeDialogs") &&
-        !web_preferences->dict()->GetString("safeDialogsMessage", &checkbox)) {
-      checkbox = "Prevent this app from creating additional dialogs";
-    }
+  if (origin_counts_[origin] > 1 &&
+      web_preferences &&
+      web_preferences->IsEnabled("safeDialogs") &&
+      !web_preferences->dict()->GetString("safeDialogsMessage", &checkbox)) {
+    checkbox = "Prevent this app from creating additional dialogs";
   }
 
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents);
+  // Don't set parent for offscreen window.
+  NativeWindow* window = nullptr;
+  if (web_preferences && !web_preferences->IsEnabled("offscreen")) {
+    auto* relay = NativeWindowRelay::FromWebContents(web_contents);
+    if (relay)
+      window = relay->window.get();
+  }
+
   atom::ShowMessageBox(
-      relay ? relay->window.get() : nullptr,
+      window,
       atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
       atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
       base::UTF16ToUTF8(message_text), "", checkbox,

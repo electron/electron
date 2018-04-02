@@ -146,8 +146,7 @@ int ShowMessageBox(NativeWindow* parent_window,
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!parent_window || !parent_window->GetNativeWindow() ||
-      parent_window->is_offscreen_dummy())
+  if (!parent_window)
     return [[alert autorelease] runModal];
 
   int ret_code = -1;
@@ -185,8 +184,7 @@ void ShowMessageBox(NativeWindow* parent_window,
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!parent_window || !parent_window->GetNativeWindow() ||
-      parent_window->is_offscreen_dummy()) {
+  if (!parent_window) {
     int ret = [[alert autorelease] runModal];
     callback.Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
