@@ -10,6 +10,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "chrome/common/pref_names.h"
@@ -89,12 +90,15 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   if (relay)
     window = relay->window.get();
 
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  bool offscreen = !web_preferences || web_preferences->IsEnabled("offscreen");
+
   base::FilePath path;
   GetItemSavePath(item, &path);
   // Show save dialog if save path was not set already on item
   file_dialog::DialogSettings settings;
   settings.parent_window = window;
-  settings.force_detached = window->is_offscreen_dummy();
+  settings.force_detached = offscreen;
   settings.title = item->GetURL().spec();
   settings.default_path = default_path;
   if (path.empty() && file_dialog::ShowSaveDialog(settings, &path)) {
