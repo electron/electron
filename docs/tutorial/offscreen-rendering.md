@@ -57,3 +57,16 @@ app.once('ready', () => {
 ```
 
 [disablehardwareacceleration]: ../api/app.md#appdisablehardwareacceleration
+
+## User Input
+
+When a window is rendered offscreen, Electron has no way to route user input to
+your window. This means that if you want to have user input in your
+application that is being rendered offscreen, you need to provide it yourself.
+
+You can send input events via the [`webContent.sendInputEvent()`]( https://electronjs.org/docs/api/web-contents#contentssendinputeventevent)
+method in `webContent`. You should also be sure to focus the window via the
+[`win.focusOnWebView()`](https://electronjs.org/docs/api/browser-window#winfocusonwebview)
+method in `BrowserWindow`.
+[`win.focus()`](https://electronjs.org/docs/api/browser-window#winfocus) will
+have no effect.
