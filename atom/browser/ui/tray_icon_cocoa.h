@@ -27,6 +27,7 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
   void SetHighlightMode(TrayIcon::HighlightMode mode) override;
+  void SetIgnoreDoubleClickEvents(bool ignore) override;
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;

@@ -25,6 +25,7 @@ const CGFloat kVerticalTitleMargin = 2;
   atom::TrayIconCocoa* trayIcon_;       // weak
   AtomMenuController* menuController_;  // weak
   atom::TrayIcon::HighlightMode highlight_mode_;
+  BOOL ignoreDoubleClickEvents_;
   BOOL forceHighlight_;
   BOOL inMouseEventSequence_;
   BOOL ANSI_;
@@ -44,6 +45,7 @@ const CGFloat kVerticalTitleMargin = 2;
   image_.reset([image copy]);
   trayIcon_ = icon;
   highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
+  ignoreDoubleClickEvents_ = NO;
   forceHighlight_ = NO;
   inMouseEventSequence_ = NO;
 
@@ -204,6 +206,10 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
+- (void) setIgnoreDoubleClickEvents:(BOOL)ignore {
+  ignoreDoubleClickEvents_ = ignore;
+}
+
 - (void)setTitle:(NSString*)title {
   if (title.length > 0) {
     title_.reset([title copy]);
@@ -278,6 +284,17 @@ const CGFloat kVerticalTitleMargin = 2;
   // Don't emit click events when menu is showing.
   if (menuController_)
     return;
+
+  // If we are ignoring double click events, we should ignore the `clickCount`
+  // value and immediately emit a click event.
+  if (ignoreDoubleClickEvents_ == YES) {
+    trayIcon_->NotifyClicked(
+        gfx::ScreenRectFromNSRect(event.window.frame),
+        gfx::ScreenPointFromNSPoint([event locationInWindow]),
+        ui::EventFlagsFromModifiers([event modifierFlags]));
+    [self setNeedsDisplay:YES];
+    return;
+  }
 
   // Single click event.
   if (event.clickCount == 1)
@@ -435,6 +452,10 @@ void TrayIconCocoa::SetTitle(const std::string& title) {
 
 void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
   [status_item_view_ setHighlight:mode];
+}
+
+void TrayIconCocoa::SetIgnoreDoubleClickEvents(bool ignore) {
+  [status_item_view_ setIgnoreDoubleClickEvents:ignore];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,

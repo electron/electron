@@ -51,6 +51,10 @@ class TrayIcon {
   };
   virtual void SetHighlightMode(HighlightMode mode);
 
+  // Sets the flag which determines whether to ignore double click events. This
+  // only works on macOS.
+  virtual void SetIgnoreDoubleClickEvents(bool ignore);
+
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.
   virtual void DisplayBalloon(ImageType icon,

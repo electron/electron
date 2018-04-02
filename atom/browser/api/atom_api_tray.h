@@ -70,6 +70,7 @@ class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title);
   void SetHighlightMode(TrayIcon::HighlightMode mode);
+  void SetIgnoreDoubleClickEvents(bool ignore);
   void DisplayBalloon(mate::Arguments* args, const mate::Dictionary& options);
   void PopUpContextMenu(mate::Arguments* args);
   void SetContextMenu(v8::Isolate* isolate, mate::Handle<Menu> menu);
