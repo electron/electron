@@ -132,6 +132,14 @@ describe('chromium feature', () => {
     })
   })
 
+  describe('navigator.languages', (done) => {
+    it('should return the system locale only', () => {
+      let appLocale = app.getLocale()
+      assert.equal(navigator.languages.length, 1)
+      assert.equal(navigator.languages[0], appLocale)
+    })
+  })
+
   describe('navigator.serviceWorker', () => {
     it('should register for file scheme', (done) => {
       w = new BrowserWindow({
