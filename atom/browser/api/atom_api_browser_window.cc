@@ -154,7 +154,6 @@ void BrowserWindow::Init(v8::Isolate* isolate,
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
   web_contents->SetOwnerWindow(window_.get());
-  window_->set_is_offscreen_dummy(api_web_contents_->IsOffScreen());
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.

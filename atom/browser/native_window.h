@@ -271,9 +271,6 @@ class NativeWindow : public base::SupportsUserData {
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
-  void set_is_offscreen_dummy(bool is_dummy) { is_osr_dummy_ = is_dummy; }
-  bool is_offscreen_dummy() const { return is_osr_dummy_; }
-
   NativeBrowserView* browser_view() const { return browser_view_; }
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
@@ -318,9 +315,6 @@ class NativeWindow : public base::SupportsUserData {
 
   // Is this a modal window.
   bool is_modal_;
-
-  // Is this a dummy window for an offscreen WebContents.
-  bool is_osr_dummy_;
 
   // The browser view layer.
   NativeBrowserView* browser_view_;
