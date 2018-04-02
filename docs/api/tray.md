@@ -241,6 +241,15 @@ win.on('hide', () => {
 })
 ```
 
+#### `tray.setIgnoreDoubleClickEvents(ignore)` _macOS_
+
+* `ignore` Boolean
+
+Sets the option to ignore double click events. Ignoring these events allow you
+to detect every individual click of the tray icon.
+
+This value is set to false by default.
+
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
