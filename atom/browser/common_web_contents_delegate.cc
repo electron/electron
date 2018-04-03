@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
@@ -150,7 +151,8 @@ bool IsDevToolsFileSystemAdded(
 }  // namespace
 
 CommonWebContentsDelegate::CommonWebContentsDelegate()
-    : ignore_menu_shortcuts_(false),
+    : offscreen_(false),
+      ignore_menu_shortcuts_(false),
       html_fullscreen_(false),
       native_fullscreen_(false),
       devtools_file_system_indexer_(new DevToolsFileSystemIndexer) {
@@ -167,6 +169,10 @@ void CommonWebContentsDelegate::InitWithWebContents(
 
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
+
+  // Determien whether the WebContents is offscreen.
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  offscreen_ = !web_preferences || web_preferences->IsEnabled("offscreen");
 
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
@@ -243,8 +249,7 @@ void CommonWebContentsDelegate::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(
-        owner_window(), owner_window()->is_offscreen_dummy()));
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
   web_dialog_helper_->RunFileChooser(render_frame_host, params);
 }
 
@@ -252,8 +257,7 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
                                                    int request_id,
                                                    const base::FilePath& path) {
   if (!web_dialog_helper_)
-    web_dialog_helper_.reset(new WebDialogHelper(
-        owner_window(), owner_window()->is_offscreen_dummy()));
+    web_dialog_helper_.reset(new WebDialogHelper(owner_window(), offscreen_));
   web_dialog_helper_->EnumerateDirectory(guest, request_id, path);
 }
 
@@ -301,7 +305,7 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(
   } else {
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
-    settings.force_detached = owner_window()->is_offscreen_dummy();
+    settings.force_detached = offscreen_;
     settings.title = url;
     settings.default_path = base::FilePath::FromUTF8Unsafe(url);
     if (!file_dialog::ShowSaveDialog(settings, &path)) {
@@ -368,7 +372,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     std::vector<base::FilePath> paths;
     file_dialog::DialogSettings settings;
     settings.parent_window = owner_window();
-    settings.force_detached = owner_window()->is_offscreen_dummy();
+    settings.force_detached = offscreen_;
     settings.properties = file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
     if (!file_dialog::ShowOpenDialog(settings, &paths))
       return;

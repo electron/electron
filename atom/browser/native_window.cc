@@ -32,7 +32,6 @@ NativeWindow::NativeWindow(
       aspect_ratio_(0.0),
       parent_(parent),
       is_modal_(false),
-      is_osr_dummy_(false),
       browser_view_(nullptr),
       weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
