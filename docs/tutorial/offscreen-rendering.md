@@ -57,3 +57,15 @@ app.once('ready', () => {
 ```
 
 [disablehardwareacceleration]: ../api/app.md#appdisablehardwareacceleration
+
+## User Input
+
+"Off screen windows do not receive user input by default. If your window
+requires user input you will need to route it there manually.
+
+You can send input events via the [`webContent.sendInputEvent()`]( https://electronjs.org/docs/api/web-contents#contentssendinputeventevent)
+method in `webContent`. You should also be sure to focus the window via the
+[`win.focusOnWebView()`](https://electronjs.org/docs/api/browser-window#winfocusonwebview)
+method in `BrowserWindow`.
+[`win.focus()`](https://electronjs.org/docs/api/browser-window#winfocus) will
+have no effect.
