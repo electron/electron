@@ -328,8 +328,6 @@ NativeWindowViews::NativeWindowViews(
   window_->CenterWindow(size);
   Layout();
 
-  autofill_popup_.reset(new AutofillPopup(GetNativeView()));
-
 #if defined(OS_WIN)
   // Save initial window state.
   if (fullscreen)
@@ -1172,6 +1170,10 @@ void NativeWindowViews::SetEnabled(bool enable) {
 #endif
 }
 
+int NativeWindowViews::GetMenuBarHeight() const {
+  return menu_bar_visible_ ? 0 : kMenuBarHeight;
+}
+
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
@@ -1361,49 +1363,6 @@ void NativeWindowViews::HandleKeyboardEvent(
   }
 }
 
-void NativeWindowViews::ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::WebContents* web_contents,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
-  bool is_offsceen = false;
-  bool is_embedder_offscreen = false;
-
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
-  if (web_preferences) {
-    web_preferences->dict()->GetBoolean("offscreen", &is_offsceen);
-    int guest_instance_id = 0;
-    web_preferences->dict()->GetInteger(options::kGuestInstanceID,
-                                        &guest_instance_id);
-
-    if (guest_instance_id) {
-      auto* manager = WebViewManager::GetWebViewManager(web_contents);
-      if (manager) {
-        auto* embedder = manager->GetEmbedder(guest_instance_id);
-        if (embedder) {
-          auto* embedder_prefs = WebContentsPreferences::From(embedder);
-          is_embedder_offscreen = embedder_prefs &&
-                                  embedder_prefs->IsEnabled("offscreen");
-        }
-      }
-    }
-  }
-
-  autofill_popup_->CreateView(
-      frame_host,
-      is_offsceen || is_embedder_offscreen,
-      widget(),
-      bounds);
-  autofill_popup_->SetItems(values, labels);
-  autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
-}
-
-void NativeWindowViews::HideAutofillPopup(
-    content::RenderFrameHost* frame_host) {
-  autofill_popup_->Hide();
-}
-
 void NativeWindowViews::Layout() {
   const auto size = GetContentsBounds().size();
   const auto menu_bar_bounds =
@@ -1419,8 +1378,8 @@ void NativeWindowViews::Layout() {
                   size.height() - menu_bar_bounds.height()));
   }
 
-  if (autofill_popup_.get())
-    autofill_popup_->UpdatePopupBounds(menu_bar_visible_ ? 0 : kMenuBarHeight);
+  // if (autofill_popup_.get())
+  //   autofill_popup_->UpdatePopupBounds(GetMenuBarHeight());
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() const {

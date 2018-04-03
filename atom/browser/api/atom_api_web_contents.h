@@ -384,10 +384,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
 
+#if defined(TOOLKIT_VIEWS)
   void ShowAutofillPopup(content::RenderFrameHost* frame_host,
                          const gfx::RectF& bounds,
                          const std::vector<base::string16>& values,
                          const std::vector<base::string16>& labels);
+#endif
 
  private:
   struct FrameDispatchHelper;

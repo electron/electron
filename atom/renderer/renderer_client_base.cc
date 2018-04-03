@@ -148,7 +148,9 @@ void RendererClientBase::RenderThreadStarted() {
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+#if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
+#endif
   new PepperHelper(render_frame);
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);

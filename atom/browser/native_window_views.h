@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atom/browser/ui/accelerator_util.h"
-#include "atom/browser/ui/autofill_popup.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -139,7 +138,10 @@ class NativeWindowViews : public NativeWindow,
 
   void SetEnabled(bool enable) override;
 
+  int GetMenuBarHeight() const;
+
   views::Widget* widget() const { return window_.get(); }
+  views::View* web_view() const { return web_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if defined(OS_WIN)
@@ -192,13 +194,6 @@ class NativeWindowViews : public NativeWindow,
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
-  void ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::WebContents* web_contents,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) override;
-  void HideAutofillPopup(content::RenderFrameHost* frame_host) override;
 
   // views::View:
   void Layout() override;
@@ -215,8 +210,6 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::Widget> window_;
   views::View* web_view_;  // Managed by inspectable_web_contents_.
   views::View* focused_view_;  // The view should be focused by default.
-
-  std::unique_ptr<AutofillPopup> autofill_popup_;
 
   std::unique_ptr<MenuBar> menu_bar_;
   bool menu_bar_autohide_;

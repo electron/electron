@@ -215,13 +215,6 @@ class NativeWindow : public base::SupportsUserData {
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
-  virtual void ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::WebContents* web_contents,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {}
-  virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.

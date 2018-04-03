@@ -6,10 +6,7 @@
 #include <utility>
 #include <vector>
 
-#if defined(ENABLE_OSR)
-#include "atom/browser/osr/osr_render_widget_host_view.h"
-#include "atom/browser/osr/osr_view_proxy.h"
-#endif
+#include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
 #include "ui/display/display.h"
@@ -18,6 +15,11 @@
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/gfx/text_utils.h"
+
+#if defined(ENABLE_OSR)
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#include "atom/browser/osr/osr_view_proxy.h"
+#endif
 
 namespace atom {
 
@@ -95,20 +97,17 @@ std::pair<int, int> CalculatePopupYAndHeight(
   }
 }
 
-display::Display GetDisplayNearestPoint(
-    const gfx::Point& point,
-    gfx::NativeView container_view) {
+display::Display GetDisplayNearestPoint(const gfx::Point& point) {
   return display::Screen::GetScreen()->GetDisplayNearestPoint(point);
 }
 
 }  // namespace
 
-AutofillPopup::AutofillPopup(gfx::NativeView container_view)
-    : container_view_(container_view), view_(nullptr) {
+AutofillPopup::AutofillPopup() {
   bold_font_list_ =
-    gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
+      gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
   smaller_font_list_ =
-    gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
+      gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
 }
 
 AutofillPopup::~AutofillPopup() {
@@ -118,20 +117,20 @@ AutofillPopup::~AutofillPopup() {
 void AutofillPopup::CreateView(
     content::RenderFrameHost* frame_host,
     bool offscreen,
-    views::Widget* parent_widget,
+    views::View* parent,
     const gfx::RectF& r) {
   frame_host_ = frame_host;
+  parent_ = parent;
   gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()),
                std::floor(r.width()), std::floor(r.height()));
   gfx::Point menu_position(lb.origin());
   popup_bounds_in_view_ = lb;
-  views::View::ConvertPointToScreen(
-    parent_widget->GetContentsView(), &menu_position);
+  views::View::ConvertPointToScreen(parent, &menu_position);
   popup_bounds_ = gfx::Rect(menu_position, lb.size());
   element_bounds_ = popup_bounds_;
 
   Hide();
-  view_ = new AutofillPopupView(this, parent_widget);
+  view_ = new AutofillPopupView(this, parent->GetWidget());
   view_->Show();
 
 #if defined(ENABLE_OSR)
@@ -184,9 +183,9 @@ void AutofillPopup::UpdatePopupBounds(int height_compensation) {
       origin + gfx::Vector2d(desired_width, bounds.height() + desired_height);
 
   display::Display top_left_display =
-      GetDisplayNearestPoint(top_left_corner_of_popup, container_view_);
+      GetDisplayNearestPoint(top_left_corner_of_popup);
   display::Display bottom_right_display =
-      GetDisplayNearestPoint(bottom_right_corner_of_popup, container_view_);
+      GetDisplayNearestPoint(bottom_right_corner_of_popup);
 
   std::pair<int, int> popup_x_and_width =
       CalculatePopupXAndWidth(top_left_display, bottom_right_display,
