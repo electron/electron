@@ -43,7 +43,8 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
 }
 
 void CommonWebContentsDelegate::HideAutofillPopup() {
-  autofill_popup_->Hide();
+  if (autofill_popup_)
+    autofill_popup_->Hide();
 }
 
 gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
