@@ -1170,10 +1170,6 @@ void NativeWindowViews::SetEnabled(bool enable) {
 #endif
 }
 
-int NativeWindowViews::GetMenuBarHeight() const {
-  return menu_bar_visible_ ? 0 : kMenuBarHeight;
-}
-
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
   if (widget != window_.get())
@@ -1377,9 +1373,6 @@ void NativeWindowViews::Layout() {
         gfx::Rect(0, menu_bar_bounds.height(), size.width(),
                   size.height() - menu_bar_bounds.height()));
   }
-
-  // if (autofill_popup_.get())
-  //   autofill_popup_->UpdatePopupBounds(GetMenuBarHeight());
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() const {
