@@ -608,6 +608,9 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
+#if defined(TOOLKIT_VIEWS)
+  HideAutofillPopup();
+#endif
   if (managed_web_contents())
     managed_web_contents()->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)

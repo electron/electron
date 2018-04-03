@@ -13,6 +13,7 @@
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/gfx/text_utils.h"
 
@@ -119,17 +120,14 @@ void AutofillPopup::CreateView(
     bool offscreen,
     views::View* parent,
     const gfx::RectF& r) {
-  frame_host_ = frame_host;
-  parent_ = parent;
-  gfx::Rect lb(std::floor(r.x()), std::floor(r.y() + r.height()),
-               std::floor(r.width()), std::floor(r.height()));
-  gfx::Point menu_position(lb.origin());
-  popup_bounds_in_view_ = lb;
-  views::View::ConvertPointToScreen(parent, &menu_position);
-  popup_bounds_ = gfx::Rect(menu_position, lb.size());
-  element_bounds_ = popup_bounds_;
-
   Hide();
+
+  frame_host_ = frame_host;
+  element_bounds_ = gfx::ToEnclosedRect(r);
+
+  parent_ = parent;
+  parent_->AddObserver(this);
+
   view_ = new AutofillPopupView(this, parent->GetWidget());
   view_->Show();
 
@@ -144,6 +142,10 @@ void AutofillPopup::CreateView(
 }
 
 void AutofillPopup::Hide() {
+  if (parent_) {
+    parent_->RemoveObserver(this);
+    parent_ = nullptr;
+  }
   if (view_) {
     view_->Hide();
     view_ = nullptr;
@@ -151,27 +153,30 @@ void AutofillPopup::Hide() {
 }
 
 void AutofillPopup::SetItems(const std::vector<base::string16>& values,
-                            const std::vector<base::string16>& labels) {
+                             const std::vector<base::string16>& labels) {
+  DCHECK(view_);
   values_ = values;
   labels_ = labels;
-  if (view_) {
-    view_->OnSuggestionsChanged();
-  }
+  UpdatePopupBounds();
+  view_->OnSuggestionsChanged();
+  if (view_)  // could be hidden after the change
+    view_->DoUpdateBoundsAndRedrawPopup();
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
   frame_host_->Send(new AtomAutofillFrameMsg_AcceptSuggestion(
-    frame_host_->GetRoutingID(), GetValueAt(index)));
+      frame_host_->GetRoutingID(), GetValueAt(index)));
 }
 
-void AutofillPopup::UpdatePopupBounds(int height_compensation) {
+void AutofillPopup::UpdatePopupBounds() {
+  DCHECK(parent_);
+  gfx::Point origin(element_bounds_.origin());
+  views::View::ConvertPointToScreen(parent_, &origin);
+  gfx::Rect bounds(origin, element_bounds_.size());
+
   int desired_width = GetDesiredPopupWidth();
   int desired_height = GetDesiredPopupHeight();
   bool is_rtl = false;
-
-  gfx::Point origin(element_bounds_.origin().x(),
-                    element_bounds_.origin().y() - height_compensation);
-  gfx::Rect bounds(origin, element_bounds_.size());
 
   gfx::Point top_left_corner_of_popup =
       origin + gfx::Vector2d(bounds.width() - desired_width, -desired_height);
@@ -200,8 +205,15 @@ void AutofillPopup::UpdatePopupBounds(int height_compensation) {
   popup_bounds_in_view_ = gfx::Rect(
       popup_bounds_in_view_.origin(),
       gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
-  if (view_)
-    view_->DoUpdateBoundsAndRedrawPopup();
+}
+
+void AutofillPopup::OnViewBoundsChanged(views::View* view) {
+  UpdatePopupBounds();
+  view_->DoUpdateBoundsAndRedrawPopup();
+}
+
+void AutofillPopup::OnViewIsDeleting(views::View* view) {
+  Hide();
 }
 
 int AutofillPopup::GetDesiredPopupHeight() {

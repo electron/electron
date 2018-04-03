@@ -37,9 +37,9 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
     return;
 
   auto* window = static_cast<NativeWindowViews*>(owner_window());
-  autofill_popup_->CreateView(frame_host, offscreen, window, bounds);
+  autofill_popup_->CreateView(
+      frame_host, offscreen, window->web_view(), bounds);
   autofill_popup_->SetItems(values, labels);
-  autofill_popup_->UpdatePopupBounds(window->GetMenuBarHeight());
 }
 
 void CommonWebContentsDelegate::HideAutofillPopup() {

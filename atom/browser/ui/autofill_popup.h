@@ -18,7 +18,7 @@ namespace atom {
 
 class AutofillPopupView;
 
-class AutofillPopup {
+class AutofillPopup : public views::ViewObserver {
  public:
   AutofillPopup();
   ~AutofillPopup();
@@ -31,10 +31,14 @@ class AutofillPopup {
 
   void SetItems(const std::vector<base::string16>& values,
                 const std::vector<base::string16>& labels);
-  void UpdatePopupBounds(int height_compensation);
+  void UpdatePopupBounds();
 
  private:
   friend class AutofillPopupView;
+
+  // views::ViewObserver:
+  void OnViewBoundsChanged(views::View* view) override;
+  void OnViewIsDeleting(views::View* view) override;
 
   void AcceptSuggestion(int index);
 
