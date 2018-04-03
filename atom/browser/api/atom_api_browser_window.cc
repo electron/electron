@@ -748,6 +748,12 @@ std::vector<int> BrowserWindow::GetPosition() {
   return result;
 }
 
+#if defined(OS_WIN) || defined(OS_MACOSX)
+void BrowserWindow::MoveTop() {
+  window_->MoveTop();
+}
+#endif
+
 void BrowserWindow::SetTitle(const std::string& title) {
   window_->SetTitle(title);
 }
@@ -1281,6 +1287,9 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &BrowserWindow::Center)
       .SetMethod("setPosition", &BrowserWindow::SetPosition)
       .SetMethod("getPosition", &BrowserWindow::GetPosition)
+#if defined(OS_WIN) || defined(OS_MACOSX)
+      .SetMethod("moveTop" , &BrowserWindow::MoveTop)
+#endif
       .SetMethod("setTitle", &BrowserWindow::SetTitle)
       .SetMethod("getTitle", &BrowserWindow::GetTitle)
       .SetMethod("flashFrame", &BrowserWindow::FlashFrame)
