@@ -285,15 +285,17 @@ describe('<webview> tag', function () {
   describe('httpreferrer attribute', () => {
     it('sets the referrer url', (done) => {
       const referrer = 'http://github.com/'
-      const listener = (e) => {
-        assert.equal(e.message, referrer)
-        webview.removeEventListener('console-message', listener)
+      const server = http.createServer((req, res) => {
+        assert.equal(req.headers.referer, referrer)
+        res.end()
+        server.close()
         done()
-      }
-      webview.addEventListener('console-message', listener)
-      webview.setAttribute('httpreferrer', referrer)
-      webview.src = `file://${fixtures}/pages/referrer.html`
-      document.body.appendChild(webview)
+      }).listen(0, '127.0.0.1', () => {
+        const port = server.address().port
+        webview.setAttribute('httpreferrer', referrer)
+        webview.src = 'http://127.0.0.1:' + port
+        document.body.appendChild(webview)
+      })
     })
   })
 
