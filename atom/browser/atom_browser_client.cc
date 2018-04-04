@@ -64,9 +64,6 @@ bool g_suppress_renderer_process_restart = false;
 // Custom schemes to be registered to handle service worker.
 std::string g_custom_service_worker_schemes = "";
 
-void Noop(scoped_refptr<content::SiteInstance>) {
-}
-
 }  // namespace
 
 // static
@@ -101,7 +98,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     content::BrowserContext* browser_context,
     content::SiteInstance* current_instance,
     const GURL& url) {
-  if (url.SchemeIs(url::kJavaScriptScheme))
+  if (url.SchemeIs(url::kJavaScriptScheme) || url.SchemeIs("chrome-devtools"))
     // "javacript:" scheme should always use same SiteInstance
     return false;
 
@@ -218,23 +215,23 @@ void AtomBrowserClient::OverrideWebkitPrefs(
 void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     content::RenderFrameHost* rfh,
     content::BrowserContext* browser_context,
-    content::SiteInstance* current_instance,
     const GURL& url,
+    bool has_request_started,
+    content::SiteInstance* candidate_instance,
     content::SiteInstance** new_instance) {
   if (g_suppress_renderer_process_restart) {
     g_suppress_renderer_process_restart = false;
     return;
   }
 
+  content::SiteInstance* current_instance = rfh->GetSiteInstance();
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  scoped_refptr<content::SiteInstance> site_instance;
   if (!ShouldCreateNewSiteInstance(rfh, browser_context, current_instance, url))
     return;
 
-  bool is_new_instance = true;
-  scoped_refptr<content::SiteInstance> site_instance;
-
   // Do we have an affinity site to manage ?
   std::string affinity;
-  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences &&
       web_preferences->dict()->GetString("affinity", &affinity) &&
@@ -243,34 +240,31 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     auto iter = site_per_affinities.find(affinity);
     if (iter != site_per_affinities.end()) {
       site_instance = iter->second;
-      is_new_instance = false;
+      *new_instance = site_instance.get();
+      return;
     } else {
       // We must not provide the url.
       // This site is "isolated" and must not be taken into account
       // when Chromium looking at a candidate for an url.
-      site_instance = content::SiteInstance::Create(
-          browser_context);
+      site_instance = content::SiteInstance::Create(browser_context);
       site_per_affinities[affinity] = site_instance.get();
+      *new_instance = site_instance.get();
+      // Remember the original web contents for the pending renderer process.
+      auto pending_process = site_instance->GetProcess();
+      pending_processes_[pending_process->GetID()] = web_contents;
+      return;
     }
   } else {
-    site_instance = content::SiteInstance::CreateForURL(
-        browser_context,
-        url);
-  }
-  *new_instance = site_instance.get();
-
-  if (is_new_instance) {
-    // Make sure the |site_instance| is not freed
-    // when this function returns.
-    // FIXME(zcbenz): We should adjust
-    // OverrideSiteInstanceForNavigation's interface to solve this.
-    BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE,
-        base::Bind(&Noop, base::RetainedRef(site_instance)));
+    if (has_request_started) {
+      *new_instance = current_instance;
+      return;
+    }
 
     // Remember the original web contents for the pending renderer process.
-    auto pending_process = site_instance->GetProcess();
+    *new_instance = candidate_instance;
+    auto pending_process = candidate_instance->GetProcess();
     pending_processes_[pending_process->GetID()] = web_contents;
+    return;
   }
 }
 
