@@ -332,10 +332,6 @@ WebContents::WebContents(v8::Isolate* isolate, const mate::Dictionary& options)
       request_id_(0),
       background_throttling_(true),
       enable_devtools_(true) {
-  // WebContents may need to emit events when it is garbage collected, so it
-  // has to be deleted in the first gc callback.
-  MarkHighMemoryUsage();
-
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
