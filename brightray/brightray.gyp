@@ -46,6 +46,11 @@
           '<(libchromiumcontent_dir)/gen/third_party/WebKit',
         ],
       },
+      'defines': [
+        # See Chromium's "src/third_party/protobuf/BUILD.gn".
+        'GOOGLE_PROTOBUF_NO_RTTI',
+        'GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER',
+      ],
       'sources': [ '<@(brightray_sources)' ],
       'conditions': [
         # Link with libraries of libchromiumcontent.
