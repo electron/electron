@@ -106,7 +106,7 @@ DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
 }
 
 std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
-  return ResourceBundle::GetSharedInstance()
+  return ui::ResourceBundle::GetSharedInstance()
       .GetRawDataResource(IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE)
       .as_string();
 }
