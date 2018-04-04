@@ -224,12 +224,12 @@ def download_mips64el_toolchain():
 def download_native_mksnapshot(arch):
   if not os.path.exists(os.path.join(VENDOR_DIR,
                                      'native_mksnapshot')):
-    tar_name = 'native-mksnapshot.zip'
+    zip_name = 'native-mksnapshot.zip'
     url = '{0}/linux/{1}/{2}/{3}'.format(BASE_URL, arch,
-           get_libchromiumcontent_commit(), tar_name)
-    download(tar_name, url, os.path.join(SOURCE_ROOT, tar_name))
-    subprocess.call(['tar', '-jxf', tar_name, '-C', VENDOR_DIR])
-    os.remove(tar_name)
+           get_libchromiumcontent_commit(), zip_name)
+    download(zip_name, url, os.path.join(SOURCE_ROOT, zip_name))
+    subprocess.call(['unzip', zip_name, '-d', VENDOR_DIR])
+    os.remove(zip_name)
 
 def create_chrome_version_h():
   version_file = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'VERSION')
