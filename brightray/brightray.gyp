@@ -25,6 +25,7 @@
         '<(libchromiumcontent_src_dir)/third_party/mojo/src',
         '<(libchromiumcontent_src_dir)/third_party/WebKit',
         '<(libchromiumcontent_src_dir)/third_party/khronos',
+        '<(libchromiumcontent_src_dir)/third_party/protobuf/src',
         '<(libchromiumcontent_dir)/gen',
       ],
       'direct_dependent_settings': {
