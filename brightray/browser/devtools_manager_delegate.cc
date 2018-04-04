@@ -84,7 +84,7 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
-      CreateSocketFactory(), std::string(), base::FilePath(), base::FilePath());
+      CreateSocketFactory(), base::FilePath(), base::FilePath());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() {}
@@ -111,9 +111,8 @@ std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
       .as_string();
 }
 
-std::string DevToolsManagerDelegate::GetFrontendResource(
-    const std::string& path) {
-  return content::DevToolsFrontendHost::GetFrontendResource(path).as_string();
+bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+  return true;
 }
 
 }  // namespace brightray
