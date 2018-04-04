@@ -143,6 +143,9 @@ class NativeWindowViews : public NativeWindow,
   void SetEnabled(bool enable) override;
 
   views::Widget* widget() const { return window_.get(); }
+  void AddFocusChangeListener(views::FocusChangeListener* listener);
+  void RemoveFocusChangeListener(views::FocusChangeListener* listener);
+
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if defined(OS_WIN)

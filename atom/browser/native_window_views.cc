@@ -894,6 +894,14 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
+void NativeWindowViews::AddFocusChangeListener(views::FocusChangeListener* listener) {
+  GetFocusManager()->AddFocusChangeListener(listener);
+}
+
+void NativeWindowViews::RemoveFocusChangeListener(views::FocusChangeListener* listener) {
+  GetFocusManager()->RemoveFocusChangeListener(listener);
+}
+
 void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators
