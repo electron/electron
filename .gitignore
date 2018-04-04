@@ -40,6 +40,8 @@
 /vendor/llvm/
 /vendor/npm/
 /vendor/python_26/
+/vendor/native_mksnapshot
+/vendor/LICENSES.chromium.html
 node_modules/
 SHASUMS256.txt
 **/package-lock.json

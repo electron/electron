@@ -24,6 +24,7 @@ DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 CHROMIUM_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'download',
                             'libchromiumcontent', 'static_library')
+NATIVE_MKSNAPSHOT_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'native_mksnapshot')
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
@@ -140,7 +141,6 @@ def copy_chrome_binary(binary):
   # Copy file and keep the executable bit.
   shutil.copyfile(src, dest)
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
-
 
 def copy_vcruntime_binaries():
   with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
@@ -260,17 +260,39 @@ def create_dist_zip():
 
 
 def create_chrome_binary_zip(binary, version):
-  dist_name = get_zip_name(binary, version)
+  file_suffix = ''
+  create_native_mksnapshot = False
+  if binary == 'mksnapshot':
+    arch = get_target_arch()
+    if arch.startswith('arm'):
+      # if the arch is arm/arm64 the mksnapshot executable is an x64 binary,
+      # so name it as such.
+      file_suffix = 'x64'
+      create_native_mksnapshot = True
+  dist_name = get_zip_name(binary, version, file_suffix)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
+  files = ['LICENSE', 'LICENSES.chromium.html']
+  if PLATFORM == 'win32':
+    files += [binary + '.exe']
+  else:
+    files += [binary]
+
   with scoped_cwd(DIST_DIR):
-    files = ['LICENSE', 'LICENSES.chromium.html']
-    if PLATFORM == 'win32':
-      files += [binary + '.exe']
-    else:
-      files += [binary]
     make_zip(zip_file, files, [])
 
+  if create_native_mksnapshot == True:
+    # Create a zip with the native version of the mksnapshot binary.
+    src = os.path.join(NATIVE_MKSNAPSHOT_DIR, binary)
+    dest = os.path.join(DIST_DIR, binary)
+    # Copy file and keep the executable bit.
+    shutil.copyfile(src, dest)
+    os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+
+    dist_name = get_zip_name(binary, version)
+    zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
+    with scoped_cwd(DIST_DIR):
+      make_zip(zip_file, files, [])
 
 def create_ffmpeg_zip():
   dist_name = get_zip_name('ffmpeg', ELECTRON_VERSION)
