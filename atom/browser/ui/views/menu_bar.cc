@@ -25,7 +25,7 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 }  // namespace
 
-MenuBar::MenuBar(NativeWindowViews* window)
+MenuBar::MenuBar(views::View* window)
     : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
@@ -101,8 +101,8 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
   if (!menu_model_)
     return;
 
-  if (!window_->IsFocused())
-    window_->Focus(true);
+  if (!window_->HasFocus())
+    window_->RequestFocus();
 
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);

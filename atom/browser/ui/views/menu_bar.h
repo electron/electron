@@ -5,7 +5,6 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
-#include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/focus/focus_manager.h"
@@ -23,7 +22,7 @@ class MenuBar : public views::View,
                 public views::MenuButtonListener,
                 public views::FocusChangeListener {
  public:
-  explicit MenuBar(NativeWindowViews* window);
+  explicit MenuBar(views::View* window);
   virtual ~MenuBar();
 
   // Replaces current menu with a new one.
@@ -71,7 +70,7 @@ class MenuBar : public views::View,
   SkColor disabled_color_;
 #endif
 
-  NativeWindowViews* window_;
+  views::View* window_;
   AtomMenuModel* menu_model_;
 
   View* FindAccelChild(base::char16 key);
