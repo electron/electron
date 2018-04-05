@@ -20,6 +20,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/common/result_codes.h"
 #include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
 #include "ui/base/idle/idle.h"
@@ -124,11 +125,16 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destructors_.insert(destructors_.end(), std::move(callback));
 }
 
-void AtomBrowserMainParts::PreEarlyInitialization() {
-  brightray::BrowserMainParts::PreEarlyInitialization();
+int AtomBrowserMainParts::PreEarlyInitialization() {
+  const int result = brightray::BrowserMainParts::PreEarlyInitialization();
+  if (result != content::RESULT_CODE_NORMAL_EXIT)
+    return result;
+
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
+
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
