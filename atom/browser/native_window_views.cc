@@ -894,11 +894,13 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
-void NativeWindowViews::AddFocusChangeListener(views::FocusChangeListener* listener) {
+void NativeWindowViews::AddFocusChangeListener(
+    views::FocusChangeListener* listener) {
   GetFocusManager()->AddFocusChangeListener(listener);
 }
 
-void NativeWindowViews::RemoveFocusChangeListener(views::FocusChangeListener* listener) {
+void NativeWindowViews::RemoveFocusChangeListener(
+    views::FocusChangeListener* listener) {
   GetFocusManager()->RemoveFocusChangeListener(listener);
 }
 
