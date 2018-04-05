@@ -99,7 +99,8 @@ InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-InAppPurchase::~InAppPurchase() {}
+InAppPurchase::~InAppPurchase() {
+}
 
 void InAppPurchase::PurchaseProduct(const std::string& product_id,
                                     mate::Arguments* args) {
@@ -139,4 +140,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_in_app_purchase, Initialize);
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_in_app_purchase, Initialize)

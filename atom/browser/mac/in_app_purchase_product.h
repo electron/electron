@@ -16,17 +16,17 @@ namespace in_app_purchase {
 
 struct Product {
   // Product Identifier
-  std::string productIdentifier = "";
+  std::string productIdentifier;
 
   // Product Attributes
-  std::string localizedDescription = "";
-  std::string localizedTitle = "";
-  std::string contentVersion = "";
+  std::string localizedDescription;
+  std::string localizedTitle;
+  std::string contentVersion;
   std::vector<uint32_t> contentLengths;
 
   // Pricing Information
   double price = 0.0;
-  std::string formattedPrice = "";
+  std::string formattedPrice;
 
   // Downloadable Content Information
   bool downloadable = false;

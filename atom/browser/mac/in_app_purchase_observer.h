@@ -13,7 +13,7 @@
 
 #if defined(__OBJC__)
 @class InAppTransactionObserver;
-#else   // __OBJC__
+#else  // __OBJC__
 class InAppTransactionObserver;
 #endif  // __OBJC__
 
