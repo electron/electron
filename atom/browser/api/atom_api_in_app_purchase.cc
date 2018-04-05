@@ -45,6 +45,29 @@ struct Converter<in_app_purchase::Transaction> {
   }
 };
 
+template <>
+struct Converter<in_app_purchase::Product> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const in_app_purchase::Product& val) {
+    mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
+    dict.Set("productIdentifier", val.productIdentifier);
+    dict.Set("localizedDescription", val.localizedDescription);
+    dict.Set("localizedTitle", val.localizedTitle);
+    dict.Set("contentVersion", val.localizedTitle);
+    dict.Set("contentLengths", val.contentLengths);
+
+    // Pricing Information
+    dict.Set("price", val.price);
+    dict.Set("formattedPrice", val.formattedPrice);
+
+    // Downloadable Content Information
+    dict.Set("isDownloadable", val.downloadable);
+
+    return dict.GetHandle();
+  }
+};
+
 }  // namespace mate
 
 namespace atom {
@@ -64,7 +87,12 @@ void InAppPurchase::BuildPrototype(v8::Isolate* isolate,
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("canMakePayments", &in_app_purchase::CanMakePayments)
       .SetMethod("getReceiptURL", &in_app_purchase::GetReceiptURL)
-      .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct);
+      .SetMethod("purchaseProduct", &InAppPurchase::PurchaseProduct)
+      .SetMethod("finishAllTransactions",
+                 &in_app_purchase::FinishAllTransactions)
+      .SetMethod("finishTransactionByDate",
+                 &in_app_purchase::FinishTransactionByDate)
+      .SetMethod("getProducts", &in_app_purchase::GetProducts);
 }
 
 InAppPurchase::InAppPurchase(v8::Isolate* isolate) {

@@ -223,7 +223,6 @@ NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     isolate->AdjustAmountOfExternalAllocatedMemory(
       image_.ToImageSkia()->bitmap()->computeByteSize());
   }
-  MarkHighMemoryUsage();
 }
 
 #if defined(OS_WIN)
@@ -238,7 +237,6 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
     isolate->AdjustAmountOfExternalAllocatedMemory(
       image_.ToImageSkia()->bitmap()->computeByteSize());
   }
-  MarkHighMemoryUsage();
 }
 #endif
 

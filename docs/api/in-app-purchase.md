@@ -21,14 +21,23 @@ Returns:
 
 The `inAppPurchase` module has the following methods:
 
+
 ### `inAppPurchase.purchaseProduct(productID, quantity, callback)`
 
-* `productID` String - The id of the product to purchase. (the id of `com.example.app.product1` is `product1`).
+* `productID` String - The identifiers of the product to purchase. (The identifier of `com.example.app.product1` is `product1`).
 * `quantity` Integer (optional) - The number of items the user wants to purchase.
 * `callback` Function (optional) - The callback called when the payment is added to the PaymentQueue.
-* `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.
+    * `isProductValid` Boolean - Determine if the product is valid and added to the payment queue.
 
 You should listen for the `transactions-updated` event as soon as possible and certainly before you call `purchaseProduct`.
+
+### `inAppPurchase.getProducts(productIDs, callback)`
+
+* `productIDs` String[] - The identifiers of the products to get.
+* `callback` Function - The callback called with the products or an empty array if the products don't exist.
+    * `products` Product[] - Array of [`Product`](structures/product) objects
+
+Retrieves the product descriptions.
 
 ### `inAppPurchase.canMakePayments()`
 
@@ -37,3 +46,15 @@ Returns `true` if the user can make a payment and `false` otherwise.
 ### `inAppPurchase.getReceiptURL()`
 
 Returns `String`, the path to the receipt.
+
+
+### `inAppPurchase.finishAllTransactions()`
+
+Completes all pending transactions.
+
+
+### `inAppPurchase.finishTransactionByDate(date)`
+
+* `date` String - The ISO formatted date of the transaction to finish.
+
+Completes the pending transactions corresponding to the date.

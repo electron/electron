@@ -512,11 +512,19 @@ void BrowserWindow::Close() {
 }
 
 void BrowserWindow::Focus() {
-  window_->Focus(true);
+  if (api_web_contents_->IsOffScreen()) {
+    FocusOnWebView();
+  } else {
+    window_->Focus(true);
+  }
 }
 
 void BrowserWindow::Blur() {
-  window_->Focus(false);
+  if (api_web_contents_->IsOffScreen()) {
+    BlurWebView();
+  } else {
+    window_->Focus(false);
+  }
 }
 
 bool BrowserWindow::IsFocused() {
