@@ -142,7 +142,6 @@ class NativeWindowViews : public NativeWindow,
   void SetEnabled(bool enable) override;
 
   views::Widget* widget() const { return window_.get(); }
-
   views::View* web_view() const { return web_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
