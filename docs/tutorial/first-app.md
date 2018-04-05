@@ -90,7 +90,7 @@ and custom caches.
 
 ## Electron Development in a Nutshell
 
-Electron apps are developed in JavaScript using the same principals and methods
+Electron apps are developed in JavaScript using the same principles and methods
 found in Node.js development. All APIs and features found in Electron are
 accessible through the `electron` module, which can be required like any other
 Node.js module:
