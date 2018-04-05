@@ -30,11 +30,11 @@ MenuBar::MenuBar(NativeWindowViews* window)
   RefreshColorCache();
   UpdateViewColors();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
-  window_->AddFocusChangeListener(this);
+  window_->GetFocusManager()->AddFocusChangeListener(this);
 }
 
 MenuBar::~MenuBar() {
-  window_->RemoveFocusChangeListener(this);
+  window_->GetFocusManager()->RemoveFocusChangeListener(this);
 }
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
