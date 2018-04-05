@@ -33,7 +33,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
-  void PreEarlyInitialization() override;
+  int PreEarlyInitialization() override;
   void ToolkitInitialized() override;
   void PreMainMessageLoopStart() override;
   void PreMainMessageLoopRun() override;
