@@ -7,7 +7,7 @@ const { remote } = require('electron')
 const { ipcMain, BrowserWindow } = remote
 const {closeWindow} = require('./window-helpers')
 
-xdescribe('BrowserWindow with affinity module', () => {
+describe('BrowserWindow with affinity module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   const myAffinityName = 'myAffinity'
   const myAffinityNameUpper = 'MYAFFINITY'

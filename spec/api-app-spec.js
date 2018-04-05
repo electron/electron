@@ -798,7 +798,7 @@ describe('app module', () => {
     })
   })
 
-  xdescribe('mixed sandbox option', () => {
+  describe('mixed sandbox option', () => {
     let appProcess = null
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'

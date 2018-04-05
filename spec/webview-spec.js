@@ -286,9 +286,9 @@ describe('<webview> tag', function () {
     it('sets the referrer url', (done) => {
       const referrer = 'http://github.com/'
       const server = http.createServer((req, res) => {
-        assert.equal(req.headers.referer, referrer)
         res.end()
         server.close()
+        assert.equal(req.headers.referer, referrer)
         done()
       }).listen(0, '127.0.0.1', () => {
         const port = server.address().port
@@ -645,7 +645,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('setDevToolsWebCotnents() API', () => {
+  describe('setDevToolsWebContents() API', () => {
     it('sets webContents of webview as devtools', (done) => {
       const webview2 = new WebView()
       webview2.addEventListener('did-attach', () => {
