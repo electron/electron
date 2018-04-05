@@ -689,8 +689,8 @@ bool App::CanCreateWindow(
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
     auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url, frame_name, disposition,
-                                     additional_features, body);
+    api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
+                                     disposition, additional_features, body);
   }
 
   return false;

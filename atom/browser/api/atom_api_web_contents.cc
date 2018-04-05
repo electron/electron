@@ -525,12 +525,14 @@ bool WebContents::DidAddMessageToConsole(content::WebContents* source,
 
 void WebContents::OnCreateWindow(
     const GURL& target_url,
+    const content::Referrer& referrer,
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
     const scoped_refptr<content::ResourceRequestBody>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
-    Emit("-new-window", target_url, frame_name, disposition, features, body);
+    Emit("-new-window", target_url, frame_name, disposition, features, body,
+         referrer);
   else
     Emit("new-window", target_url, frame_name, disposition, features);
 }
@@ -1082,10 +1084,12 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   content::NavigationController::LoadURLParams params(url);
 
-  GURL http_referrer;
-  if (options.Get("httpReferrer", &http_referrer))
-    params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
-                                        blink::kWebReferrerPolicyDefault);
+  if (!options.Get("httpReferrer", &params.referrer)) {
+    GURL http_referrer;
+    if (options.Get("httpReferrer", &http_referrer))
+      params.referrer = content::Referrer(http_referrer.GetAsReferrer(),
+                                          blink::kWebReferrerPolicyDefault);
+  }
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
