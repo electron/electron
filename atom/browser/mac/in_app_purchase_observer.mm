@@ -17,9 +17,8 @@
 
 namespace {
 
-using InAppTransactionCallback =
-    base::RepeatingCallback<
-        void(const std::vector<in_app_purchase::Transaction>&)>;
+using InAppTransactionCallback = base::RepeatingCallback<void(
+    const std::vector<in_app_purchase::Transaction>&)>;
 
 }  // namespace
 
@@ -72,8 +71,8 @@ using InAppTransactionCallback =
   }
 
   // Send the callback to the browser thread.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE, base::Bind(callback_, converted));
+  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                   base::Bind(callback_, converted));
 }
 
 /**
@@ -141,9 +140,9 @@ using InAppTransactionCallback =
   }
 
   if (transaction.transactionState < 5) {
-    transactionStruct.transactionState = [[@[
-        @"purchasing", @"purchased", @"failed", @"restored", @"deferred"
-    ] objectAtIndex:transaction.transactionState] UTF8String];
+    transactionStruct.transactionState =
+        [[@[ @"purchasing", @"purchased", @"failed", @"restored", @"deferred" ]
+            objectAtIndex:transaction.transactionState] UTF8String];
   }
 
   if (transaction.payment != nil) {
@@ -177,8 +176,8 @@ namespace in_app_purchase {
 
 TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
   obeserver_ = [[InAppTransactionObserver alloc]
-     initWithCallback:base::Bind(&TransactionObserver::OnTransactionsUpdated,
-                                 weak_ptr_factory_.GetWeakPtr())];
+      initWithCallback:base::Bind(&TransactionObserver::OnTransactionsUpdated,
+                                  weak_ptr_factory_.GetWeakPtr())];
 }
 
 TransactionObserver::~TransactionObserver() {

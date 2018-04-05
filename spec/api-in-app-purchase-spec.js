@@ -15,6 +15,14 @@ describe('inAppPurchase module', function () {
     inAppPurchase.canMakePayments()
   })
 
+  it('finishAllTransactions() does not throw', () => {
+    inAppPurchase.finishAllTransactions()
+  })
+
+  it('finishTransactionByDate() does not throw', () => {
+    inAppPurchase.finishTransactionByDate(new Date().toISOString())
+  })
+
   it('getReceiptURL() returns receipt URL', () => {
     assert.ok(inAppPurchase.getReceiptURL().endsWith('_MASReceipt/receipt'))
   })
@@ -29,6 +37,13 @@ describe('inAppPurchase module', function () {
   it('purchaseProduct() accepts optional arguments', (done) => {
     inAppPurchase.purchaseProduct('non-exist', () => {
       inAppPurchase.purchaseProduct('non-exist', 1)
+      done()
+    })
+  })
+
+  it('getProducts() returns an empty list when getting invalid product', (done) => {
+    inAppPurchase.getProducts(['non-exist'], (products) => {
+      assert.ok(products.length === 0)
       done()
     })
   })

@@ -11,14 +11,15 @@
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/mac/in_app_purchase.h"
 #include "atom/browser/mac/in_app_purchase_observer.h"
+#include "atom/browser/mac/in_app_purchase_product.h"
 #include "native_mate/handle.h"
 
 namespace atom {
 
 namespace api {
 
-class InAppPurchase: public mate::EventEmitter<InAppPurchase>,
-                     public in_app_purchase::TransactionObserver {
+class InAppPurchase : public mate::EventEmitter<InAppPurchase>,
+                      public in_app_purchase::TransactionObserver {
  public:
   static mate::Handle<InAppPurchase> Create(v8::Isolate* isolate);
 

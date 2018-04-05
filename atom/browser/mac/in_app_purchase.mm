@@ -136,6 +136,34 @@ bool CanMakePayments() {
   return [SKPaymentQueue canMakePayments];
 }
 
+void FinishAllTransactions() {
+  for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
+           .transactions) {
+    [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+  }
+}
+
+void FinishTransactionByDate(const std::string& date) {
+  // Create the date formatter.
+  NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
+  NSLocale* enUSPOSIXLocale =
+      [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+  [dateFormatter setLocale:enUSPOSIXLocale];
+  [dateFormatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZZ"];
+
+  // Remove the transaction.
+  NSString* transactionDate = base::SysUTF8ToNSString(date);
+
+  for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
+           .transactions) {
+    if ([transactionDate
+            isEqualToString:[dateFormatter
+                                stringFromDate:transaction.transactionDate]]) {
+      [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
+    }
+  }
+}
+
 std::string GetReceiptURL() {
   NSURL* receiptURL = [[NSBundle mainBundle] appStoreReceiptURL];
   if (receiptURL != nil) {
