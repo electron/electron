@@ -261,8 +261,8 @@ class ResolveProxyHelper {
                     const GURL& url) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
-    net::ProxyService* proxy_service =
-        context_getter->GetURLRequestContext()->proxy_service();
+    net::ProxyResolutionService* proxy_service =
+        context_getter->GetURLRequestContext()->proxy_resolution_service();
     net::CompletionCallback completion_callback = base::Bind(
         &ResolveProxyHelper::OnResolveProxyCompleted, base::Unretained(this));
 
@@ -278,7 +278,7 @@ class ResolveProxyHelper {
 
   Session::ResolveProxyCallback callback_;
   net::ProxyInfo proxy_info_;
-  net::ProxyService::PacRequest* pac_req_;
+  net::ProxyResolutionService::Request* pac_req_;
   scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
 
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
@@ -344,7 +344,8 @@ void DoCacheActionInIO(
 void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
-  auto* proxy_service = getter->GetURLRequestContext()->proxy_service();
+  auto* proxy_service =
+      getter->GetURLRequestContext()->proxy_resolution_service();
   proxy_service->ResetConfigService(
       base::WrapUnique(new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
