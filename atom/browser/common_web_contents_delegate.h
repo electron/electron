@@ -15,6 +15,10 @@
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
+#if defined(TOOLKIT_VIEWS)
+#include "atom/browser/ui/autofill_popup.h"
+#endif
+
 using brightray::DevToolsFileSystemIndexer;
 
 namespace atom {
@@ -86,6 +90,17 @@ class CommonWebContentsDelegate
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
 
+  // Autofill related events.
+#if defined(TOOLKIT_VIEWS)
+  void ShowAutofillPopup(
+    bool offscreen,
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels);
+  void HideAutofillPopup();
+#endif
+
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
                           const std::string& content,
@@ -122,7 +137,7 @@ class CommonWebContentsDelegate
   // Callback for when DevToolsAppendToFile has completed.
   void OnDevToolsAppendToFile(const std::string& url);
 
-  //
+  // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
                                         const std::string& file_system_path,
                                         int total_work);
@@ -150,7 +165,12 @@ class CommonWebContentsDelegate
   // Whether window is fullscreened by window api.
   bool native_fullscreen_;
 
+  // UI related helper classes.
+#if defined(TOOLKIT_VIEWS)
+  std::unique_ptr<AutofillPopup> autofill_popup_;
+#endif
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
+
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   // Make sure BrowserContext is alwasys destroyed after WebContents.

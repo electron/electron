@@ -608,6 +608,9 @@ void WebContents::MoveContents(content::WebContents* source,
 
 void WebContents::CloseContents(content::WebContents* source) {
   Emit("close");
+#if defined(TOOLKIT_VIEWS)
+  HideAutofillPopup();
+#endif
   if (managed_web_contents())
     managed_web_contents()->GetView()->SetDelegate(nullptr);
   for (ExtendedWebContentsObserver& observer : observers_)
@@ -960,16 +963,16 @@ void WebContents::DevToolsClosed() {
   Emit("devtools-closed");
 }
 
+#if defined(TOOLKIT_VIEWS)
 void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
                                     const gfx::RectF& bounds,
                                     const std::vector<base::string16>& values,
                                     const std::vector<base::string16>& labels) {
-  auto relay = NativeWindowRelay::FromWebContents(web_contents());
-  if (relay) {
-    relay->window->ShowAutofillPopup(
-        frame_host, web_contents(), bounds, values, labels);
-  }
+  bool offscreen = IsOffScreen() || (embedder_ && embedder_->IsOffScreen());
+  CommonWebContentsDelegate::ShowAutofillPopup(
+      offscreen, frame_host, bounds, values, labels);
 }
+#endif
 
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
@@ -986,15 +989,6 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
                                     content::RenderFrameHost* frame_host) {
   bool handled = true;
   FrameDispatchHelper helper = {this, frame_host};
-  auto relay = NativeWindowRelay::FromWebContents(web_contents());
-  if (relay) {
-    IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(NativeWindow, message, frame_host)
-      IPC_MESSAGE_FORWARD(AtomAutofillFrameHostMsg_HidePopup,
-                          relay->window.get(), NativeWindow::HideAutofillPopup)
-      IPC_MESSAGE_UNHANDLED(handled = false)
-    IPC_END_MESSAGE_MAP()
-  }
-
   IPC_BEGIN_MESSAGE_MAP_WITH_PARAM(WebContents, message, frame_host)
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_Message_Sync, &helper,
@@ -1004,7 +998,10 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
                                     FrameDispatchHelper::OnGetZoomLevel)
+#if defined(TOOLKIT_VIEWS)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
+    IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
+#endif
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 

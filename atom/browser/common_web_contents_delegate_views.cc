@@ -27,6 +27,26 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     owner_window()->HandleKeyboardEvent(source, event);
 }
 
+void CommonWebContentsDelegate::ShowAutofillPopup(
+    bool offscreen,
+    content::RenderFrameHost* frame_host,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  if (!owner_window())
+    return;
+
+  auto* window = static_cast<NativeWindowViews*>(owner_window());
+  autofill_popup_->CreateView(
+      frame_host, offscreen, window->web_view(), bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void CommonWebContentsDelegate::HideAutofillPopup() {
+  if (autofill_popup_)
+    autofill_popup_->Hide();
+}
+
 gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
   if (!owner_window())
     return gfx::ImageSkia();
