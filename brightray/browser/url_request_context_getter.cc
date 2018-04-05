@@ -148,7 +148,8 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_ =
-      net::ProxyService::CreateSystemProxyConfigService(io_task_runner_);
+      net::ProxyResolutionService::CreateSystemProxyConfigService(
+          io_task_runner_);
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {}
@@ -248,22 +249,25 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // --proxy-server
     if (command_line.HasSwitch(switches::kNoProxyServer)) {
-      storage_->set_proxy_service(net::ProxyService::CreateDirect());
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateDirect());
     } else if (command_line.HasSwitch(switches::kProxyServer)) {
       net::ProxyConfig proxy_config;
       proxy_config.proxy_rules().ParseFromString(
           command_line.GetSwitchValueASCII(switches::kProxyServer));
       proxy_config.proxy_rules().bypass_rules.ParseFromString(
           command_line.GetSwitchValueASCII(switches::kProxyBypassList));
-      storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateFixed(proxy_config));
     } else if (command_line.HasSwitch(switches::kProxyPacUrl)) {
       auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
           GURL(command_line.GetSwitchValueASCII(switches::kProxyPacUrl)));
       proxy_config.set_pac_mandatory(true);
-      storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateFixed(proxy_config));
     } else {
-      storage_->set_proxy_service(
-          net::ProxyService::CreateUsingSystemProxyResolver(
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_), net_log_));
     }
 
