@@ -429,6 +429,203 @@ jobs:
       - store_artifacts:
           path: out/electron-api.json
 
+  electron-osx-x64:
+    environment:
+      TARGET_ARCH: x64
+    macos:
+        xcode: "9.0"
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Reclaim disk space
+          command: |
+            df -h
+            sudo rm -rf /Library/Developer/CoreSimulator
+            df -h
+            sysctl -n hw.ncpu
+      - run:
+          name: Check for release
+          command: |
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
+                script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+      - run:
+          name: Test
+          environment:
+            MOCHA_FILE: junit/test-results.xml
+            MOCHA_REPORTER: mocha-junit-reporter
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Testing Electron debug build'
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules
+             else
+                echo 'Skipping testing on release build'
+             fi
+      - run:
+          name: Verify FFmpeg
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Verifying ffmpeg on debug build'
+                script/verify-ffmpeg.py
+             else
+                echo 'Skipping verify ffmpeg on release build'
+             fi
+      - run:
+          name: Generate Typescript Definitions
+          command: npm run create-typescript-definitions
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
+      - store_artifacts:
+          path: out/electron.d.ts
+      - store_artifacts:
+          path: out/electron-api.json
+
+  electron-mas-x64:
+    environment:
+      TARGET_ARCH: x64
+      MAS_BUILD: 1
+    macos:
+        xcode: "9.0"
+    resource_class: xlarge
+    steps:
+      - checkout
+      - run:
+          name: Reclaim disk space
+          command: |
+            df -h
+            sudo rm -rf /Library/Developer/CoreSimulator
+            df -h
+            sysctl -n hw.ncpu
+      - run:
+          name: Check for release
+          command: |
+            if [ -n "${RUN_RELEASE_BUILD}" ]; then
+              echo 'release build triggered from api'
+              echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            fi
+      - run:
+         name: Bootstrap
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Bootstrapping Electron for release build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH
+           else
+              echo 'Bootstrapping Electron for debug build'
+              script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+           fi
+      - run: npm run lint
+      - run:
+         name: Build
+         command: |
+           if [ "$ELECTRON_RELEASE" == "1" ]; then
+              echo 'Building Electron for release'
+              script/build.py -c R
+           else
+              echo 'Building Electron for debug'
+              script/build.py -c D
+           fi
+      - run:
+          name: Create distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ]; then
+                echo 'Creating Electron release distribution'
+                script/create-dist.py
+             else
+                echo 'Skipping create distribution because build is not for release'
+             fi
+      - run:
+          name: Upload distribution
+          command: |
+             if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+                echo 'Uploading Electron release distribution to github releases'
+                script/upload.py
+             elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+                echo 'Uploading Electron release distribution to s3'
+                script/upload.py --upload_to_s3
+             else
+                echo 'Skipping upload distribution because build is not for release'
+             fi
+      - run:
+          name: Test
+          environment:
+            MOCHA_FILE: junit/test-results.xml
+            MOCHA_REPORTER: mocha-junit-reporter
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Testing Electron debug build'
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules
+             else
+                echo 'Skipping testing on release build'
+             fi
+      - run:
+          name: Verify FFmpeg
+          command: |
+             if [ "$ELECTRON_RELEASE" != "1" ]; then
+                echo 'Verifying ffmpeg on debug build'
+                script/verify-ffmpeg.py
+             else
+                echo 'Skipping verify ffmpeg on release build'
+             fi
+      - run:
+          name: Generate Typescript Definitions
+          command: npm run create-typescript-definitions
+      - store_test_results:
+          path: junit
+      - store_artifacts:
+          path: junit
+      - store_artifacts:
+          path: out/electron.d.ts
+      - store_artifacts:
+          path: out/electron-api.json
+
 workflows:
   version: 2
   build-arm:
@@ -447,5 +644,11 @@ workflows:
     jobs:
       - electron-linux-ia32
   build-x64:
-   jobs:
-     - electron-linux-x64
+    jobs:
+      - electron-linux-x64
+  build-osx-x64:
+    jobs:
+      - electron-osx-x64
+  build-mas-x64:
+    jobs:
+      - electron-mas-x64
