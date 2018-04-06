@@ -56,8 +56,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void OverrideSiteInstanceForNavigation(
       content::RenderFrameHost* render_frame_host,
       content::BrowserContext* browser_context,
-      content::SiteInstance* current_instance,
       const GURL& dest_url,
+      bool has_request_started,
+      content::SiteInstance* candidate_instance,
       content::SiteInstance** new_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
