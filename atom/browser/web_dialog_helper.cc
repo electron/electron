@@ -170,10 +170,13 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 #endif
   }
 
+// Only for Win and Linux
+#if defined(OS_LINUX) || defined(OS_WIN)
   // Allow all files when extension is specified.
   filters.push_back(file_dialog::Filter());
   filters.back().first = "All Files";
   filters.back().second.push_back("*");
+#endif
 
   return filters;
 }
