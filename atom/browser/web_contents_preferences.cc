@@ -64,8 +64,14 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined("images", true);
   SetDefaultBoolIfUndefined("textAreasAreResizable", true);
   SetDefaultBoolIfUndefined("webgl", true);
-  SetDefaultBoolIfUndefined("webSecurity", true);
-  SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
+  bool webSecurity = true;
+  SetDefaultBoolIfUndefined("webSecurity", webSecurity);
+  // If webSecurity was explicity set to false, let's inherit that into insureContent
+  if (web_preferences.GetBoolean("webSecurity", &webSecurity) && !webSecurity) {
+    SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
+  } else {
+    SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
+  }
   #if defined(OS_MACOSX)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
   #endif
