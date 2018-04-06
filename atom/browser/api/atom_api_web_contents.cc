@@ -276,6 +276,9 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
                        const SkBitmap& bitmap,
                        content::ReadbackResponse response) {
+  // Hack to enable transparency in captured image
+  // TODO(nitsakh) Remove hack once fixed in chromium
+  const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
