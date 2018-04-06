@@ -1,7 +1,7 @@
 pipeline {
   agent {
     docker {
-      image 'electronbuilds/arm64v8:0.0.2'
+      image 'electronbuilds/arm64v8:0.0.3'
       args '--privileged'
     }
   }
