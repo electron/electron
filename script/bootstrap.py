@@ -42,7 +42,7 @@ def main():
 
   # Redirect to use local libchromiumcontent build.
   if args.build_release_libcc or args.build_debug_libcc:
-    build_libchromiumcontent(args.verbose, args.target_arch, defines,
+    build_libchromiumcontent(args.verbose, args.target_arch,
                              args.build_debug_libcc, args.update_libcc)
     dist_dir = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'dist', 'main')
     libcc_source_path = os.path.join(dist_dir, 'src')
@@ -172,7 +172,7 @@ def update_win32_python():
       execute_stdout(['git', 'clone', PYTHON_26_URL])
 
 
-def build_libchromiumcontent(verbose, target_arch, defines, debug,
+def build_libchromiumcontent(verbose, target_arch, debug,
                              force_update):
   args = [sys.executable,
           os.path.join(SOURCE_ROOT, 'script', 'build-libchromiumcontent.py')]
@@ -182,8 +182,6 @@ def build_libchromiumcontent(verbose, target_arch, defines, debug,
     args += ['--force-update']
   if verbose:
     args += ['-v']
-  if defines:
-    args += ['--defines', defines]
   execute_stdout(args + ['--target_arch', target_arch])
 
 
