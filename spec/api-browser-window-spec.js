@@ -419,6 +419,17 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.getFocusedWindow()', (done) => {
+    it('returns the opener window when dev tools window is focused', (done) => {
+      w.show()
+      w.webContents.once('devtools-focused', () => {
+        assert.deepEqual(BrowserWindow.getFocusedWindow(), w)
+        done()
+      })
+      w.webContents.openDevTools({mode: 'undocked'})
+    })
+  })
+
   describe('BrowserWindow.capturePage(rect, callback)', () => {
     it('calls the callback with a Buffer', (done) => {
       w.capturePage({
