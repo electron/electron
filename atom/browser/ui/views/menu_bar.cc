@@ -25,26 +25,16 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 }  // namespace
 
-MenuBar::MenuBar(NativeWindow* window)
+MenuBar::MenuBar(views::View* window)
     : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
+  window_->GetFocusManager()->AddFocusChangeListener(this);
 }
 
-MenuBar::~MenuBar() {}
-
-void MenuBar::AddedToWidget() {
-  auto fm = GetFocusManager();
-  fm->AddFocusChangeListener(this);
-  // Note that we don't own fm -- this manages the _connection_
-  focus_manager_.reset(fm, [this](views::FocusManager* fm) {
-    fm->RemoveFocusChangeListener(this);
-  });
-}
-
-void MenuBar::RemovedFromWidget() {
-  focus_manager_.reset();
+MenuBar::~MenuBar() {
+  window_->GetFocusManager()->RemoveFocusChangeListener(this);
 }
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
@@ -111,8 +101,8 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
   if (!menu_model_)
     return;
 
-  if (!window_->IsFocused())
-    window_->Focus(true);
+  if (!window_->HasFocus())
+    window_->RequestFocus();
 
   int id = source->tag();
   AtomMenuModel::ItemType type = menu_model_->GetTypeAt(id);
