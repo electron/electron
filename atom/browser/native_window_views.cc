@@ -55,6 +55,7 @@
 #include "atom/browser/ui/views/win_frame_view.h"
 #include "atom/browser/ui/win/atom_desktop_native_widget_aura.h"
 #include "atom/browser/ui/win/atom_desktop_window_tree_host_win.h"
+#include "atom/browser/ui/win/window_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/display.h"
@@ -366,7 +367,8 @@ void NativeWindowViews::Focus(bool focus) {
 
   if (focus) {
 #if defined(OS_WIN)
-    window_->Activate();
+    HWND hwnd = GetAcceleratedWidget();
+    window_util::ForceFocusWindow(hwnd);
 #elif defined(USE_X11)
     // The "Activate" implementation of Chromium is not reliable on Linux.
     ::Window window = GetAcceleratedWidget();

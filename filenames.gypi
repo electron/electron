@@ -370,6 +370,8 @@
       'atom/browser/ui/win/notify_icon.h',
       'atom/browser/ui/win/taskbar_host.cc',
       'atom/browser/ui/win/taskbar_host.h',
+      'atom/browser/ui/win/window_util.cc',
+      'atom/browser/ui/win/window_util.h',
       'atom/browser/ui/x/event_disabler.cc',
       'atom/browser/ui/x/event_disabler.h',
       'atom/browser/ui/x/window_state_watcher.cc',

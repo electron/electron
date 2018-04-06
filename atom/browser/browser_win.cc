@@ -11,6 +11,7 @@
 #include <shobjidl.h>
 
 #include "atom/browser/ui/win/jump_list.h"
+#include "atom/browser/ui/win/window_util.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
@@ -36,7 +37,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 
   GetWindowThreadProcessId(hwnd, &process_id);
   if (process_id == target_process_id) {
-    SetFocus(hwnd);
+    window_util::ForceFocusWindow(hwnd);
     return FALSE;
   }
 
