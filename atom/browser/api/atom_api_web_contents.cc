@@ -847,6 +847,14 @@ void WebContents::DidStopLoading() {
 
 void WebContents::DidGetResourceResponseStart(
     const content::ResourceRequestDetails& details) {
+  // Plznavigate is using blob URLs to deliver the body
+  // of the main resource to the renderer process. This
+  // gets better in the future with kNavigationMojoResponse
+  // feature, which replaces this mechanism with Mojo Datapipe.
+  if (details.url.SchemeIsBlob() &&
+      (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME ||
+       details.resource_type == content::RESOURCE_TYPE_SUB_FRAME))
+    return;
   Emit("did-get-response-details",
        details.socket_address.IsEmpty(),
        details.url,
