@@ -34,8 +34,6 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
-#include "content/network/throttling/network_conditions.h"
-#include "content/network/throttling/throttling_controller.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/storage_partition.h"
@@ -51,6 +49,8 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "services/network/throttling/network_conditions.h"
+#include "services/network/throttling/throttling_controller.h"
 #include "ui/base/l10n/l10n_util.h"
 
 using atom::api::Cookies;
@@ -576,20 +576,20 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  std::unique_ptr<content::NetworkConditions> conditions;
+  std::unique_ptr<network::NetworkConditions> conditions;
   bool offline = false;
   double latency = 0.0, download_throughput = 0.0, upload_throughput = 0.0;
   if (options.Get("offline", &offline) && offline) {
-    conditions.reset(new content::NetworkConditions(offline));
+    conditions.reset(new network::NetworkConditions(offline));
   } else {
     options.Get("latency", &latency);
     options.Get("downloadThroughput", &download_throughput);
     options.Get("uploadThroughput", &upload_throughput);
-    conditions.reset(new content::NetworkConditions(
+    conditions.reset(new network::NetworkConditions(
         false, latency, download_throughput, upload_throughput));
   }
 
-  content::ThrottlingController::SetConditions(
+  network::ThrottlingController::SetConditions(
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
@@ -600,8 +600,8 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 }
 
 void Session::DisableNetworkEmulation() {
-  auto conditions = std::make_unique<content::NetworkConditions>();
-  content::ThrottlingController::SetConditions(
+  auto conditions = std::make_unique<network::NetworkConditions>();
+  network::ThrottlingController::SetConditions(
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
