@@ -5,6 +5,7 @@
 #include "brightray/browser/zoom_level_delegate.h"
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "base/bind.h"
@@ -31,7 +32,7 @@ const char kPartitionPerHostZoomLevels[] = "partition.per_host_zoom_levels";
 
 std::string GetHash(const base::FilePath& partition_path) {
   size_t int_key = std::hash<base::FilePath>()(partition_path);
-  return base::SizeTToString(int_key);
+  return base::NumberToString(int_key);
 }
 
 }  // namespace
