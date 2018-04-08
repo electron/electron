@@ -203,10 +203,9 @@ std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   return default_schemes;
 }
 
-void AtomBrowserContext::NotifyCookieChange(
-    const net::CanonicalCookie& cookie,
-    bool removed,
-    net::CookieStore::ChangeCause cause) {
+void AtomBrowserContext::NotifyCookieChange(const net::CanonicalCookie& cookie,
+                                            bool removed,
+                                            net::CookieChangeCause cause) {
   CookieDetails cookie_details(&cookie, removed, cause);
   cookie_change_sub_list_.Notify(&cookie_details);
 }

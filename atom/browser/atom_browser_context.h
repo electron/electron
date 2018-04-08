@@ -48,7 +48,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::vector<std::string> GetCookieableSchemes() override;
   void NotifyCookieChange(const net::CanonicalCookie& cookie,
                           bool removed,
-                          net::CookieStore::ChangeCause cause) override;
+                          net::CookieChangeCause cause) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
