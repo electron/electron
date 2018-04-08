@@ -731,7 +731,7 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
 content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
     content::WebContents* source,
     SkColor color,
-    const std::vector<content::ColorSuggestion>& suggestions) {
+    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     return delegate->OpenColorChooser(source, color, suggestions);
