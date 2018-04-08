@@ -47,6 +47,7 @@
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
@@ -1289,7 +1290,7 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
 
   if (base::EndsWith(switch_string, "-path",
                      base::CompareCase::INSENSITIVE_ASCII) ||
-      switch_string == switches::kLogNetLog) {
+      switch_string == network::switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
     command_line->AppendSwitchPath(switch_string, path);

@@ -20,7 +20,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
-#include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cert/ct_known_logs.h"
@@ -50,6 +49,7 @@
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "storage/browser/quota/special_storage_policy.h"
 #include "url/url_constants.h"
 
@@ -239,11 +239,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
-    if (command_line.HasSwitch(::switches::kHostResolverRules)) {
+    if (command_line.HasSwitch(network::switches::kHostResolverRules)) {
       std::unique_ptr<net::MappedHostResolver> remapped_resolver(
           new net::MappedHostResolver(std::move(host_resolver)));
-      remapped_resolver->SetRulesFromString(
-          command_line.GetSwitchValueASCII(::switches::kHostResolverRules));
+      remapped_resolver->SetRulesFromString(command_line.GetSwitchValueASCII(
+          network::switches::kHostResolverRules));
       host_resolver = std::move(remapped_resolver);
     }
 
