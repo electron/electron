@@ -18,11 +18,6 @@ namespace brightray {
 
 namespace {
 
-void RemoveNotification(base::WeakPtr<Notification> notification) {
-  if (notification)
-    notification->Dismiss();
-}
-
 void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const SkBitmap& icon,
                               const content::PlatformNotificationData& data,
@@ -103,16 +98,14 @@ void PlatformNotificationService::DisplayNotification(
     const std::string& notification_id,
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
-    const content::NotificationResources& notification_resources,
-    base::Closure* cancel_callback) {
+    const content::NotificationResources& notification_resources) {
   auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
   NotificationDelegateImpl* delegate =
       new NotificationDelegateImpl(notification_id);
-  auto notification = presenter->CreateNotification(delegate);
+  auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
-    *cancel_callback = base::Bind(&RemoveNotification, notification);
     browser_client_->WebNotificationAllowed(
         render_process_id_, base::Bind(&OnWebNotificationAllowed, notification,
                                        notification_resources.notification_icon,
@@ -131,6 +124,15 @@ void PlatformNotificationService::DisplayPersistentNotification(
 void PlatformNotificationService::ClosePersistentNotification(
     content::BrowserContext* browser_context,
     const std::string& notification_id) {}
+
+void PlatformNotificationService::CloseNotification(
+    content::BrowserContext* browser_context,
+    const std::string& notification_id) {
+  auto presenter = browser_client_->GetNotificationPresenter();
+  if (!presenter)
+    return;
+  presenter->CloseNotificationWithId(notification_id);
+}
 
 void PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,

@@ -64,8 +64,11 @@ class Notification {
   }
 
   void set_delegate(NotificationDelegate* delegate) { delegate_ = delegate; }
+  void set_notification_id(const std::string& id) { notification_id_ = id; }
+
   NotificationDelegate* delegate() const { return delegate_; }
   NotificationPresenter* presenter() const { return presenter_; }
+  const std::string& notification_id() const { return notification_id_; }
 
  protected:
   Notification(NotificationDelegate* delegate,
@@ -74,6 +77,7 @@ class Notification {
  private:
   NotificationDelegate* delegate_;
   NotificationPresenter* presenter_;
+  std::string notification_id_;
 
   base::WeakPtrFactory<Notification> weak_factory_;
 
