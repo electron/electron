@@ -27,6 +27,7 @@
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
+#include "net/cookies/cookie_store.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -212,8 +213,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                            : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
     std::unique_ptr<net::CookieStore> cookie_store =
         content::CreateCookieStore(content::CookieStoreConfig(
-            cookie_path, content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-            nullptr));
+            cookie_path, false, false, nullptr));
     storage_->set_cookie_store(std::move(cookie_store));
 
     // Set custom schemes that can accept cookies.
