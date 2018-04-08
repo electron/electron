@@ -168,7 +168,7 @@ void URLRequestContextGetter::NotifyContextShutdownOnIO() {
 
 void URLRequestContextGetter::OnCookieChanged(
     const net::CanonicalCookie& cookie,
-    net::CookieStore::ChangeCause cause) {
+    net::CookieChangeCause cause) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   if (!delegate_ || context_shutting_down_)
@@ -176,9 +176,9 @@ void URLRequestContextGetter::OnCookieChanged(
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(
-          &Delegate::NotifyCookieChange, base::Unretained(delegate_), cookie,
-          !(cause == net::CookieStore::ChangeCause::INSERTED), cause));
+      base::BindOnce(&Delegate::NotifyCookieChange, base::Unretained(delegate_),
+                     cookie, !(cause == net::CookieChangeCause::INSERTED),
+                     cause));
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {
@@ -223,8 +223,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // Cookie store will outlive notifier by order of declaration
     // in the header.
     cookie_change_sub_ =
-        url_request_context_->cookie_store()->AddCallbackForAllChanges(
-            base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
+        url_request_context_->cookie_store()
+            ->GetChangeDispatcher()
+            .AddCallbackForAllChanges(
+                base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
 
     storage_->set_channel_id_service(std::make_unique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
