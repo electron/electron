@@ -123,8 +123,7 @@ class InspectableWebContentsImpl
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
                                const std::string& message) override;
-  void AgentHostClosed(content::DevToolsAgentHost* agent_host,
-                       bool replaced) override;
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
 
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
