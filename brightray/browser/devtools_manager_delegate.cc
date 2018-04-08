@@ -95,7 +95,7 @@ void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 
 bool DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
-    int session_id,
+    content::DevToolsAgentHostClient* client,
     base::DictionaryValue* command) {
   return false;
 }
