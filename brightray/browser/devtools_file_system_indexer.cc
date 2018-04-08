@@ -16,9 +16,12 @@
 #include "base/files/file_util_proxy.h"
 #include "base/lazy_instance.h"
 #include "base/logging.h"
+#include "base/sequence_checker.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task_scheduler/lazy_task_runner.h"
+#include "base/task_scheduler/post_task.h"
 #include "content/public/browser/browser_thread.h"
 
 using base::Bind;
@@ -30,13 +33,20 @@ using base::TimeDelta;
 using base::TimeTicks;
 using content::BrowserThread;
 using std::map;
-using std::set;
 using std::string;
 using std::vector;
 
 namespace brightray {
 
 namespace {
+
+base::SequencedTaskRunner* impl_task_runner() {
+  constexpr base::TaskTraits kBlockingTraits = {base::MayBlock(),
+                                                base::TaskPriority::BACKGROUND};
+  static base::LazySequencedTaskRunner s_sequenced_task_task_runner =
+      LAZY_SEQUENCED_TASK_RUNNER_INITIALIZER(kBlockingTraits);
+  return s_sequenced_task_task_runner.Get().get();
+}
 
 typedef int32_t Trigram;
 typedef char TrigramChar;
@@ -53,25 +63,23 @@ const TrigramChar kUndefinedTrigramChar = -1;
 const TrigramChar kBinaryTrigramChar = -2;
 const Trigram kUndefinedTrigram = -1;
 
-template <typename Char>
-bool IsAsciiUpper(Char c) {
-  return c >= 'A' && c <= 'Z';
-}
-
 class Index {
  public:
   Index();
+  // Index is only instantiated as a leak LazyInstance, so the destructor is
+  // never called.
+  ~Index() = delete;
+
   Time LastModifiedTimeForFile(const FilePath& file_path);
   void SetTrigramsForFile(const FilePath& file_path,
                           const vector<Trigram>& index,
                           const Time& time);
-  vector<FilePath> Search(string query);
-  void PrintStats();
+  vector<FilePath> Search(const string& query);
   void NormalizeVectors();
+  void Reset();
+  void EnsureInitialized();
 
  private:
-  ~Index();
-
   FileId GetFileId(const FilePath& file_path);
 
   typedef map<FilePath, FileId> FileIdsMap;
@@ -82,6 +90,7 @@ class Index {
   typedef map<FilePath, Time> IndexedFilesMap;
   IndexedFilesMap index_times_;
   vector<bool> is_normalized_;
+  SEQUENCE_CHECKER(sequence_checker_);
 
   DISALLOW_COPY_AND_ASSIGN(Index);
 };
@@ -100,7 +109,7 @@ TrigramChar TrigramCharForChar(char c) {
       char ch = static_cast<char>(i);
       if (ch == '\t')
         ch = ' ';
-      if (IsAsciiUpper(ch))
+      if (base::IsAsciiUpper(ch))
         ch = ch - 'A' + 'a';
 
       bool is_binary_char = ch < 9 || (ch >= 14 && ch < 32) || ch == 127;
@@ -140,15 +149,28 @@ Trigram TrigramAtIndex(const vector<TrigramChar>& trigram_chars, size_t index) {
 }
 
 Index::Index() : last_file_id_(0) {
+  Reset();
+}
+
+void Index::Reset() {
+  file_ids_.clear();
+  index_.clear();
+  index_times_.clear();
+  is_normalized_.clear();
+  last_file_id_ = 0;
+}
+
+void Index::EnsureInitialized() {
+  if (index_.size() != 0)
+    return;
   index_.resize(kTrigramCount);
   is_normalized_.resize(kTrigramCount);
   std::fill(is_normalized_.begin(), is_normalized_.end(), true);
 }
 
-Index::~Index() {}
-
 Time Index::LastModifiedTimeForFile(const FilePath& file_path) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  EnsureInitialized();
   Time last_modified_time;
   if (index_times_.find(file_path) != index_times_.end())
     last_modified_time = index_times_[file_path];
@@ -158,7 +180,8 @@ Time Index::LastModifiedTimeForFile(const FilePath& file_path) {
 void Index::SetTrigramsForFile(const FilePath& file_path,
                                const vector<Trigram>& index,
                                const Time& time) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  EnsureInitialized();
   FileId file_id = GetFileId(file_path);
   auto it = index.begin();
   for (; it != index.end(); ++it) {
@@ -169,8 +192,9 @@ void Index::SetTrigramsForFile(const FilePath& file_path,
   index_times_[file_path] = time;
 }
 
-vector<FilePath> Index::Search(string query) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+vector<FilePath> Index::Search(const string& query) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  EnsureInitialized();
   const char* data = query.c_str();
   vector<TrigramChar> trigram_chars;
   trigram_chars.reserve(query.size());
@@ -186,7 +210,7 @@ vector<FilePath> Index::Search(string query) {
     if (trigram != kUndefinedTrigram)
       trigrams.push_back(trigram);
   }
-  set<FileId> file_ids;
+  std::set<FileId> file_ids;
   bool first = true;
   vector<Trigram>::const_iterator it = trigrams.begin();
   for (; it != trigrams.end(); ++it) {
@@ -197,8 +221,8 @@ vector<FilePath> Index::Search(string query) {
       first = false;
       continue;
     }
-    set<FileId> intersection =
-        base::STLSetIntersection<set<FileId>>(file_ids, index_[trigram]);
+    std::set<FileId> intersection =
+        base::STLSetIntersection<std::set<FileId>>(file_ids, index_[trigram]);
     file_ids.swap(intersection);
   }
   vector<FilePath> result;
@@ -212,7 +236,8 @@ vector<FilePath> Index::Search(string query) {
 }
 
 FileId Index::GetFileId(const FilePath& file_path) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  EnsureInitialized();
   string file_path_str = file_path.AsUTF8Unsafe();
   if (file_ids_.find(file_path) != file_ids_.end())
     return file_ids_[file_path];
@@ -221,7 +246,8 @@ FileId Index::GetFileId(const FilePath& file_path) {
 }
 
 void Index::NormalizeVectors() {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  EnsureInitialized();
   for (size_t i = 0; i < kTrigramCount; ++i) {
     if (!is_normalized_[i]) {
       std::sort(index_[i].begin(), index_[i].end());
@@ -230,26 +256,6 @@ void Index::NormalizeVectors() {
       is_normalized_[i] = true;
     }
   }
-}
-
-void Index::PrintStats() {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
-  LOG(ERROR) << "Index stats:";
-  size_t size = 0;
-  size_t maxSize = 0;
-  size_t capacity = 0;
-  for (size_t i = 0; i < kTrigramCount; ++i) {
-    if (index_[i].size() > maxSize)
-      maxSize = index_[i].size();
-    size += index_[i].size();
-    capacity += index_[i].capacity();
-  }
-  LOG(ERROR) << "  - total trigram count: " << size;
-  LOG(ERROR) << "  - max file count per trigram: " << maxSize;
-  LOG(ERROR) << "  - total vectors capacity " << capacity;
-  size_t total_index_size =
-      capacity * sizeof(FileId) + sizeof(vector<FileId>) * kTrigramCount;
-  LOG(ERROR) << "  - estimated total index size " << total_index_size;
 }
 
 typedef Callback<void(bool, const vector<bool>&)> IndexerCallback;
@@ -265,8 +271,6 @@ DevToolsFileSystemIndexer::FileSystemIndexingJob::FileSystemIndexingJob(
       total_work_callback_(total_work_callback),
       worked_callback_(worked_callback),
       done_callback_(done_callback),
-      current_file_(
-          BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE).get()),
       files_indexed_(0),
       stopped_(false) {
   current_trigrams_set_.resize(kTrigramCount);
@@ -277,24 +281,22 @@ DevToolsFileSystemIndexer::FileSystemIndexingJob::~FileSystemIndexingJob() {}
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::Start() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::FILE, FROM_HERE,
-      BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
+  impl_task_runner()->PostTask(
+      FROM_HERE, BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::Stop() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::FILE, FROM_HERE,
-      BindOnce(&FileSystemIndexingJob::StopOnFileThread, this));
+  impl_task_runner()->PostTask(
+      FROM_HERE, BindOnce(&FileSystemIndexingJob::StopOnImplSequence, this));
 }
 
-void DevToolsFileSystemIndexer::FileSystemIndexingJob::StopOnFileThread() {
+void DevToolsFileSystemIndexer::FileSystemIndexingJob::StopOnImplSequence() {
   stopped_ = true;
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(impl_task_runner()->RunsTasksInCurrentSequence());
   if (stopped_)
     return;
   if (!file_enumerator_) {
@@ -317,13 +319,12 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
   if (current_last_modified_time > saved_last_modified_time) {
     file_path_times_[file_path] = current_last_modified_time;
   }
-  BrowserThread::PostTask(
-      BrowserThread::FILE, FROM_HERE,
-      BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
+  impl_task_runner()->PostTask(
+      FROM_HERE, BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::IndexFiles() {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(impl_task_runner()->RunsTasksInCurrentSequence());
   if (stopped_)
     return;
   if (indexing_it_ == file_path_times_.end()) {
@@ -332,13 +333,8 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::IndexFiles() {
     return;
   }
   FilePath file_path = indexing_it_->first;
-  current_file_.CreateOrOpen(
-      file_path, base::File::FLAG_OPEN | base::File::FLAG_READ,
-      Bind(&FileSystemIndexingJob::StartFileIndexing, this));
-}
-
-void DevToolsFileSystemIndexer::FileSystemIndexingJob::StartFileIndexing(
-    base::File::Error error) {
+  current_file_.Initialize(file_path,
+                           base::File::FLAG_OPEN | base::File::FLAG_READ);
   if (!current_file_.IsValid()) {
     FinishFileIndexing(false);
     return;
@@ -354,20 +350,16 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::ReadFromFile() {
     CloseFile();
     return;
   }
-  current_file_.Read(current_file_offset_, kMaxReadLength,
-                     Bind(&FileSystemIndexingJob::OnRead, this));
-}
-
-void DevToolsFileSystemIndexer::FileSystemIndexingJob::OnRead(
-    base::File::Error error,
-    const char* data,
-    int bytes_read) {
-  if (error != base::File::FILE_OK) {
+  std::unique_ptr<char[]> data_ptr(new char[kMaxReadLength]);
+  const char* const data = data_ptr.get();
+  int bytes_read =
+      current_file_.Read(current_file_offset_, data_ptr.get(), kMaxReadLength);
+  if (bytes_read < 0) {
     FinishFileIndexing(false);
     return;
   }
 
-  if (!bytes_read || bytes_read < 3) {
+  if (bytes_read < 3) {
     FinishFileIndexing(true);
     return;
   }
@@ -393,12 +385,13 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::OnRead(
     }
   }
   current_file_offset_ += bytes_read - 2;
-  ReadFromFile();
+  impl_task_runner()->PostTask(
+      FROM_HERE, base::BindOnce(&FileSystemIndexingJob::ReadFromFile, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::FinishFileIndexing(
     bool success) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(impl_task_runner()->RunsTasksInCurrentSequence());
   CloseFile();
   if (success) {
     FilePath file_path = indexing_it_->first;
@@ -407,16 +400,14 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::FinishFileIndexing(
   }
   ReportWorked();
   ++indexing_it_;
-  IndexFiles();
+  impl_task_runner()->PostTask(
+      FROM_HERE, base::BindOnce(&FileSystemIndexingJob::IndexFiles, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::CloseFile() {
   if (current_file_.IsValid())
-    current_file_.Close(Bind(&FileSystemIndexingJob::CloseCallback, this));
+    current_file_.Close();
 }
-
-void DevToolsFileSystemIndexer::FileSystemIndexingJob::CloseCallback(
-    base::File::Error error) {}
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::ReportWorked() {
   TimeTicks current_time = TimeTicks::Now();
@@ -435,9 +426,20 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::ReportWorked() {
   }
 }
 
-DevToolsFileSystemIndexer::DevToolsFileSystemIndexer() {}
+static int g_instance_count = 0;
 
-DevToolsFileSystemIndexer::~DevToolsFileSystemIndexer() {}
+DevToolsFileSystemIndexer::DevToolsFileSystemIndexer() {
+  impl_task_runner()->PostTask(FROM_HERE,
+                               base::BindOnce([]() { ++g_instance_count; }));
+}
+
+DevToolsFileSystemIndexer::~DevToolsFileSystemIndexer() {
+  impl_task_runner()->PostTask(FROM_HERE, base::BindOnce([]() {
+                                 --g_instance_count;
+                                 if (!g_instance_count)
+                                   g_trigram_index.Get().Reset();
+                               }));
+}
 
 scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>
 DevToolsFileSystemIndexer::IndexPath(
@@ -457,17 +459,17 @@ void DevToolsFileSystemIndexer::SearchInPath(const string& file_system_path,
                                              const string& query,
                                              const SearchCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::FILE, FROM_HERE,
-      BindOnce(&DevToolsFileSystemIndexer::SearchInPathOnFileThread, this,
+  impl_task_runner()->PostTask(
+      FROM_HERE,
+      BindOnce(&DevToolsFileSystemIndexer::SearchInPathOnImplSequence, this,
                file_system_path, query, callback));
 }
 
-void DevToolsFileSystemIndexer::SearchInPathOnFileThread(
+void DevToolsFileSystemIndexer::SearchInPathOnImplSequence(
     const string& file_system_path,
     const string& query,
     const SearchCallback& callback) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
+  DCHECK(impl_task_runner()->RunsTasksInCurrentSequence());
   vector<FilePath> file_paths = g_trigram_index.Get().Search(query);
   vector<string> result;
   FilePath path = FilePath::FromUTF8Unsafe(file_system_path);
@@ -477,7 +479,7 @@ void DevToolsFileSystemIndexer::SearchInPathOnFileThread(
       result.push_back(it->AsUTF8Unsafe());
   }
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          BindOnce(callback, result));
+                          BindOnce(callback, std::move(result)));
 }
 
 }  // namespace brightray
