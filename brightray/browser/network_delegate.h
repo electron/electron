@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 #define BRIGHTRAY_BROWSER_NETWORK_DELEGATE_H_
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -38,7 +39,7 @@ class NetworkDelegate : public net::NetworkDelegate {
       GURL* allowed_unsafe_redirect_url) override;
   void OnBeforeRedirect(net::URLRequest* request,
                         const GURL& new_location) override;
-  void OnResponseStarted(net::URLRequest* request) override;
+  void OnResponseStarted(net::URLRequest* request, int net_error) override;
   void OnNetworkBytesReceived(net::URLRequest* request,
                               int64_t bytes_read) override;
   void OnNetworkBytesSent(net::URLRequest* request,
@@ -54,7 +55,7 @@ class NetworkDelegate : public net::NetworkDelegate {
   bool OnCanGetCookies(const net::URLRequest& request,
                        const net::CookieList& cookie_list) override;
   bool OnCanSetCookie(const net::URLRequest& request,
-                      const std::string& cookie_line,
+                      const net::CanonicalCookie& cookie_line,
                       net::CookieOptions* options) override;
   bool OnCanAccessFile(const net::URLRequest& request,
                        const base::FilePath& original_path,
@@ -68,7 +69,9 @@ class NetworkDelegate : public net::NetworkDelegate {
       const GURL& target_url,
       const GURL& referrer_url) const override;
   bool OnCanQueueReportingReport(const url::Origin& origin) const override;
-  bool OnCanSendReportingReport(const url::Origin& origin) const override;
+  void OnCanSendReportingReports(std::set<url::Origin> origins,
+                                 base::OnceCallback<void(std::set<url::Origin>)>
+                                     result_callback) const override;
   bool OnCanSetReportingClient(const url::Origin& origin,
                                const GURL& endpoint) const override;
   bool OnCanUseReportingClient(const url::Origin& origin,

@@ -51,7 +51,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
                           bool* defer_redirect) override;
   void OnAuthRequired(net::URLRequest* request,
                       net::AuthChallengeInfo* auth_info) override;
-  void OnResponseStarted(net::URLRequest* request) override;
+  void OnResponseStarted(net::URLRequest* request, int net_error) override;
   void OnReadCompleted(net::URLRequest* request, int bytes_read) override;
 
   // Overrides of net::URLRequestContextGetterObserver
