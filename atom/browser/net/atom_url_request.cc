@@ -354,7 +354,8 @@ void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
                      this, scoped_refptr<net::AuthChallengeInfo>(auth_info)));
 }
 
-void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
+void AtomURLRequest::OnResponseStarted(net::URLRequest* request,
+                                       int net_error) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (!request_) {
     return;
@@ -373,7 +374,7 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
     ReadResponse();
   } else if (status.status() == net::URLRequestStatus::Status::FAILED) {
     // Report error on Start.
-    DoCancelWithError(net::ErrorToString(status.ToNetError()), true);
+    DoCancelWithError(net::ErrorToString(net_error), true);
   }
   // We don't report an error is the request is canceled.
 }
