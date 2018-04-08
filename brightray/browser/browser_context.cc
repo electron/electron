@@ -194,12 +194,6 @@ content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* BrowserContext::GetPermissionManager() {
-  if (!permission_manager_.get())
-    permission_manager_.reset(new PermissionManager);
-  return permission_manager_.get();
-}
-
 content::BackgroundFetchDelegate* BrowserContext::GetBackgroundFetchDelegate() {
   return nullptr;
 }
