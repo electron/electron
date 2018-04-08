@@ -11,7 +11,6 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "brightray/browser/media/media_device_id_salt.h"
-#include "brightray/browser/permission_manager.h"
 #include "brightray/browser/url_request_context_getter.h"
 #include "content/public/browser/browser_context.h"
 
@@ -23,8 +22,6 @@ class SpecialStoragePolicy;
 }
 
 namespace brightray {
-
-class PermissionManager;
 
 class BrowserContext : public base::RefCounted<BrowserContext>,
                        public content::BrowserContext,
@@ -52,7 +49,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   content::PushMessagingService* GetPushMessagingService() override;
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
-  content::PermissionManager* GetPermissionManager() override;
   content::BackgroundFetchDelegate* GetBackgroundFetchDelegate() override;
   content::BackgroundSyncController* GetBackgroundSyncController() override;
   content::BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate()
@@ -125,7 +121,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<PrefService> prefs_;
-  std::unique_ptr<PermissionManager> permission_manager_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
 
   base::WeakPtrFactory<BrowserContext> weak_factory_;
