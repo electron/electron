@@ -46,12 +46,12 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
-  NativeWindowViews(brightray::InspectableWebContents* inspectable_web_contents,
-                    const mate::Dictionary& options,
+  NativeWindowViews(const mate::Dictionary& options,
                     NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:
+  void SetContentView(brightray::InspectableWebContents* web_contents) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -61,6 +61,7 @@ class NativeWindowViews : public NativeWindow,
   void Hide() override;
   bool IsVisible() override;
   bool IsEnabled() override;
+  void SetEnabled(bool enable) override;
   void Maximize() override;
   void Unmaximize() override;
   bool IsMaximized() override;
@@ -138,8 +139,6 @@ class NativeWindowViews : public NativeWindow,
 #elif defined(USE_X11)
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
-
-  void SetEnabled(bool enable) override;
 
   views::Widget* widget() const { return window_.get(); }
   views::View* content_view() const { return content_view_; }

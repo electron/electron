@@ -118,14 +118,12 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(
-    brightray::InspectableWebContents* web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent)
+NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
+                                     NativeWindow* parent)
     : NativeWindow(options, parent),
       window_(new views::Widget),
-      content_view_(web_contents->GetView()->GetView()),
-      focused_view_(web_contents->GetView()->GetWebView()),
+      content_view_(nullptr),
+      focused_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -266,8 +264,6 @@ NativeWindowViews::NativeWindowViews(
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
-  AddChildView(content_view_);
-
 #if defined(OS_WIN)
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
@@ -310,7 +306,6 @@ NativeWindowViews::NativeWindowViews(
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
   window_->CenterWindow(size);
-  Layout();
 
 #if defined(OS_WIN)
   // Save initial window state.
@@ -329,6 +324,22 @@ NativeWindowViews::~NativeWindowViews() {
   // Disable mouse forwarding to relinquish resources, should any be held.
   SetForwardMouseMessages(false);
 #endif
+}
+
+void NativeWindowViews::SetContentView(
+    brightray::InspectableWebContents* web_contents) {
+  if (content_view_) {
+    RemoveChildView(content_view_);
+    if (browser_view()) {
+      content_view_->RemoveChildView(
+          browser_view()->GetInspectableWebContentsView()->GetView());
+      set_browser_view(nullptr);
+    }
+  }
+  content_view_ = web_contents->GetView()->GetView();
+  focused_view_ = web_contents->GetView()->GetWebView();
+  AddChildView(content_view_);
+  Layout();
 }
 
 void NativeWindowViews::Close() {
@@ -409,6 +420,33 @@ bool NativeWindowViews::IsEnabled() {
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif defined(USE_X11)
   return !event_disabler_.get();
+#endif
+}
+
+void NativeWindowViews::SetEnabled(bool enable) {
+  // Handle multiple calls of SetEnabled correctly.
+  if (enable) {
+    --disable_count_;
+    if (disable_count_ != 0)
+      return;
+  } else {
+    ++disable_count_;
+    if (disable_count_ != 1)
+      return;
+  }
+
+#if defined(OS_WIN)
+  ::EnableWindow(GetAcceleratedWidget(), enable);
+#elif defined(USE_X11)
+  views::DesktopWindowTreeHostX11* tree_host =
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
+  if (enable) {
+    tree_host->RemoveEventRewriter(event_disabler_.get());
+    event_disabler_.reset();
+  } else {
+    event_disabler_.reset(new EventDisabler);
+    tree_host->AddEventRewriter(event_disabler_.get());
+  }
 #endif
 }
 
@@ -544,7 +582,7 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() {
-  return content_view_->GetBoundsInScreen();
+  return content_view_ ? content_view_->GetBoundsInScreen() : gfx::Rect();
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
@@ -553,7 +591,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
     return NativeWindow::GetContentSize();
 #endif
 
-  return content_view_->size();
+  return content_view_ ? content_view_->size() : gfx::Size();
 }
 
 void NativeWindowViews::SetContentSizeConstraints(
@@ -933,6 +971,9 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 }
 
 void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
+  if (!content_view_)
+    return;
+
   if (browser_view()) {
     content_view_->RemoveChildView(
         browser_view()->GetInspectableWebContentsView()->GetView());
@@ -1128,33 +1169,6 @@ void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
       icon, icon);
 }
 #endif
-
-void NativeWindowViews::SetEnabled(bool enable) {
-  // Handle multiple calls of SetEnabled correctly.
-  if (enable) {
-    --disable_count_;
-    if (disable_count_ != 0)
-      return;
-  } else {
-    ++disable_count_;
-    if (disable_count_ != 1)
-      return;
-  }
-
-#if defined(OS_WIN)
-  ::EnableWindow(GetAcceleratedWidget(), enable);
-#elif defined(USE_X11)
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  if (enable) {
-    tree_host->RemoveEventRewriter(event_disabler_.get());
-    event_disabler_.reset();
-  } else {
-    event_disabler_.reset(new EventDisabler);
-    tree_host->AddEventRewriter(event_disabler_.get());
-  }
-#endif
-}
 
 void NativeWindowViews::OnWidgetActivationChanged(
     views::Widget* widget, bool active) {
@@ -1399,11 +1413,9 @@ ui::WindowShowState NativeWindowViews::GetRestoredState() {
 }
 
 // static
-NativeWindow* NativeWindow::Create(
-    brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent) {
-  return new NativeWindowViews(inspectable_web_contents, options, parent);
+NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
+                                   NativeWindow* parent) {
+  return new NativeWindowViews(options, parent);
 }
 
 }  // namespace atom

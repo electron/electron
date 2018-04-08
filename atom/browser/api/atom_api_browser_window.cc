@@ -150,9 +150,9 @@ void BrowserWindow::Init(v8::Isolate* isolate,
 
   // Creates BrowserWindow.
   window_.reset(NativeWindow::Create(
-      web_contents->managed_web_contents(),
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
+  window_->SetContentView(web_contents->managed_web_contents());
   web_contents->SetOwnerWindow(window_.get());
 
   // Tell the content module to initialize renderer widget with transparent

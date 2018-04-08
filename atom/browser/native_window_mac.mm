@@ -776,10 +776,8 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 
 namespace atom {
 
-NativeWindowMac::NativeWindowMac(
-    brightray::InspectableWebContents* web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent)
+NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
+                                 NativeWindow* parent)
     : NativeWindow(options, parent),
       is_kiosk_(false),
       was_fullscreen_(false),
@@ -952,9 +950,6 @@ NativeWindowMac::NativeWindowMac(
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
 
-  NSView* view = web_contents->GetView()->GetNativeView();
-  [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-
   // Use an NSEvent monitor to listen for the wheel event.
   BOOL __block began = NO;
   wheel_event_monitor_ = [NSEvent
@@ -975,8 +970,6 @@ NativeWindowMac::NativeWindowMac(
       return event;
   }];
 
-  InstallView(web_contents->GetView()->GetNativeView());
-
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
     SetVibrancy(type);
@@ -989,6 +982,16 @@ NativeWindowMac::NativeWindowMac(
 
 NativeWindowMac::~NativeWindowMac() {
   [NSEvent removeMonitor:wheel_event_monitor_];
+}
+
+void NativeWindowMac::SetContentView(
+    brightray::InspectableWebContents* web_contents) {
+  // TODO(zcbenz): Uninstall view first.
+  // TODO(zcbenz): Handle vibrancy.
+  // TODO(zcbenz): Handle draggable regions.
+  NSView* view = web_contents->GetView()->GetNativeView();
+  [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  InstallView(web_contents->GetView()->GetNativeView());
 }
 
 void NativeWindowMac::Close() {
@@ -1860,11 +1863,9 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
 }
 
 // static
-NativeWindow* NativeWindow::Create(
-    brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent) {
-  return new NativeWindowMac(inspectable_web_contents, options, parent);
+NativeWindow* NativeWindow::Create(const mate::Dictionary& options,
+                                   NativeWindow* parent) {
+  return new NativeWindowMac(options, parent);
 }
 
 }  // namespace atom

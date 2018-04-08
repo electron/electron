@@ -21,12 +21,12 @@ namespace atom {
 
 class NativeWindowMac : public NativeWindow {
  public:
-  NativeWindowMac(brightray::InspectableWebContents* inspectable_web_contents,
-                  const mate::Dictionary& options,
+  NativeWindowMac(const mate::Dictionary& options,
                   NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
+  void SetContentView(brightray::InspectableWebContents* web_contents) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;

@@ -53,12 +53,13 @@ class NativeWindow : public base::SupportsUserData {
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(
-      brightray::InspectableWebContents* inspectable_web_contents,
-      const mate::Dictionary& options,
-      NativeWindow* parent = nullptr);
+  static NativeWindow* Create(const mate::Dictionary& options,
+                              NativeWindow* parent = nullptr);
 
   void InitFromOptions(const mate::Dictionary& options);
+
+  virtual void SetContentView(
+      brightray::InspectableWebContents* web_contents) = 0;
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
