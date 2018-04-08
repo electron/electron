@@ -9,6 +9,7 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
 #include "native_mate/constructor.h"
@@ -197,7 +198,7 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(this);
+    notification_ = presenter_->CreateNotification(this, base::GenerateGUID());
     if (notification_) {
       brightray::NotificationOptions options;
       options.title = title_;
