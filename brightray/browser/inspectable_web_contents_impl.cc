@@ -264,7 +264,7 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
   if (agent_host_.get())
-    agent_host_->InspectElement(this, x, y);
+    agent_host_->InspectElement(web_contents_->GetFocusedFrame(), x, y);
 }
 
 void InspectableWebContentsImpl::SetDelegate(
