@@ -124,7 +124,7 @@ NativeWindowViews::NativeWindowViews(
     NativeWindow* parent)
     : NativeWindow(options, parent),
       window_(new views::Widget),
-      web_view_(web_contents->GetView()->GetView()),
+      content_view_(web_contents->GetView()->GetView()),
       focused_view_(web_contents->GetView()->GetWebView()),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
@@ -266,7 +266,7 @@ NativeWindowViews::NativeWindowViews(
     SetWindowType(GetAcceleratedWidget(), window_type);
 #endif
 
-  AddChildView(web_view_);
+  AddChildView(content_view_);
 
 #if defined(OS_WIN)
   if (!has_frame()) {
@@ -544,7 +544,7 @@ gfx::Rect NativeWindowViews::GetBounds() {
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() {
-  return web_view_->GetBoundsInScreen();
+  return content_view_->GetBoundsInScreen();
 }
 
 gfx::Size NativeWindowViews::GetContentSize() {
@@ -553,7 +553,7 @@ gfx::Size NativeWindowViews::GetContentSize() {
     return NativeWindow::GetContentSize();
 #endif
 
-  return web_view_->size();
+  return content_view_->size();
 }
 
 void NativeWindowViews::SetContentSizeConstraints(
@@ -934,7 +934,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 
 void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
   if (browser_view()) {
-    web_view_->RemoveChildView(
+    content_view_->RemoveChildView(
         browser_view()->GetInspectableWebContentsView()->GetView());
     set_browser_view(nullptr);
   }
@@ -946,7 +946,7 @@ void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
   // Add as child of the main web view to avoid (0, 0) origin from overlapping
   // with menu bar.
   set_browser_view(view);
-  web_view_->AddChildView(view->GetInspectableWebContentsView()->GetView());
+  content_view_->AddChildView(view->GetInspectableWebContentsView()->GetView());
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1346,6 +1346,9 @@ void NativeWindowViews::HandleKeyboardEvent(
 }
 
 void NativeWindowViews::Layout() {
+  if (!content_view_)  // Not ready yet.
+    return;
+
   const auto size = GetContentsBounds().size();
   const auto menu_bar_bounds =
       menu_bar_visible_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight)
@@ -1354,11 +1357,9 @@ void NativeWindowViews::Layout() {
     menu_bar_->SetBoundsRect(menu_bar_bounds);
   }
 
-  if (web_view_) {
-    web_view_->SetBoundsRect(
-        gfx::Rect(0, menu_bar_bounds.height(), size.width(),
-                  size.height() - menu_bar_bounds.height()));
-  }
+  content_view_->SetBoundsRect(
+      gfx::Rect(0, menu_bar_bounds.height(), size.width(),
+                size.height() - menu_bar_bounds.height()));
 }
 
 gfx::Size NativeWindowViews::GetMinimumSize() const {
