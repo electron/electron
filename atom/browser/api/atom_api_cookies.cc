@@ -14,7 +14,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
-#include "net/cookies/cookie_monster.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
 #include "net/url_request/url_request_context.h"
@@ -55,24 +54,24 @@ struct Converter<net::CanonicalCookie> {
 };
 
 template <>
-struct Converter<net::CookieStore::ChangeCause> {
+struct Converter<net::CookieChangeCause> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::CookieStore::ChangeCause& val) {
+                                   const net::CookieChangeCause& val) {
     switch (val) {
-      case net::CookieStore::ChangeCause::INSERTED:
-      case net::CookieStore::ChangeCause::EXPLICIT:
-      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_BETWEEN:
-      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_PREDICATE:
-      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_SINGLE:
-      case net::CookieStore::ChangeCause::EXPLICIT_DELETE_CANONICAL:
+      case net::CookieChangeCause::INSERTED:
+      case net::CookieChangeCause::EXPLICIT:
+      case net::CookieChangeCause::EXPLICIT_DELETE_BETWEEN:
+      case net::CookieChangeCause::EXPLICIT_DELETE_PREDICATE:
+      case net::CookieChangeCause::EXPLICIT_DELETE_SINGLE:
+      case net::CookieChangeCause::EXPLICIT_DELETE_CANONICAL:
         return mate::StringToV8(isolate, "explicit");
-      case net::CookieStore::ChangeCause::OVERWRITE:
+      case net::CookieChangeCause::OVERWRITE:
         return mate::StringToV8(isolate, "overwrite");
-      case net::CookieStore::ChangeCause::EXPIRED:
+      case net::CookieChangeCause::EXPIRED:
         return mate::StringToV8(isolate, "expired");
-      case net::CookieStore::ChangeCause::EVICTED:
+      case net::CookieChangeCause::EVICTED:
         return mate::StringToV8(isolate, "evicted");
-      case net::CookieStore::ChangeCause::EXPIRED_OVERWRITE:
+      case net::CookieChangeCause::EXPIRED_OVERWRITE:
         return mate::StringToV8(isolate, "expired-overwrite");
       default:
         return mate::StringToV8(isolate, "unknown");
