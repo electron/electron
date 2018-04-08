@@ -16,8 +16,10 @@ NotificationPresenter::~NotificationPresenter() {
 }
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
-    NotificationDelegate* delegate) {
+    NotificationDelegate* delegate,
+    const std::string& notification_id) {
   Notification* notification = CreateNotificationObject(delegate);
+  notification->set_notification_id(notification_id);
   notifications_.insert(notification);
   return notification->GetWeakPtr();
 }
@@ -25,6 +27,16 @@ base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
 void NotificationPresenter::RemoveNotification(Notification* notification) {
   notifications_.erase(notification);
   delete notification;
+}
+
+void NotificationPresenter::CloseNotificationWithId(
+    const std::string& notification_id) {
+  auto it = std::find_if(notifications_.begin(), notifications_.end(),
+                         [&notification_id](const Notification* n) {
+                           return n->notification_id() == notification_id;
+                         });
+  if (it != notifications_.end())
+    (*it)->Dismiss();
 }
 
 }  // namespace brightray
