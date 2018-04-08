@@ -231,7 +231,7 @@ bool CommonWebContentsDelegate::CanOverscrollContent() const {
 content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
     content::WebContents* web_contents,
     SkColor color,
-    const std::vector<content::ColorSuggestion>& suggestions) {
+    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
   return chrome::ShowColorChooser(web_contents, color);
 }
 
