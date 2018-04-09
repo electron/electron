@@ -6,12 +6,11 @@
 
 #include <string>
 
-#include "content/public/browser/browser_thread.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
-
-using content::BrowserThread;
 
 namespace mate {
 
@@ -75,9 +74,13 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
     std::unique_ptr<device::PowerSaveBlocker> new_blocker(
         new device::PowerSaveBlocker(
             new_blocker_type, device::PowerSaveBlocker::kReasonOther,
-            ATOM_PRODUCT_NAME,
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
+            ATOM_PRODUCT_NAME, base::ThreadTaskRunnerHandle::Get(),
+            // This task runner may be used by some device service
+            // implementation bits to interface with dbus client code, which in
+            // turn imposes some subtle thread affinity on the clients. We
+            // therefore require a single-thread runner.
+            base::CreateSingleThreadTaskRunnerWithTraits(
+                {base::MayBlock(), base::TaskPriority::BACKGROUND})));
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }
