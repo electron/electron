@@ -36,10 +36,10 @@
     'use_lto_o2%': 0,
 
     'conditions': [
-      # Do not use Clang on Windows or when building for mips64el.
-      ['OS=="win" or target_arch=="mips64el"', {
+      # Do not use Clang when building for mips64el.
+      ['target_arch=="mips64el"', {
         'clang%': 0,
-      }],  # OS=="win"
+      }],  # target_arch=="mips64el"
 
       # Search for the available version of SDK.
       ['OS=="mac"', {
