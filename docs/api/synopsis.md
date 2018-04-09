@@ -13,7 +13,7 @@ both processes.
 
 The basic rule is: if a module is [GUI][gui] or low-level system related, then
 it should be only available in the main process. You need to be familiar with
-the concept of [main process vs. renderer process](../tutorial/quick-start.md#main-process)
+the concept of [main process vs. renderer process](../tutorial/application-architecture.md#main-and-renderer-processes)
 scripts to be able to use those modules.
 
 The main process script is just like a normal Node.js script:
@@ -43,7 +43,7 @@ extra ability to use node modules:
 </html>
 ```
 
-To run your app, read [Run your app](../tutorial/quick-start.md#run-your-app).
+To run your app, read [Run your app](../tutorial/first-app.md#running-your-app).
 
 ## Destructuring assignment
 

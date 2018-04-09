@@ -176,4 +176,4 @@ when you right click on it a system menu will pop up. To make the context menu
 behave correctly on all platforms you should never use a custom context menu on
 draggable areas.
 
-[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore
+[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore-options
