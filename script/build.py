@@ -56,7 +56,14 @@ def main():
   env = build_env()
   for config in args.configuration:
     build_path = os.path.join('out', config[0])
-    ret = subprocess.call(ninja + ['-C', build_path, args.target], env=env)
+    build_args = ['-C', build_path, args.target]
+    if args.compdb:
+      build_args += ['-t', 'compdb', 'cxx', 'cc']
+      compdb = open(r'compile_commands.json','w')
+      ret = subprocess.call(ninja + build_args, env=env, stdout=compdb)
+      compdb.close()
+    else:
+      ret = subprocess.call(ninja + build_args, env=env)
     if ret != 0:
       sys.exit(ret)
 
@@ -86,6 +93,12 @@ def parse_args():
   parser.add_argument('--ninja-path',
                       help='Path of ninja command to use.',
                       required=False)
+  parser.add_argument('--compdb',
+                      help=(
+                        'Generate JSON compilation database. This will not '
+                        'trigger actual build. '
+                      ),
+                      action='store_true', default=False)
   return parser.parse_args()
 
 
