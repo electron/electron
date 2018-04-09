@@ -65,7 +65,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined("webgl", true);
   bool webSecurity = true;
   SetDefaultBoolIfUndefined("webSecurity", webSecurity);
-  // If webSecurity was explicity set to false, let's inherit that into insureContent
+  // If webSecurity was explicity set to false, let's inherit that into
+  // insecureContent
   if (web_preferences.GetBoolean("webSecurity", &webSecurity) && !webSecurity) {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
   } else {
