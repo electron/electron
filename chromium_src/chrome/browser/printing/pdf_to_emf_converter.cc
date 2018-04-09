@@ -17,6 +17,10 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/logging.h"
 #include "base/macros.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
+#include "base/sequenced_task_runner.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/common/chrome_utility_printing_messages.h"
 #include "content/public/browser/browser_thread.h"
@@ -40,24 +44,50 @@ class PdfConverterImpl;
 // used to store PDF and metafiles. PDF should be gone by the time utility
 // process exits. Metafiles should be gone when all LazyEmf destroyed.
 class RefCountedTempDir
-    : public base::RefCountedThreadSafe<RefCountedTempDir,
-                                        BrowserThread::DeleteOnFileThread> {
+    : public base::RefCountedDeleteOnSequence<RefCountedTempDir> {
  public:
-  RefCountedTempDir() { ignore_result(temp_dir_.CreateUniqueTempDir()); }
+  RefCountedTempDir()
+      : base::RefCountedDeleteOnSequence<RefCountedTempDir>(
+            base::SequencedTaskRunnerHandle::Get()) {
+    ignore_result(temp_dir_.CreateUniqueTempDir());
+  }
+
   bool IsValid() const { return temp_dir_.IsValid(); }
   const base::FilePath& GetPath() const { return temp_dir_.GetPath(); }
 
  private:
-  friend struct BrowserThread::DeleteOnThread<BrowserThread::FILE>;
+  friend class base::RefCountedDeleteOnSequence<RefCountedTempDir>;
   friend class base::DeleteHelper<RefCountedTempDir>;
+
   ~RefCountedTempDir() {}
 
   base::ScopedTempDir temp_dir_;
   DISALLOW_COPY_AND_ASSIGN(RefCountedTempDir);
 };
 
-using ScopedTempFile =
-    std::unique_ptr<base::File, BrowserThread::DeleteOnFileThread>;
+class TempFile {
+ public:
+  explicit TempFile(base::File file)
+      : file_(std::move(file)),
+        blocking_task_runner_(base::SequencedTaskRunnerHandle::Get()) {
+    base::ThreadRestrictions::AssertIOAllowed();
+  }
+  ~TempFile() {
+    blocking_task_runner_->PostTask(
+        FROM_HERE, base::BindOnce(&CloseFileOnBlockingTaskRunner,
+                                  base::Passed(std::move(file_))));
+  }
+
+  base::File& file() { return file_; }
+
+ private:
+  base::File file_;
+  const scoped_refptr<base::SequencedTaskRunner> blocking_task_runner_;
+
+  DISALLOW_COPY_AND_ASSIGN(TempFile);
+};
+
+using ScopedTempFile = std::unique_ptr<TempFile>;
 
 // Wrapper for Emf to keep only file handle in memory, and load actual data only
 // on playback. Emf::InitFromFile() can play metafile directly from disk, but it
@@ -96,7 +126,7 @@ class PostScriptMetaFile : public LazyEmf {
       : LazyEmf(temp_dir, std::move(file)) {}
   ~PostScriptMetaFile() override;
 
- protected:
+ private:
   // MetafilePlayer:
   bool SafePlayback(HDC hdc) const override;
 
@@ -104,10 +134,10 @@ class PostScriptMetaFile : public LazyEmf {
 };
 
 // Class for converting PDF to another format for printing (Emf, Postscript).
-// Class uses 3 threads: UI, IO and FILE.
+// Class uses UI thread, IO thread and |blocking_task_runner_|.
 // Internal workflow is following:
 // 1. Create instance on the UI thread. (files_, settings_,)
-// 2. Create pdf file on the FILE thread.
+// 2. Create pdf file on |blocking_task_runner_|.
 // 3. Start utility process and start conversion on the IO thread.
 // 4. Utility process returns page count.
 // 5. For each page:
@@ -139,7 +169,7 @@ class PdfConverterUtilityProcessHostClient
   // sync message replies.
   bool Send(IPC::Message* msg);
 
- protected:
+ private:
   class GetPageCallbackData {
    public:
     GetPageCallbackData(int page_number, PdfConverter::GetPageCallback callback)
@@ -176,16 +206,13 @@ class PdfConverterUtilityProcessHostClient
 
   // Helper functions: must be overridden by subclasses
   // Set the process name
-  virtual base::string16 GetName() const;
+  base::string16 GetName() const;
   // Create a metafileplayer subclass file from a temporary file.
-  virtual std::unique_ptr<MetafilePlayer> GetFileFromTemp(
-      std::unique_ptr<base::File, content::BrowserThread::DeleteOnFileThread>
-          temp_file);
+  std::unique_ptr<MetafilePlayer> GetFileFromTemp(ScopedTempFile temp_file);
   // Send the messages to Start, GetPage, and Stop.
-  virtual void SendStartMessage(IPC::PlatformFileForTransit transit);
-  virtual void SendGetPageMessage(int page_number,
-                                  IPC::PlatformFileForTransit transit);
-  virtual void SendStopMessage();
+  void SendStartMessage(IPC::PlatformFileForTransit transit);
+  void SendGetPageMessage(int page_number, IPC::PlatformFileForTransit transit);
+  void SendStopMessage();
 
   // Message handlers:
   void OnPageCount(int page_count);
@@ -218,13 +245,14 @@ class PdfConverterUtilityProcessHostClient
   using GetPageCallbacks = std::queue<GetPageCallbackData>;
   GetPageCallbacks get_page_callbacks_;
 
+  const scoped_refptr<base::SequencedTaskRunner> blocking_task_runner_;
+
   DISALLOW_COPY_AND_ASSIGN(PdfConverterUtilityProcessHostClient);
 };
 
 std::unique_ptr<MetafilePlayer>
 PdfConverterUtilityProcessHostClient::GetFileFromTemp(
-    std::unique_ptr<base::File, content::BrowserThread::DeleteOnFileThread>
-        temp_file) {
+    ScopedTempFile temp_file) {
   if (settings_.mode == PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2 ||
       settings_.mode == PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3) {
     return std::make_unique<PostScriptMetaFile>(temp_dir_,
@@ -268,7 +296,7 @@ class PdfConverterImpl : public PdfConverter {
 
 ScopedTempFile CreateTempFile(scoped_refptr<RefCountedTempDir>* temp_dir) {
   if (!temp_dir->get())
-    *temp_dir = new RefCountedTempDir();
+    *temp_dir = base::MakeRefCounted<RefCountedTempDir>();
   ScopedTempFile file;
   if (!(*temp_dir)->IsValid())
     return file;
@@ -278,11 +306,11 @@ ScopedTempFile CreateTempFile(scoped_refptr<RefCountedTempDir>* temp_dir) {
                 << (*temp_dir)->GetPath().value();
     return file;
   }
-  file.reset(new base::File(
+  file = std::make_unique<TempFile>(base::File(
       path, base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE |
                 base::File::FLAG_READ | base::File::FLAG_DELETE_ON_CLOSE |
                 base::File::FLAG_TEMPORARY));
-  if (!file->IsValid()) {
+  if (!file->file().IsValid()) {
     PLOG(ERROR) << "Failed to create " << path.value();
     file.reset();
   }
@@ -292,16 +320,14 @@ ScopedTempFile CreateTempFile(scoped_refptr<RefCountedTempDir>* temp_dir) {
 ScopedTempFile CreateTempPdfFile(
     const scoped_refptr<base::RefCountedMemory>& data,
     scoped_refptr<RefCountedTempDir>* temp_dir) {
-  DCHECK_CURRENTLY_ON(BrowserThread::FILE);
-
   ScopedTempFile pdf_file = CreateTempFile(temp_dir);
-  if (!pdf_file ||
-      static_cast<int>(data->size()) !=
-          pdf_file->WriteAtCurrentPos(data->front_as<char>(), data->size())) {
+  if (!pdf_file || static_cast<int>(data->size()) !=
+                       pdf_file->file().WriteAtCurrentPos(
+                           data->front_as<char>(), data->size())) {
     pdf_file.reset();
     return pdf_file;
   }
-  pdf_file->Seek(base::File::FROM_BEGIN, 0);
+  pdf_file->file().Seek(base::File::FROM_BEGIN, 0);
   return pdf_file;
 }
 
@@ -332,12 +358,12 @@ void LazyEmf::Close() const {
 }
 
 bool LazyEmf::LoadEmf(Emf* emf) const {
-  file_->Seek(base::File::FROM_BEGIN, 0);
-  int64_t size = file_->GetLength();
+  file_->file().Seek(base::File::FROM_BEGIN, 0);
+  int64_t size = file_->file().GetLength();
   if (size <= 0)
     return false;
   std::vector<char> data(size);
-  if (file_->ReadAtCurrentPos(data.data(), data.size()) != size)
+  if (file_->file().ReadAtCurrentPos(data.data(), data.size()) != size)
     return false;
   return emf->InitFromData(data.data(), data.size());
 }
@@ -378,7 +404,11 @@ bool PostScriptMetaFile::SafePlayback(HDC hdc) const {
 PdfConverterUtilityProcessHostClient::PdfConverterUtilityProcessHostClient(
     base::WeakPtr<PdfConverterImpl> converter,
     const PdfRenderSettings& settings)
-    : converter_(converter), settings_(settings) {}
+    : converter_(converter),
+      settings_(settings),
+      blocking_task_runner_(base::CreateSequencedTaskRunnerWithTraits(
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {}
 
 PdfConverterUtilityProcessHostClient::~PdfConverterUtilityProcessHostClient() {}
 
@@ -404,8 +434,8 @@ void PdfConverterUtilityProcessHostClient::Start(
                               ->AsWeakPtr();
   utility_process_host_->SetName(GetName());
 
-  BrowserThread::PostTaskAndReplyWithResult(
-      BrowserThread::FILE, FROM_HERE,
+  base::PostTaskAndReplyWithResult(
+      blocking_task_runner_.get(), FROM_HERE,
       base::Bind(&CreateTempPdfFile, data, &temp_dir_),
       base::Bind(&PdfConverterUtilityProcessHostClient::OnTempPdfReady, this));
 }
@@ -416,7 +446,7 @@ void PdfConverterUtilityProcessHostClient::OnTempPdfReady(ScopedTempFile pdf) {
     return OnFailed();
   // Should reply with OnPageCount().
   SendStartMessage(
-      IPC::GetPlatformFileForTransit(pdf->GetPlatformFile(), false));
+      IPC::GetPlatformFileForTransit(pdf->file().GetPlatformFile(), false));
 }
 
 void PdfConverterUtilityProcessHostClient::OnPageCount(int page_count) {
@@ -446,8 +476,9 @@ void PdfConverterUtilityProcessHostClient::GetPage(
   if (!utility_process_host_)
     return OnFailed();
 
-  BrowserThread::PostTaskAndReplyWithResult(
-      BrowserThread::FILE, FROM_HERE, base::Bind(&CreateTempFile, &temp_dir_),
+  base::PostTaskAndReplyWithResult(
+      blocking_task_runner_.get(), FROM_HERE,
+      base::Bind(&CreateTempFile, &temp_dir_),
       base::Bind(&PdfConverterUtilityProcessHostClient::OnTempFileReady, this,
                  &get_page_callbacks_.back()));
 }
@@ -458,8 +489,8 @@ void PdfConverterUtilityProcessHostClient::OnTempFileReady(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   if (!utility_process_host_ || !temp_file)
     return OnFailed();
-  IPC::PlatformFileForTransit transit =
-      IPC::GetPlatformFileForTransit(temp_file->GetPlatformFile(), false);
+  IPC::PlatformFileForTransit transit = IPC::GetPlatformFileForTransit(
+      temp_file->file().GetPlatformFile(), false);
   callback_data->set_file(std::move(temp_file));
   // Should reply with OnPageDone().
   SendGetPageMessage(callback_data->page_number(), transit);
