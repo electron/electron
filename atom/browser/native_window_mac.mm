@@ -970,11 +970,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
       return event;
   }];
 
-  std::string type;
-  if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type);
-  }
-
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);

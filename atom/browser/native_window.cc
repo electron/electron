@@ -131,6 +131,12 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+#if defined(OS_MACOSX)
+  std::string type;
+  if (options.Get(options::kVibrancyType, &type)) {
+    SetVibrancy(type);
+  }
+#endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(ParseHexColor(color));
