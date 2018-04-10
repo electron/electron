@@ -488,7 +488,7 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
     // there *is* a "windowId" property, but since it should be an int, code
     // on the browser which doesn't additionally check for null will fail.
     // We can avoid all bugs related to this by stripping null.
-    if (strip_null_from_objects_ && child->IsType(base::Value::Type::NONE))
+    if (strip_null_from_objects_ && child->is_none())
       continue;
 
     result->SetWithoutPathExpansion(std::string(*name_utf8, name_utf8.length()),

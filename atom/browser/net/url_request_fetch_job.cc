@@ -112,7 +112,7 @@ void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
 }
 
 void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (!options->IsType(base::Value::Type::DICTIONARY)) {
+  if (!options->is_dict()) {
     NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
                                            net::ERR_NOT_IMPLEMENTED));
     return;
