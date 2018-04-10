@@ -986,9 +986,15 @@ NativeWindowMac::~NativeWindowMac() {
 
 void NativeWindowMac::SetContentView(
     brightray::InspectableWebContents* web_contents) {
-  // TODO(zcbenz): Uninstall view first.
-  // TODO(zcbenz): Handle vibrancy.
-  // TODO(zcbenz): Handle draggable regions.
+  // We might have vibrantView added to the contentView.
+  NSArray* subviews = [[window_ contentView] subviews];
+  if ([subviews count] == ([window_ vibrantView] != nil ? 2 : 1)) {
+    // The vibrantView is always bellow the web view.
+    NSView* content_view = static_cast<NSView*>(
+        [subviews objectAtIndex:([subviews count] - 1)]);
+    [content_view removeFromSuperview];
+  }
+
   NSView* view = web_contents->GetView()->GetNativeView();
   [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   InstallView(web_contents->GetView()->GetNativeView());
