@@ -17,6 +17,9 @@
 #include "base/mac/scoped_aedesc.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/task_scheduler/task_traits.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
 
@@ -166,7 +169,7 @@ void OpenExternal(const GURL& url,
                  });
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path) {
+bool MoveItemToTrashSync(const base::FilePath& full_path) {
   NSString* path_string = base::SysUTF8ToNSString(full_path.value());
   BOOL status = [[NSFileManager defaultManager]
         trashItemAtURL:[NSURL fileURLWithPath:path_string]
@@ -176,6 +179,15 @@ bool MoveItemToTrash(const base::FilePath& full_path) {
     LOG(WARNING) << "NSWorkspace failed to move file " << full_path.value()
                  << " to trash";
   return status;
+}
+  
+void MoveItemToTrash(const base::FilePath& full_path,
+                     MoveItemToTrashCallback callback) {
+  base::PostTaskWithTraitsAndReplyWithResult(
+    FROM_HERE,
+    {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
+    base::Bind(&MoveItemToTrashSync, full_path),
+    callback);
 }
 
 void Beep() {
