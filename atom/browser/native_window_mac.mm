@@ -780,7 +780,7 @@ NativeWindowMac::NativeWindowMac(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(web_contents, options, parent),
+    : NativeWindow(options, parent),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),

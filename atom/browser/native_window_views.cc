@@ -122,7 +122,7 @@ NativeWindowViews::NativeWindowViews(
     brightray::InspectableWebContents* web_contents,
     const mate::Dictionary& options,
     NativeWindow* parent)
-    : NativeWindow(web_contents, options, parent),
+    : NativeWindow(options, parent),
       window_(new views::Widget),
       web_view_(web_contents->GetView()->GetView()),
       focused_view_(web_contents->GetView()->GetWebView()),

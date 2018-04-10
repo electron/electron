@@ -21,6 +21,7 @@
 #include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/icon_util.h"
+#include "ui/gfx/image/image_skia.h"
 
 namespace atom {
 

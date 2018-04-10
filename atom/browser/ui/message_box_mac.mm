@@ -11,6 +11,7 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "ui/gfx/image/image_skia.h"
 
 @interface ModalDelegate : NSObject {
  @private
