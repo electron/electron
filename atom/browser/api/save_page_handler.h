@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "content/public/browser/download_item.h"
+#include "components/download/public/common/download_item.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/save_page_type.h"
 #include "v8/include/v8.h"
@@ -26,7 +26,7 @@ namespace api {
 
 // A self-destroyed class for handling save page request.
 class SavePageHandler : public content::DownloadManager::Observer,
-                        public content::DownloadItem::Observer {
+                        public download::DownloadItem::Observer {
  public:
   using SavePageCallback = base::Callback<void(v8::Local<v8::Value>)>;
 
@@ -38,14 +38,14 @@ class SavePageHandler : public content::DownloadManager::Observer,
               const content::SavePageType& save_type);
 
  private:
-  void Destroy(content::DownloadItem* item);
+  void Destroy(download::DownloadItem* item);
 
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,
-                         content::DownloadItem* item) override;
+                         download::DownloadItem* item) override;
 
-  // content::DownloadItem::Observer:
-  void OnDownloadUpdated(content::DownloadItem* item) override;
+  // download::DownloadItem::Observer:
+  void OnDownloadUpdated(download::DownloadItem* item) override;
 
   content::WebContents* web_contents_;  // weak
   SavePageCallback callback_;
