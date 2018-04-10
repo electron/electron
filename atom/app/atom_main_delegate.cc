@@ -22,6 +22,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_features.h"
+#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -141,7 +142,8 @@ void AtomMainDelegate::PreSandboxStartup() {
     if (command_line->HasSwitch(switches::kEnableSandbox)) {
       // Disable setuid sandbox since it is not longer required on
       // linux(namespace sandbox is available on most distros).
-      command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+      command_line->AppendSwitch(
+          service_manager::switches::kDisableSetuidSandbox);
     } else {
       // Disable renderer sandbox for most of node's functions.
       command_line->AppendSwitch(::switches::kNoSandbox);
