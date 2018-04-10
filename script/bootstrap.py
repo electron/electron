@@ -66,6 +66,8 @@ def main():
   create_chrome_version_h()
   touch_config_gypi()
   run_update(defines, args.msvs)
+  if (args.sccache):
+    inject_sscache()
 
 
 def parse_args():
@@ -110,6 +112,7 @@ def parse_args():
                       help='The static library path of libchromiumcontent.')
   parser.add_argument('--defines', default='',
                       help='The build variables passed to gyp')
+  parser.add_argument('--sccache', action='store_true', help='Enables sccache support')
   return parser.parse_args()
 
 
@@ -255,6 +258,24 @@ def run_update(defines, msvs):
     args += ['--msvs']
 
   execute_stdout(args)
+
+def sscache_repl(match):
+  return match.group()[:-1] + 'sccache $'
+
+def inject_sscache():
+  out_dir = os.path.join(SOURCE_ROOT, 'out')
+  # We explicitly don't want to do this for cc_s
+  rules_to_update = ['cc', 'cxx', 'objc', 'objcxx']
+  for component_dir in [x for x in os.listdir(out_dir) if os.path.isdir(os.path.join(out_dir, x))]:
+    ninja_file = os.path.join(out_dir, component_dir, 'build.ninja')
+    content = ''
+    with open(ninja_file, 'r') as f:
+      content = f.read()
+    for rule in rules_to_update:
+      r = re.compile('rule ' + rule + r'(\n|(\n\r))  command = \$', re.M)
+      content = r.sub(sscache_repl, content)
+    with open(ninja_file, 'w') as f:
+      f.write(content)
 
 
 def get_libchromiumcontent_commit():
