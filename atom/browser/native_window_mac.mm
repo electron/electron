@@ -779,6 +779,7 @@ namespace atom {
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent),
+      content_view_(nil),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -981,18 +982,72 @@ NativeWindowMac::~NativeWindowMac() {
 
 void NativeWindowMac::SetContentView(
     brightray::InspectableWebContents* web_contents) {
-  // We might have vibrantView added to the contentView.
-  NSArray* subviews = [[window_ contentView] subviews];
-  if ([subviews count] == ([window_ vibrantView] != nil ? 2 : 1)) {
-    // The vibrantView is always bellow the web view.
-    NSView* content_view = static_cast<NSView*>(
-        [subviews objectAtIndex:([subviews count] - 1)]);
-    [content_view removeFromSuperview];
-  }
+  if (content_view_)
+    [content_view_ removeFromSuperview];
 
-  NSView* view = web_contents->GetView()->GetNativeView();
-  [view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  InstallView(web_contents->GetView()->GetNativeView());
+  content_view_ = web_contents->GetView()->GetNativeView();
+  [content_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+  // Make sure the bottom corner is rounded for non-modal windows: http://crbug.com/396264.
+  // But do not enable it on OS X 10.9 for transparent window, otherwise a
+  // semi-transparent frame would show.
+  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal())
+    [[window_ contentView] setWantsLayer:YES];
+
+  if (has_frame()) {
+    [content_view_ setFrame:[[window_ contentView] bounds]];
+    [[window_ contentView] addSubview:content_view_];
+  } else {
+    // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
+    // produces warnings. To eliminate the warnings, we resize the contentView
+    // to fill the window, and add subviews to that.
+    // http://crbug.com/380412
+    container_view_.reset([[FullSizeContentView alloc] init]);
+    [container_view_
+        setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
+
+    // Move the vibrantView from the old content view.
+    if ([window_ vibrantView]) {
+      [[window_ vibrantView] removeFromSuperview];
+      [container_view_ addSubview:[window_ vibrantView]
+                       positioned:NSWindowBelow
+                       relativeTo:nil];
+    }
+
+    [window_ setContentView:container_view_];
+
+    [content_view_ setFrame:[container_view_ bounds]];
+    [container_view_ addSubview:content_view_];
+
+    // The fullscreen button should always be hidden for frameless window.
+    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
+
+    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
+      NSView* window_button_view = [[[CustomWindowButtonView alloc]
+          initWithFrame:NSZeroRect] autorelease];
+      [container_view_ addSubview:window_button_view];
+    } else {
+      if (title_bar_style_ != NORMAL) {
+        if (base::mac::IsOS10_9()) {
+          ShowWindowButton(NSWindowZoomButton);
+          ShowWindowButton(NSWindowMiniaturizeButton);
+          ShowWindowButton(NSWindowCloseButton);
+        }
+        return;
+      }
+
+      // Hide the window buttons.
+      [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
+      [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+      [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    }
+
+    // Some third-party macOS utilities check the zoom button's enabled state to
+    // determine whether to show custom UI on hover, so we disable it here to
+    // prevent them from doing so in a frameless app window.
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+  }
 }
 
 void NativeWindowMac::Close() {
@@ -1777,60 +1832,6 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent, bool attach)
 void NativeWindowMac::ShowWindowButton(NSWindowButton button) {
   auto view = [window_ standardWindowButton:button];
   [view.superview addSubview:view positioned:NSWindowAbove relativeTo:nil];
-}
-
-void NativeWindowMac::InstallView(NSView* view) {
-  // Make sure the bottom corner is rounded for non-modal windows: http://crbug.com/396264.
-  // But do not enable it on OS X 10.9 for transparent window, otherwise a
-  // semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal())
-    [[window_ contentView] setWantsLayer:YES];
-
-  if (has_frame()) {
-    [view setFrame:[[window_ contentView] bounds]];
-    [[window_ contentView] addSubview:view];
-  } else {
-    // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
-    // produces warnings. To eliminate the warnings, we resize the contentView
-    // to fill the window, and add subviews to that.
-    // http://crbug.com/380412
-    content_view_.reset([[FullSizeContentView alloc] init]);
-    [content_view_
-        setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [content_view_ setFrame:[[[window_ contentView] superview] bounds]];
-    [window_ setContentView:content_view_];
-
-    [view setFrame:[content_view_ bounds]];
-    [content_view_ addSubview:view];
-
-    // The fullscreen button should always be hidden for frameless window.
-    [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
-
-    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* window_button_view = [[[CustomWindowButtonView alloc]
-          initWithFrame:NSZeroRect] autorelease];
-      [content_view_ addSubview:window_button_view];
-    } else {
-      if (title_bar_style_ != NORMAL) {
-        if (base::mac::IsOS10_9()) {
-          ShowWindowButton(NSWindowZoomButton);
-          ShowWindowButton(NSWindowMiniaturizeButton);
-          ShowWindowButton(NSWindowCloseButton);
-        }
-        return;
-      }
-
-      // Hide the window buttons.
-      [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
-      [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
-      [[window_ standardWindowButton:NSWindowCloseButton] setHidden:YES];
-    }
-
-    // Some third-party macOS utilities check the zoom button's enabled state to
-    // determine whether to show custom UI on hover, so we disable it here to
-    // prevent them from doing so in a frameless app window.
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
-  }
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {

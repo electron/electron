@@ -141,8 +141,6 @@ class NativeWindowMac : public NativeWindow {
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
-  void InstallView(NSView* view);
-
   void SetForwardMouseMessages(bool forward);
 
   base::scoped_nsobject<AtomNSWindow> window_;
@@ -152,7 +150,10 @@ class NativeWindowMac : public NativeWindow {
   id wheel_event_monitor_;
 
   // The view that will fill the whole frameless window.
-  base::scoped_nsobject<FullSizeContentView> content_view_;
+  base::scoped_nsobject<FullSizeContentView> container_view_;
+
+  // The content view passed by SetContentView, weak ref.
+  NSView* content_view_;
 
   bool is_kiosk_;
 
