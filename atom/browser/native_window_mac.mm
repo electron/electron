@@ -1708,7 +1708,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  background_color_before_vibrancy_.reset([window_ backgroundColor]);
+  background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
   transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
   ui::GpuSwitchingManager::SetTransparent(true);
 
