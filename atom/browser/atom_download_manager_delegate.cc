@@ -15,6 +15,7 @@
 #include "base/files/file_util.h"
 #include "base/task_scheduler/post_task.h"
 #include "chrome/common/pref_names.h"
+#include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -117,7 +118,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   // download should be cancelled.
   // If user cancels the file save dialog, run the callback with empty FilePath.
   callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
-               content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
+               download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
                path.empty() ? content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
                             : content::DOWNLOAD_INTERRUPT_REASON_NONE);
 }
@@ -135,7 +136,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   if (!download->GetForcedFilePath().empty()) {
     callback.Run(download->GetForcedFilePath(),
                  download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                 download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
                  download->GetForcedFilePath(),
                  content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
@@ -147,7 +148,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   if (!save_path.empty()) {
     callback.Run(save_path,
                  download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                 download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
                  save_path, content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
