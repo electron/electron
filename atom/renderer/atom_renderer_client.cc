@@ -181,11 +181,12 @@ void AtomRendererClient::SetupMainWorldOverrides(
 
   // Wrap the bundle into a function that receives the binding object as
   // an argument.
-  std::string bundle(node::isolated_bundle_data,
-      node::isolated_bundle_data + sizeof(node::isolated_bundle_data));
-  std::string wrapper = "(function (binding, require) {\n" + bundle + "\n})";
-  auto script = v8::Script::Compile(
-      mate::ConvertToV8(isolate, wrapper)->ToString());
+  std::string left = "(function (binding, require) {\n";
+  std::string right = "\n})";
+  auto script = v8::Script::Compile(v8::String::Concat(
+      mate::ConvertToV8(isolate, left)->ToString(),
+      v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString())));
   auto func = v8::Handle<v8::Function>::Cast(
       script->Run(context).ToLocalChecked());
 
