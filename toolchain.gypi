@@ -107,7 +107,10 @@
     # Setup sccache
     ['sccache_path!=""', {
       'make_global_settings': [
-        ['CC_wrapper', '<(sccache_path)']
+        ['CC_wrapper', '<(sccache_path)'],
+        ['CXX_wrapper', '<(sccache_path)'],
+        ['CC.host_wrapper', '<(sccache_path)'],
+        ['CXX.host_wrapper', '<(sccache_path)']
       ],
     }],
     # Setup building with clang.
