@@ -18,6 +18,7 @@
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager.h"
 #include "net/base/filename_util.h"
 
@@ -56,7 +57,7 @@ AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   }
 }
 
-void AtomDownloadManagerDelegate::GetItemSavePath(content::DownloadItem* item,
+void AtomDownloadManagerDelegate::GetItemSavePath(download::DownloadItem* item,
                                                   base::FilePath* path) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
@@ -78,7 +79,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     return;
 
   NativeWindow* window = nullptr;
-  content::WebContents* web_contents = item->GetWebContents();
+  content::WebContents* web_contents =
+      content::DownloadItemUtils::GetWebContents(item);
   auto* relay =
       web_contents ? NativeWindowRelay::FromWebContents(web_contents) : nullptr;
   if (relay)
@@ -114,7 +116,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   // Running the DownloadTargetCallback with an empty FilePath signals that the
   // download should be cancelled.
   // If user cancels the file save dialog, run the callback with empty FilePath.
-  callback.Run(path, content::DownloadItem::TARGET_DISPOSITION_PROMPT,
+  callback.Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
                path.empty() ? content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
                             : content::DOWNLOAD_INTERRUPT_REASON_NONE);
@@ -126,13 +128,13 @@ void AtomDownloadManagerDelegate::Shutdown() {
 }
 
 bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
-    content::DownloadItem* download,
+    download::DownloadItem* download,
     const content::DownloadTargetCallback& callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   if (!download->GetForcedFilePath().empty()) {
     callback.Run(download->GetForcedFilePath(),
-                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                 download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
                  content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
                  download->GetForcedFilePath(),
                  content::DOWNLOAD_INTERRUPT_REASON_NONE);
@@ -143,9 +145,10 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   base::FilePath save_path;
   GetItemSavePath(download, &save_path);
   if (!save_path.empty()) {
-    callback.Run(save_path, content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, save_path,
-                 content::DOWNLOAD_INTERRUPT_REASON_NONE);
+    callback.Run(save_path,
+                 download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+                 save_path, content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
@@ -169,14 +172,14 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
 }
 
 bool AtomDownloadManagerDelegate::ShouldOpenDownload(
-    content::DownloadItem* download,
+    download::DownloadItem* download,
     const content::DownloadOpenDelayedCallback& callback) {
   return true;
 }
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = download::DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 
