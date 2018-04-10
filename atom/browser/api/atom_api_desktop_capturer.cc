@@ -59,7 +59,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
                                     const gfx::Size& thumbnail_size) {
   webrtc::DesktopCaptureOptions options =
-      content::CreateDesktopCaptureOptions();
+      content::desktop_capture::CreateDesktopCaptureOptions();
 #if defined(OS_WIN)
   using_directx_capturer_ = options.allow_directx_capturer();
 #endif  // defined(OS_WIN)
