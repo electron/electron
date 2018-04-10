@@ -437,7 +437,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
+      download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
