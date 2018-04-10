@@ -33,6 +33,7 @@
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
+#include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -435,7 +436,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       GURL(), mime_type, mime_type, start_time, base::Time(), etag,
       last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
-      content::DownloadDangerType::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
+      download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
