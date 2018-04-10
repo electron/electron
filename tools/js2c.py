@@ -9,6 +9,19 @@ import sys
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
+TEMPLATE = """
+#ifndef ATOM_NATIVES_H_
+#define ATOM_NATIVES_H_
+
+namespace node {{
+
+{definitions}
+
+}}  // namespace node
+
+#endif  // ATOM_NATIVES_H_
+"""
+
 
 def main():
   natives = os.path.abspath(sys.argv[1])
@@ -23,7 +36,8 @@ def call_js2c(natives, js_source_files):
   with scoped_cwd(src_dir):
     subprocess.check_call(
         [sys.executable, js2c, natives] +
-        [os.path.basename(source) for source in js_source_files])
+        [os.path.basename(source) for source in js_source_files] +
+        ['-t', TEMPLATE])
 
 
 @contextlib.contextmanager
