@@ -35,6 +35,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
@@ -433,10 +434,10 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
       GURL(), mime_type, mime_type, start_time, base::Time(), etag,
       last_modified, offset, length, std::string(),
-      content::DownloadItem::INTERRUPTED,
+      download::DownloadItem::INTERRUPTED,
       content::DownloadDangerType::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
-      false, std::vector<content::DownloadItem::ReceivedSlice>());
+      false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
 void SetDevToolsNetworkEmulationClientIdInIO(
@@ -506,16 +507,18 @@ Session::~Session() {
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
-                                content::DownloadItem* item) {
+                                download::DownloadItem* item) {
   if (item->IsSavePackageDownload())
     return;
 
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto handle = DownloadItem::Create(isolate(), item);
-  if (item->GetState() == content::DownloadItem::INTERRUPTED)
+  if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
-  bool prevent_default = Emit("will-download", handle, item->GetWebContents());
+  content::WebContents* web_contents =
+      content::DownloadItemUtils::GetWebContents(item);
+  bool prevent_default = Emit("will-download", handle, web_contents);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
