@@ -60,10 +60,6 @@ struct Converter<net::CookieChangeCause> {
     switch (val) {
       case net::CookieChangeCause::INSERTED:
       case net::CookieChangeCause::EXPLICIT:
-      case net::CookieChangeCause::EXPLICIT_DELETE_BETWEEN:
-      case net::CookieChangeCause::EXPLICIT_DELETE_PREDICATE:
-      case net::CookieChangeCause::EXPLICIT_DELETE_SINGLE:
-      case net::CookieChangeCause::EXPLICIT_DELETE_CANONICAL:
         return mate::StringToV8(isolate, "explicit");
       case net::CookieChangeCause::OVERWRITE:
         return mate::StringToV8(isolate, "overwrite");
