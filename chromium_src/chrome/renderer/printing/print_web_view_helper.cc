@@ -1238,7 +1238,7 @@ bool PrintWebViewHelper::PrintPreviewContext::CreatePreviewDocument(
     return false;
   }
 
-  metafile_.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
+  metafile_.reset(new PdfMetafileSkia());
   CHECK(metafile_->Init());
 
   current_page_index_ = 0;
