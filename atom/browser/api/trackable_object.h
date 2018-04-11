@@ -107,7 +107,9 @@ class TrackableObject : public TrackableObjectBase,
   }
 
  protected:
-  TrackableObject() {}
+  TrackableObject() {
+    weak_map_id_ = ++next_id_;
+  }
 
   ~TrackableObject() override {
     RemoveFromWeakMap();
@@ -118,7 +120,6 @@ class TrackableObject : public TrackableObjectBase,
     if (!weak_map_) {
       weak_map_ = new atom::KeyWeakMap<int32_t>;
     }
-    weak_map_id_ = ++next_id_;
     weak_map_->Set(isolate, weak_map_id_, wrapper);
   }
 

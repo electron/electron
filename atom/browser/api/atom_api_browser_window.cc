@@ -424,10 +424,10 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
 
 }  // namespace atom
 
-
 namespace {
 
 using atom::api::BrowserWindow;
+using atom::api::TopLevelWindow;
 
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
@@ -444,10 +444,10 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   mate::Dictionary browser_window(isolate, templ->GetFunction());
   browser_window.SetMethod(
       "fromId",
-      &mate::TrackableObject<BrowserWindow>::FromWeakMapID);
+      &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
   browser_window.SetMethod(
       "getAllWindows",
-      &mate::TrackableObject<BrowserWindow>::GetAll);
+      &mate::TrackableObject<TopLevelWindow>::GetAll);
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
