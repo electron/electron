@@ -155,7 +155,7 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
   window_unresponsive_closure_.Cancel();
 }
 
-void BrowserWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
+void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
   // Schedule the unresponsive shortly later, since we may receive the
   // responsive event soon. This could happen after the whole application had
   // blocked for a while.
