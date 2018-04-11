@@ -310,8 +310,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
-      const content::WebContentsUnresponsiveState& unresponsive_state) override;
-  void RendererResponsive(content::WebContents* source) override;
+      content::RenderWidgetHost* render_widget_host) override;
+  void RendererResponsive(
+      content::WebContents* source,
+      content::RenderWidgetHost* render_widget_host) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
