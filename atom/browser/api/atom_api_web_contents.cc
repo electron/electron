@@ -710,11 +710,13 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(
     content::WebContents* source,
-    const content::WebContentsUnresponsiveState& unresponsive_state) {
+    content::RenderWidgetHost* render_widget_host) {
   Emit("unresponsive");
 }
 
-void WebContents::RendererResponsive(content::WebContents* source) {
+void WebContents::RendererResponsive(
+    content::WebContents* source,
+    content::RenderWidgetHost* render_widget_host) {
   Emit("responsive");
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnRendererResponsive();
