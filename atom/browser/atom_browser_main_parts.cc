@@ -6,7 +6,6 @@
 
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/bridge_task_runner.h"
@@ -21,7 +20,6 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
-#include "device/geolocation/geolocation_delegate.h"
 #include "device/geolocation/geolocation_provider.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -48,22 +46,6 @@
 namespace atom {
 
 namespace {
-
-// A provider of Geolocation services to override AccessTokenStore.
-class AtomGeolocationDelegate : public device::GeolocationDelegate {
- public:
-  AtomGeolocationDelegate() {
-    device::GeolocationProvider::GetInstance()
-        ->UserDidOptIntoLocationServices();
-  }
-
-  scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
-    return new AtomAccessTokenStore();
-  }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
-};
 
 template <typename T>
 void Erase(T* container, typename T::iterator iter) {
@@ -245,8 +227,9 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
-  device::GeolocationProvider::SetGeolocationDelegate(
-      new AtomGeolocationDelegate());
+  // TODO(deepak1556): Enable this optionally based on response
+  // from AtomPermissionManager.
+  device::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
