@@ -102,6 +102,10 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 
 BrowserWindow::~BrowserWindow() {
   api_web_contents_->RemoveObserver(this);
+  // Note that the OnWindowClosed will not be called after the destructor runs,
+  // since the window object is managed by the TopLevelWindow class.
+  if (web_contents())
+    Cleanup();
 }
 
 void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
@@ -239,13 +243,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 }
 
 void BrowserWindow::OnWindowClosed() {
-  auto* host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->GetWidget()->RemoveInputEventObserver(this);
-
-  api_web_contents_->DestroyWebContents(true /* async */);
-  Observe(nullptr);
-
+  Cleanup();
   TopLevelWindow::OnWindowClosed();
 }
 
@@ -378,6 +376,15 @@ void BrowserWindow::NotifyWindowUnresponsive() {
       !IsUnresponsiveEventSuppressed()) {
     Emit("unresponsive");
   }
+}
+
+void BrowserWindow::Cleanup() {
+  auto* host = web_contents()->GetRenderViewHost();
+  if (host)
+    host->GetWidget()->RemoveInputEventObserver(this);
+
+  api_web_contents_->DestroyWebContents(true /* async */);
+  Observe(nullptr);
 }
 
 // static

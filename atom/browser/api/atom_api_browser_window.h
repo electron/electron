@@ -96,6 +96,9 @@ class BrowserWindow : public TopLevelWindow,
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
 
+  // Cleanup our WebContents observers.
+  void Cleanup();
+
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
