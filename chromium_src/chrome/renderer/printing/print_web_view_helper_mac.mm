@@ -22,7 +22,7 @@ using blink::WebLocalFrame;
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
     WebLocalFrame* frame) {
-  PdfMetafileSkia metafile(SkiaDocumentType::PDF);
+  PdfMetafileSkia metafile;
   CHECK(metafile.Init());
 
   int page_number = params.page_number;
@@ -60,7 +60,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
       print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_;
 
   if (render_to_draft) {
-    draft_metafile.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
+    draft_metafile.reset(new PdfMetafileSkia());
     CHECK(draft_metafile->Init());
     initial_render_metafile = draft_metafile.get();
   }
