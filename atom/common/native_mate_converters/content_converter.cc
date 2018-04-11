@@ -17,10 +17,10 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
-#include "content/public/common/resource_request_body.h"
 #include "native_mate/dictionary.h"
+#include "services/network/public/cpp/resource_request_body.h"
 
-using content::ResourceRequestBody;
+using network::ResourceRequestBody;
 
 namespace {
 
@@ -252,7 +252,7 @@ bool Converter<scoped_refptr<ResourceRequestBody>>::FromV8(
   std::unique_ptr<base::ListValue> list(new base::ListValue);
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
-  *out = new content::ResourceRequestBody();
+  *out = new network::ResourceRequestBody();
   for (size_t i = 0; i < list->GetSize(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;

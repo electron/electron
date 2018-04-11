@@ -44,11 +44,11 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/resource_request_body.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
+#include "services/network/public/cpp/resource_request_body.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
@@ -415,7 +415,7 @@ bool AtomBrowserClient::CanCreateWindow(
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
     const std::vector<std::string>& additional_features,
-    const scoped_refptr<content::ResourceRequestBody>& body,
+    const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
