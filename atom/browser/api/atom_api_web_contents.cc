@@ -561,7 +561,7 @@ void WebContents::OnCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
-    const scoped_refptr<content::ResourceRequestBody>& body) {
+    const scoped_refptr<network::ResourceRequestBody>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition, features, body,
          referrer);
@@ -1206,7 +1206,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
 
-  scoped_refptr<content::ResourceRequestBody> body;
+  scoped_refptr<network::ResourceRequestBody> body;
   if (options.Get("postData", &body)) {
     params.post_data = body;
     params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
