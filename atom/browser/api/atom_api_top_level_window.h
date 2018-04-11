@@ -5,6 +5,11 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
 #define ATOM_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
 
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
@@ -61,16 +66,14 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
-
   #if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
   #endif
 
- private:
   // Public APIs of NativeWindow.
   void Close();
-  void Focus();
-  void Blur();
+  virtual void Focus();
+  virtual void Blur();
   bool IsFocused();
   void Show();
   void ShowInactive();
@@ -127,7 +130,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool IsSimpleFullScreen();
   void SetKiosk(bool kiosk);
   bool IsKiosk();
-  void SetBackgroundColor(const std::string& color_name);
+  virtual void SetBackgroundColor(const std::string& color_name);
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
   void SetOpacity(const double opacity);
@@ -141,7 +144,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetFocusable(bool focusable);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
-  void SetBrowserView(v8::Local<v8::Value> value);
+  virtual void SetBrowserView(v8::Local<v8::Value> value);
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -149,7 +152,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
-  void SetVibrancy(mate::Arguments* args);
+  virtual void SetVibrancy(mate::Arguments* args);
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);

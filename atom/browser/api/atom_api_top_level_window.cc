@@ -14,9 +14,17 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "native_mate/constructor.h"
-#include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "native_mate/persistent_dictionary.h"
+
+#if defined(TOOLKIT_VIEWS)
+#include "atom/browser/native_window_views.h"
+#endif
+
+#if defined(OS_WIN)
+#include "atom/browser/ui/win/taskbar_host.h"
+#include "ui/base/win/shell.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -81,7 +89,6 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
     SetIcon(icon);
 #endif
 
-  InitWith(isolate, wrapper);
   AttachAsUserData(window_.get());
 
   // We can only append this window to parent window's child windows after this
@@ -1017,17 +1024,15 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   v8::Isolate* isolate = context->GetIsolate();
   TopLevelWindow::SetConstructor(isolate, base::Bind(&TopLevelWindow::New));
 
-  mate::Dictionary browser_window(
+  mate::Dictionary constructor(
       isolate, TopLevelWindow::GetConstructor(isolate)->GetFunction());
-  browser_window.SetMethod(
-      "fromId",
-      &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  browser_window.SetMethod(
-      "getAllWindows",
-      &mate::TrackableObject<TopLevelWindow>::GetAll);
+  constructor.SetMethod("fromId",
+                        &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
+  constructor.SetMethod("getAllWindows",
+                        &mate::TrackableObject<TopLevelWindow>::GetAll);
 
   mate::Dictionary dict(isolate, exports);
-  dict.Set("TopLevelWindow", browser_window);
+  dict.Set("TopLevelWindow", constructor);
 }
 
 }  // namespace

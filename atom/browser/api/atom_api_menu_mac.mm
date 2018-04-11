@@ -35,7 +35,8 @@ void MenuMac::PopupAt(BrowserWindow* window,
     return;
 
   auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                          native_window->GetWeakPtr(), window->ID(), x, y,
+                          native_window->GetWeakPtr(),
+                          window->weak_map_id(), x, y,
                           positioning_item, callback);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
 }
