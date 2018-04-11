@@ -26,10 +26,11 @@ void PreventDefault(mate::Arguments* args) {
 // Create a pure JavaScript Event object.
 v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
   if (event_template.IsEmpty()) {
-    event_template.Reset(isolate,
-                         ObjectTemplateBuilder(isolate)
-                             .SetMethod("preventDefault", &PreventDefault)
-                             .Build());
+    event_template.Reset(
+        isolate,
+        ObjectTemplateBuilder(isolate, v8::ObjectTemplate::New(isolate))
+            .SetMethod("preventDefault", &PreventDefault)
+            .Build());
   }
 
   return v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
