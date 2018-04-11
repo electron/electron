@@ -48,7 +48,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
  protected:
   // content::ContentBrowserClient:
-  void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
+  void RenderProcessWillLaunch(
+      content::RenderProcessHost* host,
+      service_manager::mojom::ServiceRequest* service_request) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,

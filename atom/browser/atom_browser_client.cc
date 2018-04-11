@@ -166,7 +166,8 @@ bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
-    content::RenderProcessHost* host) {
+    content::RenderProcessHost* host,
+    service_manager::mojom::ServiceRequest* service_request)) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
