@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
+#include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
