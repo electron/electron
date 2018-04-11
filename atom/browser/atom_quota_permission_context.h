@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_QUOTA_PERMISSION_CONTEXT_H_
 
 #include "content/public/browser/quota_permission_context.h"
+#include "content/public/common/storage_quota_params.h"
 
 namespace atom {
 
