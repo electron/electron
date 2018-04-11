@@ -1007,7 +1007,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setThumbarButtons", &TopLevelWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)
       .SetMethod("setIcon", &TopLevelWindow::SetIcon)
-#elif defined(OS_WIN)
+#endif
+#if defined(OS_WIN)
       .SetMethod("hookWindowMessage", &TopLevelWindow::HookWindowMessage)
       .SetMethod("isWindowMessageHooked",
                  &TopLevelWindow::IsWindowMessageHooked)

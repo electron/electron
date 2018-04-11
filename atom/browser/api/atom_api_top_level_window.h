@@ -13,6 +13,8 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
+#include "atom/common/api/atom_api_native_image.h"
+#include "native_mate/handle.h"
 
 namespace atom {
 
@@ -180,7 +182,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool SetThumbarButtons(mate::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(mate::Handle<NativeImage> icon);
-#elif defined(OS_WIN)
+#endif
+#if defined(OS_WIN)
   typedef base::Callback<void(v8::Local<v8::Value>,
                               v8::Local<v8::Value>)> MessageCallback;
   bool HookWindowMessage(UINT message, const MessageCallback& callback);
