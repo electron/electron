@@ -8,7 +8,7 @@
 #import "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "base/allocator/allocator_shim.h"
-#include "base/allocator/features.h"
+#include "base/allocator/buildflags.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
