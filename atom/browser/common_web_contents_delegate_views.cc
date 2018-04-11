@@ -38,7 +38,7 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
 
   auto* window = static_cast<NativeWindowViews*>(owner_window());
   autofill_popup_->CreateView(
-      frame_host, offscreen, window->web_view(), bounds);
+      frame_host, offscreen, window->content_view(), bounds);
   autofill_popup_->SetItems(values, labels);
 }
 

@@ -46,12 +46,12 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
-  NativeWindowViews(brightray::InspectableWebContents* inspectable_web_contents,
-                    const mate::Dictionary& options,
+  NativeWindowViews(const mate::Dictionary& options,
                     NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:
+  void SetContentView(brightray::InspectableWebContents* web_contents) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -61,6 +61,7 @@ class NativeWindowViews : public NativeWindow,
   void Hide() override;
   bool IsVisible() override;
   bool IsEnabled() override;
+  void SetEnabled(bool enable) override;
   void Maximize() override;
   void Unmaximize() override;
   bool IsMaximized() override;
@@ -139,10 +140,8 @@ class NativeWindowViews : public NativeWindow,
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  void SetEnabled(bool enable) override;
-
   views::Widget* widget() const { return window_.get(); }
-  views::View* web_view() const { return web_view_; }
+  views::View* content_view() const { return content_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if defined(OS_WIN)
@@ -209,7 +208,7 @@ class NativeWindowViews : public NativeWindow,
   ui::WindowShowState GetRestoredState();
 
   std::unique_ptr<views::Widget> window_;
-  views::View* web_view_;  // Managed by inspectable_web_contents_.
+  views::View* content_view_;  // Weak ref.
   views::View* focused_view_;  // The view should be focused by default.
 
   std::unique_ptr<MenuBar> menu_bar_;

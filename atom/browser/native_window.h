@@ -11,13 +11,11 @@
 #include <vector>
 
 #include "atom/browser/native_window_observer.h"
-#include "atom/browser/ui/atom_menu_model.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
-#include "native_mate/persistent_dictionary.h"
 
 class SkRegion;
 
@@ -39,10 +37,12 @@ class Size;
 
 namespace mate {
 class Dictionary;
+class PersistentDictionary;
 }
 
 namespace atom {
 
+class AtomMenuModel;
 class NativeBrowserView;
 
 struct DraggableRegion;
@@ -53,12 +53,13 @@ class NativeWindow : public base::SupportsUserData {
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
-  static NativeWindow* Create(
-      brightray::InspectableWebContents* inspectable_web_contents,
-      const mate::Dictionary& options,
-      NativeWindow* parent = nullptr);
+  static NativeWindow* Create(const mate::Dictionary& options,
+                              NativeWindow* parent = nullptr);
 
   void InitFromOptions(const mate::Dictionary& options);
+
+  virtual void SetContentView(
+      brightray::InspectableWebContents* web_contents) = 0;
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
@@ -272,8 +273,7 @@ class NativeWindow : public base::SupportsUserData {
   bool is_modal() const { return is_modal_; }
 
  protected:
-  NativeWindow(brightray::InspectableWebContents* inspectable_web_contents,
-               const mate::Dictionary& options,
+  NativeWindow(const mate::Dictionary& options,
                NativeWindow* parent);
 
   void set_browser_view(NativeBrowserView* browser_view) {

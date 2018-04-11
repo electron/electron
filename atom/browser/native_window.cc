@@ -12,17 +12,14 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/color_util.h"
 #include "atom/common/options_switches.h"
-#include "brightray/browser/inspectable_web_contents.h"
 #include "native_mate/dictionary.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
 
-NativeWindow::NativeWindow(
-    brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent)
+NativeWindow::NativeWindow(const mate::Dictionary& options,
+                           NativeWindow* parent)
     : has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
@@ -134,6 +131,12 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+#if defined(OS_MACOSX)
+  std::string type;
+  if (options.Get(options::kVibrancyType, &type)) {
+    SetVibrancy(type);
+  }
+#endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     SetBackgroundColor(ParseHexColor(color));
