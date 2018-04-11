@@ -147,7 +147,7 @@ class App : public AtomBrowserClient::Delegate,
                        WindowOpenDisposition disposition,
                        const blink::mojom::WindowFeatures& features,
                        const std::vector<std::string>& additional_features,
-                       const scoped_refptr<content::ResourceRequestBody>& body,
+                       const scoped_refptr<network::ResourceRequestBody>& body,
                        bool user_gesture,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
