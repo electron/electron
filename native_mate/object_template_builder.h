@@ -69,7 +69,7 @@ class ObjectTemplateBuilder {
  public:
   explicit ObjectTemplateBuilder(
       v8::Isolate* isolate,
-      v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New());
+      v8::Local<v8::ObjectTemplate> templ);
   ~ObjectTemplateBuilder();
 
   // It's against Google C++ style to return a non-const ref, but we take some
