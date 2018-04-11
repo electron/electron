@@ -194,7 +194,6 @@
       'atom/browser/auto_updater.cc',
       'atom/browser/auto_updater.h',
       'atom/browser/auto_updater_mac.mm',
-      'atom/browser/atom_access_token_store.h',
       'atom/browser/atom_blob_reader.cc',
       'atom/browser/atom_blob_reader.h',
       'atom/browser/atom_browser_client.cc',
