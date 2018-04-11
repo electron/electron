@@ -14,6 +14,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
+#include "net/cookies/canonical_cookie.h"
 #include "net/cookies/cookie_store.h"
 #include "net/cookies/cookie_util.h"
 #include "net/url_request/url_request_context.h"
@@ -224,10 +225,19 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                            : base::Time::FromDoubleT(last_access_date);
   }
 
-  GetCookieStore(getter)->SetCookieWithDetailsAsync(
-      GURL(url), name, value, domain, path, creation_time, expiration_time,
-      last_access_time, secure, http_only, net::CookieSameSite::DEFAULT_MODE,
-      net::COOKIE_PRIORITY_DEFAULT, base::BindOnce(OnSetCookie, callback));
+  std::unique_ptr<net::CanonicalCookie> canonical_cookie(
+      net::CanonicalCookie::CreateSanitizedCookie(
+          GURL(url), name, value, domain, path, creation_time, expiration_time,
+          last_access_time, secure, http_only,
+          net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
+  auto completion_callback = base::BindOnce(OnSetCookie, callback);
+  if (!canonical_cookie) {
+    std::move(completion_callback).Run(false);
+    return;
+  }
+  GetCookieStore(getter)->SetCanonicalCookieAsync(
+      std::move(canonical_cookie), secure, http_only,
+      std::move(completion_callback));
 }
 
 }  // namespace
