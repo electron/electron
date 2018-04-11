@@ -1121,33 +1121,6 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('did-get-response-details event (deprecated)', () => {
-    it('emits for the page and its resources', (done) => {
-      // expected {fileName: resourceType} pairs
-      const expectedResources = {
-        'did-get-response-details.html': 'mainFrame',
-        'logo.png': 'image'
-      }
-      let responses = 0
-      webview.addEventListener('-did-get-response-details', (event) => {
-        responses += 1
-        const fileName = event.newURL.slice(event.newURL.lastIndexOf('/') + 1)
-        const expectedType = expectedResources[fileName]
-        assert(!!expectedType, `Unexpected response details for ${event.newURL}`)
-        assert(typeof event.status === 'boolean', 'status should be boolean')
-        assert.equal(event.httpResponseCode, 200)
-        assert.equal(event.requestMethod, 'GET')
-        assert(typeof event.referrer === 'string', 'referrer should be string')
-        assert(!!event.headers, 'headers should be present')
-        assert(typeof event.headers === 'object', 'headers should be object')
-        assert.equal(event.resourceType, expectedType, 'Incorrect resourceType')
-        if (responses === Object.keys(expectedResources).length) done()
-      })
-      webview.src = `file://${path.join(fixtures, 'pages', 'did-get-response-details.html')}`
-      document.body.appendChild(webview)
-    })
-  })
-
   describe('document.visibilityState/hidden', () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong')
