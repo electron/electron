@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/options_switches.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 
@@ -73,6 +74,17 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   mate::Handle<TopLevelWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
+
+#if defined(ENABLE_OSR)
+  // Offscreen windows are always created frameless.
+  mate::Dictionary web_preferences;
+  bool offscreen;
+  if (options.Get(options::kWebPreferences, &web_preferences) &&
+      web_preferences.Get("offscreen", &offscreen) &&
+      offscreen) {
+    const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
+  }
+#endif
 
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(
@@ -861,8 +873,8 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
     return;
 
   mate::Handle<TopLevelWindow> parent;
-  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent)
-    || parent.IsEmpty()) {
+  if (!mate::ConvertFromV8(isolate(), GetParentWindow(), &parent) ||
+      parent.IsEmpty()) {
     return;
   }
 

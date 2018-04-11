@@ -46,16 +46,6 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   if (options.Get("transparent", &transparent))
     web_preferences.Set("transparent", transparent);
 
-#if defined(ENABLE_OSR)
-  // FIXME(zcbenz): This is not working after refactoring.
-  // Offscreen windows are always created frameless.
-  bool offscreen;
-  if (web_preferences.Get("offscreen", &offscreen) && offscreen) {
-    auto window_options = const_cast<mate::Dictionary&>(options);
-    window_options.Set(options::kFrame, false);
-  }
-#endif
-
   if (options.Get("webContents", &web_contents) && !web_contents.IsEmpty()) {
     // Set webPreferences from options if using an existing webContents.
     // These preferences will be used when the webContent launches new
