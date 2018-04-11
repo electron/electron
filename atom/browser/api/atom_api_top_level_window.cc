@@ -78,8 +78,6 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   window_.reset(NativeWindow::Create(
       options,
       parent.IsEmpty() ? nullptr : parent->window_.get()));
-
-  window_->InitFromOptions(options);
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)

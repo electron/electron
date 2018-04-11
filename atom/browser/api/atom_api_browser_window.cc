@@ -87,14 +87,17 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   ui::GpuSwitchingManager::SetTransparent(window()->transparent());
 
   // Associate with BrowserWindow.
-  window()->SetContentView(web_contents->managed_web_contents());
   web_contents->SetOwnerWindow(window());
-
-  InitWith(isolate, wrapper);
+  window()->SetContentView(web_contents->managed_web_contents());
 
   auto* host = web_contents->web_contents()->GetRenderViewHost();
   if (host)
     host->GetWidget()->AddInputEventObserver(this);
+
+  InitWith(isolate, wrapper);
+
+  // Init window after everything has been setup.
+  window()->InitFromOptions(options);
 }
 
 BrowserWindow::~BrowserWindow() {
