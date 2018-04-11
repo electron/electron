@@ -981,18 +981,22 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
                  &TopLevelWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &TopLevelWindow::IsVisibleOnAllWorkspaces)
+#if defined(OS_MACOSX)
       .SetMethod("setAutoHideCursor", &TopLevelWindow::SetAutoHideCursor)
+#endif
       .SetMethod("setVibrancy", &TopLevelWindow::SetVibrancy)
       .SetMethod("_setTouchBarItems", &TopLevelWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &TopLevelWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem",
                  &TopLevelWindow::SetEscapeTouchBarItem)
+#if defined(OS_MACOSX)
       .SetMethod("selectPreviousTab", &TopLevelWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &TopLevelWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &TopLevelWindow::MergeAllWindows)
       .SetMethod("moveTabToNewWindow", &TopLevelWindow::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &TopLevelWindow::ToggleTabBar)
       .SetMethod("addTabbedWindow", &TopLevelWindow::AddTabbedWindow)
+#endif
       .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &TopLevelWindow::SetMenuBarVisibility)
