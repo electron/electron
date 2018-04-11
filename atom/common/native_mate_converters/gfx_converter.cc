@@ -87,9 +87,9 @@ struct Converter<display::Display::TouchSupport> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const display::Display::TouchSupport& val) {
     switch (val) {
-      case display::Display::TOUCH_SUPPORT_AVAILABLE:
+      case display::Display::TouchSupport::AVAILABLE:
         return StringToV8(isolate, "available");
-      case display::Display::TOUCH_SUPPORT_UNAVAILABLE:
+      case display::Display::TouchSupport::UNAVAILABLE:
         return StringToV8(isolate, "unavailable");
       default:
         return StringToV8(isolate, "unknown");
