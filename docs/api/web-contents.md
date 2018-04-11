@@ -93,39 +93,6 @@ Corresponds to the points in time when the spinner of the tab started spinning.
 
 Corresponds to the points in time when the spinner of the tab stopped spinning.
 
-#### Event: 'did-get-response-details' *(Deprecated)*
-
-Returns:
-
-* `event` Event
-* `status` Boolean
-* `newURL` String
-* `originalURL` String
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-* `resourceType` String
-
-Emitted when details regarding a requested resource are available.
-`status` indicates the socket connection to download the resource.
-
-**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
-#### Event: 'did-get-redirect-request' *(Deprecated)*
-
-Returns:
-
-* `event` Event
-* `oldURL` String
-* `newURL` String
-* `isMainFrame` Boolean
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-
-Emitted when a redirect is received while requesting a resource.
-**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
 #### Event: 'dom-ready'
 
 Returns:

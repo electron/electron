@@ -156,8 +156,6 @@ describe('BrowserWindow module', () => {
     it('should not crash when invoked synchronously inside navigation observer', (done) => {
       const events = [
         { name: 'did-start-loading', url: `${server.url}/200` },
-        { name: '-did-get-redirect-request', url: `${server.url}/301` },
-        { name: '-did-get-response-details', url: `${server.url}/200` },
         { name: 'dom-ready', url: `${server.url}/200` },
         { name: 'page-title-updated', url: `${server.url}/title` },
         { name: 'did-stop-loading', url: `${server.url}/200` },
@@ -221,30 +219,6 @@ describe('BrowserWindow module', () => {
     it('should emit ready-to-show event', (done) => {
       w.on('ready-to-show', () => { done() })
       w.loadURL('about:blank')
-    })
-    // TODO(nitsakh): Deprecated
-    it('should emit did-get-response-details(deprecated) event', (done) => {
-      // expected {fileName: resourceType} pairs
-      const expectedResources = {
-        'did-get-response-details.html': 'mainFrame',
-        'logo.png': 'image'
-      }
-      let responses = 0
-      w.webContents.on('-did-get-response-details', (event, status, newUrl, oldUrl, responseCode, method, referrer, headers, resourceType) => {
-        responses += 1
-        const fileName = newUrl.slice(newUrl.lastIndexOf('/') + 1)
-        const expectedType = expectedResources[fileName]
-        assert(!!expectedType, `Unexpected response details for ${newUrl}`)
-        assert(typeof status === 'boolean', 'status should be boolean')
-        assert.equal(responseCode, 200)
-        assert.equal(method, 'GET')
-        assert(typeof referrer === 'string', 'referrer should be string')
-        assert(!!headers, 'headers should be present')
-        assert(typeof headers === 'object', 'headers should be object')
-        assert.equal(resourceType, expectedType, 'Incorrect resourceType')
-        if (responses === Object.keys(expectedResources).length) done()
-      })
-      w.loadURL(`file://${path.join(fixtures, 'pages', 'did-get-response-details.html')}`)
     })
     it('should emit did-fail-load event for files that do not exist', (done) => {
       w.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {

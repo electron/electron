@@ -82,7 +82,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
@@ -889,30 +888,6 @@ void WebContents::DidStartLoading() {
 
 void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
-}
-
-void WebContents::DidGetResourceResponseStart(
-    const content::ResourceRequestDetails& details) {
-  // Plznavigate is using blob URLs to deliver the body
-  // of the main resource to the renderer process. This
-  // gets better in the future with kNavigationMojoResponse
-  // feature, which replaces this mechanism with Mojo Datapipe.
-  if (details.url.SchemeIsBlob() &&
-      (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME ||
-       details.resource_type == content::RESOURCE_TYPE_SUB_FRAME))
-    return;
-  Emit("-did-get-response-details", details.socket_address.IsEmpty(),
-       details.url, details.original_url, details.http_response_code,
-       details.method, details.referrer, details.headers.get(),
-       ResourceTypeToString(details.resource_type));
-}
-
-void WebContents::DidGetRedirectForResourceRequest(
-    const content::ResourceRedirectDetails& details) {
-  Emit("-did-get-redirect-request", details.url, details.new_url,
-       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
-       details.http_response_code, details.method, details.referrer,
-       details.headers.get());
 }
 
 void WebContents::DidStartNavigation(
