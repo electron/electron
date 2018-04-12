@@ -151,8 +151,6 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
   switch (val) {
     case content::PermissionType::MIDI_SYSEX:
       return StringToV8(isolate, "midiSysex");
-    case content::PermissionType::PUSH_MESSAGING:
-      return StringToV8(isolate, "pushMessaging");
     case content::PermissionType::NOTIFICATIONS:
       return StringToV8(isolate, "notifications");
     case content::PermissionType::GEOLOCATION:
