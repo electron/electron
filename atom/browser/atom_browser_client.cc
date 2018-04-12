@@ -33,7 +33,6 @@
 #include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
-#include "chrome/browser/renderer_host/pepper/widevine_cdm_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -186,8 +185,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
-  host->AddFilter(
-      new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
   ProcessPreferences prefs;
   auto* web_preferences =

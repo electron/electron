@@ -20,7 +20,6 @@
 #include "content/public/common/user_agent.h"
 #include "media/media_features.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
-#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
 
@@ -89,20 +88,6 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
   content::WebPluginMimeType widevine_cdm_mime_type(
       kWidevineCdmPluginMimeType, kWidevineCdmPluginExtension,
       kWidevineCdmPluginMimeTypeDescription);
-
-  // Add the supported codecs as if they came from the component manifest.
-  std::vector<std::string> codecs;
-  codecs.push_back(kCdmSupportedCodecVp8);
-  codecs.push_back(kCdmSupportedCodecVp9);
-#if BUILDFLAG(USE_PROPRIETARY_CODECS)
-  codecs.push_back(kCdmSupportedCodecAvc1);
-#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
-  std::string codec_string = base::JoinString(
-      codecs, std::string(1, kCdmSupportedCodecsValueDelimiter));
-  widevine_cdm_mime_type.additional_param_names.push_back(
-      base::ASCIIToUTF16(kCdmSupportedCodecsParamName));
-  widevine_cdm_mime_type.additional_param_values.push_back(
-      base::ASCIIToUTF16(codec_string));
 
   widevine_cdm.mime_types.push_back(widevine_cdm_mime_type);
   widevine_cdm.permissions = kWidevineCdmPluginPermissions;
@@ -222,6 +207,38 @@ void AtomContentClient::AddPepperPlugins(
 #if defined(ENABLE_PDF_VIEWER)
   ComputeBuiltInPlugins(plugins);
 #endif  // defined(ENABLE_PDF_VIEWER)
+}
+
+void AtomContentClient::AddContentDecryptionModules(
+    std::vector<content::CdmInfo>* cdms,
+    std::vector<media::CdmHostFilePath>* cdm_host_file_paths) {
+#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
+  auto command_line = base::CommandLine::ForCurrentProcess();
+  base::FilePath widevine_cdm_path =
+      command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
+  if (widevine_cdm_path.empty())
+    return;
+
+  if (!base::PathExists(widevine_cdm_path))
+    return;
+
+  auto widevine_cdm_version =
+      command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
+  if (widevine_cdm_version.empty())
+    return;
+
+  std::vector<media::VideoCodec> supported_video_codecs;
+  supported_video_codecs.push_back(media::VideoCodec::kCodecVP8);
+  supported_video_codecs.push_back(media::VideoCodec::kCodecVP9);
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
+  supported_video_codecs.push_back(media::VideoCodec::kCodecH264);
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+  content::CdmRegistry::GetInstance()->RegisterCdm(
+      content::CdmInfo(kWidevineCdmDisplayName, kWidevineCdmGuid,
+                       base::Version(widevine_cdm_version), widevine_cdm_path,
+                       kWidevineCdmFileSystemId, supported_video_codecs, false,
+                       kWidevineKeySystem, false));
+#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 }
 
 }  // namespace atom
