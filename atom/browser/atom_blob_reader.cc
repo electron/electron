@@ -11,7 +11,6 @@
 #include "storage/browser/blob/blob_data_handle.h"
 #include "storage/browser/blob/blob_reader.h"
 #include "storage/browser/blob/blob_storage_context.h"
-#include "storage/browser/fileapi/file_system_context.h"
 
 #include "atom/common/node_includes.h"
 
@@ -46,9 +45,8 @@ void RunCallbackInUI(const AtomBlobReader::CompletionCallback& callback,
 
 }  // namespace
 
-AtomBlobReader::AtomBlobReader(content::ChromeBlobStorageContext* blob_context,
-                               storage::FileSystemContext* file_system_context)
-    : blob_context_(blob_context), file_system_context_(file_system_context) {}
+AtomBlobReader::AtomBlobReader(content::ChromeBlobStorageContext* blob_context)
+    : blob_context_(blob_context) {}
 
 AtomBlobReader::~AtomBlobReader() {}
 
@@ -65,7 +63,7 @@ void AtomBlobReader::StartReading(
     return;
   }
 
-  auto blob_reader = blob_data_handle->CreateReader(file_system_context_.get());
+  auto blob_reader = blob_data_handle->CreateReader();
   BlobReadHelper* blob_read_helper =
       new BlobReadHelper(std::move(blob_reader), callback);
   blob_read_helper->Read();
