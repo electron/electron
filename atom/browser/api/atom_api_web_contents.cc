@@ -71,6 +71,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -1222,10 +1223,10 @@ void WebContents::DownloadURL(const GURL& url) {
   auto* browser_context = web_contents()->GetBrowserContext();
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context);
-
-  download_manager->DownloadUrl(
-      download::DownloadUrlParameters::CreateForWebContentsMainFrame(
+  std::unique_ptr<download::DownloadUrlParameters> download_params(
+      content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, NO_TRAFFIC_ANNOTATION_YET));
+  download_manager->DownloadUrl(std::move(download_params));
 }
 
 GURL WebContents::GetURL() const {
