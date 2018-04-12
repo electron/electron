@@ -18,9 +18,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/context_menu_params.h"
 #include "native_mate/dictionary.h"
-#include "services/network/public/cpp/resource_request_body.h"
-
-using network::ResourceRequestBody;
 
 namespace {
 
@@ -200,99 +197,6 @@ bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
   else
     return false;
 
-  return true;
-}
-
-// static
-v8::Local<v8::Value> Converter<scoped_refptr<ResourceRequestBody>>::ToV8(
-    v8::Isolate* isolate,
-    const scoped_refptr<ResourceRequestBody>& val) {
-  if (!val)
-    return v8::Null(isolate);
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
-  for (const auto& element : *(val->elements())) {
-    std::unique_ptr<base::DictionaryValue> post_data_dict(
-        new base::DictionaryValue);
-    auto type = element.type();
-    if (type == ResourceRequestBody::Element::TYPE_BYTES) {
-      std::unique_ptr<base::Value> bytes(base::Value::CreateWithCopiedBuffer(
-          element.bytes(), static_cast<size_t>(element.length())));
-      post_data_dict->SetString("type", "rawData");
-      post_data_dict->Set("bytes", std::move(bytes));
-    } else if (type == ResourceRequestBody::Element::TYPE_FILE) {
-      post_data_dict->SetString("type", "file");
-      post_data_dict->SetKey("filePath",
-                             base::Value(element.path().AsUTF8Unsafe()));
-      post_data_dict->SetInteger("offset", static_cast<int>(element.offset()));
-      post_data_dict->SetInteger("length", static_cast<int>(element.length()));
-      post_data_dict->SetDouble(
-          "modificationTime", element.expected_modification_time().ToDoubleT());
-    } else if (type == ResourceRequestBody::Element::TYPE_FILE_FILESYSTEM) {
-      post_data_dict->SetString("type", "fileSystem");
-      post_data_dict->SetKey("fileSystemURL",
-                             base::Value(element.filesystem_url().spec()));
-      post_data_dict->SetInteger("offset", static_cast<int>(element.offset()));
-      post_data_dict->SetInteger("length", static_cast<int>(element.length()));
-      post_data_dict->SetDouble(
-          "modificationTime", element.expected_modification_time().ToDoubleT());
-    } else if (type == ResourceRequestBody::Element::TYPE_BLOB) {
-      post_data_dict->SetString("type", "blob");
-      post_data_dict->SetString("blobUUID", element.blob_uuid());
-    }
-    list->Append(std::move(post_data_dict));
-  }
-  return ConvertToV8(isolate, *list);
-}
-
-// static
-bool Converter<scoped_refptr<ResourceRequestBody>>::FromV8(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> val,
-    scoped_refptr<ResourceRequestBody>* out) {
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
-  if (!ConvertFromV8(isolate, val, list.get()))
-    return false;
-  *out = new network::ResourceRequestBody();
-  for (size_t i = 0; i < list->GetSize(); ++i) {
-    base::DictionaryValue* dict = nullptr;
-    std::string type;
-    if (!list->GetDictionary(i, &dict))
-      return false;
-    dict->GetString("type", &type);
-    if (type == "rawData") {
-      base::Value* bytes = nullptr;
-      dict->GetBinary("bytes", &bytes);
-      (*out)->AppendBytes(bytes->GetBlob().data(), bytes->GetBlob().size());
-    } else if (type == "file") {
-      std::string file;
-      int offset = 0, length = -1;
-      double modification_time = 0.0;
-      dict->GetStringWithoutPathExpansion("filePath", &file);
-      dict->GetInteger("offset", &offset);
-      dict->GetInteger("file", &length);
-      dict->GetDouble("modificationTime", &modification_time);
-      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(file),
-                              static_cast<uint64_t>(offset),
-                              static_cast<uint64_t>(length),
-                              base::Time::FromDoubleT(modification_time));
-    } else if (type == "fileSystem") {
-      std::string file_system_url;
-      int offset = 0, length = -1;
-      double modification_time = 0.0;
-      dict->GetStringWithoutPathExpansion("fileSystemURL", &file_system_url);
-      dict->GetInteger("offset", &offset);
-      dict->GetInteger("file", &length);
-      dict->GetDouble("modificationTime", &modification_time);
-      (*out)->AppendFileSystemFileRange(
-          GURL(file_system_url), static_cast<uint64_t>(offset),
-          static_cast<uint64_t>(length),
-          base::Time::FromDoubleT(modification_time));
-    } else if (type == "blob") {
-      std::string uuid;
-      dict->GetString("blobUUID", &uuid);
-      (*out)->AppendBlob(uuid);
-    }
-  }
   return true;
 }
 
