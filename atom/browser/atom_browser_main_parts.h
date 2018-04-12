@@ -12,6 +12,7 @@
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "content/public/browser/browser_context.h"
+#include "services/device/public/mojom/geolocation_control.mojom.h"
 
 class BrowserProcess;
 
@@ -86,6 +87,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<brightray::ViewsDelegate> views_delegate_;
 #endif
 
+  device::mojom::GeolocationControl* GetGeolocationControl();
+
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcess> fake_browser_process_;
 
@@ -107,6 +110,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
   // List of callbacks should be executed before destroying JS env.
   std::list<base::OnceClosure> destructors_;
+
+  device::mojom::GeolocationControlPtr geolocation_control_;
 
   static AtomBrowserMainParts* self_;
 
