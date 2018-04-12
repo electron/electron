@@ -96,7 +96,6 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-#include "ui/latency/latency_info.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -1593,17 +1592,18 @@ bool WebContents::SendIPCMessage(bool all_frames,
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
-  auto* const view = static_cast<content::RenderWidgetHostViewBase*>(
-      web_contents()->GetRenderWidgetHostView());
+  content::RenderWidgetHostView* view =
+      web_contents()->GetRenderWidgetHostView();
   if (!view)
     return;
 
+  content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
   blink::WebInputEvent::Type type =
       mate::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
+      rwh->ForwardMouseEvent(mouse_event);
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
@@ -1611,13 +1611,13 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebKeyboardEvent::kRawKeyDown,
         blink::WebInputEvent::kNoModifiers, ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      view->ProcessKeyboardEvent(keyboard_event, ui::LatencyInfo());
+      rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
+      rwh->ForwardWheelEvent(mouse_wheel_event);
       return;
     }
   }
