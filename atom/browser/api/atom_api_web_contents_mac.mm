@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "content/public/browser/render_widget_host_view.h"
 
 #import <Cocoa/Cocoa.h>
 
