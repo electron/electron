@@ -56,7 +56,8 @@ bool JavascriptEnvironment::Initialize() {
       new v8::TracingController());
   gin::IsolateHolder::Initialize(
       gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
-      gin::ArrayBufferAllocator::SharedInstance(), false);
+      gin::ArrayBufferAllocator::SharedInstance(),
+      nullptr /* external_reference_table */, false /* create_v8_platform */);
   return true;
 }
 
