@@ -309,10 +309,10 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
     return nullptr;
 
   if (val->IsExternal())
-    return base::MakeUnique<base::Value>().release();
+    return std::make_unique<base::Value>().release();
 
   if (val->IsNull())
-    return base::MakeUnique<base::Value>().release();
+    return std::make_unique<base::Value>().release();
 
   if (val->IsBoolean())
     return new base::Value(val->ToBoolean()->Value());
@@ -386,7 +386,7 @@ base::Value* V8ValueConverter::FromV8Array(
     v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return base::MakeUnique<base::Value>().release();
+    return std::make_unique<base::Value>().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to
@@ -415,7 +415,7 @@ base::Value* V8ValueConverter::FromV8Array(
     else
       // JSON.stringify puts null in places where values don't serialize, for
       // example undefined and functions. Emulate that behavior.
-      result->Append(base::MakeUnique<base::Value>());
+      result->Append(std::make_unique<base::Value>());
   }
   return result;
 }
@@ -434,7 +434,7 @@ base::Value* V8ValueConverter::FromV8Object(
     v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
-    return base::MakeUnique<base::Value>().release();
+    return std::make_unique<base::Value>().release();
 
   std::unique_ptr<v8::Context::Scope> scope;
   // If val was created in a different context than our current one, change to

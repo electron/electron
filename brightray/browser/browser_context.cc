@@ -149,7 +149,7 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
 }
 
 std::unique_ptr<net::NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
-  return base::MakeUnique<NetworkDelegate>();
+  return std::make_unique<NetworkDelegate>();
 }
 
 std::string BrowserContext::GetMediaDeviceIDSalt() {
@@ -165,7 +165,7 @@ base::FilePath BrowserContext::GetPath() const {
 std::unique_ptr<content::ZoomLevelDelegate>
 BrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
   if (!IsOffTheRecord()) {
-    return base::MakeUnique<ZoomLevelDelegate>(prefs(), partition_path);
+    return std::make_unique<ZoomLevelDelegate>(prefs(), partition_path);
   }
   return std::unique_ptr<content::ZoomLevelDelegate>();
 }

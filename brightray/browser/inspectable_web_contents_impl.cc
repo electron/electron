@@ -828,7 +828,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
 
   {
-    auto headers = base::MakeUnique<base::DictionaryValue>();
+    auto headers = std::make_unique<base::DictionaryValue>();
 
     size_t iterator = 0;
     std::string name;

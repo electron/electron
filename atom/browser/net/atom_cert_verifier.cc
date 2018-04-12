@@ -177,7 +177,7 @@ int AtomCertVerifier::Verify(
     if (!request) {
       out_req->reset();
       std::unique_ptr<CertVerifierRequest> new_request =
-          base::MakeUnique<CertVerifierRequest>(params, this);
+          std::make_unique<CertVerifierRequest>(params, this);
       new_request->Start(crl_set, net_log);
       request = new_request.get();
       *out_req = std::move(new_request);

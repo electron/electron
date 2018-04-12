@@ -602,7 +602,7 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
 }
 
 void Session::DisableNetworkEmulation() {
-  auto conditions = base::MakeUnique<content::DevToolsNetworkConditions>();
+  auto conditions = std::make_unique<content::DevToolsNetworkConditions>();
   content::DevToolsNetworkController::SetNetworkState(
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(

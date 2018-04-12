@@ -290,7 +290,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
 #if !defined(OS_MACOSX)
-  delegated_frame_host_ = base::MakeUnique<content::DelegatedFrameHost>(
+  delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack), this,
       false /* enable_surface_synchronization */);
 
@@ -788,7 +788,7 @@ std::unique_ptr<content::CompositorResizeLock>
 OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   HoldResize();
   const gfx::Size& desired_size = GetRootLayer()->bounds().size();
-  return base::MakeUnique<content::CompositorResizeLock>(this, desired_size);
+  return std::make_unique<content::CompositorResizeLock>(this, desired_size);
 }
 
 viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
@@ -897,7 +897,7 @@ void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
 
 void OffScreenRenderWidgetHostView::RegisterGuestViewFrameSwappedCallback(
     content::RenderWidgetHostViewGuest* guest_host_view) {
-  guest_host_view->RegisterFrameSwappedCallback(base::MakeUnique<base::Closure>(
+  guest_host_view->RegisterFrameSwappedCallback(std::make_unique<base::Closure>(
     base::Bind(&OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped,
                weak_ptr_factory_.GetWeakPtr(),
                base::Unretained(guest_host_view))));

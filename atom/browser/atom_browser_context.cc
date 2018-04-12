@@ -111,7 +111,7 @@ AtomBrowserContext::RegisterCookieChangeCallback(
 
 std::unique_ptr<net::NetworkDelegate>
 AtomBrowserContext::CreateNetworkDelegate() {
-  return base::MakeUnique<AtomNetworkDelegate>();
+  return std::make_unique<AtomNetworkDelegate>();
 }
 
 std::string AtomBrowserContext::GetUserAgent() {

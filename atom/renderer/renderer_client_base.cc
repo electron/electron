@@ -190,7 +190,7 @@ void RendererClientBase::DidClearWindowObject(
 std::unique_ptr<blink::WebSpeechSynthesizer>
 RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
-  return base::MakeUnique<TtsDispatcher>(client);
+  return std::make_unique<TtsDispatcher>(client);
 }
 
 bool RendererClientBase::OverrideCreatePlugin(

@@ -220,7 +220,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         url_request_context_->cookie_store()->AddCallbackForAllChanges(
             base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
 
-    storage_->set_channel_id_service(base::MakeUnique<net::ChannelIDService>(
+    storage_->set_channel_id_service(std::make_unique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
 
     storage_->set_http_user_agent_settings(
@@ -306,10 +306,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     storage_->set_http_server_properties(std::move(server_properties));
 
     std::unique_ptr<net::MultiLogCTVerifier> ct_verifier =
-        base::MakeUnique<net::MultiLogCTVerifier>();
+        std::make_unique<net::MultiLogCTVerifier>();
     ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
     storage_->set_cert_transparency_verifier(std::move(ct_verifier));
-    storage_->set_ct_policy_enforcer(base::MakeUnique<net::CTPolicyEnforcer>());
+    storage_->set_ct_policy_enforcer(std::make_unique<net::CTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.ignore_certificate_errors = false;
@@ -346,7 +346,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       backend.reset(delegate_->CreateHttpCacheBackendFactory(base_path_));
     }
 
-    storage_->set_http_transaction_factory(base::MakeUnique<net::HttpCache>(
+    storage_->set_http_transaction_factory(std::make_unique<net::HttpCache>(
         content::CreateDevToolsNetworkTransactionFactory(
             http_network_session_.get()),
         std::move(backend), false));

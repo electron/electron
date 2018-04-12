@@ -585,7 +585,7 @@ void ProcessSingleton::LinuxWatcher::OnSocketCanReadWithoutBlocking(
   DCHECK(base::SetNonBlocking(connection_socket))
       << "Failed to make non-blocking socket.";
   readers_.insert(
-      base::MakeUnique<SocketReader>(this, ui_task_runner_, connection_socket));
+      std::make_unique<SocketReader>(this, ui_task_runner_, connection_socket));
 }
 
 void ProcessSingleton::LinuxWatcher::StartListening(int socket) {

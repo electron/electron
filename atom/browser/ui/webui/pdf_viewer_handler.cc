@@ -45,7 +45,7 @@ void CreateResponseHeadersDictionary(const net::HttpResponseHeaders* headers,
 void PopulateStreamInfo(base::DictionaryValue* stream_info,
                         content::StreamInfo* stream,
                         const std::string& original_url) {
-  auto headers_dict = base::MakeUnique<base::DictionaryValue>();
+  auto headers_dict = std::make_unique<base::DictionaryValue>();
   auto stream_url = stream->handle->GetURL().spec();
   CreateResponseHeadersDictionary(stream->response_headers.get(),
                                   headers_dict.get());
@@ -66,7 +66,7 @@ PdfViewerHandler::~PdfViewerHandler() {
 void PdfViewerHandler::SetPdfResourceStream(content::StreamInfo* stream) {
   stream_ = stream;
   if (!!initialize_callback_id_.get()) {
-    auto list = base::MakeUnique<base::ListValue>();
+    auto list = std::make_unique<base::ListValue>();
     list->Set(0, std::move(initialize_callback_id_));
     Initialize(list.get());
   }
@@ -109,7 +109,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
     CHECK(!initialize_callback_id_.get());
     AllowJavascript();
 
-    auto stream_info = base::MakeUnique<base::DictionaryValue>();
+    auto stream_info = std::make_unique<base::DictionaryValue>();
     PopulateStreamInfo(stream_info.get(), stream_, original_url_);
     ResolveJavascriptCallback(*callback_id, *stream_info);
   } else {
@@ -174,7 +174,7 @@ void PdfViewerHandler::GetStrings(const base::ListValue* args) {
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
 
-  auto result = base::MakeUnique<base::DictionaryValue>();
+  auto result = std::make_unique<base::DictionaryValue>();
 // TODO(deepak1556): Generate strings from components/pdf_strings.grdp.
 #define SET_STRING(id, resource) result->SetString(id, resource)
   SET_STRING("passwordPrompt",

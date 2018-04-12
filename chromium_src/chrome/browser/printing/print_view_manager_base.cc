@@ -73,7 +73,7 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
   int32_t id = rfh->GetRoutingID();
   return PrintNowInternal(
       rfh,
-      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
+      std::make_unique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 

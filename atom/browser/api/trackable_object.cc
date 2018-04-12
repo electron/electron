@@ -49,7 +49,7 @@ void TrackableObjectBase::Destroy() {
 
 void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
   wrapped->SetUserData(kTrackedObjectKey,
-      base::MakeUnique<IDUserData>(weak_map_id_));
+      std::make_unique<IDUserData>(weak_map_id_));
 }
 
 // static

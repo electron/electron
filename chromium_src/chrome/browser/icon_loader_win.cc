@@ -65,7 +65,7 @@ void IconLoader::ReadIcon() {
       gfx::ImageSkia image_skia(gfx::ImageSkiaRep(*bitmap,
                                                   display::win::GetDPIScale()));
       image_skia.MakeThreadSafe();
-      image = base::MakeUnique<gfx::Image>(image_skia);
+      image = std::make_unique<gfx::Image>(image_skia);
       DestroyIcon(file_info.hIcon);
     }
   }

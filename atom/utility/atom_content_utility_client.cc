@@ -13,7 +13,7 @@ namespace atom {
 
 AtomContentUtilityClient::AtomContentUtilityClient() {
 #if defined(OS_WIN)
-  handlers_.push_back(base::MakeUnique<printing::PrintingHandlerWin>());
+  handlers_.push_back(std::make_unique<printing::PrintingHandlerWin>());
 #endif
 }
 

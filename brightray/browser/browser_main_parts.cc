@@ -307,7 +307,7 @@ int BrowserMainParts::PreCreateThreads() {
     l10n_util::GetApplicationLocale(custom_locale_));
 
   // Manage global state of net and other IO thread related.
-  io_thread_ = base::MakeUnique<IOThread>();
+  io_thread_ = std::make_unique<IOThread>();
 
   return 0;
 }
