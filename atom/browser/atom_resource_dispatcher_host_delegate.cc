@@ -14,16 +14,7 @@
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/render_frame_host.h"
 #include "net/base/escape.h"
-#include "net/ssl/client_cert_store.h"
 #include "url/gurl.h"
-
-#if defined(USE_NSS_CERTS)
-#include "net/ssl/client_cert_store_nss.h"
-#elif defined(OS_WIN)
-#include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
-#include "net/ssl/client_cert_store_mac.h"
-#endif
 
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
@@ -128,21 +119,6 @@ AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
     net::AuthChallengeInfo* auth_info,
     net::URLRequest* request) {
   return new LoginHandler(auth_info, request);
-}
-
-std::unique_ptr<net::ClientCertStore>
-AtomResourceDispatcherHostDelegate::CreateClientCertStore(
-    content::ResourceContext* resource_context) {
-#if defined(USE_NSS_CERTS)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
-      net::ClientCertStoreNSS::PasswordDelegateFactory()));
-#elif defined(OS_WIN)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
-#elif defined(OS_MACOSX)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
-#elif defined(USE_OPENSSL)
-  return std::unique_ptr<net::ClientCertStore>();
-#endif
 }
 
 bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(

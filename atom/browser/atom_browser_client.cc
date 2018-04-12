@@ -52,6 +52,16 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
+#if defined(USE_NSS_CERTS)
+#include "net/ssl/client_cert_store_nss.h"
+#elif defined(OS_WIN)
+#include "net/ssl/client_cert_store_win.h"
+#elif defined(OS_MACOSX)
+#include "net/ssl/client_cert_store_mac.h"
+#elif defined(USE_OPENSSL)
+#include "net/ssl/client_cert_store.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -167,7 +177,7 @@ bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
 
 void AtomBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host,
-    service_manager::mojom::ServiceRequest* service_request)) {
+    service_manager::mojom::ServiceRequest* service_request) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
@@ -470,6 +480,20 @@ void AtomBrowserClient::SiteInstanceDeleting(
       break;
     }
   }
+}
+
+std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
+    content::ResourceContext* resource_context) {
+#if defined(USE_NSS_CERTS)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
+      net::ClientCertStoreNSS::PasswordDelegateFactory()));
+#elif defined(OS_WIN)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
+#elif defined(OS_MACOSX)
+  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
+#elif defined(USE_OPENSSL)
+  return std::unique_ptr<net::ClientCertStore>();
+#endif
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
