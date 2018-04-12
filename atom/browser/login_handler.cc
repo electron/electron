@@ -5,45 +5,31 @@
 #include "atom/browser/login_handler.h"
 
 #include "atom/browser/browser.h"
-#include "atom/common/native_mate_converters/net_converter.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/resource_dispatcher_host.h"
-#include "content/public/browser/resource_request_info.h"
 #include "content/public/browser/web_contents.h"
 #include "net/base/auth.h"
-#include "net/url_request/url_request.h"
 
 using content::BrowserThread;
 
 namespace atom {
 
-namespace {
-
-// Helper to remove the ref from an net::URLRequest to the LoginHandler.
-// Should only be called from the IO thread, since it accesses an
-// net::URLRequest.
-void ResetLoginHandlerForRequest(net::URLRequest* request) {
-  content::ResourceDispatcherHost::Get()->ClearLoginDelegateForRequest(request);
-}
-
-}  // namespace
-
-LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
-                           net::URLRequest* request)
+LoginHandler::LoginHandler(
+    net::AuthChallengeInfo* auth_info,
+    content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+    const GURL& url,
+    const base::Callback<void(const base::Optional<net::AuthCredentials>&)>&
+        auth_required_callback)
     : handled_auth_(false),
       auth_info_(auth_info),
-      request_(request),
-      render_process_host_id_(0),
-      render_frame_id_(0) {
-  content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
-      &render_process_host_id_, &render_frame_id_);
-
+      web_contents_getter_(web_contents_getter),
+      auth_required_callback_(auth_required_callback) {
   // Fill request details on IO thread.
+  // TODO(deepak1556): Fill in method and referrer details to
+  // avoid breaking the app login event.
   std::unique_ptr<base::DictionaryValue> request_details(
       new base::DictionaryValue);
-  FillRequestDetails(request_details.get(), request_);
+  request_details->SetKey("url", base::Value(url));
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
@@ -56,10 +42,7 @@ LoginHandler::~LoginHandler() {}
 
 content::WebContents* LoginHandler::GetWebContents() const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-
-  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
-      render_process_host_id_, render_frame_id_);
-  return content::WebContents::FromRenderFrameHost(rfh);
+  return web_contents_getter_.Run();
 }
 
 void LoginHandler::Login(const base::string16& username,
@@ -82,7 +65,7 @@ void LoginHandler::CancelAuth() {
 
 void LoginHandler::OnRequestCancelled() {
   TestAndSetAuthHandled();
-  request_ = nullptr;
+  auth_required_callback_.Reset();
 }
 
 // Marks authentication as handled and returns the previous handled state.
@@ -95,22 +78,16 @@ bool LoginHandler::TestAndSetAuthHandled() {
 
 void LoginHandler::DoCancelAuth() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
-  if (request_) {
-    request_->CancelAuth();
-    // Verify that CancelAuth doesn't destroy the request via our delegate.
-    DCHECK(request_ != nullptr);
-    ResetLoginHandlerForRequest(request_);
-  }
+  if (!auth_required_callback_.is_null())
+    std::move(auth_required_callback_).Run(base::nullopt);
 }
 
 void LoginHandler::DoLogin(const base::string16& username,
                            const base::string16& password) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
-
-  if (request_) {
-    request_->SetAuth(net::AuthCredentials(username, password));
-    ResetLoginHandlerForRequest(request_);
+  if (!auth_required_callback_.is_null()) {
+    std::move(auth_required_callback_)
+        .Run(net::AuthCredentials(username, password));
   }
 }
 
