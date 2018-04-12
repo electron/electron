@@ -17,6 +17,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/login_handler.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -495,6 +496,19 @@ std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
 #endif
+}
+
+content::ResourceDispatcherHostLoginDelegate*
+AtomBrowserClient::CreateLoginDelegate(
+    net::AuthChallengeInfo* auth_info,
+    content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+    bool is_main_frame,
+    const GURL& url,
+    bool first_auth_attempt,
+    const base::Callback<void(const base::Optional<net::AuthCredentials>&)>&
+        auth_required_callback) {
+  return new LoginHandler(auth_info, web_contents_getter, url,
+                          auth_required_callback);
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
