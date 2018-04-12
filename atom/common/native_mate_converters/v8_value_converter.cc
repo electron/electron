@@ -216,7 +216,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, child);
 
-    v8::TryCatch try_catch;
+    v8::TryCatch try_catch(isolate);
     result->Set(static_cast<uint32_t>(i), child_v8);
     if (try_catch.HasCaught())
       LOG(ERROR) << "Setter for index " << i << " threw an exception.";
@@ -236,7 +236,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
     const std::string& key = iter.key();
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, &iter.value());
 
-    v8::TryCatch try_catch;
+    v8::TryCatch try_catch(isolate);
     result.Set(key, child_v8);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Setter for property " << key.c_str() << " threw an "
@@ -389,7 +389,7 @@ base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {
-    v8::TryCatch try_catch;
+    v8::TryCatch try_catch(isolate);
     v8::Local<v8::Value> child_v8 = val->Get(i);
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Getter for index " << i << " threw an exception.";
@@ -448,7 +448,7 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
 
     v8::String::Utf8Value name_utf8(key->ToString());
 
-    v8::TryCatch try_catch;
+    v8::TryCatch try_catch(isolate);
     v8::Local<v8::Value> child_v8 = val->Get(key);
 
     if (try_catch.HasCaught()) {
