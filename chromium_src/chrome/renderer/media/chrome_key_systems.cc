@@ -13,12 +13,16 @@
 #include "base/strings/string16.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/common/widevine_cdm_messages.h"
 #include "components/cdm/renderer/widevine_key_system_properties.h"
 #include "content/public/renderer/render_thread.h"
 #include "media/base/eme_constants.h"
 #include "media/base/key_system_properties.h"
 #include "media/media_features.h"
+
+#if BUILDFLAG(ENABLE_LIBRARY_CDMS)
+#include "content/public/renderer/key_system_support.h"
+#include "media/base/video_codecs.h"
+#endif
 
 #include "widevine_cdm_version.h"  // In SHARED_INTERMEDIATE_DIR.
 
@@ -35,19 +39,6 @@ using media::SupportedCodecs;
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
 static const char kExternalClearKeyPepperType[] =
     "application/x-ppapi-clearkey-cdm";
-
-static bool IsPepperCdmAvailable(
-    const std::string& pepper_type,
-    std::vector<base::string16>* additional_param_names,
-    std::vector<base::string16>* additional_param_values) {
-  bool is_available = false;
-  content::RenderThread::Get()->Send(
-      new ChromeViewHostMsg_IsInternalPluginAvailableForMimeType(
-          pepper_type, &is_available, additional_param_names,
-          additional_param_values));
-
-  return is_available;
-}
 
 // KeySystemProperties implementation for external Clear Key systems.
 class ExternalClearKeyProperties : public KeySystemProperties {
@@ -133,11 +124,11 @@ static void AddExternalClearKey(
   static const char kExternalClearKeyCrashKeySystem[] =
       "org.chromium.externalclearkey.crash";
 
-  std::vector<base::string16> additional_param_names;
-  std::vector<base::string16> additional_param_values;
-  if (!IsPepperCdmAvailable(kExternalClearKeyPepperType,
-                            &additional_param_names,
-                            &additional_param_values)) {
+  std::vector<media::VideoCodec> supported_video_codecs;
+  bool supports_persistent_license;
+  if (!content::IsKeySystemSupported(kExternalClearKeyKeySystem,
+                                     &supported_video_codecs,
+                                     &supports_persistent_license)) {
     return;
   }
 
@@ -164,33 +155,6 @@ static void AddExternalClearKey(
 }
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
-// This function finds "codecs" and parses the value into the vector |codecs|.
-// Converts the codec strings to UTF-8 since we only expect ASCII strings and
-// this simplifies the rest of the code in this file.
-void GetSupportedCodecsForPepperCdm(
-    const std::vector<base::string16>& additional_param_names,
-    const std::vector<base::string16>& additional_param_values,
-    std::vector<std::string>* codecs) {
-  DCHECK(codecs->empty());
-  DCHECK_EQ(additional_param_names.size(), additional_param_values.size());
-  for (size_t i = 0; i < additional_param_names.size(); ++i) {
-    if (additional_param_names[i] ==
-        base::ASCIIToUTF16(kCdmSupportedCodecsParamName)) {
-      const base::string16& codecs_string16 = additional_param_values[i];
-      std::string codecs_string;
-      if (!base::UTF16ToUTF8(codecs_string16.c_str(), codecs_string16.length(),
-                             &codecs_string)) {
-        DLOG(WARNING) << "Non-UTF-8 codecs string.";
-        // Continue using the best effort conversion.
-      }
-      *codecs = base::SplitString(
-          codecs_string, std::string(1, kCdmSupportedCodecsValueDelimiter),
-          base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
-      break;
-    }
-  }
-}
-
 static void AddPepperBasedWidevine(
     std::vector<std::unique_ptr<KeySystemProperties>>* concrete_key_systems) {
 #if defined(WIDEVINE_CDM_MIN_GLIBC_VERSION)
@@ -200,17 +164,14 @@ static void AddPepperBasedWidevine(
     return;
 #endif  // defined(WIDEVINE_CDM_MIN_GLIBC_VERSION)
 
-  std::vector<base::string16> additional_param_names;
-  std::vector<base::string16> additional_param_values;
-  if (!IsPepperCdmAvailable(kWidevineCdmPluginMimeType, &additional_param_names,
-                            &additional_param_values)) {
+  std::vector<media::VideoCodec> supported_video_codecs;
+  bool supports_persistent_license = false;
+  if (!content::IsKeySystemSupported(kWidevineKeySystem,
+                                     &supported_video_codecs,
+                                     &supports_persistent_license)) {
     DVLOG(1) << "Widevine CDM is not currently available.";
     return;
   }
-
-  std::vector<std::string> codecs;
-  GetSupportedCodecsForPepperCdm(additional_param_names,
-                                 additional_param_values, &codecs);
 
   SupportedCodecs supported_codecs = media::EME_CODEC_NONE;
 
@@ -223,17 +184,25 @@ static void AddPepperBasedWidevine(
   supported_codecs |= media::EME_CODEC_MP4_AAC;
 #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
 
-  for (size_t i = 0; i < codecs.size(); ++i) {
-    if (codecs[i] == kCdmSupportedCodecVp8)
-      supported_codecs |= media::EME_CODEC_WEBM_VP8;
-    if (codecs[i] == kCdmSupportedCodecVp9) {
-      supported_codecs |= media::EME_CODEC_WEBM_VP9;
-      supported_codecs |= media::EME_CODEC_COMMON_VP9;
-    }
+  // Video codecs are determined by what was registered for the CDM.
+  for (const auto& codec : supported_video_codecs) {
+    switch (codec) {
+      case media::VideoCodec::kCodecVP8:
+        supported_codecs |= media::EME_CODEC_WEBM_VP8;
+        break;
+      case media::VideoCodec::kCodecVP9:
+        supported_codecs |= media::EME_CODEC_WEBM_VP9;
+        supported_codecs |= media::EME_CODEC_COMMON_VP9;
+        break;
 #if BUILDFLAG(USE_PROPRIETARY_CODECS)
-    if (codecs[i] == kCdmSupportedCodecAvc1)
-      supported_codecs |= media::EME_CODEC_MP4_AVC1;
+      case media::VideoCodec::kCodecH264:
+        supported_codecs |= media::EME_CODEC_MP4_AVC1;
+        break;
 #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+      default:
+        DVLOG(1) << "Unexpected supported codec: " << GetCodecName(codec);
+        break;
+    }
   }
 
   using Robustness = cdm::WidevineKeySystemProperties::Robustness;
