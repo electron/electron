@@ -47,7 +47,7 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
-  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
   dict.SetMethod("crash", &AtomBindings::Crash);
