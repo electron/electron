@@ -104,6 +104,8 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
+  std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
+      content::ResourceContext* resource_context) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
