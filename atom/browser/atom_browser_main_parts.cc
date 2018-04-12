@@ -23,7 +23,6 @@
 #include "device/geolocation/geolocation_provider.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
