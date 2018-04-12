@@ -1196,10 +1196,6 @@ base::string16 NativeWindowViews::GetWindowTitle() const {
   return base::UTF8ToUTF16(title_);
 }
 
-bool NativeWindowViews::ShouldHandleSystemCommands() const {
-  return true;
-}
-
 views::View* NativeWindowViews::GetContentsView() {
   return root_view_.get();
 }
