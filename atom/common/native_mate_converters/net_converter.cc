@@ -18,6 +18,7 @@
 #include "net/base/upload_element_reader.h"
 #include "net/base/upload_file_element_reader.h"
 #include "net/cert/x509_certificate.h"
+#include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_request.h"
 #include "storage/browser/blob/upload_blob_element_reader.h"
@@ -66,7 +67,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     const scoped_refptr<net::X509Certificate>& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   std::string encoded_data;
-  net::X509Certificate::GetPEMEncoded(val->os_cert_handle(), &encoded_data);
+  net::X509Certificate::GetPEMEncoded(val->cert_buffer(), &encoded_data);
 
   dict.Set("data", encoded_data);
   dict.Set("issuer", val->issuer());
@@ -78,16 +79,21 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("validStart", val->valid_start().ToDoubleT());
   dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
   dict.Set("fingerprint",
-           net::HashValue(val->CalculateFingerprint256(val->os_cert_handle()))
+           net::HashValue(val->CalculateFingerprint256(val->cert_buffer()))
                .ToString());
 
-  if (!val->GetIntermediateCertificates().empty()) {
-    net::X509Certificate::OSCertHandles issuer_intermediates(
-        val->GetIntermediateCertificates().begin() + 1,
-        val->GetIntermediateCertificates().end());
+  const auto& intermediate_buffers = val->intermediate_buffers();
+  if (!intermediate_buffers.empty()) {
+    std::vector<bssl::UniquePtr<CRYPTO_BUFFER>> issuer_intermediates;
+    issuer_intermediates.reserve(intermediate_buffers.size() - 1);
+    for (size_t i = 1; i < intermediate_buffers.size(); ++i) {
+      issuer_intermediates.push_back(
+          net::x509_util::DupCryptoBuffer(intermediate_buffers[i].get()));
+    }
     const scoped_refptr<net::X509Certificate>& issuer_cert =
-        net::X509Certificate::CreateFromHandle(
-            val->GetIntermediateCertificates().front(), issuer_intermediates);
+        net::X509Certificate::CreateFromBuffer(
+            net::x509_util::DupCryptoBuffer(intermediate_buffers[0].get()),
+            std::move(issuer_intermediates));
     dict.Set("issuerCert", issuer_cert);
   }
 
@@ -108,13 +114,14 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   if (!CertFromData(data, &leaf_cert))
     return false;
 
-  scoped_refptr<net::X509Certificate> parent;
-  if (dict.Get("issuerCert", &parent)) {
-    auto parents = std::vector<net::X509Certificate::OSCertHandle>(
-        parent->GetIntermediateCertificates());
-    parents.insert(parents.begin(), parent->os_cert_handle());
-    auto cert = net::X509Certificate::CreateFromHandle(
-        leaf_cert->os_cert_handle(), parents);
+  scoped_refptr<net::X509Certificate> issuer_cert;
+  if (dict.Get("issuerCert", &issuer_cert)) {
+    std::vector<bssl::UniquePtr<CRYPTO_BUFFER>> intermediates;
+    intermediates.push_back(
+        net::x509_util::DupCryptoBuffer(issuer_cert->cert_buffer()));
+    auto cert = net::X509Certificate::CreateFromBuffer(
+        net::x509_util::DupCryptoBuffer(leaf_cert->cert_buffer()),
+        std::move(intermediates));
     if (!cert)
       return false;
 
