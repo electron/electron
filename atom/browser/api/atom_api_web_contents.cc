@@ -798,6 +798,14 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
+void WebContents::ResizeDueToAutoResize(
+    content::WebContents* web_contents,
+    const gfx::Size& new_size) {
+  if (IsGuest()) {
+    guest_delegate_->ResizeDueToAutoResize(new_size);
+  }
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
