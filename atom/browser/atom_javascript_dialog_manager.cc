@@ -32,12 +32,13 @@ AtomJavaScriptDialogManager::~AtomJavaScriptDialogManager() = default;
 
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
-    const GURL& origin_url,
+    content::RenderFrameHost* rfh,
     JavaScriptDialogType dialog_type,
     const base::string16& message_text,
     const base::string16& default_prompt_text,
     DialogClosedCallback callback,
     bool* did_suppress_message) {
+  auto origin_url = rfh->GetLastCommittedURL();
   const std::string& origin = origin_url.GetOrigin().spec();
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
     return std::move(callback).Run(false, base::string16());
@@ -83,6 +84,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
 void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
     content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
     bool is_reload,
     DialogClosedCallback callback) {
   bool default_prevented = api_web_contents_->Emit("will-prevent-unload");
