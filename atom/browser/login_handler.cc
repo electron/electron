@@ -29,7 +29,7 @@ LoginHandler::LoginHandler(
   // avoid breaking the app login event.
   std::unique_ptr<base::DictionaryValue> request_details(
       new base::DictionaryValue);
-  request_details->SetKey("url", base::Value(url));
+  request_details->SetKey("url", base::Value(url.spec()));
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,

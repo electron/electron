@@ -10,6 +10,7 @@
 #include "base/strings/string16.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/resource_dispatcher_host_login_delegate.h"
+#include "content/public/browser/resource_request_info.h"
 
 namespace content {
 class WebContents;
