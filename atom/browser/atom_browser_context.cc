@@ -224,10 +224,7 @@ AtomBlobReader* AtomBrowserContext::GetBlobReader() {
   if (!blob_reader_.get()) {
     content::ChromeBlobStorageContext* blob_context =
         content::ChromeBlobStorageContext::GetFor(this);
-    storage::FileSystemContext* file_system_context =
-        content::BrowserContext::GetStoragePartition(this, nullptr)
-            ->GetFileSystemContext();
-    blob_reader_.reset(new AtomBlobReader(blob_context, file_system_context));
+    blob_reader_.reset(new AtomBlobReader(blob_context));
   }
   return blob_reader_.get();
 }
