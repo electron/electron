@@ -302,8 +302,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 // Called when CapturePage is done.
 void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
-                       const SkBitmap& bitmap,
-                       content::ReadbackResponse response) {
+                       const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
@@ -1767,8 +1766,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::Bind(&OnCapturePageDone, callback),
-                        kBGRA_8888_SkColorType);
+                        base::BindOnce(&OnCapturePageDone, callback));
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
