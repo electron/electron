@@ -20,7 +20,9 @@
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
-#include "device/geolocation/geolocation_provider.h"
+#include "content/public/common/service_manager_connection.h"
+#include "services/device/public/mojom/constants.mojom.h"
+#include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 
@@ -230,7 +232,7 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #endif
   // TODO(deepak1556): Enable this optionally based on response
   // from AtomPermissionManager.
-  device::GeolocationProvider::GetInstance()->UserDidOptIntoLocationServices();
+  GetGeolocationControl()->UserDidOptIntoLocationServices();
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
@@ -253,6 +255,21 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+}
+
+device::mojom::GeolocationControl*
+AtomBrowserMainParts::GetGeolocationControl() {
+  if (geolocation_control_)
+    return geolocation_control_.get();
+
+  auto request = mojo::MakeRequest(&geolocation_control_);
+  if (!content::ServiceManagerConnection::GetForProcess())
+    return geolocation_control_.get();
+
+  service_manager::Connector* connector =
+      content::ServiceManagerConnection::GetForProcess()->GetConnector();
+  connector->BindInterface(device::mojom::kServiceName, std::move(request));
+  return geolocation_control_.get();
 }
 
 }  // namespace atom
