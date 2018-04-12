@@ -5,7 +5,6 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/common/platform_util.h"
@@ -112,13 +111,6 @@ bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
                                          info->GetWebContentsGetterForRequest(),
                                          info->HasUserGesture()));
   return true;
-}
-
-content::ResourceDispatcherHostLoginDelegate*
-AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
-    net::AuthChallengeInfo* auth_info,
-    net::URLRequest* request) {
-  return new LoginHandler(auth_info, request);
 }
 
 bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(

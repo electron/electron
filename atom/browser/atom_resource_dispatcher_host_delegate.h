@@ -19,9 +19,6 @@ class AtomResourceDispatcherHostDelegate
   // content::ResourceDispatcherHostDelegate:
   bool HandleExternalProtocol(const GURL& url,
                               content::ResourceRequestInfo* info) override;
-  content::ResourceDispatcherHostLoginDelegate* CreateLoginDelegate(
-      net::AuthChallengeInfo* auth_info,
-      net::URLRequest* request) override;
   bool ShouldInterceptResourceAsStream(net::URLRequest* request,
                                        const std::string& mime_type,
                                        GURL* origin,
