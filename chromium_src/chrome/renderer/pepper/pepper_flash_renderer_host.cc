@@ -27,6 +27,7 @@
 #include "ppapi/thunk/ppb_image_data_api.h"
 #include "skia/ext/platform_canvas.h"
 #include "third_party/skia/include/core/SkCanvas.h"
+#include "third_party/skia/include/core/SkFontStyle.h"
 #include "third_party/skia/include/core/SkMatrix.h"
 #include "third_party/skia/include/core/SkPaint.h"
 #include "third_party/skia/include/core/SkPoint.h"
@@ -197,14 +198,13 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
     return PP_ERROR_FAILED;
 
   // Set up the typeface.
-  int style = SkTypeface::kNormal;
-  if (static_cast<PP_BrowserFont_Trusted_Weight>(params.font_desc.weight) >=
-      PP_BROWSERFONT_TRUSTED_WEIGHT_BOLD)
-    style |= SkTypeface::kBold;
+  int weight = (params.font_desc.weight + 1) * 100;
+  SkFontStyle::Slant slant = SkFontStyle::kUpright_Slant;
   if (params.font_desc.italic)
-    style |= SkTypeface::kItalic;
-  sk_sp<SkTypeface> typeface(SkTypeface::MakeFromName(
-      params.font_desc.face.c_str(), SkFontStyle::FromOldStyle(style)));
+    slant = SkFontStyle::kItalic_Slant;
+  SkFontStyle style(weight, SkFontStyle::kNormal_Width, slant);
+  sk_sp<SkTypeface> typeface(
+      SkTypeface::MakeFromName(params.font_desc.face.c_str(), style));
   if (!typeface)
     return PP_ERROR_FAILED;
 
