@@ -28,7 +28,7 @@ void PrintWebViewHelper::PrintPageInternal(
   int page_number = params.page_number;
   gfx::Size page_size_in_dpi;
   gfx::Rect content_area_in_dpi;
-  RenderPage(print_pages_params_->params, page_number, frame, false, &metafile,
+  RenderPage(print_pages_params_->params, page_number, frame, &metafile,
              &page_size_in_dpi, &content_area_in_dpi);
   metafile.FinishDocument();
 
@@ -68,7 +68,7 @@ bool PrintWebViewHelper::RenderPreviewPage(
   base::TimeTicks begin_time = base::TimeTicks::Now();
   gfx::Size page_size;
   RenderPage(printParams, page_number, print_preview_context_.prepared_frame(),
-             true, initial_render_metafile, &page_size, NULL);
+             initial_render_metafile, &page_size, nullptr);
   print_preview_context_.RenderedPreviewPage(base::TimeTicks::Now() -
                                              begin_time);
 
@@ -89,7 +89,6 @@ bool PrintWebViewHelper::RenderPreviewPage(
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
                                     WebLocalFrame* frame,
-                                    bool is_preview,
                                     PdfMetafileSkia* metafile,
                                     gfx::Size* page_size,
                                     gfx::Rect* content_rect) {
@@ -117,7 +116,6 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
       return;
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
-    cc::SetIsPreviewMetafile(canvas, is_preview);
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }
