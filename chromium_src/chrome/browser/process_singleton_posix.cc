@@ -67,7 +67,6 @@
 #include "base/location.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/memory/ptr_util.h"
 #include "base/memory/ref_counted.h"
 #include "base/message_loop/message_loop.h"
 #include "base/metrics/histogram_macros.h"
@@ -585,7 +584,7 @@ void ProcessSingleton::LinuxWatcher::OnSocketCanReadWithoutBlocking(
   DCHECK(base::SetNonBlocking(connection_socket))
       << "Failed to make non-blocking socket.";
   readers_.insert(
-      base::MakeUnique<SocketReader>(this, ui_task_runner_, connection_socket));
+      std::make_unique<SocketReader>(this, ui_task_runner_, connection_socket));
 }
 
 void ProcessSingleton::LinuxWatcher::StartListening(int socket) {

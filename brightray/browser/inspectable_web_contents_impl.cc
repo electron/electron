@@ -10,7 +10,6 @@
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
-#include "base/memory/ptr_util.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
@@ -828,7 +827,7 @@ void InspectableWebContentsImpl::OnURLFetchComplete(
   response.SetInteger("statusCode", rh ? rh->response_code() : 200);
 
   {
-    auto headers = base::MakeUnique<base::DictionaryValue>();
+    auto headers = std::make_unique<base::DictionaryValue>();
 
     size_t iterator = 0;
     std::string name;

@@ -15,7 +15,6 @@
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
 #include "base/files/file_util.h"
-#include "base/memory/ptr_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
@@ -186,7 +185,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents, NativeWindow* owner_window) {
   owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
-  auto relay = base::MakeUnique<NativeWindowRelay>(owner_window_);
+  auto relay = std::make_unique<NativeWindowRelay>(owner_window_);
   auto relay_key = relay->key;
   if (owner_window) {
 #if defined(TOOLKIT_VIEWS)
@@ -397,7 +396,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
   auto pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(
-      path.AsUTF8Unsafe(), base::MakeUnique<base::Value>());
+      path.AsUTF8Unsafe(), std::make_unique<base::Value>());
 
   web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded",
                                     file_system_value.get(),

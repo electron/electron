@@ -17,7 +17,6 @@
 #include "base/files/scoped_temp_dir.h"
 #include "base/logging.h"
 #include "base/macros.h"
-#include "base/memory/ptr_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/common/chrome_utility_printing_messages.h"
 #include "content/public/browser/browser_thread.h"
@@ -228,10 +227,10 @@ PdfConverterUtilityProcessHostClient::GetFileFromTemp(
       temp_file) {
   if (settings_.mode == PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2 ||
       settings_.mode == PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3) {
-    return base::MakeUnique<PostScriptMetaFile>(temp_dir_,
+    return std::make_unique<PostScriptMetaFile>(temp_dir_,
                                                 std::move(temp_file));
   }
-  return base::MakeUnique<LazyEmf>(temp_dir_, std::move(temp_file));
+  return std::make_unique<LazyEmf>(temp_dir_, std::move(temp_file));
 }
 
 class PdfConverterImpl : public PdfConverter {
@@ -632,7 +631,7 @@ std::unique_ptr<PdfConverter> PdfConverter::StartPdfConverter(
     const PdfRenderSettings& conversion_settings,
     const StartCallback& start_callback) {
   std::unique_ptr<PdfConverterImpl> converter =
-      base::MakeUnique<PdfConverterImpl>();
+      std::make_unique<PdfConverterImpl>();
   converter->Start(
       new PdfConverterUtilityProcessHostClient(converter->GetWeakPtr(),
                                                conversion_settings),

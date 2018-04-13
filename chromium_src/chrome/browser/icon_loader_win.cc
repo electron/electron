@@ -8,7 +8,6 @@
 #include <shellapi.h>
 
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/thread.h"
@@ -65,7 +64,7 @@ void IconLoader::ReadIcon() {
       gfx::ImageSkia image_skia(gfx::ImageSkiaRep(*bitmap,
                                                   display::win::GetDPIScale()));
       image_skia.MakeThreadSafe();
-      image = base::MakeUnique<gfx::Image>(image_skia);
+      image = std::make_unique<gfx::Image>(image_skia);
       DestroyIcon(file_info.hIcon);
     }
   }

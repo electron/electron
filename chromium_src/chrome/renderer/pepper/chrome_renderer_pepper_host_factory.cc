@@ -17,7 +17,6 @@
 #include "ppapi/shared_impl/ppapi_permissions.h"
 
 #if defined(ENABLE_PDF_VIEWER)
-#include "base/memory/ptr_util.h"
 #include "components/pdf/renderer/pepper_pdf_host.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
 
@@ -89,7 +88,7 @@ std::unique_ptr<ResourceHost> ChromeRendererPepperHostFactory::CreateResourceHos
           ppapi::PERMISSION_PRIVATE)) {
     switch (message.type()) {
       case PpapiHostMsg_PDF_Create::ID: {
-        return base::MakeUnique<pdf::PepperPDFHost>(host_, instance, resource);
+        return std::make_unique<pdf::PepperPDFHost>(host_, instance, resource);
       }
     }
   }

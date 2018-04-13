@@ -11,7 +11,6 @@
 #include "base/callback.h"
 #include "base/compiler_specific.h"
 #include "base/location.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -99,7 +98,7 @@ void PrintSettingsToJobSettings(const PrintSettings& settings,
   // range
 
   if (!settings.ranges().empty()) {
-    auto page_range_array = base::MakeUnique<base::ListValue>();
+    auto page_range_array = std::make_unique<base::ListValue>();
     job_settings->Set(kSettingPageRange, std::move(page_range_array));
     for (size_t i = 0; i < settings.ranges().size(); ++i) {
       std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
@@ -200,7 +199,7 @@ PrintJobWorker::PrintJobWorker(int render_process_id,
   // The object is created in the IO thread.
   DCHECK(owner_->RunsTasksInCurrentSequence());
 
-  printing_context_delegate_ = base::MakeUnique<PrintingContextDelegate>(
+  printing_context_delegate_ = std::make_unique<PrintingContextDelegate>(
       render_process_id, render_frame_id);
   printing_context_ = PrintingContext::Create(printing_context_delegate_.get());
 }

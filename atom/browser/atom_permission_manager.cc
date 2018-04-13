@@ -162,7 +162,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
 
   auto web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
-  int request_id = pending_requests_.Add(base::MakeUnique<PendingRequest>(
+  int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, permissions, response_callback));
 
   for (size_t i = 0; i < permissions.size(); ++i) {

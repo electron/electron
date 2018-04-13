@@ -5,7 +5,6 @@
 #include "atom/utility/atom_content_utility_client.h"
 
 #if defined(OS_WIN)
-#include "base/memory/ptr_util.h"
 #include "chrome/utility/printing_handler_win.h"
 #endif
 
@@ -13,7 +12,7 @@ namespace atom {
 
 AtomContentUtilityClient::AtomContentUtilityClient() {
 #if defined(OS_WIN)
-  handlers_.push_back(base::MakeUnique<printing::PrintingHandlerWin>());
+  handlers_.push_back(std::make_unique<printing::PrintingHandlerWin>());
 #endif
 }
 

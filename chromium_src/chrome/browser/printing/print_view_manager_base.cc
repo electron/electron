@@ -8,7 +8,6 @@
 
 #include "base/bind.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -73,7 +72,7 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
   int32_t id = rfh->GetRoutingID();
   return PrintNowInternal(
       rfh,
-      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
+      std::make_unique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 

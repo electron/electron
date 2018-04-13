@@ -7,7 +7,6 @@
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
-#include "base/memory/ptr_util.h"
 #include "base/memory/weak_ptr.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "content/public/browser/browser_thread.h"
@@ -177,7 +176,7 @@ int AtomCertVerifier::Verify(
     if (!request) {
       out_req->reset();
       std::unique_ptr<CertVerifierRequest> new_request =
-          base::MakeUnique<CertVerifierRequest>(params, this);
+          std::make_unique<CertVerifierRequest>(params, this);
       new_request->Start(crl_set, net_log);
       request = new_request.get();
       *out_req = std::move(new_request);

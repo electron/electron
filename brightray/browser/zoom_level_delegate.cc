@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "components/prefs/json_pref_store.h"
@@ -89,7 +88,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   if (!host_zoom_dictionaries->GetDictionary(partition_key_,
                                              &host_zoom_dictionary)) {
     host_zoom_dictionary = host_zoom_dictionaries->SetDictionary(
-        partition_key_, base::MakeUnique<base::DictionaryValue>());
+        partition_key_, std::make_unique<base::DictionaryValue>());
   }
 
   if (modification_is_removal)
