@@ -12,6 +12,7 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread.h"
+#include "build/build_config.h"
 #include "chrome/browser/printing/printer_query.h"
 #include "content/public/browser/browser_thread.h"
 #include "printing/page_number.h"
@@ -100,8 +101,17 @@ class PrintJobWorker {
   // and DEFAULT_INIT_DONE. These three are sent through PrintJob::InitDone().
   class NotificationTask;
 
+  // Posts a task to call OnNewPage(). Used to wait for pages/document to be
+  // available.
+  void PostWaitForPage();
+
+#if defined(OS_WIN)
   // Renders a page in the printer.
   void SpoolPage(PrintedPage* page);
+#else
+  // Renders the document to the printer.
+  void SpoolJob();
+#endif
 
   // Closes the job since spooling is done.
   void OnDocumentDone();

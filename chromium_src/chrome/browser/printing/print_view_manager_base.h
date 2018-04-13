@@ -150,10 +150,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // print settings are being loaded.
   bool inside_inner_message_loop_;
 
-#if !defined(OS_MACOSX)
   // Set to true when OnDidPrintPage() should be expecting the first page.
   bool expecting_first_page_;
-#endif  // OS_MACOSX
 
   // The document cookie of the current PrinterQuery.
   int cookie_;
