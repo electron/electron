@@ -55,6 +55,8 @@
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
+#include "content/browser/frame_host/frame_tree_node.h"
+#include "content/browser/frame_host/render_frame_host_manager.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/common/view_messages.h"
@@ -840,7 +842,12 @@ void WebContents::DocumentLoadedInFrame(
 void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
                                 const GURL& validated_url) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-frame-finish-load", is_main_frame);
+  int frame_process_id = render_frame_host->GetProcess()->GetID();
+  int frame_routing_id = render_frame_host->GetRoutingID();
+  Emit("did-frame-finish-load",
+       is_main_frame,
+       frame_process_id,
+       frame_routing_id);
 
   if (is_main_frame)
     Emit("did-finish-load");
@@ -851,7 +858,15 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
                               int error_code,
                               const base::string16& error_description) {
   bool is_main_frame = !render_frame_host->GetParent();
-  Emit("did-fail-load", error_code, error_description, url, is_main_frame);
+  int frame_process_id = render_frame_host->GetProcess()->GetID();
+  int frame_routing_id = render_frame_host->GetRoutingID();
+  Emit("did-fail-load",
+       error_code,
+       error_description,
+       url,
+       is_main_frame,
+       frame_process_id,
+       frame_routing_id);
 }
 
 void WebContents::DidStartLoading() {
@@ -886,26 +901,80 @@ void WebContents::DidGetRedirectForResourceRequest(
        details.headers.get());
 }
 
-void WebContents::DidFinishNavigation(
+void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
-  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
+  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNode* frame_tree_node =
+    content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  content::RenderFrameHostManager* render_manager =
+    frame_tree_node->render_manager();
+  content::RenderFrameHost* frame_host = nullptr;
+  if (render_manager) {
+    frame_host = render_manager->speculative_frame_host();
+    if (!frame_host)
+      frame_host = render_manager->current_frame_host();
+  }
+  int frame_process_id = -1, frame_routing_id = -1;
+  if (frame_host) {
+    frame_process_id = frame_host->GetProcess()->GetID();
+    frame_routing_id = frame_host->GetRoutingID();
+  }
+  bool is_same_document = navigation_handle->IsSameDocument();
+  auto url = navigation_handle->GetURL();
+  Emit("did-start-navigation",
+       url,
+       is_same_document,
+       is_main_frame,
+       frame_process_id,
+       frame_routing_id);
+}
+
+void WebContents::DidFinishNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (!navigation_handle->HasCommitted())
+    return;
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  content::RenderFrameHost* frame_host =
+    navigation_handle->GetRenderFrameHost();
+  int frame_process_id = -1, frame_routing_id = -1;
+  if (frame_host) {
+    frame_process_id = frame_host->GetProcess()->GetID();
+    frame_routing_id = frame_host->GetRoutingID();
+  }
+  if (!navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_main_frame && !is_same_document) {
       Emit("did-navigate", url);
     } else if (is_same_document) {
-      Emit("did-navigate-in-page", url, is_main_frame);
+      Emit("did-navigate-in-page",
+           url,
+           is_main_frame,
+           frame_process_id,
+           frame_routing_id);
     }
   } else {
     auto url = navigation_handle->GetURL();
     int code = navigation_handle->GetNetErrorCode();
     auto description = net::ErrorToShortString(code);
-    Emit("did-fail-provisional-load", code, description, url, is_main_frame);
+    Emit("did-fail-provisional-load",
+         code,
+         description,
+         url,
+         is_main_frame,
+         frame_process_id,
+         frame_routing_id);
 
     // Do not emit "did-fail-load" for canceled requests.
     if (code != net::ERR_ABORTED)
-      Emit("did-fail-load", code, description, url, is_main_frame);
+      Emit("did-fail-load",
+           code,
+           description,
+           url,
+           is_main_frame,
+           frame_process_id,
+           frame_routing_id);
   }
 }
 

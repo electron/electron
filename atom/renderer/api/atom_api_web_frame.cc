@@ -440,6 +440,24 @@ v8::Local<v8::Value> WebFrame::FindFrameByName(const std::string& name) const {
     return v8::Null(isolate());
 }
 
+v8::Local<v8::Value> WebFrame::FindFrameByRoutingId(int routing_id) const {
+  content::RenderFrame* render_frame =
+    content::RenderFrame::FromRoutingID(routing_id);
+  blink::WebLocalFrame* local_frame = nullptr;
+  if (render_frame)
+    local_frame = render_frame->GetWebFrame();
+  if (local_frame)
+    return mate::CreateHandle(isolate(),
+                              new WebFrame(isolate(), local_frame)).ToV8();
+  else
+    return v8::Null(isolate());
+}
+
+v8::Local<v8::Value> WebFrame::RoutingId() const {
+  int routing_id = content::RenderFrame::GetRoutingIdForWebFrame(web_frame_);
+  return v8::Number::New(isolate(), routing_id);
+}
+
 // static
 void WebFrame::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype) {
@@ -486,7 +504,9 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("parent", &WebFrame::Parent)
       .SetProperty("top", &WebFrame::Top)
       .SetProperty("firstChild", &WebFrame::FirstChild)
-      .SetProperty("nextSibling", &WebFrame::NextSibling);
+      .SetProperty("nextSibling", &WebFrame::NextSibling)
+      .SetProperty("routingId", &WebFrame::RoutingId)
+      .SetMethod("findFrameByRoutingId", &WebFrame::FindFrameByRoutingId);
 }
 
 }  // namespace api
