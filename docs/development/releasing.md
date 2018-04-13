@@ -207,7 +207,7 @@ release
 $ npm run release -- --validateRelease
 ```
 
-## Merge temporary branch
+## Merge temporary branch (pre-2-0-x branches only)
 Once the release builds have finished, merge the `release` branch back into
 the source release branch using the `merge-release` script.
 If the branch cannot be successfully merged back this script will automatically
@@ -252,7 +252,7 @@ Removing old .npmrc (default)
 Activating .npmrc "electron"
 ```
 
-The Electron account's credentials are stored in LastPass under the entry
+The Electron account's credentials are kept by GitHub.
 "Electron - NPM" for the URL "https://www.npmjs.com/login".
 ```sh
 $ npm login
@@ -268,8 +268,11 @@ electron
 $ npm run publish-to-npm
 ```
 
-Note: the `publish-to-npm` script may have trouble with Node 7 or higher. If
-you have trouble, try running with an older version of Node, e.g. a 6.x LTS.
+Note: In general you should be using the latest Node during this
+process; however, older versions of the `publish-to-npm` script
+may have trouble with Node 7 or higher. If you have trouble with
+this in an older branch, try running with an older version of Node,
+e.g. a 6.x LTS.
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
