@@ -6,7 +6,6 @@
 
 #include "atom/common/atom_constants.h"
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/stream_handle.h"

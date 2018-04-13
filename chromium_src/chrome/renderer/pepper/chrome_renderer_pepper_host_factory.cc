@@ -17,7 +17,6 @@
 #include "ppapi/shared_impl/ppapi_permissions.h"
 
 #if defined(ENABLE_PDF_VIEWER)
-#include "base/memory/ptr_util.h"
 #include "components/pdf/renderer/pepper_pdf_host.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
 

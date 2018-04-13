@@ -17,7 +17,6 @@
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/memory/ptr_util.h"
 #include "base/strings/string_split.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"

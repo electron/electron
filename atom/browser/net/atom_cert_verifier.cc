@@ -7,7 +7,6 @@
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
-#include "base/memory/ptr_util.h"
 #include "base/memory/weak_ptr.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "content/public/browser/browser_thread.h"

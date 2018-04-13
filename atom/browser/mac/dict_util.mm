@@ -5,7 +5,6 @@
 #include "atom/browser/mac/dict_util.h"
 
 #include "base/json/json_writer.h"
-#include "base/memory/ptr_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 

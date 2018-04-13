@@ -6,7 +6,6 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/supports_user_data.h"
 
 namespace mate {

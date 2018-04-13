@@ -8,7 +8,6 @@
 #include <shellapi.h>
 
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/thread.h"
