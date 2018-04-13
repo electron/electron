@@ -14,7 +14,8 @@ namespace {
 std::string V8TypeAsString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   if (value.IsEmpty())
     return "<empty handle>";
-  v8::MaybeLocal<v8::String> details = value->ToDetailString(isolate);
+  v8::MaybeLocal<v8::String> details =
+      value->ToDetailString(isolate->GetCurrentContext());
   std::string result;
   if (!details.IsEmpty())
     ConvertFromV8(isolate, details.ToLocalChecked(), &result);
