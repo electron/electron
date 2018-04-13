@@ -131,24 +131,14 @@ void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
-  const char* asar_init_native = reinterpret_cast<const char*>(
-      static_cast<const unsigned char*>(node::asar_init_data));
-  v8::Local<v8::Script> asar_init = v8::Script::Compile(v8::String::NewFromUtf8(
-      isolate,
-      asar_init_native,
-      v8::String::kNormalString,
-      sizeof(node::asar_init_data) -1));
+  v8::Local<v8::Script> asar_init =
+      v8::Script::Compile(node::asar_init_value.ToStringChecked(isolate));
   v8::Local<v8::Value> result = asar_init->Run();
 
   // Initialize asar support.
   if (result->IsFunction()) {
-    const char* asar_native = reinterpret_cast<const char*>(
-        static_cast<const unsigned char*>(node::asar_data));
-    base::StringPiece asar_data(asar_native, sizeof(node::asar_data) - 1);
     v8::Local<v8::Value> args[] = {
-        process,
-        require,
-        mate::ConvertToV8(isolate, asar_data),
+        process, require, node::asar_value.ToStringChecked(isolate),
     };
     result.As<v8::Function>()->Call(result, 3, args);
   }

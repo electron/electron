@@ -4,8 +4,6 @@
 
 #include "atom/renderer/atom_sandboxed_renderer_client.h"
 
-#include <string>
-
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -171,16 +169,13 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string preload_bundle_native(node::preload_bundle_data,
-      node::preload_bundle_data + sizeof(node::preload_bundle_data));
-  std::stringstream ss;
-  ss << "(function(binding, preloadPath, require) {\n";
-  ss << preload_bundle_native << "\n";
-  ss << "})";
-  std::string preload_wrapper = ss.str();
+  std::string left = "(function(binding, preloadPath, require) {\n";
+  std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
-  auto script = v8::Script::Compile(
-      mate::ConvertToV8(isolate, preload_wrapper)->ToString());
+  auto script = v8::Script::Compile(v8::String::Concat(
+      mate::ConvertToV8(isolate, left)->ToString(),
+      v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString())));
   auto func = v8::Handle<v8::Function>::Cast(
       script->Run(context).ToLocalChecked());
   // Create and initialize the binding object
