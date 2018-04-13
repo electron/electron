@@ -94,6 +94,8 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_WEBSQL;
     else if (type == "serviceworkers")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_SERVICE_WORKERS;
+    else if (type == "cachestorage")
+      storage_mask |= StoragePartition::REMOVE_DATA_MASK_CACHE_STORAGE;
   }
   return storage_mask;
 }
