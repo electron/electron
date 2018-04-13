@@ -20,8 +20,8 @@ bool PrintJobWorkerOwner::RunsTasksInCurrentSequence() const {
 }
 
 bool PrintJobWorkerOwner::PostTask(const base::Location& from_here,
-                                   const base::Closure& task) {
-  return task_runner_->PostTask(from_here, task);
+                                   base::OnceClosure task) {
+  return task_runner_->PostTask(from_here, std::move(task));
 }
 
 }  // namespace printing
