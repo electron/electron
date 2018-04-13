@@ -351,7 +351,7 @@ class ScopedSocket {
 
 // Returns a random string for uniquifying profile connections.
 std::string GenerateCookie() {
-  return base::Uint64ToString(base::RandUint64());
+  return base::NumberToString(base::RandUint64());
 }
 
 bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
