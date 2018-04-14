@@ -222,7 +222,7 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 
 A list of strings which specifies the blink features to be enabled separated by `,`.
 The full list of supported feature strings can be found in the
-[RuntimeEnabledFeatures.json5][blink-feature-string] file.
+[RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
 ### `disableblinkfeatures`
 
@@ -232,7 +232,7 @@ The full list of supported feature strings can be found in the
 
 A list of strings which specifies the blink features to be disabled separated by `,`.
 The full list of supported feature strings can be found in the
-[RuntimeEnabledFeatures.json5][blink-feature-string] file.
+[RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
 
 ### `guestinstance`
 
@@ -939,4 +939,4 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
+[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
