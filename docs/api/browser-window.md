@@ -311,12 +311,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       macOS. Default is `false`.
     * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-      strings can be found in the [RuntimeEnabledFeatures.json5][blink-feature-string]
+      strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]
       file.
     * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
       like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
       feature strings can be found in the
-      [RuntimeEnabledFeatures.json5][blink-feature-string] file.
+      [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
     * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
       * `standard` String (optional) - Defaults to `Times New Roman`.
       * `serif` String (optional) - Defaults to `Times New Roman`.
@@ -1491,7 +1491,7 @@ Returns `BrowserView | null` - an attached BrowserView. Returns `null` if none i
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
-[blink-feature-string]: https://cs.chromium.org/chromium/src/third_party/WebKit/Source/platform/runtime_enabled_features.json5?l=70
+[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
