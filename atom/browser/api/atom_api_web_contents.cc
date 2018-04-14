@@ -29,6 +29,7 @@
 #include "atom/browser/web_contents_zoom_controller.h"
 #include "atom/browser/web_view_guest_delegate.h"
 #include "atom/common/api/api_messages.h"
+#include "atom/common/api/atom_api_native_image.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/color_util.h"
 #include "atom/common/mouse_util.h"

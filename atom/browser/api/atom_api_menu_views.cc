@@ -43,7 +43,7 @@ void MenuViews::PopupAt(BrowserWindow* window,
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
-  int32_t window_id = window->ID();
+  int32_t window_id = window->weak_map_id();
   auto close_callback = base::Bind(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
