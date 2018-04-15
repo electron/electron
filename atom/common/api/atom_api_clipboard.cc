@@ -10,10 +10,13 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixmap.h"
-#include "third_party/skia/tools/sk_tool_utils.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 
 #include "atom/common/node_includes.h"
+
+namespace sk_tool_utils {
+  bool copy_to(SkBitmap* dst, SkColorType dstCT, const SkBitmap& src);
+}
 
 namespace atom {
 
@@ -173,7 +176,7 @@ void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   SkBitmap orig = image.AsBitmap();
   SkBitmap bmp;
 
-  if (sk_tool_utils::copy_to(&bmp, orig.colorType(), &orig)) {
+  if (sk_tool_utils::copy_to(&bmp, orig.colorType(), orig)) {
     writer.WriteImage(bmp);
   } else {
     writer.WriteImage(orig);

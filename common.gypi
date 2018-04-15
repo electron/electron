@@ -146,8 +146,6 @@
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/i18n',
-          '<(libchromiumcontent_src_dir)/third_party/skia/include/utils',
-          '<(libchromiumcontent_src_dir)/third_party/skia/include/private',
           '<(libchromiumcontent_src_dir)/v8',
           '<(libchromiumcontent_src_dir)/v8/include',
         ],
