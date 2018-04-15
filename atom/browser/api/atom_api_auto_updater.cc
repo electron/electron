@@ -104,8 +104,6 @@ void AutoUpdater::SetFeedURL(mate::Arguments* args) {
 }
 
 void AutoUpdater::QuitAndInstall() {
-  Emit("before-quit-for-update");
-
   // If we don't have any window then quitAndInstall immediately.
   if (WindowList::IsEmpty()) {
     auto_updater::AutoUpdater::QuitAndInstall();
