@@ -2,7 +2,7 @@ version: "{build}"
 
 clone_depth: 10
 
-os: Visual Studio 2015
+os: Visual Studio 2017
 
 init:
   - git config --global core.autocrlf input
@@ -11,7 +11,7 @@ platform:
   - x64
 
 install:
-  - cmd: SET PATH=C:\Program Files (x86)\MSBuild\14.0\bin\;%PATH%
+  - cmd: SET PATH=C:\Program Files (x86)\MSBuild\15.0\bin\;%PATH%
   - cmd: SET PATH=C:\python27;%PATH%
   - cmd: bash script/cibuild
 
