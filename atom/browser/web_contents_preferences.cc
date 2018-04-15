@@ -68,7 +68,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined("webSecurity", webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
   // insecureContent
-  if (web_preferences.GetBoolean("webSecurity", &webSecurity) && !webSecurity) {
+  if (web_preferences.Get("webSecurity", &webSecurity) && !webSecurity) {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
   } else {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
