@@ -598,6 +598,7 @@ Emitted when a `<webview>` has been attached to this web contents.
 
 Returns:
 
+* `event` Event
 * `level` Integer
 * `message` String
 * `line` Integer
