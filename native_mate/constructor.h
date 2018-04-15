@@ -127,7 +127,7 @@ MATE_METHOD_RETURN_TYPE InvokeNew(const base::Callback<Sig>& factory,
   WrappableBase* object;
   {
     // Don't continue if the constructor throws an exception.
-    v8::TryCatch try_catch(isolate);
+    v8::TryCatch try_catch;
     object = internal::InvokeFactory(args, factory);
     if (try_catch.HasCaught()) {
       try_catch.ReThrow();
