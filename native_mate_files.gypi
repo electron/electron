@@ -17,8 +17,6 @@
       'native_mate/persistent_dictionary.cc',
       'native_mate/persistent_dictionary.h',
       'native_mate/scoped_persistent.h',
-      'native_mate/try_catch.cc',
-      'native_mate/try_catch.h',
       'native_mate/wrappable.cc',
       'native_mate/wrappable.h',
       'native_mate/wrappable_base.h',
