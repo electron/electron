@@ -20,7 +20,7 @@ Dictionary::~Dictionary() {
 }
 
 Dictionary Dictionary::CreateEmpty(v8::Isolate* isolate) {
-  return Dictionary(isolate, v8::Object::New(isolate));;
+  return Dictionary(isolate, v8::Object::New(isolate));
 }
 
 v8::Local<v8::Object> Dictionary::GetHandle() const {

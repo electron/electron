@@ -22,6 +22,8 @@
       'native_mate/wrappable.cc',
       'native_mate/wrappable.h',
       'native_mate/wrappable_base.h',
+      'native_mate/promise.h',
+      'native_mate/promise.cc',
     ],
   },
 }
