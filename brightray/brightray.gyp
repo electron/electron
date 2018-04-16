@@ -123,8 +123,6 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
-                  # components/network_session_configurator/common/
-                  '<(libchromiumcontent_dir)/libcommon.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
@@ -144,7 +142,6 @@
                   '<(libchromiumcontent_dir)/libfxcodec.a',
                   '<(libchromiumcontent_dir)/libfxge.a',
                   '<(libchromiumcontent_dir)/libfxjs.a',
-                  '<(libchromiumcontent_dir)/libjavascript.a',
                   '<(libchromiumcontent_dir)/libpwl.a',
                   '<(libchromiumcontent_dir)/libfx_agg.a',
                   '<(libchromiumcontent_dir)/libfx_lcms2.a',
@@ -209,8 +206,6 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
-                  # components/network_session_configurator/common/
-                  '<(libchromiumcontent_dir)/libcommon.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
@@ -228,7 +223,6 @@
                   '<(libchromiumcontent_dir)/libfxcrt.a',
                   '<(libchromiumcontent_dir)/libfxge.a',
                   '<(libchromiumcontent_dir)/libfxjs.a',
-                  '<(libchromiumcontent_dir)/libjavascript.a',
                   '<(libchromiumcontent_dir)/libpwl.a',
                   '<(libchromiumcontent_dir)/libfx_agg.a',
                   '<(libchromiumcontent_dir)/libfx_lcms2.a',
@@ -347,8 +341,6 @@
                   '<(libchromiumcontent_dir)/libyuv.lib',
                   '<(libchromiumcontent_dir)/renderer.lib',
                   '<(libchromiumcontent_dir)/security_state.lib',
-                  # components/network_session_configurator/common/
-                  '<(libchromiumcontent_dir)/common.lib',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/power_save_blocker.lib',
                   # Friends of pdf.lib:
@@ -367,7 +359,6 @@
                   '<(libchromiumcontent_dir)/fxcrt.lib',
                   '<(libchromiumcontent_dir)/fxge.lib',
                   '<(libchromiumcontent_dir)/fxjs.lib',
-                  '<(libchromiumcontent_dir)/javascript.lib',
                   '<(libchromiumcontent_dir)/pwl.lib',
                   '<(libchromiumcontent_dir)/fx_agg.lib',
                   '<(libchromiumcontent_dir)/fx_lcms2.lib',
