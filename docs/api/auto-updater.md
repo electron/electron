@@ -84,6 +84,12 @@ Emitted when an update has been downloaded.
 
 On Windows only `releaseName` is available.
 
+### Event: 'before-quit-for-update'
+
+This event is emitted after a user calls `quitAndInstall()`.
+
+When this API is called, the `before-quit` event is not emitted before all windows are closed. As a result you should listen to this event if you wish to perform actions before the windows are closed while a process is quitting, as well as listening to `before-quit`.
+
 ## Methods
 
 The `autoUpdater` object has the following methods:
