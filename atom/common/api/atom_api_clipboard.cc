@@ -172,10 +172,9 @@ void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   SkBitmap orig = image.AsBitmap();
   SkBitmap bmp;
 
-  if (bmp.tryAllocPixels(orig.info())) {
-    orig.readPixels(bmp.info(), bmp.getPixels(), bmp.rowBytes(), 0, 0);
-  } else {
-    writer.WriteImage(orig);
+  if (bmp.tryAllocPixels(orig.info()) &&
+    orig.readPixels(bmp.info(), bmp.getPixels(), bmp.rowBytes(), 0, 0)) {
+    writer.WriteImage(bmp);
   }
 }
 
