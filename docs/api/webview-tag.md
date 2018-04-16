@@ -663,7 +663,7 @@ Corresponds to the points in time when the spinner of the tab starts spinning.
 
 Corresponds to the points in time when the spinner of the tab stops spinning.
 
-### Event: 'did-get-response-details'
+### Event: 'did-get-response-details' *(Deprecated)*
 
 Returns:
 
@@ -679,6 +679,7 @@ Returns:
 Fired when details regarding a requested resource is available.
 `status` indicates socket connection to download the resource.
 
+**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
 ### Event: 'did-get-redirect-request'
 
 Returns:
