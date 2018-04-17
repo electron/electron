@@ -438,14 +438,8 @@ void Initialize(v8::Local<v8::Object> exports,
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   BrowserWindow::BuildPrototype(isolate, templ);
 
-  mate::Dictionary browser_window(isolate, templ->GetFunction());
-  browser_window.SetMethod(
-      "fromId", &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  browser_window.SetMethod("getAllWindows",
-                           &mate::TrackableObject<TopLevelWindow>::GetAll);
-
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", browser_window);
+  dict.Set("BrowserWindow", templ->GetFunction());
 }
 
 }  // namespace
