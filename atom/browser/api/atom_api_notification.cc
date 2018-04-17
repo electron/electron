@@ -259,7 +259,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Notification::SetConstructor(isolate, base::Bind(&Notification::New));
+  Notification::SetConstructor(isolate, base::BindRepeating(&Notification::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("Notification",

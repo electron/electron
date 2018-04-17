@@ -44,7 +44,7 @@ void MenuViews::PopupAt(BrowserWindow* window,
 
   // Show the menu.
   int32_t window_id = window->weak_map_id();
-  auto close_callback = base::Bind(
+  auto close_callback = base::BindRepeating(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
   menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
       model(), flags, close_callback));
