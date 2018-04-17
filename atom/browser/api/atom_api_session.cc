@@ -139,7 +139,7 @@ void SetUserAgentInIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<ClearStorageDataOptions> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -208,7 +208,7 @@ struct Converter<net::ProxyConfig> {
   }
 };
 
-template<>
+template <>
 struct Converter<atom::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::VerifyRequestParams val) {
@@ -245,16 +245,17 @@ class ResolveProxyHelper {
         browser_context->url_request_context_getter();
     context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE,
-        base::Bind(&ResolveProxyHelper::ResolveProxy,
-                   base::Unretained(this), context_getter, url));
+        base::BindRepeating(&ResolveProxyHelper::ResolveProxy,
+                            base::Unretained(this), context_getter, url));
   }
 
   void OnResolveProxyCompleted(int result) {
     std::string proxy;
     if (result == net::OK)
       proxy = proxy_info_.ToPacString();
-    original_thread_->PostTask(FROM_HERE,
-                               base::Bind(callback_, proxy));
+    if (!callback_.is_null()) {
+      original_thread_->PostTask(FROM_HERE, base::BindOnce(callback_, proxy));
+    }
     delete this;
   }
 
@@ -265,14 +266,13 @@ class ResolveProxyHelper {
 
     net::ProxyService* proxy_service =
         context_getter->GetURLRequestContext()->proxy_service();
-    net::CompletionCallback completion_callback =
-        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   base::Unretained(this));
+    net::CompletionCallback completion_callback = base::BindRepeating(
+        &ResolveProxyHelper::OnResolveProxyCompleted, base::Unretained(this));
 
     // Start the request.
-    int result = proxy_service->ResolveProxy(
-        url, "GET", &proxy_info_, completion_callback, &pac_req_, nullptr,
-        net::NetLogWithSource());
+    int result = proxy_service->ResolveProxy(url, "GET", &proxy_info_,
+                                             completion_callback, &pac_req_,
+                                             nullptr, net::NetLogWithSource());
 
     // Completed synchronously.
     if (result != net::ERR_IO_PENDING)
@@ -291,10 +291,12 @@ class ResolveProxyHelper {
 void RunCallbackInUI(const base::Callback<void()>& callback) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
 }
-template<typename ...T>
+template <typename... T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE, base::Bind(callback, result...));
+  if (!callback.is_null()) {
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                            base::BindOnce(callback, result...));
+  }
 }
 
 // Callback of HttpCache::GetBackend.
@@ -306,8 +308,9 @@ void OnGetBackend(disk_cache::Backend** backend_ptr,
     RunCallbackInUI(callback, result);
   } else if (backend_ptr && *backend_ptr) {
     if (action == Session::CacheAction::CLEAR) {
-      (*backend_ptr)->DoomAllEntries(base::Bind(&RunCallbackInUI<int>,
-                                                callback));
+      (*backend_ptr)
+          ->DoomAllEntries(
+              base::BindRepeating(&RunCallbackInUI<int>, callback));
     } else if (action == Session::CacheAction::STATS) {
       base::StringPairs stats;
       (*backend_ptr)->GetStats(&stats);
@@ -337,8 +340,8 @@ void DoCacheActionInIO(
   // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
   using BackendPtr = disk_cache::Backend*;
   auto* backend_ptr = new BackendPtr(nullptr);
-  net::CompletionCallback on_get_backend =
-      base::Bind(&OnGetBackend, base::Owned(backend_ptr), action, callback);
+  net::CompletionCallback on_get_backend = base::BindRepeating(
+      &OnGetBackend, base::Owned(backend_ptr), action, callback);
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
   if (rv != net::ERR_IO_PENDING)
     on_get_backend.Run(net::OK);
@@ -348,8 +351,8 @@ void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
   auto proxy_service = getter->GetURLRequestContext()->proxy_service();
-  proxy_service->ResetConfigService(base::WrapUnique(
-      new net::ProxyConfigServiceFixed(config)));
+  proxy_service->ResetConfigService(
+      base::WrapUnique(new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);
@@ -359,8 +362,8 @@ void SetCertVerifyProcInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const AtomCertVerifier::VerifyProc& proc) {
   auto request_context = context_getter->GetURLRequestContext();
-  static_cast<AtomCertVerifier*>(request_context->cert_verifier())->
-      SetVerifyProc(proc);
+  static_cast<AtomCertVerifier*>(request_context->cert_verifier())
+      ->SetVerifyProc(proc);
 }
 
 void ClearHostResolverCacheInIO(
@@ -437,9 +440,8 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       last_modified, offset, length, std::string(),
       content::DownloadItem::INTERRUPTED,
       content::DownloadDangerType::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false,
-      base::Time(), false,
-      std::vector<content::DownloadItem::ReceivedSlice>());
+      content::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
+      false, std::vector<content::DownloadItem::ReceivedSlice>());
 }
 
 void SetDevToolsNetworkEmulationClientIdInIO(
@@ -486,8 +488,8 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : devtools_network_emulation_client_id_(base::GenerateGUID()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
-  content::BrowserContext::GetDownloadManager(browser_context)->
-      AddObserver(this);
+  content::BrowserContext::GetDownloadManager(browser_context)
+      ->AddObserver(this);
 
   new SessionPreferences(browser_context);
 
@@ -500,8 +502,8 @@ Session::~Session() {
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::BindOnce(ClearJobFactoryInIO, base::RetainedRef(getter)));
-  content::BrowserContext::GetDownloadManager(browser_context())->
-      RemoveObserver(this);
+  content::BrowserContext::GetDownloadManager(browser_context())
+      ->RemoveObserver(this);
   DestroyGlobalHandle(isolate(), cookies_);
   DestroyGlobalHandle(isolate(), web_request_);
   DestroyGlobalHandle(isolate(), protocol_);
@@ -529,13 +531,15 @@ void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
   new ResolveProxyHelper(browser_context(), url, callback);
 }
 
-template<Session::CacheAction action>
+template <Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&DoCacheActionInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 action,
-                 callback));
+  if (!callback.is_null()) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&DoCacheActionInIO,
+                       WrapRefCounted(browser_context_->GetRequestContext()),
+                       action, callback));
+  }
 }
 
 void Session::ClearStorageData(mate::Arguments* args) {
@@ -554,9 +558,9 @@ void Session::ClearStorageData(mate::Arguments* args) {
   }
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
-      content::StoragePartition::OriginMatcherFunction(),
-      base::Time(), base::Time::Max(),
-      base::Bind(&OnClearStorageDataDone, callback));
+      content::StoragePartition::OriginMatcherFunction(), base::Time(),
+      base::Time::Max(),
+      base::BindRepeating(&OnClearStorageDataDone, callback));
 }
 
 void Session::FlushStorageData() {
@@ -575,8 +579,8 @@ void Session::SetProxy(const net::ProxyConfig& config,
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {
-  browser_context_->prefs()->SetFilePath(
-      prefs::kDownloadDefaultDirectory, path);
+  browser_context_->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
+                                         path);
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
@@ -597,7 +601,7 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(
+      base::BindOnce(
           &SetDevToolsNetworkEmulationClientIdInIO,
           base::RetainedRef(browser_context_->url_request_context_getter()),
           devtools_network_emulation_client_id_));
@@ -609,7 +613,7 @@ void Session::DisableNetworkEmulation() {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(
+      base::BindOnce(
           &SetDevToolsNetworkEmulationClientIdInIO,
           base::RetainedRef(browser_context_->url_request_context_getter()),
           std::string()));
@@ -623,10 +627,11 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
     return;
   }
 
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&SetCertVerifyProcInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 proc));
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&SetCertVerifyProcInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     proc));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -645,10 +650,13 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
   base::Closure callback;
   args->GetNext(&callback);
 
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&ClearHostResolverCacheInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 callback));
+  if (!callback.is_null()) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&ClearHostResolverCacheInIO,
+                       WrapRefCounted(browser_context_->GetRequestContext()),
+                       callback));
+  }
 }
 
 void Session::ClearAuthCache(mate::Arguments* args) {
@@ -660,18 +668,21 @@ void Session::ClearAuthCache(mate::Arguments* args) {
   base::Closure callback;
   args->GetNext(&callback);
 
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::Bind(&ClearAuthCacheInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 options, callback));
+  if (!callback.is_null()) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&ClearAuthCacheInIO,
+                       WrapRefCounted(browser_context_->GetRequestContext()),
+                       options, callback));
+  }
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&AllowNTLMCredentialsForDomainsInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 domains));
+  BrowserThread::PostTask(
+      BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&AllowNTLMCredentialsForDomainsInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     domains));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
@@ -685,26 +696,25 @@ void Session::SetUserAgent(const std::string& user_agent,
       browser_context_->GetRequestContext());
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
+      base::BindOnce(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
-void Session::GetBlobData(
-    const std::string& uuid,
-    const AtomBlobReader::CompletionCallback& callback) {
+void Session::GetBlobData(const std::string& uuid,
+                          const AtomBlobReader::CompletionCallback& callback) {
   if (callback.is_null())
     return;
 
-  AtomBlobReader* blob_reader =
-      browser_context()->GetBlobReader();
-  BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomBlobReader::StartReading,
-                 base::Unretained(blob_reader),
-                 uuid,
-                 callback));
+  AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
+  if (!callback.is_null()) {
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&AtomBlobReader::StartReading,
+                       base::Unretained(blob_reader), uuid, callback));
+  }
 }
 
 void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
@@ -733,7 +743,7 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
   }
   auto download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
-  download_manager->GetDelegate()->GetNextId(base::Bind(
+  download_manager->GetDelegate()->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
 }
@@ -776,14 +786,14 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 }
 
 // static
-mate::Handle<Session> Session::CreateFrom(
-    v8::Isolate* isolate, AtomBrowserContext* browser_context) {
+mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
+                                          AtomBrowserContext* browser_context) {
   auto existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 
-  auto handle = mate::CreateHandle(
-      isolate, new Session(isolate, browser_context));
+  auto handle =
+      mate::CreateHandle(isolate, new Session(isolate, browser_context));
 
   // The Sessions should never be garbage collected, since the common pattern is
   // to use partition strings, instead of using the Session object directly.
@@ -795,7 +805,8 @@ mate::Handle<Session> Session::CreateFrom(
 
 // static
 mate::Handle<Session> Session::FromPartition(
-    v8::Isolate* isolate, const std::string& partition,
+    v8::Isolate* isolate,
+    const std::string& partition,
     const base::DictionaryValue& options) {
   scoped_refptr<AtomBrowserContext> browser_context;
   if (partition.empty()) {
@@ -852,8 +863,8 @@ namespace {
 
 using atom::api::Session;
 
-v8::Local<v8::Value> FromPartition(
-    const std::string& partition, mate::Arguments* args) {
+v8::Local<v8::Value> FromPartition(const std::string& partition,
+                                   mate::Arguments* args) {
   if (!atom::Browser::Get()->is_ready()) {
     args->ThrowError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
@@ -863,8 +874,10 @@ v8::Local<v8::Value> FromPartition(
   return Session::FromPartition(args->isolate(), partition, options).ToV8();
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("Session", Session::GetConstructor(isolate)->GetFunction());
