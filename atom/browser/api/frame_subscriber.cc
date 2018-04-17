@@ -57,7 +57,7 @@ bool FrameSubscriber::ShouldCaptureFrame(
   view_->CopyFromSurface(
       rect,
       rect.size(),
-      base::Bind(&FrameSubscriber::OnFrameDelivered,
+      base::BindRepeating(&FrameSubscriber::OnFrameDelivered,
                  weak_factory_.GetWeakPtr(), callback_, rect),
       kBGRA_8888_SkColorType);
 

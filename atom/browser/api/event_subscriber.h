@@ -71,7 +71,7 @@ class EventSubscriber : internal::EventSubscriberBase {
       ptr->handler_ = nullptr;
       content::BrowserThread::PostTask(
           content::BrowserThread::UI, FROM_HERE,
-          base::Bind(
+          base::BindOnce(
               [](EventSubscriber<HandlerType>* subscriber) {
                 {
                   // It is possible that this function will execute in the UI
