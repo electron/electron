@@ -70,7 +70,6 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               v8::Local<v8::Object> wrapper,
                                const mate::Dictionary& options)
     : weak_factory_(this) {
   // The parent window.
@@ -99,6 +98,15 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
+}
+
+TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
+                               v8::Local<v8::Object> wrapper,
+                               const mate::Dictionary& options)
+    : TopLevelWindow(isolate, options) {
+  InitWith(isolate, wrapper);
+  // Init window after everything has been setup.
+  window()->InitFromOptions(options);
 }
 
 TopLevelWindow::~TopLevelWindow() {

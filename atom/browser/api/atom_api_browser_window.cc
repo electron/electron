@@ -29,7 +29,7 @@ namespace api {
 BrowserWindow::BrowserWindow(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper,
                              const mate::Dictionary& options)
-    : TopLevelWindow(isolate, wrapper, options), weak_factory_(this) {
+    : TopLevelWindow(isolate, options), weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
