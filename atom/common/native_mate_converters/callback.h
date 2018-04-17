@@ -133,24 +133,38 @@ struct NativeFunctionInvoker<ReturnType(ArgTypes...)> {
 
 }  // namespace internal
 
-template<typename Sig>
-struct Converter<base::Callback<Sig>> {
+template <typename Sig>
+struct Converter<base::OnceCallback<Sig>> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::OnceCallback<Sig>* out) {
+    if (!val->IsFunction())
+      return false;
+
+    *out = base::BindOnce(&internal::V8FunctionInvoker<Sig>::Go, isolate,
+                          internal::SafeV8Function(isolate, val));
+    return true;
+  }
+};
+
+template <typename Sig>
+struct Converter<base::RepeatingCallback<Sig>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::Callback<Sig>& val) {
+                                   const base::RepeatingCallback<Sig>& val) {
     // We don't use CreateFunctionTemplate here because it creates a new
     // FunctionTemplate everytime, which is cached by V8 and causes leaks.
-    internal::Translater translater = base::Bind(
-        &internal::NativeFunctionInvoker<Sig>::Go, val);
+    internal::Translater translater =
+        base::BindRepeating(&internal::NativeFunctionInvoker<Sig>::Go, val);
     return internal::CreateFunctionFromTranslater(isolate, translater);
   }
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     base::Callback<Sig>* out) {
+                     base::RepeatingCallback<Sig>* out) {
     if (!val->IsFunction())
       return false;
 
-    *out = base::Bind(&internal::V8FunctionInvoker<Sig>::Go,
-                      isolate, internal::SafeV8Function(isolate, val));
+    *out = base::BindRepeating(&internal::V8FunctionInvoker<Sig>::Go, isolate,
+                               internal::SafeV8Function(isolate, val));
     return true;
   }
 };
