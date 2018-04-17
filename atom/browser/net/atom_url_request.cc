@@ -105,7 +105,7 @@ void AtomURLRequest::DoInitialize(
   redirect_policy_ = redirect_policy;
   request_context_getter_ = request_context_getter;
   request_context_getter_->AddObserver(this);
-  auto context = request_context_getter_->GetURLRequestContext();
+  auto* context = request_context_getter_->GetURLRequestContext();
   if (!context) {
     // Called after shutdown.
     DoCancelWithError("Cannot start a request after shutdown.", true);
@@ -238,14 +238,14 @@ void AtomURLRequest::DoWriteBuffer(
     if (buffer) {
       // Handling potential empty buffers.
       using internal::UploadOwnedIOBufferElementReader;
-      auto element_reader =
+      auto* element_reader =
           UploadOwnedIOBufferElementReader::CreateWithBuffer(std::move(buffer));
       upload_element_readers_.push_back(
           std::unique_ptr<net::UploadElementReader>(element_reader));
     }
 
     if (is_last) {
-      auto elements_upload_data_stream = new net::ElementsUploadDataStream(
+      auto* elements_upload_data_stream = new net::ElementsUploadDataStream(
           std::move(upload_element_readers_), 0);
       request_->set_upload(
           std::unique_ptr<net::UploadDataStream>(elements_upload_data_stream));

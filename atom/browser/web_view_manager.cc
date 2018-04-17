@@ -74,9 +74,9 @@ bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
 // static
 WebViewManager* WebViewManager::GetWebViewManager(
     content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
+  auto* context = web_contents->GetBrowserContext();
   if (context) {
-    auto manager = context->GetGuestManager();
+    auto* manager = context->GetGuestManager();
     return static_cast<WebViewManager*>(manager);
   } else {
     return nullptr;

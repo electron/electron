@@ -203,10 +203,10 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
       delegate_(nullptr),
       web_contents_(web_contents),
       weak_factory_(this) {
-  auto context =
+  auto* context =
       static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
   pref_service_ = context->prefs();
-  auto bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
+  auto* bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict) {
     DictionaryToRect(*bounds_dict, &devtools_bounds_);
     // Sometimes the devtools window is out of screen or has too small size.
@@ -719,7 +719,7 @@ bool InspectableWebContentsImpl::ShouldCreateWebContents(
 void InspectableWebContentsImpl::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  auto delegate = web_contents_->GetDelegate();
+  auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->HandleKeyboardEvent(source, event);
 }
@@ -733,7 +733,7 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
     content::WebContents* source,
     SkColor color,
     const std::vector<content::ColorSuggestion>& suggestions) {
-  auto delegate = web_contents_->GetDelegate();
+  auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     return delegate->OpenColorChooser(source, color, suggestions);
   return nullptr;
@@ -742,7 +742,7 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
 void InspectableWebContentsImpl::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     const content::FileChooserParams& params) {
-  auto delegate = web_contents_->GetDelegate();
+  auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->RunFileChooser(render_frame_host, params);
 }
@@ -751,7 +751,7 @@ void InspectableWebContentsImpl::EnumerateDirectory(
     content::WebContents* source,
     int request_id,
     const base::FilePath& path) {
-  auto delegate = web_contents_->GetDelegate();
+  auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     delegate->EnumerateDirectory(source, request_id, path);
 }

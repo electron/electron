@@ -165,7 +165,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)updateAccessibilityEnabled:(BOOL)enabled {
-  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
 
   if (enabled) {
     ax_state->OnScreenReaderDetected();

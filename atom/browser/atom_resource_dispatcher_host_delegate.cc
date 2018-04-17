@@ -57,7 +57,7 @@ void HandleExternalProtocolInUI(
   if (!web_contents)
     return;
 
-  auto permission_helper =
+  auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper)
     return;

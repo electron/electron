@@ -256,7 +256,7 @@ std::string Browser::DockGetBadgeText() {
 }
 
 void Browser::DockHide() {
-  for (const auto& window : WindowList::GetWindows())
+  for (auto* const& window : WindowList::GetWindows())
     [window->GetNativeWindow() setCanHide:NO];
 
   ProcessSerialNumber psn = { 0, kCurrentProcess };

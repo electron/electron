@@ -87,8 +87,8 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   auto local_buffer = buffer.ToLocalChecked();
 
   {
-    auto source = static_cast<const unsigned char*>(bitmap.getPixels());
-    auto target = node::Buffer::Data(local_buffer);
+    auto* source = static_cast<const unsigned char*>(bitmap.getPixels());
+    auto* target = node::Buffer::Data(local_buffer);
 
     for (int y = 0; y < bitmap.height(); ++y) {
       memcpy(target, source, rgb_row_size);

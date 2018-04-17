@@ -53,7 +53,7 @@ content::WebUIController* WebUIControllerFactory::CreateWebUIControllerForURL(
     content::WebUI* web_ui,
     const GURL& url) const {
   if (url.host() == kChromeUIDevToolsBundledHost) {
-    auto browser_context = web_ui->GetWebContents()->GetBrowserContext();
+    auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
     return new DevToolsUI(browser_context, web_ui);
   }
   return nullptr;

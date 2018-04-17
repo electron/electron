@@ -197,7 +197,7 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
   if (!response.GetString("statusLine", &status_line))
     status_line = container.second;
   if (response.GetDictionary("responseHeaders", &dict)) {
-    auto headers = container.first;
+    auto* headers = container.first;
     *headers = new net::HttpResponseHeaders("");
     (*headers)->ReplaceStatusLine(status_line);
     for (base::DictionaryValue::Iterator it(*dict); !it.IsAtEnd();

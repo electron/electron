@@ -33,7 +33,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
   FileSelectHelper(content::RenderFrameHost* render_frame_host,
                    const content::FileChooserParams::Mode& mode)
       : render_frame_host_(render_frame_host), mode_(mode) {
-    auto web_contents =
+    auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     content::WebContentsObserver::Observe(web_contents);
   }
@@ -71,7 +71,7 @@ class FileSelectHelper : public base::RefCounted<FileSelectHelper>,
       }
 
       if (render_frame_host_ && !paths.empty()) {
-        auto browser_context = static_cast<atom::AtomBrowserContext*>(
+        auto* browser_context = static_cast<atom::AtomBrowserContext*>(
             render_frame_host_->GetProcess()->GetBrowserContext());
         browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
                                               paths[0].DirName());

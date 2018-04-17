@@ -83,7 +83,7 @@ void Protocol::UnregisterProtocol(const std::string& scheme,
                                   mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
-  auto getter = browser_context_->GetRequestContext();
+  auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::BindOnce(&Protocol::UnregisterProtocolInIO,
@@ -95,7 +95,7 @@ void Protocol::UnregisterProtocol(const std::string& scheme,
 Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+  auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
       request_context_getter->job_factory());
   if (!job_factory->HasProtocolHandler(scheme))
     return PROTOCOL_NOT_REGISTERED;
@@ -105,7 +105,7 @@ Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
 
 void Protocol::IsProtocolHandled(const std::string& scheme,
                                  const BooleanCallback& callback) {
-  auto getter = browser_context_->GetRequestContext();
+  auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::Bind(&Protocol::IsProtocolHandledInIO, base::RetainedRef(getter),
@@ -124,7 +124,7 @@ void Protocol::UninterceptProtocol(const std::string& scheme,
                                    mate::Arguments* args) {
   CompletionCallback callback;
   args->GetNext(&callback);
-  auto getter = browser_context_->GetRequestContext();
+  auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTaskAndReplyWithResult(
       content::BrowserThread::IO, FROM_HERE,
       base::BindOnce(&Protocol::UninterceptProtocolInIO,

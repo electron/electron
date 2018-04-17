@@ -321,7 +321,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
 bool IsChromeProcess(pid_t pid) {
   base::FilePath other_chrome_path(base::GetProcessExecutablePath(pid));
 
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   PathService::Get(base::FILE_EXE, &exec_path);
 

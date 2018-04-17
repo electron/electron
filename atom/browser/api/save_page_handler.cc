@@ -30,7 +30,7 @@ void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
 
 bool SavePageHandler::Handle(const base::FilePath& full_path,
                              const content::SavePageType& save_type) {
-  auto download_manager = content::BrowserContext::GetDownloadManager(
+  auto* download_manager = content::BrowserContext::GetDownloadManager(
       web_contents_->GetBrowserContext());
   download_manager->AddObserver(this);
   // Chromium will create a 'foo_files' directory under the directory of saving

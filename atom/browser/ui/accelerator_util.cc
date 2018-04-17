@@ -74,7 +74,7 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
   for (int i = 0; i < count; ++i) {
     atom::AtomMenuModel::ItemType type = model->GetTypeAt(i);
     if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
-      auto submodel = model->GetSubmenuModelAt(i);
+      auto* submodel = model->GetSubmenuModelAt(i);
       GenerateAcceleratorTable(table, submodel);
     } else {
       ui::Accelerator accelerator;

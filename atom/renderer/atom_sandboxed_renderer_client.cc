@@ -60,7 +60,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
     return exports;
   }
 
-  auto mod = node::get_builtin_module(module_key.c_str());
+  auto* mod = node::get_builtin_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
@@ -84,7 +84,7 @@ base::CommandLine::StringVector GetArgv() {
 
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("crash", AtomBindings::Crash);
@@ -111,7 +111,7 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
     if (!frame)
       return;
 
-    auto isolate = blink::MainThreadIsolate();
+    auto* isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
     auto context = frame->MainWorldScriptContext();
     v8::Context::Scope context_scope(context);
@@ -160,7 +160,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   base::FilePath preload_script_path =
       command_line->GetSwitchValuePath(switches::kPreloadScript);
 
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
@@ -191,7 +191,7 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   if (!render_frame->IsMainFrame())
     return;
 
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeIpcCallback(context, "onExit", std::vector<v8::Local<v8::Value>>());
@@ -201,7 +201,7 @@ void AtomSandboxedRendererClient::InvokeIpcCallback(
     v8::Handle<v8::Context> context,
     const std::string& callback_name,
     std::vector<v8::Handle<v8::Value>> args) {
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();

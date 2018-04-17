@@ -87,7 +87,7 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
 net::HttpCache::BackendFactory*
 URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   int max_size = 0;
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_size);

@@ -61,7 +61,7 @@ AtomMainDelegate::AtomMainDelegate() {}
 AtomMainDelegate::~AtomMainDelegate() {}
 
 bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
 
   logging::LoggingSettings settings;
 #if defined(OS_WIN)
@@ -129,7 +129,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 

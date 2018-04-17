@@ -78,13 +78,13 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  auto item = download_manager_->GetDownload(download_id);
+  auto* item = download_manager_->GetDownload(download_id);
   if (!item)
     return;
 
   NativeWindow* window = nullptr;
   content::WebContents* web_contents = item->GetWebContents();
-  auto relay =
+  auto* relay =
       web_contents ? NativeWindowRelay::FromWebContents(web_contents) : nullptr;
   if (relay)
     window = relay->window.get();

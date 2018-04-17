@@ -76,7 +76,7 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   if (handler.is_null() && !pending_requests_.IsEmpty()) {
     for (PendingRequestsMap::const_iterator iter(&pending_requests_);
          !iter.IsAtEnd(); iter.Advance()) {
-      auto request = iter.GetCurrentValue();
+      auto* request = iter.GetCurrentValue();
       if (!WebContentsDestroyed(request->render_process_id()))
         request->RunCallback();
     }
@@ -146,7 +146,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     return kNoPendingOperation;
   }
 
-  auto web_contents =
+  auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, permissions, response_callback));
@@ -175,7 +175,7 @@ void AtomPermissionManager::OnPermissionResponse(
     int request_id,
     int permission_id,
     blink::mojom::PermissionStatus status) {
-  auto pending_request = pending_requests_.Lookup(request_id);
+  auto* pending_request = pending_requests_.Lookup(request_id);
   if (!pending_request)
     return;
 
@@ -187,7 +187,7 @@ void AtomPermissionManager::OnPermissionResponse(
 }
 
 void AtomPermissionManager::CancelPermissionRequest(int request_id) {
-  auto pending_request = pending_requests_.Lookup(request_id);
+  auto* pending_request = pending_requests_.Lookup(request_id);
   if (!pending_request)
     return;
 

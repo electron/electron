@@ -368,7 +368,7 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
-  auto host = web_contents()->GetRenderViewHost();
+  auto* host = web_contents()->GetRenderViewHost();
   if (print_job_.get()) {
     if (host)
       host->Send(new PrintMsg_PrintingDone(host->GetRoutingID(), success));

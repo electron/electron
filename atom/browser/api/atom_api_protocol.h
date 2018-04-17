@@ -100,7 +100,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
                         mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto getter = browser_context_->GetRequestContext();
+    auto* getter = browser_context_->GetRequestContext();
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::RegisterProtocolInIO<RequestJob>,
@@ -113,7 +113,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
         request_context_getter->job_factory());
     if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
@@ -146,7 +146,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
                          mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto getter = browser_context_->GetRequestContext();
+    auto* getter = browser_context_->GetRequestContext();
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::InterceptProtocolInIO<RequestJob>,
@@ -159,7 +159,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
         request_context_getter->job_factory());
     if (!job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;

@@ -38,7 +38,7 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
 }
 
 bool JavascriptEnvironment::Initialize() {
-  auto cmd = base::CommandLine::ForCurrentProcess();
+  auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
   std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);

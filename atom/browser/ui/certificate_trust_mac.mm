@@ -68,7 +68,7 @@
 - (void)panelDidEnd:(NSWindow*)sheet
         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo {
-  auto cert_db = net::CertDatabase::GetInstance();
+  auto* cert_db = net::CertDatabase::GetInstance();
   // This forces Chromium to reload the certificate since it might be trusted
   // now.
   cert_db->NotifyObserversCertDBChanged();
@@ -86,7 +86,7 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
                           const scoped_refptr<net::X509Certificate>& cert,
                           const std::string& message,
                           const ShowTrustCallback& callback) {
-  auto sec_policy = SecPolicyCreateBasicX509();
+  auto* sec_policy = SecPolicyCreateBasicX509();
   auto cert_chain =
       net::x509_util::CreateSecCertificateArrayForX509Certificate(cert.get());
   SecTrustRef trust = nullptr;

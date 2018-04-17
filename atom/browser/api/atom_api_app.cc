@@ -927,12 +927,12 @@ void App::DisableDomainBlockingFor3DAPIs(mate::Arguments* args) {
 }
 
 bool App::IsAccessibilitySupportEnabled() {
-  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   return ax_state->IsAccessibleBrowser();
 }
 
 void App::SetAccessibilitySupportEnabled(bool enabled) {
-  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
   if (enabled) {
     ax_state->OnScreenReaderDetected();
   } else {
@@ -1054,7 +1054,7 @@ void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
     return;
   }
 
-  auto icon_manager = g_browser_process->GetIconManager();
+  auto* icon_manager = g_browser_process->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
@@ -1132,7 +1132,7 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
     return;
   }
 
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(::switches::kNoSandbox)) {
 #if defined(OS_WIN)
     const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
@@ -1263,7 +1263,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
 namespace {
 
 void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
 
   if (base::EndsWith(switch_string, "-path",
                      base::CompareCase::INSENSITIVE_ASCII) ||
@@ -1301,7 +1301,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());

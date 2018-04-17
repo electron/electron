@@ -207,7 +207,7 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
 // static
 mate::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
                                                 content::DownloadItem* item) {
-  auto existing = TrackableObject::FromWrappedClass(isolate, item);
+  auto* existing = TrackableObject::FromWrappedClass(isolate, item);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
 
