@@ -47,7 +47,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
 
  protected:
   Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context);
-  ~Protocol();
+  ~Protocol() override;
 
  private:
   // Possible errors.

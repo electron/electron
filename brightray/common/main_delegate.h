@@ -30,7 +30,7 @@ void LoadCommonResources();
 class MainDelegate : public content::ContentMainDelegate {
  public:
   MainDelegate();
-  ~MainDelegate();
+  ~MainDelegate() override;
 
  protected:
   // Subclasses can override this to provide their own ContentClient

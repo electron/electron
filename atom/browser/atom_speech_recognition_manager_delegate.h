@@ -18,7 +18,7 @@ class AtomSpeechRecognitionManagerDelegate
       public content::SpeechRecognitionEventListener {
  public:
   AtomSpeechRecognitionManagerDelegate();
-  virtual ~AtomSpeechRecognitionManagerDelegate();
+  ~AtomSpeechRecognitionManagerDelegate() override;
 
   // content::SpeechRecognitionEventListener:
   void OnRecognitionStart(int session_id) override;

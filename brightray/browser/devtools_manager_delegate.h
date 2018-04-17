@@ -18,7 +18,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   static void StartHttpHandler();
 
   DevToolsManagerDelegate();
-  virtual ~DevToolsManagerDelegate();
+  ~DevToolsManagerDelegate() override;
 
   // DevToolsManagerDelegate implementation.
   void Inspect(content::DevToolsAgentHost* agent_host) override;

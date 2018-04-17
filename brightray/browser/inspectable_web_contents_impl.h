@@ -40,7 +40,7 @@ class InspectableWebContentsImpl
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
   explicit InspectableWebContentsImpl(content::WebContents*);
-  virtual ~InspectableWebContentsImpl();
+  ~InspectableWebContentsImpl() override;
 
   InspectableWebContentsView* GetView() const override;
   content::WebContents* GetWebContents() const override;

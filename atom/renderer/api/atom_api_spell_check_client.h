@@ -33,7 +33,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                    bool auto_spell_correct_turned_on,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> provider);
-  virtual ~SpellCheckClient();
+  ~SpellCheckClient() override;
 
  private:
   class SpellcheckRequest;

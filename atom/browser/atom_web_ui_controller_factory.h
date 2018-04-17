@@ -16,7 +16,7 @@ class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
   static AtomWebUIControllerFactory* GetInstance();
 
   AtomWebUIControllerFactory();
-  virtual ~AtomWebUIControllerFactory();
+  ~AtomWebUIControllerFactory() override;
 
   // content::WebUIControllerFactory:
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,

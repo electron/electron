@@ -15,7 +15,7 @@ namespace brightray {
 class NetworkDelegate : public net::NetworkDelegate {
  public:
   NetworkDelegate();
-  virtual ~NetworkDelegate();
+  ~NetworkDelegate() override;
 
  protected:
   int OnBeforeURLRequest(net::URLRequest* request,

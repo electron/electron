@@ -42,7 +42,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
                   const base::FilePath& file_path);
 
  protected:
-  virtual ~URLRequestAsarJob();
+  ~URLRequestAsarJob() override;
 
   void InitializeAsarJob(const scoped_refptr<base::TaskRunner> file_task_runner,
                          std::shared_ptr<Archive> archive,

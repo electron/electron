@@ -107,7 +107,7 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
  protected:
   void EmitIPCEvent(blink::WebLocalFrame* frame,
                     const base::string16& channel,
-                    const base::ListValue& args) {
+                    const base::ListValue& args) override {
     if (!frame)
       return;
 

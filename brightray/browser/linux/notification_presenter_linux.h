@@ -13,7 +13,7 @@ namespace brightray {
 class NotificationPresenterLinux : public NotificationPresenter {
  public:
   NotificationPresenterLinux();
-  ~NotificationPresenterLinux();
+  ~NotificationPresenterLinux() override;
 
  private:
   Notification* CreateNotificationObject(

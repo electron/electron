@@ -29,19 +29,19 @@ class TtsDispatcher : public blink::WebSpeechSynthesizer,
                       public content::RenderThreadObserver {
  public:
   explicit TtsDispatcher(blink::WebSpeechSynthesizerClient* client);
-  virtual ~TtsDispatcher();
+  ~TtsDispatcher() override;
 
  private:
   // RenderProcessObserver override.
-  virtual bool OnControlMessageReceived(const IPC::Message& message) override;
+  bool OnControlMessageReceived(const IPC::Message& message) override;
 
   // blink::WebSpeechSynthesizer implementation.
-  virtual void UpdateVoiceList() override;
-  virtual void Speak(
-      const blink::WebSpeechSynthesisUtterance& utterance) override;
-  virtual void Pause() override;
-  virtual void Resume() override;
-  virtual void Cancel() override;
+  void UpdateVoiceList() override;
+  void Speak(const blink::WebSpeechSynthesisUtterance& utterance)
+      override;
+  void Pause() override;
+  void Resume() override;
+  void Cancel() override;
 
   blink::WebSpeechSynthesisUtterance FindUtterance(int utterance_id);
 

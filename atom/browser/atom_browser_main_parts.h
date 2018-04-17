@@ -28,7 +28,7 @@ class BridgeTaskRunner;
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
   AtomBrowserMainParts();
-  virtual ~AtomBrowserMainParts();
+  ~AtomBrowserMainParts() override;
 
   static AtomBrowserMainParts* Get();
 

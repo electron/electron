@@ -24,7 +24,7 @@ class WidevineCdmMessageFilter : public content::BrowserMessageFilter {
   friend class content::BrowserThread;
   friend class base::DeleteHelper<WidevineCdmMessageFilter>;
 
-  virtual ~WidevineCdmMessageFilter();
+  ~WidevineCdmMessageFilter() override;
 
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
   // Returns whether any internal plugin supporting |mime_type| is registered

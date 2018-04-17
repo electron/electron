@@ -41,7 +41,7 @@ class TtsMessageFilter : public content::BrowserMessageFilter,
   friend class content::BrowserThread;
   friend class base::DeleteHelper<TtsMessageFilter>;
 
-  virtual ~TtsMessageFilter();
+  ~TtsMessageFilter() override;
 
   void OnInitializeVoiceList();
   void OnSpeak(const TtsUtteranceRequest& utterance);

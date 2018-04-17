@@ -67,7 +67,7 @@ class PrintWebViewHelper
       public content::RenderFrameObserverTracker<PrintWebViewHelper> {
  public:
   explicit PrintWebViewHelper(content::RenderFrame* render_frame);
-  virtual ~PrintWebViewHelper();
+  ~PrintWebViewHelper() override;
 
   void PrintNode(const blink::WebNode& node);
 

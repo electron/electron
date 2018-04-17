@@ -262,7 +262,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
               content::WebContents* web_contents,
               Type type);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
-  ~WebContents();
+  ~WebContents() override;
 
   void InitWithSessionAndOptions(v8::Isolate* isolate,
                                  content::WebContents* web_contents,

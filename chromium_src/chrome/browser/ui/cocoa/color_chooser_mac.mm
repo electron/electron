@@ -39,14 +39,14 @@ class ColorChooserMac : public content::ColorChooser {
                                SkColor initial_color);
 
   ColorChooserMac(content::WebContents* tab, SkColor initial_color);
-  virtual ~ColorChooserMac();
+  ~ColorChooserMac() override;
 
   // Called from ColorPanelCocoa.
   void DidChooseColorInColorPanel(SkColor color);
   void DidCloseColorPabel();
 
-  virtual void End() override;
-  virtual void SetSelectedColor(SkColor color) override;
+  void End() override;
+  void SetSelectedColor(SkColor color) override;
 
  private:
   static ColorChooserMac* current_color_chooser_;

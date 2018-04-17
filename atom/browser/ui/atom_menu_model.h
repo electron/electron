@@ -16,7 +16,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
  public:
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
-    virtual ~Delegate() {}
+    ~Delegate() override {}
 
     virtual bool GetAcceleratorForCommandIdWithParams(
         int command_id,
@@ -44,7 +44,7 @@ class AtomMenuModel : public ui::SimpleMenuModel {
   };
 
   explicit AtomMenuModel(Delegate* delegate);
-  virtual ~AtomMenuModel();
+  ~AtomMenuModel() override;
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }

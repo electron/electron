@@ -22,7 +22,7 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
       base::Callback<void(const base::FilePath&)>;
 
   explicit AtomDownloadManagerDelegate(content::DownloadManager* manager);
-  virtual ~AtomDownloadManagerDelegate();
+  ~AtomDownloadManagerDelegate() override;
 
   void OnDownloadPathGenerated(uint32_t download_id,
                                const content::DownloadTargetCallback& callback,

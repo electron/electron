@@ -20,7 +20,7 @@ class CocoaNotification : public Notification {
  public:
   CocoaNotification(NotificationDelegate* delegate,
                     NotificationPresenter* presenter);
-  ~CocoaNotification();
+  ~CocoaNotification() override;
 
   // Notification:
   void Show(const NotificationOptions& options) override;

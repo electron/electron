@@ -32,7 +32,7 @@ class SavePageHandler : public content::DownloadManager::Observer,
 
   SavePageHandler(content::WebContents* web_contents,
                   const SavePageCallback& callback);
-  ~SavePageHandler();
+  ~SavePageHandler() override;
 
   bool Handle(const base::FilePath& full_path,
               const content::SavePageType& save_type);

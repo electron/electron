@@ -27,7 +27,7 @@ class RenderProcessPreferences : public content::NotificationObserver {
   // The |predicate| is used to determine whether to set preferences for a
   // render process.
   explicit RenderProcessPreferences(const Predicate& predicate);
-  virtual ~RenderProcessPreferences();
+  ~RenderProcessPreferences() override;
 
   int AddEntry(const base::DictionaryValue& entry);
   void RemoveEntry(int id);

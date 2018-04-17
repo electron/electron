@@ -14,7 +14,7 @@ namespace atom {
 class AtomSandboxedRendererClient : public RendererClientBase {
  public:
   AtomSandboxedRendererClient();
-  virtual ~AtomSandboxedRendererClient();
+  ~AtomSandboxedRendererClient() override;
 
   void InvokeIpcCallback(v8::Handle<v8::Context> context,
                          const std::string& callback_name,

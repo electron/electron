@@ -34,7 +34,7 @@ class PrintQueriesQueue;
 class PrintViewManagerBase : public content::NotificationObserver,
                              public content::WebContentsObserver {
  public:
-  virtual ~PrintViewManagerBase();
+  ~PrintViewManagerBase() override;
 
 #if !defined(DISABLE_BASIC_PRINTING)
   // Prints the current document immediately. Since the rendering is
@@ -70,12 +70,12 @@ class PrintViewManagerBase : public content::NotificationObserver,
 
  private:
   // content::NotificationObserver implementation.
-  virtual void Observe(int type,
-                       const content::NotificationSource& source,
-                       const content::NotificationDetails& details) override;
+  void Observe(int type,
+               const content::NotificationSource& source,
+               const content::NotificationDetails& details) override;
 
   // Cancels the print job.
-  virtual void NavigationStopped() override;
+  void NavigationStopped() override;
 
   // IPC Message handlers.
   void OnDidGetPrintedPagesCount(int cookie, int number_pages);

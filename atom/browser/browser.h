@@ -38,7 +38,7 @@ class LoginHandler;
 class Browser : public WindowListObserver {
  public:
   Browser();
-  ~Browser();
+  ~Browser() override;
 
   static Browser* Get();
 

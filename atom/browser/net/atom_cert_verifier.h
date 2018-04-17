@@ -31,7 +31,7 @@ struct VerifyRequestParams {
 class AtomCertVerifier : public net::CertVerifier {
  public:
   explicit AtomCertVerifier(brightray::RequireCTDelegate* ct_delegate);
-  virtual ~AtomCertVerifier();
+  ~AtomCertVerifier() override;
 
   using VerifyProc = base::Callback<void(const VerifyRequestParams& request,
                                          const net::CompletionCallback&)>;

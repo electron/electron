@@ -23,7 +23,7 @@ class NodeBindings;
 class AtomRendererClient : public RendererClientBase {
  public:
   AtomRendererClient();
-  virtual ~AtomRendererClient();
+  ~AtomRendererClient() override;
 
   // atom::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,

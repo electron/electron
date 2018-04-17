@@ -70,7 +70,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   friend struct base::DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
 
   MediaCaptureDevicesDispatcher();
-  virtual ~MediaCaptureDevicesDispatcher();
+  ~MediaCaptureDevicesDispatcher() override;
 
   // Flag used by unittests to disable device enumeration.
   bool is_device_enumeration_disabled_;

@@ -21,7 +21,7 @@ class AutofillPopupView;
 class AutofillPopup : public views::ViewObserver {
  public:
   AutofillPopup();
-  ~AutofillPopup();
+  ~AutofillPopup() override;
 
   void CreateView(content::RenderFrameHost* render_frame,
                   bool offscreen,

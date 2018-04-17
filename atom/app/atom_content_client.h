@@ -16,7 +16,7 @@ namespace atom {
 class AtomContentClient : public brightray::ContentClient {
  public:
   AtomContentClient();
-  virtual ~AtomContentClient();
+  ~AtomContentClient() override;
 
  protected:
   // content::ContentClient:

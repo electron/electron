@@ -119,8 +119,8 @@ class NativeWindowMac : public NativeWindow {
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item) override;
 
-  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const;
-  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const;
+  gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);

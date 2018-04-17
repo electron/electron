@@ -73,7 +73,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
-  virtual ~URLRequestContextGetter();
+  ~URLRequestContextGetter() override;
 
   // net::CookieStore::CookieChangedCallback implementation.
   void OnCookieChanged(const net::CanonicalCookie& cookie,

@@ -18,7 +18,7 @@ class LibnotifyNotification : public Notification {
  public:
   LibnotifyNotification(NotificationDelegate* delegate,
                         NotificationPresenter* presenter);
-  virtual ~LibnotifyNotification();
+  ~LibnotifyNotification() override;
 
   static bool Initialize();
 

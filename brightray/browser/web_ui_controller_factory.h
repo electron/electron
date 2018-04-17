@@ -23,7 +23,7 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
   static WebUIControllerFactory* GetInstance();
 
   WebUIControllerFactory();
-  virtual ~WebUIControllerFactory();
+  ~WebUIControllerFactory() override;
 
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
                                       const GURL& url) const override;
