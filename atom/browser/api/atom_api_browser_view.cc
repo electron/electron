@@ -148,7 +148,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  BrowserView::SetConstructor(isolate, base::Bind(&BrowserView::New));
+  BrowserView::SetConstructor(isolate, base::BindRepeating(&BrowserView::New));
 
   mate::Dictionary browser_view(
       isolate, BrowserView::GetConstructor(isolate)->GetFunction());

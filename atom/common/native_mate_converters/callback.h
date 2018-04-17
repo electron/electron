@@ -107,7 +107,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 };
 
 // Helper to pass a C++ funtion to JavaScript.
-using Translater = base::Callback<void(Arguments* args)>;
+using Translater = base::RepeatingCallback<void(Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   const Translater& translater);
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
