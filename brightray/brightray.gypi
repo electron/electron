@@ -136,6 +136,7 @@
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
+              '-fno-exceptions',
               '-fno-rtti',
             ],
             'ldflags': [
