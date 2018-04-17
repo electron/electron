@@ -99,13 +99,6 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
-
-  AttachAsUserData(window_.get());
-
-  // We can only append this window to parent window's child windows after this
-  // window's JS wrapper gets initialized.
-  if (!parent.IsEmpty())
-    parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
 }
 
 TopLevelWindow::~TopLevelWindow() {
@@ -115,6 +108,21 @@ TopLevelWindow::~TopLevelWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+void TopLevelWindow::InitWith(v8::Isolate* isolate,
+                              v8::Local<v8::Object> wrapper) {
+  AttachAsUserData(window_.get());
+  mate::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
+
+  // We can only append this window to parent window's child windows after this
+  // window's JS wrapper gets initialized.
+  if (!parent_window_.IsEmpty()) {
+    mate::Handle<TopLevelWindow> parent;
+    mate::ConvertFromV8(isolate, GetParentWindow(), &parent);
+    DCHECK(!parent.IsEmpty());
+    parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
+  }
 }
 
 void TopLevelWindow::WillCloseWindow(bool* prevent_default) {

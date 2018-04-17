@@ -40,6 +40,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
                  const mate::Dictionary& options);
   ~TopLevelWindow() override;
 
+  // TrackableObject:
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
+
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
