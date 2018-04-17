@@ -16,12 +16,12 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<base::Time> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::Time& val) {
-    v8::MaybeLocal<v8::Value> date = v8::Date::New(
-        isolate->GetCurrentContext(), val.ToJsTime());
+    v8::MaybeLocal<v8::Value> date =
+        v8::Date::New(isolate->GetCurrentContext(), val.ToJsTime());
     if (date.IsEmpty())
       return v8::Null(isolate);
     else
@@ -49,21 +49,20 @@ void AutoUpdater::OnError(const std::string& message) {
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
   mate::EmitEvent(
-      isolate(),
-      GetWrapper(),
-      "error",
+      isolate(), GetWrapper(), "error",
       error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked(),
       // Message is also emitted to keep compatibility with old code.
       message);
 }
 
 void AutoUpdater::OnError(const std::string& message,
-                          const int code, const std::string& domain) {
+                          const int code,
+                          const std::string& domain) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto error = v8::Exception::Error(mate::StringToV8(isolate(), message));
-  auto errorObject = error->ToObject(
-    isolate()->GetCurrentContext()).ToLocalChecked();
+  auto errorObject =
+      error->ToObject(isolate()->GetCurrentContext()).ToLocalChecked();
 
   // add two new params for better error handling
   errorObject->Set(mate::StringToV8(isolate(), "code"),
@@ -92,7 +91,8 @@ void AutoUpdater::OnUpdateDownloaded(const std::string& release_notes,
                                      const std::string& url) {
   Emit("update-downloaded", release_notes, release_name, release_date, url,
        // Keep compatibility with old APIs.
-       base::Bind(&AutoUpdater::QuitAndInstall, base::Unretained(this)));
+       base::BindRepeating(&AutoUpdater::QuitAndInstall,
+                           base::Unretained(this)));
 }
 
 void AutoUpdater::OnWindowAllClosed() {
@@ -123,8 +123,8 @@ mate::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
 }
 
 // static
-void AutoUpdater::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void AutoUpdater::BuildPrototype(v8::Isolate* isolate,
+                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "AutoUpdater"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
@@ -137,13 +137,14 @@ void AutoUpdater::BuildPrototype(
 
 }  // namespace atom
 
-
 namespace {
 
 using atom::api::AutoUpdater;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("autoUpdater", AutoUpdater::Create(isolate));

@@ -242,7 +242,7 @@ using atom::api::Tray;
 void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  Tray::SetConstructor(isolate, base::Bind(&Tray::New));
+  Tray::SetConstructor(isolate, base::BindRepeating(&Tray::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("Tray", Tray::GetConstructor(isolate)->GetFunction());

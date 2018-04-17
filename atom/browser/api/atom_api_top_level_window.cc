@@ -34,9 +34,10 @@
 #if defined(OS_WIN)
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::TaskbarHost::ThumbarButton> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      atom::TaskbarHost::ThumbarButton* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -82,16 +83,14 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   mate::Dictionary web_preferences;
   bool offscreen;
   if (options.Get(options::kWebPreferences, &web_preferences) &&
-      web_preferences.Get("offscreen", &offscreen) &&
-      offscreen) {
+      web_preferences.Get("offscreen", &offscreen) && offscreen) {
     const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
   }
 #endif
 
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(
-      options,
-      parent.IsEmpty() ? nullptr : parent->window_.get()));
+      options, parent.IsEmpty() ? nullptr : parent->window_.get()));
   window_->AddObserver(this);
 
 #if defined(TOOLKIT_VIEWS)
@@ -227,8 +226,9 @@ void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
-void TopLevelWindow::OnTouchBarItemResult(const std::string& item_id,
-                                  const base::DictionaryValue& details) {
+void TopLevelWindow::OnTouchBarItemResult(
+    const std::string& item_id,
+    const base::DictionaryValue& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 
@@ -238,8 +238,8 @@ void TopLevelWindow::OnNewWindowForTab() {
 
 #if defined(OS_WIN)
 void TopLevelWindow::OnWindowMessage(UINT message,
-                                    WPARAM w_param,
-                                    LPARAM l_param) {
+                                     WPARAM w_param,
+                                     LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
     messages_callback_map_[message].Run(
         ToBuffer(isolate(), static_cast<void*>(&w_param), sizeof(WPARAM)),
@@ -334,7 +334,7 @@ gfx::Rect TopLevelWindow::GetBounds() {
 }
 
 void TopLevelWindow::SetContentBounds(const gfx::Rect& bounds,
-                                     mate::Arguments* args) {
+                                      mate::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
@@ -358,8 +358,9 @@ std::vector<int> TopLevelWindow::GetSize() {
   return result;
 }
 
-void TopLevelWindow::SetContentSize(int width, int height,
-                                   mate::Arguments* args) {
+void TopLevelWindow::SetContentSize(int width,
+                                    int height,
+                                    mate::Arguments* args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentSize(gfx::Size(width, height), animate);
@@ -580,16 +581,15 @@ void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
   if (value->IsObject() &&
       mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
-      mate::ConvertFromV8(isolate, value, &menu) &&
-      !menu.IsEmpty()) {
+      mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
   } else if (value->IsNull()) {
     menu_.Reset();
     window_->SetMenu(nullptr);
   } else {
-    isolate->ThrowException(v8::Exception::TypeError(
-        mate::StringToV8(isolate, "Invalid Menu")));
+    isolate->ThrowException(
+        v8::Exception::TypeError(mate::StringToV8(isolate, "Invalid Menu")));
   }
 }
 
@@ -789,19 +789,19 @@ bool TopLevelWindow::SetThumbarButtons(mate::Arguments* args) {
 #if defined(TOOLKIT_VIEWS)
 void TopLevelWindow::SetIcon(mate::Handle<NativeImage> icon) {
 #if defined(OS_WIN)
-  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
-      icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
-      icon->GetHICON(GetSystemMetrics(SM_CXICON)));
+  static_cast<NativeWindowViews*>(window_.get())
+      ->SetIcon(icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
+                icon->GetHICON(GetSystemMetrics(SM_CXICON)));
 #elif defined(USE_X11)
-  static_cast<NativeWindowViews*>(window_.get())->SetIcon(
-      icon->image().AsImageSkia());
+  static_cast<NativeWindowViews*>(window_.get())
+      ->SetIcon(icon->image().AsImageSkia());
 #endif
 }
 #endif
 
 #if defined(OS_WIN)
 bool TopLevelWindow::HookWindowMessage(UINT message,
-                               const MessageCallback& callback) {
+                                       const MessageCallback& callback) {
   messages_callback_map_[message] = callback;
   return true;
 }
@@ -846,10 +846,9 @@ void TopLevelWindow::SetAppDetails(const mate::Dictionary& options) {
   options.Get("relaunchCommand", &relaunch_command);
   options.Get("relaunchDisplayName", &relaunch_display_name);
 
-  ui::win::SetAppDetailsForWindow(
-      app_id, app_icon_path, app_icon_index,
-      relaunch_command, relaunch_display_name,
-      window_->GetAcceleratedWidget());
+  ui::win::SetAppDetailsForWindow(app_id, app_icon_path, app_icon_index,
+                                  relaunch_command, relaunch_display_name,
+                                  window_->GetAcceleratedWidget());
 }
 #endif
 
@@ -906,7 +905,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hide", &TopLevelWindow::Hide)
       .SetMethod("isVisible", &TopLevelWindow::IsVisible)
       .SetMethod("isEnabled", &TopLevelWindow::IsEnabled)
-      .SetMethod("setEnabled", & TopLevelWindow::SetEnabled)
+      .SetMethod("setEnabled", &TopLevelWindow::SetEnabled)
       .SetMethod("maximize", &TopLevelWindow::Maximize)
       .SetMethod("unmaximize", &TopLevelWindow::Unmaximize)
       .SetMethod("isMaximized", &TopLevelWindow::IsMaximized)
@@ -932,7 +931,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isResizable", &TopLevelWindow::IsResizable)
       .SetMethod("setMovable", &TopLevelWindow::SetMovable)
 #if defined(OS_WIN) || defined(OS_MACOSX)
-      .SetMethod("moveTop" , &TopLevelWindow::MoveTop)
+      .SetMethod("moveTop", &TopLevelWindow::MoveTop)
 #endif
       .SetMethod("isMovable", &TopLevelWindow::IsMovable)
       .SetMethod("setMinimizable", &TopLevelWindow::SetMinimizable)
@@ -1036,10 +1035,13 @@ namespace {
 
 using atom::api::TopLevelWindow;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  TopLevelWindow::SetConstructor(isolate, base::Bind(&TopLevelWindow::New));
+  TopLevelWindow::SetConstructor(isolate,
+                                 base::BindRepeating(&TopLevelWindow::New));
 
   mate::Dictionary constructor(
       isolate, TopLevelWindow::GetConstructor(isolate)->GetFunction());

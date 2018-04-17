@@ -49,7 +49,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
 
-  URLRequest::SetConstructor(isolate, base::Bind(URLRequest::New));
+  URLRequest::SetConstructor(isolate, base::BindRepeating(URLRequest::New));
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("net", Net::Create(isolate));

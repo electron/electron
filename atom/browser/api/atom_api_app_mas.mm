@@ -51,7 +51,7 @@ base::Callback<void ()> App::StartAccessingSecurityScopedResource(mate::Argument
   [bookmarkUrl retain];
 
   // Return a js callback which will close the bookmark.
-  return base::Bind(&OnStopAccessingSecurityScopedResource, bookmarkUrl);
+  return base::BindOnce(&OnStopAccessingSecurityScopedResource, bookmarkUrl);
 }
 
 } // namespace atom

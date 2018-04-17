@@ -34,7 +34,7 @@ void MenuMac::PopupAt(BrowserWindow* window,
   if (!native_window)
     return;
 
-  auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
+  auto popup = base::BindRepeating(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                           native_window->GetWeakPtr(),
                           window->weak_map_id(), x, y,
                           positioning_item, callback);
@@ -51,7 +51,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
     return;
   NSWindow* nswindow = native_window->GetNativeWindow();
 
-  auto close_callback = base::Bind(
+  auto close_callback = base::BindRepeating(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
   popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
       [[AtomMenuController alloc] initWithModel:model()

@@ -350,7 +350,8 @@ void URLRequest::OnAuthenticationRequired(
   }
 
   Emit("login", auth_info.get(),
-       base::Bind(&AtomURLRequest::PassLoginInformation, atom_request_));
+       base::BindRepeating(&AtomURLRequest::PassLoginInformation,
+                           atom_request_));
 }
 
 void URLRequest::OnResponseStarted(
