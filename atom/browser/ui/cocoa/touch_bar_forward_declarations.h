@@ -259,7 +259,7 @@ static const NSTouchBarItemIdentifier NSTouchBarItemIdentifierOtherItemsProxy =
 @class NSTouchBarItem;
 
 @interface NSWindow (TouchBarSDK)
-@property(strong, readonly) NSTouchBar* touchBar;
+@property(strong, readonly) NSTouchBar* touchBar API_AVAILABLE(macosx(10.12.2));
 @end
 
 #endif  // MAC_OS_X_VERSION_10_12_1
