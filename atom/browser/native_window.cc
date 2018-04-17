@@ -505,4 +505,9 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
+NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
+  : key(UserDataKey()), window(window) {}
+
+NativeWindowRelay::~NativeWindowRelay() = default;
+
 }  // namespace atom

@@ -57,6 +57,8 @@ AutofillAgent::AutofillAgent(content::RenderFrame* frame)
   render_frame()->GetWebFrame()->SetAutofillClient(this);
 }
 
+AutofillAgent::~AutofillAgent() = default;
+
 void AutofillAgent::OnDestruct() {
   delete this;
 }

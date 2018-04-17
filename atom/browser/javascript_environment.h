@@ -19,6 +19,7 @@ namespace atom {
 class JavascriptEnvironment {
  public:
   JavascriptEnvironment();
+  ~JavascriptEnvironment();
 
   void OnMessageLoopCreated();
   void OnMessageLoopDestroying();

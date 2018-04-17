@@ -60,6 +60,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
     v8::Local<v8::Function> spell_check_;
 
     explicit SpellCheckScope(const SpellCheckClient& client);
+    ~SpellCheckScope();
   };
 
   // Check the spelling of text.

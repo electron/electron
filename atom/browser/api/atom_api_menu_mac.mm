@@ -25,6 +25,8 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
+MenuMac::~MenuMac() = default;
+
 void MenuMac::PopupAt(TopLevelWindow* window,
                       int x, int y, int positioning_item,
                       const base::Closure& callback) {

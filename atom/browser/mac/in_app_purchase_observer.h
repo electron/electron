@@ -34,6 +34,10 @@ struct Transaction {
   std::string errorMessage = "";
   std::string transactionState = "";
   Payment payment;
+
+  Transaction();
+  Transaction(const Transaction&);
+  ~Transaction();
 };
 
 // --------------------------- Classes ---------------------------

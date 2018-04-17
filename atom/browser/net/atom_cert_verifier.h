@@ -26,6 +26,10 @@ struct VerifyRequestParams {
   std::string default_result;
   int error_code;
   scoped_refptr<net::X509Certificate> certificate;
+
+  VerifyRequestParams();
+  VerifyRequestParams(const VerifyRequestParams&);
+  ~VerifyRequestParams();
 };
 
 class AtomCertVerifier : public net::CertVerifier {

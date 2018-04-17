@@ -237,6 +237,8 @@ SpellCheckClient::SpellCheckScope::SpellCheckScope(
       provider_(client.provider_.NewHandle()),
       spell_check_(client.spell_check_.NewHandle()) {}
 
+SpellCheckClient::SpellCheckScope::~SpellCheckScope() = default;
+
 }  // namespace api
 
 }  // namespace atom

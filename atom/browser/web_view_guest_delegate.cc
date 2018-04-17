@@ -23,6 +23,9 @@ const int kDefaultHeight = 300;
 
 }  // namespace
 
+SetSizeParams::SetSizeParams() = default;
+SetSizeParams::~SetSizeParams() = default;
+
 WebViewGuestDelegate::WebViewGuestDelegate()
     : embedder_zoom_controller_(nullptr),
       guest_host_(nullptr),

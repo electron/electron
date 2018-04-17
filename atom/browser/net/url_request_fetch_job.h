@@ -20,6 +20,7 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
                            public brightray::URLRequestContextGetter::Delegate {
  public:
   URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
+  ~URLRequestFetchJob() override;
 
   // Called by response writer.
   void HeadersCompleted();

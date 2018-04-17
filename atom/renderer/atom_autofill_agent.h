@@ -21,6 +21,7 @@ class AutofillAgent : public content::RenderFrameObserver,
                       public blink::WebAutofillClient {
  public:
   explicit AutofillAgent(content::RenderFrame* frame);
+  ~AutofillAgent() override;
 
   // content::RenderFrameObserver:
   void OnDestruct() override;

@@ -19,6 +19,7 @@ class WebContents;
 class AtomJavaScriptDialogManager : public content::JavaScriptDialogManager {
  public:
   explicit AtomJavaScriptDialogManager(api::WebContents* api_web_contents);
+  ~AtomJavaScriptDialogManager() override;
 
   // content::JavaScriptDialogManager implementations.
   void RunJavaScriptDialog(content::WebContents* web_contents,

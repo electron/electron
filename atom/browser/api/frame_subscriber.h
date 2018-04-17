@@ -27,6 +27,7 @@ class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
                   content::RenderWidgetHostView* view,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
+  ~FrameSubscriber() override;
 
   bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
                           base::TimeTicks present_time,

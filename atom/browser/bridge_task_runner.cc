@@ -8,6 +8,9 @@
 
 namespace atom {
 
+BridgeTaskRunner::BridgeTaskRunner() = default;
+BridgeTaskRunner::~BridgeTaskRunner() = default;
+
 void BridgeTaskRunner::MessageLoopIsReady() {
   auto* message_loop = base::MessageLoop::current();
   CHECK(message_loop);

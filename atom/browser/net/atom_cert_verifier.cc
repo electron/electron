@@ -19,6 +19,10 @@ using content::BrowserThread;
 
 namespace atom {
 
+VerifyRequestParams::VerifyRequestParams() = default;
+VerifyRequestParams::~VerifyRequestParams() = default;
+VerifyRequestParams::VerifyRequestParams(const VerifyRequestParams&) = default;
+
 namespace {
 
 class Response : public base::LinkNode<Response> {

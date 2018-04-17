@@ -69,6 +69,9 @@
 
 namespace file_dialog {
 
+DialogSettings::DialogSettings() = default;
+DialogSettings::~DialogSettings() = default;
+
 namespace {
 
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {

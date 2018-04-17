@@ -27,6 +27,8 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
       source_id_for_copy_request_(base::UnguessableToken::Create()),
       weak_factory_(this) {}
 
+FrameSubscriber::~FrameSubscriber() = default;
+
 bool FrameSubscriber::ShouldCaptureFrame(
     const gfx::Rect& dirty_rect,
     base::TimeTicks present_time,
