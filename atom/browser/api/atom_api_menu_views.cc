@@ -6,8 +6,6 @@
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
@@ -19,7 +17,7 @@ namespace api {
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : Menu(isolate, wrapper), weak_factory_(this) {}
 
-void MenuViews::PopupAt(BrowserWindow* window,
+void MenuViews::PopupAt(TopLevelWindow* window,
                         int x,
                         int y,
                         int positioning_item,

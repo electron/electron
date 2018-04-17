@@ -229,4 +229,27 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
 }  // namespace atom
 
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::NativeWindow** out) {
+    // null would be tranfered to NULL.
+    if (val->IsNull()) {
+      *out = NULL;
+      return true;
+    }
+
+    atom::api::TopLevelWindow* window;
+    if (!Converter<atom::api::TopLevelWindow*>::FromV8(isolate, val, &window))
+      return false;
+    *out = window->window();
+    return true;
+  }
+};
+
+}  // namespace mate
+
 #endif  // ATOM_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_

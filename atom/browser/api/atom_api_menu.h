@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/api/atom_api_browser_window.h"
+#include "atom/browser/api/atom_api_top_level_window.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/ui/atom_menu_model.h"
 #include "base/callback.h"
@@ -54,7 +54,7 @@ class Menu : public mate::TrackableObject<Menu>,
   void ExecuteCommand(int command_id, int event_flags) override;
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
-  virtual void PopupAt(BrowserWindow* window,
+  virtual void PopupAt(TopLevelWindow* window,
                        int x,
                        int y,
                        int positioning_item,

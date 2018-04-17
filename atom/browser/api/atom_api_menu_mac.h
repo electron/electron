@@ -22,7 +22,7 @@ class MenuMac : public Menu {
  protected:
   MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  void PopupAt(BrowserWindow* window,
+  void PopupAt(TopLevelWindow* window,
                int x,
                int y,
                int positioning_item,
