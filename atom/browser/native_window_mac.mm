@@ -425,6 +425,9 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @implementation AtomPreviewItem
 
+@synthesize previewItemURL;
+@synthesize previewItemTitle;
+
 - (id)initWithURL:(NSURL*)url title:(NSString*)title {
   self = [super init];
   if (self) {
@@ -479,6 +482,13 @@ enum {
 @end
 
 @implementation AtomNSWindow
+
+@synthesize acceptsFirstMouse;
+@synthesize disableAutoHideCursor;
+@synthesize disableKeyOrMainWindow;
+@synthesize windowButtonsOffset;
+@synthesize quickLookItem;
+@synthesize vibrantView;
 
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;

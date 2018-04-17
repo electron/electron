@@ -25,6 +25,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @implementation DragRegionView
 
+@synthesize initialLocation;
+
 - (BOOL)mouseDownCanMoveWindow
 {
   return NO;

@@ -27,6 +27,9 @@
 
 @implementation PopUpButtonHandler
 
+@synthesize savePanel;
+@synthesize fileTypesList;
+
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList {
   self = [super init];
