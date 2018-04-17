@@ -48,7 +48,7 @@ scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
     LOG(ERROR) << "Creating temporary file failed";
 
   return TracingController::CreateFileEndpoint(result_file_path,
-                                           base::Bind(callback,
+                                           base::BindRepeating(callback,
                                                       result_file_path));
 }
 
@@ -62,12 +62,12 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context, void* priv) {
   auto controller = base::Unretained(TracingController::GetInstance());
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("getCategories", base::Bind(
+  dict.SetMethod("getCategories", base::BindRepeating(
       &TracingController::GetCategories, controller));
-  dict.SetMethod("startRecording", base::Bind(
+  dict.SetMethod("startRecording", base::BindRepeating(
       &TracingController::StartTracing, controller));
   dict.SetMethod("stopRecording", &StopRecording);
-  dict.SetMethod("getTraceBufferUsage", base::Bind(
+  dict.SetMethod("getTraceBufferUsage", base::BindRepeating(
       &TracingController::GetTraceBufferUsage, controller));
 }
 

@@ -29,8 +29,7 @@ namespace api {
 BrowserWindow::BrowserWindow(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper,
                              const mate::Dictionary& options)
-    : TopLevelWindow(isolate, wrapper, options),
-      weak_factory_(this) {
+    : TopLevelWindow(isolate, wrapper, options), weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
@@ -69,8 +68,8 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   Observe(api_web_contents_->web_contents());
 
   // Keep a copy of the options for later use.
-  mate::Dictionary(isolate, web_contents->GetWrapper()).Set(
-      "browserWindowOptions", options);
+  mate::Dictionary(isolate, web_contents->GetWrapper())
+      .Set("browserWindowOptions", options);
 
   // Tell the content module to initialize renderer widget with transparent
   // mode.
@@ -142,11 +141,12 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
 
   // Emit the ReadyToShow event in next tick in case of pending drawing work.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE,
-      base::Bind([](base::WeakPtr<BrowserWindow> self) {
-        if (self)
-          self->Emit("ready-to-show");
-      }, GetWeakPtr()));
+      FROM_HERE, base::BindOnce(
+                     [](base::WeakPtr<BrowserWindow> self) {
+                       if (self)
+                         self->Emit("ready-to-show");
+                     },
+                     GetWeakPtr()));
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -339,9 +339,7 @@ std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
   std::unique_ptr<SkRegion> sk_region(new SkRegion);
   for (const DraggableRegion& region : regions) {
     sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
+        region.bounds.x(), region.bounds.y(), region.bounds.right(),
         region.bounds.bottom(),
         region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
   }
@@ -352,11 +350,10 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
   if (!window_unresponsive_closure_.IsCancelled())
     return;
 
-  window_unresponsive_closure_.Reset(
-      base::Bind(&BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
+  window_unresponsive_closure_.Reset(base::BindRepeating(
+      &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
   base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
-      FROM_HERE,
-      window_unresponsive_closure_.callback(),
+      FROM_HERE, window_unresponsive_closure_.callback(),
       base::TimeDelta::FromMilliseconds(ms));
 }
 
@@ -397,7 +394,6 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
   return new BrowserWindow(args->isolate(), args->GetThis(), options);
 }
 
-
 // static
 void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
@@ -429,25 +425,25 @@ namespace {
 using atom::api::BrowserWindow;
 using atom::api::TopLevelWindow;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   // Calling SetConstructor would only use TopLevelWindow's prototype.
   v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
       isolate,
-      base::Bind(
+      base::BindRepeating(
           &mate::internal::InvokeNew<mate::WrappableBase*(mate::Arguments*)>,
-          base::Bind(&BrowserWindow::New)));
+          base::BindRepeating(&BrowserWindow::New)));
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   BrowserWindow::BuildPrototype(isolate, templ);
 
   mate::Dictionary browser_window(isolate, templ->GetFunction());
   browser_window.SetMethod(
-      "fromId",
-      &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  browser_window.SetMethod(
-      "getAllWindows",
-      &mate::TrackableObject<TopLevelWindow>::GetAll);
+      "fromId", &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
+  browser_window.SetMethod("getAllWindows",
+                           &mate::TrackableObject<TopLevelWindow>::GetAll);
 
   mate::Dictionary dict(isolate, exports);
   dict.Set("BrowserWindow", browser_window);
