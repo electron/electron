@@ -12,7 +12,6 @@ namespace atom {
 class AtomAccessTokenStore : public device::AccessTokenStore {
  public:
   AtomAccessTokenStore() = default;
-  ~AtomAccessTokenStore() = default;
 
   // device::AccessTokenStore:
   void LoadAccessTokens(const LoadAccessTokensCallback& callback) override {}
@@ -20,6 +19,7 @@ class AtomAccessTokenStore : public device::AccessTokenStore {
                        const base::string16& access_token) override {}
 
  private:
+  ~AtomAccessTokenStore() override = default;
   DISALLOW_COPY_AND_ASSIGN(AtomAccessTokenStore);
 };
 
