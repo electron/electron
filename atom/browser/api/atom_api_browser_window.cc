@@ -397,7 +397,6 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
 // static
 void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
-  TopLevelWindow::BuildPrototype(isolate, prototype);
   prototype->SetClassName(mate::StringToV8(isolate, "BrowserWindow"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
