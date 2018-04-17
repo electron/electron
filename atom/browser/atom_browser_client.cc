@@ -90,8 +90,7 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
 
 AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {}
 
-AtomBrowserClient::~AtomBrowserClient() {
-}
+AtomBrowserClient::~AtomBrowserClient() {}
 
 content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
@@ -138,7 +137,8 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
 }
 
 void AtomBrowserClient::AddProcessPreferences(
-    int process_id, AtomBrowserClient::ProcessPreferences prefs) {
+    int process_id,
+    AtomBrowserClient::ProcessPreferences prefs) {
   process_preferences_[process_id] = prefs;
 }
 
@@ -178,8 +178,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
       new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
   ProcessPreferences prefs;
-  auto* web_preferences = WebContentsPreferences::From(
-      GetWebContentsFromProcessID(process_id));
+  auto* web_preferences =
+      WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
   if (web_preferences) {
     prefs.sandbox = web_preferences->IsEnabled("sandbox");
     prefs.native_window_open = web_preferences->IsEnabled("nativeWindowOpen");
@@ -191,12 +191,12 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 }
 
 content::SpeechRecognitionManagerDelegate*
-    AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
+AtomBrowserClient::CreateSpeechRecognitionManagerDelegate() {
   return new AtomSpeechRecognitionManagerDelegate;
 }
 
-void AtomBrowserClient::OverrideWebkitPrefs(
-    content::RenderViewHost* host, content::WebPreferences* prefs) {
+void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
+                                            content::WebPreferences* prefs) {
   prefs->javascript_enabled = true;
   prefs->web_security_enabled = true;
   prefs->plugins_enabled = true;
@@ -295,14 +295,12 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     return;
 
   // Copy following switches to child process.
-  static const char* const kCommonSwitchNames[] = {
-    switches::kStandardSchemes,
-    switches::kEnableSandbox,
-    switches::kSecureSchemes
-  };
-  command_line->CopySwitchesFrom(
-      *base::CommandLine::ForCurrentProcess(),
-      kCommonSwitchNames, arraysize(kCommonSwitchNames));
+  static const char* const kCommonSwitchNames[] = {switches::kStandardSchemes,
+                                                   switches::kEnableSandbox,
+                                                   switches::kSecureSchemes};
+  command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
+                                 kCommonSwitchNames,
+                                 arraysize(kCommonSwitchNames));
 
   // The registered service worker schemes.
   if (!g_custom_service_worker_schemes.empty())
@@ -331,15 +329,13 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
 
-    auto context_id = atom::api::WebContents::GetIDForContents(
-      web_contents);
+    auto context_id = atom::api::WebContents::GetIDForContents(web_contents);
     command_line->AppendSwitchASCII(switches::kContextId,
-      base::IntToString(context_id));
+                                    base::IntToString(context_id));
   }
 }
 
-void AtomBrowserClient::DidCreatePpapiPlugin(
-    content::BrowserPpapiHost* host) {
+void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
   host->GetPpapiHost()->AddHostFactoryFilter(
       base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
 }
@@ -363,7 +359,7 @@ std::string AtomBrowserClient::GetGeolocationApiKey() {
 }
 
 content::QuotaPermissionContext*
-    AtomBrowserClient::CreateQuotaPermissionContext() {
+AtomBrowserClient::CreateQuotaPermissionContext() {
   return new AtomQuotaPermissionContext;
 }
 
@@ -379,9 +375,8 @@ void AtomBrowserClient::AllowCertificateError(
         callback) {
   if (delegate_) {
     delegate_->AllowCertificateError(
-        web_contents, cert_error, ssl_info, request_url,
-        resource_type, strict_enforcement,
-        expired_previous_decision, callback);
+        web_contents, cert_error, ssl_info, request_url, resource_type,
+        strict_enforcement, expired_previous_decision, callback);
   }
 }
 
@@ -455,8 +450,7 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
   auto schemes_list = api::GetStandardSchemes();
   if (!schemes_list.empty())
-    additional_schemes->insert(additional_schemes->end(),
-                               schemes_list.begin(),
+    additional_schemes->insert(additional_schemes->end(), schemes_list.begin(),
                                schemes_list.end());
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
@@ -466,7 +460,7 @@ void AtomBrowserClient::SiteInstanceDeleting(
   // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
   // when an instance is destroyed.
   for (auto iter = site_per_affinities.begin();
-      iter != site_per_affinities.end(); ++iter) {
+       iter != site_per_affinities.end(); ++iter) {
     if (iter->second == site_instance) {
       site_per_affinities.erase(iter);
       break;
@@ -496,7 +490,7 @@ void AtomBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::Bind(callback, web_contents->IsAudioMuted()));
+      base::BindRepeating(callback, web_contents->IsAudioMuted()));
 }
 
 void AtomBrowserClient::RenderProcessHostDestroyed(
