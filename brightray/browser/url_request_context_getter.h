@@ -48,9 +48,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() {
-      return nullptr;
-    }
+    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate();
     virtual std::string GetUserAgent();
     virtual std::unique_ptr<net::URLRequestJobFactory>
     CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);

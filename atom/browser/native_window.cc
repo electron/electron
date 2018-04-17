@@ -155,6 +155,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }

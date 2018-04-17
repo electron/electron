@@ -32,9 +32,7 @@ class BrowserClient : public content::ContentBrowserClient {
   // Subclasses should override this to enable or disable WebNotification.
   virtual void WebNotificationAllowed(
       int render_process_id,
-      const base::Callback<void(bool, bool)>& callback) {
-    callback.Run(false, true);
-  }
+      const base::Callback<void(bool, bool)>& callback);
 
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.

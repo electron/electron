@@ -18,6 +18,11 @@
 
 namespace atom {
 
+void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->role = ui::AX_ROLE_MENU_ITEM;
+  node_data->SetName(suggestion_);
+}
+
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
     : popup_(popup),
@@ -126,6 +131,16 @@ void AutofillPopupView::OnSuggestionsChanged() {
     return;
   }
   DoUpdateBoundsAndRedrawPopup();
+}
+
+int AutofillPopupView::GetDragOperationsForView(
+    views::View*, const gfx::Point&) {
+  return ui::DragDropTypes::DRAG_NONE;
+}
+
+bool AutofillPopupView::CanStartDragForView(
+  views::View*, const gfx::Point&, const gfx::Point&) {
+  return false;
 }
 
 void AutofillPopupView::OnSelectedRowChanged(

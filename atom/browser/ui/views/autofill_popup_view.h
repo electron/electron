@@ -42,10 +42,7 @@ class AutofillPopupChildView : public views::View {
   ~AutofillPopupChildView() override {}
 
   // views::Views implementation
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override {
-    node_data->role = ui::AX_ROLE_MENU_ITEM;
-    node_data->SetName(suggestion_);
-  }
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   base::string16 suggestion_;
 
@@ -70,15 +67,11 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   void WriteDragDataForView(views::View*,
                             const gfx::Point&,
-                            ui::OSExchangeData*) override {}
-  int GetDragOperationsForView(views::View*, const gfx::Point&) override {
-    return ui::DragDropTypes::DRAG_NONE;
-  }
+                            ui::OSExchangeData*) override;
+  int GetDragOperationsForView(views::View*, const gfx::Point&) override;
   bool CanStartDragForView(views::View*,
                            const gfx::Point&,
-                           const gfx::Point&) override {
-    return false;
-  }
+                           const gfx::Point&) override;
 
  private:
   friend class AutofillPopup;

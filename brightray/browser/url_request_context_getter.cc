@@ -60,6 +60,11 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }
 
+std::unique_ptr<net::NetworkDelegate>
+URLRequestContextGetter::Delegate::CreateNetworkDelegate() {
+  return nullptr;
+}
+
 std::unique_ptr<net::URLRequestJobFactory>
 URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers) {
