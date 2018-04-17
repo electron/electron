@@ -245,7 +245,7 @@ win.on('hide', () => {
 
 * `ignore` Boolean
 
-Sets the option to ignore double click events. Ignoring these events allow you
+Sets the option to ignore double click events. Ignoring these events allows you
 to detect every individual click of the tray icon.
 
 This value is set to false by default.
