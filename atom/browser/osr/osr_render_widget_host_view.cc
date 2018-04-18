@@ -661,15 +661,6 @@ void OffScreenRenderWidgetHostView::CopyFromSurfaceToVideoFrame(
       src_subrect, target, callback);
 }
 
-void OffScreenRenderWidgetHostView::BeginFrameSubscription(
-    std::unique_ptr<content::RenderWidgetHostViewFrameSubscriber> subscriber) {
-  GetDelegatedFrameHost()->BeginFrameSubscription(std::move(subscriber));
-}
-
-void OffScreenRenderWidgetHostView::EndFrameSubscription() {
-  GetDelegatedFrameHost()->EndFrameSubscription();
-}
-
 void OffScreenRenderWidgetHostView::InitAsGuest(
     content::RenderWidgetHostView* parent_host_view,
     content::RenderWidgetHostViewGuest* guest_view) {

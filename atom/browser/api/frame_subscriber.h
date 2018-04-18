@@ -7,46 +7,53 @@
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
-#include "content/browser/renderer_host/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/readback_types.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "mojo/public/cpp/bindings/binding.h"
+#include "services/viz/privileged/interfaces/compositing/frame_sink_video_capture.mojom.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/geometry/size.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
 namespace api {
 
-class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
+class FrameSubscriber : public viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
                   content::RenderWidgetHostView* view,
-                  const FrameCaptureCallback& callback,
-                  bool only_dirty);
+                  const FrameCaptureCallback& callback);
   ~FrameSubscriber() override;
 
-  bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
-                          base::TimeTicks present_time,
-                          scoped_refptr<media::VideoFrame>* storage,
-                          DeliverFrameCallback* callback) override;
-  const base::UnguessableToken& GetSourceIdForCopyRequest() override;
-
  private:
-  void OnFrameDelivered(const FrameCaptureCallback& callback,
-                        const gfx::Rect& damage_rect,
-                        const SkBitmap& bitmap,
-                        content::ReadbackResponse response);
+  void OnFrameCaptured(
+    mojo::ScopedSharedBufferHandle buffer,
+    uint32_t buffer_size,
+    ::media::mojom::VideoFrameInfoPtr info,
+    const gfx::Rect& update_rect,
+    const gfx::Rect& content_rect,
+    viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) override;
+  void OnTargetLost(const viz::FrameSinkId& frame_sink_id) override;
+  void OnStopped() override;
+  viz::mojom::FrameSinkVideoCapturerPtr CreateVideoCapturer();
 
   v8::Isolate* isolate_;
   content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
-  bool only_dirty_;
 
-  base::UnguessableToken source_id_for_copy_request_;
+  SkBitmap frame_;
+
+  // This object keeps the shared memory that backs |frame_| mapped.
+  mojo::ScopedSharedBufferMapping shared_memory_mapping_;
+
+  // This object prevents FrameSinkVideoCapturer from recycling the shared
+  // memory that backs |frame_|.
+  viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr shared_memory_releaser_;
+
+  viz::mojom::FrameSinkVideoCapturerPtr video_capturer_;
+  mojo::Binding<viz::mojom::FrameSinkVideoConsumer> video_consumer_binding_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_factory_;
 
