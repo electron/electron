@@ -192,8 +192,8 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     XDisplay* xdisplay = gfx::GetXDisplay();
     XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
-                    XInternAtom(xdisplay, "UTF8_STRING", False), 8,
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
                     PropModeReplace,
                     reinterpret_cast<const unsigned char*>("dark"), 4);
   }
@@ -843,7 +843,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
                             ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
   } else {
     XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
-                      0, None, ShapeSet);
+                      0, x11::None, ShapeSet);
   }
 #endif
 }
