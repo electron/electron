@@ -62,11 +62,9 @@ NotificationPresenter* NotificationPresenter::Create() {
   return presenter.release();
 }
 
-NotificationPresenterWin::NotificationPresenterWin() {
-}
+NotificationPresenterWin::NotificationPresenterWin() {}
 
-NotificationPresenterWin::~NotificationPresenterWin() {
-}
+NotificationPresenterWin::~NotificationPresenterWin() {}
 
 bool NotificationPresenterWin::Init() {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -74,7 +72,8 @@ bool NotificationPresenterWin::Init() {
 }
 
 base::string16 NotificationPresenterWin::SaveIconToFilesystem(
-    const SkBitmap& icon, const GURL& origin) {
+    const SkBitmap& icon,
+    const GURL& origin) {
   std::string filename;
 
   if (origin.is_valid()) {

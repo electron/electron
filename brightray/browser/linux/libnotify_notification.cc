@@ -29,7 +29,7 @@ const std::set<std::string>& GetServerCapabilities() {
   static std::set<std::string> caps;
   if (caps.empty()) {
     auto capabilities = libnotify_loader_.notify_get_server_caps();
-    for (auto l=capabilities; l != nullptr; l=l->next)
+    for (auto l = capabilities; l != nullptr; l = l->next)
       caps.insert(static_cast<const char*>(l->data));
     g_list_free_full(capabilities, g_free);
   }
@@ -48,10 +48,9 @@ bool NotifierSupportsActions() {
 }
 
 void log_and_clear_error(GError* error, const char* context) {
-  LOG(ERROR) << context
-             << ": domain=" << error->domain
-             << " code=" << error->code
-             << " message=\"" << error->message << '"';
+  LOG(ERROR) << context << ": domain=" << error->domain
+             << " code=" << error->code << " message=\"" << error->message
+             << '"';
   g_error_free(error);
 }
 
@@ -76,9 +75,7 @@ bool LibnotifyNotification::Initialize() {
 
 LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
                                              NotificationPresenter* presenter)
-    : Notification(delegate, presenter),
-      notification_(nullptr) {
-}
+    : Notification(delegate, presenter), notification_(nullptr) {}
 
 LibnotifyNotification::~LibnotifyNotification() {
   if (notification_) {
@@ -90,11 +87,10 @@ LibnotifyNotification::~LibnotifyNotification() {
 void LibnotifyNotification::Show(const NotificationOptions& options) {
   notification_ = libnotify_loader_.notify_notification_new(
       base::UTF16ToUTF8(options.title).c_str(),
-      base::UTF16ToUTF8(options.msg).c_str(),
-      nullptr);
+      base::UTF16ToUTF8(options.msg).c_str(), nullptr);
 
-  g_signal_connect(
-      notification_, "closed", G_CALLBACK(OnNotificationClosedThunk), this);
+  g_signal_connect(notification_, "closed",
+                   G_CALLBACK(OnNotificationClosedThunk), this);
 
   // NB: On Unity and on any other DE using Notify-OSD, adding a notification
   // action will cause the notification to display as a modal dialog box.
@@ -106,10 +102,10 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
 
   if (!options.icon.drawsNothing()) {
     GdkPixbuf* pixbuf = libgtkui::GdkPixbufFromSkBitmap(options.icon);
-    libnotify_loader_.notify_notification_set_image_from_pixbuf(
-        notification_, pixbuf);
-    libnotify_loader_.notify_notification_set_timeout(
-        notification_, NOTIFY_EXPIRES_DEFAULT);
+    libnotify_loader_.notify_notification_set_image_from_pixbuf(notification_,
+                                                                pixbuf);
+    libnotify_loader_.notify_notification_set_timeout(notification_,
+                                                      NOTIFY_EXPIRES_DEFAULT);
     g_object_unref(pixbuf);
   }
 
@@ -121,8 +117,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // Always try to append notifications.
   // Unique tags can be used to prevent this.
   if (HasCapability("append")) {
-    libnotify_loader_.notify_notification_set_hint_string(
-        notification_, "append", "true");
+    libnotify_loader_.notify_notification_set_hint_string(notification_,
+                                                          "append", "true");
   } else if (HasCapability("x-canonical-append")) {
     libnotify_loader_.notify_notification_set_hint_string(
         notification_, "x-canonical-append", "true");
@@ -172,8 +168,8 @@ void LibnotifyNotification::OnNotificationClosed(
   NotificationDismissed();
 }
 
-void LibnotifyNotification::OnNotificationView(
-    NotifyNotification* notification, char* action) {
+void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
+                                               char* action) {
   NotificationClicked();
 }
 

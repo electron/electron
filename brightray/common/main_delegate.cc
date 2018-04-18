@@ -27,8 +27,8 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       process_type == switches::kZygoteProcess ||
 #endif
 #if defined(OS_MACOSX)
-      // Mac needs them too for scrollbar related images and for sandbox
-      // profiles.
+  // Mac needs them too for scrollbar related images and for sandbox
+  // profiles.
 #if !defined(DISABLE_NACL)
       process_type == switches::kNaClLoaderProcess ||
 #endif
@@ -48,7 +48,7 @@ void LoadResourceBundle(const std::string& locale) {
     ui::ResourceBundle::CleanupSharedInstance();
 
   ui::ResourceBundle::InitSharedInstanceWithLocale(
-    locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
 
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.ReloadLocaleResources(locale);
@@ -82,11 +82,9 @@ void LoadResourceBundle(const std::string& locale) {
 #endif
 }
 
-MainDelegate::MainDelegate() {
-}
+MainDelegate::MainDelegate() {}
 
-MainDelegate::~MainDelegate() {
-}
+MainDelegate::~MainDelegate() {}
 
 std::unique_ptr<ContentClient> MainDelegate::CreateContentClient() {
   return std::unique_ptr<ContentClient>(new ContentClient);

@@ -81,9 +81,8 @@ WindowsToastNotification::~WindowsToastNotification() {
 
 void WindowsToastNotification::Show(const NotificationOptions& options) {
   auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
-  std::wstring icon_path = presenter_win->SaveIconToFilesystem(
-    options.icon,
-    options.icon_url);
+  std::wstring icon_path =
+      presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
 
   ComPtr<IXmlDocument> toast_xml;
   if (FAILED(GetToastXml(toast_manager_.Get(), options.title, options.msg,
@@ -123,14 +122,16 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
     return;
   }
 
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification created";
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Notification created";
 
   if (delegate())
     delegate()->NotificationDisplayed();
 }
 
 void WindowsToastNotification::Dismiss() {
-  if (IsDebuggingNotifications()) LOG(INFO) << "Hiding notification";
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Hiding notification";
   toast_notifier_->Hide(toast_notification_.Get());
 }
 
@@ -407,7 +408,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationClicked, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification clicked";
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Notification clicked";
 
   return S_OK;
 }
@@ -418,7 +420,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationDismissed, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification dismissed";
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Notification dismissed";
 
   return S_OK;
 }
@@ -429,7 +432,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(&Notification::NotificationFailed, notification_));
-  if (IsDebuggingNotifications()) LOG(INFO) << "Notification failed";
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Notification failed";
 
   return S_OK;
 }

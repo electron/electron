@@ -6,8 +6,7 @@
 
 #include <dlfcn.h>
 
-LibNotifyLoader::LibNotifyLoader() : loaded_(false) {
-}
+LibNotifyLoader::LibNotifyLoader() : loaded_(false) {}
 
 LibNotifyLoader::~LibNotifyLoader() {
   CleanUp(loaded_);
@@ -21,17 +20,15 @@ bool LibNotifyLoader::Load(const std::string& library_name) {
   if (!library_)
     return false;
 
-  notify_is_initted =
-      reinterpret_cast<decltype(this->notify_is_initted)>(
-          dlsym(library_, "notify_is_initted"));
+  notify_is_initted = reinterpret_cast<decltype(this->notify_is_initted)>(
+      dlsym(library_, "notify_is_initted"));
   if (!notify_is_initted) {
     CleanUp(true);
     return false;
   }
 
-  notify_init =
-      reinterpret_cast<decltype(this->notify_init)>(
-          dlsym(library_, "notify_init"));
+  notify_init = reinterpret_cast<decltype(this->notify_init)>(
+      dlsym(library_, "notify_init"));
   if (!notify_init) {
     CleanUp(true);
     return false;

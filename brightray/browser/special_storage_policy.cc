@@ -6,11 +6,9 @@
 
 namespace brightray {
 
-SpecialStoragePolicy::SpecialStoragePolicy() {
-}
+SpecialStoragePolicy::SpecialStoragePolicy() {}
 
-SpecialStoragePolicy::~SpecialStoragePolicy() {
-}
+SpecialStoragePolicy::~SpecialStoragePolicy() {}
 
 bool SpecialStoragePolicy::IsStorageProtected(const GURL& origin) {
   return true;

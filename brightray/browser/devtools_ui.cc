@@ -23,7 +23,8 @@ const char kChromeUIDevToolsBundledPath[] = "bundled";
 
 std::string PathWithoutParams(const std::string& path) {
   return GURL(std::string("chrome-devtools://devtools/") + path)
-      .path().substr(1);
+      .path()
+      .substr(1);
 }
 
 std::string GetMimeTypeForPath(const std::string& path) {
@@ -57,9 +58,7 @@ class BundledDataSource : public content::URLDataSource {
   BundledDataSource() {}
 
   // content::URLDataSource implementation.
-  std::string GetSource() const override {
-    return kChromeUIDevToolsHost;
-  }
+  std::string GetSource() const override { return kChromeUIDevToolsHost; }
 
   void StartDataRequest(
       const std::string& path,
@@ -83,17 +82,11 @@ class BundledDataSource : public content::URLDataSource {
     return GetMimeTypeForPath(path);
   }
 
-  bool ShouldAddContentSecurityPolicy() const override {
-    return false;
-  }
+  bool ShouldAddContentSecurityPolicy() const override { return false; }
 
-  bool ShouldDenyXFrameOptions() const override {
-    return false;
-  }
+  bool ShouldDenyXFrameOptions() const override { return false; }
 
-  bool ShouldServeMimeTypeAsContentTypeHeader() const override {
-    return true;
-  }
+  bool ShouldServeMimeTypeAsContentTypeHeader() const override { return true; }
 
   void StartBundledDataRequest(const std::string& path,
                                const GotDataCallback& callback) {

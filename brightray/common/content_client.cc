@@ -16,19 +16,17 @@ namespace brightray {
 std::string GetProductInternal() {
   auto name = GetApplicationName();
   base::RemoveChars(name, base::kWhitespaceASCII, &name);
-  return base::StringPrintf("%s/%s",
-      name.c_str(), GetApplicationVersion().c_str());
+  return base::StringPrintf("%s/%s", name.c_str(),
+                            GetApplicationVersion().c_str());
 }
 
 std::string GetBrightrayUserAgent() {
   return content::BuildUserAgentFromProduct(GetProductInternal());
 }
 
-ContentClient::ContentClient() {
-}
+ContentClient::ContentClient() {}
 
-ContentClient::~ContentClient() {
-}
+ContentClient::~ContentClient() {}
 
 std::string ContentClient::GetProduct() const {
   return GetProductInternal();
@@ -43,7 +41,8 @@ base::string16 ContentClient::GetLocalizedString(int message_id) const {
 }
 
 base::StringPiece ContentClient::GetDataResource(
-    int resource_id, ui::ScaleFactor scale_factor) const {
+    int resource_id,
+    ui::ScaleFactor scale_factor) const {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
       resource_id, scale_factor);
 }

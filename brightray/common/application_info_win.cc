@@ -17,7 +17,6 @@ namespace brightray {
 namespace {
 
 base::string16 g_app_user_model_id;
-
 }
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
@@ -49,7 +48,7 @@ PCWSTR GetRawAppUserModelID() {
     } else {
       std::string name = GetApplicationName();
       base::string16 generated_app_id = base::ReplaceStringPlaceholders(
-        kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
+          kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
       SetAppUserModelID(generated_app_id);
     }
     CoTaskMemFree(current_app_id);

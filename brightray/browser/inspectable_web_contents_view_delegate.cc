@@ -7,4 +7,3 @@ gfx::ImageSkia InspectableWebContentsViewDelegate::GetDevToolsWindowIcon() {
 }
 
 }  // namespace brightray
-
