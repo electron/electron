@@ -428,6 +428,11 @@ app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
 
+### `app.isPackaged()`
+
+Returns `Boolean` - `true` if the app is packaged, `false` otherwise. For many apps,
+this function can be used to distinguish development and production environments.
+
 ### `app.isReady()`
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
