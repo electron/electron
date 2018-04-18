@@ -803,14 +803,14 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowElevation(GetNativeWindow(), has_shadow
-                                                ? wm::ShadowElevation::MEDIUM
-                                                : wm::ShadowElevation::NONE);
+  wm::SetShadowElevation(GetNativeWindow(),
+                         has_shadow ? wm::kShadowElevationInactiveWindow
+                                    : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() {
   return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
-         wm::ShadowElevation::NONE;
+         wm::kShadowElevationNone;
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
