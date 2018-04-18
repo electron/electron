@@ -369,6 +369,10 @@
           'xcode_settings': {
             # ReactiveCocoa which is used by Squirrel requires using __weak.
             'CLANG_ENABLE_OBJC_WEAK': 'YES',
+            'OTHER_CFLAGS': [
+              '-Wunguarded-availability',
+              '-Wobjc-missing-property-synthesis',
+            ],
           },
         }],  # OS=="mac" and mas_build==0
         ['OS=="mac" and mas_build==1', {
