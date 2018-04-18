@@ -26,8 +26,7 @@ int32_t PepperFlashFullscreenHost::OnResourceMessageReceived(
     ppapi::host::HostMessageContext* context) {
   PPAPI_BEGIN_MESSAGE_MAP(PepperFlashFullscreenHost, msg)
     PPAPI_DISPATCH_HOST_RESOURCE_CALL(
-      PpapiHostMsg_FlashFullscreen_SetFullscreen,
-      OnSetFullscreen)
+        PpapiHostMsg_FlashFullscreen_SetFullscreen, OnSetFullscreen)
   PPAPI_END_MESSAGE_MAP()
   return PP_ERROR_FAILED;
 }

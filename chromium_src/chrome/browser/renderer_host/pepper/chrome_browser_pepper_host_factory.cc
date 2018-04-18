@@ -29,7 +29,8 @@ ChromeBrowserPepperHostFactory::ChromeBrowserPepperHostFactory(
 
 ChromeBrowserPepperHostFactory::~ChromeBrowserPepperHostFactory() {}
 
-std::unique_ptr<ResourceHost> ChromeBrowserPepperHostFactory::CreateResourceHost(
+std::unique_ptr<ResourceHost>
+ChromeBrowserPepperHostFactory::CreateResourceHost(
     ppapi::host::PpapiHost* host,
     PP_Resource resource,
     PP_Instance instance,

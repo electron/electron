@@ -66,7 +66,7 @@ bool GetSystemVolumeSerialNumber(std::string* number) {
 }
 #endif
 
-}
+}  // namespace
 
 #if defined(OS_WIN)
 // Helper class to get the UI thread which monitor is showing the
@@ -89,8 +89,7 @@ class MonitorFinder : public base::RefCountedThreadSafe<MonitorFinder> {
     // to call and we can't cache the |monitor_| value.
     if (InterlockedCompareExchange(&request_sent_, 1, 0) == 0) {
       content::BrowserThread::PostTask(
-          content::BrowserThread::UI,
-          FROM_HERE,
+          content::BrowserThread::UI, FROM_HERE,
           base::Bind(&MonitorFinder::FetchMonitorFromWidget, this));
     }
     return reinterpret_cast<int64_t>(monitor_);

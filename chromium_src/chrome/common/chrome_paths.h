@@ -90,8 +90,8 @@ enum {
                                     // succeed no matter the file exists or not.
   FILE_FLASH_SYSTEM_PLUGIN,         // Full path to the system version of NPAPI
                                     // Flash plugin, downloadable from Adobe
-                             // website. Querying this path might succeed no
-                             // matter the file exists or not.
+  // website. Querying this path might succeed no
+  // matter the file exists or not.
   FILE_NACL_PLUGIN,            // Full path to the internal NaCl plugin file.
   DIR_PNACL_BASE,              // Full path to the base dir for PNaCl.
   DIR_PNACL_COMPONENT,         // Full path to the latest PNaCl version

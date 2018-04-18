@@ -21,7 +21,6 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 
-
 namespace {
 
 int timeout_in_milliseconds = 20 * 1000;

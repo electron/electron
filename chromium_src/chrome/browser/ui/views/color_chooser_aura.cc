@@ -52,8 +52,8 @@ void ColorChooserAura::SetSelectedColor(SkColor color) {
 }
 
 // static
-ColorChooserAura* ColorChooserAura::Open(
-    content::WebContents* web_contents, SkColor initial_color) {
+ColorChooserAura* ColorChooserAura::Open(content::WebContents* web_contents,
+                                         SkColor initial_color) {
   return new ColorChooserAura(web_contents, initial_color);
 }
 
