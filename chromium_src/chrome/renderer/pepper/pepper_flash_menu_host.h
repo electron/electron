@@ -16,13 +16,13 @@
 namespace content {
 class RendererPpapiHost;
 struct MenuItem;
-}
+}  // namespace content
 
 namespace ppapi {
 namespace proxy {
 class SerializedFlashMenu;
 }
-}
+}  // namespace ppapi
 
 class PepperFlashMenuHost : public ppapi::host::ResourceHost,
                             public content::ContextMenuClient {

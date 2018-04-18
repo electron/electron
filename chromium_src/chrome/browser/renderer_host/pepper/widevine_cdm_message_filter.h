@@ -16,7 +16,7 @@ class BrowserContext;
 class WidevineCdmMessageFilter : public content::BrowserMessageFilter {
  public:
   explicit WidevineCdmMessageFilter(int render_process_id,
-      content::BrowserContext* browser_context);
+                                    content::BrowserContext* browser_context);
   bool OnMessageReceived(const IPC::Message& message) override;
   void OnDestruct() const override;
 

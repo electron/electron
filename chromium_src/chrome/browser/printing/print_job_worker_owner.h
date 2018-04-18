@@ -14,7 +14,7 @@
 namespace base {
 class MessageLoop;
 class SequencedTaskRunner;
-}
+}  // namespace base
 
 namespace printing {
 
@@ -48,8 +48,7 @@ class PrintJobWorkerOwner
   bool RunsTasksInCurrentSequence() const;
 
   // Posts the given task to be run.
-  bool PostTask(const base::Location& from_here,
-                const base::Closure& task);
+  bool PostTask(const base::Location& from_here, const base::Closure& task);
 
  protected:
   friend class base::RefCountedThreadSafe<PrintJobWorkerOwner>;

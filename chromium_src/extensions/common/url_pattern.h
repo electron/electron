@@ -47,13 +47,13 @@ class URLPattern {
  public:
   // A collection of scheme bitmasks for use with valid_schemes.
   enum SchemeMasks {
-    SCHEME_NONE       = 0,
-    SCHEME_HTTP       = 1 << 0,
-    SCHEME_HTTPS      = 1 << 1,
-    SCHEME_FILE       = 1 << 2,
-    SCHEME_FTP        = 1 << 3,
-    SCHEME_CHROMEUI   = 1 << 4,
-    SCHEME_EXTENSION  = 1 << 5,
+    SCHEME_NONE = 0,
+    SCHEME_HTTP = 1 << 0,
+    SCHEME_HTTPS = 1 << 1,
+    SCHEME_FILE = 1 << 2,
+    SCHEME_FTP = 1 << 3,
+    SCHEME_CHROMEUI = 1 << 4,
+    SCHEME_EXTENSION = 1 << 5,
     SCHEME_FILESYSTEM = 1 << 6,
 
     // IMPORTANT!
@@ -62,7 +62,7 @@ class URLPattern {
     // implications, third-party extensions should usually not be able to get
     // access to URL patterns initialized this way. If there is a reason
     // for violating this general rule, document why this it safe.
-    SCHEME_ALL      = -1,
+    SCHEME_ALL = -1,
   };
 
   // Error codes returned from Parse().

@@ -15,7 +15,7 @@ namespace ppapi {
 namespace host {
 struct HostMessageContext;
 }
-}
+}  // namespace ppapi
 
 namespace ui {
 class ScopedClipboardWriter;
