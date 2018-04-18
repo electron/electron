@@ -5,10 +5,9 @@
 #include "atom/browser/api/frame_subscriber.h"
 
 #include "atom/common/native_mate_converters/gfx_converter.h"
-#include "base/bind.h"
-#include "content/public/browser/render_widget_host.h"
-#include "ui/display/display.h"
-#include "ui/display/screen.h"
+#include "components/viz/host/host_frame_sink_manager.h"
+#include "content/browser/compositor/surface_utils.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 
 #include "atom/common/node_includes.h"
 
@@ -18,91 +17,96 @@ namespace api {
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::RenderWidgetHostView* view,
-                                 const FrameCaptureCallback& callback,
-                                 bool only_dirty)
+                                 const FrameCaptureCallback& callback)
     : isolate_(isolate),
       view_(view),
       callback_(callback),
-      only_dirty_(only_dirty),
-      source_id_for_copy_request_(base::UnguessableToken::Create()),
-      weak_factory_(this) {}
+      video_consumer_binding_(this),
+      weak_factory_(this) {
+  video_capturer_ = CreateVideoCapturer();
+  video_capturer_->SetResolutionConstraints(
+      view_->GetViewBounds().size(),
+      view_->GetViewBounds().size(), true);
+  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
+                             media::COLOR_SPACE_UNSPECIFIED);
+
+  viz::mojom::FrameSinkVideoConsumerPtr consumer;
+  video_consumer_binding_.Bind(mojo::MakeRequest(&consumer));
+  video_capturer_->Start(std::move(consumer));
+}
 
 FrameSubscriber::~FrameSubscriber() = default;
 
-bool FrameSubscriber::ShouldCaptureFrame(
-    const gfx::Rect& dirty_rect,
-    base::TimeTicks present_time,
-    scoped_refptr<media::VideoFrame>* storage,
-    DeliverFrameCallback* callback) {
-  if (!view_)
-    return false;
-
-  if (dirty_rect.IsEmpty())
-    return false;
-
-  gfx::Rect rect = gfx::Rect(view_->GetVisibleViewportSize());
-  if (only_dirty_)
-    rect = dirty_rect;
-
-  gfx::Size view_size = rect.size();
-  gfx::Size bitmap_size = view_size;
-  gfx::NativeView native_view = view_->GetNativeView();
-  const float scale = display::Screen::GetScreen()
-                          ->GetDisplayNearestView(native_view)
-                          .device_scale_factor();
-  if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
-
-  rect = gfx::Rect(rect.origin(), bitmap_size);
-
-  view_->CopyFromSurface(
-      rect, rect.size(),
-      base::Bind(&FrameSubscriber::OnFrameDelivered, weak_factory_.GetWeakPtr(),
-                 callback_, rect),
-      kBGRA_8888_SkColorType);
-
-  return false;
-}
-
-const base::UnguessableToken& FrameSubscriber::GetSourceIdForCopyRequest() {
-  return source_id_for_copy_request_;
-}
-
-void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
-                                       const gfx::Rect& damage_rect,
-                                       const SkBitmap& bitmap,
-                                       content::ReadbackResponse response) {
-  if (response != content::ReadbackResponse::READBACK_SUCCESS)
-    return;
-
+void FrameSubscriber::OnFrameCaptured(
+    mojo::ScopedSharedBufferHandle buffer,
+    uint32_t buffer_size,
+    ::media::mojom::VideoFrameInfoPtr info,
+    const gfx::Rect& update_rect,
+    const gfx::Rect& content_rect,
+    viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
   v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
-  size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
-
-  v8::MaybeLocal<v8::Object> buffer =
-      node::Buffer::New(isolate_, rgb_row_size * bitmap.height());
-
-  if (buffer.IsEmpty())
+  gfx::Size view_size = view_->GetViewBounds().size();
+  if (view_size != content_rect.size()) {
+    video_capturer_->SetResolutionConstraints(view_size, view_size, true);
+    video_capturer_->RequestRefreshFrame();
     return;
+  }
 
-  auto local_buffer = buffer.ToLocalChecked();
+  if (!buffer.is_valid()) {
+    callbacks->Done();
+    return;
+  }
+
+  mojo::ScopedSharedBufferMapping mapping = buffer->Map(buffer_size);
+  if (!mapping) {
+    return;
+  }
+
+  SkImageInfo image_info = SkImageInfo::MakeN32(
+      content_rect.width(), content_rect.height(), kPremul_SkAlphaType);
+  SkPixmap pixmap(image_info, mapping.get(),
+                  media::VideoFrame::RowBytes(media::VideoFrame::kARGBPlane,
+                                              info->pixel_format,
+                                              info->coded_size.width()));
+  frame_.installPixels(pixmap);
+  size_t rgb_row_size = frame_.width() * frame_.bytesPerPixel();
+  v8::MaybeLocal<v8::Object> node_buffer =
+      node::Buffer::New(isolate_, rgb_row_size * frame_.height());
+  auto local_buffer = node_buffer.ToLocalChecked();
 
   {
-    auto* source = static_cast<const unsigned char*>(bitmap.getPixels());
+    auto* source = static_cast<const unsigned char*>(frame_.getPixels());
     auto* target = node::Buffer::Data(local_buffer);
 
-    for (int y = 0; y < bitmap.height(); ++y) {
+    for (int y = 0; y < frame_.height(); ++y) {
       memcpy(target, source, rgb_row_size);
-      source += bitmap.rowBytes();
+      source += frame_.rowBytes();
       target += rgb_row_size;
     }
   }
 
   v8::Local<v8::Value> damage =
-      mate::Converter<gfx::Rect>::ToV8(isolate_, damage_rect);
+      mate::Converter<gfx::Rect>::ToV8(isolate_, update_rect);
 
   callback_.Run(local_buffer, damage);
+
+  shared_memory_mapping_ = std::move(mapping);
+  shared_memory_releaser_ = std::move(callbacks);
+}
+
+void FrameSubscriber::OnTargetLost(const viz::FrameSinkId& frame_sink_id) {}
+
+void FrameSubscriber::OnStopped() {}
+
+viz::mojom::FrameSinkVideoCapturerPtr FrameSubscriber::CreateVideoCapturer() {
+  auto* view_base = static_cast<content::RenderWidgetHostViewBase*>(view_);
+  viz::mojom::FrameSinkVideoCapturerPtr video_capturer;
+  content::GetHostFrameSinkManager()->CreateVideoCapturer(
+      mojo::MakeRequest(&video_capturer));
+  video_capturer->ChangeTarget(view_base->GetFrameSinkId());
+  return video_capturer;
 }
 
 }  // namespace api

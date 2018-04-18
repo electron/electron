@@ -438,6 +438,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
+  std::unique_ptr<FrameSubscriber> frame_subscriber_;
+
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_;
 
