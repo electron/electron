@@ -21,7 +21,7 @@ namespace base {
 class FilePath;
 class FileEnumerator;
 class Time;
-}
+}  // namespace base
 
 namespace content {
 class WebContents;
@@ -56,9 +56,7 @@ class DevToolsFileSystemIndexer
     void IndexFiles();
     void StartFileIndexing(base::File::Error error);
     void ReadFromFile();
-    void OnRead(base::File::Error error,
-                const char* data,
-                int bytes_read);
+    void OnRead(base::File::Error error, const char* data, int bytes_read);
     void FinishFileIndexing(bool success);
     void CloseFile();
     void CloseCallback(base::File::Error error);

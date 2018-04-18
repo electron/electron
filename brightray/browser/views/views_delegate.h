@@ -23,13 +23,12 @@ class ViewsDelegate : public views::ViewsDelegate {
                            const std::string& window_name,
                            const gfx::Rect& bounds,
                            ui::WindowShowState show_state) override;
-  bool GetSavedWindowPlacement(
-      const views::Widget* widget,
-      const std::string& window_name,
-      gfx::Rect* bounds,
-      ui::WindowShowState* show_state) const override;
-  void NotifyAccessibilityEvent(
-      views::View* view, ui::AXEvent event_type) override;
+  bool GetSavedWindowPlacement(const views::Widget* widget,
+                               const std::string& window_name,
+                               gfx::Rect* bounds,
+                               ui::WindowShowState* show_state) const override;
+  void NotifyAccessibilityEvent(views::View* view,
+                                ui::AXEvent event_type) override;
   void NotifyMenuItemFocused(const base::string16& menu_name,
                              const base::string16& menu_item_name,
                              int item_index,
