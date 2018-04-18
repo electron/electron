@@ -113,6 +113,12 @@ describe('app module', () => {
     })
   })
 
+  describe('app.isPackaged()', () => {
+    it('should be false durings tests', () => {
+      assert.equal(app.isPackaged(), false)
+    })
+  })
+
   describe('app.isInApplicationsFolder()', () => {
     before(function () {
       if (process.platform !== 'darwin') {
