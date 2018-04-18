@@ -6,6 +6,7 @@
 
 #if defined(OS_WIN)
 #include <objbase.h>
+#include <wrl/client.h>
 #endif
 
 #include <vector>
@@ -741,7 +742,7 @@ void NativeWindowViews::FlashFrame(bool flash) {
 
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #if defined(OS_WIN)
-  base::win::ScopedComPtr<ITaskbarList> taskbar;
+  Microsoft::WRL::ComPtr<ITaskbarList> taskbar;
   if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
                                 CLSCTX_INPROC_SERVER,
                                 IID_PPV_ARGS(&taskbar))) ||

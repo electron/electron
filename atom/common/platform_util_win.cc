@@ -13,6 +13,7 @@
 #include <objbase.h>
 #include <shellapi.h>
 #include <shlobj.h>
+#include <wrl/client.h>
 
 #include "base/bind.h"
 #include "base/bind_helpers.h"
@@ -24,7 +25,6 @@
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
-#include "base/win/scoped_comptr.h"
 #include "base/win/windows_version.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
@@ -273,7 +273,7 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
     return ui::win::OpenFolderViaShell(dir);
   }
 
-  base::win::ScopedComPtr<IShellFolder> desktop;
+  Microsoft::WRL::ComPtr<IShellFolder> desktop;
   HRESULT hr = SHGetDesktopFolder(desktop.GetAddressOf());
   if (FAILED(hr))
     return false;
@@ -357,7 +357,7 @@ bool MoveItemToTrash(const base::FilePath& path) {
   if (!com_initializer.succeeded())
     return false;
 
-  base::win::ScopedComPtr<IFileOperation> pfo;
+  Microsoft::WRL::ComPtr<IFileOperation> pfo;
   if (FAILED(::CoCreateInstance(CLSID_FileOperation, nullptr, CLSCTX_ALL,
                                 IID_PPV_ARGS(&pfo))))
     return false;
@@ -381,13 +381,13 @@ bool MoveItemToTrash(const base::FilePath& path) {
   }
 
   // Create an IShellItem from the supplied source path.
-  base::win::ScopedComPtr<IShellItem> delete_item;
+  Microsoft::WRL::ComPtr<IShellItem> delete_item;
   if (FAILED(SHCreateItemFromParsingName(
           path.value().c_str(), NULL,
           IID_PPV_ARGS(delete_item.GetAddressOf()))))
     return false;
 
-  base::win::ScopedComPtr<IFileOperationProgressSink> delete_sink(
+  Microsoft::WRL::ComPtr<IFileOperationProgressSink> delete_sink(
       new DeleteFileProgressSink);
   if (!delete_sink)
     return false;
