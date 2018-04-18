@@ -14,7 +14,8 @@
 #include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
 
 namespace base {
-template <typename T> struct DefaultSingletonTraits;
+template <typename T>
+struct DefaultSingletonTraits;
 }
 
 namespace crash_reporter {

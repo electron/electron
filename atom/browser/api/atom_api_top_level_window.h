@@ -68,9 +68,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
-  #if defined(OS_WIN)
+#if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
-  #endif
+#endif
 
   // Public APIs of NativeWindow.
   void Close();
@@ -107,9 +107,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
-  #if defined(OS_WIN) || defined(OS_MACOSX)
+#if defined(OS_WIN) || defined(OS_MACOSX)
   void MoveTop();
-  #endif
+#endif
   bool IsMovable();
   void SetMinimizable(bool minimizable);
   bool IsMinimizable();
@@ -184,8 +184,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
-  typedef base::Callback<void(v8::Local<v8::Value>,
-                              v8::Local<v8::Value>)> MessageCallback;
+  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
+      MessageCallback;
   bool HookWindowMessage(UINT message, const MessageCallback& callback);
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);

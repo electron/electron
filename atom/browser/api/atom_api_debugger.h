@@ -17,7 +17,7 @@
 namespace content {
 class DevToolsAgentHost;
 class WebContents;
-}
+}  // namespace content
 
 namespace mate {
 class Arguments;
@@ -27,15 +27,15 @@ namespace atom {
 
 namespace api {
 
-class Debugger: public mate::TrackableObject<Debugger>,
-                public content::DevToolsAgentHostClient {
+class Debugger : public mate::TrackableObject<Debugger>,
+                 public content::DevToolsAgentHostClient {
  public:
   using SendCommandCallback =
       base::Callback<void(const base::DictionaryValue&,
                           const base::DictionaryValue&)>;
 
-  static mate::Handle<Debugger> Create(
-      v8::Isolate* isolate, content::WebContents* web_contents);
+  static mate::Handle<Debugger> Create(v8::Isolate* isolate,
+                                       content::WebContents* web_contents);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,

@@ -32,18 +32,20 @@ class TaskbarHost {
   virtual ~TaskbarHost();
 
   // Add or update the buttons in thumbar.
-  bool SetThumbarButtons(
-      HWND window, const std::vector<ThumbarButton>& buttons);
+  bool SetThumbarButtons(HWND window,
+                         const std::vector<ThumbarButton>& buttons);
 
   void RestoreThumbarButtons(HWND window);
 
   // Set the progress state in taskbar.
-  bool SetProgressBar(
-      HWND window, double value, const NativeWindow::ProgressState state);
+  bool SetProgressBar(HWND window,
+                      double value,
+                      const NativeWindow::ProgressState state);
 
   // Set the overlay icon in taskbar.
-  bool SetOverlayIcon(
-      HWND window, const gfx::Image& overlay, const std::string& text);
+  bool SetOverlayIcon(HWND window,
+                      const gfx::Image& overlay,
+                      const std::string& text);
 
   // Set the region of the window to show as a thumbnail in taskbar.
   bool SetThumbnailClip(HWND window, const gfx::Rect& region);

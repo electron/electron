@@ -68,6 +68,6 @@ class AtomCertVerifier : public net::CertVerifier {
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };
 
-}   // namespace atom
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_

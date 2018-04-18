@@ -79,10 +79,10 @@ class NativeWindowObserver {
                                     const base::DictionaryValue& details) {}
   virtual void OnNewWindowForTab() {}
 
-  // Called when window message received
-  #if defined(OS_WIN)
+// Called when window message received
+#if defined(OS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
-  #endif
+#endif
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}

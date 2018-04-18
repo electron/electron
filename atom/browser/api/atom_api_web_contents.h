@@ -38,7 +38,7 @@ class ResourceRequestBody;
 namespace mate {
 class Arguments;
 class Dictionary;
-}
+}  // namespace mate
 
 namespace atom {
 
@@ -82,13 +82,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Create from an existing WebContents.
   static mate::Handle<WebContents> CreateFrom(
-      v8::Isolate* isolate, content::WebContents* web_contents);
+      v8::Isolate* isolate,
+      content::WebContents* web_contents);
   static mate::Handle<WebContents> CreateFrom(
-      v8::Isolate* isolate, content::WebContents* web_contents, Type type);
+      v8::Isolate* isolate,
+      content::WebContents* web_contents,
+      Type type);
 
   // Create a new WebContents.
-  static mate::Handle<WebContents> Create(
-      v8::Isolate* isolate, const mate::Dictionary& options);
+  static mate::Handle<WebContents> Create(v8::Isolate* isolate,
+                                          const mate::Dictionary& options);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -133,8 +136,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DisableDeviceEmulation();
   void InspectElement(int x, int y);
   void InspectServiceWorker();
-  void HasServiceWorker(
-      const base::Callback<void(bool)>&);
+  void HasServiceWorker(const base::Callback<void(bool)>&);
   void UnregisterServiceWorker(const base::Callback<void(bool)>&);
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
@@ -221,13 +223,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                    bool allowed);
 
   // Create window with the given disposition.
-  void OnCreateWindow(
-      const GURL& target_url,
-      const content::Referrer& referrer,
-      const std::string& frame_name,
-      WindowOpenDisposition disposition,
-      const std::vector<std::string>& features,
-      const scoped_refptr<content::ResourceRequestBody>& body);
+  void OnCreateWindow(const GURL& target_url,
+                      const content::Referrer& referrer,
+                      const std::string& frame_name,
+                      WindowOpenDisposition disposition,
+                      const std::vector<std::string>& features,
+                      const scoped_refptr<content::ResourceRequestBody>& body);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
@@ -264,7 +265,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   ~WebContents();
 
   void InitWithSessionAndOptions(v8::Isolate* isolate,
-                                 content::WebContents *web_contents,
+                                 content::WebContents* web_contents,
                                  mate::Handle<class Session> session,
                                  const mate::Dictionary& options);
 
@@ -274,14 +275,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                               const base::string16& message,
                               int32_t line_no,
                               const base::string16& source_id) override;
-  void WebContentsCreated(
-      content::WebContents* source_contents,
-      int opener_render_process_id,
-      int opener_render_frame_id,
-      const std::string& frame_name,
-      const GURL& target_url,
-      content::WebContents* new_contents)
-      override;
+  void WebContentsCreated(content::WebContents* source_contents,
+                          int opener_render_process_id,
+                          int opener_render_frame_id,
+                          const std::string& frame_name,
+                          const GURL& target_url,
+                          content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
                       content::WebContents* new_contents,
                       WindowOpenDisposition disposition,
@@ -321,18 +320,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  bool CheckMediaAccessPermission(
-      content::WebContents* web_contents,
-      const GURL& security_origin,
-      content::MediaStreamType type) override;
+  bool CheckMediaAccessPermission(content::WebContents* web_contents,
+                                  const GURL& security_origin,
+                                  content::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
       const content::MediaResponseCallback& callback) override;
-  void RequestToLockMouse(
-      content::WebContents* web_contents,
-      bool user_gesture,
-      bool last_unlocked_by_target) override;
+  void RequestToLockMouse(content::WebContents* web_contents,
+                          bool user_gesture,
+                          bool last_unlocked_by_target) override;
   std::unique_ptr<content::BluetoothChooser> RunBluetoothChooser(
       content::RenderFrameHost* frame,
       const content::BluetoothChooser::EventHandler& handler) override;
@@ -396,9 +393,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   struct FrameDispatchHelper;
   AtomBrowserContext* GetBrowserContext() const;
 
-  uint32_t GetNextRequestId() {
-    return ++request_id_;
-  }
+  uint32_t GetNextRequestId() { return ++request_id_; }
 
 #if defined(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;

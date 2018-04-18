@@ -20,13 +20,11 @@ class AtomSandboxedRendererClient : public RendererClientBase {
                          const std::string& callback_name,
                          std::vector<v8::Handle<v8::Value>> args);
   // atom::RendererClientBase:
-  void DidCreateScriptContext(
-      v8::Handle<v8::Context> context,
-      content::RenderFrame* render_frame) override;
-  void WillReleaseScriptContext(
-      v8::Handle<v8::Context> context,
-      content::RenderFrame* render_frame) override;
-  void SetupMainWorldOverrides(v8::Handle<v8::Context> context) override { }
+  void DidCreateScriptContext(v8::Handle<v8::Context> context,
+                              content::RenderFrame* render_frame) override;
+  void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+                                content::RenderFrame* render_frame) override;
+  void SetupMainWorldOverrides(v8::Handle<v8::Context> context) override {}
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
   void RenderViewCreated(content::RenderView*) override;

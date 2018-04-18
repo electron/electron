@@ -26,16 +26,15 @@ v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
                                     v8::Local<v8::Object> object,
                                     content::RenderFrameHost* sender,
                                     IPC::Message* message);
-v8::Local<v8::Object> CreateCustomEvent(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> object,
-    v8::Local<v8::Object> event);
+v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
+                                        v8::Local<v8::Object> object,
+                                        v8::Local<v8::Object> event);
 v8::Local<v8::Object> CreateEventFromFlags(v8::Isolate* isolate, int flags);
 
 }  // namespace internal
 
 // Provide helperers to emit event in JavaScript.
-template<typename T>
+template <typename T>
 class EventEmitter : public Wrappable<T> {
  public:
   typedef std::vector<v8::Local<v8::Value>> ValueArray;
@@ -48,27 +47,26 @@ class EventEmitter : public Wrappable<T> {
   }
 
   // this.emit(name, event, args...);
-  template<typename... Args>
+  template <typename... Args>
   bool EmitCustomEvent(const base::StringPiece& name,
                        v8::Local<v8::Object> event,
                        const Args&... args) {
     return EmitWithEvent(
-        name,
-        internal::CreateCustomEvent(isolate(), GetWrapper(), event), args...);
+        name, internal::CreateCustomEvent(isolate(), GetWrapper(), event),
+        args...);
   }
 
   // this.emit(name, new Event(flags), args...);
-  template<typename... Args>
+  template <typename... Args>
   bool EmitWithFlags(const base::StringPiece& name,
                      int flags,
                      const Args&... args) {
     return EmitCustomEvent(
-        name,
-        internal::CreateEventFromFlags(isolate(), flags), args...);
+        name, internal::CreateEventFromFlags(isolate(), flags), args...);
   }
 
   // this.emit(name, new Event(), args...);
-  template<typename... Args>
+  template <typename... Args>
   bool Emit(const base::StringPiece& name, const Args&... args) {
     return EmitWithSender(name, nullptr, nullptr, args...);
   }
@@ -85,8 +83,8 @@ class EventEmitter : public Wrappable<T> {
     if (wrapper.IsEmpty()) {
       return false;
     }
-    v8::Local<v8::Object> event = internal::CreateJSEvent(
-        isolate(), wrapper, sender, message);
+    v8::Local<v8::Object> event =
+        internal::CreateJSEvent(isolate(), wrapper, sender, message);
     return EmitWithEvent(name, event, args...);
   }
 
@@ -95,15 +93,15 @@ class EventEmitter : public Wrappable<T> {
 
  private:
   // this.emit(name, event, args...);
-  template<typename... Args>
+  template <typename... Args>
   bool EmitWithEvent(const base::StringPiece& name,
                      v8::Local<v8::Object> event,
                      const Args&... args) {
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     EmitEvent(isolate(), GetWrapper(), name, event, args...);
-    return event->Get(
-        StringToV8(isolate(), "defaultPrevented"))->BooleanValue();
+    return event->Get(StringToV8(isolate(), "defaultPrevented"))
+        ->BooleanValue();
   }
 
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);

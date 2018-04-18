@@ -17,7 +17,7 @@
 namespace content {
 class QuotaPermissionContext;
 class ClientCertificateDelegate;
-}
+}  // namespace content
 
 namespace net {
 class SSLCertRequestInfo;
@@ -50,7 +50,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // content::ContentBrowserClient:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
-      CreateSpeechRecognitionManagerDelegate() override;
+  CreateSpeechRecognitionManagerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   void OverrideSiteInstanceForNavigation(
@@ -84,22 +84,21 @@ class AtomBrowserClient : public brightray::BrowserClient,
       net::ClientCertIdentityList client_certs,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   void ResourceDispatcherHostCreated() override;
-  bool CanCreateWindow(
-      content::RenderFrameHost* opener,
-      const GURL& opener_url,
-      const GURL& opener_top_level_frame_url,
-      const GURL& source_origin,
-      content::mojom::WindowContainerType container_type,
-      const GURL& target_url,
-      const content::Referrer& referrer,
-      const std::string& frame_name,
-      WindowOpenDisposition disposition,
-      const blink::mojom::WindowFeatures& features,
-      const std::vector<std::string>& additional_features,
-      const scoped_refptr<content::ResourceRequestBody>& body,
-      bool user_gesture,
-      bool opener_suppressed,
-      bool* no_javascript_access) override;
+  bool CanCreateWindow(content::RenderFrameHost* opener,
+                       const GURL& opener_url,
+                       const GURL& opener_top_level_frame_url,
+                       const GURL& source_origin,
+                       content::mojom::WindowContainerType container_type,
+                       const GURL& target_url,
+                       const content::Referrer& referrer,
+                       const std::string& frame_name,
+                       WindowOpenDisposition disposition,
+                       const blink::mojom::WindowFeatures& features,
+                       const std::vector<std::string>& additional_features,
+                       const scoped_refptr<content::ResourceRequestBody>& body,
+                       bool user_gesture,
+                       bool opener_suppressed,
+                       bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;

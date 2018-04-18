@@ -18,8 +18,8 @@ namespace atom {
 namespace api {
 
 class Menu : public mate::TrackableObject<Menu>,
-              public AtomMenuModel::Delegate,
-              public AtomMenuModel::Observer {
+             public AtomMenuModel::Delegate,
+             public AtomMenuModel::Observer {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
@@ -55,7 +55,9 @@ class Menu : public mate::TrackableObject<Menu>,
   void MenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void PopupAt(BrowserWindow* window,
-                       int x, int y, int positioning_item,
+                       int x,
+                       int y,
+                       int positioning_item,
                        const base::Closure& callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
 
@@ -110,12 +112,12 @@ class Menu : public mate::TrackableObject<Menu>,
 
 }  // namespace atom
 
-
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::AtomMenuModel*> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      atom::AtomMenuModel** out) {
     // null would be tranfered to NULL.
     if (val->IsNull()) {

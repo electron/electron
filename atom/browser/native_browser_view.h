@@ -15,7 +15,7 @@
 namespace brightray {
 class InspectableWebContents;
 class InspectableWebContentsView;
-}
+}  // namespace brightray
 
 namespace gfx {
 class Rect;
@@ -48,7 +48,7 @@ class NativeBrowserView {
 
   // Called when the window needs to update its draggable region.
   virtual void UpdateDraggableRegions(
-    const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
+      const std::vector<gfx::Rect>& system_drag_exclude_areas) {}
 
  protected:
   explicit NativeBrowserView(

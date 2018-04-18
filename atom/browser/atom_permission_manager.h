@@ -24,15 +24,13 @@ class AtomPermissionManager : public content::PermissionManager {
   AtomPermissionManager();
   ~AtomPermissionManager() override;
 
-  using StatusCallback =
-      base::Callback<void(blink::mojom::PermissionStatus)>;
+  using StatusCallback = base::Callback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback =
       base::Callback<void(const std::vector<blink::mojom::PermissionStatus>&)>;
-  using RequestHandler =
-      base::Callback<void(content::WebContents*,
-                          content::PermissionType,
-                          const StatusCallback&,
-                          const base::DictionaryValue&)>;
+  using RequestHandler = base::Callback<void(content::WebContents*,
+                                             content::PermissionType,
+                                             const StatusCallback&,
+                                             const base::DictionaryValue&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
@@ -57,8 +55,8 @@ class AtomPermissionManager : public content::PermissionManager {
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       bool user_gesture,
-      const base::Callback<void(
-          const std::vector<blink::mojom::PermissionStatus>&)>& callback)
+      const base::Callback<
+          void(const std::vector<blink::mojom::PermissionStatus>&)>& callback)
       override;
   int RequestPermissionsWithDetails(
       const std::vector<content::PermissionType>& permissions,
@@ -66,8 +64,8 @@ class AtomPermissionManager : public content::PermissionManager {
       const GURL& requesting_origin,
       bool user_gesture,
       const base::DictionaryValue* details,
-      const base::Callback<void(
-          const std::vector<blink::mojom::PermissionStatus>&)>& callback);
+      const base::Callback<
+          void(const std::vector<blink::mojom::PermissionStatus>&)>& callback);
 
  protected:
   void OnPermissionResponse(int request_id,

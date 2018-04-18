@@ -13,13 +13,14 @@
 #include "base/compiler_specific.h"
 
 namespace base {
-template <typename T> struct DefaultSingletonTraits;
+template <typename T>
+struct DefaultSingletonTraits;
 }
 
 namespace google_breakpad {
 class ExceptionHandler;
 class MinidumpDescriptor;
-}
+}  // namespace google_breakpad
 
 namespace crash_reporter {
 

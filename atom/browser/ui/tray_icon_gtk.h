@@ -16,8 +16,7 @@ class StatusIconLinux;
 
 namespace atom {
 
-class TrayIconGtk : public TrayIcon,
-                    public views::StatusIconLinux::Delegate {
+class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
  public:
   TrayIconGtk();
   virtual ~TrayIconGtk();

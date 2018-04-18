@@ -76,7 +76,8 @@ class Archive {
 
   // Cached external temporary files.
   std::unordered_map<base::FilePath::StringType,
-                     std::unique_ptr<ScopedTemporaryFile>> external_files_;
+                     std::unique_ptr<ScopedTemporaryFile>>
+      external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

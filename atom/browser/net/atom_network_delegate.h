@@ -95,11 +95,11 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
  private:
   void OnErrorOccurred(net::URLRequest* request, bool started);
 
-  template<typename...Args>
+  template <typename... Args>
   void HandleSimpleEvent(SimpleEvent type,
                          net::URLRequest* request,
                          Args... args);
-  template<typename Out, typename... Args>
+  template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent type,
                           net::URLRequest* request,
                           const net::CompletionCallback& callback,
@@ -107,12 +107,14 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                           Args... args);
 
   // Deal with the results of Listener.
-  template<typename T>
-  void OnListenerResultInIO(
-      uint64_t id, T out, std::unique_ptr<base::DictionaryValue> response);
-  template<typename T>
-  void OnListenerResultInUI(
-      uint64_t id, T out, const base::DictionaryValue& response);
+  template <typename T>
+  void OnListenerResultInIO(uint64_t id,
+                            T out,
+                            std::unique_ptr<base::DictionaryValue> response);
+  template <typename T>
+  void OnListenerResultInUI(uint64_t id,
+                            T out,
+                            const base::DictionaryValue& response);
 
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
@@ -124,6 +126,6 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
 
-}   // namespace atom
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

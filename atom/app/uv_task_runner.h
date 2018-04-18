@@ -25,10 +25,9 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
                        base::OnceClosure task,
                        base::TimeDelta delay) override;
   bool RunsTasksInCurrentSequence() const override;
-  bool PostNonNestableDelayedTask(
-      const base::Location& from_here,
-      base::OnceClosure task,
-      base::TimeDelta delay) override;
+  bool PostNonNestableDelayedTask(const base::Location& from_here,
+                                  base::OnceClosure task,
+                                  base::TimeDelta delay) override;
 
  private:
   static void OnTimeout(uv_timer_t* timer);

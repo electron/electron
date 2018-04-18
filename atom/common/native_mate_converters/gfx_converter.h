@@ -15,41 +15,38 @@ namespace gfx {
 class Point;
 class Size;
 class Rect;
-}
+}  // namespace gfx
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<gfx::Point> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Point& val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const gfx::Point& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gfx::Point* out);
 };
 
-template<>
+template <>
 struct Converter<gfx::Size> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Size& val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const gfx::Size& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gfx::Size* out);
 };
 
-template<>
+template <>
 struct Converter<gfx::Rect> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const gfx::Rect& val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const gfx::Rect& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gfx::Rect* out);
 };
 
-template<>
+template <>
 struct Converter<display::Display> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const display::Display& val);
+                                   const display::Display& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      display::Display* out);

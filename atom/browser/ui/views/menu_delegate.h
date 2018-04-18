@@ -41,12 +41,11 @@ class MenuDelegate : public views::MenuDelegate {
   void WillShowMenu(views::MenuItemView* menu) override;
   void WillHideMenu(views::MenuItemView* menu) override;
   void OnMenuClosed(views::MenuItemView* menu) override;
-  views::MenuItemView* GetSiblingMenu(
-      views::MenuItemView* menu,
-      const gfx::Point& screen_point,
-      views::MenuAnchorPosition* anchor,
-      bool* has_mnemonics,
-      views::MenuButton** button) override;
+  views::MenuItemView* GetSiblingMenu(views::MenuItemView* menu,
+                                      const gfx::Point& screen_point,
+                                      views::MenuAnchorPosition* anchor,
+                                      bool* has_mnemonics,
+                                      views::MenuButton** button) override;
 
  private:
   MenuBar* menu_bar_;

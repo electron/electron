@@ -16,8 +16,8 @@ namespace atom {
 
 namespace api {
 
-class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
-                       public DesktopMediaListObserver {
+class DesktopCapturer : public mate::EventEmitter<DesktopCapturer>,
+                        public DesktopMediaListObserver {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;

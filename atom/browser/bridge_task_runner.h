@@ -29,14 +29,13 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
                        base::OnceClosure task,
                        base::TimeDelta delay) override;
   bool RunsTasksInCurrentSequence() const override;
-  bool PostNonNestableDelayedTask(
-      const base::Location& from_here,
-      base::OnceClosure task,
-      base::TimeDelta delay) override;
+  bool PostNonNestableDelayedTask(const base::Location& from_here,
+                                  base::OnceClosure task,
+                                  base::TimeDelta delay) override;
 
  private:
-  using TaskPair = std::tuple<
-      base::Location, base::OnceClosure, base::TimeDelta>;
+  using TaskPair =
+      std::tuple<base::Location, base::OnceClosure, base::TimeDelta>;
   std::vector<TaskPair> tasks_;
   std::vector<TaskPair> non_nestable_tasks_;
 

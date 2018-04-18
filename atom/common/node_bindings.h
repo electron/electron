@@ -18,7 +18,7 @@ class MessageLoop;
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
-}
+}  // namespace node
 
 namespace atom {
 
@@ -84,7 +84,7 @@ class NodeBindings {
 
  private:
   // Thread to poll uv events.
-  static void EmbedThreadRunner(void *arg);
+  static void EmbedThreadRunner(void* arg);
 
   // Whether the libuv loop has ended.
   bool embed_closed_;

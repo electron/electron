@@ -20,7 +20,7 @@ namespace mate {
 
 namespace internal {
 
-template<typename T>
+template <typename T>
 class RefCountedGlobal;
 
 // Manages the V8 function with RAII.
@@ -55,7 +55,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
+    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
     v8::Local<v8::Value> ret(holder->Call(
         holder, args.size(), args.empty() ? nullptr : &args.front()));
     return handle_scope.Escape(ret);
@@ -76,9 +76,8 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
-    holder->Call(
-        holder, args.size(), args.empty() ? nullptr : &args.front());
+    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
+    holder->Call(holder, args.size(), args.empty() ? nullptr : &args.front());
   }
 };
 
@@ -97,10 +96,10 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args { ConvertToV8(isolate, raw)... };
+    std::vector<v8::Local<v8::Value>> args{ConvertToV8(isolate, raw)...};
     v8::Local<v8::Value> result;
-    auto maybe_result = holder->Call(
-        context, holder, args.size(), args.empty() ? nullptr : &args.front());
+    auto maybe_result = holder->Call(context, holder, args.size(),
+                                     args.empty() ? nullptr : &args.front());
     if (maybe_result.ToLocal(&result))
       Converter<ReturnType>::FromV8(isolate, result, &ret);
     return ret;
@@ -109,8 +108,8 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
 
 // Helper to pass a C++ funtion to JavaScript.
 using Translater = base::Callback<void(Arguments* args)>;
-v8::Local<v8::Value> CreateFunctionFromTranslater(
-    v8::Isolate* isolate, const Translater& translater);
+v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
+                                                  const Translater& translater);
 v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
                                       v8::Local<v8::Function> func,

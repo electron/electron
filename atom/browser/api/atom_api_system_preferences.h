@@ -36,10 +36,11 @@ enum NotificationCenterKind {
 
 class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
-    , public BrowserObserver
-    , public gfx::SysColorChangeListener
+    ,
+                          public BrowserObserver,
+                          public gfx::SysColorChangeListener
 #endif
-  {
+{
  public:
   static mate::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
@@ -49,10 +50,10 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 
-  typedef HRESULT (STDAPICALLTYPE *DwmGetColorizationColor)(DWORD *, BOOL *);
+  typedef HRESULT(STDAPICALLTYPE* DwmGetColorizationColor)(DWORD*, BOOL*);
   DwmGetColorizationColor dwmGetColorizationColor =
-    (DwmGetColorizationColor) GetProcAddress(LoadLibraryW(L"dwmapi.dll"),
-                                            "DwmGetColorizationColor");
+      (DwmGetColorizationColor)GetProcAddress(LoadLibraryW(L"dwmapi.dll"),
+                                              "DwmGetColorizationColor");
 
   std::string GetAccentColor();
   std::string GetColor(const std::string& color, mate::Arguments* args);
@@ -66,8 +67,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
 
 #elif defined(OS_MACOSX)
-  using NotificationCallback = base::Callback<
-    void(const std::string&, const base::DictionaryValue&)>;
+  using NotificationCallback =
+      base::Callback<void(const std::string&, const base::DictionaryValue&)>;
 
   void PostNotification(const std::string& name,
                         const base::DictionaryValue& user_info);
@@ -80,9 +81,9 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
-                             const base::DictionaryValue& user_info);
+                                 const base::DictionaryValue& user_info);
   int SubscribeWorkspaceNotification(const std::string& name,
-                                 const NotificationCallback& callback);
+                                     const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
   v8::Local<v8::Value> GetUserDefault(const std::string& name,
                                       const std::string& type);
@@ -113,11 +114,15 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
  private:
 #if defined(OS_WIN)
   // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK
-      WndProcStatic(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
+                                        UINT message,
+                                        WPARAM wparam,
+                                        LPARAM lparam);
 
-  LRESULT CALLBACK
-      WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  LRESULT CALLBACK WndProc(HWND hwnd,
+                           UINT message,
+                           WPARAM wparam,
+                           LPARAM lparam);
 
   // The window class of |window_|.
   ATOM atom_;

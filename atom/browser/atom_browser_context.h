@@ -26,7 +26,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static scoped_refptr<AtomBrowserContext> From(
-      const std::string& partition, bool in_memory,
+      const std::string& partition,
+      bool in_memory,
       const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
@@ -67,7 +68,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   }
 
  protected:
-  AtomBrowserContext(const std::string& partition, bool in_memory,
+  AtomBrowserContext(const std::string& partition,
+                     bool in_memory,
                      const base::DictionaryValue& options);
   ~AtomBrowserContext() override;
 
