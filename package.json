@@ -73,7 +73,7 @@
   },
   "husky": {
     "hooks": {
-      "precommit": "npm run check-clang-format \"npm run clang-format\""
+      "precommit": "npm run check-clang-format echo \"some-script failed\""
     }
   },
   "license": "MIT",
