@@ -60,8 +60,6 @@ def run_gyp(target_arch, component):
   env = os.environ.copy()
   if PLATFORM == 'linux' and target_arch != get_host_arch():
     env['GYP_CROSSCOMPILE'] = '1'
-  elif PLATFORM == 'win32':
-    env['GYP_MSVS_VERSION'] = '2017'
   python = sys.executable
   if sys.platform == 'cygwin':
     # Force using win32 python on cygwin.
