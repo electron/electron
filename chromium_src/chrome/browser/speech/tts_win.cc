@@ -5,12 +5,12 @@
 #include <math.h>
 #include <objbase.h>
 #include <sapi.h>
+#include <wrl/client.h>
 
 #include "base/memory/singleton.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "base/win/scoped_comptr.h"
 #include "chrome/browser/speech/tts_controller.h"
 #include "chrome/browser/speech/tts_platform.h"
 
@@ -45,7 +45,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
 
   void OnSpeechEvent();
 
-  base::win::ScopedComPtr<ISpVoice> speech_synthesizer_;
+  Microsoft::WRL::ComPtr<ISpVoice> speech_synthesizer_;
 
   // These apply to the current utterance only.
   std::wstring utterance_;
