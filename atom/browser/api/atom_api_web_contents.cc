@@ -675,7 +675,8 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
-  auto* permission_helper = WebContentsPermissionHelper::FromWebContents(source);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
   auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
                              base::Unretained(this), source, origin);
   permission_helper->RequestFullscreenPermission(callback);

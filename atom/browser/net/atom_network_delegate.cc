@@ -219,13 +219,15 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
 
 AtomNetworkDelegate::SimpleListenerInfo::SimpleListenerInfo(
     URLPatterns patterns_,
-    SimpleListener listener_): url_patterns(patterns_), listener(listener_) {}
+    SimpleListener listener_)
+    : url_patterns(patterns_), listener(listener_) {}
 AtomNetworkDelegate::SimpleListenerInfo::SimpleListenerInfo() = default;
 AtomNetworkDelegate::SimpleListenerInfo::~SimpleListenerInfo() = default;
 
 AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo(
     URLPatterns patterns_,
-    ResponseListener listener_): url_patterns(patterns_), listener(listener_) {}
+    ResponseListener listener_)
+    : url_patterns(patterns_), listener(listener_) {}
 AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo() = default;
 AtomNetworkDelegate::ResponseListenerInfo::~ResponseListenerInfo() = default;
 

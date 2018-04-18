@@ -21,23 +21,22 @@ namespace atom {
 namespace api {
 
 MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper),
-      weak_factory_(this) {
-}
+    : Menu(isolate, wrapper), weak_factory_(this) {}
 
 MenuMac::~MenuMac() = default;
 
 void MenuMac::PopupAt(TopLevelWindow* window,
-                      int x, int y, int positioning_item,
+                      int x,
+                      int y,
+                      int positioning_item,
                       const base::Closure& callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)
     return;
 
   auto popup = base::Bind(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                          native_window->GetWeakPtr(),
-                          window->weak_map_id(), x, y,
-                          positioning_item, callback);
+                          native_window->GetWeakPtr(), window->weak_map_id(), x,
+                          y, positioning_item, callback);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, popup);
 }
 
@@ -53,9 +52,9 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
   auto close_callback = base::Bind(
       &MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
-  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>(
-      [[AtomMenuController alloc] initWithModel:model()
-                          useDefaultAccelerator:NO]);
+  popup_controllers_[window_id] = base::scoped_nsobject<AtomMenuController>([
+      [AtomMenuController alloc] initWithModel:model()
+                         useDefaultAccelerator:NO]);
   NSMenu* menu = [popup_controllers_[window_id] menu];
   NSView* view = [nswindow contentView];
 
@@ -130,9 +129,9 @@ void MenuMac::OnClosed(int32_t window_id, base::Closure callback) {
 // static
 void Menu::SetApplicationMenu(Menu* base_menu) {
   MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  base::scoped_nsobject<AtomMenuController> menu_controller(
-      [[AtomMenuController alloc] initWithModel:menu->model_.get()
-                          useDefaultAccelerator:YES]);
+  base::scoped_nsobject<AtomMenuController> menu_controller([
+      [AtomMenuController alloc] initWithModel:menu->model_.get()
+                         useDefaultAccelerator:YES]);
   [NSApp setMainMenu:[menu_controller menu]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.

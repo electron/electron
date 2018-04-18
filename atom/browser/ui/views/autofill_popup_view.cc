@@ -133,13 +133,18 @@ void AutofillPopupView::OnSuggestionsChanged() {
   DoUpdateBoundsAndRedrawPopup();
 }
 
-int AutofillPopupView::GetDragOperationsForView(
-    views::View*, const gfx::Point&) {
+void AutofillPopupView::WriteDragDataForView(views::View*,
+                                             const gfx::Point&,
+                                             ui::OSExchangeData*) {}
+
+int AutofillPopupView::GetDragOperationsForView(views::View*,
+                                                const gfx::Point&) {
   return ui::DragDropTypes::DRAG_NONE;
 }
 
-bool AutofillPopupView::CanStartDragForView(
-  views::View*, const gfx::Point&, const gfx::Point&) {
+bool AutofillPopupView::CanStartDragForView(views::View*,
+                                            const gfx::Point&,
+                                            const gfx::Point&) {
   return false;
 }
 

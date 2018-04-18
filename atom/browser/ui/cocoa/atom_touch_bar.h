@@ -32,15 +32,18 @@
               settings:(const std::vector<mate::PersistentDictionary>&)settings;
 
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2));
-- (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items API_AVAILABLE(macosx(10.12.2));
+- (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items
+    API_AVAILABLE(macosx(10.12.2));
 - (NSMutableArray*)identifiersFromSettings:
     (const std::vector<mate::PersistentDictionary>&)settings;
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
-                         id:(const std::string&)item_id API_AVAILABLE(macosx(10.12.2));
+                         id:(const std::string&)item_id
+    API_AVAILABLE(macosx(10.12.2));
 - (void)addNonDefaultTouchBarItems:
     (const std::vector<mate::PersistentDictionary>&)items;
 - (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
-                  forTouchBar:(NSTouchBar*)touchBar API_AVAILABLE(macosx(10.12.2));
+                  forTouchBar:(NSTouchBar*)touchBar
+    API_AVAILABLE(macosx(10.12.2));
 
 - (NSString*)idFromIdentifier:(NSString*)identifier
                    withPrefix:(NSString*)prefix;
@@ -56,31 +59,42 @@
 
 // Helpers to create touch bar items
 - (NSTouchBarItem*)makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier
-  API_AVAILABLE(macosx(10.12.2));
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
-                    withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                    withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
-                   withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                   withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
-                         withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                         withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makeSliderForID:(NSString*)id
-                    withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                    withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
-                     withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                     withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 - (NSTouchBarItem*)makeGroupForID:(NSString*)id
-                   withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2));
+                   withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2));
 
 // Helpers to update touch bar items
 - (void)updateButton:(NSCustomTouchBarItem*)item
-        withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2));
+        withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2));
 - (void)updateLabel:(NSCustomTouchBarItem*)item
-       withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2));
+       withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2));
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
-             withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2));
+             withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2));
 - (void)updateSlider:(NSSliderTouchBarItem*)item
-        withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2));
+        withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2));
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
-         withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2));
+         withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2));
 
 @end
 
