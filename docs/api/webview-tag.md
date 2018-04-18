@@ -680,7 +680,7 @@ Fired when details regarding a requested resource is available.
 `status` indicates socket connection to download the resource.
 
 **Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
-### Event: 'did-get-redirect-request'
+### Event: 'did-get-redirect-request' *(Deprecated)*
 
 Returns:
 
@@ -689,7 +689,7 @@ Returns:
 * `isMainFrame` Boolean
 
 Fired when a redirect was received while requesting a resource.
-
+**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
 ### Event: 'dom-ready'
 
 Fired when document in the given frame is loaded.

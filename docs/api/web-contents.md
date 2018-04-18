@@ -107,7 +107,7 @@ Emitted when details regarding a requested resource are available.
 `status` indicates the socket connection to download the resource.
 
 **Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
-#### Event: 'did-get-redirect-request'
+#### Event: 'did-get-redirect-request' *(Deprecated)*
 
 Returns:
 
@@ -121,7 +121,7 @@ Returns:
 * `headers` Object
 
 Emitted when a redirect is received while requesting a resource.
-
+**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
 #### Event: 'dom-ready'
 
 Returns:
