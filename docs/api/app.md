@@ -432,6 +432,12 @@ app.exit(0)
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
+### `app.whenReady()`
+
+Returns `Promise` - fulfilled when Electron is initialized.
+May be used as a convenient alternative to checking `app.isReady()`
+and subscribing to the `ready` event if the app is not ready yet.
+
 ### `app.focus()`
 
 On Linux, focuses on the first visible window. On macOS, makes the application

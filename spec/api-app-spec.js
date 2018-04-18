@@ -1,4 +1,6 @@
 const assert = require('assert')
+const chai = require('chai')
+const chaiAsPromised = require('chai-as-promised')
 const ChildProcess = require('child_process')
 const https = require('https')
 const net = require('net')
@@ -7,9 +9,12 @@ const path = require('path')
 const {ipcRenderer, remote} = require('electron')
 const {closeWindow} = require('./window-helpers')
 
+const {expect} = chai
 const {app, BrowserWindow, Menu, ipcMain} = remote
 
 const isCI = remote.getGlobal('isCi')
+
+chai.use(chaiAsPromised)
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
@@ -901,6 +906,17 @@ describe('app module', () => {
       app.dock.setMenu(new Menu())
       const v8Util = process.atomBinding('v8_util')
       v8Util.requestGarbageCollectionForTesting()
+    })
+  })
+
+  describe('whenReady', () => {
+    it('returns a Promise', () => {
+      expect(app.whenReady()).to.be.an.instanceOf(Promise)
+    })
+
+    it('becomes fulfilled if the app is already ready', () => {
+      assert(app.isReady())
+      return expect(app.whenReady()).to.be.eventually.fulfilled
     })
   })
 })
