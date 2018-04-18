@@ -19,7 +19,7 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<content::DownloadItem::DownloadState> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::DownloadItem::DownloadState state) {
@@ -79,8 +79,8 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
     // Destroy the item once item is downloaded.
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, GetDestroyClosure());
+    base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE,
+                                                  GetDestroyClosure());
   } else {
     Emit("updated", item->GetState());
   }
@@ -129,12 +129,11 @@ bool DownloadItem::HasUserGesture() const {
 }
 
 std::string DownloadItem::GetFilename() const {
-  return base::UTF16ToUTF8(net::GenerateFileName(GetURL(),
-                           GetContentDisposition(),
-                           std::string(),
-                           download_item_->GetSuggestedFilename(),
-                           GetMimeType(),
-                           "download").LossyDisplayName());
+  return base::UTF16ToUTF8(
+      net::GenerateFileName(GetURL(), GetContentDisposition(), std::string(),
+                            download_item_->GetSuggestedFilename(),
+                            GetMimeType(), "download")
+          .LossyDisplayName());
 }
 
 std::string DownloadItem::GetContentDisposition() const {
@@ -206,8 +205,8 @@ void DownloadItem::BuildPrototype(v8::Isolate* isolate,
 }
 
 // static
-mate::Handle<DownloadItem> DownloadItem::Create(
-    v8::Isolate* isolate, content::DownloadItem* item) {
+mate::Handle<DownloadItem> DownloadItem::Create(v8::Isolate* isolate,
+                                                content::DownloadItem* item) {
   auto existing = TrackableObject::FromWrappedClass(isolate, item);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<DownloadItem*>(existing));
@@ -226,8 +225,10 @@ mate::Handle<DownloadItem> DownloadItem::Create(
 
 namespace {
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary(isolate, exports)
       .Set("DownloadItem",

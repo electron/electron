@@ -12,8 +12,7 @@ namespace atom {
 
 ObjectLifeMonitor::ObjectLifeMonitor(v8::Isolate* isolate,
                                      v8::Local<v8::Object> target)
-    : target_(isolate, target),
-      weak_ptr_factory_(this) {
+    : target_(isolate, target), weak_ptr_factory_(this) {
   target_.SetWeak(this, OnObjectGC, v8::WeakCallbackType::kParameter);
 }
 

@@ -30,15 +30,15 @@ namespace {
 // Distinguish directories from regular files.
 bool IsDirectory(const base::FilePath& path) {
   base::File::Info file_info;
-  return base::GetFileInfo(path, &file_info) ?
-      file_info.is_directory : path.EndsWithSeparator();
+  return base::GetFileInfo(path, &file_info) ? file_info.is_directory
+                                             : path.EndsWithSeparator();
 }
 
 void ConvertFilters(const Filters& filters,
                     std::vector<std::wstring>* buffer,
                     std::vector<COMDLG_FILTERSPEC>* filterspec) {
   if (filters.empty()) {
-    COMDLG_FILTERSPEC spec = { L"All Files (*.*)", L"*.*" };
+    COMDLG_FILTERSPEC spec = {L"All Files (*.*)", L"*.*"};
     filterspec->push_back(spec);
     return;
   }
@@ -75,8 +75,8 @@ class FileDialog {
     std::vector<COMDLG_FILTERSPEC> filterspec;
     ConvertFilters(settings.filters, &buffer, &filterspec);
 
-    dialog_.reset(new T(file_part.c_str(), options, NULL,
-                        filterspec.data(), filterspec.size()));
+    dialog_.reset(new T(file_part.c_str(), options, NULL, filterspec.data(),
+                        filterspec.size()));
 
     if (!settings.title.empty())
       GetPtr()->SetTitle(base::UTF8ToUTF16(settings.title).c_str());
@@ -99,7 +99,7 @@ class FileDialog {
     for (size_t i = 0; i < filterspec.size(); ++i) {
       if (std::wstring(filterspec[i].pszSpec) != L"*.*") {
         // SetFileTypeIndex is regarded as one-based index.
-        GetPtr()->SetFileTypeIndex(i+1);
+        GetPtr()->SetFileTypeIndex(i + 1);
         GetPtr()->SetDefaultExtension(filterspec[i].pszSpec);
         break;
       }
@@ -112,9 +112,10 @@ class FileDialog {
 
   bool Show(atom::NativeWindow* parent_window) {
     atom::UnresponsiveSuppressor suppressor;
-    HWND window = parent_window ? static_cast<atom::NativeWindowViews*>(
-        parent_window)->GetAcceleratedWidget() :
-        NULL;
+    HWND window = parent_window
+                      ? static_cast<atom::NativeWindowViews*>(parent_window)
+                            ->GetAcceleratedWidget()
+                      : NULL;
     return dialog_->DoModal(window) == IDOK;
   }
 
@@ -125,13 +126,12 @@ class FileDialog {
  private:
   // Set up the initial directory for the dialog.
   void SetDefaultFolder(const base::FilePath file_path) {
-    std::wstring directory = IsDirectory(file_path) ?
-        file_path.value() :
-        file_path.DirName().value();
+    std::wstring directory = IsDirectory(file_path)
+                                 ? file_path.value()
+                                 : file_path.DirName().value();
 
     ATL::CComPtr<IShellItem> folder_item;
-    HRESULT hr = SHCreateItemFromParsingName(directory.c_str(),
-                                             NULL,
+    HRESULT hr = SHCreateItemFromParsingName(directory.c_str(), NULL,
                                              IID_PPV_ARGS(&folder_item));
     if (SUCCEEDED(hr))
       GetPtr()->SetFolder(folder_item);
@@ -165,7 +165,7 @@ void RunOpenDialogInNewThread(const RunState& run_state,
   std::vector<base::FilePath> paths;
   bool result = ShowOpenDialog(settings, &paths);
   run_state.ui_task_runner->PostTask(FROM_HERE,
-                                      base::Bind(callback, result, paths));
+                                     base::Bind(callback, result, paths));
   run_state.ui_task_runner->DeleteSoon(FROM_HERE, run_state.dialog_thread);
 }
 
@@ -198,8 +198,8 @@ bool ShowOpenDialog(const DialogSettings& settings,
     return false;
 
   ATL::CComPtr<IShellItemArray> items;
-  HRESULT hr = static_cast<IFileOpenDialog*>(open_dialog.GetPtr())->GetResults(
-      &items);
+  HRESULT hr =
+      static_cast<IFileOpenDialog*>(open_dialog.GetPtr())->GetResults(&items);
   if (FAILED(hr))
     return false;
 
@@ -216,8 +216,8 @@ bool ShowOpenDialog(const DialogSettings& settings,
       return false;
 
     wchar_t file_name[MAX_PATH];
-    hr = CShellFileOpenDialog::GetFileNameFromShellItem(
-        item, SIGDN_FILESYSPATH, file_name, MAX_PATH);
+    hr = CShellFileOpenDialog::GetFileNameFromShellItem(item, SIGDN_FILESYSPATH,
+                                                        file_name, MAX_PATH);
     if (FAILED(hr))
       return false;
 
@@ -240,8 +240,7 @@ void ShowOpenDialog(const DialogSettings& settings,
       base::Bind(&RunOpenDialogInNewThread, run_state, settings, callback));
 }
 
-bool ShowSaveDialog(const DialogSettings& settings,
-                    base::FilePath* path) {
+bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
   FileDialog<CShellFileSaveDialog> save_dialog(
       settings, FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT);
   if (!save_dialog.Show(settings.parent_window))

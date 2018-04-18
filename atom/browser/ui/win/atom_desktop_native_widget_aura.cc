@@ -27,11 +27,11 @@ void AtomDesktopNativeWidgetAura::OnWindowActivated(
     wm::ActivationChangeObserver::ActivationReason reason,
     aura::Window* gained_active,
     aura::Window* lost_active) {
-  views::DesktopNativeWidgetAura::OnWindowActivated(
-    reason, gained_active, lost_active);
+  views::DesktopNativeWidgetAura::OnWindowActivated(reason, gained_active,
+                                                    lost_active);
   if (lost_active != nullptr) {
     auto* tooltip_controller = static_cast<views::corewm::TooltipController*>(
-      wm::GetTooltipClient(lost_active->GetRootWindow()));
+        wm::GetTooltipClient(lost_active->GetRootWindow()));
 
     // This will cause the tooltip to be hidden when a window is deactivated,
     // as it should be.

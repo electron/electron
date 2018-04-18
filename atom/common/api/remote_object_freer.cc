@@ -27,13 +27,15 @@ content::RenderFrame* GetCurrentRenderFrame() {
 }  // namespace
 
 // static
-void RemoteObjectFreer::BindTo(
-    v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id) {
+void RemoteObjectFreer::BindTo(v8::Isolate* isolate,
+                               v8::Local<v8::Object> target,
+                               int object_id) {
   new RemoteObjectFreer(isolate, target, object_id);
 }
 
-RemoteObjectFreer::RemoteObjectFreer(
-    v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id)
+RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
+                                     v8::Local<v8::Object> target,
+                                     int object_id)
     : ObjectLifeMonitor(isolate, target),
       object_id_(object_id),
       routing_id_(MSG_ROUTING_NONE) {
@@ -43,8 +45,7 @@ RemoteObjectFreer::RemoteObjectFreer(
   }
 }
 
-RemoteObjectFreer::~RemoteObjectFreer() {
-}
+RemoteObjectFreer::~RemoteObjectFreer() {}
 
 void RemoteObjectFreer::RunDestructor() {
   content::RenderFrame* render_frame =

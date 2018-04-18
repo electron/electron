@@ -18,12 +18,13 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<base::win::ShortcutOperation> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      base::win::ShortcutOperation* out) {
     std::string operation;
-    if (!ConvertFromV8(isolate, val, & operation))
+    if (!ConvertFromV8(isolate, val, &operation))
       return false;
     if (operation.empty() || operation == "create")
       *out = base::win::SHORTCUT_CREATE_ALWAYS;
@@ -109,8 +110,8 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
     properties.set_app_id(str);
 
   base::win::ScopedCOMInitializer com_initializer;
-  return base::win::CreateOrUpdateShortcutLink(
-      shortcut_path, properties, operation);
+  return base::win::CreateOrUpdateShortcutLink(shortcut_path, properties,
+                                               operation);
 }
 
 v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
@@ -135,8 +136,10 @@ v8::Local<v8::Value> ReadShortcutLink(mate::Arguments* args,
 }
 #endif
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openItem", &platform_util::OpenItem);

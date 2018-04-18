@@ -26,7 +26,7 @@
 
 namespace atom {
 
-int NodeMain(int argc, char *argv[]) {
+int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
   int exit_code = 1;

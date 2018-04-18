@@ -25,7 +25,7 @@ bool StringToAccelerator(const std::string& shortcut,
   }
 
   std::vector<std::string> tokens = base::SplitString(
-     shortcut, "+", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+      shortcut, "+", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
@@ -79,7 +79,7 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
     } else {
       ui::Accelerator accelerator;
       if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
-        MenuItem item = { i, model };
+        MenuItem item = {i, model};
         (*table)[accelerator] = item;
       }
     }

@@ -22,9 +22,8 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   // If there is no argument passed then we failed.
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
-        base::Bind(callback, false, nullptr));
+    content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
+                                     base::Bind(callback, false, nullptr));
     return;
   }
 
@@ -52,10 +51,9 @@ void AskForOptions(v8::Isolate* isolate,
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
-  handler.Run(
-      *(request_details.get()),
-      mate::ConvertToV8(isolate,
-                        base::Bind(&HandlerCallback, before_start, callback)));
+  handler.Run(*(request_details.get()),
+              mate::ConvertToV8(isolate, base::Bind(&HandlerCallback,
+                                                    before_start, callback)));
 }
 
 bool IsErrorOptions(base::Value* value, int* error) {

@@ -115,8 +115,8 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
     initialize_callback_id_ = callback_id->CreateDeepCopy();
   }
 
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
   zoom_controller->SetZoomMode(WebContentsZoomController::ZOOM_MODE_MANUAL);
   zoom_controller->SetZoomLevel(0);
 }
@@ -128,12 +128,11 @@ void PdfViewerHandler::GetDefaultZoom(const base::ListValue* args) {
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
 
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
   double zoom_level = zoom_controller->GetDefaultZoomLevel();
   ResolveJavascriptCallback(
-      *callback_id,
-      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
+      *callback_id, base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
@@ -143,12 +142,11 @@ void PdfViewerHandler::GetInitialZoom(const base::ListValue* args) {
   const base::Value* callback_id;
   CHECK(args->Get(0, &callback_id));
 
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
   double zoom_level = zoom_controller->GetZoomLevel();
   ResolveJavascriptCallback(
-      *callback_id,
-      base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
+      *callback_id, base::Value(content::ZoomLevelToZoomFactor(zoom_level)));
 }
 
 void PdfViewerHandler::SetZoom(const base::ListValue* args) {
@@ -160,8 +158,8 @@ void PdfViewerHandler::SetZoom(const base::ListValue* args) {
   double zoom_level = 0.0;
   CHECK(args->GetDouble(1, &zoom_level));
 
-  auto zoom_controller = WebContentsZoomController::FromWebContents(
-    web_ui()->GetWebContents());
+  auto zoom_controller =
+      WebContentsZoomController::FromWebContents(web_ui()->GetWebContents());
   zoom_controller->SetZoomLevel(zoom_level);
   ResolveJavascriptCallback(*callback_id, base::Value(zoom_level));
 }
@@ -204,11 +202,12 @@ void PdfViewerHandler::Reload(const base::ListValue* args) {
 }
 
 void PdfViewerHandler::OnZoomLevelChanged(content::WebContents* web_contents,
-    double level, bool is_temporary) {
+                                          double level,
+                                          bool is_temporary) {
   if (web_ui()->GetWebContents() == web_contents) {
     CallJavascriptFunction("cr.webUIListenerCallback",
-      base::Value("onZoomLevelChanged"),
-      base::Value(content::ZoomLevelToZoomFactor(level)));
+                           base::Value("onZoomLevelChanged"),
+                           base::Value(content::ZoomLevelToZoomFactor(level)));
   }
 }
 

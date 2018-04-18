@@ -8,7 +8,6 @@
 
 namespace accelerator_util {
 
-void SetPlatformAccelerator(ui::Accelerator* accelerator) {
-}
+void SetPlatformAccelerator(ui::Accelerator* accelerator) {}
 
 }  // namespace accelerator_util

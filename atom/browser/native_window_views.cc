@@ -102,13 +102,12 @@ class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
                          NativeWindowViews* contents_view)
-      : views::ClientView(widget, contents_view) {
-  }
+      : views::ClientView(widget, contents_view) {}
   virtual ~NativeWindowClientView() {}
 
   bool CanClose() override {
-    static_cast<NativeWindowViews*>(contents_view())->
-        NotifyWindowCloseButtonClicked();
+    static_cast<NativeWindowViews*>(contents_view())
+        ->NotifyWindowCloseButtonClicked();
     return false;
   }
 
@@ -196,8 +195,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 
   params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
-      this,
-      window_.get(),
+      this, window_.get(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
   params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
 #elif defined(USE_X11)
@@ -227,10 +225,9 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     XDisplay* xdisplay = gfx::GetXDisplay();
     XChangeProperty(xdisplay, GetAcceleratedWidget(),
                     XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
-                    XInternAtom(xdisplay, "UTF8_STRING", False),
-                    8, PropModeReplace,
-                    reinterpret_cast<const unsigned char*>("dark"),
-                    4);
+                    XInternAtom(xdisplay, "UTF8_STRING", False), 8,
+                    PropModeReplace,
+                    reinterpret_cast<const unsigned char*>("dark"), 4);
   }
 
   // Before the window is mapped the SetWMSpecState can not work, so we have
@@ -641,9 +638,9 @@ void NativeWindowViews::SetResizable(bool resizable) {
 void NativeWindowViews::MoveTop() {
   gfx::Point pos = GetPosition();
   gfx::Size size = GetSize();
-  ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP,
-                pos.x(), pos.y(), size.width(), size.height(),
-                SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+  ::SetWindowPos(GetAcceleratedWidget(), HWND_TOP, pos.x(), pos.y(),
+                 size.width(), size.height(),
+                 SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
 }
 #endif
 
@@ -735,8 +732,10 @@ bool NativeWindowViews::IsClosable() {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(bool top, const std::string& level,
-                                       int relativeLevel, std::string* error) {
+void NativeWindowViews::SetAlwaysOnTop(bool top,
+                                       const std::string& level,
+                                       int relativeLevel,
+                                       std::string* error) {
   window_->SetAlwaysOnTop(top);
 }
 
@@ -820,24 +819,23 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 #if defined(OS_WIN)
   // Set the background color of native window.
   HBRUSH brush = CreateSolidBrush(skia::SkColorToCOLORREF(background_color));
-  ULONG_PTR previous_brush = SetClassLongPtr(
-      GetAcceleratedWidget(),
-      GCLP_HBRBACKGROUND,
-      reinterpret_cast<LONG_PTR>(brush));
+  ULONG_PTR previous_brush =
+      SetClassLongPtr(GetAcceleratedWidget(), GCLP_HBRBACKGROUND,
+                      reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
 #endif
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowElevation(
-      GetNativeWindow(),
-      has_shadow ? wm::ShadowElevation::MEDIUM : wm::ShadowElevation::NONE);
+  wm::SetShadowElevation(GetNativeWindow(), has_shadow
+                                                ? wm::ShadowElevation::MEDIUM
+                                                : wm::ShadowElevation::NONE);
 }
 
 bool NativeWindowViews::HasShadow() {
-  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey)
-      != wm::ShadowElevation::NONE;
+  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
+         wm::ShadowElevation::NONE;
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
@@ -881,8 +879,8 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     XShapeCombineRectangles(gfx::GetXDisplay(), GetAcceleratedWidget(),
                             ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
   } else {
-    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(),
-                      ShapeInput, 0, 0, None, ShapeSet);
+    XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
+                      0, None, ShapeSet);
   }
 #endif
 }
@@ -997,7 +995,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   XDisplay* xdisplay = gfx::GetXDisplay();
   XSetTransientForHint(
       xdisplay, GetAcceleratedWidget(),
-      parent? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
+      parent ? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
 #elif defined(OS_WIN) && defined(DEBUG)
   // Should work, but does not, it seems that the views toolkit doesn't support
   // reparenting on desktop.
@@ -1024,8 +1022,8 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
   return window_->GetNativeWindow();
 }
 
-void NativeWindowViews::SetProgressBar(
-    double progress, NativeWindow::ProgressState state) {
+void NativeWindowViews::SetProgressBar(double progress,
+                                       NativeWindow::ProgressState state) {
 #if defined(OS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
 #elif defined(USE_X11)
@@ -1085,8 +1083,8 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   XAtom sticky_atom = GetAtom("_NET_WM_STATE_STICKY");
   std::vector<XAtom> wm_states;
   ui::GetAtomArrayProperty(GetAcceleratedWidget(), "_NET_WM_STATE", &wm_states);
-  return std::find(wm_states.begin(),
-                   wm_states.end(), sticky_atom) != wm_states.end();
+  return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
+         wm_states.end();
 #endif
   return false;
 }
@@ -1165,21 +1163,21 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
   views::DesktopWindowTreeHostX11* tree_host =
       views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(
-      icon, icon);
+  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(icon,
+                                                                        icon);
 }
 #endif
 
-void NativeWindowViews::OnWidgetActivationChanged(
-    views::Widget* widget, bool active) {
+void NativeWindowViews::OnWidgetActivationChanged(views::Widget* widget,
+                                                  bool active) {
   if (widget != window_.get())
     return;
 
   // Post the notification to next tick.
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(active ? &NativeWindow::NotifyWindowFocus :
-                          &NativeWindow::NotifyWindowBlur,
+      base::Bind(active ? &NativeWindow::NotifyWindowFocus
+                        : &NativeWindow::NotifyWindowBlur,
                  GetWeakPtr()));
 
   // Hide menu bar when window is blured.
@@ -1189,8 +1187,8 @@ void NativeWindowViews::OnWidgetActivationChanged(
   menu_bar_alt_pressed_ = false;
 }
 
-void NativeWindowViews::OnWidgetBoundsChanged(
-    views::Widget* widget, const gfx::Rect& bounds) {
+void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* widget,
+                                              const gfx::Rect& bounds) {
   if (widget != window_.get())
     return;
 
@@ -1199,8 +1197,8 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
     if (browser_view()) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())->
-          GetAutoResizeFlags();
+      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())
+                             ->GetAutoResizeFlags();
       int width_delta = 0;
       int height_delta = 0;
       if (flags & kAutoResizeWidth) {
@@ -1285,8 +1283,8 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 
   // And the events on border for dragging resizable frameless window.
   if (!has_frame() && CanResize()) {
-    FramelessView* frame = static_cast<FramelessView*>(
-        window_->non_client_view()->frame_view());
+    FramelessView* frame =
+        static_cast<FramelessView*>(window_->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
   }
 
@@ -1328,8 +1326,8 @@ void NativeWindowViews::HandleKeyboardEvent(
 
   // Show accelerator when "Alt" is pressed.
   if (menu_bar_visible_ && IsAltKey(event))
-    menu_bar_->SetAcceleratorVisibility(
-        event.GetType() == blink::WebInputEvent::kRawKeyDown);
+    menu_bar_->SetAcceleratorVisibility(event.GetType() ==
+                                        blink::WebInputEvent::kRawKeyDown);
 
   // Show the submenu when "Alt+Key" is pressed.
   if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
@@ -1385,8 +1383,8 @@ gfx::Size NativeWindowViews::GetMaximumSize() const {
 }
 
 bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
-  return accelerator_util::TriggerAcceleratorTableCommand(
-      &accelerator_table_, accelerator);
+  return accelerator_util::TriggerAcceleratorTableCommand(&accelerator_table_,
+                                                          accelerator);
 }
 
 void NativeWindowViews::RegisterAccelerators(AtomMenuModel* menu_model) {

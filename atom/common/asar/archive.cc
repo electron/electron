@@ -121,8 +121,7 @@ Archive::Archive(const base::FilePath& path)
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
-  fd_ =
-      _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
+  fd_ = _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
 #elif defined(OS_POSIX)
   fd_ = file_.GetPlatformFile();
 #else
@@ -145,8 +144,8 @@ Archive::~Archive() {
 bool Archive::Init() {
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
-      LOG(WARNING) << "Opening " << path_.value()
-                   << ": " << base::File::ErrorToString(file_.error_details());
+      LOG(WARNING) << "Opening " << path_.value() << ": "
+                   << base::File::ErrorToString(file_.error_details());
     }
     return false;
   }
@@ -165,8 +164,8 @@ bool Archive::Init() {
   }
 
   uint32_t size;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
-          &size)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size()))
+           .ReadUInt32(&size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -182,8 +181,8 @@ bool Archive::Init() {
   }
 
   std::string header;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadString(
-        &header)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size()))
+           .ReadString(&header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }

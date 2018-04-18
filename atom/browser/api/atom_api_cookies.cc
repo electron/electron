@@ -24,7 +24,7 @@ using content::BrowserThread;
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::api::Cookies::Error> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::api::Cookies::Error val) {
@@ -35,7 +35,7 @@ struct Converter<atom::api::Cookies::Error> {
   }
 };
 
-template<>
+template <>
 struct Converter<net::CanonicalCookie> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CanonicalCookie& val) {
@@ -54,7 +54,7 @@ struct Converter<net::CanonicalCookie> {
   }
 };
 
-template<>
+template <>
 struct Converter<net::CookieStore::ChangeCause> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CookieStore::ChangeCause& val) {
@@ -165,12 +165,13 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
     GetCookieStore(getter)->GetAllCookiesAsync(filtered_callback);
   else
     GetCookieStore(getter)->GetAllCookiesForURLAsync(GURL(url),
-        filtered_callback);
+                                                     filtered_callback);
 }
 
 // Removes cookie with |url| and |name| in IO thread.
 void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
-                            const GURL& url, const std::string& name,
+                            const GURL& url,
+                            const std::string& name,
                             const base::Closure& callback) {
   GetCookieStore(getter)->DeleteCookieAsync(
       url, name, base::Bind(RunCallbackInUI, callback));
@@ -209,30 +210,29 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
   base::Time creation_time;
   if (details->GetDouble("creationDate", &creation_date)) {
-    creation_time = (creation_date == 0) ?
-        base::Time::UnixEpoch() :
-        base::Time::FromDoubleT(creation_date);
+    creation_time = (creation_date == 0)
+                        ? base::Time::UnixEpoch()
+                        : base::Time::FromDoubleT(creation_date);
   }
 
   base::Time expiration_time;
   if (details->GetDouble("expirationDate", &expiration_date)) {
-    expiration_time = (expiration_date == 0) ?
-        base::Time::UnixEpoch() :
-        base::Time::FromDoubleT(expiration_date);
+    expiration_time = (expiration_date == 0)
+                          ? base::Time::UnixEpoch()
+                          : base::Time::FromDoubleT(expiration_date);
   }
 
   base::Time last_access_time;
   if (details->GetDouble("lastAccessDate", &last_access_date)) {
-    last_access_time = (last_access_date == 0) ?
-        base::Time::UnixEpoch() :
-        base::Time::FromDoubleT(last_access_date);
+    last_access_time = (last_access_date == 0)
+                           ? base::Time::UnixEpoch()
+                           : base::Time::FromDoubleT(last_access_date);
   }
 
   GetCookieStore(getter)->SetCookieWithDetailsAsync(
-      GURL(url), name, value, domain, path, creation_time,
-      expiration_time, last_access_time, secure, http_only,
-      net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT,
-      base::Bind(OnSetCookie, callback));
+      GURL(url), name, value, domain, path, creation_time, expiration_time,
+      last_access_time, secure, http_only, net::CookieSameSite::DEFAULT_MODE,
+      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
 }
 
 }  // namespace
@@ -257,7 +257,8 @@ void Cookies::Get(const base::DictionaryValue& filter,
                      callback));
 }
 
-void Cookies::Remove(const GURL& url, const std::string& name,
+void Cookies::Remove(const GURL& url,
+                     const std::string& name,
                      const base::Closure& callback) {
   auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
@@ -288,11 +289,9 @@ void Cookies::OnCookieChanged(const CookieDetails* details) {
   Emit("changed", *(details->cookie), details->cause, details->removed);
 }
 
-
 // static
-mate::Handle<Cookies> Cookies::Create(
-    v8::Isolate* isolate,
-    AtomBrowserContext* browser_context) {
+mate::Handle<Cookies> Cookies::Create(v8::Isolate* isolate,
+                                      AtomBrowserContext* browser_context) {
   return mate::CreateHandle(isolate, new Cookies(isolate, browser_context));
 }
 

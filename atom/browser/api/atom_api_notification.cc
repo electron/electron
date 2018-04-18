@@ -20,10 +20,11 @@
 #include "atom/common/node_includes.h"
 
 namespace mate {
-template<>
+template <>
 struct Converter<brightray::NotificationAction> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                      brightray::NotificationAction* out) {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     brightray::NotificationAction* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -36,7 +37,7 @@ struct Converter<brightray::NotificationAction> {
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    brightray::NotificationAction val) {
+                                   brightray::NotificationAction val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
@@ -155,7 +156,7 @@ void Notification::SetSound(const base::string16& new_sound) {
 }
 
 void Notification::SetActions(
-  const std::vector<brightray::NotificationAction>& actions) {
+    const std::vector<brightray::NotificationAction>& actions) {
   actions_ = actions;
 }
 
@@ -179,8 +180,7 @@ void Notification::NotificationDisplayed() {
   Emit("show");
 }
 
-void Notification::NotificationDestroyed() {
-}
+void Notification::NotificationDestroyed() {}
 
 void Notification::NotificationClosed() {
   Emit("close");
@@ -232,14 +232,12 @@ void Notification::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("subtitle", &Notification::GetSubtitle,
                    &Notification::SetSubtitle)
       .SetProperty("body", &Notification::GetBody, &Notification::SetBody)
-      .SetProperty("silent", &Notification::GetSilent,
-                   &Notification::SetSilent)
+      .SetProperty("silent", &Notification::GetSilent, &Notification::SetSilent)
       .SetProperty("hasReply", &Notification::GetHasReply,
                    &Notification::SetHasReply)
       .SetProperty("replyPlaceholder", &Notification::GetReplyPlaceholder,
                    &Notification::SetReplyPlaceholder)
-      .SetProperty("sound", &Notification::GetSound,
-                   &Notification::SetSound)
+      .SetProperty("sound", &Notification::GetSound, &Notification::SetSound)
       .SetProperty("actions", &Notification::GetActions,
                    &Notification::SetActions)
       .SetProperty("closeButtonText", &Notification::GetCloseButtonText,

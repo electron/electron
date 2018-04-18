@@ -16,10 +16,9 @@
 #endif
 
 #ifndef ATOM_PRE_RELEASE_VERSION
-#define ATOM_VERSION_STRING                                  \
-  ATOM_STRINGIFY(ATOM_MAJOR_VERSION)                         \
-  "." ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." ATOM_STRINGIFY( \
-      ATOM_PATCH_VERSION)
+#define ATOM_VERSION_STRING          \
+  ATOM_STRINGIFY(ATOM_MAJOR_VERSION) \
+  "." ATOM_STRINGIFY(ATOM_MINOR_VERSION) "." ATOM_STRINGIFY(ATOM_PATCH_VERSION)
 #else
 #define ATOM_VERSION_STRING                                  \
   ATOM_STRINGIFY(ATOM_MAJOR_VERSION)                         \

@@ -35,8 +35,7 @@ void SetWMSpecState(::Window xwindow, bool enabled, ::Atom state) {
 
   XDisplay* xdisplay = gfx::GetXDisplay();
   XSendEvent(xdisplay, DefaultRootWindow(xdisplay), False,
-             SubstructureRedirectMask | SubstructureNotifyMask,
-             &xclient);
+             SubstructureRedirectMask | SubstructureNotifyMask, &xclient);
 }
 
 void SetWindowType(::Window xwindow, const std::string& type) {
@@ -45,8 +44,7 @@ void SetWindowType(::Window xwindow, const std::string& type) {
   ::Atom window_type = XInternAtom(
       xdisplay, (type_prefix + base::ToUpperASCII(type)).c_str(), False);
   XChangeProperty(xdisplay, xwindow,
-                  XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False),
-                  XA_ATOM,
+                  XInternAtom(xdisplay, "_NET_WM_WINDOW_TYPE", False), XA_ATOM,
                   32, PropModeReplace,
                   reinterpret_cast<unsigned char*>(&window_type), 1);
 }

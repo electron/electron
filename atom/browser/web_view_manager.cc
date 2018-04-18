@@ -11,17 +11,15 @@
 
 namespace atom {
 
-WebViewManager::WebViewManager() {
-}
+WebViewManager::WebViewManager() {}
 
-WebViewManager::~WebViewManager() {
-}
+WebViewManager::~WebViewManager() {}
 
 void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents) {
-  web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
+  web_contents_embedder_map_[guest_instance_id] = {web_contents, embedder};
 
   // Map the element in embedder to guest.
   int owner_process_id = embedder->GetMainFrame()->GetProcess()->GetID();

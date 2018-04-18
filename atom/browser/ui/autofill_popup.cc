@@ -105,8 +105,7 @@ display::Display GetDisplayNearestPoint(const gfx::Point& point) {
 }  // namespace
 
 AutofillPopup::AutofillPopup() {
-  bold_font_list_ =
-      gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
+  bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
   smaller_font_list_ =
       gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
 }
@@ -115,11 +114,10 @@ AutofillPopup::~AutofillPopup() {
   Hide();
 }
 
-void AutofillPopup::CreateView(
-    content::RenderFrameHost* frame_host,
-    bool offscreen,
-    views::View* parent,
-    const gfx::RectF& r) {
+void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
+                               bool offscreen,
+                               views::View* parent,
+                               const gfx::RectF& r) {
   Hide();
 
   frame_host_ = frame_host;
@@ -133,8 +131,8 @@ void AutofillPopup::CreateView(
 
 #if defined(ENABLE_OSR)
   if (offscreen) {
-    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-        frame_host_->GetView());
+    auto* osr_rwhv =
+        static_cast<OffScreenRenderWidgetHostView*>(frame_host_->GetView());
     view_->view_proxy_.reset(new OffscreenViewProxy(view_));
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
@@ -192,19 +190,17 @@ void AutofillPopup::UpdatePopupBounds() {
   display::Display bottom_right_display =
       GetDisplayNearestPoint(bottom_right_corner_of_popup);
 
-  std::pair<int, int> popup_x_and_width =
-      CalculatePopupXAndWidth(top_left_display, bottom_right_display,
-                              desired_width, bounds, is_rtl);
-  std::pair<int, int> popup_y_and_height =
-      CalculatePopupYAndHeight(top_left_display, bottom_right_display,
-                               desired_height, bounds);
+  std::pair<int, int> popup_x_and_width = CalculatePopupXAndWidth(
+      top_left_display, bottom_right_display, desired_width, bounds, is_rtl);
+  std::pair<int, int> popup_y_and_height = CalculatePopupYAndHeight(
+      top_left_display, bottom_right_display, desired_height, bounds);
 
-  popup_bounds_ = gfx::Rect(
-      popup_x_and_width.first, popup_y_and_height.first,
-      popup_x_and_width.second, popup_y_and_height.second);
-  popup_bounds_in_view_ = gfx::Rect(
-      popup_bounds_in_view_.origin(),
-      gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
+  popup_bounds_ =
+      gfx::Rect(popup_x_and_width.first, popup_y_and_height.first,
+                popup_x_and_width.second, popup_y_and_height.second);
+  popup_bounds_in_view_ =
+      gfx::Rect(popup_bounds_in_view_.origin(),
+                gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
 }
 
 void AutofillPopup::OnViewBoundsChanged(views::View* view) {
@@ -224,9 +220,10 @@ int AutofillPopup::GetDesiredPopupWidth() {
   int popup_width = element_bounds_.width();
 
   for (size_t i = 0; i < values_.size(); ++i) {
-    int row_size = kEndPadding + 2 * kPopupBorderThickness +
-      gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
-      gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
+    int row_size =
+        kEndPadding + 2 * kPopupBorderThickness +
+        gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
+        gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
     if (GetLabelAt(i).length() > 0)
       row_size += kNamePadding + kEndPadding;
 
@@ -255,8 +252,8 @@ const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
 ui::NativeTheme::ColorId AutofillPopup::GetBackgroundColorIDForRow(
     int index) const {
   return (view_ && index == view_->GetSelectedLine())
-      ? ui::NativeTheme::kColorId_ResultsTableHoveredBackground
-      : ui::NativeTheme::kColorId_ResultsTableNormalBackground;
+             ? ui::NativeTheme::kColorId_ResultsTableHoveredBackground
+             : ui::NativeTheme::kColorId_ResultsTableNormalBackground;
 }
 
 int AutofillPopup::GetLineCount() {

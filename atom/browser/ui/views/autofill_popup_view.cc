@@ -18,9 +18,8 @@
 
 namespace atom {
 
-AutofillPopupView::AutofillPopupView(
-    AutofillPopup* popup,
-    views::Widget* parent_widget)
+AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
+                                     views::Widget* parent_widget)
     : popup_(popup),
       parent_widget_(parent_widget),
 #if defined(ENABLE_OSR)
@@ -63,12 +62,10 @@ void AutofillPopupView::Show() {
     views::FocusManager* focus_manager = parent_widget_->GetFocusManager();
     focus_manager->RegisterAccelerator(
         ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority,
-        this);
+        ui::AcceleratorManager::kNormalPriority, this);
     focus_manager->RegisterAccelerator(
         ui::Accelerator(ui::VKEY_ESCAPE, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority,
-        this);
+        ui::AcceleratorManager::kNormalPriority, this);
 
     // The widget is destroyed by the corresponding NativeWidget, so we use
     // a weak pointer to hold the reference and don't have to worry about
@@ -97,7 +94,7 @@ void AutofillPopupView::Show() {
     views::WidgetFocusManager::GetInstance()->AddFocusChangeListener(this);
 
   keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
-    base::Unretained(this));
+                                  base::Unretained(this));
   auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
@@ -150,30 +147,26 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   if (!popup_)
     return;
 
-  canvas->FillRect(
-      entry_rect,
-      GetNativeTheme()->GetSystemColor(
-          popup_->GetBackgroundColorIDForRow(index)));
+  canvas->FillRect(entry_rect, GetNativeTheme()->GetSystemColor(
+                                   popup_->GetBackgroundColorIDForRow(index)));
 
   const bool is_rtl = base::i18n::IsRTL();
   const int text_align =
-    is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
+      is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
   gfx::Rect value_rect = entry_rect;
   value_rect.Inset(kEndPadding, 0);
 
   int x_align_left = value_rect.x();
   const int value_width = gfx::GetStringWidth(
-     popup_->GetValueAt(index),
-     popup_->GetValueFontListForRow(index));
+      popup_->GetValueAt(index), popup_->GetValueFontListForRow(index));
   int value_x_align_left = x_align_left;
   value_x_align_left =
-    is_rtl ? value_rect.right() - value_width : value_rect.x();
+      is_rtl ? value_rect.right() - value_width : value_rect.x();
 
   canvas->DrawStringRectWithFlags(
-      popup_->GetValueAt(index),
-      popup_->GetValueFontListForRow(index),
+      popup_->GetValueAt(index), popup_->GetValueFontListForRow(index),
       GetNativeTheme()->GetSystemColor(
-        ui::NativeTheme::kColorId_ResultsTableNormalText),
+          ui::NativeTheme::kColorId_ResultsTableNormalText),
       gfx::Rect(value_x_align_left, value_rect.y(), value_width,
                 value_rect.height()),
       text_align);
@@ -181,15 +174,13 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   // Draw the label text, if one exists.
   if (!popup_->GetLabelAt(index).empty()) {
     const int label_width = gfx::GetStringWidth(
-        popup_->GetLabelAt(index),
-        popup_->GetLabelFontListForRow(index));
+        popup_->GetLabelAt(index), popup_->GetLabelFontListForRow(index));
     int label_x_align_left = x_align_left;
     label_x_align_left =
-      is_rtl ? value_rect.x() : value_rect.right() - label_width;
+        is_rtl ? value_rect.x() : value_rect.right() - label_width;
 
     canvas->DrawStringRectWithFlags(
-        popup_->GetLabelAt(index),
-        popup_->GetLabelFontListForRow(index),
+        popup_->GetLabelAt(index), popup_->GetLabelFontListForRow(index),
         GetNativeTheme()->GetSystemColor(
             ui::NativeTheme::kColorId_ResultsTableNormalDimmedText),
         gfx::Rect(label_x_align_left, entry_rect.y(), label_width,
@@ -229,8 +220,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
-                          popup_->popup_bounds_in_view_.height(),
-                          true);
+                          popup_->popup_bounds_in_view_.height(), true);
     paint_canvas.reset(new cc::SkiaPaintCanvas(bitmap));
     draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
@@ -340,8 +330,7 @@ void AutofillPopupView::OnGestureEvent(ui::GestureEvent* event) {
   event->SetHandled();
 }
 
-bool AutofillPopupView::AcceleratorPressed(
-    const ui::Accelerator& accelerator) {
+bool AutofillPopupView::AcceleratorPressed(const ui::Accelerator& accelerator) {
   if (accelerator.modifiers() != ui::EF_NONE)
     return false;
 

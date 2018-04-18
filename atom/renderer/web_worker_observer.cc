@@ -17,8 +17,9 @@ namespace atom {
 
 namespace {
 
-static base::LazyInstance<base::ThreadLocalPointer<WebWorkerObserver>>::
-    DestructorAtExit lazy_tls = LAZY_INSTANCE_INITIALIZER;
+static base::LazyInstance<
+    base::ThreadLocalPointer<WebWorkerObserver>>::DestructorAtExit lazy_tls =
+    LAZY_INSTANCE_INITIALIZER;
 
 }  // namespace
 

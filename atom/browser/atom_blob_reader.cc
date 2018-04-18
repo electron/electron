@@ -25,19 +25,19 @@ void FreeNodeBufferData(char* data, void* hint) {
   delete[] data;
 }
 
-void RunCallbackInUI(
-    const AtomBlobReader::CompletionCallback& callback,
-    char* blob_data,
-    int size) {
+void RunCallbackInUI(const AtomBlobReader::CompletionCallback& callback,
+                     char* blob_data,
+                     int size) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   if (blob_data) {
-    v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
-        blob_data, static_cast<size_t>(size), &FreeNodeBufferData, nullptr)
-        .ToLocalChecked();
+    v8::Local<v8::Value> buffer =
+        node::Buffer::New(isolate, blob_data, static_cast<size_t>(size),
+                          &FreeNodeBufferData, nullptr)
+            .ToLocalChecked();
     callback.Run(buffer);
   } else {
     callback.Run(v8::Null(isolate));
@@ -46,33 +46,26 @@ void RunCallbackInUI(
 
 }  // namespace
 
-AtomBlobReader::AtomBlobReader(
-    content::ChromeBlobStorageContext* blob_context,
-    storage::FileSystemContext* file_system_context)
-    : blob_context_(blob_context),
-      file_system_context_(file_system_context) {
-}
+AtomBlobReader::AtomBlobReader(content::ChromeBlobStorageContext* blob_context,
+                               storage::FileSystemContext* file_system_context)
+    : blob_context_(blob_context), file_system_context_(file_system_context) {}
 
-AtomBlobReader::~AtomBlobReader() {
-}
+AtomBlobReader::~AtomBlobReader() {}
 
 void AtomBlobReader::StartReading(
     const std::string& uuid,
     const AtomBlobReader::CompletionCallback& completion_callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  auto blob_data_handle =
-      blob_context_->context()->GetBlobDataFromUUID(uuid);
-  auto callback = base::Bind(&RunCallbackInUI,
-                             completion_callback);
+  auto blob_data_handle = blob_context_->context()->GetBlobDataFromUUID(uuid);
+  auto callback = base::Bind(&RunCallbackInUI, completion_callback);
   if (!blob_data_handle) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-        base::Bind(callback, nullptr, 0));
+                            base::Bind(callback, nullptr, 0));
     return;
   }
 
-  auto blob_reader = blob_data_handle->CreateReader(
-      file_system_context_.get());
+  auto blob_reader = blob_data_handle->CreateReader(file_system_context_.get());
   BlobReadHelper* blob_read_helper =
       new BlobReadHelper(std::move(blob_reader), callback);
   blob_read_helper->Read();
@@ -81,12 +74,9 @@ void AtomBlobReader::StartReading(
 AtomBlobReader::BlobReadHelper::BlobReadHelper(
     std::unique_ptr<storage::BlobReader> blob_reader,
     const BlobReadHelper::CompletionCallback& callback)
-    : blob_reader_(std::move(blob_reader)),
-      completion_callback_(callback) {
-}
+    : blob_reader_(std::move(blob_reader)), completion_callback_(callback) {}
 
-AtomBlobReader::BlobReadHelper::~BlobReadHelper() {
-}
+AtomBlobReader::BlobReadHelper::~BlobReadHelper() {}
 
 void AtomBlobReader::BlobReadHelper::Read() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -110,14 +100,11 @@ void AtomBlobReader::BlobReadHelper::DidCalculateSize(int result) {
   int bytes_read = 0;
   scoped_refptr<net::IOBuffer> blob_data =
       new net::IOBuffer(static_cast<size_t>(total_size));
-  auto callback = base::Bind(&AtomBlobReader::BlobReadHelper::DidReadBlobData,
-                             base::Unretained(this),
-                             base::RetainedRef(blob_data));
-  storage::BlobReader::Status read_status = blob_reader_->Read(
-      blob_data.get(),
-      total_size,
-      &bytes_read,
-      callback);
+  auto callback =
+      base::Bind(&AtomBlobReader::BlobReadHelper::DidReadBlobData,
+                 base::Unretained(this), base::RetainedRef(blob_data));
+  storage::BlobReader::Status read_status =
+      blob_reader_->Read(blob_data.get(), total_size, &bytes_read, callback);
   if (read_status != storage::BlobReader::Status::IO_PENDING)
     callback.Run(bytes_read);
 }
@@ -130,7 +117,7 @@ void AtomBlobReader::BlobReadHelper::DidReadBlobData(
   char* data = new char[size];
   memcpy(data, blob_data->data(), size);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-      base::Bind(completion_callback_, data, size));
+                          base::Bind(completion_callback_, data, size));
   delete this;
 }
 

@@ -24,7 +24,7 @@
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
-#elif defined(OS_LINUX)  // defined(OS_WIN)
+#elif defined(OS_LINUX)                   // defined(OS_WIN)
 #include "atom/app/atom_main_delegate.h"  // NOLINT
 #include "content/public/app/content_main.h"
 #else  // defined(OS_LINUX)
@@ -117,9 +117,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   // from within the CRT's atexit facility, ensuring the heap functions are
   // still active. The second invocation from the OS loader will be a no-op.
   extern void NTAPI OnThreadExit(PVOID module, DWORD reason, PVOID reserved);
-  atexit([]() {
-    OnThreadExit(nullptr, DLL_THREAD_DETACH, nullptr);
-  });
+  atexit([]() { OnThreadExit(nullptr, DLL_THREAD_DETACH, nullptr); });
 #endif
 
 #ifdef ENABLE_RUN_AS_NODE

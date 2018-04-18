@@ -24,7 +24,7 @@
 
 namespace {
 
-template<typename T>
+template <typename T>
 int VectorToBitArray(const std::vector<T>& vec) {
   int bits = 0;
   for (const T& item : vec)
@@ -36,9 +36,10 @@ int VectorToBitArray(const std::vector<T>& vec) {
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<base::char16> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      base::char16* out) {
     base::string16 code = base::UTF8ToUTF16(V8ToString(val));
     if (code.length() != 1)
@@ -48,9 +49,10 @@ struct Converter<base::char16> {
   }
 };
 
-template<>
+template <>
 struct Converter<blink::WebInputEvent::Type> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Type* out) {
     std::string type = base::ToLowerASCII(V8ToString(val));
     if (type == "mousedown")
@@ -85,9 +87,10 @@ struct Converter<blink::WebInputEvent::Type> {
   }
 };
 
-template<>
+template <>
 struct Converter<blink::WebMouseEvent::Button> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
     std::string button = base::ToLowerASCII(V8ToString(val));
     if (button == "left")
@@ -102,9 +105,10 @@ struct Converter<blink::WebMouseEvent::Button> {
   }
 };
 
-template<>
+template <>
 struct Converter<blink::WebInputEvent::Modifiers> {
-  static bool FromV8(v8::Isolate* isolate, v8::Handle<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
     std::string modifier = base::ToLowerASCII(V8ToString(val));
     if (modifier == "shift")
@@ -138,16 +142,16 @@ struct Converter<blink::WebInputEvent::Modifiers> {
 };
 
 blink::WebInputEvent::Type GetWebInputEventType(v8::Isolate* isolate,
-    v8::Local<v8::Value> val) {
+                                                v8::Local<v8::Value> val) {
   blink::WebInputEvent::Type type = blink::WebInputEvent::kUndefined;
   mate::Dictionary dict;
   ConvertFromV8(isolate, val, &dict) && dict.Get("type", &type);
   return type;
 }
 
-bool Converter<blink::WebInputEvent>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
-    blink::WebInputEvent* out) {
+bool Converter<blink::WebInputEvent>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             blink::WebInputEvent* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -162,9 +166,9 @@ bool Converter<blink::WebInputEvent>::FromV8(
   return true;
 }
 
-bool Converter<blink::WebKeyboardEvent>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
-    blink::WebKeyboardEvent* out) {
+bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                blink::WebKeyboardEvent* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -208,7 +212,8 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(
 }
 
 bool Converter<content::NativeWebKeyboardEvent>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
     content::NativeWebKeyboardEvent* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -220,7 +225,8 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
 }
 
 v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
-    v8::Isolate* isolate, const content::NativeWebKeyboardEvent& in) {
+    v8::Isolate* isolate,
+    const content::NativeWebKeyboardEvent& in) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 
   if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
@@ -229,7 +235,7 @@ v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
     dict.Set("type", "keyUp");
   dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
   dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
-    static_cast<ui::DomCode>(in.dom_code)));
+                       static_cast<ui::DomCode>(in.dom_code)));
 
   using Modifiers = blink::WebInputEvent::Modifiers;
   dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
@@ -241,8 +247,9 @@ v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
   return dict.GetHandle();
 }
 
-bool Converter<blink::WebMouseEvent>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebMouseEvent* out) {
+bool Converter<blink::WebMouseEvent>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             blink::WebMouseEvent* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -271,7 +278,8 @@ bool Converter<blink::WebMouseEvent>::FromV8(
 }
 
 bool Converter<blink::WebMouseWheelEvent>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
     blink::WebMouseWheelEvent* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -297,32 +305,35 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   return true;
 }
 
-bool Converter<blink::WebFloatPoint>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebFloatPoint* out) {
+bool Converter<blink::WebFloatPoint>::FromV8(v8::Isolate* isolate,
+                                             v8::Local<v8::Value> val,
+                                             blink::WebFloatPoint* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   return dict.Get("x", &out->x) && dict.Get("y", &out->y);
 }
 
-template<>
+template <>
 struct Converter<base::Optional<blink::WebPoint>> {
-  static bool FromV8(
-      v8::Isolate* isolate, v8::Local<v8::Value> val,
-      base::Optional<blink::WebPoint>* out) {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     base::Optional<blink::WebPoint>* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
     blink::WebPoint point;
     bool success = dict.Get("x", &point.x) && dict.Get("y", &point.y);
-    if (!success) return false;
+    if (!success)
+      return false;
     out->emplace(point);
     return true;
   }
 };
 
-bool Converter<blink::WebSize>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val, blink::WebSize* out) {
+bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
+                                       v8::Local<v8::Value> val,
+                                       blink::WebSize* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -330,7 +341,8 @@ bool Converter<blink::WebSize>::FromV8(
 }
 
 bool Converter<blink::WebDeviceEmulationParams>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
     blink::WebDeviceEmulationParams* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -355,10 +367,9 @@ bool Converter<blink::WebDeviceEmulationParams>::FromV8(
   return true;
 }
 
-bool Converter<blink::WebFindOptions>::FromV8(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> val,
-    blink::WebFindOptions* out) {
+bool Converter<blink::WebFindOptions>::FromV8(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> val,
+                                              blink::WebFindOptions* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -373,7 +384,8 @@ bool Converter<blink::WebFindOptions>::FromV8(
 
 // static
 v8::Local<v8::Value> Converter<blink::WebContextMenuData::MediaType>::ToV8(
-      v8::Isolate* isolate, const blink::WebContextMenuData::MediaType& in) {
+    v8::Isolate* isolate,
+    const blink::WebContextMenuData::MediaType& in) {
   switch (in) {
     case blink::WebContextMenuData::kMediaTypeImage:
       return mate::StringToV8(isolate, "image");
@@ -394,8 +406,8 @@ v8::Local<v8::Value> Converter<blink::WebContextMenuData::MediaType>::ToV8(
 
 // static
 v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
-      v8::Isolate* isolate,
-      const blink::WebContextMenuData::InputFieldType& in) {
+    v8::Isolate* isolate,
+    const blink::WebContextMenuData::InputFieldType& in) {
   switch (in) {
     case blink::WebContextMenuData::kInputFieldTypePlainText:
       return mate::StringToV8(isolate, "plainText");
@@ -410,14 +422,10 @@ v8::Local<v8::Value> Converter<blink::WebContextMenuData::InputFieldType>::ToV8(
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-  dict.Set("canUndo",
-      !!(editFlags & blink::WebContextMenuData::kCanUndo));
-  dict.Set("canRedo",
-      !!(editFlags & blink::WebContextMenuData::kCanRedo));
-  dict.Set("canCut",
-      !!(editFlags & blink::WebContextMenuData::kCanCut));
-  dict.Set("canCopy",
-      !!(editFlags & blink::WebContextMenuData::kCanCopy));
+  dict.Set("canUndo", !!(editFlags & blink::WebContextMenuData::kCanUndo));
+  dict.Set("canRedo", !!(editFlags & blink::WebContextMenuData::kCanRedo));
+  dict.Set("canCut", !!(editFlags & blink::WebContextMenuData::kCanCut));
+  dict.Set("canCopy", !!(editFlags & blink::WebContextMenuData::kCanCopy));
 
   bool pasteFlag = false;
   if (editFlags & blink::WebContextMenuData::kCanPaste) {
@@ -429,10 +437,9 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   }
   dict.Set("canPaste", pasteFlag);
 
-  dict.Set("canDelete",
-      !!(editFlags & blink::WebContextMenuData::kCanDelete));
+  dict.Set("canDelete", !!(editFlags & blink::WebContextMenuData::kCanDelete));
   dict.Set("canSelectAll",
-      !!(editFlags & blink::WebContextMenuData::kCanSelectAll));
+           !!(editFlags & blink::WebContextMenuData::kCanSelectAll));
 
   return mate::ConvertToV8(isolate, dict);
 }
@@ -440,21 +447,20 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("inError",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaInError));
+           !!(mediaFlags & blink::WebContextMenuData::kMediaInError));
   dict.Set("isPaused",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaPaused));
-  dict.Set("isMuted",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaMuted));
+           !!(mediaFlags & blink::WebContextMenuData::kMediaPaused));
+  dict.Set("isMuted", !!(mediaFlags & blink::WebContextMenuData::kMediaMuted));
   dict.Set("hasAudio",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaHasAudio));
+           !!(mediaFlags & blink::WebContextMenuData::kMediaHasAudio));
   dict.Set("isLooping",
-      (mediaFlags & blink::WebContextMenuData::kMediaLoop) != 0);
+           (mediaFlags & blink::WebContextMenuData::kMediaLoop) != 0);
   dict.Set("isControlsVisible",
-      (mediaFlags & blink::WebContextMenuData::kMediaControls) != 0);
+           (mediaFlags & blink::WebContextMenuData::kMediaControls) != 0);
   dict.Set("canToggleControls",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaCanToggleControls));
+           !!(mediaFlags & blink::WebContextMenuData::kMediaCanToggleControls));
   dict.Set("canRotate",
-      !!(mediaFlags & blink::WebContextMenuData::kMediaCanRotate));
+           !!(mediaFlags & blink::WebContextMenuData::kMediaCanRotate));
   return mate::ConvertToV8(isolate, dict);
 }
 
@@ -483,8 +489,8 @@ v8::Local<v8::Value> Converter<blink::WebCache::ResourceTypeStats>::ToV8(
 
 // static
 v8::Local<v8::Value> Converter<blink::WebReferrerPolicy>::ToV8(
-      v8::Isolate* isolate,
-      const blink::WebReferrerPolicy& in) {
+    v8::Isolate* isolate,
+    const blink::WebReferrerPolicy& in) {
   switch (in) {
     case blink::kWebReferrerPolicyDefault:
       return mate::StringToV8(isolate, "default");
@@ -508,8 +514,10 @@ v8::Local<v8::Value> Converter<blink::WebReferrerPolicy>::ToV8(
 }
 
 // static
-bool Converter<blink::WebReferrerPolicy>::FromV8(v8::Isolate* isolate,
-      v8::Handle<v8::Value> val, blink::WebReferrerPolicy* out) {
+bool Converter<blink::WebReferrerPolicy>::FromV8(
+    v8::Isolate* isolate,
+    v8::Handle<v8::Value> val,
+    blink::WebReferrerPolicy* out) {
   std::string policy = base::ToLowerASCII(V8ToString(val));
   if (policy == "default")
     *out = blink::kWebReferrerPolicyDefault;

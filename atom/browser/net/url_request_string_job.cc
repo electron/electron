@@ -11,10 +11,9 @@
 
 namespace atom {
 
-URLRequestStringJob::URLRequestStringJob(
-    net::URLRequest* request, net::NetworkDelegate* network_delegate)
-    : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {
-}
+URLRequestStringJob::URLRequestStringJob(net::URLRequest* request,
+                                         net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestSimpleJob>(request, network_delegate) {}
 
 void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
   if (options->IsType(base::Value::Type::DICTIONARY)) {

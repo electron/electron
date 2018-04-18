@@ -12,8 +12,8 @@
 
 namespace {
 
-using atom::JumpListItem;
 using atom::JumpListCategory;
+using atom::JumpListItem;
 using atom::JumpListResult;
 
 bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
@@ -46,7 +46,7 @@ bool AppendSeparator(IObjectCollection* collection) {
   if (SUCCEEDED(shell_link.CoCreateInstance(CLSID_ShellLink))) {
     CComQIPtr<IPropertyStore> property_store(shell_link);
     if (base::win::SetBooleanValueForPropertyStore(
-        property_store, PKEY_AppUserModel_IsDestListSeparator, true))
+            property_store, PKEY_AppUserModel_IsDestListSeparator, true))
       return SUCCEEDED(collection->AddObject(shell_link));
   }
   return false;
@@ -56,8 +56,8 @@ bool AppendFile(const JumpListItem& item, IObjectCollection* collection) {
   DCHECK(collection);
 
   CComPtr<IShellItem> file;
-  if (SUCCEEDED(SHCreateItemFromParsingName(
-        item.path.value().c_str(), NULL, IID_PPV_ARGS(&file))))
+  if (SUCCEEDED(SHCreateItemFromParsingName(item.path.value().c_str(), NULL,
+                                            IID_PPV_ARGS(&file))))
     return SUCCEEDED(collection->AddObject(file));
 
   return false;
@@ -68,8 +68,8 @@ bool GetShellItemFileName(IShellItem* shell_item, base::FilePath* file_name) {
   DCHECK(file_name);
 
   base::win::ScopedCoMem<wchar_t> file_name_buffer;
-  if (SUCCEEDED(shell_item->GetDisplayName(SIGDN_FILESYSPATH,
-                                           &file_name_buffer))) {
+  if (SUCCEEDED(
+          shell_item->GetDisplayName(SIGDN_FILESYSPATH, &file_name_buffer))) {
     *file_name = base::FilePath(file_name_buffer.get());
     return true;
   }
@@ -88,19 +88,20 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
 
   CComQIPtr<IPropertyStore> property_store = shell_link;
   base::win::ScopedPropVariant prop;
-  if (SUCCEEDED(property_store->GetValue(PKEY_Link_Arguments, prop.Receive()))
-      && (prop.get().vt == VT_LPWSTR)) {
+  if (SUCCEEDED(
+          property_store->GetValue(PKEY_Link_Arguments, prop.Receive())) &&
+      (prop.get().vt == VT_LPWSTR)) {
     item->arguments = prop.get().pwszVal;
   }
 
-  if (SUCCEEDED(property_store->GetValue(PKEY_Title, prop.Receive()))
-      && (prop.get().vt == VT_LPWSTR)) {
+  if (SUCCEEDED(property_store->GetValue(PKEY_Title, prop.Receive())) &&
+      (prop.get().vt == VT_LPWSTR)) {
     item->title = prop.get().pwszVal;
   }
 
   int icon_index;
-  if (SUCCEEDED(shell_link->GetIconLocation(path, arraysize(path),
-                                            &icon_index))) {
+  if (SUCCEEDED(
+          shell_link->GetIconLocation(path, arraysize(path), &icon_index))) {
     item->icon_path = base::FilePath(path);
     item->icon_index = icon_index;
   }
@@ -219,7 +220,8 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
         if (AppendTask(item, collection))
           ++appended_count;
         else
-          LOG(ERROR) << "Failed to append task '" << item.title << "' "
+          LOG(ERROR) << "Failed to append task '" << item.title
+                     << "' "
                         "to Jump List.";
         break;
 
@@ -240,7 +242,8 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
         if (AppendFile(item, collection))
           ++appended_count;
         else
-          LOG(ERROR) << "Failed to append '" << item.path.value() << "' "
+          LOG(ERROR) << "Failed to append '" << item.path.value()
+                     << "' "
                         "to Jump List.";
         break;
     }
@@ -322,7 +325,7 @@ JumpListResult JumpList::AppendCategories(
     // Keep the first non-generic error code as only one can be returned from
     // the function (so try to make it the most useful one).
     if (((result == JumpListResult::SUCCESS) ||
-        (result == JumpListResult::GENERIC_ERROR)) &&
+         (result == JumpListResult::GENERIC_ERROR)) &&
         (latestResult != JumpListResult::SUCCESS))
       result = latestResult;
   }

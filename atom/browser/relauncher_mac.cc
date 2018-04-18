@@ -41,7 +41,7 @@ void RelauncherSynchronizeWithParent() {
     return;
   }
 
-  struct kevent change = { 0 };
+  struct kevent change = {0};
   EV_SET(&change, parent_pid, EVFILT_PROC, EV_ADD, NOTE_EXIT, 0, NULL);
   if (kevent(kq.get(), &change, 1, nullptr, 0, nullptr) == -1) {
     PLOG(ERROR) << "kevent (add)";
@@ -68,8 +68,7 @@ void RelauncherSynchronizeWithParent() {
     return;
   }
 
-  if (event.filter != EVFILT_PROC ||
-      event.fflags != NOTE_EXIT ||
+  if (event.filter != EVFILT_PROC || event.fflags != NOTE_EXIT ||
       event.ident != static_cast<uintptr_t>(parent_pid)) {
     LOG(ERROR) << "kevent (monitor): unexpected event, filter " << event.filter
                << ", fflags " << event.fflags << ", ident " << event.ident;

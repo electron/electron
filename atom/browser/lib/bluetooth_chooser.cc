@@ -9,10 +9,11 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::BluetoothChooser::DeviceInfo> {
   static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate, const atom::BluetoothChooser::DeviceInfo& val) {
+      v8::Isolate* isolate,
+      const atom::BluetoothChooser::DeviceInfo& val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("deviceName", val.device_name);
     dict.Set("deviceId", val.device_id);
@@ -28,9 +29,8 @@ namespace {
 
 const int kMaxScanRetries = 5;
 
-void OnDeviceChosen(
-    const content::BluetoothChooser::EventHandler& handler,
-    const std::string& device_id) {
+void OnDeviceChosen(const content::BluetoothChooser::EventHandler& handler,
+                    const std::string& device_id) {
   if (device_id.empty()) {
     handler.Run(content::BluetoothChooser::Event::CANCELLED, device_id);
   } else {
@@ -40,16 +40,13 @@ void OnDeviceChosen(
 
 }  // namespace
 
-BluetoothChooser::BluetoothChooser(
-    api::WebContents* contents,
-    const EventHandler& event_handler)
+BluetoothChooser::BluetoothChooser(api::WebContents* contents,
+                                   const EventHandler& event_handler)
     : api_web_contents_(contents),
       event_handler_(event_handler),
-      num_retries_(0) {
-}
+      num_retries_(0) {}
 
-BluetoothChooser::~BluetoothChooser() {
-}
+BluetoothChooser::~BluetoothChooser() {}
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
   switch (presence) {
@@ -69,15 +66,13 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
       break;
     case DiscoveryState::IDLE:
       if (device_list_.empty()) {
-        auto event = ++num_retries_ > kMaxScanRetries ? Event::CANCELLED
-                                                      : Event::RESCAN;
+        auto event =
+            ++num_retries_ > kMaxScanRetries ? Event::CANCELLED : Event::RESCAN;
         event_handler_.Run(event, "");
       } else {
-        bool prevent_default =
-            api_web_contents_->Emit("select-bluetooth-device",
-                                    device_list_,
-                                    base::Bind(&OnDeviceChosen,
-                                               event_handler_));
+        bool prevent_default = api_web_contents_->Emit(
+            "select-bluetooth-device", device_list_,
+            base::Bind(&OnDeviceChosen, event_handler_));
         if (!prevent_default) {
           auto device_id = device_list_[0].device_id;
           event_handler_.Run(Event::SELECTED, device_id);
@@ -100,8 +95,9 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
 
   // Emit a select-bluetooth-device handler to allow for user to listen for
   // bluetooth device found.
-  bool prevent_default = api_web_contents_->Emit("select-bluetooth-device",
-                device_list_, base::Bind(&OnDeviceChosen, event_handler_));
+  bool prevent_default =
+      api_web_contents_->Emit("select-bluetooth-device", device_list_,
+                              base::Bind(&OnDeviceChosen, event_handler_));
 
   // If emit not implimented select first device that matches the filters
   //  provided.

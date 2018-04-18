@@ -11,8 +11,8 @@
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
-using content::RenderFrame;
 using blink::WebLocalFrame;
+using content::RenderFrame;
 
 namespace atom {
 
@@ -59,8 +59,10 @@ base::string16 SendSync(mate::Arguments* args,
   return json;
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("send", &Send);
   dict.SetMethod("sendSync", &SendSync);

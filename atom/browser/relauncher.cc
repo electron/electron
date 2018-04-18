@@ -57,8 +57,8 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   relaunch_argv.push_back(helper.value());
   relaunch_argv.push_back(internal::kRelauncherTypeArg);
 
-  relaunch_argv.insert(relaunch_argv.end(),
-                       relauncher_args.begin(), relauncher_args.end());
+  relaunch_argv.insert(relaunch_argv.end(), relauncher_args.begin(),
+                       relauncher_args.end());
 
   relaunch_argv.push_back(internal::kRelauncherArgSeparator);
 
@@ -84,8 +84,8 @@ bool RelaunchAppWithHelper(const base::FilePath& helper,
   // preserve these three FDs in forked processes, so kRelauncherSyncFD should
   // not conflict with them.
   static_assert(internal::kRelauncherSyncFD != STDIN_FILENO &&
-                internal::kRelauncherSyncFD != STDOUT_FILENO &&
-                internal::kRelauncherSyncFD != STDERR_FILENO,
+                    internal::kRelauncherSyncFD != STDOUT_FILENO &&
+                    internal::kRelauncherSyncFD != STDERR_FILENO,
                 "kRelauncherSyncFD must not conflict with stdio fds");
 #endif
 

@@ -22,7 +22,9 @@ namespace atom {
 namespace {
 
 // Dummy class type that used for crashing the program.
-struct DummyClass { bool crash; };
+struct DummyClass {
+  bool crash;
+};
 
 // Called when there is a fatal error in V8, we just crash the process here so
 // we can get the stack trace.
@@ -32,7 +34,6 @@ void FatalErrorCallback(const char* location, const char* message) {
 }
 
 }  // namespace
-
 
 AtomBindings::AtomBindings(uv_loop_t* loop) {
   uv_async_init(loop, &call_next_tick_async_, OnCallNextTick);
@@ -44,8 +45,7 @@ AtomBindings::~AtomBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
 }
 
-void AtomBindings::BindTo(v8::Isolate* isolate,
-                          v8::Local<v8::Object> process) {
+void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   v8::V8::SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
@@ -54,14 +54,14 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
   dict.SetMethod("log", &Log);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
-  dict.SetMethod("getCPUUsage",
-      base::Bind(&AtomBindings::GetCPUUsage, base::Unretained(this)));
+  dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
+                                           base::Unretained(this)));
   dict.SetMethod("getIOCounters", &GetIOCounters);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
 #endif
-  dict.SetMethod("activateUvLoop",
-      base::Bind(&AtomBindings::ActivateUVLoop, base::Unretained(this)));
+  dict.SetMethod("activateUvLoop", base::Bind(&AtomBindings::ActivateUVLoop,
+                                              base::Unretained(this)));
 
 #if defined(MAS_BUILD)
   dict.Set("mas", true);
@@ -76,8 +76,8 @@ void AtomBindings::BindTo(v8::Isolate* isolate,
 }
 
 void AtomBindings::EnvironmentDestroyed(node::Environment* env) {
-  auto it = std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(),
-                      env);
+  auto it =
+      std::find(pending_next_ticks_.begin(), pending_next_ticks_.end(), env);
   if (it != pending_next_ticks_.end())
     pending_next_ticks_.erase(it);
 }
@@ -102,9 +102,7 @@ void AtomBindings::OnCallNextTick(uv_async_t* handle) {
     mate::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
     node::InternalCallbackScope scope(
-        env,
-        v8::Local<v8::Object>(),
-        {0, 0},
+        env, v8::Local<v8::Object>(), {0, 0},
         node::InternalCallbackScope::kAllowEmptyResource);
   }
 
@@ -149,7 +147,7 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
-    mate::Arguments* args) {
+                                                       mate::Arguments* args) {
   base::SystemMemoryInfoKB mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
     args->ThrowError("Unable to retrieve system memory information");

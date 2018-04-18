@@ -6,29 +6,22 @@
 
 namespace atom {
 
-TrayIcon::TrayIcon() {
-}
+TrayIcon::TrayIcon() {}
 
-TrayIcon::~TrayIcon() {
-}
+TrayIcon::~TrayIcon() {}
 
-void TrayIcon::SetPressedImage(ImageType image) {
-}
+void TrayIcon::SetPressedImage(ImageType image) {}
 
-void TrayIcon::SetTitle(const std::string& title) {
-}
+void TrayIcon::SetTitle(const std::string& title) {}
 
-void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {
-}
+void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {}
 
 void TrayIcon::DisplayBalloon(ImageType icon,
                               const base::string16& title,
-                              const base::string16& contents) {
-}
+                              const base::string16& contents) {}
 
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
-                                AtomMenuModel* menu_model) {
-}
+                                AtomMenuModel* menu_model) {}
 
 gfx::Rect TrayIcon::GetBounds() {
   return gfx::Rect();

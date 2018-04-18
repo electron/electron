@@ -39,18 +39,18 @@ struct CommonButtonID {
 CommonButtonID GetCommonID(const base::string16& button) {
   base::string16 lower = base::ToLowerASCII(button);
   if (lower == L"ok")
-    return { TDCBF_OK_BUTTON, IDOK };
+    return {TDCBF_OK_BUTTON, IDOK};
   else if (lower == L"yes")
-    return { TDCBF_YES_BUTTON, IDYES };
+    return {TDCBF_YES_BUTTON, IDYES};
   else if (lower == L"no")
-    return { TDCBF_NO_BUTTON, IDNO };
+    return {TDCBF_NO_BUTTON, IDNO};
   else if (lower == L"cancel")
-    return { TDCBF_CANCEL_BUTTON, IDCANCEL };
+    return {TDCBF_CANCEL_BUTTON, IDCANCEL};
   else if (lower == L"retry")
-    return { TDCBF_RETRY_BUTTON, IDRETRY };
+    return {TDCBF_RETRY_BUTTON, IDRETRY};
   else if (lower == L"close")
-    return { TDCBF_CLOSE_BUTTON, IDCLOSE };
-  return { -1, -1 };
+    return {TDCBF_CLOSE_BUTTON, IDCLOSE};
+  return {-1, -1};
 }
 
 // Determine whether the buttons are common buttons, if so map common ID
@@ -86,13 +86,13 @@ int ShowTaskDialogUTF16(NativeWindow* parent,
                         bool* checkbox_checked,
                         const gfx::ImageSkia& icon) {
   TASKDIALOG_FLAGS flags =
-      TDF_SIZE_TO_CONTENT |  // Show all content.
+      TDF_SIZE_TO_CONTENT |           // Show all content.
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
 
-  TASKDIALOGCONFIG config = { 0 };
-  config.cbSize     = sizeof(config);
-  config.hInstance  = GetModuleHandle(NULL);
-  config.dwFlags    = flags;
+  TASKDIALOGCONFIG config = {0};
+  config.cbSize = sizeof(config);
+  config.hInstance = GetModuleHandle(NULL);
+  config.dwFlags = flags;
 
   if (parent) {
     config.hwndParent =
@@ -223,8 +223,8 @@ void RunMessageBoxInNewThread(base::Thread* thread,
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::Bind(callback, result, checkbox_checked));
-  content::BrowserThread::DeleteSoon(
-      content::BrowserThread::UI, FROM_HERE, thread);
+  content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                     thread);
 }
 
 }  // namespace

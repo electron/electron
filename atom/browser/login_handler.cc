@@ -38,7 +38,7 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
       render_process_host_id_(0),
       render_frame_id_(0) {
   content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
-      &render_process_host_id_,  &render_frame_id_);
+      &render_process_host_id_, &render_frame_id_);
 
   // Fill request details on IO thread.
   std::unique_ptr<base::DictionaryValue> request_details(
@@ -47,14 +47,12 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(&Browser::RequestLogin,
-                 base::Unretained(Browser::Get()),
+      base::Bind(&Browser::RequestLogin, base::Unretained(Browser::Get()),
                  base::RetainedRef(WrapRefCounted(this)),
                  base::Passed(&request_details)));
 }
 
-LoginHandler::~LoginHandler() {
-}
+LoginHandler::~LoginHandler() {}
 
 content::WebContents* LoginHandler::GetWebContents() const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);

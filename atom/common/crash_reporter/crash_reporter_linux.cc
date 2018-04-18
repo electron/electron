@@ -38,9 +38,7 @@ static const off_t kMaxMinidumpFileSize = 1258291;
 }  // namespace
 
 CrashReporterLinux::CrashReporterLinux()
-    : process_start_time_(0),
-      pid_(getpid()),
-      upload_to_server_(true) {
+    : process_start_time_(0), pid_(getpid()), upload_to_server_(true) {
   // Set the base process start time value.
   struct timeval tv;
   if (!gettimeofday(&tv, NULL)) {
@@ -54,8 +52,7 @@ CrashReporterLinux::CrashReporterLinux()
   base::SetLinuxDistro(base::GetLinuxDistro());
 }
 
-CrashReporterLinux::~CrashReporterLinux() {
-}
+CrashReporterLinux::~CrashReporterLinux() {}
 
 void CrashReporterLinux::InitBreakpad(const std::string& product_name,
                                       const std::string& version,
@@ -101,13 +98,10 @@ void CrashReporterLinux::EnableCrashDumping(const base::FilePath& crashes_dir) {
   MinidumpDescriptor minidump_descriptor(crashes_dir.value());
   minidump_descriptor.set_size_limit(kMaxMinidumpFileSize);
 
-  breakpad_.reset(new ExceptionHandler(
-      minidump_descriptor,
-      NULL,
-      CrashDone,
-      this,
-      true,  // Install handlers.
-      -1));
+  breakpad_.reset(new ExceptionHandler(minidump_descriptor, NULL, CrashDone,
+                                       this,
+                                       true,  // Install handlers.
+                                       -1));
 }
 
 bool CrashReporterLinux::CrashDone(const MinidumpDescriptor& minidump,

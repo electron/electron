@@ -72,7 +72,7 @@ void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
 void PowerObserverLinux::BlockSleep() {
   dbus::MethodCall sleep_inhibit_call(kLogindManagerInterface, "Inhibit");
   dbus::MessageWriter inhibit_writer(&sleep_inhibit_call);
-  inhibit_writer.AppendString("sleep");                               // what
+  inhibit_writer.AppendString("sleep");  // what
   // Use the executable name as the lock owner, which will list rebrands of the
   // electron executable as separate entities.
   inhibit_writer.AppendString(lock_owner_name_);                      // who

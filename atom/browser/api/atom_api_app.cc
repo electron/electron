@@ -64,9 +64,10 @@ using atom::Browser;
 namespace mate {
 
 #if defined(OS_WIN)
-template<>
+template <>
 struct Converter<Browser::UserTask> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      Browser::UserTask* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -83,13 +84,14 @@ struct Converter<Browser::UserTask> {
   }
 };
 
-using atom::JumpListItem;
 using atom::JumpListCategory;
+using atom::JumpListItem;
 using atom::JumpListResult;
 
-template<>
+template <>
 struct Converter<JumpListItem::Type> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      JumpListItem::Type* out) {
     std::string item_type;
     if (!ConvertFromV8(isolate, val, &item_type))
@@ -127,9 +129,10 @@ struct Converter<JumpListItem::Type> {
   }
 };
 
-template<>
+template <>
 struct Converter<JumpListItem> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      JumpListItem* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -189,9 +192,10 @@ struct Converter<JumpListItem> {
   }
 };
 
-template<>
+template <>
 struct Converter<JumpListCategory::Type> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      JumpListCategory::Type* out) {
     std::string category_type;
     if (!ConvertFromV8(isolate, val, &category_type))
@@ -235,9 +239,10 @@ struct Converter<JumpListCategory::Type> {
   }
 };
 
-template<>
+template <>
 struct Converter<JumpListCategory> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      JumpListCategory* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -264,7 +269,7 @@ struct Converter<JumpListCategory> {
 };
 
 // static
-template<>
+template <>
 struct Converter<JumpListResult> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, JumpListResult val) {
     std::string result_code;
@@ -298,9 +303,10 @@ struct Converter<JumpListResult> {
 };
 #endif
 
-template<>
+template <>
 struct Converter<Browser::LoginItemSettings> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      Browser::LoginItemSettings* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
@@ -325,15 +331,16 @@ struct Converter<Browser::LoginItemSettings> {
   }
 };
 
-template<>
+template <>
 struct Converter<content::CertificateRequestResultType> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      content::CertificateRequestResultType* out) {
     bool b;
     if (!ConvertFromV8(isolate, val, &b))
       return false;
-    *out = b ? content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE :
-               content::CERTIFICATE_REQUEST_RESULT_TYPE_CANCEL;
+    *out = b ? content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE
+             : content::CERTIFICATE_REQUEST_RESULT_TYPE_CANCEL;
     return true;
   }
 };
@@ -414,8 +421,8 @@ bool NotificationCallbackWrapper(
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
-    task_runner->PostTask(
-        FROM_HERE, base::Bind(base::IgnoreResult(callback), cmd, cwd));
+    task_runner->PostTask(FROM_HERE,
+                          base::Bind(base::IgnoreResult(callback), cmd, cwd));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -479,9 +486,8 @@ void PassLoginInformation(scoped_refptr<LoginHandler> login_handler,
 }
 
 #if defined(USE_NSS_CERTS)
-int ImportIntoCertStore(
-    CertificateManagerModel* model,
-    const base::DictionaryValue& options) {
+int ImportIntoCertStore(CertificateManagerModel* model,
+                        const base::DictionaryValue& options) {
   std::string file_data, cert_path;
   base::string16 password;
   net::ScopedCERTCertificateList imported_certs;
@@ -492,17 +498,13 @@ int ImportIntoCertStore(
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {
       auto module = model->cert_db()->GetPrivateSlot();
-      rv = model->ImportFromPKCS12(module.get(),
-                                   file_data,
-                                   password,
-                                   true,
+      rv = model->ImportFromPKCS12(module.get(), file_data, password, true,
                                    &imported_certs);
       if (imported_certs.size() > 1) {
         auto it = imported_certs.begin();
         ++it;  // skip first which would  be the client certificate.
         for (; it != imported_certs.end(); ++it)
-          rv &= model->SetCertTrust(it->get(),
-                                    net::CA_CERT,
+          rv &= model->SetCertTrust(it->get(), net::CA_CERT,
                                     net::NSSCertDatabase::TRUSTED_SSL);
       }
     }
@@ -521,7 +523,7 @@ void OnIconDataAvailable(v8::Isolate* isolate,
     callback.Run(v8::Null(isolate), *icon);
   } else {
     v8::Local<v8::String> error_message =
-      v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
+        v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
     callback.Run(v8::Exception::Error(error_message), gfx::Image());
   }
 }
@@ -533,18 +535,16 @@ App::App(v8::Isolate* isolate) {
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
   base::ProcessId pid = base::GetCurrentProcId();
-  std::unique_ptr<atom::ProcessMetric> process_metric(
-      new atom::ProcessMetric(
-          content::PROCESS_TYPE_BROWSER,
-          pid,
-          base::ProcessMetrics::CreateCurrentProcessMetrics()));
+  std::unique_ptr<atom::ProcessMetric> process_metric(new atom::ProcessMetric(
+      content::PROCESS_TYPE_BROWSER, pid,
+      base::ProcessMetrics::CreateCurrentProcessMetrics()));
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
 }
 
 App::~App() {
-  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(
-      nullptr);
+  static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+      ->set_delegate(nullptr);
   Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
@@ -609,35 +609,30 @@ void App::OnAccessibilitySupportChanged() {
 }
 
 #if defined(OS_MACOSX)
-void App::OnWillContinueUserActivity(
-    bool* prevent_default,
-    const std::string& type) {
+void App::OnWillContinueUserActivity(bool* prevent_default,
+                                     const std::string& type) {
   *prevent_default = Emit("will-continue-activity", type);
 }
 
-void App::OnDidFailToContinueUserActivity(
-    const std::string& type,
-    const std::string& error) {
+void App::OnDidFailToContinueUserActivity(const std::string& type,
+                                          const std::string& error) {
   Emit("continue-activity-error", type, error);
 }
 
-void App::OnContinueUserActivity(
-    bool* prevent_default,
-    const std::string& type,
-    const base::DictionaryValue& user_info) {
+void App::OnContinueUserActivity(bool* prevent_default,
+                                 const std::string& type,
+                                 const base::DictionaryValue& user_info) {
   *prevent_default = Emit("continue-activity", type, user_info);
 }
 
-void App::OnUserActivityWasContinued(
-    const std::string& type,
-    const base::DictionaryValue& user_info) {
+void App::OnUserActivityWasContinued(const std::string& type,
+                                     const base::DictionaryValue& user_info) {
   Emit("activity-was-continued", type, user_info);
 }
 
-void App::OnUpdateUserActivityState(
-    bool* prevent_default,
-    const std::string& type,
-    const base::DictionaryValue& user_info) {
+void App::OnUpdateUserActivityState(bool* prevent_default,
+                                    const std::string& type,
+                                    const base::DictionaryValue& user_info) {
   *prevent_default = Emit("update-activity-state", type, user_info);
 }
 
@@ -654,12 +649,9 @@ void App::OnLogin(LoginHandler* login_handler,
   content::WebContents* web_contents = login_handler->GetWebContents();
   if (web_contents) {
     prevent_default =
-        Emit("login",
-             WebContents::CreateFrom(isolate(), web_contents),
-             request_details,
-             login_handler->auth_info(),
-             base::Bind(&PassLoginInformation,
-                        WrapRefCounted(login_handler)));
+        Emit("login", WebContents::CreateFrom(isolate(), web_contents),
+             request_details, login_handler->auth_info(),
+             base::Bind(&PassLoginInformation, WrapRefCounted(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
@@ -708,12 +700,9 @@ void App::AllowCertificateError(
         callback) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  bool prevent_default = Emit("certificate-error",
-                              WebContents::CreateFrom(isolate(), web_contents),
-                              request_url,
-                              net::ErrorToString(cert_error),
-                              ssl_info.cert,
-                              callback);
+  bool prevent_default = Emit(
+      "certificate-error", WebContents::CreateFrom(isolate(), web_contents),
+      request_url, net::ErrorToString(cert_error), ssl_info.cert, callback);
 
   // Deny the certificate by default.
   if (!prevent_default)
@@ -725,8 +714,8 @@ void App::SelectClientCertificate(
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
-  std::shared_ptr<content::ClientCertificateDelegate>
-      shared_delegate(delegate.release());
+  std::shared_ptr<content::ClientCertificateDelegate> shared_delegate(
+      delegate.release());
 
   // Convert the ClientCertIdentityList to a CertificateList
   // to avoid changes in the API.
@@ -756,7 +745,7 @@ void App::SelectClientCertificate(
 
 void App::OnGpuProcessCrashed(base::TerminationStatus status) {
   Emit("gpu-process-crashed",
-    status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
+       status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
@@ -918,8 +907,9 @@ bool App::Relaunch(mate::Arguments* js_args) {
 
 void App::DisableHardwareAcceleration(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError("app.disableHardwareAcceleration() can only be called "
-                     "before app is ready");
+    args->ThrowError(
+        "app.disableHardwareAcceleration() can only be called "
+        "before app is ready");
     return;
   }
   content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
@@ -958,18 +948,15 @@ Browser::LoginItemSettings App::GetLoginItemSettings(mate::Arguments* args) {
 }
 
 #if defined(USE_NSS_CERTS)
-void App::ImportCertificate(
-    const base::DictionaryValue& options,
-    const net::CompletionCallback& callback) {
+void App::ImportCertificate(const base::DictionaryValue& options,
+                            const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
     std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
     CertificateManagerModel::Create(
         browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
-                   base::Unretained(this),
-                   base::Passed(&copy),
-                   callback));
+                   base::Unretained(this), base::Passed(&copy), callback));
     return;
   }
 
@@ -982,8 +969,8 @@ void App::OnCertificateManagerModelCreated(
     const net::CompletionCallback& callback,
     std::unique_ptr<CertificateManagerModel> model) {
   certificate_manager_model_ = std::move(model);
-  int rv = ImportIntoCertStore(certificate_manager_model_.get(),
-                               *(options.get()));
+  int rv =
+      ImportIntoCertStore(certificate_manager_model_.get(), *(options.get()));
   callback.Run(rv);
 }
 #endif
@@ -1012,7 +999,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   std::vector<JumpListCategory> categories;
   bool delete_jump_list = val->IsNull();
   if (!delete_jump_list &&
-    !mate::ConvertFromV8(args->isolate(), val, &categories)) {
+      !mate::ConvertFromV8(args->isolate(), val, &categories)) {
     args->ThrowError("Argument must be null or an array of categories");
     return JumpListResult::ARGUMENT_ERROR;
   }
@@ -1020,9 +1007,8 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
   JumpList jump_list(Browser::Get()->GetAppUserModelID());
 
   if (delete_jump_list) {
-    return jump_list.Delete()
-      ? JumpListResult::SUCCESS
-      : JumpListResult::GENERIC_ERROR;
+    return jump_list.Delete() ? JumpListResult::SUCCESS
+                              : JumpListResult::GENERIC_ERROR;
   }
 
   // Start a transaction that updates the JumpList of this application.
@@ -1045,8 +1031,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
-void App::GetFileIcon(const base::FilePath& path,
-                      mate::Arguments* args) {
+void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
   mate::Dictionary options;
   IconLoader::IconSize icon_size;
   FileIconCallback callback;
@@ -1091,10 +1076,12 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
-    memory_dict.Set("workingSetSize",
+    memory_dict.Set(
+        "workingSetSize",
         static_cast<double>(
             process_metric.second->metrics->GetWorkingSetSize() >> 10));
-    memory_dict.Set("peakWorkingSetSize",
+    memory_dict.Set(
+        "peakWorkingSetSize",
         static_cast<double>(
             process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
 
@@ -1106,13 +1093,14 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     }
 
     pid_dict.Set("memory", memory_dict);
-    cpu_dict.Set("percentCPUUsage",
-        process_metric.second->metrics->GetPlatformIndependentCPUUsage()
-        / processor_count);
+    cpu_dict.Set(
+        "percentCPUUsage",
+        process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
+            processor_count);
 
 #if !defined(OS_WIN)
     cpu_dict.Set("idleWakeupsPerSecond",
-        process_metric.second->metrics->GetIdleWakeupsPerSecond());
+                 process_metric.second->metrics->GetIdleWakeupsPerSecond());
 #else
     // Chrome's underlying process_metrics.cc will throw a non-fatal warning
     // that this method isn't implemented on Windows, so set it to 0 instead
@@ -1122,8 +1110,8 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
     pid_dict.Set("cpu", cpu_dict);
     pid_dict.Set("pid", process_metric.second->pid);
-    pid_dict.Set("type",
-        content::GetProcessTypeNameInEnglish(process_metric.second->type));
+    pid_dict.Set("type", content::GetProcessTypeNameInEnglish(
+                             process_metric.second->type));
     result.push_back(pid_dict);
   }
 
@@ -1138,8 +1126,9 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
-    args->ThrowError("app.enableMixedSandbox() can only be called "
-                     "before app is ready");
+    args->ThrowError(
+        "app.enableMixedSandbox() can only be called "
+        "before app is ready");
     return;
   }
 
@@ -1179,8 +1168,8 @@ mate::Handle<App> App::Create(v8::Isolate* isolate) {
 }
 
 // static
-void App::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void App::BuildPrototype(v8::Isolate* isolate,
+                         v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "App"));
   auto browser = base::Unretained(Browser::Get());
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
@@ -1255,22 +1244,21 @@ void App::BuildPrototype(
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
-      // TODO(juturu): Remove in 2.0, deprecate before then with warnings
-      #if defined(OS_MACOSX)
+// TODO(juturu): Remove in 2.0, deprecate before then with warnings
+#if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
-      #endif
-      #if defined(MAS_BUILD)
+#endif
+#if defined(MAS_BUILD)
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
-      #endif
+#endif
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 
 }  // namespace api
 
 }  // namespace atom
-
 
 namespace {
 
@@ -1308,8 +1296,10 @@ void DockSetMenu(atom::api::Menu* menu) {
 }
 #endif
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   auto command_line = base::CommandLine::ForCurrentProcess();
 
@@ -1317,9 +1307,8 @@ void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
   dict.Set("App", atom::api::App::GetConstructor(isolate)->GetFunction());
   dict.Set("app", atom::api::App::Create(isolate));
   dict.SetMethod("appendSwitch", &AppendSwitch);
-  dict.SetMethod("appendArgument",
-                 base::Bind(&base::CommandLine::AppendArg,
-                            base::Unretained(command_line)));
+  dict.SetMethod("appendArgument", base::Bind(&base::CommandLine::AppendArg,
+                                              base::Unretained(command_line)));
 #if defined(OS_MACOSX)
   auto browser = base::Unretained(Browser::Get());
   dict.SetMethod("dockBounce", &DockBounce);

@@ -21,8 +21,7 @@ CrashReporter::CrashReporter() {
   is_browser_ = cmd->GetSwitchValueASCII(switches::kProcessType).empty();
 }
 
-CrashReporter::~CrashReporter() {
-}
+CrashReporter::~CrashReporter() {}
 
 void CrashReporter::Start(const std::string& product_name,
                           const std::string& company_name,
@@ -45,8 +44,7 @@ void CrashReporter::SetUploadParameters(const StringMap& parameters) {
   SetUploadParameters();
 }
 
-void CrashReporter::SetUploadToServer(const bool upload_to_server) {
-}
+void CrashReporter::SetUploadToServer(const bool upload_to_server) {}
 
 bool CrashReporter::GetUploadToServer() {
   return true;
@@ -66,10 +64,10 @@ CrashReporter::GetUploadedReports(const base::FilePath& crashes_dir) {
       std::vector<std::string> report_item = base::SplitString(
           report, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
       int report_time = 0;
-      if (report_item.size() >= 2 && base::StringToInt(report_item[0],
-            &report_time)) {
-        result.push_back(CrashReporter::UploadReportResult(report_time,
-            report_item[1]));
+      if (report_item.size() >= 2 &&
+          base::StringToInt(report_item[0], &report_time)) {
+        result.push_back(
+            CrashReporter::UploadReportResult(report_time, report_item[1]));
       }
     }
   }
@@ -82,18 +80,14 @@ void CrashReporter::InitBreakpad(const std::string& product_name,
                                  const std::string& submit_url,
                                  const base::FilePath& crashes_dir,
                                  bool auto_submit,
-                                 bool skip_system_crash_handler) {
-}
+                                 bool skip_system_crash_handler) {}
 
-void CrashReporter::SetUploadParameters() {
-}
+void CrashReporter::SetUploadParameters() {}
 
 void CrashReporter::AddExtraParameter(const std::string& key,
-                                      const std::string& value) {
-}
+                                      const std::string& value) {}
 
-void CrashReporter::RemoveExtraParameter(const std::string& key) {
-}
+void CrashReporter::RemoveExtraParameter(const std::string& key) {}
 
 std::map<std::string, std::string> CrashReporter::GetParameters() const {
   return upload_parameters_;
@@ -109,7 +103,8 @@ CrashReporter* CrashReporter::GetInstance() {
 
 void CrashReporter::StartInstance(const mate::Dictionary& options) {
   auto reporter = GetInstance();
-  if (!reporter) return;
+  if (!reporter)
+    return;
 
   std::string product_name;
   options.Get("productName", &product_name);

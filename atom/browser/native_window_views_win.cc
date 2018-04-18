@@ -13,58 +13,110 @@ namespace {
 // Convert Win32 WM_APPCOMMANDS to strings.
 const char* AppCommandToString(int command_id) {
   switch (command_id) {
-    case APPCOMMAND_BROWSER_BACKWARD       : return "browser-backward";
-    case APPCOMMAND_BROWSER_FORWARD        : return "browser-forward";
-    case APPCOMMAND_BROWSER_REFRESH        : return "browser-refresh";
-    case APPCOMMAND_BROWSER_STOP           : return "browser-stop";
-    case APPCOMMAND_BROWSER_SEARCH         : return "browser-search";
-    case APPCOMMAND_BROWSER_FAVORITES      : return "browser-favorites";
-    case APPCOMMAND_BROWSER_HOME           : return "browser-home";
-    case APPCOMMAND_VOLUME_MUTE            : return "volume-mute";
-    case APPCOMMAND_VOLUME_DOWN            : return "volume-down";
-    case APPCOMMAND_VOLUME_UP              : return "volume-up";
-    case APPCOMMAND_MEDIA_NEXTTRACK        : return "media-nexttrack";
-    case APPCOMMAND_MEDIA_PREVIOUSTRACK    : return "media-previoustrack";
-    case APPCOMMAND_MEDIA_STOP             : return "media-stop";
-    case APPCOMMAND_MEDIA_PLAY_PAUSE       : return "media-play_pause";
-    case APPCOMMAND_LAUNCH_MAIL            : return "launch-mail";
-    case APPCOMMAND_LAUNCH_MEDIA_SELECT    : return "launch-media-select";
-    case APPCOMMAND_LAUNCH_APP1            : return "launch-app1";
-    case APPCOMMAND_LAUNCH_APP2            : return "launch-app2";
-    case APPCOMMAND_BASS_DOWN              : return "bass-down";
-    case APPCOMMAND_BASS_BOOST             : return "bass-boost";
-    case APPCOMMAND_BASS_UP                : return "bass-up";
-    case APPCOMMAND_TREBLE_DOWN            : return "treble-down";
-    case APPCOMMAND_TREBLE_UP              : return "treble-up";
-    case APPCOMMAND_MICROPHONE_VOLUME_MUTE : return "microphone-volume-mute";
-    case APPCOMMAND_MICROPHONE_VOLUME_DOWN : return "microphone-volume-down";
-    case APPCOMMAND_MICROPHONE_VOLUME_UP   : return "microphone-volume-up";
-    case APPCOMMAND_HELP                   : return "help";
-    case APPCOMMAND_FIND                   : return "find";
-    case APPCOMMAND_NEW                    : return "new";
-    case APPCOMMAND_OPEN                   : return "open";
-    case APPCOMMAND_CLOSE                  : return "close";
-    case APPCOMMAND_SAVE                   : return "save";
-    case APPCOMMAND_PRINT                  : return "print";
-    case APPCOMMAND_UNDO                   : return "undo";
-    case APPCOMMAND_REDO                   : return "redo";
-    case APPCOMMAND_COPY                   : return "copy";
-    case APPCOMMAND_CUT                    : return "cut";
-    case APPCOMMAND_PASTE                  : return "paste";
-    case APPCOMMAND_REPLY_TO_MAIL          : return "reply-to-mail";
-    case APPCOMMAND_FORWARD_MAIL           : return "forward-mail";
-    case APPCOMMAND_SEND_MAIL              : return "send-mail";
-    case APPCOMMAND_SPELL_CHECK            : return "spell-check";
-    case APPCOMMAND_MIC_ON_OFF_TOGGLE      : return "mic-on-off-toggle";
-    case APPCOMMAND_CORRECTION_LIST        : return "correction-list";
-    case APPCOMMAND_MEDIA_PLAY             : return "media-play";
-    case APPCOMMAND_MEDIA_PAUSE            : return "media-pause";
-    case APPCOMMAND_MEDIA_RECORD           : return "media-record";
-    case APPCOMMAND_MEDIA_FAST_FORWARD     : return "media-fast-forward";
-    case APPCOMMAND_MEDIA_REWIND           : return "media-rewind";
-    case APPCOMMAND_MEDIA_CHANNEL_UP       : return "media-channel-up";
-    case APPCOMMAND_MEDIA_CHANNEL_DOWN     : return "media-channel-down";
-    case APPCOMMAND_DELETE                 : return "delete";
+    case APPCOMMAND_BROWSER_BACKWARD:
+      return "browser-backward";
+    case APPCOMMAND_BROWSER_FORWARD:
+      return "browser-forward";
+    case APPCOMMAND_BROWSER_REFRESH:
+      return "browser-refresh";
+    case APPCOMMAND_BROWSER_STOP:
+      return "browser-stop";
+    case APPCOMMAND_BROWSER_SEARCH:
+      return "browser-search";
+    case APPCOMMAND_BROWSER_FAVORITES:
+      return "browser-favorites";
+    case APPCOMMAND_BROWSER_HOME:
+      return "browser-home";
+    case APPCOMMAND_VOLUME_MUTE:
+      return "volume-mute";
+    case APPCOMMAND_VOLUME_DOWN:
+      return "volume-down";
+    case APPCOMMAND_VOLUME_UP:
+      return "volume-up";
+    case APPCOMMAND_MEDIA_NEXTTRACK:
+      return "media-nexttrack";
+    case APPCOMMAND_MEDIA_PREVIOUSTRACK:
+      return "media-previoustrack";
+    case APPCOMMAND_MEDIA_STOP:
+      return "media-stop";
+    case APPCOMMAND_MEDIA_PLAY_PAUSE:
+      return "media-play_pause";
+    case APPCOMMAND_LAUNCH_MAIL:
+      return "launch-mail";
+    case APPCOMMAND_LAUNCH_MEDIA_SELECT:
+      return "launch-media-select";
+    case APPCOMMAND_LAUNCH_APP1:
+      return "launch-app1";
+    case APPCOMMAND_LAUNCH_APP2:
+      return "launch-app2";
+    case APPCOMMAND_BASS_DOWN:
+      return "bass-down";
+    case APPCOMMAND_BASS_BOOST:
+      return "bass-boost";
+    case APPCOMMAND_BASS_UP:
+      return "bass-up";
+    case APPCOMMAND_TREBLE_DOWN:
+      return "treble-down";
+    case APPCOMMAND_TREBLE_UP:
+      return "treble-up";
+    case APPCOMMAND_MICROPHONE_VOLUME_MUTE:
+      return "microphone-volume-mute";
+    case APPCOMMAND_MICROPHONE_VOLUME_DOWN:
+      return "microphone-volume-down";
+    case APPCOMMAND_MICROPHONE_VOLUME_UP:
+      return "microphone-volume-up";
+    case APPCOMMAND_HELP:
+      return "help";
+    case APPCOMMAND_FIND:
+      return "find";
+    case APPCOMMAND_NEW:
+      return "new";
+    case APPCOMMAND_OPEN:
+      return "open";
+    case APPCOMMAND_CLOSE:
+      return "close";
+    case APPCOMMAND_SAVE:
+      return "save";
+    case APPCOMMAND_PRINT:
+      return "print";
+    case APPCOMMAND_UNDO:
+      return "undo";
+    case APPCOMMAND_REDO:
+      return "redo";
+    case APPCOMMAND_COPY:
+      return "copy";
+    case APPCOMMAND_CUT:
+      return "cut";
+    case APPCOMMAND_PASTE:
+      return "paste";
+    case APPCOMMAND_REPLY_TO_MAIL:
+      return "reply-to-mail";
+    case APPCOMMAND_FORWARD_MAIL:
+      return "forward-mail";
+    case APPCOMMAND_SEND_MAIL:
+      return "send-mail";
+    case APPCOMMAND_SPELL_CHECK:
+      return "spell-check";
+    case APPCOMMAND_MIC_ON_OFF_TOGGLE:
+      return "mic-on-off-toggle";
+    case APPCOMMAND_CORRECTION_LIST:
+      return "correction-list";
+    case APPCOMMAND_MEDIA_PLAY:
+      return "media-play";
+    case APPCOMMAND_MEDIA_PAUSE:
+      return "media-pause";
+    case APPCOMMAND_MEDIA_RECORD:
+      return "media-record";
+    case APPCOMMAND_MEDIA_FAST_FORWARD:
+      return "media-fast-forward";
+    case APPCOMMAND_MEDIA_REWIND:
+      return "media-rewind";
+    case APPCOMMAND_MEDIA_CHANNEL_UP:
+      return "media-channel-up";
+    case APPCOMMAND_MEDIA_CHANNEL_DOWN:
+      return "media-channel-down";
+    case APPCOMMAND_DELETE:
+      return "delete";
     case APPCOMMAND_DICTATE_OR_COMMAND_CONTROL_TOGGLE:
       return "dictate-or-command-control-toggle";
     default:
@@ -89,8 +141,10 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   return false;
 }
 
-bool NativeWindowViews::PreHandleMSG(
-    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+bool NativeWindowViews::PreHandleMSG(UINT message,
+                                     WPARAM w_param,
+                                     LPARAM l_param,
+                                     LRESULT* result) {
   NotifyWindowMessage(message, w_param, l_param);
 
   switch (message) {
@@ -100,7 +154,8 @@ bool NativeWindowViews::PreHandleMSG(
     // because we still want Chromium to handle returning the actual
     // accessibility object.
     case WM_GETOBJECT: {
-      if (checked_for_a11y_support_) return false;
+      if (checked_for_a11y_support_)
+        return false;
 
       const DWORD obj_id = static_cast<DWORD>(l_param);
 
@@ -231,8 +286,8 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
-    SetWindowSubclass(
-      legacy_window_, SubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
+    SetWindowSubclass(legacy_window_, SubclassProc, 1,
+                      reinterpret_cast<DWORD_PTR>(this));
 
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, NULL, 0);
@@ -250,9 +305,12 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   }
 }
 
-LRESULT CALLBACK NativeWindowViews::SubclassProc(
-    HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
-    DWORD_PTR ref_data) {
+LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
+                                                 UINT msg,
+                                                 WPARAM w_param,
+                                                 LPARAM l_param,
+                                                 UINT_PTR subclass_id,
+                                                 DWORD_PTR ref_data) {
   NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
     case WM_MOUSELEAVE: {
@@ -276,8 +334,9 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(
   return DefSubclassProc(hwnd, msg, w_param, l_param);
 }
 
-LRESULT CALLBACK NativeWindowViews::MouseHookProc(
-    int n_code, WPARAM w_param, LPARAM l_param) {
+LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
+                                                  WPARAM w_param,
+                                                  LPARAM l_param) {
   if (n_code < 0) {
     return CallNextHookEx(NULL, n_code, w_param, l_param);
   }
