@@ -316,6 +316,8 @@
       'atom/browser/ui/cocoa/atom_bundle_mover.mm',
       'atom/browser/ui/cocoa/atom_menu_controller.h',
       'atom/browser/ui/cocoa/atom_menu_controller.mm',
+      'atom/browser/ui/cocoa/atom_native_widget_mac.h',
+      'atom/browser/ui/cocoa/atom_native_widget_mac.mm',
       'atom/browser/ui/cocoa/atom_touch_bar.h',
       'atom/browser/ui/cocoa/atom_touch_bar.mm',
       'atom/browser/ui/cocoa/views_delegate_mac.h',
