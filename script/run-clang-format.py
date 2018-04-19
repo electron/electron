@@ -88,11 +88,17 @@ class UnexpectedError(Exception):
 
 def run_clang_format_diff_wrapper(args, file):
     try:
-        ret = run_clang_format_diff(args, file)
-        return ret
+        ext = os.path.splitext(file)[1][1:]
+        if ext in args.extensions:
+            ret = run_clang_format_diff(args, file)
+            return ret
+        else:
+            print('nothing')
     except DiffError:
+        print('hello')
         raise
     except Exception as e:
+        print('hello')
         raise UnexpectedError('{}: {}: {}'.format(file, e.__class__.__name__,
                                                   e), e)
 
@@ -195,6 +201,11 @@ def main():
         help='run recursively over directories')
     parser.add_argument('files', metavar='file', nargs='+')
     parser.add_argument(
+        '-c', 
+        '--changed',
+        action='store_true',
+        help='only run on changed files')
+    parser.add_argument(
         '-j',
         metavar='N',
         type=int,
@@ -238,11 +249,23 @@ def main():
         colored_stderr = sys.stderr.isatty()
 
     retcode = ExitStatus.SUCCESS
-    files = list_files(
-        args.files,
-        recursive=args.recursive,
-        exclude=args.exclude,
-        extensions=args.extensions.split(','))
+    
+    changed_files = []
+    if args.changed:
+        popen = subprocess.Popen(["git", "diff", "--name-only", "origin/master"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in popen.stdout:
+            changed_files.append(line.rstrip())
+        files = list_files(
+            changed_files,
+            recursive=args.recursive,
+            exclude=args.exclude,
+            extensions=args.extensions.split(','))
+    else:
+        files = list_files(
+            args.files,
+            recursive=args.recursive,
+            exclude=args.exclude,
+            extensions=args.extensions.split(','))
 
     if not files:
         return
@@ -263,6 +286,7 @@ def main():
             partial(run_clang_format_diff_wrapper, args), files)
     while True:
         try:
+            print(it)
             outs, errs = next(it)
         except StopIteration:
             break
