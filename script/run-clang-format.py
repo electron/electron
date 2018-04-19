@@ -198,6 +198,10 @@ def main():
         help='run recursively over directories')
     parser.add_argument('files', metavar='file', nargs='+')
     parser.add_argument(
+        '-q',
+        '--quiet', 
+        action='store_true')
+    parser.add_argument(
         '-c', 
         '--changed',
         action='store_true',
@@ -301,7 +305,8 @@ def main():
             sys.stderr.writelines(errs)
             if outs == []:
                 continue
-            print_diff(outs, use_color=colored_stdout)
+            if args.quiet is None:
+                print_diff(outs, use_color=colored_stdout)
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
     return retcode
