@@ -97,7 +97,7 @@ enum FlashNavigateUsage {
   FLASH_NAVIGATE_USAGE_ENUM_COUNT
 };
 
-static base::LazyInstance<std::map<std::string, FlashNavigateUsage> >::
+static base::LazyInstance<std::map<std::string, FlashNavigateUsage>>::
     DestructorAtExit g_rejected_headers = LAZY_INSTANCE_INITIALIZER;
 
 bool IsSimpleHeader(const std::string& lower_case_header_name,
@@ -112,11 +112,8 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
     std::string lower_case_mime_type;
     std::string lower_case_charset;
     bool had_charset = false;
-    net::HttpUtil::ParseContentType(header_value,
-                                    &lower_case_mime_type,
-                                    &lower_case_charset,
-                                    &had_charset,
-                                    NULL);
+    net::HttpUtil::ParseContentType(header_value, &lower_case_mime_type,
+                                    &lower_case_charset, &had_charset, NULL);
     return lower_case_mime_type == "application/x-www-form-urlencoded" ||
            lower_case_mime_type == "multipart/form-data" ||
            lower_case_mime_type == "text/plain";
@@ -127,8 +124,8 @@ bool IsSimpleHeader(const std::string& lower_case_header_name,
 
 void RecordFlashNavigateUsage(FlashNavigateUsage usage) {
   DCHECK_NE(FLASH_NAVIGATE_USAGE_ENUM_COUNT, usage);
-  UMA_HISTOGRAM_ENUMERATION(
-      "Plugin.FlashNavigateUsage", usage, FLASH_NAVIGATE_USAGE_ENUM_COUNT);
+  UMA_HISTOGRAM_ENUMERATION("Plugin.FlashNavigateUsage", usage,
+                            FLASH_NAVIGATE_USAGE_ENUM_COUNT);
 }
 
 }  // namespace
@@ -277,8 +274,8 @@ int32_t PepperFlashRendererHost::OnDrawGlyphs(
       y += SkFloatToScalar(params.glyph_advances[i].y);
     }
 
-    canvas->drawPosText(
-        &params.glyph_indices[0], glyph_count * 2, sk_positions, paint);
+    canvas->drawPosText(&params.glyph_indices[0], glyph_count * 2, sk_positions,
+                        paint);
   }
 
   if (needs_unmapping)
@@ -310,12 +307,11 @@ int32_t PepperFlashRendererHost::OnNavigate(
           static_cast<FlashNavigateUsage>(i);
   }
 
-  net::HttpUtil::HeadersIterator header_iter(
-      data.headers.begin(), data.headers.end(), "\n\r");
+  net::HttpUtil::HeadersIterator header_iter(data.headers.begin(),
+                                             data.headers.end(), "\n\r");
   bool rejected = false;
   while (header_iter.GetNext()) {
-    std::string lower_case_header_name =
-        base::ToLowerASCII(header_iter.name());
+    std::string lower_case_header_name = base::ToLowerASCII(header_iter.name());
     if (!IsSimpleHeader(lower_case_header_name, header_iter.values())) {
       rejected = true;
 

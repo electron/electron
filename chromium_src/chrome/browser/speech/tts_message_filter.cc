@@ -25,16 +25,16 @@ TtsMessageFilter::TtsMessageFilter(int render_process_id,
   AddRef();
 }
 
-void TtsMessageFilter::OverrideThreadForMessage(
-    const IPC::Message& message, BrowserThread::ID* thread) {
+void TtsMessageFilter::OverrideThreadForMessage(const IPC::Message& message,
+                                                BrowserThread::ID* thread) {
   switch (message.type()) {
-  case TtsHostMsg_InitializeVoiceList::ID:
-  case TtsHostMsg_Speak::ID:
-  case TtsHostMsg_Pause::ID:
-  case TtsHostMsg_Resume::ID:
-  case TtsHostMsg_Cancel::ID:
-    *thread = BrowserThread::UI;
-    break;
+    case TtsHostMsg_InitializeVoiceList::ID:
+    case TtsHostMsg_Speak::ID:
+    case TtsHostMsg_Pause::ID:
+    case TtsHostMsg_Resume::ID:
+    case TtsHostMsg_Cancel::ID:
+      *thread = BrowserThread::UI;
+      break;
   }
 }
 
@@ -144,8 +144,8 @@ void TtsMessageFilter::OnTtsEvent(Utterance* utterance,
       Send(new TtsMsg_WasCancelled(utterance->src_id()));
       break;
     case TTS_EVENT_ERROR:
-      Send(new TtsMsg_SpeakingErrorOccurred(
-          utterance->src_id(), error_message));
+      Send(
+          new TtsMsg_SpeakingErrorOccurred(utterance->src_id(), error_message));
       break;
     case TTS_EVENT_PAUSE:
       Send(new TtsMsg_DidPauseSpeaking(utterance->src_id()));

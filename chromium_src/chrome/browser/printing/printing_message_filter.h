@@ -15,7 +15,7 @@ struct PrintHostMsg_ScriptedPrint_Params;
 namespace base {
 class DictionaryValue;
 class FilePath;
-}
+}  // namespace base
 
 namespace content {
 class WebContents;
@@ -33,9 +33,8 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   PrintingMessageFilter(int render_process_id);
 
   // content::BrowserMessageFilter methods.
-  void OverrideThreadForMessage(
-      const IPC::Message& message,
-      content::BrowserThread::ID* thread) override;
+  void OverrideThreadForMessage(const IPC::Message& message,
+                                content::BrowserThread::ID* thread) override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:

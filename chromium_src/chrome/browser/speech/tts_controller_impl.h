@@ -35,9 +35,9 @@ class TtsControllerImpl : public TtsController {
   virtual void Pause() override;
   virtual void Resume() override;
   virtual void OnTtsEvent(int utterance_id,
-                  TtsEventType event_type,
-                  int char_index,
-                  const std::string& error_message) override;
+                          TtsEventType event_type,
+                          int char_index,
+                          const std::string& error_message) override;
   virtual void GetVoices(content::BrowserContext* browser_context,
                          std::vector<VoiceData>* out_voices) override;
   virtual void VoicesChanged() override;

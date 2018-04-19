@@ -98,13 +98,11 @@ class CertificateManagerModel {
 
   // Methods used during initialization, see the comment at the top of the .cc
   // file for details.
-  static void DidGetCertDBOnUIThread(
-      net::NSSCertDatabase* cert_db,
-      bool is_user_db_available,
-      const CreationCallback& callback);
-  static void DidGetCertDBOnIOThread(
-      const CreationCallback& callback,
-      net::NSSCertDatabase* cert_db);
+  static void DidGetCertDBOnUIThread(net::NSSCertDatabase* cert_db,
+                                     bool is_user_db_available,
+                                     const CreationCallback& callback);
+  static void DidGetCertDBOnIOThread(const CreationCallback& callback,
+                                     net::NSSCertDatabase* cert_db);
   static void GetCertDBOnIOThread(content::ResourceContext* context,
                                   const CreationCallback& callback);
 

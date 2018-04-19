@@ -73,7 +73,8 @@ void PrintingHandlerWin::OnRenderPDFPagesToMetafile(
       postscript_level = chrome_pdf::PrintingMode::kPostScript3;
       break;
     default:
-      postscript_level = chrome_pdf::PrintingMode::kEmf;  // Not using postscript.
+      postscript_level =
+          chrome_pdf::PrintingMode::kEmf;  // Not using postscript.
   }
   chrome_pdf::SetPDFUsePrintMode(postscript_level);
 

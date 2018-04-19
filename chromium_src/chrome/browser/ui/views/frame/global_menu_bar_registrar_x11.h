@@ -36,10 +36,16 @@ class GlobalMenuBarRegistrarX11 {
   void RegisterXID(unsigned long xid);
   void UnregisterXID(unsigned long xid);
 
-  CHROMEG_CALLBACK_1(GlobalMenuBarRegistrarX11, void, OnProxyCreated,
-                     GObject*, GAsyncResult*);
-  CHROMEG_CALLBACK_1(GlobalMenuBarRegistrarX11, void, OnNameOwnerChanged,
-                     GObject*, GParamSpec*);
+  CHROMEG_CALLBACK_1(GlobalMenuBarRegistrarX11,
+                     void,
+                     OnProxyCreated,
+                     GObject*,
+                     GAsyncResult*);
+  CHROMEG_CALLBACK_1(GlobalMenuBarRegistrarX11,
+                     void,
+                     OnNameOwnerChanged,
+                     GObject*,
+                     GParamSpec*);
 
   GDBusProxy* registrar_proxy_;
 

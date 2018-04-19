@@ -106,7 +106,6 @@ class PrintWebViewHelper
 #endif  // !DISABLE_BASIC_PRINTING
   void OnPrintPreview(const base::DictionaryValue& settings);
 
-
   // Get |page_size| and |content_area| information from
   // |page_layout_in_points|.
   void GetPageSizeAndContentAreaFromPageLayout(
@@ -131,7 +130,6 @@ class PrintWebViewHelper
   bool RenderPreviewPage(int page_number,
                          const PrintMsg_Print_Params& print_params);
 
-
   // Initialize the print preview document.
   bool CreatePreviewDocument();
 
@@ -154,10 +152,11 @@ class PrintWebViewHelper
                          const base::string16& device_name = base::string16());
 
   // Calculate number of pages in source document.
-  bool CalculateNumberOfPages(blink::WebLocalFrame* frame,
-                              const blink::WebNode& node,
-                              int* number_of_pages,
-                              const base::string16& device_name = base::string16());
+  bool CalculateNumberOfPages(
+      blink::WebLocalFrame* frame,
+      const blink::WebNode& node,
+      int* number_of_pages,
+      const base::string16& device_name = base::string16());
 
   // Update the current print settings with new |passed_job_settings|.
   // |passed_job_settings| dictionary contains print job details such as printer
@@ -165,7 +164,6 @@ class PrintWebViewHelper
   bool UpdatePrintSettings(blink::WebLocalFrame* frame,
                            const blink::WebNode& node,
                            const base::DictionaryValue& passed_job_settings);
-
 
   // Get final print settings from the user.
   // Return false if the user cancels or on error.
@@ -372,7 +370,6 @@ class PrintWebViewHelper
 
     State state_;
   };
-
 
   bool print_node_in_progress_;
   bool is_loading_;

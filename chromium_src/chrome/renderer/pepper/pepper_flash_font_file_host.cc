@@ -32,10 +32,8 @@ PepperFlashFontFileHost::PepperFlashFontFileHost(
   fd_.reset(content::MatchFontWithFallback(
       description.face.c_str(),
       description.weight >= PP_BROWSERFONT_TRUSTED_WEIGHT_BOLD,
-      description.italic,
-      charset,
-      PP_BROWSERFONT_TRUSTED_FAMILY_DEFAULT));
-#elif defined(OS_WIN) // defined(OS_LINUX) || defined(OS_OPENBSD)
+      description.italic, charset, PP_BROWSERFONT_TRUSTED_FAMILY_DEFAULT));
+#elif defined(OS_WIN)  // defined(OS_LINUX) || defined(OS_OPENBSD)
   int weight = description.weight;
   if (weight == FW_DONTCARE)
     weight = SkFontStyle::kNormal_Weight;
@@ -45,7 +43,7 @@ PepperFlashFontFileHost::PepperFlashFontFileHost(
   sk_sp<SkFontMgr> font_mgr(SkFontMgr::RefDefault());
   typeface_ = sk_sp<SkTypeface>(
       font_mgr->matchFamilyStyle(description.face.c_str(), style));
-#endif // defined(OS_WIN)
+#endif                 // defined(OS_WIN)
 }
 
 PepperFlashFontFileHost::~PepperFlashFontFileHost() {}
@@ -67,7 +65,7 @@ bool PepperFlashFontFileHost::GetFontData(uint32_t table,
   int fd = fd_.get();
   if (fd != -1)
     result = content::GetFontTable(fd, table, 0 /* offset */,
-                 reinterpret_cast<uint8_t*>(buffer), length);
+                                   reinterpret_cast<uint8_t*>(buffer), length);
 #elif defined(OS_WIN)
   if (typeface_) {
     table = base::ByteSwap(table);
@@ -92,14 +90,14 @@ int32_t PepperFlashFontFileHost::OnGetFontTable(
   int32_t result = PP_ERROR_FAILED;
   size_t length = 0;
   if (GetFontData(table, NULL, &length)) {
-	  contents.resize(length);
-	  uint8_t* contents_ptr =
-		  reinterpret_cast<uint8_t*>(const_cast<char*>(contents.c_str()));
-	  if (GetFontData(table, contents_ptr, &length)) {
-		  result = PP_OK;
-	  } else {
-		  contents.clear();
-	  }
+    contents.resize(length);
+    uint8_t* contents_ptr =
+        reinterpret_cast<uint8_t*>(const_cast<char*>(contents.c_str()));
+    if (GetFontData(table, contents_ptr, &length)) {
+      result = PP_OK;
+    } else {
+      contents.clear();
+    }
   }
 
   context->reply_msg = PpapiPluginMsg_FlashFontFile_GetFontTableReply(contents);

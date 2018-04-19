@@ -15,8 +15,8 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "printing/page_size_margins.h"
-#include "printing/print_job_constants.h"
 #include "printing/pdf_metafile_skia.h"
+#include "printing/print_job_constants.h"
 
 #include "atom/common/node_includes.h"
 
@@ -35,9 +35,9 @@ void StopWorker(int document_cookie) {
   scoped_refptr<printing::PrinterQuery> printer_query =
       queue->PopPrinterQuery(document_cookie);
   if (printer_query.get()) {
-    BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                            base::Bind(&printing::PrinterQuery::StopWorker,
-                                       printer_query));
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::Bind(&printing::PrinterQuery::StopWorker, printer_query));
   }
 }
 
@@ -61,15 +61,13 @@ void FreeNodeBufferData(char* data, void* hint) {
 
 namespace printing {
 
-
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
     WebContents* web_contents)
     : content::WebContentsObserver(web_contents) {
   DCHECK(web_contents);
 }
 
-PrintPreviewMessageHandler::~PrintPreviewMessageHandler() {
-}
+PrintPreviewMessageHandler::~PrintPreviewMessageHandler() {}
 
 void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
     const PrintHostMsg_DidPreviewDocument_Params& params) {
@@ -82,12 +80,9 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   }
 
   BrowserThread::PostTaskAndReplyWithResult(
-      BrowserThread::IO,
-      FROM_HERE,
-      base::Bind(&CopyPDFDataOnIOThread, params),
+      BrowserThread::IO, FROM_HERE, base::Bind(&CopyPDFDataOnIOThread, params),
       base::Bind(&PrintPreviewMessageHandler::RunPrintToPDFCallback,
-                 base::Unretained(this),
-                 params.preview_request_id,
+                 base::Unretained(this), params.preview_request_id,
                  params.data_size));
 }
 
@@ -104,8 +99,7 @@ bool PrintPreviewMessageHandler::OnMessageReceived(
   IPC_BEGIN_MESSAGE_MAP(PrintPreviewMessageHandler, message)
     IPC_MESSAGE_HANDLER(PrintHostMsg_MetafileReadyForPrinting,
                         OnMetafileReadyForPrinting)
-    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed,
-                        OnPrintPreviewFailed)
+    IPC_MESSAGE_HANDLER(PrintHostMsg_PrintPreviewFailed, OnPrintPreviewFailed)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;
@@ -122,21 +116,23 @@ void PrintPreviewMessageHandler::PrintToPDF(
   rfh->Send(new PrintMsg_PrintPreview(rfh->GetRoutingID(), options));
 }
 
-void PrintPreviewMessageHandler::RunPrintToPDFCallback(
-    int request_id, uint32_t data_size, char* data) {
+void PrintPreviewMessageHandler::RunPrintToPDFCallback(int request_id,
+                                                       uint32_t data_size,
+                                                       char* data) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   if (data) {
-    v8::Local<v8::Value> buffer = node::Buffer::New(isolate,
-        data, static_cast<size_t>(data_size), &FreeNodeBufferData, nullptr)
-        .ToLocalChecked();
+    v8::Local<v8::Value> buffer =
+        node::Buffer::New(isolate, data, static_cast<size_t>(data_size),
+                          &FreeNodeBufferData, nullptr)
+            .ToLocalChecked();
     print_to_pdf_callback_map_[request_id].Run(v8::Null(isolate), buffer);
   } else {
-    v8::Local<v8::String> error_message = v8::String::NewFromUtf8(isolate,
-        "Failed to generate PDF");
+    v8::Local<v8::String> error_message =
+        v8::String::NewFromUtf8(isolate, "Failed to generate PDF");
     print_to_pdf_callback_map_[request_id].Run(
         v8::Exception::Error(error_message), v8::Null(isolate));
   }

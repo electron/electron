@@ -23,7 +23,8 @@ GlobalShortcutListener::~GlobalShortcutListener() {
 }
 
 bool GlobalShortcutListener::RegisterAccelerator(
-    const ui::Accelerator& accelerator, Observer* observer) {
+    const ui::Accelerator& accelerator,
+    Observer* observer) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   if (IsShortcutHandlingSuspended())
     return false;
@@ -48,7 +49,8 @@ bool GlobalShortcutListener::RegisterAccelerator(
 }
 
 void GlobalShortcutListener::UnregisterAccelerator(
-    const ui::Accelerator& accelerator, Observer* observer) {
+    const ui::Accelerator& accelerator,
+    Observer* observer) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
   if (IsShortcutHandlingSuspended())
     return;
@@ -88,8 +90,7 @@ void GlobalShortcutListener::SetShortcutHandlingSuspended(bool suspended) {
 
   shortcut_handling_suspended_ = suspended;
   for (AcceleratorMap::iterator it = accelerator_map_.begin();
-       it != accelerator_map_.end();
-       ++it) {
+       it != accelerator_map_.end(); ++it) {
     // On Linux, when shortcut handling is suspended we cannot simply early
     // return in NotifyKeyPressed (similar to what we do for non-global
     // shortcuts) because we'd eat the keyboard event thereby preventing the

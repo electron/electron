@@ -209,9 +209,7 @@ class JobEventDetails : public base::RefCountedThreadSafe<JobEventDetails> {
   // Getters.
   PrintedDocument* document() const;
   PrintedPage* page() const;
-  Type type() const {
-    return type_;
-  }
+  Type type() const { return type_; }
 
  private:
   friend class base::RefCountedThreadSafe<JobEventDetails>;

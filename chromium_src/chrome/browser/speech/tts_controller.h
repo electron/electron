@@ -40,11 +40,7 @@ enum TtsEventType {
   TTS_EVENT_RESUME
 };
 
-enum TtsGenderType {
-  TTS_GENDER_NONE,
-  TTS_GENDER_MALE,
-  TTS_GENDER_FEMALE
-};
+enum TtsGenderType { TTS_GENDER_NONE, TTS_GENDER_MALE, TTS_GENDER_FEMALE };
 
 // Returns true if this event type is one that indicates an utterance
 // is finished and can be destroyed.
@@ -167,14 +163,10 @@ class Utterance {
   }
   const std::string& voice_name() const { return voice_name_; }
 
-  void set_lang(const std::string& lang) {
-    lang_ = lang;
-  }
+  void set_lang(const std::string& lang) { lang_ = lang; }
   const std::string& lang() const { return lang_; }
 
-  void set_gender(TtsGenderType gender) {
-    gender_ = gender;
-  }
+  void set_gender(TtsGenderType gender) { gender_ = gender; }
   TtsGenderType gender() const { return gender_; }
 
   void set_continuous_parameters(const UtteranceContinuousParameters& params) {

@@ -92,8 +92,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
   // call |GetLocalDataRestrictions| with it.
   GURL document_url = host_->GetDocumentURLForInstance(pp_instance());
   GURL plugin_url = host_->GetPluginURLForInstance(pp_instance());
-  GetLocalDataRestrictions(context->MakeReplyMessageContext(),
-                           document_url,
+  GetLocalDataRestrictions(context->MakeReplyMessageContext(), document_url,
                            plugin_url);
   return PP_OK_COMPLETIONPENDING;
 }
@@ -105,9 +104,8 @@ void PepperFlashBrowserHost::GetLocalDataRestrictions(
   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::IO));
 
   PP_FlashLSORestrictions restrictions = PP_FLASHLSORESTRICTIONS_NONE;
-  SendReply(reply_context,
-            PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
-                static_cast<int32_t>(restrictions)));
+  SendReply(reply_context, PpapiPluginMsg_Flash_GetLocalDataRestrictionsReply(
+                               static_cast<int32_t>(restrictions)));
 }
 
 }  // namespace chrome

@@ -22,10 +22,7 @@ COLORREF ColorChooserDialog::g_custom_colors[16];
 ColorChooserDialog::ExecuteOpenParams::ExecuteOpenParams(SkColor color,
                                                          RunState run_state,
                                                          HWND owner)
-    : color(color),
-      run_state(run_state),
-      owner(owner) {
-}
+    : color(color), run_state(run_state), owner(owner) {}
 
 ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
                                        SkColor initial_color,
@@ -36,16 +33,16 @@ ColorChooserDialog::ColorChooserDialog(views::ColorChooserListener* listener,
   HWND owning_hwnd = views::HWNDForNativeWindow(owning_window);
   ExecuteOpenParams execute_params(initial_color, BeginRun(owning_hwnd),
                                    owning_hwnd);
-  execute_params.run_state.dialog_thread->task_runner()->PostTask(FROM_HERE,
+  execute_params.run_state.dialog_thread->task_runner()->PostTask(
+      FROM_HERE,
       base::Bind(&ColorChooserDialog::ExecuteOpen, this, execute_params));
 }
 
-ColorChooserDialog::~ColorChooserDialog() {
-}
+ColorChooserDialog::~ColorChooserDialog() {}
 
 bool ColorChooserDialog::IsRunning(gfx::NativeWindow owning_window) const {
-  return listener_ && IsRunningDialogForOwner(
-      views::HWNDForNativeWindow(owning_window));
+  return listener_ &&
+         IsRunningDialogForOwner(views::HWNDForNativeWindow(owning_window));
 }
 
 void ColorChooserDialog::ListenerDestroyed() {
@@ -63,7 +60,8 @@ void ColorChooserDialog::ExecuteOpen(const ExecuteOpenParams& params) {
   cc.Flags = CC_ANYCOLOR | CC_FULLOPEN | CC_RGBINIT;
   bool success = !!ChooseColor(&cc);
   DisableOwner(cc.hwndOwner);
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
       base::Bind(&ColorChooserDialog::DidCloseDialog, this, success,
                  skia::COLORREFToSkColor(cc.rgbResult), params.run_state));
 }

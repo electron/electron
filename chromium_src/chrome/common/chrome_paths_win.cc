@@ -5,6 +5,7 @@
 #include "chrome/common/chrome_paths_internal.h"
 
 #include <windows.h>
+
 #include <knownfolders.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -28,8 +29,8 @@ bool GetUserDirectory(int csidl_folder, base::FilePath* result) {
   // so we don't bother handling it.
   wchar_t path_buf[MAX_PATH];
   path_buf[0] = 0;
-  if (FAILED(SHGetFolderPath(NULL, csidl_folder, NULL,
-                             SHGFP_TYPE_CURRENT, path_buf))) {
+  if (FAILED(SHGetFolderPath(NULL, csidl_folder, NULL, SHGFP_TYPE_CURRENT,
+                             path_buf))) {
     return false;
   }
   *result = base::FilePath(path_buf);
@@ -68,8 +69,8 @@ bool GetUserDownloadsDirectorySafe(base::FilePath* result) {
 // relocated to point to a "dangerous" folder, callers should validate that the
 // returned path is not dangerous before using it.
 bool GetUserDownloadsDirectory(base::FilePath* result) {
-  typedef HRESULT (WINAPI *GetKnownFolderPath)(
-      REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
+  typedef HRESULT(WINAPI * GetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE,
+                                               PWSTR*);
   GetKnownFolderPath f = reinterpret_cast<GetKnownFolderPath>(
       GetProcAddress(GetModuleHandle(L"shell32.dll"), "SHGetKnownFolderPath"));
   base::win::ScopedCoMem<wchar_t> path_buf;

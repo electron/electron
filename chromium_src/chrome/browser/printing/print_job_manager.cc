@@ -14,8 +14,7 @@
 
 namespace printing {
 
-PrintQueriesQueue::PrintQueriesQueue() {
-}
+PrintQueriesQueue::PrintQueriesQueue() {}
 
 PrintQueriesQueue::~PrintQueriesQueue() {
   base::AutoLock lock(lock_);
@@ -47,8 +46,7 @@ scoped_refptr<PrinterQuery> PrintQueriesQueue::PopPrinterQuery(
 scoped_refptr<PrinterQuery> PrintQueriesQueue::CreatePrinterQuery(
     int render_process_id,
     int render_frame_id) {
-  return WrapRefCounted(
-      new PrinterQuery(render_process_id, render_frame_id));
+  return WrapRefCounted(new PrinterQuery(render_process_id, render_frame_id));
 }
 
 void PrintQueriesQueue::Shutdown() {
@@ -71,8 +69,7 @@ PrintJobManager::PrintJobManager() : is_shutdown_(false) {
                  content::NotificationService::AllSources());
 }
 
-PrintJobManager::~PrintJobManager() {
-}
+PrintJobManager::~PrintJobManager() {}
 
 scoped_refptr<PrintQueriesQueue> PrintJobManager::queue() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -117,9 +114,8 @@ void PrintJobManager::Observe(int type,
                   *content::Details<JobEventDetails>(details).ptr());
 }
 
-void PrintJobManager::OnPrintJobEvent(
-    PrintJob* print_job,
-    const JobEventDetails& event_details) {
+void PrintJobManager::OnPrintJobEvent(PrintJob* print_job,
+                                      const JobEventDetails& event_details) {
   switch (event_details.type()) {
     case JobEventDetails::NEW_DOC: {
       DCHECK(current_jobs_.end() == current_jobs_.find(print_job));

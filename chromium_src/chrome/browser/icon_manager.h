@@ -97,7 +97,7 @@ class IconManager {
     CacheKey(const IconLoader::IconGroup& group, IconLoader::IconSize size);
 
     // Used as a key in the map below, so we need this comparator.
-    bool operator<(const CacheKey &other) const;
+    bool operator<(const CacheKey& other) const;
 
     IconLoader::IconGroup group;
     IconLoader::IconSize size;

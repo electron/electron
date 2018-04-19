@@ -89,24 +89,24 @@ void PrinterQuery::GetSettings(GetSettingsAskParam ask_user_for_settings,
                  margin_type, is_scripted, is_modifiable, base::string16()));
 }
 
-void PrinterQuery::GetSettings(
-    GetSettingsAskParam ask_user_for_settings,
-    int expected_page_count,
-    bool has_selection,
-    MarginType margin_type,
-    bool is_scripted,
-    bool is_modifiable,
-    const base::string16& device_name,
-    const base::Closure& callback) {
+void PrinterQuery::GetSettings(GetSettingsAskParam ask_user_for_settings,
+                               int expected_page_count,
+                               bool has_selection,
+                               MarginType margin_type,
+                               bool is_scripted,
+                               bool is_modifiable,
+                               const base::string16& device_name,
+                               const base::Closure& callback) {
   DCHECK(RunsTasksInCurrentSequence());
   DCHECK(!is_print_dialog_box_shown_);
   StartWorker(callback);
 
   is_print_dialog_box_shown_ = false;
-  worker_->PostTask(FROM_HERE,
-                    base::Bind(&PrintJobWorker::GetSettings, base::Unretained(worker_.get()),
-                               is_print_dialog_box_shown_, expected_page_count, has_selection,
-                               margin_type, is_scripted, is_modifiable, device_name));
+  worker_->PostTask(
+      FROM_HERE,
+      base::Bind(&PrintJobWorker::GetSettings, base::Unretained(worker_.get()),
+                 is_print_dialog_box_shown_, expected_page_count, has_selection,
+                 margin_type, is_scripted, is_modifiable, device_name));
 }
 
 void PrinterQuery::SetSettings(
@@ -114,10 +114,9 @@ void PrinterQuery::SetSettings(
     const base::Closure& callback) {
   StartWorker(callback);
 
-  worker_->PostTask(FROM_HERE,
-                    base::Bind(&PrintJobWorker::SetSettings,
-                               base::Unretained(worker_.get()),
-                               base::Passed(&new_settings)));
+  worker_->PostTask(FROM_HERE, base::Bind(&PrintJobWorker::SetSettings,
+                                          base::Unretained(worker_.get()),
+                                          base::Passed(&new_settings)));
 }
 
 void PrinterQuery::StartWorker(const base::Closure& callback) {

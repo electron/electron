@@ -1,12 +1,12 @@
 // This is generated file. Do not modify directly.
-// Path to the code generator: tools/generate_library_loader/generate_library_loader.py .
+// Path to the code generator:
+// tools/generate_library_loader/generate_library_loader.py .
 
 #ifndef LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H
 #define LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H
 
 #include "third_party/speech-dispatcher/libspeechd.h"
 #define LIBRARY_LOADER_OUT_RELEASE_GEN_LIBRARY_LOADERS_LIBSPEECHD_H_DLOPEN
-
 
 #include <string>
 
@@ -34,7 +34,6 @@ class LibSpeechdLoader {
   decltype(&::spd_list_modules) spd_list_modules;
   decltype(&::spd_set_output_module) spd_set_output_module;
   decltype(&::spd_set_language) spd_set_language;
-
 
  private:
   void CleanUp(bool unload);

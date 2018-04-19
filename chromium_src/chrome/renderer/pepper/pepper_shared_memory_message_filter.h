@@ -16,7 +16,7 @@ namespace ppapi {
 namespace proxy {
 class SerializedHandle;
 }
-}
+}  // namespace ppapi
 
 // Implements the backend for shared memory messages from a plugin process.
 class PepperSharedMemoryMessageFilter

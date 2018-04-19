@@ -21,8 +21,7 @@ class ColorChooserWin : public content::ColorChooser,
   static ColorChooserWin* Open(content::WebContents* web_contents,
                                SkColor initial_color);
 
-  ColorChooserWin(content::WebContents* web_contents,
-                  SkColor initial_color);
+  ColorChooserWin(content::WebContents* web_contents, SkColor initial_color);
   ~ColorChooserWin();
 
   // content::ColorChooser overrides:
@@ -58,13 +57,12 @@ ColorChooserWin::ColorChooserWin(content::WebContents* web_contents,
                                  SkColor initial_color)
     : web_contents_(web_contents) {
   gfx::NativeWindow owning_window = web_contents->GetRenderViewHost()
-                                                ->GetWidget()
-                                                ->GetView()
-                                                ->GetNativeView()
-                                                ->GetToplevelWindow();
-  color_chooser_dialog_ = new ColorChooserDialog(this,
-                                                 initial_color,
-                                                 owning_window);
+                                        ->GetWidget()
+                                        ->GetView()
+                                        ->GetNativeView()
+                                        ->GetToplevelWindow();
+  color_chooser_dialog_ =
+      new ColorChooserDialog(this, initial_color, owning_window);
 }
 
 ColorChooserWin::~ColorChooserWin() {
