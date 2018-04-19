@@ -9,18 +9,14 @@
 namespace atom {
 
 HttpProtocolHandler::HttpProtocolHandler(const std::string& scheme)
-    : scheme_(scheme) {
-}
+    : scheme_(scheme) {}
 
-HttpProtocolHandler::~HttpProtocolHandler() {
-}
+HttpProtocolHandler::~HttpProtocolHandler() {}
 
 net::URLRequestJob* HttpProtocolHandler::MaybeCreateJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate) const {
-  return net::URLRequestHttpJob::Factory(request,
-                                         network_delegate,
-                                         scheme_);
+  return net::URLRequestHttpJob::Factory(request, network_delegate, scheme_);
 }
 
 }  // namespace atom

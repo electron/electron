@@ -8,11 +8,9 @@
 
 namespace atom {
 
-AtomQuotaPermissionContext::AtomQuotaPermissionContext() {
-}
+AtomQuotaPermissionContext::AtomQuotaPermissionContext() {}
 
-AtomQuotaPermissionContext::~AtomQuotaPermissionContext() {
-}
+AtomQuotaPermissionContext::~AtomQuotaPermissionContext() {}
 
 void AtomQuotaPermissionContext::RequestQuotaPermission(
     const content::StorageQuotaParams& params,

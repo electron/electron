@@ -60,9 +60,9 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     std::string src;
 
     const net::UnescapeRule::Type unescape_rules =
-      net::UnescapeRule::SPACES | net::UnescapeRule::PATH_SEPARATORS |
-      net::UnescapeRule::URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS |
-      net::UnescapeRule::REPLACE_PLUS_WITH_SPACE;
+        net::UnescapeRule::SPACES | net::UnescapeRule::PATH_SEPARATORS |
+        net::UnescapeRule::URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS |
+        net::UnescapeRule::REPLACE_PLUS_WITH_SPACE;
 
     for (const auto& param : toplevel_params) {
       if (param.first == kPdfPluginSrc) {

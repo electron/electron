@@ -6,11 +6,9 @@
 
 namespace atom {
 
-EventDisabler::EventDisabler() {
-}
+EventDisabler::EventDisabler() {}
 
-EventDisabler::~EventDisabler() {
-}
+EventDisabler::~EventDisabler() {}
 
 ui::EventRewriteStatus EventDisabler::RewriteEvent(
     const ui::Event& event,

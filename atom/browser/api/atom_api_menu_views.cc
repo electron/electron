@@ -17,12 +17,12 @@ namespace atom {
 namespace api {
 
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper),
-      weak_factory_(this) {
-}
+    : Menu(isolate, wrapper), weak_factory_(this) {}
 
 void MenuViews::PopupAt(BrowserWindow* window,
-                        int x, int y, int positioning_item,
+                        int x,
+                        int y,
+                        int positioning_item,
                         const base::Closure& callback) {
   auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
@@ -46,14 +46,11 @@ void MenuViews::PopupAt(BrowserWindow* window,
   int32_t window_id = window->weak_map_id();
   auto close_callback = base::Bind(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
-  menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
-      model(), flags, close_callback));
+  menu_runners_[window_id] = std::unique_ptr<MenuRunner>(
+      new MenuRunner(model(), flags, close_callback));
   menu_runners_[window_id]->RunMenuAt(
-      native_window->widget(),
-      NULL,
-      gfx::Rect(location, gfx::Size()),
-      views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE);
+      native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
+      views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {

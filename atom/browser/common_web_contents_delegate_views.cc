@@ -37,8 +37,8 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
     return;
 
   auto* window = static_cast<NativeWindowViews*>(owner_window());
-  autofill_popup_->CreateView(
-      frame_host, offscreen, window->content_view(), bounds);
+  autofill_popup_->CreateView(frame_host, offscreen, window->content_view(),
+                              bounds);
   autofill_popup_->SetItems(values, labels);
 }
 
@@ -50,13 +50,15 @@ void CommonWebContentsDelegate::HideAutofillPopup() {
 gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
   if (!owner_window())
     return gfx::ImageSkia();
-  return static_cast<views::WidgetDelegate*>(static_cast<NativeWindowViews*>(
-      owner_window()))->GetWindowAppIcon();
+  return static_cast<views::WidgetDelegate*>(
+             static_cast<NativeWindowViews*>(owner_window()))
+      ->GetWindowAppIcon();
 }
 
 #if defined(USE_X11)
 void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
+    std::string* name,
+    std::string* class_name) {
   *class_name = Browser::Get()->GetName();
   *name = base::ToLowerASCII(*class_name);
 }

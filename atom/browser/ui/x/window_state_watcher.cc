@@ -14,8 +14,8 @@ namespace atom {
 namespace {
 
 const char* kAtomsToCache[] = {
-  "_NET_WM_STATE",
-  NULL,
+    "_NET_WM_STATE",
+    NULL,
 };
 
 }  // namespace
@@ -71,8 +71,7 @@ void WindowStateWatcher::DidProcessEvent(const ui::PlatformEvent& event) {
 bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
   ::Atom changed_atom = event->xproperty.atom;
   return (changed_atom == gfx::GetAtom("_NET_WM_STATE") &&
-          event->type == PropertyNotify &&
-          event->xproperty.window == widget_);
+          event->type == PropertyNotify && event->xproperty.window == widget_);
 }
 
 }  // namespace atom

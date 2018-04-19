@@ -19,38 +19,37 @@ class NativeWindow;
 namespace file_dialog {
 
 // <description, extensions>
-typedef std::pair<std::string, std::vector<std::string> > Filter;
+typedef std::pair<std::string, std::vector<std::string>> Filter;
 typedef std::vector<Filter> Filters;
 
 enum FileDialogProperty {
-  FILE_DIALOG_OPEN_FILE          = 1 << 0,
-  FILE_DIALOG_OPEN_DIRECTORY     = 1 << 1,
-  FILE_DIALOG_MULTI_SELECTIONS   = 1 << 2,
-  FILE_DIALOG_CREATE_DIRECTORY   = 1 << 3,
-  FILE_DIALOG_SHOW_HIDDEN_FILES  = 1 << 4,
-  FILE_DIALOG_PROMPT_TO_CREATE   = 1 << 5,
+  FILE_DIALOG_OPEN_FILE = 1 << 0,
+  FILE_DIALOG_OPEN_DIRECTORY = 1 << 1,
+  FILE_DIALOG_MULTI_SELECTIONS = 1 << 2,
+  FILE_DIALOG_CREATE_DIRECTORY = 1 << 3,
+  FILE_DIALOG_SHOW_HIDDEN_FILES = 1 << 4,
+  FILE_DIALOG_PROMPT_TO_CREATE = 1 << 5,
   FILE_DIALOG_NO_RESOLVE_ALIASES = 1 << 6,
   FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY = 1 << 7,
 };
 
 #if defined(MAS_BUILD)
-  typedef base::Callback<void(
-      bool result,
-      const std::vector<base::FilePath>& paths,
-      const std::vector<std::string>& bookmarkData)> OpenDialogCallback;
+typedef base::Callback<void(bool result,
+                            const std::vector<base::FilePath>& paths,
+                            const std::vector<std::string>& bookmarkData)>
+    OpenDialogCallback;
 
-  typedef base::Callback<void(
-      bool result,
-      const base::FilePath& path,
-      const std::string& bookmarkData)> SaveDialogCallback;
+typedef base::Callback<void(bool result,
+                            const base::FilePath& path,
+                            const std::string& bookmarkData)>
+    SaveDialogCallback;
 #else
-  typedef base::Callback<void(
-      bool result,
-      const std::vector<base::FilePath>& paths)> OpenDialogCallback;
+typedef base::Callback<void(bool result,
+                            const std::vector<base::FilePath>& paths)>
+    OpenDialogCallback;
 
-  typedef base::Callback<void(
-      bool result,
-      const base::FilePath& path)> SaveDialogCallback;
+typedef base::Callback<void(bool result, const base::FilePath& path)>
+    SaveDialogCallback;
 #endif
 
 struct DialogSettings {
@@ -73,8 +72,7 @@ bool ShowOpenDialog(const DialogSettings& settings,
 void ShowOpenDialog(const DialogSettings& settings,
                     const OpenDialogCallback& callback);
 
-bool ShowSaveDialog(const DialogSettings& settings,
-                    base::FilePath* path);
+bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path);
 
 void ShowSaveDialog(const DialogSettings& settings,
                     const SaveDialogCallback& callback);

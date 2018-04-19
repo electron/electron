@@ -13,7 +13,10 @@
 
 namespace accelerator_util {
 
-typedef struct { int position; atom::AtomMenuModel* model; } MenuItem;
+typedef struct {
+  int position;
+  atom::AtomMenuModel* model;
+} MenuItem;
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 
 // Parse a string as an accelerator.

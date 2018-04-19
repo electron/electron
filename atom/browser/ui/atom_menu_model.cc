@@ -9,12 +9,9 @@
 namespace atom {
 
 AtomMenuModel::AtomMenuModel(Delegate* delegate)
-    : ui::SimpleMenuModel(delegate),
-      delegate_(delegate) {
-}
+    : ui::SimpleMenuModel(delegate), delegate_(delegate) {}
 
-AtomMenuModel::~AtomMenuModel() {
-}
+AtomMenuModel::~AtomMenuModel() {}
 
 void AtomMenuModel::SetRole(int index, const base::string16& role) {
   int command_id = GetCommandIdAt(index);

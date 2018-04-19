@@ -16,11 +16,9 @@ AtomContentUtilityClient::AtomContentUtilityClient() {
 #endif
 }
 
-AtomContentUtilityClient::~AtomContentUtilityClient() {
-}
+AtomContentUtilityClient::~AtomContentUtilityClient() {}
 
-bool AtomContentUtilityClient::OnMessageReceived(
-    const IPC::Message& message) {
+bool AtomContentUtilityClient::OnMessageReceived(const IPC::Message& message) {
 #if defined(OS_WIN)
   for (const auto& handler : handlers_) {
     if (handler->OnMessageReceived(message))

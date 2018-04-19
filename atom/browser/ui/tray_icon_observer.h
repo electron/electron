@@ -11,7 +11,7 @@
 namespace gfx {
 class Rect;
 class Point;
-}
+}  // namespace gfx
 
 namespace atom {
 

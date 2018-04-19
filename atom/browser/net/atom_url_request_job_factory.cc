@@ -127,7 +127,7 @@ bool AtomURLRequestJobFactory::IsHandledProtocol(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   return HasProtocolHandler(scheme) ||
-      net::URLRequest::IsHandledProtocol(scheme);
+         net::URLRequest::IsHandledProtocol(scheme);
 }
 
 bool AtomURLRequestJobFactory::IsSafeRedirectTarget(

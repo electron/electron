@@ -22,7 +22,9 @@ class MenuViews : public Menu {
 
  protected:
   void PopupAt(BrowserWindow* window,
-               int x, int y, int positioning_item,
+               int x,
+               int y,
+               int positioning_item,
                const base::Closure& callback) override;
   void ClosePopupAt(int32_t window_id) override;
 

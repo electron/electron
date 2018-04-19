@@ -20,18 +20,18 @@ class RendererClientBase : public content::ContentRendererClient {
   RendererClientBase();
   virtual ~RendererClientBase();
 
-  virtual void DidCreateScriptContext(
-      v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
-  virtual void WillReleaseScriptContext(
-      v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
+  virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
+                                      content::RenderFrame* render_frame) = 0;
+  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+                                        content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context) = 0;
 
   bool isolated_world() { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
-  v8::Local<v8::Context> GetContext(
-      blink::WebLocalFrame* frame, v8::Isolate* isolate);
+  v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
+                                    v8::Isolate* isolate);
 
  protected:
   void AddRenderBindings(v8::Isolate* isolate,

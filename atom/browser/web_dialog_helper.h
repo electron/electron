@@ -15,7 +15,7 @@ namespace content {
 struct FileChooserParams;
 class RenderFrameHost;
 class WebContents;
-}
+}  // namespace content
 
 namespace atom {
 

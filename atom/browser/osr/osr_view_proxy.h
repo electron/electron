@@ -39,6 +39,7 @@ class OffscreenViewProxy {
   void OnEvent(ui::Event* event);
 
   void ResetView() { view_ = nullptr; }
+
  private:
   views::View* view_;
 

@@ -21,8 +21,7 @@ namespace atom {
 
 class NativeWindowMac : public NativeWindow {
  public:
-  NativeWindowMac(const mate::Dictionary& options,
-                  NativeWindow* parent);
+  NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
@@ -53,10 +52,10 @@ class NativeWindowMac : public NativeWindow {
   void MoveTop() override;
   bool IsResizable() override;
   void SetMovable(bool movable) override;
-  void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size)
-    override;
-  void PreviewFile(const std::string& path, const std::string& display_name)
-    override;
+  void SetAspectRatio(double aspect_ratio,
+                      const gfx::Size& extra_size) override;
+  void PreviewFile(const std::string& path,
+                   const std::string& display_name) override;
   void CloseFilePreview() override;
   bool IsMovable() override;
   void SetMinimizable(bool minimizable) override;
@@ -67,8 +66,10 @@ class NativeWindowMac : public NativeWindow {
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top, const std::string& level,
-                      int relativeLevel, std::string* error) override;
+  void SetAlwaysOnTop(bool top,
+                      const std::string& level,
+                      int relativeLevel,
+                      std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
   void Invalidate() override;

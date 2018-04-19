@@ -43,8 +43,10 @@ void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
     manager->RemoveGuest(guest_instance_id);
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("addGuest", &AddGuest);
   dict.SetMethod("removeGuest", &RemoveGuest);

@@ -23,8 +23,8 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   // Set up our OLE machinery
   ui::OSExchangeData data;
 
-  button_drag_utils::SetDragImage(GURL(), files[0].LossyDisplayName(),
-      icon.AsImageSkia(), nullptr,
+  button_drag_utils::SetDragImage(
+      GURL(), files[0].LossyDisplayName(), icon.AsImageSkia(), nullptr,
       *views::Widget::GetTopLevelWidgetForNativeView(view), &data);
 
   std::vector<ui::FileInfo> file_infos;
@@ -39,13 +39,11 @@ void DragFileItems(const std::vector<base::FilePath>& files,
 
   gfx::Point location = display::Screen::GetScreen()->GetCursorScreenPoint();
   // TODO(varunjain): Properly determine and send DRAG_EVENT_SOURCE below.
-  aura::client::GetDragDropClient(root_window)->StartDragAndDrop(
-      data,
-      root_window,
-      view,
-      location,
-      ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK,
-      ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
+  aura::client::GetDragDropClient(root_window)
+      ->StartDragAndDrop(
+          data, root_window, view, location,
+          ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_LINK,
+          ui::DragDropTypes::DRAG_EVENT_SOURCE_MOUSE);
 }
 
 }  // namespace atom

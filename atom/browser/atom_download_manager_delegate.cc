@@ -50,8 +50,7 @@ void CreateDownloadPath(
 
 AtomDownloadManagerDelegate::AtomDownloadManagerDelegate(
     content::DownloadManager* manager)
-    : download_manager_(manager),
-      weak_ptr_factory_(this) {}
+    : download_manager_(manager), weak_ptr_factory_(this) {}
 
 AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   if (download_manager_) {
@@ -67,8 +66,8 @@ void AtomDownloadManagerDelegate::GetItemSavePath(content::DownloadItem* item,
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  api::DownloadItem* download = api::DownloadItem::FromWrappedClass(isolate,
-                                                                    item);
+  api::DownloadItem* download =
+      api::DownloadItem::FromWrappedClass(isolate, item);
   if (download)
     *path = download->GetSavePath();
 }
@@ -85,8 +84,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
 
   NativeWindow* window = nullptr;
   content::WebContents* web_contents = item->GetWebContents();
-  auto relay = web_contents ? NativeWindowRelay::FromWebContents(web_contents)
-                            : nullptr;
+  auto relay =
+      web_contents ? NativeWindowRelay::FromWebContents(web_contents) : nullptr;
   if (relay)
     window = relay->window.get();
 
@@ -111,8 +110,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
-    api::DownloadItem* download_item = api::DownloadItem::FromWrappedClass(
-        isolate, item);
+    api::DownloadItem* download_item =
+        api::DownloadItem::FromWrappedClass(isolate, item);
     if (download_item)
       download_item->SetSavePath(path);
   }
@@ -120,12 +119,10 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   // Running the DownloadTargetCallback with an empty FilePath signals that the
   // download should be cancelled.
   // If user cancels the file save dialog, run the callback with empty FilePath.
-  callback.Run(path,
-               content::DownloadItem::TARGET_DISPOSITION_PROMPT,
+  callback.Run(path, content::DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
-               path.empty() ?
-                   content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED :
-                   content::DOWNLOAD_INTERRUPT_REASON_NONE);
+               path.empty() ? content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED
+                            : content::DOWNLOAD_INTERRUPT_REASON_NONE);
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {
@@ -151,22 +148,20 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   base::FilePath save_path;
   GetItemSavePath(download, &save_path);
   if (!save_path.empty()) {
-    callback.Run(save_path,
-                 content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 save_path, content::DOWNLOAD_INTERRUPT_REASON_NONE);
+    callback.Run(save_path, content::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
+                 content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, save_path,
+                 content::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
-  AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(
-      download_manager_->GetBrowserContext());
-  base::FilePath default_download_path = browser_context->prefs()->GetFilePath(
-      prefs::kDownloadDefaultDirectory);
+  AtomBrowserContext* browser_context =
+      static_cast<AtomBrowserContext*>(download_manager_->GetBrowserContext());
+  base::FilePath default_download_path =
+      browser_context->prefs()->GetFilePath(prefs::kDownloadDefaultDirectory);
 
   CreateDownloadPathCallback download_path_callback =
       base::Bind(&AtomDownloadManagerDelegate::OnDownloadPathGenerated,
-                 weak_ptr_factory_.GetWeakPtr(),
-                 download->GetId(), callback);
+                 weak_ptr_factory_.GetWeakPtr(), download->GetId(), callback);
 
   content::BrowserThread::PostTask(
       content::BrowserThread::FILE, FROM_HERE,

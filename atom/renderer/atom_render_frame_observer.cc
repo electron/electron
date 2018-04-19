@@ -92,8 +92,8 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
-  if (renderer_client_->isolated_world() && IsMainWorld(world_id)
-      && render_frame_->IsMainFrame()) {
+  if (renderer_client_->isolated_world() && IsMainWorld(world_id) &&
+      render_frame_->IsMainFrame()) {
     CreateIsolatedWorldContext();
     renderer_client_->SetupMainWorldOverrides(context);
   }
@@ -136,7 +136,7 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // Setup document's origin policy in isolated world
   frame->SetIsolatedWorldSecurityOrigin(
-    World::ISOLATED_WORLD, frame->GetDocument().GetSecurityOrigin());
+      World::ISOLATED_WORLD, frame->GetDocument().GetSecurityOrigin());
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
@@ -196,8 +196,8 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
-                                          const base::string16& channel,
-                                          const base::ListValue& args) {
+                                           const base::string16& channel,
+                                           const base::ListValue& args) {
   if (!frame)
     return;
 

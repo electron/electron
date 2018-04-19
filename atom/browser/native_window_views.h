@@ -19,8 +19,6 @@
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_gdi_object.h"
-#include "ui/base/win/accessibility_misc_utils.h"
-#include <UIAutomationCoreApi.h>
 #endif
 
 namespace views {
@@ -46,8 +44,7 @@ class NativeWindowViews : public NativeWindow,
                           public views::WidgetDelegateView,
                           public views::WidgetObserver {
  public:
-  NativeWindowViews(const mate::Dictionary& options,
-                    NativeWindow* parent);
+  NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowViews() override;
 
   // NativeWindow:
@@ -91,8 +88,10 @@ class NativeWindowViews : public NativeWindow,
   bool IsFullScreenable() override;
   void SetClosable(bool closable) override;
   bool IsClosable() override;
-  void SetAlwaysOnTop(bool top, const std::string& level,
-                      int relativeLevel, std::string* error) override;
+  void SetAlwaysOnTop(bool top,
+                      const std::string& level,
+                      int relativeLevel,
+                      std::string* error) override;
   bool IsAlwaysOnTop() override;
   void Center() override;
   void Invalidate() override;
@@ -150,10 +149,9 @@ class NativeWindowViews : public NativeWindow,
 
  private:
   // views::WidgetObserver:
-  void OnWidgetActivationChanged(
-      views::Widget* widget, bool active) override;
-  void OnWidgetBoundsChanged(
-      views::Widget* widget, const gfx::Rect& bounds) override;
+  void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
+  void OnWidgetBoundsChanged(views::Widget* widget,
+                             const gfx::Rect& bounds) override;
 
   // views::WidgetDelegate:
   void DeleteDelegate() override;
@@ -167,8 +165,8 @@ class NativeWindowViews : public NativeWindow,
   const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
-     gfx::NativeView child,
-     const gfx::Point& location) override;
+      gfx::NativeView child,
+      const gfx::Point& location) override;
   views::ClientView* CreateClientView(views::Widget* widget) override;
   views::NonClientFrameView* CreateNonClientFrameView(
       views::Widget* widget) override;
@@ -179,15 +177,21 @@ class NativeWindowViews : public NativeWindow,
 
 #if defined(OS_WIN)
   // MessageHandlerDelegate:
-  bool PreHandleMSG(
-      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) override;
+  bool PreHandleMSG(UINT message,
+                    WPARAM w_param,
+                    LPARAM l_param,
+                    LRESULT* result) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void SetForwardMouseMessages(bool forward);
-  static LRESULT CALLBACK SubclassProc(
-      HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param, UINT_PTR subclass_id,
-      DWORD_PTR ref_data);
-  static LRESULT CALLBACK MouseHookProc(
-      int n_code, WPARAM w_param, LPARAM l_param);
+  static LRESULT CALLBACK SubclassProc(HWND hwnd,
+                                       UINT msg,
+                                       WPARAM w_param,
+                                       LPARAM l_param,
+                                       UINT_PTR subclass_id,
+                                       DWORD_PTR ref_data);
+  static LRESULT CALLBACK MouseHookProc(int n_code,
+                                        WPARAM w_param,
+                                        LPARAM l_param);
 #endif
 
   // NativeWindow:

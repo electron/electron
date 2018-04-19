@@ -57,8 +57,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   std::string checkbox;
-  if (origin_counts_[origin] > 1 &&
-      web_preferences &&
+  if (origin_counts_[origin] > 1 && web_preferences &&
       web_preferences->IsEnabled("safeDialogs") &&
       !web_preferences->dict()->GetString("safeDialogsMessage", &checkbox)) {
     checkbox = "Prevent this app from creating additional dialogs";
@@ -73,14 +72,11 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   }
 
   atom::ShowMessageBox(
-      window,
-      atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
+      window, atom::MessageBoxType::MESSAGE_BOX_TYPE_NONE, buttons, -1, 0,
       atom::MessageBoxOptions::MESSAGE_BOX_NONE, "",
-      base::UTF16ToUTF8(message_text), "", checkbox,
-      false, gfx::ImageSkia(),
+      base::UTF16ToUTF8(message_text), "", checkbox, false, gfx::ImageSkia(),
       base::Bind(&AtomJavaScriptDialogManager::OnMessageBoxCallback,
-                 base::Unretained(this),
-                 base::Passed(std::move(callback)),
+                 base::Unretained(this), base::Passed(std::move(callback)),
                  origin));
 }
 
@@ -95,8 +91,7 @@ void AtomJavaScriptDialogManager::RunBeforeUnloadDialog(
 
 void AtomJavaScriptDialogManager::CancelDialogs(
     content::WebContents* web_contents,
-    bool reset_state) {
-}
+    bool reset_state) {}
 
 void AtomJavaScriptDialogManager::OnMessageBoxCallback(
     DialogClosedCallback callback,

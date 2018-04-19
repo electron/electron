@@ -33,12 +33,12 @@ class Point;
 class Rect;
 class RectF;
 class Size;
-}
+}  // namespace gfx
 
 namespace mate {
 class Dictionary;
 class PersistentDictionary;
-}
+}  // namespace mate
 
 namespace atom {
 
@@ -154,15 +154,14 @@ class NativeWindow : public base::SupportsUserData {
 
   // Taskbar/Dock APIs.
   enum ProgressState {
-    PROGRESS_NONE,               // no progress, no marking
-    PROGRESS_INDETERMINATE,      // progress, indeterminate
-    PROGRESS_ERROR,              // progress, errored (red)
-    PROGRESS_PAUSED,             // progress, paused (yellow)
-    PROGRESS_NORMAL,             // progress, not marked (green)
+    PROGRESS_NONE,           // no progress, no marking
+    PROGRESS_INDETERMINATE,  // progress, indeterminate
+    PROGRESS_ERROR,          // progress, errored (red)
+    PROGRESS_PAUSED,         // progress, paused (yellow)
+    PROGRESS_NORMAL,         // progress, not marked (green)
   };
 
-  virtual void SetProgressBar(double progress,
-                              const ProgressState state) = 0;
+  virtual void SetProgressBar(double progress, const ProgressState state) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 
@@ -251,13 +250,11 @@ class NativeWindow : public base::SupportsUserData {
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
 
-  #if defined(OS_WIN)
+#if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
-  #endif
+#endif
 
-  void AddObserver(NativeWindowObserver* obs) {
-    observers_.AddObserver(obs);
-  }
+  void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
   }
@@ -273,8 +270,7 @@ class NativeWindow : public base::SupportsUserData {
   bool is_modal() const { return is_modal_; }
 
  protected:
-  NativeWindow(const mate::Dictionary& options,
-               NativeWindow* parent);
+  NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
 
   void set_browser_view(NativeBrowserView* browser_view) {
     browser_view_ = browser_view;
@@ -324,11 +320,11 @@ class NativeWindow : public base::SupportsUserData {
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.
-class NativeWindowRelay :
-    public content::WebContentsUserData<NativeWindowRelay> {
+class NativeWindowRelay
+    : public content::WebContentsUserData<NativeWindowRelay> {
  public:
   explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-    : key(UserDataKey()), window(window) {}
+      : key(UserDataKey()), window(window) {}
 
   static void* UserDataKey() {
     return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();

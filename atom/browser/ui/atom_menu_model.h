@@ -27,8 +27,8 @@ class AtomMenuModel : public ui::SimpleMenuModel {
     // ui::SimpleMenuModel::Delegate:
     bool GetAcceleratorForCommandId(int command_id,
                                     ui::Accelerator* accelerator) const {
-      return GetAcceleratorForCommandIdWithParams(
-          command_id, false, accelerator);
+      return GetAcceleratorForCommandIdWithParams(command_id, false,
+                                                  accelerator);
     }
   };
 

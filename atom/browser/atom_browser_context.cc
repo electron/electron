@@ -77,14 +77,12 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   std::string name = RemoveWhitespace(browser->GetName());
   std::string user_agent;
   if (name == ATOM_PRODUCT_NAME) {
-    user_agent = "Chrome/" CHROME_VERSION_STRING " "
-                 ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING;
+    user_agent = "Chrome/" CHROME_VERSION_STRING " " ATOM_PRODUCT_NAME
+                 "/" ATOM_VERSION_STRING;
   } else {
     user_agent = base::StringPrintf(
         "%s/%s Chrome/%s " ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING,
-        name.c_str(),
-        browser->GetVersion().c_str(),
-        CHROME_VERSION_STRING);
+        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
   }
   user_agent_ = content::BuildUserAgentFromProduct(user_agent);
 
@@ -96,8 +94,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   InitPrefs();
 }
 
-AtomBrowserContext::~AtomBrowserContext() {
-}
+AtomBrowserContext::~AtomBrowserContext() {}
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
@@ -156,8 +153,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
   auto host_resolver =
       url_request_context_getter()->GetURLRequestContext()->host_resolver();
   job_factory->SetProtocolHandler(
-      url::kFtpScheme,
-      net::FtpProtocolHandler::Create(host_resolver));
+      url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
 
   return std::move(job_factory);
 }
@@ -202,8 +198,8 @@ std::unique_ptr<net::CertVerifier> AtomBrowserContext::CreateCertVerifier(
 std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   auto default_schemes = brightray::BrowserContext::GetCookieableSchemes();
   const auto& standard_schemes = atom::api::GetStandardSchemes();
-  default_schemes.insert(default_schemes.end(),
-                         standard_schemes.begin(), standard_schemes.end());
+  default_schemes.insert(default_schemes.end(), standard_schemes.begin(),
+                         standard_schemes.end());
   return default_schemes;
 }
 
@@ -230,17 +226,17 @@ AtomBlobReader* AtomBrowserContext::GetBlobReader() {
     content::ChromeBlobStorageContext* blob_context =
         content::ChromeBlobStorageContext::GetFor(this);
     storage::FileSystemContext* file_system_context =
-        content::BrowserContext::GetStoragePartition(
-            this, nullptr)->GetFileSystemContext();
-    blob_reader_.reset(new AtomBlobReader(blob_context,
-                                          file_system_context));
+        content::BrowserContext::GetStoragePartition(this, nullptr)
+            ->GetFileSystemContext();
+    blob_reader_.reset(new AtomBlobReader(blob_context, file_system_context));
   }
   return blob_reader_.get();
 }
 
 // static
 scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
-    const std::string& partition, bool in_memory,
+    const std::string& partition,
+    bool in_memory,
     const base::DictionaryValue& options) {
   auto browser_context = brightray::BrowserContext::Get(partition, in_memory);
   if (browser_context)

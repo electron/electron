@@ -31,8 +31,7 @@ WebViewGuestDelegate::WebViewGuestDelegate()
       attached_(false),
       api_web_contents_(nullptr) {}
 
-WebViewGuestDelegate::~WebViewGuestDelegate() {
-}
+WebViewGuestDelegate::~WebViewGuestDelegate() {}
 
 void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
   api_web_contents_ = api_web_contents;
@@ -168,9 +167,9 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
 }
 
 void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(
-    const gfx::Size& old_size, const gfx::Size& new_size) {
-  api_web_contents_->Emit("size-changed",
-                          old_size.width(), old_size.height(),
+    const gfx::Size& old_size,
+    const gfx::Size& new_size) {
+  api_web_contents_->Emit("size-changed", old_size.width(), old_size.height(),
                           new_size.width(), new_size.height());
 }
 
@@ -178,7 +177,7 @@ gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
   if (is_full_page_plugin_) {
     // Full page plugins default to the size of the owner's viewport.
     return embedder_web_contents_->GetRenderWidgetHostView()
-                                 ->GetVisibleViewportSize();
+        ->GetVisibleViewportSize();
   } else {
     return gfx::Size(kDefaultWidth, kDefaultHeight);
   }

@@ -13,7 +13,7 @@
 #include "atom/common/node_includes.h"
 
 namespace mate {
-template<>
+template <>
 struct Converter<ui::IdleState> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const ui::IdleState& in) {
@@ -38,11 +38,11 @@ namespace api {
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if defined(OS_LINUX)
-  SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
-                                base::Unretained(this)));
+  SetShutdownHandler(
+      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #elif defined(OS_MACOSX)
-  Browser::Get()->SetShutdownHandler(base::Bind(&PowerMonitor::ShouldShutdown,
-                                                base::Unretained(this)));
+  Browser::Get()->SetShutdownHandler(
+      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
@@ -87,9 +87,8 @@ void PowerMonitor::QuerySystemIdleState(v8::Isolate* isolate,
   if (idle_threshold > 0) {
     ui::CalculateIdleState(idle_threshold, callback);
   } else {
-    isolate->ThrowException(v8::Exception::TypeError(
-        mate::StringToV8(isolate,
-          "Invalid idle threshold, must be greater than 0")));
+    isolate->ThrowException(v8::Exception::TypeError(mate::StringToV8(
+        isolate, "Invalid idle threshold, must be greater than 0")));
   }
 }
 
@@ -110,31 +109,32 @@ v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
 }
 
 // static
-void PowerMonitor::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void PowerMonitor::BuildPrototype(v8::Isolate* isolate,
+                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "PowerMonitor"));
 
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-        .MakeDestroyable()
+      .MakeDestroyable()
 #if defined(OS_LINUX)
-        .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
-        .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
+      .SetMethod("blockShutdown", &PowerMonitor::BlockShutdown)
+      .SetMethod("unblockShutdown", &PowerMonitor::UnblockShutdown)
 #endif
-        .SetMethod("querySystemIdleState", &PowerMonitor::QuerySystemIdleState)
-        .SetMethod("querySystemIdleTime", &PowerMonitor::QuerySystemIdleTime);
+      .SetMethod("querySystemIdleState", &PowerMonitor::QuerySystemIdleState)
+      .SetMethod("querySystemIdleTime", &PowerMonitor::QuerySystemIdleTime);
 }
 
 }  // namespace api
 
 }  // namespace atom
 
-
 namespace {
 
 using atom::api::PowerMonitor;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerMonitor", PowerMonitor::Create(isolate));

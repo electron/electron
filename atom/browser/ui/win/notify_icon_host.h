@@ -27,11 +27,15 @@ class NotifyIconHost {
   typedef std::vector<NotifyIcon*> NotifyIcons;
 
   // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK
-      WndProcStatic(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
+                                        UINT message,
+                                        WPARAM wparam,
+                                        LPARAM lparam);
 
-  LRESULT CALLBACK
-      WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  LRESULT CALLBACK WndProc(HWND hwnd,
+                           UINT message,
+                           WPARAM wparam,
+                           LPARAM lparam);
 
   UINT NextIconId();
 

@@ -26,13 +26,14 @@ void PreventDefault(mate::Arguments* args) {
 // Create a pure JavaScript Event object.
 v8::Local<v8::Object> CreateEventObject(v8::Isolate* isolate) {
   if (event_template.IsEmpty()) {
-    event_template.Reset(isolate, ObjectTemplateBuilder(isolate)
-        .SetMethod("preventDefault", &PreventDefault)
-        .Build());
+    event_template.Reset(isolate,
+                         ObjectTemplateBuilder(isolate)
+                             .SetMethod("preventDefault", &PreventDefault)
+                             .Build());
   }
 
-  return v8::Local<v8::ObjectTemplate>::New(
-      isolate, event_template)->NewInstance();
+  return v8::Local<v8::ObjectTemplate>::New(isolate, event_template)
+      ->NewInstance();
 }
 
 }  // namespace
@@ -57,10 +58,9 @@ v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
   return event;
 }
 
-v8::Local<v8::Object> CreateCustomEvent(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> object,
-    v8::Local<v8::Object> custom_event) {
+v8::Local<v8::Object> CreateCustomEvent(v8::Isolate* isolate,
+                                        v8::Local<v8::Object> object,
+                                        v8::Local<v8::Object> custom_event) {
   v8::Local<v8::Object> event = CreateEventObject(isolate);
   (void)event->SetPrototype(custom_event->CreationContext(), custom_event);
   mate::Dictionary(isolate, event).Set("sender", object);

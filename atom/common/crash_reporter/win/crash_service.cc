@@ -36,7 +36,8 @@ const wchar_t kCheckPointFile[] = L"crash_checkpoint.txt";
 typedef std::map<std::wstring, std::wstring> CrashMap;
 
 bool CustomInfoToMap(const google_breakpad::ClientInfo* client_info,
-                     const std::wstring& reporter_tag, CrashMap* map) {
+                     const std::wstring& reporter_tag,
+                     CrashMap* map) {
   google_breakpad::CustomClientInfo info = client_info->GetCustomInfo();
 
   for (uintptr_t i = 0; i < info.count; ++i) {
@@ -56,8 +57,9 @@ bool WriteCustomInfoToFile(const std::wstring& dump_path, const CrashMap& map) {
   file_path.resize(last_dot);
   file_path += L".txt";
 
-  std::wofstream file(file_path.c_str(),
-      std::ios_base::out | std::ios_base::app | std::ios::binary);
+  std::wofstream file(file_path.c_str(), std::ios_base::out |
+                                             std::ios_base::app |
+                                             std::ios::binary);
   if (!file.is_open())
     return false;
 
@@ -81,8 +83,9 @@ bool WriteReportIDToFile(const std::wstring& dump_path,
   file_path.resize(last_slash);
   file_path += L"\\uploads.log";
 
-  std::wofstream file(file_path.c_str(),
-      std::ios_base::out | std::ios_base::app | std::ios::binary);
+  std::wofstream file(file_path.c_str(), std::ios_base::out |
+                                             std::ios_base::app |
+                                             std::ios::binary);
   if (!file.is_open())
     return false;
 
@@ -98,8 +101,10 @@ bool WriteReportIDToFile(const std::wstring& dump_path,
 
 // The window procedure task is to handle when a) the user logs off.
 // b) the system shuts down or c) when the user closes the window.
-LRESULT __stdcall CrashSvcWndProc(HWND hwnd, UINT message,
-                                  WPARAM wparam, LPARAM lparam) {
+LRESULT __stdcall CrashSvcWndProc(HWND hwnd,
+                                  UINT message,
+                                  WPARAM wparam,
+                                  LPARAM lparam) {
   switch (message) {
     case WM_CLOSE:
     case WM_ENDSESSION:
@@ -118,8 +123,8 @@ HWND g_top_window = NULL;
 bool CreateTopWindow(HINSTANCE instance,
                      const base::string16& application_name,
                      bool visible) {
-  base::string16 class_name = base::ReplaceStringPlaceholders(
-      kClassNameFormat, application_name, NULL);
+  base::string16 class_name =
+      base::ReplaceStringPlaceholders(kClassNameFormat, application_name, NULL);
 
   WNDCLASSEXW wcx = {0};
   wcx.cbSize = sizeof(wcx);
@@ -133,8 +138,8 @@ bool CreateTopWindow(HINSTANCE instance,
   // The window size is zero but being a popup window still shows in the
   // task bar and can be closed using the system menu or using task manager.
   HWND window = CreateWindowExW(0, wcx.lpszClassName, L"crash service", style,
-                                CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
-                                NULL, NULL, instance, NULL);
+                                CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL,
+                                instance, NULL);
   if (!window)
     return false;
 
@@ -148,15 +153,10 @@ bool CreateTopWindow(HINSTANCE instance,
 // finishes.
 class ProcessingLock {
  public:
-  ProcessingLock() {
-    ::InterlockedIncrement(&op_count_);
-  }
-  ~ProcessingLock() {
-    ::InterlockedDecrement(&op_count_);
-  }
-  static bool IsWorking() {
-    return (op_count_ != 0);
-  }
+  ProcessingLock() { ::InterlockedIncrement(&op_count_); }
+  ~ProcessingLock() { ::InterlockedDecrement(&op_count_); }
+  static bool IsWorking() { return (op_count_ != 0); }
+
  private:
   static volatile LONG op_count_;
 };
@@ -171,21 +171,22 @@ struct DumpJobInfo {
   CrashMap map;
   std::wstring dump_path;
 
-  DumpJobInfo(DWORD process_id, CrashService* service,
-              const CrashMap& crash_map, const std::wstring& path)
-      : pid(process_id), self(service), map(crash_map), dump_path(path) {
-  }
+  DumpJobInfo(DWORD process_id,
+              CrashService* service,
+              const CrashMap& crash_map,
+              const std::wstring& path)
+      : pid(process_id), self(service), map(crash_map), dump_path(path) {}
 };
 
 }  // namespace
 
 // Command line switches:
-const char CrashService::kMaxReports[]        = "max-reports";
-const char CrashService::kNoWindow[]          = "no-window";
-const char CrashService::kReporterTag[]       = "reporter";
-const char CrashService::kDumpsDir[]          = "dumps-dir";
-const char CrashService::kPipeName[]          = "pipe-name";
-const char CrashService::kReporterURL[]       = "reporter-url";
+const char CrashService::kMaxReports[] = "max-reports";
+const char CrashService::kNoWindow[] = "no-window";
+const char CrashService::kReporterTag[] = "reporter";
+const char CrashService::kDumpsDir[] = "dumps-dir";
+const char CrashService::kPipeName[] = "pipe-name";
+const char CrashService::kReporterURL[] = "reporter-url";
 
 CrashService::CrashService()
     : sender_(NULL),
@@ -193,8 +194,7 @@ CrashService::CrashService()
       requests_handled_(0),
       requests_sent_(0),
       clients_connected_(0),
-      clients_terminated_(0) {
-}
+      clients_terminated_(0) {}
 
 CrashService::~CrashService() {
   base::AutoLock lock(sending_);
@@ -205,8 +205,8 @@ CrashService::~CrashService() {
 bool CrashService::Initialize(const base::string16& application_name,
                               const base::FilePath& operating_dir,
                               const base::FilePath& dumps_path) {
-  using google_breakpad::CrashReportSender;
   using google_breakpad::CrashGenerationServer;
+  using google_breakpad::CrashReportSender;
 
   std::wstring pipe_name = kTestPipeName;
   int max_reports = -1;
@@ -249,12 +249,10 @@ bool CrashService::Initialize(const base::string16& application_name,
   security_attributes.bInheritHandle = FALSE;
 
   // Create the OOP crash generator object.
-  dumper_ = new CrashGenerationServer(pipe_name, &security_attributes,
-                                      &CrashService::OnClientConnected, this,
-                                      &CrashService::OnClientDumpRequest, this,
-                                      &CrashService::OnClientExited, this,
-                                      NULL, NULL,
-                                      true, &dumps_path_to_use.value());
+  dumper_ = new CrashGenerationServer(
+      pipe_name, &security_attributes, &CrashService::OnClientConnected, this,
+      &CrashService::OnClientDumpRequest, this, &CrashService::OnClientExited,
+      this, NULL, NULL, true, &dumps_path_to_use.value());
 
   if (!dumper_) {
     LOG(ERROR) << "could not create dumper";
@@ -263,8 +261,7 @@ bool CrashService::Initialize(const base::string16& application_name,
     return false;
   }
 
-  if (!CreateTopWindow(::GetModuleHandleW(NULL),
-                       application_name,
+  if (!CreateTopWindow(::GetModuleHandleW(NULL), application_name,
                        !cmd_line.HasSwitch(kNoWindow))) {
     LOG(ERROR) << "could not create window";
     if (security_attributes.lpSecurityDescriptor)
@@ -281,13 +278,13 @@ bool CrashService::Initialize(const base::string16& application_name,
     reporter_url_ = cmd_line.GetSwitchValueNative(kReporterURL);
 
   // Log basic information.
-  VLOG(1) << "pipe name is " << pipe_name
-          << "\ndumps at " << dumps_path_to_use.value();
+  VLOG(1) << "pipe name is " << pipe_name << "\ndumps at "
+          << dumps_path_to_use.value();
 
   if (sender_) {
-    VLOG(1) << "checkpoint is " << checkpoint_path.value()
-            << "\nserver is " << reporter_url_
-            << "\nmaximum " << sender_->max_reports_per_day() << " reports/day"
+    VLOG(1) << "checkpoint is " << checkpoint_path.value() << "\nserver is "
+            << reporter_url_ << "\nmaximum " << sender_->max_reports_per_day()
+            << " reports/day"
             << "\nreporter is " << reporter_tag_;
   }
   // Start servicing clients.
@@ -303,15 +300,16 @@ bool CrashService::Initialize(const base::string16& application_name,
 
   // Create or open an event to signal the browser process that the crash
   // service is initialized.
-  base::string16 wait_name = base::ReplaceStringPlaceholders(
-      kWaitEventFormat, application_name, NULL);
+  base::string16 wait_name =
+      base::ReplaceStringPlaceholders(kWaitEventFormat, application_name, NULL);
   HANDLE wait_event = ::CreateEventW(NULL, TRUE, TRUE, wait_name.c_str());
   ::SetEvent(wait_event);
 
   return true;
 }
 
-void CrashService::OnClientConnected(void* context,
+void CrashService::OnClientConnected(
+    void* context,
     const google_breakpad::ClientInfo* client_info) {
   ProcessingLock lock;
   VLOG(1) << "client start. pid = " << client_info->pid();
@@ -319,7 +317,8 @@ void CrashService::OnClientConnected(void* context,
   ::InterlockedIncrement(&self->clients_connected_);
 }
 
-void CrashService::OnClientExited(void* context,
+void CrashService::OnClientExited(
+    void* context,
     const google_breakpad::ClientInfo* client_info) {
   ProcessingLock processing_lock;
   VLOG(1) << "client end. pid = " << client_info->pid();
@@ -349,7 +348,8 @@ void CrashService::OnClientExited(void* context,
   }
 }
 
-void CrashService::OnClientDumpRequest(void* context,
+void CrashService::OnClientDumpRequest(
+    void* context,
     const google_breakpad::ClientInfo* client_info,
     const std::wstring* file_path) {
   ProcessingLock lock;
@@ -378,8 +378,8 @@ void CrashService::OnClientDumpRequest(void* context,
   if (it != map.end()) {
     base::FilePath alternate_dump_location = base::FilePath(it->second);
     base::CreateDirectoryW(alternate_dump_location);
-    alternate_dump_location = alternate_dump_location.Append(
-        dump_location.BaseName());
+    alternate_dump_location =
+        alternate_dump_location.Append(dump_location.BaseName());
     base::Move(dump_location, alternate_dump_location);
     dump_location = alternate_dump_location;
   }
@@ -396,10 +396,10 @@ void CrashService::OnClientDumpRequest(void* context,
 
   // Send the crash dump using a worker thread. This operation has retry
   // logic in case there is no internet connection at the time.
-  DumpJobInfo* dump_job = new DumpJobInfo(pid, self, map,
-                                          dump_location.value());
-  if (!::QueueUserWorkItem(&CrashService::AsyncSendDump,
-                           dump_job, WT_EXECUTELONGFUNCTION)) {
+  DumpJobInfo* dump_job =
+      new DumpJobInfo(pid, self, map, dump_location.value());
+  if (!::QueueUserWorkItem(&CrashService::AsyncSendDump, dump_job,
+                           WT_EXECUTELONGFUNCTION)) {
     LOG(ERROR) << "could not queue job";
   }
 }
@@ -414,16 +414,11 @@ DWORD CrashService::AsyncSendDump(void* context) {
 
   std::wstring report_id = L"<unsent>";
 
-  const DWORD kOneMinute = 60*1000;
-  const DWORD kOneHour = 60*kOneMinute;
+  const DWORD kOneMinute = 60 * 1000;
+  const DWORD kOneHour = 60 * kOneMinute;
 
-  const DWORD kSleepSchedule[] = {
-      24*kOneHour,
-      8*kOneHour,
-      4*kOneHour,
-      kOneHour,
-      15*kOneMinute,
-      0};
+  const DWORD kSleepSchedule[] = {24 * kOneHour, 8 * kOneHour,    4 * kOneHour,
+                                  kOneHour,      15 * kOneMinute, 0};
 
   int retry_round = arraysize(kSleepSchedule) - 1;
 
@@ -436,11 +431,9 @@ DWORD CrashService::AsyncSendDump(void* context) {
       VLOG(1) << "trying to send report for pid = " << info->pid;
       std::map<std::wstring, std::wstring> file_map;
       file_map[L"upload_file_minidump"] = info->dump_path;
-      google_breakpad::ReportResult send_result
-          = info->self->sender_->SendCrashReport(info->self->reporter_url_,
-                                                 info->map,
-                                                 file_map,
-                                                 &report_id);
+      google_breakpad::ReportResult send_result =
+          info->self->sender_->SendCrashReport(info->self->reporter_url_,
+                                               info->map, file_map, &report_id);
       switch (send_result) {
         case google_breakpad::RESULT_FAILED:
           report_id = L"<network issue>";
@@ -507,9 +500,8 @@ PSECURITY_DESCRIPTOR CrashService::GetSecurityDescriptorForLowIntegrity() {
   BOOL sacl_present = FALSE;
   BOOL sacl_defaulted = FALSE;
 
-  if (::ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(),
-                                                             SDDL_REVISION,
-                                                             &sec_desc, NULL)) {
+  if (::ConvertStringSecurityDescriptorToSecurityDescriptorW(
+          sddl.c_str(), SDDL_REVISION, &sec_desc, NULL)) {
     if (::GetSecurityDescriptorSacl(sec_desc, &sacl_present, &sacl,
                                     &sacl_defaulted)) {
       return sec_desc;

@@ -21,11 +21,9 @@ int indicators_count;
 
 }  // namespace
 
-TrayIconGtk::TrayIconGtk() {
-}
+TrayIconGtk::TrayIconGtk() {}
 
-TrayIconGtk::~TrayIconGtk() {
-}
+TrayIconGtk::~TrayIconGtk() {}
 
 void TrayIconGtk::SetImage(const gfx::Image& image) {
   if (icon_) {
@@ -38,10 +36,9 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
   if (libgtkui::AppIndicatorIcon::CouldOpen()) {
     ++indicators_count;
     icon_.reset(new libgtkui::AppIndicatorIcon(
-        base::StringPrintf(
-            "%s%d", Browser::Get()->GetName().c_str(), indicators_count),
-        image.AsImageSkia(),
-        toolTip));
+        base::StringPrintf("%s%d", Browser::Get()->GetName().c_str(),
+                           indicators_count),
+        image.AsImageSkia(), toolTip));
   } else {
     icon_.reset(new libgtkui::Gtk2StatusIcon(image.AsImageSkia(), toolTip));
   }

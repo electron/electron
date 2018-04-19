@@ -16,7 +16,8 @@
 #include "vendor/crashpad/client/simple_string_dictionary.h"
 
 namespace base {
-template <typename T> struct DefaultSingletonTraits;
+template <typename T>
+struct DefaultSingletonTraits;
 }
 
 namespace crash_reporter {

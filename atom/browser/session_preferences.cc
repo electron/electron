@@ -27,8 +27,7 @@ SessionPreferences::SessionPreferences(content::BrowserContext* context) {
   context->SetUserData(&kLocatorKey, base::WrapUnique(this));
 }
 
-SessionPreferences::~SessionPreferences() {
-}
+SessionPreferences::~SessionPreferences() {}
 
 // static
 SessionPreferences* SessionPreferences::FromBrowserContext(
@@ -38,7 +37,8 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
 
 // static
 void SessionPreferences::AppendExtraCommandLineSwitches(
-    content::BrowserContext* context, base::CommandLine* command_line) {
+    content::BrowserContext* context,
+    base::CommandLine* command_line) {
   SessionPreferences* self = FromBrowserContext(context);
   if (!self)
     return;

@@ -15,7 +15,7 @@ using content::BrowserThread;
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<device::PowerSaveBlocker::PowerSaveBlockerType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -46,8 +46,7 @@ PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
   Init(isolate);
 }
 
-PowerSaveBlocker::~PowerSaveBlocker() {
-}
+PowerSaveBlocker::~PowerSaveBlocker() {}
 
 void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   if (power_save_blocker_types_.empty()) {
@@ -75,8 +74,7 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
     std::unique_ptr<device::PowerSaveBlocker> new_blocker(
         new device::PowerSaveBlocker(
-            new_blocker_type,
-            device::PowerSaveBlocker::kReasonOther,
+            new_blocker_type, device::PowerSaveBlocker::kReasonOther,
             ATOM_PRODUCT_NAME,
             BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
             BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
@@ -110,7 +108,8 @@ mate::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(v8::Isolate* isolate) {
 
 // static
 void PowerSaveBlocker::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+    v8::Isolate* isolate,
+    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "PowerSaveBlocker"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("start", &PowerSaveBlocker::Start)
@@ -124,8 +123,10 @@ void PowerSaveBlocker::BuildPrototype(
 
 namespace {
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("powerSaveBlocker", atom::api::PowerSaveBlocker::Create(isolate));

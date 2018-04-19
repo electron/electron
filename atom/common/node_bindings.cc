@@ -77,11 +77,13 @@ namespace {
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   // Close any active handles
   uv_stop(loop);
-  uv_walk(loop, [](uv_handle_t* handle, void*){
-    if (!uv_is_closing(handle)) {
-      uv_close(handle, nullptr);
-    }
-  }, nullptr);
+  uv_walk(loop,
+          [](uv_handle_t* handle, void*) {
+            if (!uv_is_closing(handle)) {
+              uv_close(handle, nullptr);
+            }
+          },
+          nullptr);
 
   // Run the loop to let it finish all the closing handles
   // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
@@ -102,9 +104,9 @@ namespace {
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
 // is not modified.
-std::unique_ptr<const char*[]> StringVectorToArgArray(
+std::unique_ptr<const char* []> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
-  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
+  std::unique_ptr<const char* []> array(new const char*[vector.size()]);
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
@@ -118,9 +120,10 @@ base::FilePath GetResourcesPath(bool is_browser) {
 
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
-      is_browser ? exec_path.DirName().DirName().Append("Resources") :
-                   exec_path.DirName().DirName().DirName().DirName().DirName()
-                            .Append("Resources");
+      is_browser
+          ? exec_path.DirName().DirName().Append("Resources")
+          : exec_path.DirName().DirName().DirName().DirName().DirName().Append(
+                "Resources");
 #else
       exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
@@ -221,11 +224,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::FilePath resources_path = GetResourcesPath(browser_env_ == BROWSER);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
-                    .Append(process_type)
-                    .Append(FILE_PATH_LITERAL("init.js"));
+          .Append(process_type)
+          .Append(FILE_PATH_LITERAL("init.js"));
   args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
 
-  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
+  std::unique_ptr<const char* []> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
@@ -324,7 +327,7 @@ void NodeBindings::WakeupEmbedThread() {
 }
 
 // static
-void NodeBindings::EmbedThreadRunner(void *arg) {
+void NodeBindings::EmbedThreadRunner(void* arg) {
   NodeBindings* self = static_cast<NodeBindings*>(arg);
 
   while (true) {

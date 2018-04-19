@@ -13,25 +13,22 @@ namespace atom {
 
 OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
                                              const OnPaintCallback& callback)
-  : transparent_(transparent),
-    callback_(callback),
-    active_(false) {
+    : transparent_(transparent), callback_(callback), active_(false) {
   DCHECK(!callback_.is_null());
 }
 
-OffScreenOutputDevice::~OffScreenOutputDevice() {
-}
+OffScreenOutputDevice::~OffScreenOutputDevice() {}
 
-void OffScreenOutputDevice::Resize(
-    const gfx::Size& pixel_size, float scale_factor) {
-  if (viewport_pixel_size_ == pixel_size) return;
+void OffScreenOutputDevice::Resize(const gfx::Size& pixel_size,
+                                   float scale_factor) {
+  if (viewport_pixel_size_ == pixel_size)
+    return;
   viewport_pixel_size_ = pixel_size;
 
   canvas_.reset();
   bitmap_.reset(new SkBitmap);
   bitmap_->allocN32Pixels(viewport_pixel_size_.width(),
-                          viewport_pixel_size_.height(),
-                          !transparent_);
+                          viewport_pixel_size_.height(), !transparent_);
   if (bitmap_->drawsNothing()) {
     NOTREACHED();
     bitmap_.reset();
@@ -52,11 +49,9 @@ SkCanvas* OffScreenOutputDevice::BeginPaint(const gfx::Rect& damage_rect) {
   DCHECK(bitmap_.get());
 
   damage_rect_ = damage_rect;
-  SkIRect damage = SkIRect::MakeXYWH(
-    damage_rect_.x(),
-    damage_rect_.y(),
-    damage_rect_.width(),
-    damage_rect_.height());
+  SkIRect damage =
+      SkIRect::MakeXYWH(damage_rect_.x(), damage_rect_.y(),
+                        damage_rect_.width(), damage_rect_.height());
 
   if (transparent_) {
     bitmap_->erase(SK_ColorTRANSPARENT, damage);
@@ -71,7 +66,8 @@ void OffScreenOutputDevice::EndPaint() {
   DCHECK(canvas_.get());
   DCHECK(bitmap_.get());
 
-  if (!bitmap_.get()) return;
+  if (!bitmap_.get())
+    return;
 
   viz::SoftwareOutputDevice::EndPaint();
 

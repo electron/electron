@@ -26,11 +26,10 @@ std::string GetExtFromURL(const GURL& url) {
 
 }  // namespace
 
-URLRequestBufferJob::URLRequestBufferJob(
-    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+URLRequestBufferJob::URLRequestBufferJob(net::URLRequest* request,
+                                         net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestSimpleJob>(request, network_delegate),
-      status_code_(net::HTTP_NOT_IMPLEMENTED) {
-}
+      status_code_(net::HTTP_NOT_IMPLEMENTED) {}
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   const base::Value* binary = nullptr;
@@ -54,8 +53,8 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   }
 
   if (!binary) {
-    NotifyStartError(net::URLRequestStatus(
-          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           net::ERR_NOT_IMPLEMENTED));
     return;
   }
 

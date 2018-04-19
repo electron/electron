@@ -7,7 +7,7 @@
 
 #ifndef GOOGLEAPIS_ENDPOINT
 #define GOOGLEAPIS_ENDPOINT \
-    "https://www.googleapis.com/geolocation/v1/geolocate?key="
+  "https://www.googleapis.com/geolocation/v1/geolocate?key="
 #endif
 
 #ifndef GOOGLEAPIS_API_KEY

@@ -21,7 +21,7 @@ class Image;
 namespace mate {
 class Arguments;
 class Dictionary;
-}
+}  // namespace mate
 
 namespace atom {
 
@@ -32,8 +32,7 @@ namespace api {
 class Menu;
 class NativeImage;
 
-class Tray : public mate::TrackableObject<Tray>,
-             public TrayIconObserver {
+class Tray : public mate::TrackableObject<Tray>, public TrayIconObserver {
  public:
   static mate::WrappableBase* New(mate::Handle<NativeImage> image,
                                   mate::Arguments* args);
@@ -42,7 +41,8 @@ class Tray : public mate::TrackableObject<Tray>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
-  Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+  Tray(v8::Isolate* isolate,
+       v8::Local<v8::Object> wrapper,
        mate::Handle<NativeImage> image);
   ~Tray() override;
 

@@ -15,8 +15,7 @@ class Message;
 
 namespace mate {
 
-class Event : public Wrappable<Event>,
-              public content::WebContentsObserver {
+class Event : public Wrappable<Event>, public content::WebContentsObserver {
  public:
   static Handle<Event> Create(v8::Isolate* isolate);
 

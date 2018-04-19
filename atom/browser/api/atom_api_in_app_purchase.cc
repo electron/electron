@@ -99,8 +99,7 @@ InAppPurchase::InAppPurchase(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-InAppPurchase::~InAppPurchase() {
-}
+InAppPurchase::~InAppPurchase() {}
 
 void InAppPurchase::PurchaseProduct(const std::string& product_id,
                                     mate::Arguments* args) {

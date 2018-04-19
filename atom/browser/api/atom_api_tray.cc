@@ -20,9 +20,10 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::TrayIcon::HighlightMode> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      atom::TrayIcon::HighlightMode* out) {
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
@@ -54,12 +55,12 @@ struct Converter<atom::TrayIcon::HighlightMode> {
 };
 }  // namespace mate
 
-
 namespace atom {
 
 namespace api {
 
-Tray::Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
+Tray::Tray(v8::Isolate* isolate,
+           v8::Local<v8::Object> wrapper,
            mate::Handle<NativeImage> image)
     : tray_icon_(TrayIcon::Create()) {
   SetImage(isolate, image);
@@ -70,8 +71,8 @@ Tray::Tray(v8::Isolate* isolate, v8::Local<v8::Object> wrapper,
 
 Tray::~Tray() {
   // Destroy the native tray in next tick.
-  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(
-      FROM_HERE, tray_icon_.release());
+  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
+                                                  tray_icon_.release());
 }
 
 // static
@@ -180,8 +181,7 @@ void Tray::DisplayBalloon(mate::Arguments* args,
   mate::Handle<NativeImage> icon;
   options.Get("icon", &icon);
   base::string16 title, content;
-  if (!options.Get("title", &title) ||
-      !options.Get("content", &content)) {
+  if (!options.Get("title", &title) || !options.Get("content", &content)) {
     args->ThrowError("'title' and 'content' must be defined");
     return;
   }
@@ -191,8 +191,8 @@ void Tray::DisplayBalloon(mate::Arguments* args,
       icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
       title, content);
 #else
-  tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? gfx::Image() : icon->image(), title, content);
+  tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
+                             title, content);
 #endif
 }
 
@@ -234,13 +234,14 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace atom
 
-
 namespace {
 
 using atom::api::Tray;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   Tray::SetConstructor(isolate, base::Bind(&Tray::New));
 

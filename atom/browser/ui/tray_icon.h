@@ -45,8 +45,8 @@ class TrayIcon {
 
   // Sets the status icon highlight mode. This only works on macOS.
   enum HighlightMode {
-    ALWAYS,  // Always highlight the tray icon
-    NEVER,  // Never highlight the tray icon
+    ALWAYS,    // Always highlight the tray icon
+    NEVER,     // Never highlight the tray icon
     SELECTION  // Highlight the tray icon when clicked or the menu is opened
   };
   virtual void SetHighlightMode(HighlightMode mode);
@@ -90,7 +90,7 @@ class TrayIcon {
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),
                          int modifiers = 0);
   void NotifyMouseMoved(const gfx::Point& location = gfx::Point(),
-                         int modifiers = 0);
+                        int modifiers = 0);
 
  protected:
   TrayIcon();

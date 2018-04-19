@@ -39,8 +39,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 AtomRendererClient::AtomRendererClient()
     : node_integration_initialized_(false),
       node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())) {
-}
+      atom_bindings_(new AtomBindings(uv_default_loop())) {}
 
 AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
@@ -79,7 +78,8 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
   // Only allow node integration for the main frame, unless it is a devtools
   // extension page.
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
@@ -120,7 +120,8 @@ void AtomRendererClient::DidCreateScriptContext(
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
   injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
@@ -187,8 +188,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
                          mate::ConvertToV8(isolate, right)->ToString())));
-  auto func = v8::Handle<v8::Function>::Cast(
-      script->Run(context).ToLocalChecked());
+  auto func =
+      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
 
   auto binding = v8::Object::New(isolate);
   api::Initialize(binding, v8::Null(isolate), context, nullptr);
@@ -206,7 +207,7 @@ void AtomRendererClient::SetupMainWorldOverrides(
   dict.Set("nativeWindowOpen",
            command_line->HasSwitch(switches::kNativeWindowOpen));
 
-  v8::Local<v8::Value> args[] = { binding };
+  v8::Local<v8::Value> args[] = {binding};
   ignore_result(func->Call(context, v8::Null(isolate), 1, args));
 }
 

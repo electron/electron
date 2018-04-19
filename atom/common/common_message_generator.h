@@ -5,7 +5,7 @@
 // Multiply-included file, no traditional include guard.
 
 #include "atom/common/api/api_messages.h"
+#include "chrome/common/chrome_utility_printing_messages.h"
 #include "chrome/common/print_messages.h"
 #include "chrome/common/tts_messages.h"
 #include "chrome/common/widevine_cdm_messages.h"
-#include "chrome/common/chrome_utility_printing_messages.h"

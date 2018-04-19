@@ -9,12 +9,12 @@
 
 #if defined(OS_MACOSX)
 extern "C" {
-__attribute__((visibility("default")))
-int AtomMain(int argc, char* argv[]);
+__attribute__((visibility("default"))) int AtomMain(int argc, char* argv[]);
 
 #ifdef ENABLE_RUN_AS_NODE
-__attribute__((visibility("default")))
-int AtomInitializeICUandStartNode(int argc, char *argv[]);
+__attribute__((visibility("default"))) int AtomInitializeICUandStartNode(
+    int argc,
+    char* argv[]);
 #endif
 }
 #endif  // OS_MACOSX

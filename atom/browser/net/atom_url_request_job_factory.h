@@ -30,9 +30,8 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
                           std::unique_ptr<ProtocolHandler> protocol_handler);
 
   // Intercepts the ProtocolHandler for a scheme.
-  bool InterceptProtocol(
-      const std::string& scheme,
-      std::unique_ptr<ProtocolHandler> protocol_handler);
+  bool InterceptProtocol(const std::string& scheme,
+                         std::unique_ptr<ProtocolHandler> protocol_handler);
   bool UninterceptProtocol(const std::string& scheme);
 
   // Returns the protocol handler registered with scheme.
@@ -65,8 +64,8 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   ProtocolHandlerMap protocol_handler_map_;
 
   // Map that stores the original protocols of schemes.
-  using OriginalProtocolsMap = std::unordered_map<
-      std::string, std::unique_ptr<ProtocolHandler>>;
+  using OriginalProtocolsMap =
+      std::unordered_map<std::string, std::unique_ptr<ProtocolHandler>>;
   // Can only be accessed in IO thread.
   OriginalProtocolsMap original_protocols_;
 
