@@ -145,9 +145,13 @@ void Browser::SetUserActivity(const std::string& type,
 }
 
 std::string Browser::GetCurrentActivityType() {
-  NSUserActivity* userActivity =
-      [[AtomApplication sharedApplication] getCurrentActivity];
-  return base::SysNSStringToUTF8(userActivity.activityType);
+  if (@available(macOS 10.10, *)) {
+    NSUserActivity* userActivity =
+        [[AtomApplication sharedApplication] getCurrentActivity];
+    return base::SysNSStringToUTF8(userActivity.activityType);
+  } else {
+    return std::string();
+  }
 }
 
 void Browser::InvalidateCurrentActivity() {
@@ -256,7 +260,7 @@ std::string Browser::DockGetBadgeText() {
 }
 
 void Browser::DockHide() {
-  for (const auto& window : WindowList::GetWindows())
+  for (auto* const& window : WindowList::GetWindows())
     [window->GetNativeWindow() setCanHide:NO];
 
   ProcessSerialNumber psn = { 0, kCurrentProcess };

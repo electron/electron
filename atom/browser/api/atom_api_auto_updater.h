@@ -34,7 +34,7 @@ class AutoUpdater : public mate::EventEmitter<AutoUpdater>,
   void OnError(const std::string& error) override;
   void OnError(const std::string& message,
                const int code,
-               const std::string& domain);
+               const std::string& domain) override;
   void OnCheckingForUpdate() override;
   void OnUpdateAvailable() override;
   void OnUpdateNotAvailable() override;

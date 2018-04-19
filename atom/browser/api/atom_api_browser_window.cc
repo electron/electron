@@ -135,7 +135,7 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
 
   // When there is a non-empty first paint, resize the RenderWidget to force
   // Chromium to draw.
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   view->Show();
   view->SetSize(window()->GetContentSize());
 
@@ -408,7 +408,7 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
 // static
 v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
                                          NativeWindow* native_window) {
-  auto existing = TrackableObject::FromWrappedClass(isolate, native_window);
+  auto* existing = TrackableObject::FromWrappedClass(isolate, native_window);
   if (existing)
     return existing->GetWrapper();
   else

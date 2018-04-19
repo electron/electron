@@ -33,7 +33,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                    bool auto_spell_correct_turned_on,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> provider);
-  virtual ~SpellCheckClient();
+  ~SpellCheckClient() override;
 
  private:
   class SpellcheckRequest;
@@ -60,6 +60,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
     v8::Local<v8::Function> spell_check_;
 
     explicit SpellCheckScope(const SpellCheckClient& client);
+    ~SpellCheckScope();
   };
 
   // Check the spelling of text.

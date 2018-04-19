@@ -122,6 +122,43 @@
           'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',  # -std=c++14
         },
         'target_conditions': [
+          ['_target_name in ["electron", "brightray"]', {
+            'conditions': [
+              ['OS=="mac"', {
+                'xcode_settings': {
+                  'OTHER_CFLAGS': [
+                    "-Xclang",
+                    "-load",
+                    "-Xclang",
+                    "<(source_root)/<(make_clang_dir)/lib/libFindBadConstructs.dylib",
+                    "-Xclang",
+                    "-add-plugin",
+                    "-Xclang",
+                    "find-bad-constructs",
+                    "-Xclang",
+                    "-plugin-arg-find-bad-constructs",
+                    "-Xclang",
+                    "check-auto-raw-pointer",
+                  ],
+                },
+              }, {  # OS=="mac"
+                'cflags_cc': [
+                  "-Xclang",
+                  "-load",
+                  "-Xclang",
+                  "<(source_root)/<(make_clang_dir)/lib/libFindBadConstructs.so",
+                  "-Xclang",
+                  "-add-plugin",
+                  "-Xclang",
+                  "find-bad-constructs",
+                  "-Xclang",
+                  "-plugin-arg-find-bad-constructs",
+                  "-Xclang",
+                  "check-auto-raw-pointer",
+                ],
+              }],
+            ],
+          }],
           ['OS=="mac" and _type in ["executable", "shared_library"]', {
             'xcode_settings': {
               # On some machines setting CLANG_CXX_LIBRARY doesn't work for

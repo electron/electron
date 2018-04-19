@@ -38,7 +38,7 @@ class LoginHandler;
 class Browser : public WindowListObserver {
  public:
   Browser();
-  ~Browser();
+  ~Browser() override;
 
   static Browser* Get();
 
@@ -100,6 +100,10 @@ class Browser : public WindowListObserver {
     bool opened_as_hidden = false;
     base::string16 path;
     std::vector<base::string16> args;
+
+    LoginItemSettings();
+    ~LoginItemSettings();
+    LoginItemSettings(const LoginItemSettings&);
   };
   void SetLoginItemSettings(LoginItemSettings settings);
   LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);

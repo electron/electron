@@ -20,14 +20,14 @@
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
         didDeliverNotification:(NSUserNotification*)notif {
-  auto notification = presenter_->GetNotification(notif);
+  auto* notification = presenter_->GetNotification(notif);
   if (notification)
     notification->NotificationDisplayed();
 }
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
        didActivateNotification:(NSUserNotification *)notif {
-  auto notification = presenter_->GetNotification(notif);
+  auto* notification = presenter_->GetNotification(notif);
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String] << ")";
@@ -41,8 +41,12 @@
       notification->NotificationActivated();
     } else if (notif.activationType == NSUserNotificationActivationTypeReplied) {
       notification->NotificationReplied([notif.response.string UTF8String]);
-    } else if (notif.activationType == NSUserNotificationActivationTypeAdditionalActionClicked) {
-      notification->NotificationActivated([notif additionalActivationAction]);
+    } else {
+      if (@available(macOS 10.10, *)) {
+        if (notif.activationType == NSUserNotificationActivationTypeAdditionalActionClicked) {
+          notification->NotificationActivated([notif additionalActivationAction]);
+        }
+      }
     }
   }
 }

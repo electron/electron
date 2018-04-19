@@ -17,6 +17,8 @@ namespace api {
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : Menu(isolate, wrapper), weak_factory_(this) {}
 
+MenuViews::~MenuViews() = default;
+
 void MenuViews::PopupAt(TopLevelWindow* window,
                         int x,
                         int y,

@@ -45,7 +45,7 @@ class CrashReporterMac : public CrashReporter {
   friend struct base::DefaultSingletonTraits<CrashReporterMac>;
 
   CrashReporterMac();
-  virtual ~CrashReporterMac();
+  ~CrashReporterMac() override;
 
   void SetUploadsEnabled(bool enable_uploads);
   void SetCrashKeyValue(const base::StringPiece& key,

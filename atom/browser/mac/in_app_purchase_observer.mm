@@ -174,6 +174,10 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
 namespace in_app_purchase {
 
+Transaction::Transaction() = default;
+Transaction::Transaction(const Transaction&) = default;
+Transaction::~Transaction() = default;
+
 TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
   obeserver_ = [[InAppTransactionObserver alloc]
       initWithCallback:base::Bind(&TransactionObserver::OnTransactionsUpdated,

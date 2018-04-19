@@ -30,7 +30,7 @@ class DevToolsWindowDelegate : public views::ClientView,
     if (shell->GetDelegate())
       icon_ = shell->GetDelegate()->GetDevToolsWindowIcon();
   }
-  virtual ~DevToolsWindowDelegate() {}
+  ~DevToolsWindowDelegate() override {}
 
   // views::WidgetDelegate:
   void DeleteDelegate() override { delete this; }

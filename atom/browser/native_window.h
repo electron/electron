@@ -63,7 +63,7 @@ class NativeWindow : public base::SupportsUserData {
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
-  virtual bool IsClosed() const { return is_closed_; }
+  virtual bool IsClosed() const;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() = 0;
   virtual void Show() = 0;
@@ -323,8 +323,8 @@ class NativeWindow : public base::SupportsUserData {
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-      : key(UserDataKey()), window(window) {}
+  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+  ~NativeWindowRelay() override;
 
   static void* UserDataKey() {
     return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();

@@ -48,9 +48,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() {
-      return nullptr;
-    }
+    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate();
     virtual std::string GetUserAgent();
     virtual std::unique_ptr<net::URLRequestJobFactory>
     CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
@@ -73,7 +71,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
-  virtual ~URLRequestContextGetter();
 
   // net::CookieStore::CookieChangedCallback implementation.
   void OnCookieChanged(const net::CanonicalCookie& cookie,
@@ -90,6 +87,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   void NotifyContextShutdownOnIO();
 
  private:
+  ~URLRequestContextGetter() override;
+
   Delegate* delegate_;
 
   NetLog* net_log_;

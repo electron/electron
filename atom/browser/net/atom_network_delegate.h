@@ -51,11 +51,19 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   struct SimpleListenerInfo {
     URLPatterns url_patterns;
     SimpleListener listener;
+
+    SimpleListenerInfo(URLPatterns, SimpleListener);
+    SimpleListenerInfo();
+    ~SimpleListenerInfo();
   };
 
   struct ResponseListenerInfo {
     URLPatterns url_patterns;
     ResponseListener listener;
+
+    ResponseListenerInfo(URLPatterns, ResponseListener);
+    ResponseListenerInfo();
+    ~ResponseListenerInfo();
   };
 
   AtomNetworkDelegate();

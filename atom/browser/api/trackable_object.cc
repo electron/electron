@@ -54,7 +54,8 @@ void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
 int32_t TrackableObjectBase::GetIDFromWrappedClass(
     base::SupportsUserData* wrapped) {
   if (wrapped) {
-    auto id = static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
+    auto* id = static_cast<IDUserData*>(
+        wrapped->GetUserData(kTrackedObjectKey));
     if (id)
       return *id;
   }

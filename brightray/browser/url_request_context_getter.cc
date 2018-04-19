@@ -27,6 +27,7 @@
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
+#include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
@@ -60,6 +61,11 @@ std::string URLRequestContextGetter::Delegate::GetUserAgent() {
   return base::EmptyString();
 }
 
+std::unique_ptr<net::NetworkDelegate>
+URLRequestContextGetter::Delegate::CreateNetworkDelegate() {
+  return nullptr;
+}
+
 std::unique_ptr<net::URLRequestJobFactory>
 URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers) {
@@ -87,7 +93,7 @@ URLRequestContextGetter::Delegate::CreateURLRequestJobFactory(
 net::HttpCache::BackendFactory*
 URLRequestContextGetter::Delegate::CreateHttpCacheBackendFactory(
     const base::FilePath& base_path) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   int max_size = 0;
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_size);
@@ -203,13 +209,16 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     auto cookie_path = in_memory_
                            ? base::FilePath()
                            : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
-    auto cookie_config = content::CookieStoreConfig(
-        cookie_path, content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-        nullptr);
-    cookie_config.cookieable_schemes = delegate_->GetCookieableSchemes();
     std::unique_ptr<net::CookieStore> cookie_store =
-        content::CreateCookieStore(cookie_config);
+        content::CreateCookieStore(content::CookieStoreConfig(
+            cookie_path, content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
+            nullptr));
     storage_->set_cookie_store(std::move(cookie_store));
+
+    // Set custom schemes that can accept cookies.
+    net::CookieMonster* cookie_monster =
+        static_cast<net::CookieMonster*>(url_request_context_->cookie_store());
+    cookie_monster->SetCookieableSchemes(delegate_->GetCookieableSchemes());
     // Cookie store will outlive notifier by order of declaration
     // in the header.
     cookie_change_sub_ =

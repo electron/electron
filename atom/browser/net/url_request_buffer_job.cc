@@ -31,6 +31,8 @@ URLRequestBufferJob::URLRequestBufferJob(net::URLRequest* request,
     : JsAsker<net::URLRequestSimpleJob>(request, network_delegate),
       status_code_(net::HTTP_NOT_IMPLEMENTED) {}
 
+URLRequestBufferJob::~URLRequestBufferJob() = default;
+
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   const base::Value* binary = nullptr;
   if (options->IsType(base::Value::Type::DICTIONARY)) {

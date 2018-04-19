@@ -33,7 +33,7 @@ namespace brightray {
 class BrowserMainParts : public content::BrowserMainParts {
  public:
   BrowserMainParts();
-  ~BrowserMainParts();
+  ~BrowserMainParts() override;
 
   IOThread* io_thread() const { return io_thread_.get(); }
 

@@ -314,59 +314,60 @@ bool ScopedDisableResize::disable_resize_ = false;
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (base::mac::IsAtLeastOS10_10() &&
-      shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-    NSWindow* window = shell_->GetNativeWindow();
-    [window setToolbar:nil];
+  if (@available(macOS 10.10, *)) {
+    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+      NSWindow* window = shell_->GetNativeWindow();
+      [window setToolbar:nil];
+    }
   }
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
   shell_->NotifyWindowEnterFullScreen();
 
-  // For frameless window we don't show set title for normal mode since the
-  // titlebar is expected to be empty, but after entering fullscreen mode we
-  // have to set one, because title bar is visible here.
-  NSWindow* window = shell_->GetNativeWindow();
-  if ((shell_->transparent() || !shell_->has_frame()) &&
-      base::mac::IsAtLeastOS10_10() &&
-      // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
+  if (@available(macOS 10.10, *)) {
+    // For frameless window we don't show set title for normal mode since the
+    // titlebar is expected to be empty, but after entering fullscreen mode we
+    // have to set one, because title bar is visible here.
+    NSWindow* window = shell_->GetNativeWindow();
+    if ((shell_->transparent() || !shell_->has_frame()) &&
+        // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
+        // fullscreen mode.
+        // Show title if fullscreen_window_title flag is set
+        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+         shell_->fullscreen_window_title())) {
+      [window setTitleVisibility:NSWindowTitleVisible];
+    }
+
+    // Restore the native toolbar immediately after entering fullscreen, if we do
+    // this before leaving fullscreen, traffic light buttons will be jumping.
+    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+      base::scoped_nsobject<NSToolbar> toolbar(
+          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+      [toolbar setShowsBaselineSeparator:NO];
+      [window setToolbar:toolbar];
+
+      // Set window style to hide the toolbar, otherwise the toolbar will show in
       // fullscreen mode.
-      // Show title if fullscreen_window_title flag is set
-      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-       shell_->fullscreen_window_title())) {
-    [window setTitleVisibility:NSWindowTitleVisible];
-  }
-
-  // Restore the native toolbar immediately after entering fullscreen, if we do
-  // this before leaving fullscreen, traffic light buttons will be jumping.
-  if (base::mac::IsAtLeastOS10_10() &&
-      shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-    base::scoped_nsobject<NSToolbar> toolbar(
-        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
-    [toolbar setShowsBaselineSeparator:NO];
-    [window setToolbar:toolbar];
-
-    // Set window style to hide the toolbar, otherwise the toolbar will show in
-    // fullscreen mode.
-    shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
+      shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
+    }
   }
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  // Restore the titlebar visibility.
-  NSWindow* window = shell_->GetNativeWindow();
-  if ((shell_->transparent() || !shell_->has_frame()) &&
-      base::mac::IsAtLeastOS10_10() &&
-      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-       shell_->fullscreen_window_title())) {
-    [window setTitleVisibility:NSWindowTitleHidden];
-  }
+  if (@available(macOS 10.10, *)) {
+    // Restore the titlebar visibility.
+    NSWindow* window = shell_->GetNativeWindow();
+    if ((shell_->transparent() || !shell_->has_frame()) &&
+        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+         shell_->fullscreen_window_title())) {
+      [window setTitleVisibility:NSWindowTitleHidden];
+    }
 
-  // Turn off the style for toolbar.
-  if (base::mac::IsAtLeastOS10_10() &&
-      shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-    shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
+    // Turn off the style for toolbar.
+    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+      shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
+    }
   }
 }
 
@@ -424,6 +425,9 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @implementation AtomPreviewItem
 
+@synthesize previewItemURL;
+@synthesize previewItemTitle;
+
 - (id)initWithURL:(NSURL*)url title:(NSString*)title {
   self = [super init];
   if (self) {
@@ -479,6 +483,13 @@ enum {
 
 @implementation AtomNSWindow
 
+@synthesize acceptsFirstMouse;
+@synthesize disableAutoHideCursor;
+@synthesize disableKeyOrMainWindow;
+@synthesize windowButtonsOffset;
+@synthesize quickLookItem;
+@synthesize vibrantView;
+
 - (void)setShell:(atom::NativeWindowMac*)shell {
   shell_ = shell;
 }
@@ -487,7 +498,8 @@ enum {
   enable_larger_than_screen_ = enable;
 }
 
-- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings {
+- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings
+  API_AVAILABLE(macosx(10.12.2)) {
   if (![self respondsToSelector:@selector(touchBar)]) return;
 
   atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
@@ -496,12 +508,13 @@ enum {
   self.touchBar = nil;
 }
 
-- (void)refreshTouchBarItem:(const std::string&)item_id {
+- (void)refreshTouchBarItem:(const std::string&)item_id
+  API_AVAILABLE(macosx(10.12.2)) {
   if (atom_touch_bar_ && self.touchBar)
     [atom_touch_bar_ refreshTouchBarItem:self.touchBar id:item_id];
 }
 
-- (NSTouchBar*)makeTouchBar {
+- (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
   if (atom_touch_bar_)
     return [atom_touch_bar_ makeTouchBar];
   else
@@ -509,14 +522,15 @@ enum {
 }
 
 - (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
-      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier {
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier API_AVAILABLE(macosx(10.12.2)) {
   if (touchBar && atom_touch_bar_)
     return [atom_touch_bar_ makeItemForIdentifier:identifier];
   else
     return nil;
 }
 
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item {
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
+  API_AVAILABLE(macosx(10.12.2)) {
   if (atom_touch_bar_ && self.touchBar)
     [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
 }
@@ -828,10 +842,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
 
   NSUInteger styleMask = NSTitledWindowMask;
-  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
-      base::mac::IsAtLeastOS10_10() &&
-      (!useStandardWindow || transparent() || !has_frame())) {
-    styleMask = NSFullSizeContentViewWindowMask;
+  if (@available(macOS 10.10, *)) {
+    if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
+        (!useStandardWindow || transparent() || !has_frame())) {
+      styleMask = NSFullSizeContentViewWindowMask;
+    }
   }
   if (minimizable) {
     styleMask |= NSMiniaturizableWindowMask;
@@ -885,7 +900,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     [window_ setDisableKeyOrMainWindow:YES];
 
   if (transparent() || !has_frame()) {
-    if (base::mac::IsAtLeastOS10_10()) {
+    if (@available(macOS 10.10, *)) {
       // Don't show title bar.
       [window_ setTitlebarAppearsTransparent:YES];
       [window_ setTitleVisibility:NSWindowTitleHidden];
@@ -897,11 +912,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Create a tab only if tabbing identifier is specified and window has
   // a native title bar.
   if (tabbingIdentifier.empty() || transparent() || !has_frame()) {
-    if ([window_ respondsToSelector:@selector(tabbingMode)]) {
+    if (@available(macOS 10.12, *)) {
       [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
     }
   } else {
-    if ([window_ respondsToSelector:@selector(tabbingIdentifier)]) {
+    if (@available(macOS 10.12, *)) {
       [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
     }
   }
@@ -911,14 +926,14 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   // Hide the title bar background
   if (title_bar_style_ != NORMAL) {
-    if (base::mac::IsAtLeastOS10_10()) {
+    if (@available(macOS 10.10, *)) {
       [window_ setTitlebarAppearsTransparent:YES];
     }
   }
 
   // Hide the title bar.
   if (title_bar_style_ == HIDDEN_INSET) {
-    if (base::mac::IsAtLeastOS10_10()) {
+    if (@available(macOS 10.10, *)) {
       base::scoped_nsobject<NSToolbar> toolbar(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
       [toolbar setShowsBaselineSeparator:NO];
@@ -1650,31 +1665,31 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
 }
 
 void NativeWindowMac::SelectPreviousTab() {
-  if ([window_ respondsToSelector:@selector(selectPreviousTab:)]) {
+  if (@available(macOS 10.12, *)) {
     [window_ selectPreviousTab:nil];
   }
 }
 
 void NativeWindowMac::SelectNextTab() {
-  if ([window_ respondsToSelector:@selector(selectNextTab:)]) {
+  if (@available(macOS 10.12, *)) {
     [window_ selectNextTab:nil];
   }
 }
 
 void NativeWindowMac::MergeAllWindows() {
-  if ([window_ respondsToSelector:@selector(mergeAllWindows:)]) {
+  if (@available(macOS 10.12, *)) {
     [window_ mergeAllWindows:nil];
   }
 }
 
 void NativeWindowMac::MoveTabToNewWindow() {
-  if ([window_ respondsToSelector:@selector(moveTabToNewWindow:)]) {
+  if (@available(macOS 10.12, *)) {
     [window_ moveTabToNewWindow:nil];
   }
 }
 
 void NativeWindowMac::ToggleTabBar() {
-  if ([window_ respondsToSelector:@selector(toggleTabBar:)]) {
+  if (@available(macOS 10.12, *)) {
     [window_ toggleTabBar:nil];
   }
 }
@@ -1683,91 +1698,91 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   if (window_.get() == window->GetNativeWindow()) {
     return false;
   } else {
-    if ([window_ respondsToSelector:@selector(addTabbedWindow:ordered:)])
+    if (@available(macOS 10.12, *))
       [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
   return true;
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  if (!base::mac::IsAtLeastOS10_10()) return;
+  if (@available(macOS 10.10, *)) {
+    NSView* vibrant_view = [window_ vibrantView];
 
-  NSView* vibrant_view = [window_ vibrantView];
+    if (type.empty()) {
+      if (background_color_before_vibrancy_) {
+        [window_ setBackgroundColor:background_color_before_vibrancy_];
+        [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
+      }
+      if (vibrant_view == nil) return;
 
-  if (type.empty()) {
-    if (background_color_before_vibrancy_) {
-      [window_ setBackgroundColor:background_color_before_vibrancy_];
-      [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
+      [vibrant_view removeFromSuperview];
+      [window_ setVibrantView:nil];
+      ui::GpuSwitchingManager::SetTransparent(transparent());
+
+      return;
     }
-    if (vibrant_view == nil) return;
 
-    [vibrant_view removeFromSuperview];
-    [window_ setVibrantView:nil];
-    ui::GpuSwitchingManager::SetTransparent(transparent());
+    background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
+    transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
+    ui::GpuSwitchingManager::SetTransparent(true);
 
-    return;
-  }
-
-  background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
-  transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
-  ui::GpuSwitchingManager::SetTransparent(true);
-
-  if (title_bar_style_ != NORMAL) {
-    [window_ setTitlebarAppearsTransparent:YES];
-    [window_ setBackgroundColor:[NSColor clearColor]];
-  }
-
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
-  if (effect_view == nil) {
-    effect_view = [[[NSVisualEffectView alloc]
-        initWithFrame: [[window_ contentView] bounds]] autorelease];
-    [window_ setVibrantView:(NSView*)effect_view];
-
-    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    [effect_view setState:NSVisualEffectStateActive];
-    [[window_ contentView] addSubview:effect_view
-                           positioned:NSWindowBelow
-                           relativeTo:nil];
-  }
-
-  NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
-
-  if (type == "appearance-based") {
-    vibrancyType = NSVisualEffectMaterialAppearanceBased;
-  } else if (type == "light") {
-    vibrancyType = NSVisualEffectMaterialLight;
-  } else if (type == "dark") {
-    vibrancyType = NSVisualEffectMaterialDark;
-  } else if (type == "titlebar") {
-    vibrancyType = NSVisualEffectMaterialTitlebar;
-  }
-
-  if (base::mac::IsAtLeastOS10_11()) {
-    // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
-    // they are available in the minimum SDK version
-    if (type == "selection") {
-      // NSVisualEffectMaterialSelection
-      vibrancyType = static_cast<NSVisualEffectMaterial>(4);
-    } else if (type == "menu") {
-      // NSVisualEffectMaterialMenu
-      vibrancyType = static_cast<NSVisualEffectMaterial>(5);
-    } else if (type == "popover") {
-      // NSVisualEffectMaterialPopover
-      vibrancyType = static_cast<NSVisualEffectMaterial>(6);
-    } else if (type == "sidebar") {
-      // NSVisualEffectMaterialSidebar
-      vibrancyType = static_cast<NSVisualEffectMaterial>(7);
-    } else if (type == "medium-light") {
-      // NSVisualEffectMaterialMediumLight
-      vibrancyType = static_cast<NSVisualEffectMaterial>(8);
-    } else if (type == "ultra-dark") {
-      // NSVisualEffectMaterialUltraDark
-      vibrancyType = static_cast<NSVisualEffectMaterial>(9);
+    if (title_bar_style_ != NORMAL) {
+      [window_ setTitlebarAppearsTransparent:YES];
+      [window_ setBackgroundColor:[NSColor clearColor]];
     }
-  }
 
-  [effect_view setMaterial:vibrancyType];
+    NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+    if (effect_view == nil) {
+      effect_view = [[[NSVisualEffectView alloc]
+          initWithFrame: [[window_ contentView] bounds]] autorelease];
+      [window_ setVibrantView:(NSView*)effect_view];
+
+      [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+      [effect_view setState:NSVisualEffectStateActive];
+      [[window_ contentView] addSubview:effect_view
+                             positioned:NSWindowBelow
+                             relativeTo:nil];
+    }
+
+    NSVisualEffectMaterial vibrancyType = NSVisualEffectMaterialLight;
+
+    if (type == "appearance-based") {
+      vibrancyType = NSVisualEffectMaterialAppearanceBased;
+    } else if (type == "light") {
+      vibrancyType = NSVisualEffectMaterialLight;
+    } else if (type == "dark") {
+      vibrancyType = NSVisualEffectMaterialDark;
+    } else if (type == "titlebar") {
+      vibrancyType = NSVisualEffectMaterialTitlebar;
+    }
+
+    if (@available(macOS 10.11, *)) {
+      // TODO(kevinsawicki): Use NSVisualEffectMaterial* constants directly once
+      // they are available in the minimum SDK version
+      if (type == "selection") {
+        // NSVisualEffectMaterialSelection
+        vibrancyType = static_cast<NSVisualEffectMaterial>(4);
+      } else if (type == "menu") {
+        // NSVisualEffectMaterialMenu
+        vibrancyType = static_cast<NSVisualEffectMaterial>(5);
+      } else if (type == "popover") {
+        // NSVisualEffectMaterialPopover
+        vibrancyType = static_cast<NSVisualEffectMaterial>(6);
+      } else if (type == "sidebar") {
+        // NSVisualEffectMaterialSidebar
+        vibrancyType = static_cast<NSVisualEffectMaterial>(7);
+      } else if (type == "medium-light") {
+        // NSVisualEffectMaterialMediumLight
+        vibrancyType = static_cast<NSVisualEffectMaterial>(8);
+      } else if (type == "ultra-dark") {
+        // NSVisualEffectMaterialUltraDark
+        vibrancyType = static_cast<NSVisualEffectMaterial>(9);
+      }
+    }
+
+    [effect_view setMaterial:vibrancyType];
+  }
 }
 
 void NativeWindowMac::SetTouchBar(

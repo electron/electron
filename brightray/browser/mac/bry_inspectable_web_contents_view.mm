@@ -31,7 +31,7 @@
               name:NSWindowDidBecomeMainNotification
             object:nil];
 
-  auto contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
+  auto* contents = inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   auto contentsView = contents->GetNativeView();
   [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
   [self addSubview:contentsView];
@@ -63,9 +63,9 @@
   if (visible == devtools_visible_)
     return;
 
-  auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
-  auto webContents = inspectable_web_contents->GetWebContents();
-  auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
+  auto* inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+  auto* webContents = inspectable_web_contents->GetWebContents();
+  auto* devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
   auto devToolsView = devToolsWebContents->GetNativeView();
 
   if (visible && devtools_docked_) {
@@ -120,8 +120,8 @@
   // Switch to new state.
   devtools_docked_ = docked;
   if (!docked) {
-    auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
-    auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
+    auto* inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+    auto* devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
     auto devToolsView = devToolsWebContents->GetNativeView();
 
     auto styleMask = NSTitledWindowMask | NSClosableWindowMask |
@@ -184,10 +184,10 @@
 }
 
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
-  auto inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
+  auto* inspectable_web_contents = inspectableWebContentsView_->inspectable_web_contents();
   if (!inspectable_web_contents)
     return;
-  auto webContents = inspectable_web_contents->GetWebContents();
+  auto* webContents = inspectable_web_contents->GetWebContents();
   auto webContentsView = webContents->GetNativeView();
 
   NSView* view = [notification object];
@@ -196,7 +196,7 @@
     return;
   }
 
-  auto devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
+  auto* devToolsWebContents = inspectable_web_contents->GetDevToolsWebContents();
   if (!devToolsWebContents)
     return;
   auto devToolsView = devToolsWebContents->GetNativeView();

@@ -25,6 +25,9 @@
 
 namespace file_dialog {
 
+DialogSettings::DialogSettings() = default;
+DialogSettings::~DialogSettings() = default;
+
 namespace {
 
 // Distinguish directories from regular files.

@@ -155,6 +155,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
     Show();
 }
 
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
@@ -504,5 +508,10 @@ void NativeWindow::NotifyWindowMessage(UINT message,
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
+
+NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
+  : key(UserDataKey()), window(window) {}
+
+NativeWindowRelay::~NativeWindowRelay() = default;
 
 }  // namespace atom

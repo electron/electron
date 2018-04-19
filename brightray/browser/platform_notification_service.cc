@@ -105,7 +105,7 @@ void PlatformNotificationService::DisplayNotification(
     const content::PlatformNotificationData& notification_data,
     const content::NotificationResources& notification_resources,
     base::Closure* cancel_callback) {
-  auto presenter = browser_client_->GetNotificationPresenter();
+  auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
   NotificationDelegateImpl* delegate =

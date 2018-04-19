@@ -57,6 +57,8 @@ AutofillAgent::AutofillAgent(content::RenderFrame* frame)
   render_frame()->GetWebFrame()->SetAutofillClient(this);
 }
 
+AutofillAgent::~AutofillAgent() = default;
+
 void AutofillAgent::OnDestruct() {
   delete this;
 }
@@ -210,7 +212,7 @@ void AutofillAgent::DoFocusChangeComplete() {
   if (focused_node_was_last_clicked_ && was_focused_before_now_) {
     ShowSuggestionsOptions options;
     options.autofill_on_empty_values = true;
-    auto input_element = ToWebInputElement(&element);
+    auto* input_element = ToWebInputElement(&element);
     if (input_element)
       ShowSuggestions(*input_element, options);
   }

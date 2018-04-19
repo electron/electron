@@ -11,6 +11,8 @@ TtsUtteranceRequest::~TtsUtteranceRequest() {}
 
 TtsVoice::TtsVoice() : local_service(true), is_default(false) {}
 
+TtsVoice::TtsVoice(const TtsVoice&) = default;
+
 TtsVoice::~TtsVoice() {}
 
 TtsUtteranceResponse::TtsUtteranceResponse() : id(0) {}

@@ -27,6 +27,9 @@
 
 @implementation PopUpButtonHandler
 
+@synthesize savePanel;
+@synthesize fileTypesList;
+
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList {
   self = [super init];
@@ -68,6 +71,9 @@
 @end
 
 namespace file_dialog {
+
+DialogSettings::DialogSettings() = default;
+DialogSettings::~DialogSettings() = default;
 
 namespace {
 

@@ -29,6 +29,8 @@ JavascriptEnvironment::JavascriptEnvironment()
       context_(isolate_, v8::Context::New(isolate_)),
       context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
 
+JavascriptEnvironment::~JavascriptEnvironment() = default;
+
 void JavascriptEnvironment::OnMessageLoopCreated() {
   isolate_holder_.AddRunMicrotasksObserver();
 }
@@ -38,7 +40,7 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
 }
 
 bool JavascriptEnvironment::Initialize() {
-  auto cmd = base::CommandLine::ForCurrentProcess();
+  auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
   std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);

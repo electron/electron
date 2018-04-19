@@ -64,6 +64,9 @@ struct DialogSettings {
   bool shows_tag_field = true;
   bool force_detached = false;
   bool security_scoped_bookmarks = false;
+
+  DialogSettings();
+  ~DialogSettings();
 };
 
 bool ShowOpenDialog(const DialogSettings& settings,

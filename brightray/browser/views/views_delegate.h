@@ -15,7 +15,7 @@ namespace brightray {
 class ViewsDelegate : public views::ViewsDelegate {
  public:
   ViewsDelegate();
-  virtual ~ViewsDelegate();
+  ~ViewsDelegate() override;
 
  protected:
   // views::ViewsDelegate:

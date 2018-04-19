@@ -197,7 +197,7 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
   if (!response.GetString("statusLine", &status_line))
     status_line = container.second;
   if (response.GetDictionary("responseHeaders", &dict)) {
-    auto headers = container.first;
+    auto* headers = container.first;
     *headers = new net::HttpResponseHeaders("");
     (*headers)->ReplaceStatusLine(status_line);
     for (base::DictionaryValue::Iterator it(*dict); !it.IsAtEnd();
@@ -216,6 +216,20 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
 }
 
 }  // namespace
+
+AtomNetworkDelegate::SimpleListenerInfo::SimpleListenerInfo(
+    URLPatterns patterns_,
+    SimpleListener listener_)
+    : url_patterns(patterns_), listener(listener_) {}
+AtomNetworkDelegate::SimpleListenerInfo::SimpleListenerInfo() = default;
+AtomNetworkDelegate::SimpleListenerInfo::~SimpleListenerInfo() = default;
+
+AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo(
+    URLPatterns patterns_,
+    ResponseListener listener_)
+    : url_patterns(patterns_), listener(listener_) {}
+AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo() = default;
+AtomNetworkDelegate::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
 AtomNetworkDelegate::AtomNetworkDelegate() {}
 

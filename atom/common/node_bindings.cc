@@ -114,7 +114,7 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
 }
 
 base::FilePath GetResourcesPath(bool is_browser) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   PathService::Get(base::FILE_EXE, &exec_path);
 

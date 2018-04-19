@@ -25,6 +25,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @implementation DragRegionView
 
+@synthesize initialLocation;
+
 - (BOOL)mouseDownCanMoveWindow
 {
   return NO;
@@ -50,7 +52,9 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
         postNotificationName:NSWindowWillMoveNotification
                       object:self];
 
-    [self.window performWindowDragWithEvent:event];
+    if (@available(macOS 10.11, *)) {
+      [self.window performWindowDragWithEvent:event];
+    }
     return;
   }
 

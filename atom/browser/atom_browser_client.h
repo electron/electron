@@ -31,7 +31,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
                           public content::RenderProcessHostObserver {
  public:
   AtomBrowserClient();
-  virtual ~AtomBrowserClient();
+  ~AtomBrowserClient() override;
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }

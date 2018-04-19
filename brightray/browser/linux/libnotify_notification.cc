@@ -28,8 +28,8 @@ LibNotifyLoader libnotify_loader_;
 const std::set<std::string>& GetServerCapabilities() {
   static std::set<std::string> caps;
   if (caps.empty()) {
-    auto capabilities = libnotify_loader_.notify_get_server_caps();
-    for (auto l = capabilities; l != nullptr; l = l->next)
+    auto* capabilities = libnotify_loader_.notify_get_server_caps();
+    for (auto* l = capabilities; l != nullptr; l = l->next)
       caps.insert(static_cast<const char*>(l->data));
     g_list_free_full(capabilities, g_free);
   }

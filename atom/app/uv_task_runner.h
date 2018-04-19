@@ -18,7 +18,6 @@ namespace atom {
 class UvTaskRunner : public base::SingleThreadTaskRunner {
  public:
   explicit UvTaskRunner(uv_loop_t* loop);
-  ~UvTaskRunner() override;
 
   // base::SingleThreadTaskRunner:
   bool PostDelayedTask(const base::Location& from_here,
@@ -30,6 +29,7 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
                                   base::TimeDelta delay) override;
 
  private:
+  ~UvTaskRunner() override;
   static void OnTimeout(uv_timer_t* timer);
   static void OnClose(uv_handle_t* handle);
 

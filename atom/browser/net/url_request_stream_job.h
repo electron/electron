@@ -23,6 +23,7 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
  public:
   URLRequestStreamJob(net::URLRequest* request,
                       net::NetworkDelegate* network_delegate);
+  ~URLRequestStreamJob() override;
 
   void OnData(mate::Arguments* args);
   void OnEnd(mate::Arguments* args);

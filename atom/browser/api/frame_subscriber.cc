@@ -27,6 +27,8 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
       source_id_for_copy_request_(base::UnguessableToken::Create()),
       weak_factory_(this) {}
 
+FrameSubscriber::~FrameSubscriber() = default;
+
 bool FrameSubscriber::ShouldCaptureFrame(
     const gfx::Rect& dirty_rect,
     base::TimeTicks present_time,
@@ -87,8 +89,8 @@ void FrameSubscriber::OnFrameDelivered(const FrameCaptureCallback& callback,
   auto local_buffer = buffer.ToLocalChecked();
 
   {
-    auto source = static_cast<const unsigned char*>(bitmap.getPixels());
-    auto target = node::Buffer::Data(local_buffer);
+    auto* source = static_cast<const unsigned char*>(bitmap.getPixels());
+    auto* target = node::Buffer::Data(local_buffer);
 
     for (int y = 0; y < bitmap.height(); ++y) {
       memcpy(target, source, rgb_row_size);

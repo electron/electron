@@ -275,12 +275,12 @@ namespace {
 
 content::ServiceWorkerContext* GetServiceWorkerContext(
     const content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
-  auto site_instance = web_contents->GetSiteInstance();
+  auto* context = web_contents->GetBrowserContext();
+  auto* site_instance = web_contents->GetSiteInstance();
   if (!context || !site_instance)
     return nullptr;
 
-  auto storage_partition =
+  auto* storage_partition =
       content::BrowserContext::GetStoragePartition(context, site_instance);
   if (!storage_partition)
     return nullptr;
@@ -486,7 +486,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
     NativeWindow* owner_window = nullptr;
     if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
-      auto relay =
+      auto* relay =
           NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
         owner_window = relay->window.get();
@@ -675,7 +675,8 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
 
 void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
                                             const GURL& origin) {
-  auto permission_helper = WebContentsPermissionHelper::FromWebContents(source);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(source);
   auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
                              base::Unretained(this), source, origin);
   permission_helper->RequestFullscreenPermission(callback);
@@ -754,7 +755,7 @@ void WebContents::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
     const content::MediaResponseCallback& callback) {
-  auto permission_helper =
+  auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestMediaAccessPermission(request, callback);
 }
@@ -762,7 +763,7 @@ void WebContents::RequestMediaAccessPermission(
 void WebContents::RequestToLockMouse(content::WebContents* web_contents,
                                      bool user_gesture,
                                      bool last_unlocked_by_target) {
-  auto permission_helper =
+  auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(user_gesture);
 }
@@ -789,7 +790,7 @@ void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
 }
 
 void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  const auto impl = content::RenderWidgetHostImpl::FromID(
+  auto* const impl = content::RenderWidgetHostImpl::FromID(
       render_view_host->GetProcess()->GetID(),
       render_view_host->GetRoutingID());
   if (impl)
@@ -807,7 +808,7 @@ void WebContents::RenderProcessGone(base::TerminationStatus status) {
 void WebContents::PluginCrashed(const base::FilePath& plugin_path,
                                 base::ProcessId plugin_pid) {
   content::WebPluginInfo info;
-  auto plugin_service = content::PluginService::GetInstance();
+  auto* plugin_service = content::PluginService::GetInstance();
   plugin_service->GetPluginInfoByPath(plugin_path, &info);
   Emit("plugin-crashed", info.name, info.version);
 }
@@ -1129,7 +1130,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   // Set the background color of RenderWidgetHostView.
   // We have to call it right after LoadURL because the RenderViewHost is only
   // created after loading a page.
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;
@@ -1143,8 +1144,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 }
 
 void WebContents::DownloadURL(const GURL& url) {
-  auto browser_context = web_contents()->GetBrowserContext();
-  auto download_manager =
+  auto* browser_context = web_contents()->GetBrowserContext();
+  auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context);
 
   download_manager->DownloadUrl(
@@ -1223,7 +1224,7 @@ std::string WebContents::GetUserAgent() {
 bool WebContents::SavePage(const base::FilePath& full_file_path,
                            const content::SavePageType& save_type,
                            const SavePageHandler::SavePageCallback& callback) {
-  auto handler = new SavePageHandler(web_contents(), callback);
+  auto* handler = new SavePageHandler(web_contents(), callback);
   return handler->Handle(full_file_path, save_type);
 }
 
@@ -1280,9 +1281,9 @@ void WebContents::EnableDeviceEmulation(
   if (type_ == REMOTE)
     return;
 
-  auto frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto widget_host =
+    auto* widget_host =
         frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
     if (!widget_host)
       return;
@@ -1295,9 +1296,9 @@ void WebContents::DisableDeviceEmulation() {
   if (type_ == REMOTE)
     return;
 
-  auto frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto widget_host =
+    auto* widget_host =
         frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
     if (!widget_host)
       return;
@@ -1343,7 +1344,7 @@ void WebContents::InspectServiceWorker() {
 }
 
 void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
+  auto* context = GetServiceWorkerContext(web_contents());
   if (!context)
     return;
 
@@ -1358,7 +1359,7 @@ void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
     }
   };
 
-  auto wrapped_callback = new WrappedCallback(callback);
+  auto* wrapped_callback = new WrappedCallback(callback);
 
   context->CheckHasServiceWorker(
       web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
@@ -1367,7 +1368,7 @@ void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
 
 void WebContents::UnregisterServiceWorker(
     const base::Callback<void(bool)>& callback) {
-  auto context = GetServiceWorkerContext(web_contents());
+  auto* context = GetServiceWorkerContext(web_contents());
   if (!context)
     return;
 
@@ -1393,7 +1394,7 @@ void WebContents::Print(mate::Arguments* args) {
     args->ThrowError();
     return;
   }
-  auto print_view_manager_basic_ptr =
+  auto* print_view_manager_basic_ptr =
       printing::PrintViewManagerBasic::FromWebContents(web_contents());
   if (args->Length() == 2) {
     base::Callback<void(bool)> callback;
@@ -1505,14 +1506,14 @@ void WebContents::StopFindInPage(content::StopFindAction action) {
 
 void WebContents::ShowDefinitionForSelection() {
 #if defined(OS_MACOSX)
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->ShowDefinitionForSelection();
 #endif
 }
 
 void WebContents::CopyImageAt(int x, int y) {
-  const auto host = web_contents()->GetMainFrame();
+  auto* const host = web_contents()->GetMainFrame();
   if (host)
     host->CopyImageAt(x, y);
 }
@@ -1544,7 +1545,7 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool all_frames,
                                  const base::string16& channel,
                                  const base::ListValue& args) {
-  auto frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     return frame_host->Send(new AtomFrameMsg_Message(
         frame_host->GetRoutingID(), all_frames, channel, args));
@@ -1554,7 +1555,7 @@ bool WebContents::SendIPCMessage(bool all_frames,
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
-  const auto view = static_cast<content::RenderWidgetHostViewBase*>(
+  auto* const view = static_cast<content::RenderWidgetHostViewBase*>(
       web_contents()->GetRenderWidgetHostView());
   if (!view)
     return;
@@ -1597,7 +1598,7 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view) {
     std::unique_ptr<FrameSubscriber> frame_subscriber(
         new FrameSubscriber(isolate(), view, callback, only_dirty));
@@ -1606,7 +1607,7 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
 }
 
 void WebContents::EndFrameSubscription() {
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->EndFrameSubscription();
 }
@@ -1659,7 +1660,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
     return;
   }
 
-  const auto view = web_contents()->GetRenderWidgetHostView();
+  auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
     callback.Run(gfx::Image());
     return;
@@ -1787,7 +1788,7 @@ void WebContents::Invalidate() {
       osr_rwhv->Invalidate();
 #endif
   } else {
-    const auto window = owner_window();
+    auto* const window = owner_window();
     if (window)
       window->Invalidate();
   }
@@ -1795,7 +1796,7 @@ void WebContents::Invalidate() {
 
 gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
   if (IsOffScreen() && wc == web_contents()) {
-    auto relay = NativeWindowRelay::FromWebContents(web_contents());
+    auto* relay = NativeWindowRelay::FromWebContents(web_contents());
     if (relay) {
       return relay->window->GetSize();
     }
@@ -1877,7 +1878,7 @@ content::WebContents* WebContents::HostWebContents() {
 void WebContents::SetEmbedder(const WebContents* embedder) {
   if (embedder) {
     NativeWindow* owner_window = nullptr;
-    auto relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
+    auto* relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
     if (relay) {
       owner_window = relay->window.get();
     }
@@ -2054,7 +2055,7 @@ mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
   // We have an existing WebContents object in JS.
-  auto existing = TrackableObject::FromWrappedClass(isolate, web_contents);
+  auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<WebContents*>(existing));
 

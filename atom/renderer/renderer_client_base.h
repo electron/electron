@@ -18,7 +18,7 @@ class PreferencesManager;
 class RendererClientBase : public content::ContentRendererClient {
  public:
   RendererClientBase();
-  virtual ~RendererClientBase();
+  ~RendererClientBase() override;
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
                                       content::RenderFrame* render_frame) = 0;

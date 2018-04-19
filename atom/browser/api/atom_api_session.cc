@@ -326,14 +326,14 @@ void DoCacheActionInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     Session::CacheAction action,
     const net::CompletionCallback& callback) {
-  auto request_context = context_getter->GetURLRequestContext();
-  auto http_cache = request_context->http_transaction_factory()->GetCache();
+  auto* request_context = context_getter->GetURLRequestContext();
+  auto* http_cache = request_context->http_transaction_factory()->GetCache();
   if (!http_cache)
     RunCallbackInUI<int>(callback, net::ERR_FAILED);
 
   // Call GetBackend and make the backend's ptr accessable in OnGetBackend.
   using BackendPtr = disk_cache::Backend*;
-  auto* backend_ptr = new BackendPtr(nullptr);
+  auto** backend_ptr = new BackendPtr(nullptr);
   net::CompletionCallback on_get_backend =
       base::Bind(&OnGetBackend, base::Owned(backend_ptr), action, callback);
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
@@ -344,7 +344,7 @@ void DoCacheActionInIO(
 void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
                   const net::ProxyConfig& config,
                   const base::Closure& callback) {
-  auto proxy_service = getter->GetURLRequestContext()->proxy_service();
+  auto* proxy_service = getter->GetURLRequestContext()->proxy_service();
   proxy_service->ResetConfigService(
       base::WrapUnique(new net::ProxyConfigServiceFixed(config)));
   // Refetches and applies the new pac script if provided.
@@ -355,7 +355,7 @@ void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
 void SetCertVerifyProcInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const AtomCertVerifier::VerifyProc& proc) {
-  auto request_context = context_getter->GetURLRequestContext();
+  auto* request_context = context_getter->GetURLRequestContext();
   static_cast<AtomCertVerifier*>(request_context->cert_verifier())
       ->SetVerifyProc(proc);
 }
@@ -363,8 +363,8 @@ void SetCertVerifyProcInIO(
 void ClearHostResolverCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const base::Closure& callback) {
-  auto request_context = context_getter->GetURLRequestContext();
-  auto cache = request_context->host_resolver()->GetHostCache();
+  auto* request_context = context_getter->GetURLRequestContext();
+  auto* cache = request_context->host_resolver()->GetHostCache();
   if (cache) {
     cache->clear();
     DCHECK_EQ(0u, cache->size());
@@ -377,12 +377,12 @@ void ClearAuthCacheInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const ClearAuthCacheOptions& options,
     const base::Closure& callback) {
-  auto request_context = context_getter->GetURLRequestContext();
-  auto network_session =
+  auto* request_context = context_getter->GetURLRequestContext();
+  auto* network_session =
       request_context->http_transaction_factory()->GetSession();
   if (network_session) {
     if (options.type == "password") {
-      auto auth_cache = network_session->http_auth_cache();
+      auto* auth_cache = network_session->http_auth_cache();
       if (!options.origin.is_empty()) {
         auth_cache->Remove(
             options.origin, options.realm, options.auth_scheme,
@@ -391,7 +391,7 @@ void ClearAuthCacheInIO(
         auth_cache->ClearEntriesAddedWithin(base::TimeDelta::Max());
       }
     } else if (options.type == "clientCertificate") {
-      auto client_auth_cache = network_session->ssl_client_auth_cache();
+      auto* client_auth_cache = network_session->ssl_client_auth_cache();
       client_auth_cache->Remove(net::HostPortPair::FromURL(options.origin));
     }
     network_session->CloseAllConnections();
@@ -403,10 +403,10 @@ void ClearAuthCacheInIO(
 void AllowNTLMCredentialsForDomainsInIO(
     const scoped_refptr<net::URLRequestContextGetter>& context_getter,
     const std::string& domains) {
-  auto request_context = context_getter->GetURLRequestContext();
-  auto auth_handler = request_context->http_auth_handler_factory();
+  auto* request_context = context_getter->GetURLRequestContext();
+  auto* auth_handler = request_context->http_auth_handler_factory();
   if (auth_handler) {
-    auto auth_preferences = const_cast<net::HttpAuthPreferences*>(
+    auto* auth_preferences = const_cast<net::HttpAuthPreferences*>(
         auth_handler->http_auth_preferences());
     if (auth_preferences)
       auth_preferences->set_server_whitelist(domains);
@@ -453,7 +453,7 @@ void SetDevToolsNetworkEmulationClientIdInIO(
 // Clear protocol handlers in IO thread.
 void ClearJobFactoryInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
-  auto job_factory = static_cast<AtomURLRequestJobFactory*>(
+  auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
       request_context_getter->job_factory());
   if (job_factory)
     job_factory->Clear();
@@ -492,7 +492,7 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  auto getter = browser_context_->GetRequestContext();
+  auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
       base::BindOnce(ClearJobFactoryInIO, base::RetainedRef(getter)));
@@ -541,7 +541,7 @@ void Session::ClearStorageData(mate::Arguments* args) {
   args->GetNext(&options);
   args->GetNext(&callback);
 
-  auto storage_partition =
+  auto* storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
@@ -555,14 +555,14 @@ void Session::ClearStorageData(mate::Arguments* args) {
 }
 
 void Session::FlushStorageData() {
-  auto storage_partition =
+  auto* storage_partition =
       content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
   storage_partition->Flush();
 }
 
 void Session::SetProxy(const net::ProxyConfig& config,
                        const base::Closure& callback) {
-  auto getter = browser_context_->GetRequestContext();
+  auto* getter = browser_context_->GetRequestContext();
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(&SetProxyInIO, base::RetainedRef(getter), config,
@@ -631,7 +631,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     args->ThrowError("Must pass null or function");
     return;
   }
-  auto permission_manager = static_cast<AtomPermissionManager*>(
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
       browser_context()->GetPermissionManager());
   permission_manager->SetPermissionRequestHandler(handler);
 }
@@ -725,7 +725,7 @@ void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
         isolate(), "Must pass an offset value less than length.")));
     return;
   }
-  auto download_manager =
+  auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context());
   download_manager->GetDelegate()->GetNextId(base::Bind(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
@@ -772,7 +772,7 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 // static
 mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                           AtomBrowserContext* browser_context) {
-  auto existing = TrackableObject::FromWrappedClass(isolate, browser_context);
+  auto* existing = TrackableObject::FromWrappedClass(isolate, browser_context);
   if (existing)
     return mate::CreateHandle(isolate, static_cast<Session*>(existing));
 

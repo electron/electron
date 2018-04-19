@@ -30,6 +30,10 @@ struct Product {
 
   // Downloadable Content Information
   bool downloadable = false;
+
+  Product(const Product&);
+  Product();
+  ~Product();
 };
 
 // --------------------------- Typedefs ---------------------------

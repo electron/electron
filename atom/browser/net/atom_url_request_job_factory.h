@@ -21,7 +21,7 @@ const void* DisableProtocolInterceptFlagKey();
 class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
  public:
   AtomURLRequestJobFactory();
-  virtual ~AtomURLRequestJobFactory();
+  ~AtomURLRequestJobFactory() override;
 
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,

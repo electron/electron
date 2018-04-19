@@ -14,7 +14,7 @@ class AtomRenderViewObserver : public content::RenderViewObserver {
   explicit AtomRenderViewObserver(content::RenderView* render_view);
 
  protected:
-  virtual ~AtomRenderViewObserver();
+  ~AtomRenderViewObserver() override;
 
  private:
   // content::RenderViewObserver implementation.

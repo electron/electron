@@ -50,7 +50,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
 
  protected:
   DownloadItem(v8::Isolate* isolate, content::DownloadItem* download_item);
-  ~DownloadItem();
+  ~DownloadItem() override;
 
   // Override content::DownloadItem::Observer methods
   void OnDownloadUpdated(content::DownloadItem* download) override;

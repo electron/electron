@@ -95,7 +95,7 @@ class FrameSpellChecker : public content::RenderFrameVisitor {
     main_frame_ = nullptr;
   }
   bool Visit(content::RenderFrame* render_frame) override {
-    auto view = render_frame->GetRenderView();
+    auto* view = render_frame->GetRenderView();
     if (view->GetMainRenderFrame() == main_frame_ ||
         (render_frame->IsMainFrame() && render_frame == main_frame_)) {
       render_frame->GetWebFrame()->SetTextCheckClient(spell_check_client_);
@@ -173,7 +173,7 @@ v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
 void WebFrame::RegisterElementResizeCallback(
     int element_instance_id,
     const GuestViewContainer::ResizeCallback& callback) {
-  auto guest_view_container = GuestViewContainer::FromID(element_instance_id);
+  auto* guest_view_container = GuestViewContainer::FromID(element_instance_id);
   if (guest_view_container)
     guest_view_container->RegisterElementResizeCallback(callback);
 }

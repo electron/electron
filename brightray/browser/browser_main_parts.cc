@@ -227,7 +227,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
   // Initialize ui::ResourceBundle.
   ui::ResourceBundle::InitSharedInstanceWithLocale(
       "", nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
-  auto cmd_line = base::CommandLine::ForCurrentProcess();
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
   if (cmd_line->HasSwitch(switches::kLang)) {
     const std::string locale = cmd_line->GetSwitchValueASCII(switches::kLang);
     const base::FilePath locale_file_path =
@@ -258,7 +258,7 @@ void BrowserMainParts::PreMainMessageLoopRun() {
       WebUIControllerFactory::GetInstance());
 
   // --remote-debugging-port
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
     DevToolsManagerDelegate::StartHttpHandler();
 }

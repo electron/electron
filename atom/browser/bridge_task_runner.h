@@ -18,8 +18,7 @@ namespace atom {
 // otherwise delay the work until message loop is ready.
 class BridgeTaskRunner : public base::SingleThreadTaskRunner {
  public:
-  BridgeTaskRunner() {}
-  ~BridgeTaskRunner() override {}
+  BridgeTaskRunner();
 
   // Called when message loop is ready.
   void MessageLoopIsReady();
@@ -36,6 +35,8 @@ class BridgeTaskRunner : public base::SingleThreadTaskRunner {
  private:
   using TaskPair =
       std::tuple<base::Location, base::OnceClosure, base::TimeDelta>;
+  ~BridgeTaskRunner() override;
+
   std::vector<TaskPair> tasks_;
   std::vector<TaskPair> non_nestable_tasks_;
 

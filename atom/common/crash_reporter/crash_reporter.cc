@@ -17,7 +17,7 @@
 namespace crash_reporter {
 
 CrashReporter::CrashReporter() {
-  auto cmd = base::CommandLine::ForCurrentProcess();
+  auto* cmd = base::CommandLine::ForCurrentProcess();
   is_browser_ = cmd->GetSwitchValueASCII(switches::kProcessType).empty();
 }
 
@@ -102,7 +102,7 @@ CrashReporter* CrashReporter::GetInstance() {
 #endif
 
 void CrashReporter::StartInstance(const mate::Dictionary& options) {
-  auto reporter = GetInstance();
+  auto* reporter = GetInstance();
   if (!reporter)
     return;
 

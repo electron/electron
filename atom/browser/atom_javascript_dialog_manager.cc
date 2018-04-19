@@ -28,6 +28,7 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 AtomJavaScriptDialogManager::AtomJavaScriptDialogManager(
     api::WebContents* api_web_contents)
     : api_web_contents_(api_web_contents) {}
+AtomJavaScriptDialogManager::~AtomJavaScriptDialogManager() = default;
 
 void AtomJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,

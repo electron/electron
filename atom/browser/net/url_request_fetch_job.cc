@@ -83,6 +83,8 @@ URLRequestFetchJob::URLRequestFetchJob(net::URLRequest* request,
       pending_buffer_size_(0),
       write_num_bytes_(0) {}
 
+URLRequestFetchJob::~URLRequestFetchJob() = default;
+
 void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
                                          v8::Local<v8::Value> value) {
   mate::Dictionary options;

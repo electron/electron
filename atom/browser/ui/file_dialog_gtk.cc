@@ -17,6 +17,9 @@
 
 namespace file_dialog {
 
+DialogSettings::DialogSettings() = default;
+DialogSettings::~DialogSettings() = default;
+
 namespace {
 
 // Makes sure that .jpg also shows .JPG.

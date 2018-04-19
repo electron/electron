@@ -43,7 +43,7 @@ NetLog::~NetLog() {
 }
 
 void NetLog::StartLogging() {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   if (!command_line->HasSwitch(switches::kLogNetLog))
     return;
 

@@ -41,7 +41,7 @@ class PrintingMessageFilter : public content::BrowserMessageFilter {
   friend class base::DeleteHelper<PrintingMessageFilter>;
   friend class content::BrowserThread;
 
-  virtual ~PrintingMessageFilter();
+  ~PrintingMessageFilter() override;
 
   void OnDestruct() const override;
 

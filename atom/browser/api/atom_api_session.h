@@ -91,7 +91,7 @@ class Session : public mate::TrackableObject<Session>,
 
  protected:
   Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
-  ~Session();
+  ~Session() override;
 
   // content::DownloadManager::Observer:
   void OnDownloadCreated(content::DownloadManager* manager,

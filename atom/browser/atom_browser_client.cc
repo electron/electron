@@ -120,7 +120,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
       // a new SiteInstance
       return true;
     }
-    auto web_contents =
+    auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     if (!ChildWebContentsTracker::IsChildWebContents(web_contents)) {
       // Root WebContents should always create new process to make sure
@@ -252,7 +252,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
       site_per_affinities[affinity] = candidate_instance;
       *new_instance = candidate_instance;
       // Remember the original web contents for the pending renderer process.
-      auto pending_process = candidate_instance->GetProcess();
+      auto* pending_process = candidate_instance->GetProcess();
       pending_processes_[pending_process->GetID()] = web_contents;
     }
   } else {
@@ -272,7 +272,7 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
 
     *new_instance = candidate_instance;
     // Remember the original web contents for the pending renderer process.
-    auto pending_process = candidate_instance->GetProcess();
+    auto* pending_process = candidate_instance->GetProcess();
     pending_processes_[pending_process->GetID()] = web_contents;
   }
 }
@@ -343,8 +343,8 @@ void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
 void AtomBrowserClient::GetGeolocationRequestContext(
     base::OnceCallback<void(scoped_refptr<net::URLRequestContextGetter>)>
         callback) {
-  auto io_thread = AtomBrowserMainParts::Get()->io_thread();
-  auto context = io_thread->GetRequestContext();
+  auto* io_thread = AtomBrowserMainParts::Get()->io_thread();
+  auto* context = io_thread->GetRequestContext();
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::BindOnce(std::move(callback), base::RetainedRef(context)));
@@ -483,7 +483,7 @@ void AtomBrowserClient::WebNotificationAllowed(
     callback.Run(false, false);
     return;
   }
-  auto permission_helper =
+  auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper) {
     callback.Run(false, false);

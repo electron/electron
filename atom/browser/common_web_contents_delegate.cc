@@ -57,7 +57,7 @@ struct FileSystem {
 
 std::string RegisterFileSystem(content::WebContents* web_contents,
                                const base::FilePath& path) {
-  auto isolated_context = storage::IsolatedContext::GetInstance();
+  auto* isolated_context = storage::IsolatedContext::GetInstance();
   std::string root_name(kRootName);
   std::string file_system_id = isolated_context->RegisterFileSystemForPath(
       storage::kFileSystemTypeNativeLocal, std::string(), path, &root_name);
@@ -113,13 +113,13 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
 }
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
+  auto* context = web_contents->GetBrowserContext();
   return static_cast<atom::AtomBrowserContext*>(context)->prefs();
 }
 
 std::set<std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
-  auto pref_service = GetPrefService(web_contents);
+  auto* pref_service = GetPrefService(web_contents);
   const base::DictionaryValue* file_system_paths_value =
       pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
   std::set<std::string> result;
@@ -176,7 +176,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     NativeWindow* owner_window) {
   owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
   auto relay = std::make_unique<NativeWindowRelay>(owner_window_);
-  auto relay_key = relay->key;
+  auto* relay_key = relay->key;
   if (owner_window) {
 #if defined(TOOLKIT_VIEWS)
     autofill_popup_.reset(new AutofillPopup());
@@ -383,7 +383,7 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
   std::unique_ptr<base::DictionaryValue> file_system_value(
       CreateFileSystemValue(file_system));
 
-  auto pref_service = GetPrefService(GetDevToolsWebContents());
+  auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(path.AsUTF8Unsafe(),
                                         std::make_unique<base::Value>());
@@ -401,7 +401,7 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
   storage::IsolatedContext::GetInstance()->RevokeFileSystemByPath(
       file_system_path);
 
-  auto pref_service = GetPrefService(GetDevToolsWebContents());
+  auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->RemoveWithoutPathExpansion(path, nullptr);
 

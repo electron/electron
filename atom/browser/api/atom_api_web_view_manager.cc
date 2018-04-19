@@ -23,7 +23,7 @@ void AddGuest(int guest_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
               const base::DictionaryValue& options) {
-  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
@@ -38,7 +38,7 @@ void AddGuest(int guest_instance_id,
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
-  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->RemoveGuest(guest_instance_id);
 }

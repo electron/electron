@@ -33,7 +33,7 @@ class CommonWebContentsDelegate
       public brightray::InspectableWebContentsViewDelegate {
  public:
   CommonWebContentsDelegate();
-  virtual ~CommonWebContentsDelegate();
+  ~CommonWebContentsDelegate() override;
 
   // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.

@@ -58,13 +58,15 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL {
-  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
-      [[NSUserActivity alloc] initWithActivityType:type]);
-  [currentActivity_ setUserInfo:userInfo];
-  [currentActivity_ setWebpageURL:webpageURL];
-  [currentActivity_ setDelegate:self];
-  [currentActivity_ becomeCurrent];
-  [currentActivity_ setNeedsSave:YES];
+  if (@available(macOS 10.10, *)) {
+    currentActivity_ = base::scoped_nsobject<NSUserActivity>(
+        [[NSUserActivity alloc] initWithActivityType:type]);
+    [currentActivity_ setUserInfo:userInfo];
+    [currentActivity_ setWebpageURL:webpageURL];
+    [currentActivity_ setDelegate:self];
+    [currentActivity_ becomeCurrent];
+    [currentActivity_ setNeedsSave:YES];
+  }
 }
 
 - (NSUserActivity*)getCurrentActivity {
@@ -90,7 +92,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [handoffLock_ unlock];
 }
 
-- (void)userActivityWillSave:(NSUserActivity *)userActivity {
+- (void)userActivityWillSave:(NSUserActivity *)userActivity API_AVAILABLE(macosx(10.10)) {
   __block BOOL shouldWait = NO;
   dispatch_sync_main(^{
     std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
@@ -114,7 +116,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [userActivity setNeedsSave:YES];
 }
 
-- (void)userActivityWasContinued:(NSUserActivity *)userActivity {
+- (void)userActivityWasContinued:(NSUserActivity *)userActivity API_AVAILABLE(macosx(10.10)) {
   dispatch_async(dispatch_get_main_queue(), ^{
     std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
@@ -165,7 +167,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (void)updateAccessibilityEnabled:(BOOL)enabled {
-  auto ax_state = content::BrowserAccessibilityState::GetInstance();
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
 
   if (enabled) {
     ax_state->OnScreenReaderDetected();

@@ -17,7 +17,7 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
   // the first character must be a letter for this to be a URL
   auto c = *arg;
   if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')) {
-    for (auto p = arg + 1; *p; ++p) {
+    for (auto* p = arg + 1; *p; ++p) {
       c = *p;
 
       // colon indicates that the argument starts with a URI scheme
@@ -1377,7 +1377,7 @@ bool IsBlacklistedArg(const base::CommandLine::CharType* arg) {
   static const char* prefixes[] = {"--", "-", "/"};
 
   int prefix_length = 0;
-  for (auto& prefix : prefixes) {
+  for (auto*& prefix : prefixes) {
     if (base::StartsWith(a, prefix, base::CompareCase::SENSITIVE)) {
       prefix_length = strlen(prefix);
       break;

@@ -127,7 +127,7 @@ std::map<std::string, std::string> CrashReporterMac::GetParameters() const {
     std::map<std::string, std::string> ret;
     crashpad::SimpleStringDictionary::Iterator iter(*simple_string_dictionary_);
     for(;;) {
-      const auto entry = iter.Next();
+      auto* const entry = iter.Next();
       if (!entry) break;
       ret[entry->key] = entry->value;
     }

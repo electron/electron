@@ -126,7 +126,7 @@ void AtomRenderFrameObserver::OnDestruct() {
 }
 
 void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
-  auto frame = render_frame_->GetWebFrame();
+  auto* frame = render_frame_->GetWebFrame();
 
   // This maps to the name shown in the context combo box in the Console tab
   // of the dev tools.

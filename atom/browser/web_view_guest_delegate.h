@@ -22,8 +22,8 @@ class WebContents;
 // meaningful. This is because the normal size of the guestview is overridden
 // whenever autosizing occurs.
 struct SetSizeParams {
-  SetSizeParams() {}
-  ~SetSizeParams() {}
+  SetSizeParams();
+  ~SetSizeParams();
 
   std::unique_ptr<bool> enable_auto_size;
   std::unique_ptr<gfx::Size> min_size;

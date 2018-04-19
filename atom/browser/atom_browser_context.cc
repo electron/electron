@@ -150,7 +150,7 @@ AtomBrowserContext::CreateURLRequestJobFactory(
       url::kWssScheme,
       base::WrapUnique(new HttpProtocolHandler(url::kWssScheme)));
 
-  auto host_resolver =
+  auto* host_resolver =
       url_request_context_getter()->GetURLRequestContext()->host_resolver();
   job_factory->SetProtocolHandler(
       url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
@@ -171,7 +171,7 @@ AtomBrowserContext::CreateHttpCacheBackendFactory(
 content::DownloadManagerDelegate*
 AtomBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
-    auto download_manager = content::BrowserContext::GetDownloadManager(this);
+    auto* download_manager = content::BrowserContext::GetDownloadManager(this);
     download_manager_delegate_.reset(
         new AtomDownloadManagerDelegate(download_manager));
   }

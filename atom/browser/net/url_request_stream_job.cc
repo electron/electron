@@ -28,6 +28,8 @@ URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
       response_headers_(nullptr),
       weak_factory_(this) {}
 
+URLRequestStreamJob::~URLRequestStreamJob() = default;
+
 void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
                                           v8::Local<v8::Value> value) {
   if (value->IsNull() || value->IsUndefined() || !value->IsObject()) {

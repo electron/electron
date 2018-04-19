@@ -35,7 +35,7 @@ void RemoteCallbackFreer::RunDestructor() {
       base::ASCIIToUTF16("ELECTRON_RENDERER_RELEASE_CALLBACK");
   base::ListValue args;
   args.AppendInteger(object_id_);
-  auto frame_host = web_contents()->GetMainFrame();
+  auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), false,
                                               channel, args));

@@ -39,7 +39,7 @@
 namespace {
 
 #ifdef ENABLE_RUN_AS_NODE
-const auto kRunAsNode = "ELECTRON_RUN_AS_NODE";
+const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 #endif
 
 #if defined(ENABLE_RUN_AS_NODE) || defined(OS_WIN)
