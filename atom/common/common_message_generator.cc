@@ -7,12 +7,16 @@
 #include "atom/common/common_message_generator.h"
 
 // Generate constructors.
-#include "atom/common/common_message_generator.h"
 #include "ipc/struct_constructor_macros.h"
 
-// Generate destructors.
+// must go after struct_contructor_macros
 #include "atom/common/common_message_generator.h"
+
+// Generate destructors.
 #include "ipc/struct_destructor_macros.h"
+
+// must go after struct_destructor_macros
+#include "atom/common/common_message_generator.h"
 
 // Generate param traits write methods.
 #include "ipc/param_traits_write_macros.h"
