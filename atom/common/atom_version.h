@@ -28,10 +28,4 @@
 
 #define ATOM_VERSION "v" ATOM_VERSION_STRING
 
-#define ATOM_VERSION_AT_LEAST(major, minor, patch)                    \
-  (((major) < ATOM_MAJOR_VERSION) ||                                  \
-   ((major) == ATOM_MAJOR_VERSION && (minor) < ATOM_MINOR_VERSION) || \
-   ((major) == ATOM_MAJOR_VERSION && (minor) == ATOM_MINOR_VERSION && \
-    (patch) <= ATOM_PATCH_VERSION))
-
 #endif  // ATOM_COMMON_ATOM_VERSION_H_
