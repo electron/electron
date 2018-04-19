@@ -389,8 +389,8 @@ int AtomNetworkDelegate::HandleResponseEvent(
                  base::Unretained(this), request->identifier(), out);
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(RunResponseListener, info.listener, base::Passed(&details),
-                 render_process_id, render_frame_id, response));
+      base::BindOnce(RunResponseListener, info.listener, base::Passed(&details),
+                     render_process_id, render_frame_id, response));
   return net::ERR_IO_PENDING;
 }
 
@@ -411,8 +411,8 @@ void AtomNetworkDelegate::HandleSimpleEvent(SimpleEvent type,
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(RunSimpleListener, info.listener, base::Passed(&details),
-                 render_process_id, render_frame_id));
+      base::BindOnce(RunSimpleListener, info.listener, base::Passed(&details),
+                     render_process_id, render_frame_id));
 }
 
 template <typename T>
@@ -439,8 +439,8 @@ void AtomNetworkDelegate::OnListenerResultInUI(
   std::unique_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomNetworkDelegate::OnListenerResultInIO<T>,
-                 base::Unretained(this), id, out, base::Passed(&copy)));
+      base::BindOnce(&AtomNetworkDelegate::OnListenerResultInIO<T>,
+                     base::Unretained(this), id, out, base::Passed(&copy)));
 }
 
 }  // namespace atom

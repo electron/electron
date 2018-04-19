@@ -14,8 +14,8 @@ URLRequestAboutJob::URLRequestAboutJob(net::URLRequest* request,
 
 void URLRequestAboutJob::Start() {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&URLRequestAboutJob::StartAsync,
-                            weak_ptr_factory_.GetWeakPtr()));
+      FROM_HERE, base::BindOnce(&URLRequestAboutJob::StartAsync,
+                                weak_ptr_factory_.GetWeakPtr()));
 }
 
 void URLRequestAboutJob::Kill() {

@@ -96,9 +96,9 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
                                         weak_ptr_factory_.GetWeakPtr());
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        base::Bind(&CertVerifierRequest::OnVerifyRequestInUI,
-                   cert_verifier_->verify_proc(), base::Passed(&request),
-                   response_callback));
+        base::BindOnce(&CertVerifierRequest::OnVerifyRequestInUI,
+                       cert_verifier_->verify_proc(), base::Passed(&request),
+                       response_callback));
   }
 
   static void OnVerifyRequestInUI(
@@ -112,7 +112,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
                              int result) {
     BrowserThread::PostTask(
         BrowserThread::IO, FROM_HERE,
-        base::Bind(&CertVerifierRequest::NotifyResponseInIO, self, result));
+        base::BindOnce(&CertVerifierRequest::NotifyResponseInIO, self, result));
   }
 
   void NotifyResponseInIO(int result) {

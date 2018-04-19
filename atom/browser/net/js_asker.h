@@ -74,7 +74,7 @@ class JsAsker : public RequestJob {
     FillRequestDetails(request_details.get(), RequestJob::request());
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(
+        base::BindOnce(
             &internal::AskForOptions, isolate_, handler_,
             base::Passed(&request_details),
             base::Bind(&JsAsker::BeforeStartInUI, weak_factory_.GetWeakPtr()),

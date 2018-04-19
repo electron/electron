@@ -79,8 +79,9 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   scoped_refptr<AtomURLRequest> atom_url_request(new AtomURLRequest(delegate));
   if (content::BrowserThread::PostTask(
           content::BrowserThread::IO, FROM_HERE,
-          base::Bind(&AtomURLRequest::DoInitialize, atom_url_request,
-                     request_context_getter, method, url, redirect_policy))) {
+          base::BindOnce(&AtomURLRequest::DoInitialize, atom_url_request,
+                         request_context_getter, method, url,
+                         redirect_policy))) {
     return atom_url_request;
   }
   return nullptr;
@@ -91,7 +92,7 @@ void AtomURLRequest::Terminate() {
   delegate_ = nullptr;
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoTerminate, this));
+      base::BindOnce(&AtomURLRequest::DoTerminate, this));
 }
 
 void AtomURLRequest::DoInitialize(
@@ -141,7 +142,7 @@ bool AtomURLRequest::Write(scoped_refptr<const net::IOBufferWithSize> buffer,
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   return content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoWriteBuffer, this, buffer, is_last));
+      base::BindOnce(&AtomURLRequest::DoWriteBuffer, this, buffer, is_last));
 }
 
 void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
@@ -155,15 +156,16 @@ void AtomURLRequest::SetChunkedUpload(bool is_chunked_upload) {
 
 void AtomURLRequest::Cancel() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
-                                   base::Bind(&AtomURLRequest::DoCancel, this));
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&AtomURLRequest::DoCancel, this));
 }
 
 void AtomURLRequest::FollowRedirect() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoFollowRedirect, this));
+      base::BindOnce(&AtomURLRequest::DoFollowRedirect, this));
 }
 
 void AtomURLRequest::SetExtraHeader(const std::string& name,
@@ -171,14 +173,14 @@ void AtomURLRequest::SetExtraHeader(const std::string& name,
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoSetExtraHeader, this, name, value));
+      base::BindOnce(&AtomURLRequest::DoSetExtraHeader, this, name, value));
 }
 
 void AtomURLRequest::RemoveExtraHeader(const std::string& name) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoRemoveExtraHeader, this, name));
+      base::BindOnce(&AtomURLRequest::DoRemoveExtraHeader, this, name));
 }
 
 void AtomURLRequest::PassLoginInformation(
@@ -188,11 +190,11 @@ void AtomURLRequest::PassLoginInformation(
   if (username.empty() || password.empty()) {
     content::BrowserThread::PostTask(
         content::BrowserThread::IO, FROM_HERE,
-        base::Bind(&AtomURLRequest::DoCancelAuth, this));
+        base::BindOnce(&AtomURLRequest::DoCancelAuth, this));
   } else {
     content::BrowserThread::PostTask(
         content::BrowserThread::IO, FROM_HERE,
-        base::Bind(&AtomURLRequest::DoSetAuth, this, username, password));
+        base::BindOnce(&AtomURLRequest::DoSetAuth, this, username, password));
   }
 }
 
@@ -200,7 +202,7 @@ void AtomURLRequest::SetLoadFlags(int flags) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomURLRequest::DoSetLoadFlags, this, flags));
+      base::BindOnce(&AtomURLRequest::DoSetLoadFlags, this, flags));
 }
 
 void AtomURLRequest::DoWriteBuffer(
@@ -308,8 +310,8 @@ void AtomURLRequest::DoCancelWithError(const std::string& error,
   DoCancel();
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateErrorOccured, this, error,
-                 isRequestError));
+      base::BindOnce(&AtomURLRequest::InformDelegateErrorOccured, this, error,
+                     isRequestError));
 }
 
 void AtomURLRequest::DoSetLoadFlags(int flags) const {
@@ -337,9 +339,9 @@ void AtomURLRequest::OnReceivedRedirect(net::URLRequest* request,
         request->response_headers();
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateReceivedRedirect, this,
-                   info.status_code, info.new_method, info.new_url,
-                   response_headers));
+        base::BindOnce(&AtomURLRequest::InformDelegateReceivedRedirect, this,
+                       info.status_code, info.new_method, info.new_url,
+                       response_headers));
   }
 }
 
@@ -349,8 +351,8 @@ void AtomURLRequest::OnAuthRequired(net::URLRequest* request,
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateAuthenticationRequired, this,
-                 scoped_refptr<net::AuthChallengeInfo>(auth_info)));
+      base::BindOnce(&AtomURLRequest::InformDelegateAuthenticationRequired,
+                     this, scoped_refptr<net::AuthChallengeInfo>(auth_info)));
 }
 
 void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
@@ -367,8 +369,8 @@ void AtomURLRequest::OnResponseStarted(net::URLRequest* request) {
     // Success or pending trigger a Read.
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateResponseStarted, this,
-                   response_headers));
+        base::BindOnce(&AtomURLRequest::InformDelegateResponseStarted, this,
+                       response_headers));
     ReadResponse();
   } else if (status.status() == net::URLRequestStatus::Status::FAILED) {
     // Report error on Start.
@@ -426,7 +428,7 @@ void AtomURLRequest::OnReadCompleted(net::URLRequest* request, int bytes_read) {
   } else if (data_ended) {
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&AtomURLRequest::InformDelegateResponseCompleted, this));
+        base::BindOnce(&AtomURLRequest::InformDelegateResponseCompleted, this));
     DoTerminate();
   } else if (data_transfer_error) {
     // We abort the request on corrupted data transfer.
@@ -449,8 +451,8 @@ bool AtomURLRequest::CopyAndPostBuffer(int bytes_read) {
 
   return content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&AtomURLRequest::InformDelegateResponseData, this,
-                 buffer_copy));
+      base::BindOnce(&AtomURLRequest::InformDelegateResponseData, this,
+                     buffer_copy));
 }
 
 void AtomURLRequest::InformDelegateReceivedRedirect(
