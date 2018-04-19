@@ -12,6 +12,8 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
+#include "ui/views/widget/widget_delegate.h"
+#include "ui/views/widget/widget_observer.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -146,6 +148,8 @@ class NativeWindowMac : public NativeWindow {
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
+
+  std::unique_ptr<views::Widget> widget_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;

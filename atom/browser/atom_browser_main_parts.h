@@ -25,6 +25,10 @@ class NodeDebugger;
 class NodeEnvironment;
 class BridgeTaskRunner;
 
+#if defined(OS_MACOSX)
+class ViewsDelegateMac;
+#endif
+
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
   AtomBrowserMainParts();
@@ -50,6 +54,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   void PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
   int PreCreateThreads() override;
+  void ToolkitInitialized() override;
   void PreMainMessageLoopRun() override;
   bool MainMessageLoopRun(int* result_code) override;
   void PostMainMessageLoopStart() override;
@@ -67,6 +72,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
 #if defined(OS_MACOSX)
   void FreeAppDelegate();
+#endif
+
+#if defined(OS_MACOSX)
+  std::unique_ptr<ViewsDelegateMac> views_delegate_;
 #endif
 
   // A fake BrowserProcess object that used to feed the source code from chrome.

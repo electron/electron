@@ -16,7 +16,6 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
-#include "atom/common/node_includes.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
@@ -35,6 +34,13 @@
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
+
+#if defined(OS_MACOSX)
+#include "atom/browser/ui/cocoa/views_delegate_mac.h"
+#endif
+
+// Must be included after all other headers.
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -169,6 +175,13 @@ int AtomBrowserMainParts::PreCreateThreads() {
 #endif
 
   return result;
+}
+
+void AtomBrowserMainParts::ToolkitInitialized() {
+  brightray::BrowserMainParts::ToolkitInitialized();
+#if defined(OS_MACOSX)
+  views_delegate_.reset(new ViewsDelegateMac);
+#endif
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {

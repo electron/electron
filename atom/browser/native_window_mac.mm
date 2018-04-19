@@ -24,6 +24,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/widget/widget.h"
 
 namespace {
 
