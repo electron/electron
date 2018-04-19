@@ -56,10 +56,13 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
                     ]
                 for f in fpaths:
                     ext = os.path.splitext(f)[1][1:]
+                    print(ext)
                     if ext in extensions:
                         out.append(f)
         else:
-            out.append(file)
+            ext = os.path.splitext(file)[1][1:]
+            if ext in extensions:
+                out.append(file)
     return out
 
 
@@ -88,17 +91,11 @@ class UnexpectedError(Exception):
 
 def run_clang_format_diff_wrapper(args, file):
     try:
-        ext = os.path.splitext(file)[1][1:]
-        if ext in args.extensions:
-            ret = run_clang_format_diff(args, file)
-            return ret
-        else:
-            print('nothing')
+        ret = run_clang_format_diff(args, file)
+        return ret
     except DiffError:
-        print('hello')
         raise
     except Exception as e:
-        print('hello')
         raise UnexpectedError('{}: {}: {}'.format(file, e.__class__.__name__,
                                                   e), e)
 
@@ -250,22 +247,19 @@ def main():
 
     retcode = ExitStatus.SUCCESS
     
-    changed_files = []
+    parse_files = []
     if args.changed:
         popen = subprocess.Popen(["git", "diff", "--name-only", "origin/master"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         for line in popen.stdout:
-            changed_files.append(line.rstrip())
-        files = list_files(
-            changed_files,
-            recursive=args.recursive,
-            exclude=args.exclude,
-            extensions=args.extensions.split(','))
+            parse_files.append(line.rstrip())
     else:
-        files = list_files(
-            args.files,
-            recursive=args.recursive,
-            exclude=args.exclude,
-            extensions=args.extensions.split(','))
+        parse_files = args.files
+
+    files = list_files(
+        parse_files,
+        recursive=args.recursive,
+        exclude=args.exclude,
+        extensions=args.extensions.split(','))
 
     if not files:
         return
@@ -286,7 +280,6 @@ def main():
             partial(run_clang_format_diff_wrapper, args), files)
     while True:
         try:
-            print(it)
             outs, errs = next(it)
         except StopIteration:
             break
