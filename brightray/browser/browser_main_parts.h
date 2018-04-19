@@ -16,12 +16,6 @@
 #include "content/public/browser/browser_main_parts.h"
 #include "ui/views/layout/layout_provider.h"
 
-#if defined(TOOLKIT_VIEWS)
-namespace brightray {
-class ViewsDelegate;
-}
-#endif
-
 #if defined(USE_AURA)
 namespace wm {
 class WMState;
@@ -55,10 +49,6 @@ class BrowserMainParts : public content::BrowserMainParts {
 #endif
 
   std::unique_ptr<IOThread> io_thread_;
-
-#if defined(TOOLKIT_VIEWS)
-  std::unique_ptr<ViewsDelegate> views_delegate_;
-#endif
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;

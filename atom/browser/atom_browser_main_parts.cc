@@ -37,6 +37,8 @@
 
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/views_delegate_mac.h"
+#else
+#include "brightray/browser/views/views_delegate.h"
 #endif
 
 // Must be included after all other headers.
@@ -181,6 +183,8 @@ void AtomBrowserMainParts::ToolkitInitialized() {
   brightray::BrowserMainParts::ToolkitInitialized();
 #if defined(OS_MACOSX)
   views_delegate_.reset(new ViewsDelegateMac);
+#else
+  views_delegate_.reset(new brightray::ViewsDelegate);
 #endif
 }
 

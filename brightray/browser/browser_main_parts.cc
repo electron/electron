@@ -43,10 +43,6 @@
 #include "ui/wm/core/wm_state.h"
 #endif
 
-#if defined(TOOLKIT_VIEWS)
-#include "brightray/browser/views/views_delegate.h"
-#endif
-
 #if defined(USE_X11)
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
@@ -207,10 +203,6 @@ void BrowserMainParts::ToolkitInitialized() {
 
 #if defined(USE_AURA)
   wm_state_.reset(new wm::WMState);
-#endif
-
-#if defined(TOOLKIT_VIEWS)
-  views_delegate_.reset(new ViewsDelegate);
 #endif
 
 #if defined(OS_WIN)

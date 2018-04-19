@@ -15,6 +15,12 @@
 
 class BrowserProcess;
 
+#if defined(TOOLKIT_VIEWS)
+namespace brightray {
+class ViewsDelegate;
+}
+#endif
+
 namespace atom {
 
 class AtomBindings;
@@ -76,6 +82,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 
 #if defined(OS_MACOSX)
   std::unique_ptr<ViewsDelegateMac> views_delegate_;
+#else
+  std::unique_ptr<brightray::ViewsDelegate> views_delegate_;
 #endif
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
