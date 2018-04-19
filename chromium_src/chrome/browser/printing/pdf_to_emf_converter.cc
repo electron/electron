@@ -38,6 +38,11 @@ namespace printing {
 
 namespace {
 
+void CloseFileOnBlockingTaskRunner(base::File temp_file) {
+base::AssertBlockingAllowed();
+temp_file.Close();
+}
+
 class PdfConverterImpl;
 
 // Allows to delete temporary directory after all temporary files created inside
@@ -71,7 +76,7 @@ class TempFile {
   explicit TempFile(base::File file)
       : file_(std::move(file)),
         blocking_task_runner_(base::SequencedTaskRunnerHandle::Get()) {
-    base::ThreadRestrictions::AssertIOAllowed();
+    base::AssertBlockingAllowed();
   }
   ~TempFile() {
     blocking_task_runner_->PostTask(
