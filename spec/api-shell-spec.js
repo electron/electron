@@ -115,5 +115,12 @@ describe('shell module', () => {
       assert.equal(result, true)
       assert.equal(fs.existsSync(filePath), false)
     })
+
+    it('fails to trash file that does not exist', () => {
+      const nonExistentPath = filePath + '_does_not_exist';
+
+      const result = shell.moveItemToTrash(nonExistentPath)
+      assert.equal(result, false)
+    })
   })
 })
