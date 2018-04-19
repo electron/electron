@@ -49,7 +49,7 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
       BrowserThread::UI, FROM_HERE,
       base::BindOnce(&Browser::RequestLogin, base::Unretained(Browser::Get()),
                      base::RetainedRef(WrapRefCounted(this)),
-                     base::Passed(&request_details)));
+                     std::move(request_details)));
 }
 
 LoginHandler::~LoginHandler() {}
