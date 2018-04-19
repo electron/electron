@@ -318,6 +318,8 @@
       'atom/browser/ui/cocoa/atom_menu_controller.mm',
       'atom/browser/ui/cocoa/atom_native_widget_mac.h',
       'atom/browser/ui/cocoa/atom_native_widget_mac.mm',
+      'atom/browser/ui/cocoa/atom_ns_window.h',
+      'atom/browser/ui/cocoa/atom_ns_window.mm',
       'atom/browser/ui/cocoa/atom_ns_window_delegate.h',
       'atom/browser/ui/cocoa/atom_ns_window_delegate.mm',
       'atom/browser/ui/cocoa/atom_preview_item.h',
