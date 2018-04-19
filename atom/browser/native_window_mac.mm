@@ -213,7 +213,6 @@ enum {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
-  base::scoped_nsobject<AtomTouchBar> atom_touch_bar_;
   CGFloat windowButtonsInterButtonSpacing_;
 }
 @property BOOL acceptsFirstMouse;
@@ -226,9 +225,6 @@ enum {
 - (void)setShell:(atom::NativeWindowMac*)shell;
 - (void)setEnableLargerThanScreen:(bool)enable;
 - (void)enableWindowButtonsOffset;
-- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
-- (void)refreshTouchBarItem:(const std::string&)item_id;
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item;
 
 @end
 
@@ -249,41 +245,19 @@ enum {
   enable_larger_than_screen_ = enable;
 }
 
-- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (![self respondsToSelector:@selector(touchBar)]) return;
-
-  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
-                                                        window:shell_
-                                                      settings:settings]);
-  self.touchBar = nil;
-}
-
-- (void)refreshTouchBarItem:(const std::string&)item_id
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_ && self.touchBar)
-    [atom_touch_bar_ refreshTouchBarItem:self.touchBar id:item_id];
-}
-
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_)
-    return [atom_touch_bar_ makeTouchBar];
+  if (shell_->atom_touch_bar())
+    return [shell_->atom_touch_bar() makeTouchBar];
   else
     return nil;
 }
 
 - (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
       makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier API_AVAILABLE(macosx(10.12.2)) {
-  if (touchBar && atom_touch_bar_)
-    return [atom_touch_bar_ makeItemForIdentifier:identifier];
+  if (touchBar && shell_->atom_touch_bar())
+    return [shell_->atom_touch_bar() makeItemForIdentifier:identifier];
   else
     return nil;
-}
-
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_ && self.touchBar)
-    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
 }
 
 // NSWindow overrides.
@@ -1538,15 +1512,24 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
-  [window_ resetTouchBar:items];
+  if (![window_ respondsToSelector:@selector(touchBar)])
+    return;
+
+  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:window_.get()
+                                                        window:this
+                                                      settings:items]);
+  [window_ setTouchBar:nil];
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  [window_ refreshTouchBarItem:item_id];
+  if (atom_touch_bar_ && [window_ touchBar])
+    [atom_touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
 }
 
-void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
-  [window_ setEscapeTouchBarItem:item];
+void NativeWindowMac::SetEscapeTouchBarItem(
+    const mate::PersistentDictionary& item) {
+  if (atom_touch_bar_ && [window_ touchBar])
+    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
 }
 
 gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
