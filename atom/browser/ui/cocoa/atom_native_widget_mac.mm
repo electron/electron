@@ -14,7 +14,7 @@ AtomNativeWidgetMac::AtomNativeWidgetMac(
 AtomNativeWidgetMac::~AtomNativeWidgetMac() {
 }
 
-views::NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
+NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
     const views::Widget::InitParams& params) {
   return views::NativeWidgetMac::CreateNSWindow(params);
 }
