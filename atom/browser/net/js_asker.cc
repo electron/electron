@@ -36,7 +36,7 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   std::unique_ptr<base::Value> options(converter.FromV8Value(value, context));
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::BindOnce(callback, true, base::Passed(&options)));
+      base::BindOnce(callback, true, std::move(options)));
 }
 
 }  // namespace

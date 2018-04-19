@@ -97,7 +97,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
         base::BindOnce(&CertVerifierRequest::OnVerifyRequestInUI,
-                       cert_verifier_->verify_proc(), base::Passed(&request),
+                       cert_verifier_->verify_proc(), std::move(request),
                        response_callback));
   }
 
