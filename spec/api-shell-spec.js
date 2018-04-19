@@ -117,7 +117,7 @@ describe('shell module', () => {
     })
 
     it('fails to trash file that does not exist', () => {
-      const nonExistentPath = filePath + '_does_not_exist';
+      const nonExistentPath = filePath + '_does_not_exist'
 
       const result = shell.moveItemToTrash(nonExistentPath)
       assert.equal(result, false)
