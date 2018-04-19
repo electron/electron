@@ -13,6 +13,7 @@ IGNORE_FILES = set(os.path.join(*components) for components in [
   ['atom', 'browser', 'resources', 'win', 'resource.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],

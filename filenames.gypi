@@ -320,6 +320,8 @@
       'atom/browser/ui/cocoa/atom_native_widget_mac.mm',
       'atom/browser/ui/cocoa/atom_ns_window_delegate.h',
       'atom/browser/ui/cocoa/atom_ns_window_delegate.mm',
+      'atom/browser/ui/cocoa/atom_preview_item.h',
+      'atom/browser/ui/cocoa/atom_preview_item.mm',
       'atom/browser/ui/cocoa/atom_touch_bar.h',
       'atom/browser/ui/cocoa/atom_touch_bar.mm',
       'atom/browser/ui/cocoa/views_delegate_mac.h',

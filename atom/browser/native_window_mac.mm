@@ -5,11 +5,12 @@
 #include "atom/browser/native_window_mac.h"
 
 #include <AvailabilityMacros.h>
-#include <Quartz/Quartz.h>
+
 #include <string>
 
 #include "atom/browser/native_browser_view_mac.h"
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
+#include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
@@ -165,31 +166,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomPreviewItem : NSObject <QLPreviewItem>
-
-@property (nonatomic, retain) NSURL* previewItemURL;
-@property (nonatomic, retain) NSString* previewItemTitle;
-
-- (id)initWithURL:(NSURL*)url title:(NSString*)title;
-
-@end
-
-@implementation AtomPreviewItem
-
-@synthesize previewItemURL;
-@synthesize previewItemTitle;
-
-- (id)initWithURL:(NSURL*)url title:(NSString*)title {
-  self = [super init];
-  if (self) {
-    self.previewItemURL = url;
-    self.previewItemTitle = title;
-  }
-  return self;
-}
-
-@end
-
 #if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum {
@@ -209,7 +185,7 @@ enum {
 
 #endif
 
-@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate> {
+@interface AtomNSWindow : EventDispatchingWindow {
  @private
   atom::NativeWindowMac* shell_;
   bool enable_larger_than_screen_;
@@ -219,7 +195,6 @@ enum {
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 @property NSPoint windowButtonsOffset;
-@property (nonatomic, retain) AtomPreviewItem* quickLookItem;
 @property (nonatomic, retain) NSView* vibrantView;
 
 - (void)setShell:(atom::NativeWindowMac*)shell;
@@ -246,8 +221,8 @@ enum {
 }
 
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
-  if (shell_->atom_touch_bar())
-    return [shell_->atom_touch_bar() makeTouchBar];
+  if (shell_->touch_bar())
+    return [shell_->touch_bar() makeTouchBar];
   else
     return nil;
 }
@@ -400,27 +375,13 @@ enum {
 }
 
 - (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
-  panel.delegate = self;
-  panel.dataSource = self;
+  panel.delegate = [self delegate];
+  panel.dataSource = static_cast<id<QLPreviewPanelDataSource>>([self delegate]);
 }
 
 - (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
   panel.delegate = nil;
   panel.dataSource = nil;
-}
-
-- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel*)panel {
-  return 1;
-}
-
-- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel previewItemAtIndex:(NSInteger)index {
-  return [self quickLookItem];
-}
-
-- (void)previewFileAtPath:(NSString*)path  withName:(NSString*) fileName {
-  NSURL* url = [[[NSURL alloc] initFileURLWithPath:path] autorelease];
-  [self setQuickLookItem:[[[AtomPreviewItem alloc] initWithURL:url title:fileName] autorelease]];
-  [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
 // Custom window button methods
@@ -1007,9 +968,10 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
 void NativeWindowMac::PreviewFile(const std::string& path,
                                   const std::string& display_name) {
-  NSString* path_ns = [NSString stringWithUTF8String:path.c_str()];
-  NSString* name_ns = [NSString stringWithUTF8String:display_name.c_str()];
-  [window_ previewFileAtPath:path_ns withName:name_ns];
+  preview_item_.reset([[AtomPreviewItem alloc]
+      initWithURL:[NSURL fileURLWithPath:base::SysUTF8ToNSString(path)]
+            title:base::SysUTF8ToNSString(display_name)]);
+  [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
 void NativeWindowMac::CloseFilePreview() {
@@ -1507,7 +1469,7 @@ void NativeWindowMac::SetTouchBar(
   if (![window_ respondsToSelector:@selector(touchBar)])
     return;
 
-  atom_touch_bar_.reset([[AtomTouchBar alloc]
+  touch_bar_.reset([[AtomTouchBar alloc]
       initWithDelegate:window_delegate_.get()
                 window:this
               settings:items]);
@@ -1515,14 +1477,14 @@ void NativeWindowMac::SetTouchBar(
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  if (atom_touch_bar_ && [window_ touchBar])
-    [atom_touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
 }
 
 void NativeWindowMac::SetEscapeTouchBarItem(
     const mate::PersistentDictionary& item) {
-  if (atom_touch_bar_ && [window_ touchBar])
-    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
+  if (touch_bar_ && [window_ touchBar])
+    [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
 }
 
 gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(

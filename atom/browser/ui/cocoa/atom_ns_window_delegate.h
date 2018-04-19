@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
 #define ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_DELEGATE_H_
 
+#include <Quartz/Quartz.h>
+
 #include "ui/views/cocoa/views_nswindow_delegate.h"
 
 namespace atom {
@@ -12,7 +14,8 @@ class NativeWindowMac;
 }
 
 @interface AtomNSWindowDelegate : NSObject<NSWindowDelegate,
-                                           NSTouchBarDelegate> {
+                                           NSTouchBarDelegate,
+                                           QLPreviewPanelDataSource> {
  @private
   atom::NativeWindowMac* shell_;
   bool is_zooming_;
