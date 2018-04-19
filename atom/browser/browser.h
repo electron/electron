@@ -18,6 +18,7 @@
 #include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
+#include <windows.h>
 #include "base/files/file_path.h"
 #endif
 
