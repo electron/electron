@@ -12,9 +12,24 @@ newIssueWelcomeComment: |
 newPRWelcomeComment: |
   💖 Thanks for opening this pull request! 💖
 
-  ![typing cat](https://user-images.githubusercontent.com/2289/36400158-2c7c589e-1584-11e8-81c7-bd34fd3c392b.gif)
+  We use [semantic commit messages](https://conventionalcommits.org/) to streamline the Electron release process. Before 
+  your pull request can be merged, you must **update your pull request title** 
+  to start with a semantic prefix, OR prefix at least one of your commit messages.
 
-  Here is a list of things that will help get it across the finish line:
+  Common prefixes:
+
+  - fix: A bug fix
+  - feat: A new feature
+  - docs: Documentation changes
+  - test: Adding missing tests or correcting existing tests
+  - build: Changes that affect the build system
+  - ci: Changes to our CI configuration files and scripts
+  - perf: A code change that improves performance
+  - refactor: A code change that neither fixes a bug nor adds a feature
+  - style: Changes that do not affect the meaning of the code (linting)
+
+  Here is a list of things that will help get your PR across the finish line:
+
   - Follow the JavaScript, C++, and Python [coding style](https://github.com/electron/electron/blob/master/docs/development/coding-style.md).
   - Run `npm run lint` locally to catch formatting errors earlier.
   - Document any user-facing changes you've made following the [documentation styleguide](https://github.com/electron/electron/blob/master/docs/styleguide.md).
