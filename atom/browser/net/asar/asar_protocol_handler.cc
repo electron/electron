@@ -14,8 +14,7 @@ AsarProtocolHandler::AsarProtocolHandler(
     const scoped_refptr<base::TaskRunner>& file_task_runner)
     : file_task_runner_(file_task_runner) {}
 
-AsarProtocolHandler::~AsarProtocolHandler() {
-}
+AsarProtocolHandler::~AsarProtocolHandler() {}
 
 net::URLRequestJob* AsarProtocolHandler::MaybeCreateJob(
     net::URLRequest* request,

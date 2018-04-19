@@ -14,7 +14,7 @@
 namespace mate {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
-                                                  const gfx::Point& val) {
+                                                 const gfx::Point& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
@@ -58,7 +58,7 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
-                                                 const gfx::Rect& val) {
+                                                const gfx::Rect& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
@@ -75,17 +75,17 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   int x, y, width, height;
-  if (!dict.Get("x", &x) || !dict.Get("y", &y) ||
-      !dict.Get("width", &width) || !dict.Get("height", &height))
+  if (!dict.Get("x", &x) || !dict.Get("y", &y) || !dict.Get("width", &width) ||
+      !dict.Get("height", &height))
     return false;
   *out = gfx::Rect(x, y, width, height);
   return true;
 }
 
-template<>
+template <>
 struct Converter<display::Display::TouchSupport> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const display::Display::TouchSupport& val) {
+                                   const display::Display::TouchSupport& val) {
     switch (val) {
       case display::Display::TOUCH_SUPPORT_AVAILABLE:
         return StringToV8(isolate, "available");
@@ -98,7 +98,8 @@ struct Converter<display::Display::TouchSupport> {
 };
 
 v8::Local<v8::Value> Converter<display::Display>::ToV8(
-    v8::Isolate* isolate, const display::Display& val) {
+    v8::Isolate* isolate,
+    const display::Display& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("id", val.id());

@@ -13,8 +13,7 @@ namespace printing {
 PrintJobWorkerOwner::PrintJobWorkerOwner()
     : task_runner_(base::ThreadTaskRunnerHandle::Get()) {}
 
-PrintJobWorkerOwner::~PrintJobWorkerOwner() {
-}
+PrintJobWorkerOwner::~PrintJobWorkerOwner() {}
 
 bool PrintJobWorkerOwner::RunsTasksInCurrentSequence() const {
   return task_runner_->RunsTasksInCurrentSequence();

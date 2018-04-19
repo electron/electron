@@ -25,9 +25,8 @@ struct TtsVoice;
 // itself when deleted. There can be multiple TtsDispatchers alive at once,
 // so each one routes IPC messages to its WebSpeechSynthesizerClient only if
 // the utterance id (which is globally unique) matches.
-class TtsDispatcher
-    : public blink::WebSpeechSynthesizer,
-      public content::RenderThreadObserver {
+class TtsDispatcher : public blink::WebSpeechSynthesizer,
+                      public content::RenderThreadObserver {
  public:
   explicit TtsDispatcher(blink::WebSpeechSynthesizerClient* client);
   virtual ~TtsDispatcher();
@@ -38,8 +37,8 @@ class TtsDispatcher
 
   // blink::WebSpeechSynthesizer implementation.
   virtual void UpdateVoiceList() override;
-  virtual void Speak(const blink::WebSpeechSynthesisUtterance& utterance)
-      override;
+  virtual void Speak(
+      const blink::WebSpeechSynthesisUtterance& utterance) override;
   virtual void Pause() override;
   virtual void Resume() override;
   virtual void Cancel() override;

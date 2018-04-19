@@ -34,8 +34,7 @@ TrackableObjectBase::TrackableObjectBase()
       GetDestroyClosure());
 }
 
-TrackableObjectBase::~TrackableObjectBase() {
-}
+TrackableObjectBase::~TrackableObjectBase() {}
 
 base::OnceClosure TrackableObjectBase::GetDestroyClosure() {
   return base::BindOnce(&TrackableObjectBase::Destroy,
@@ -48,7 +47,7 @@ void TrackableObjectBase::Destroy() {
 
 void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
   wrapped->SetUserData(kTrackedObjectKey,
-      std::make_unique<IDUserData>(weak_map_id_));
+                       std::make_unique<IDUserData>(weak_map_id_));
 }
 
 // static

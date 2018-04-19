@@ -96,10 +96,8 @@ void WindowList::DestroyAllWindows() {
     window->CloseImmediately();  // e.g. Destroy()
 }
 
-WindowList::WindowList() {
-}
+WindowList::WindowList() {}
 
-WindowList::~WindowList() {
-}
+WindowList::~WindowList() {}
 
 }  // namespace atom

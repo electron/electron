@@ -20,8 +20,8 @@ class InspectableWebContentsViewDelegate {
 
 #if defined(USE_X11)
   // Called when creating devtools window.
-  virtual void GetDevToolsWindowWMClass(
-      std::string* name, std::string* class_name) {}
+  virtual void GetDevToolsWindowWMClass(std::string* name,
+                                        std::string* class_name) {}
 #endif
 };
 

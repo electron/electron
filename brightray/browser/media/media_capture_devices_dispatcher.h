@@ -34,10 +34,10 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   // Helpers for picking particular requested devices, identified by raw id.
   // If the device requested is not available it will return NULL.
-  const content::MediaStreamDevice*
-  GetRequestedAudioDevice(const std::string& requested_audio_device_id);
-  const content::MediaStreamDevice*
-  GetRequestedVideoDevice(const std::string& requested_video_device_id);
+  const content::MediaStreamDevice* GetRequestedAudioDevice(
+      const std::string& requested_audio_device_id);
+  const content::MediaStreamDevice* GetRequestedVideoDevice(
+      const std::string& requested_video_device_id);
 
   // Returns the first available audio or video device, or NULL if no devices
   // are available.
@@ -52,13 +52,12 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   // Overridden from content::MediaObserver:
   void OnAudioCaptureDevicesChanged() override;
   void OnVideoCaptureDevicesChanged() override;
-  void OnMediaRequestStateChanged(
-      int render_process_id,
-      int render_view_id,
-      int page_request_id,
-      const GURL& security_origin,
-      content::MediaStreamType stream_type,
-      content::MediaRequestState state) override;
+  void OnMediaRequestStateChanged(int render_process_id,
+                                  int render_view_id,
+                                  int page_request_id,
+                                  const GURL& security_origin,
+                                  content::MediaStreamType stream_type,
+                                  content::MediaRequestState state) override;
   void OnCreatingAudioStream(int render_process_id,
                              int render_view_id) override;
   void OnSetCapturingLinkSecured(int render_process_id,

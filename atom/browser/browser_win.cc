@@ -61,8 +61,7 @@ bool GetProtocolLaunchPath(mate::Arguments* args, base::string16* exe) {
   // Read in optional args arg
   std::vector<base::string16> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
-    *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"",
-                              exe->c_str(),
+    *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   else
     *exe = base::StringPrintf(L"\"%ls\" \"%%1\"", exe->c_str());
@@ -76,8 +75,7 @@ bool FormatCommandLineString(base::string16* exe,
   }
 
   if (!launch_args.empty()) {
-    *exe = base::StringPrintf(L"%ls %ls",
-                              exe->c_str(),
+    *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
   }
 
@@ -97,8 +95,8 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
     return;
 
   CComPtr<IShellItem> item;
-  HRESULT hr = SHCreateItemFromParsingName(
-      path.value().c_str(), NULL, IID_PPV_ARGS(&item));
+  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
+                                           IID_PPV_ARGS(&item));
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;
     info.psi = item;
@@ -109,8 +107,8 @@ void Browser::AddRecentDocument(const base::FilePath& path) {
 
 void Browser::ClearRecentDocuments() {
   CComPtr<IApplicationDestinations> destinations;
-  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations,
-                                           NULL, CLSCTX_INPROC_SERVER)))
+  if (FAILED(destinations.CoCreateInstance(CLSID_ApplicationDestinations, NULL,
+                                           CLSCTX_INPROC_SERVER)))
     return;
   if (FAILED(destinations->SetAppID(GetAppUserModelID())))
     return;
@@ -189,8 +187,8 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     base::win::RegKey protocolKey;
     base::string16 protocolPath = keyPath + wprotocol;
 
-    if (SUCCEEDED(protocolKey
-      .Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
+    if (SUCCEEDED(
+            protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
       protocolKey.DeleteValue(L"URL Protocol");
 
       // Overwrite the default value to be empty, we can't delete it right away
@@ -208,7 +206,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
-                                        mate::Arguments* args) {
+                                         mate::Arguments* args) {
   // HKEY_CLASSES_ROOT
   //    $PROTOCOL
   //       (Default) = "URL:$NAME"

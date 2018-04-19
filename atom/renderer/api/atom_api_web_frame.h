@@ -21,7 +21,7 @@ class WebLocalFrame;
 namespace mate {
 class Dictionary;
 class Arguments;
-}
+}  // namespace mate
 
 namespace atom {
 
@@ -52,7 +52,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void SetLayoutZoomLevelLimits(double min_level, double max_level);
 
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
-      const base::string16& name, v8::Local<v8::Object> options);
+      const base::string16& name,
+      v8::Local<v8::Object> options);
   void RegisterElementResizeCallback(
       int element_instance_id,
       const GuestViewContainer::ResizeCallback& callback);
@@ -87,8 +88,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void SetIsolatedWorldContentSecurityPolicy(
       int world_id,
       const std::string& security_policy);
-  void SetIsolatedWorldHumanReadableName(int world_id,
-                                         const std::string& name);
+  void SetIsolatedWorldHumanReadableName(int world_id, const std::string& name);
 
   // Resource related methods
   blink::WebCache::ResourceTypeStats GetResourceUsage(v8::Isolate* isolate);

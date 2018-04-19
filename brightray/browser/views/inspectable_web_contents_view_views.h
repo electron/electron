@@ -10,7 +10,7 @@ namespace views {
 class WebView;
 class Widget;
 class WidgetDelegate;
-}
+}  // namespace views
 
 namespace brightray {
 

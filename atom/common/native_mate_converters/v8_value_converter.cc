@@ -32,9 +32,7 @@ class V8ValueConverter::FromV8ValueState {
     explicit Level(FromV8ValueState* state) : state_(state) {
       state_->max_recursion_depth_--;
     }
-    ~Level() {
-      state_->max_recursion_depth_++;
-    }
+    ~Level() { state_->max_recursion_depth_++; }
 
    private:
     FromV8ValueState* state_;
@@ -68,9 +66,7 @@ class V8ValueConverter::FromV8ValueState {
     return true;
   }
 
-  bool HasReachedMaxRecursionDepth() {
-    return max_recursion_depth_ < 0;
-  }
+  bool HasReachedMaxRecursionDepth() { return max_recursion_depth_ < 0; }
 
  private:
   using HashToHandleMap = std::multimap<int, v8::Local<v8::Object>>;
@@ -118,7 +114,7 @@ class V8ValueConverter::ScopedUniquenessGuard {
   bool is_valid() const { return is_valid_; }
 
  private:
-  typedef std::multimap<int, v8::Local<v8::Object> > HashToHandleMap;
+  typedef std::multimap<int, v8::Local<v8::Object>> HashToHandleMap;
   V8ValueConverter::FromV8ValueState* state_;
   v8::Local<v8::Object> value_;
   bool is_valid_;
@@ -149,7 +145,8 @@ void V8ValueConverter::SetDisableNode(bool val) {
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Value(
-    const base::Value* value, v8::Local<v8::Context> context) const {
+    const base::Value* value,
+    v8::Local<v8::Context> context) const {
   v8::Context::Scope context_scope(context);
   v8::EscapableHandleScope handle_scope(context->GetIsolate());
   return handle_scope.Escape(ToV8ValueImpl(context->GetIsolate(), value));
@@ -165,7 +162,8 @@ base::Value* V8ValueConverter::FromV8Value(
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
-     v8::Isolate* isolate, const base::Value* value) const {
+    v8::Isolate* isolate,
+    const base::Value* value) const {
   switch (value->GetType()) {
     case base::Value::Type::NONE:
       return v8::Null(isolate);
@@ -191,8 +189,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
     case base::Value::Type::STRING: {
       std::string val;
       value->GetAsString(&val);
-      return v8::String::NewFromUtf8(
-          isolate, val.c_str(), v8::String::kNormalString, val.length());
+      return v8::String::NewFromUtf8(isolate, val.c_str(),
+                                     v8::String::kNormalString, val.length());
     }
 
     case base::Value::Type::LIST:
@@ -203,8 +201,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
                         static_cast<const base::DictionaryValue*>(value));
 
     case base::Value::Type::BINARY:
-      return ToArrayBuffer(isolate,
-                           static_cast<const base::Value*>(value));
+      return ToArrayBuffer(isolate, static_cast<const base::Value*>(value));
 
     default:
       LOG(ERROR) << "Unexpected value type: " << value->GetType();
@@ -213,7 +210,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Array(
-    v8::Isolate* isolate, const base::ListValue* val) const {
+    v8::Isolate* isolate,
+    const base::ListValue* val) const {
   v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
 
   for (size_t i = 0; i < val->GetSize(); ++i) {
@@ -232,12 +230,13 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Array(
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToV8Object(
-    v8::Isolate* isolate, const base::DictionaryValue* val) const {
+    v8::Isolate* isolate,
+    const base::DictionaryValue* val) const {
   mate::Dictionary result = mate::Dictionary::CreateEmpty(isolate);
   result.SetHidden("simple", true);
 
-  for (base::DictionaryValue::Iterator iter(*val);
-       !iter.IsAtEnd(); iter.Advance()) {
+  for (base::DictionaryValue::Iterator iter(*val); !iter.IsAtEnd();
+       iter.Advance()) {
     const std::string& key = iter.key();
     v8::Local<v8::Value> child_v8 = ToV8ValueImpl(isolate, &iter.value());
 
@@ -253,7 +252,8 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
 }
 
 v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
-    v8::Isolate* isolate, const base::Value* value) const {
+    v8::Isolate* isolate,
+    const base::Value* value) const {
   const char* data = value->GetBlob().data();
   size_t length = value->GetBlob().size();
 
@@ -282,14 +282,11 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
 
   mate::Dictionary buffer_class(isolate, buffer_value->ToObject());
   v8::Local<v8::Value> from_value;
-  if (!buffer_class.Get("from", &from_value) ||
-      !from_value->IsFunction()) {
+  if (!buffer_class.Get("from", &from_value) || !from_value->IsFunction()) {
     return v8::Uint8Array::New(array_buffer, 0, length);
   }
 
-  v8::Local<v8::Value> args[] = {
-    array_buffer
-  };
+  v8::Local<v8::Value> args[] = {array_buffer};
   auto func = v8::Local<v8::Function>::Cast(from_value);
   auto result = func->Call(context, v8::Null(isolate), 1, args);
   if (!result.IsEmpty()) {
@@ -299,10 +296,9 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   return v8::Uint8Array::New(array_buffer, 0, length);
 }
 
-base::Value* V8ValueConverter::FromV8ValueImpl(
-    FromV8ValueState* state,
-    v8::Local<v8::Value> val,
-    v8::Isolate* isolate) const {
+base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
+                                               v8::Local<v8::Value> val,
+                                               v8::Isolate* isolate) const {
   FromV8ValueState::Level state_level(state);
   if (state->HasReachedMaxRecursionDepth())
     return nullptr;
@@ -379,10 +375,9 @@ base::Value* V8ValueConverter::FromV8ValueImpl(
   return nullptr;
 }
 
-base::Value* V8ValueConverter::FromV8Array(
-    v8::Local<v8::Array> val,
-    FromV8ValueState* state,
-    v8::Isolate* isolate) const {
+base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
+                                           FromV8ValueState* state,
+                                           v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
     return std::make_unique<base::Value>().release();
@@ -419,18 +414,17 @@ base::Value* V8ValueConverter::FromV8Array(
   return result;
 }
 
-base::Value* V8ValueConverter::FromNodeBuffer(
-    v8::Local<v8::Value> value,
-    FromV8ValueState* state,
-    v8::Isolate* isolate) const {
-  return base::Value::CreateWithCopiedBuffer(
-      node::Buffer::Data(value), node::Buffer::Length(value)).release();
+base::Value* V8ValueConverter::FromNodeBuffer(v8::Local<v8::Value> value,
+                                              FromV8ValueState* state,
+                                              v8::Isolate* isolate) const {
+  return base::Value::CreateWithCopiedBuffer(node::Buffer::Data(value),
+                                             node::Buffer::Length(value))
+      .release();
 }
 
-base::Value* V8ValueConverter::FromV8Object(
-    v8::Local<v8::Object> val,
-    FromV8ValueState* state,
-    v8::Isolate* isolate) const {
+base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
+                                            FromV8ValueState* state,
+                                            v8::Isolate* isolate) const {
   ScopedUniquenessGuard uniqueness_guard(state, val);
   if (!uniqueness_guard.is_valid())
     return std::make_unique<base::Value>().release();
@@ -449,9 +443,9 @@ base::Value* V8ValueConverter::FromV8Object(
     v8::Local<v8::Value> key(property_names->Get(i));
 
     // Extend this test to cover more types as necessary and if sensible.
-    if (!key->IsString() &&
-        !key->IsNumber()) {
-      NOTREACHED() << "Key \"" << *v8::String::Utf8Value(key) << "\" "
+    if (!key->IsString() && !key->IsNumber()) {
+      NOTREACHED() << "Key \"" << *v8::String::Utf8Value(key)
+                   << "\" "
                       "is neither a string nor a number";
       continue;
     }

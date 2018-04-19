@@ -5,14 +5,38 @@ This document describes the process for releasing a new version of Electron.
 ## Determine which branch to release from
 
 - **If releasing beta,** run the scripts below from `master`.
-- **If releasing a stable version,** run the scripts below from `1-7-x` or
-`1-6-x`, depending on which version you are releasing for.
+- **If releasing a stable version,** run the scripts below from the branch
+  you're stabilizing.
 
 ## Find out what version change is needed
 Run `npm run prepare-release -- --notesOnly` to view auto generated release
 notes. The notes generated should help you determine if this is a major, minor,
 patch, or beta version change. Read the
 [Version Change Rules](../tutorial/electron-versioning.md#semver) for more information.
+
+**NB:** If releasing from a branch, e.g. 1-8-x, check out the branch with
+`git checkout 1-8-x` rather than `git checkout -b remotes/origin/1-8-x`.
+The scripts need `git rev-parse --abbrev-ref HEAD` to return a short name,
+e.g. no `remotes/origin/`
+
+## Set your tokens and environment variables
+You'll need Electron S3 credentials in order to create and
+upload an Electron release. Contact a team member for more
+information.
+
+There are a handful of `*_TOKEN` environment variables needed by the release
+scripts. Once you've generated these per-user tokens, you may want to keep
+them in a local file that you can `source` when starting a release.
+* `ELECTRON_GITHUB_TOKEN`:
+Create as described at https://github.com/settings/tokens/new,
+giving the token repo access scope.
+* `APPVEYOR_TOKEN`:
+Create a token from https://windows-ci.electronjs.org/api-token
+If you don't have an account, ask a team member to add you.
+* `CIRCLE_TOKEN`:
+Create a token from "Personal API Tokens" at https://circleci.com/account/api
+* `JENKINS_AUTH_TOKEN` and `JENKINS_BUILD_TOKEN`:
+Are provided by a Jenkins admin
 
 ## Run the prepare-release script
 The prepare release script will do the following:
@@ -49,6 +73,13 @@ npm run prepare-release -- beta
 ### Promote beta to stable
 ```sh
 npm run prepare-release -- --stable
+```
+
+Tip: You can test the new version number before running `prepare-release` with
+a dry run of the `bump-version` script with the same major/minor/patch/beta
+arguments, e.g.:
+```sh
+$ ./script/bump-version.py --bump minor --dry-run
 ```
 
 ## Wait for builds :hourglass_flowing_sand:
@@ -147,30 +178,56 @@ For a `minor` release, e.g. `1.8.0`, use this format:
 ```
 
 ### Beta releases
-Use the same formats as the ones suggested above, but add the following note at the beginning of the changelog:
+Use the same formats as the ones suggested above, but add the following note at
+the beginning of the changelog:
 ```sh
-**Note:** This is a beta release and most likely will have have some instability and/or regressions.
+**Note:** This is a beta release and most likely will have have some
+instability and/or regressions.
 
 Please file new issues for any bugs you find in it.
 
-This release is published to [npm](https://www.npmjs.com/package/electron) under the `beta` tag and can be installed via `npm install electron@beta`.
+This release is published to [npm](https://www.npmjs.com/package/electron)
+under the `beta` tag and can be installed via `npm install electron@beta`.
 ```
 
 
 ## Edit the release draft
 
-1. Visit [the releases page] and you'll see a new draft release with placeholder release notes.
-1. Edit the release and add release notes.
-1. Uncheck the `prerelease` checkbox if you're publishing a stable release; leave it checked for beta releases.
-1. Click 'Save draft'. **Do not click 'Publish release'!**
-1. Wait for all builds to pass before proceeding.
-1. You can run `npm run release -- --validateRelease` to verify that all of the
-required files have been created for the release.
+1. Visit [the releases page] and you'll see a new draft release with placeholder
+release notes.
+2. Edit the release and add release notes.
+3. Uncheck the `prerelease` checkbox if you're publishing a stable release;
+leave it checked for beta releases.
+4. Click 'Save draft'. **Do not click 'Publish release'!**
+5. Wait for all builds to pass before proceeding.
+6. In the `release` branch, verify that the release's files have been created:
+```sh
+$ git rev-parse --abbrev-ref HEAD
+release
+$ npm run release -- --validateRelease
+```
 
+## Merge temporary branch (pre-2-0-x branches only)
+Once the release builds have finished, merge the `release` branch back into
+the source release branch using the `merge-release` script.
+If the branch cannot be successfully merged back this script will automatically
+rebase the `release` branch and push the changes which will trigger the release
+builds again, which means you will need to wait for the release builds to run
+again before proceeding.
+
+### Merging back into master
+```sh
+npm run merge-release -- master
+```
+
+### Merging back into old release branch
+```sh
+npm run merge-release -- 1-7-x
+```
 
 ## Publish the release
 
-Once the release builds have finished, run the `release` script
+Once the merge has finished successfully, run the `release` script
 via `npm run release` to finish the release process. This script will do the
 following:
 1. Build the project to validate that the correct version number is being released.
@@ -185,8 +242,37 @@ the correct checksums as specified in the SHASUMS files.
 
 ## Publish to npm
 
-Once the publish is successful, run `npm run publish-to-npm` to publish to
-release to npm.
+Before publishing to npm, you'll need to log into npm as Electron. Optionally,
+you may find [npmrc](https://www.npmjs.com/package/npmrc) to be a useful way
+to keep Electron's profile side-by-side with your own:
+```sh
+$ sudo npm install -g npmrc
+$ npmrc -c electron
+Removing old .npmrc (default)
+Activating .npmrc "electron"
+```
+
+The Electron account's credentials are kept by GitHub.
+"Electron - NPM" for the URL "https://www.npmjs.com/login".
+```sh
+$ npm login
+Username: electron
+Password:
+Email: (this IS public) electron@github.com
+```
+
+Publish the release to npm.
+```sh
+$ npm whoami
+electron
+$ npm run publish-to-npm
+```
+
+Note: In general you should be using the latest Node during this
+process; however, older versions of the `publish-to-npm` script
+may have trouble with Node 7 or higher. If you have trouble with
+this in an older branch, try running with an older version of Node,
+e.g. a 6.x LTS.
 
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a

@@ -20,8 +20,7 @@ namespace atom {
 namespace api {
 
 Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : model_(new AtomMenuModel(this)),
-      parent_(nullptr) {
+    : model_(new AtomMenuModel(this)), parent_(nullptr) {
   InitWith(isolate, wrapper);
   model_->AddObserver(this);
 }
@@ -70,18 +69,17 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
     ui::Accelerator* accelerator) const {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  v8::Local<v8::Value> val = get_accelerator_.Run(
-      GetWrapper(), command_id, use_default_accelerator);
+  v8::Local<v8::Value> val =
+      get_accelerator_.Run(GetWrapper(), command_id, use_default_accelerator);
   return mate::ConvertFromV8(isolate(), val, accelerator);
 }
 
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  execute_command_.Run(
-      GetWrapper(),
-      mate::internal::CreateEventFromFlags(isolate(), flags),
-      command_id);
+  execute_command_.Run(GetWrapper(),
+                       mate::internal::CreateEventFromFlags(isolate(), flags),
+                       command_id);
 }
 
 void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
@@ -90,8 +88,9 @@ void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
   menu_will_show_.Run(GetWrapper());
 }
 
-void Menu::InsertItemAt(
-    int index, int command_id, const base::string16& label) {
+void Menu::InsertItemAt(int index,
+                        int command_id,
+                        const base::string16& label) {
   model_->InsertItemAt(index, command_id, label);
 }
 
@@ -207,13 +206,14 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
 
 }  // namespace atom
 
-
 namespace {
 
 using atom::api::Menu;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   Menu::SetConstructor(isolate, base::Bind(&Menu::New));
 

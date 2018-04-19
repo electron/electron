@@ -34,6 +34,12 @@ watchedProject:
   name: Backports
 
 authorizedUsers:
+  - alexeykuzmin
   - ckerr
-  - MarshallOfSound
   - codebytere
+  - deepak1556
+  - jkleinsc
+  - MarshallOfSound
+  - nitsakh
+  - nornagon
+  - zcbenz

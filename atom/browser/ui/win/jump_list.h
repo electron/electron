@@ -98,7 +98,7 @@ class JumpList {
   JumpListResult AppendCategory(const JumpListCategory& category);
   // Appends categories to the custom Jump List.
   JumpListResult AppendCategories(
-    const std::vector<JumpListCategory>& categories);
+      const std::vector<JumpListCategory>& categories);
 
  private:
   base::string16 app_id_;

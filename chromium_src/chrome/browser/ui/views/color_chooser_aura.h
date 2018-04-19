@@ -16,7 +16,7 @@ class WebContents;
 namespace views {
 class ColorChooserView;
 class Widget;
-}
+}  // namespace views
 
 // TODO(mukai): rename this as -Ash and move to c/b/ui/ash after Linux-aura
 // switches to its native color chooser.

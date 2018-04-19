@@ -29,10 +29,10 @@ namespace mate {
 namespace {
 
 bool CertFromData(const std::string& data,
-    scoped_refptr<net::X509Certificate>* out) {
+                  scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-    data.c_str(), data.length(),
-    net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
+      data.c_str(), data.length(),
+      net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;
 
@@ -49,7 +49,8 @@ bool CertFromData(const std::string& data,
 
 // static
 v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
-    v8::Isolate* isolate, const net::AuthChallengeInfo* val) {
+    v8::Isolate* isolate,
+    const net::AuthChallengeInfo* val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("isProxy", val->is_proxy);
   dict.Set("scheme", val->scheme);
@@ -61,11 +62,11 @@ v8::Local<v8::Value> Converter<const net::AuthChallengeInfo*>::ToV8(
 
 // static
 v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
-    v8::Isolate* isolate, const scoped_refptr<net::X509Certificate>& val) {
+    v8::Isolate* isolate,
+    const scoped_refptr<net::X509Certificate>& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
   std::string encoded_data;
-  net::X509Certificate::GetPEMEncoded(
-      val->os_cert_handle(), &encoded_data);
+  net::X509Certificate::GetPEMEncoded(val->os_cert_handle(), &encoded_data);
 
   dict.Set("data", encoded_data);
   dict.Set("issuer", val->issuer());
@@ -77,8 +78,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("validStart", val->valid_start().ToDoubleT());
   dict.Set("validExpiry", val->valid_expiry().ToDoubleT());
   dict.Set("fingerprint",
-           net::HashValue(
-              val->CalculateFingerprint256(val->os_cert_handle())).ToString());
+           net::HashValue(val->CalculateFingerprint256(val->os_cert_handle()))
+               .ToString());
 
   if (!val->GetIntermediateCertificates().empty()) {
     net::X509Certificate::OSCertHandles issuer_intermediates(
@@ -86,8 +87,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
         val->GetIntermediateCertificates().end());
     const scoped_refptr<net::X509Certificate>& issuer_cert =
         net::X509Certificate::CreateFromHandle(
-            val->GetIntermediateCertificates().front(),
-            issuer_intermediates);
+            val->GetIntermediateCertificates().front(), issuer_intermediates);
     dict.Set("issuerCert", issuer_cert);
   }
 
@@ -95,7 +95,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
 }
 
 bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
-    v8::Isolate* isolate, v8::Local<v8::Value> val,
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
     scoped_refptr<net::X509Certificate>* out) {
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
@@ -110,10 +111,10 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   scoped_refptr<net::X509Certificate> parent;
   if (dict.Get("issuerCert", &parent)) {
     auto parents = std::vector<net::X509Certificate::OSCertHandle>(
-                      parent->GetIntermediateCertificates());
+        parent->GetIntermediateCertificates());
     parents.insert(parents.begin(), parent->os_cert_handle());
     auto cert = net::X509Certificate::CreateFromHandle(
-      leaf_cert->os_cert_handle(), parents);
+        leaf_cert->os_cert_handle(), parents);
     if (!cert)
       return false;
 
@@ -127,7 +128,8 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
 
 // static
 v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
-    v8::Isolate* isolate, const net::CertPrincipal& val) {
+    v8::Isolate* isolate,
+    const net::CertPrincipal& val) {
   mate::Dictionary dict(isolate, v8::Object::New(isolate));
 
   dict.Set("commonName", val.common_name);
@@ -202,7 +204,8 @@ void FillRequestDetails(base::DictionaryValue* details,
                         const net::URLRequest* request) {
   details->SetString("method", request->method());
   std::string url;
-  if (!request->url_chain().empty()) url = request->url().spec();
+  if (!request->url_chain().empty())
+    url = request->url().spec();
   details->SetKey("url", base::Value(url));
   details->SetString("referrer", request->referrer());
   std::unique_ptr<base::ListValue> list(new base::ListValue);
@@ -231,13 +234,11 @@ void GetUploadData(base::ListValue* upload_data_list,
     if (reader->AsBytesReader()) {
       const net::UploadBytesElementReader* bytes_reader =
           reader->AsBytesReader();
-      std::unique_ptr<base::Value> bytes(
-          base::Value::CreateWithCopiedBuffer(bytes_reader->bytes(),
-                                                    bytes_reader->length()));
+      std::unique_ptr<base::Value> bytes(base::Value::CreateWithCopiedBuffer(
+          bytes_reader->bytes(), bytes_reader->length()));
       upload_data_dict->Set("bytes", std::move(bytes));
     } else if (reader->AsFileReader()) {
-      const net::UploadFileElementReader* file_reader =
-          reader->AsFileReader();
+      const net::UploadFileElementReader* file_reader = reader->AsFileReader();
       auto file_path = file_reader->path().AsUTF8Unsafe();
       upload_data_dict->SetKey("file", base::Value(file_path));
     } else {

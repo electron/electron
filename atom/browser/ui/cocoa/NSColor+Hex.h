@@ -9,7 +9,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface NSColor(Hex)
+@interface NSColor (Hex)
 + (NSColor*)colorWithHexColorString:(NSString*)hex;
 @end
 

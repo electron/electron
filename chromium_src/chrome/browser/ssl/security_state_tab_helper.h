@@ -27,8 +27,7 @@ class SecurityStateTabHelper
   ~SecurityStateTabHelper() override;
 
   // See security_state::GetSecurityInfo.
-  void GetSecurityInfo(
-      security_state::SecurityInfo* result) const;
+  void GetSecurityInfo(security_state::SecurityInfo* result) const;
 
   // Called when the NavigationEntry's SSLStatus or other security
   // information changes.

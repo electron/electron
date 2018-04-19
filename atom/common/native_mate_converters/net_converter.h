@@ -11,7 +11,7 @@
 namespace base {
 class DictionaryValue;
 class ListValue;
-}
+}  // namespace base
 
 namespace net {
 class AuthChallengeInfo;
@@ -19,19 +19,20 @@ class URLRequest;
 class X509Certificate;
 class HttpResponseHeaders;
 struct CertPrincipal;
-}
+}  // namespace net
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<const net::AuthChallengeInfo*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::AuthChallengeInfo* val);
 };
 
-template<>
+template <>
 struct Converter<scoped_refptr<net::X509Certificate>> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
       const scoped_refptr<net::X509Certificate>& val);
 
   static bool FromV8(v8::Isolate* isolate,
@@ -39,7 +40,7 @@ struct Converter<scoped_refptr<net::X509Certificate>> {
                      scoped_refptr<net::X509Certificate>* out);
 };
 
-template<>
+template <>
 struct Converter<net::CertPrincipal> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::CertPrincipal& val);

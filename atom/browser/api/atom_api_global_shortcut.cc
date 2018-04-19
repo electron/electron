@@ -40,8 +40,8 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::Closure& callback) {
-  if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(
-      accelerator, this)) {
+  if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
+                                                                  this)) {
     return false;
   }
 
@@ -54,8 +54,8 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
     return;
 
   accelerator_callback_map_.erase(accelerator);
-  GlobalShortcutListener::GetInstance()->UnregisterAccelerator(
-      accelerator, this);
+  GlobalShortcutListener::GetInstance()->UnregisterAccelerator(accelerator,
+                                                               this);
 }
 
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
@@ -73,8 +73,8 @@ mate::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
 }
 
 // static
-void GlobalShortcut::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
+                                    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "GlobalShortcut"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("register", &GlobalShortcut::Register)
@@ -89,8 +89,10 @@ void GlobalShortcut::BuildPrototype(
 
 namespace {
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("globalShortcut", atom::api::GlobalShortcut::Create(isolate));

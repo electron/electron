@@ -27,35 +27,25 @@ std::string TrimLanguageCode(std::string lang) {
 }  // namespace
 
 bool IsFinalTtsEventType(TtsEventType event_type) {
-  return (event_type == TTS_EVENT_END ||
-          event_type == TTS_EVENT_INTERRUPTED ||
-          event_type == TTS_EVENT_CANCELLED ||
-          event_type == TTS_EVENT_ERROR);
+  return (event_type == TTS_EVENT_END || event_type == TTS_EVENT_INTERRUPTED ||
+          event_type == TTS_EVENT_CANCELLED || event_type == TTS_EVENT_ERROR);
 }
 
 //
 // UtteranceContinuousParameters
 //
 
-
 UtteranceContinuousParameters::UtteranceContinuousParameters()
-    : rate(-1),
-      pitch(-1),
-      volume(-1) {}
-
+    : rate(-1), pitch(-1), volume(-1) {}
 
 //
 // VoiceData
 //
 
-
 VoiceData::VoiceData()
-    : gender(TTS_GENDER_NONE),
-      remote(false),
-      native(false) {}
+    : gender(TTS_GENDER_NONE), remote(false), native(false) {}
 
 VoiceData::~VoiceData() {}
-
 
 //
 // Utterance
@@ -118,8 +108,7 @@ TtsControllerImpl::TtsControllerImpl()
     : current_utterance_(NULL),
       paused_(false),
       platform_impl_(NULL),
-      tts_engine_delegate_(NULL) {
-}
+      tts_engine_delegate_(NULL) {}
 
 TtsControllerImpl::~TtsControllerImpl() {
   if (current_utterance_) {
@@ -215,12 +204,9 @@ void TtsControllerImpl::SpeakNow(Utterance* utterance) {
     // during |speak|.
     current_utterance_ = utterance;
     GetPlatformImpl()->clear_error();
-    bool success = GetPlatformImpl()->Speak(
-        utterance->id(),
-        utterance->text(),
-        utterance->lang(),
-        voice,
-        utterance->continuous_parameters());
+    bool success = GetPlatformImpl()->Speak(utterance->id(), utterance->text(),
+                                            utterance->lang(), voice,
+                                            utterance->continuous_parameters());
     if (!success)
       current_utterance_ = NULL;
 
@@ -288,9 +274,9 @@ void TtsControllerImpl::Resume() {
 }
 
 void TtsControllerImpl::OnTtsEvent(int utterance_id,
-                                        TtsEventType event_type,
-                                        int char_index,
-                                        const std::string& error_message) {
+                                   TtsEventType event_type,
+                                   int char_index,
+                                   const std::string& error_message) {
   // We may sometimes receive completion callbacks "late", after we've
   // already finished the utterance (for example because another utterance
   // interrupted or we got a call to Stop). This is normal and we can
@@ -306,7 +292,7 @@ void TtsControllerImpl::OnTtsEvent(int utterance_id,
 }
 
 void TtsControllerImpl::GetVoices(content::BrowserContext* browser_context,
-                              std::vector<VoiceData>* out_voices) {
+                                  std::vector<VoiceData>* out_voices) {
 #if !defined(OS_ANDROID)
   if (browser_context && tts_engine_delegate_)
     tts_engine_delegate_->GetVoices(browser_context, out_voices);
@@ -362,8 +348,7 @@ void TtsControllerImpl::ClearUtteranceQueue(bool send_events) {
   }
 }
 
-void TtsControllerImpl::SetPlatformImpl(
-    TtsPlatformImpl* platform_impl) {
+void TtsControllerImpl::SetPlatformImpl(TtsPlatformImpl* platform_impl) {
   platform_impl_ = platform_impl;
 }
 
@@ -377,8 +362,8 @@ TtsPlatformImpl* TtsControllerImpl::GetPlatformImpl() {
   return platform_impl_;
 }
 
-int TtsControllerImpl::GetMatchingVoice(
-    const Utterance* utterance, std::vector<VoiceData>& voices) {
+int TtsControllerImpl::GetMatchingVoice(const Utterance* utterance,
+                                        std::vector<VoiceData>& voices) {
   // Make two passes: the first time, do strict language matching
   // ('fr-FR' does not match 'fr-CA'). The second time, do prefix
   // language matching ('fr-FR' matches 'fr' and 'fr-CA')
@@ -391,8 +376,7 @@ int TtsControllerImpl::GetMatchingVoice(
         continue;
       }
 
-      if (!voice.name.empty() &&
-          !utterance->voice_name().empty() &&
+      if (!voice.name.empty() && !utterance->voice_name().empty() &&
           voice.name != utterance->voice_name()) {
         continue;
       }
@@ -417,8 +401,7 @@ int TtsControllerImpl::GetMatchingVoice(
         bool has_all_required_event_types = true;
         for (std::set<TtsEventType>::const_iterator iter =
                  utterance->required_event_types().begin();
-             iter != utterance->required_event_types().end();
-             ++iter) {
+             iter != utterance->required_event_types().end(); ++iter) {
           if (voice.events.find(*iter) == voice.events.end()) {
             has_all_required_event_types = false;
             break;
@@ -453,8 +436,7 @@ void TtsControllerImpl::RemoveVoicesChangedDelegate(
   voices_changed_delegates_.erase(delegate);
 }
 
-void TtsControllerImpl::SetTtsEngineDelegate(
-    TtsEngineDelegate* delegate) {
+void TtsControllerImpl::SetTtsEngineDelegate(TtsEngineDelegate* delegate) {
   tts_engine_delegate_ = delegate;
 }
 

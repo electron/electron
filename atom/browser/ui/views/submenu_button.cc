@@ -20,7 +20,8 @@ SubmenuButton::SubmenuButton(const base::string16& title,
                              views::MenuButtonListener* menu_button_listener,
                              const SkColor& background_color)
     : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
-                        menu_button_listener, false),
+                        menu_button_listener,
+                        false),
       accelerator_(0),
       show_underline_(false),
       underline_start_(0),
@@ -44,16 +45,13 @@ SubmenuButton::SubmenuButton(const base::string16& title,
       color_utils::BlendTowardOppositeLuma(background_color_, 0x61));
 }
 
-SubmenuButton::~SubmenuButton() {
-}
+SubmenuButton::~SubmenuButton() {}
 
 std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
     const {
   std::unique_ptr<views::InkDropRipple> ripple(
       new views::FloodFillInkDropRipple(
-          size(),
-          GetInkDropCenterBasedOnLastEvent(),
-          GetInkDropBaseColor(),
+          size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
           ink_drop_visible_opacity()));
   return ripple;
 }
@@ -91,7 +89,8 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
 
 bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
                                          base::char16* accelerator,
-                                         int* start, int* end) const {
+                                         int* start,
+                                         int* end) const {
   int pos, span;
   base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
   if (pos > -1 && span != 0) {
@@ -104,8 +103,9 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
   return false;
 }
 
-void SubmenuButton::GetCharacterPosition(
-    const base::string16& text, int index, int* pos) const {
+void SubmenuButton::GetCharacterPosition(const base::string16& text,
+                                         int index,
+                                         int* pos) const {
   int height = 0;
   gfx::Canvas::SizeStringInt(text.substr(0, index), gfx::FontList(), pos,
                              &height, 0, 0);

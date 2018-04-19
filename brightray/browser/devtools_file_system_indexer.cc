@@ -78,7 +78,7 @@ class Index {
   FileIdsMap file_ids_;
   FileId last_file_id_;
   // The index in this vector is the trigram id.
-  vector<vector<FileId> > index_;
+  vector<vector<FileId>> index_;
   typedef map<FilePath, Time> IndexedFilesMap;
   IndexedFilesMap index_times_;
   vector<bool> is_normalized_;
@@ -175,10 +175,10 @@ vector<FilePath> Index::Search(string query) {
   vector<TrigramChar> trigram_chars;
   trigram_chars.reserve(query.size());
   for (size_t i = 0; i < query.size(); ++i) {
-      TrigramChar trigram_char = TrigramCharForChar(data[i]);
-      if (trigram_char == kBinaryTrigramChar)
-        trigram_char = kUndefinedTrigramChar;
-      trigram_chars.push_back(trigram_char);
+    TrigramChar trigram_char = TrigramCharForChar(data[i]);
+    if (trigram_char == kBinaryTrigramChar)
+      trigram_char = kUndefinedTrigramChar;
+    trigram_chars.push_back(trigram_char);
   }
   vector<Trigram> trigrams;
   for (size_t i = 0; i + 2 < query.size(); ++i) {
@@ -192,21 +192,19 @@ vector<FilePath> Index::Search(string query) {
   for (; it != trigrams.end(); ++it) {
     Trigram trigram = *it;
     if (first) {
-      std::copy(index_[trigram].begin(),
-                index_[trigram].end(),
+      std::copy(index_[trigram].begin(), index_[trigram].end(),
                 std::inserter(file_ids, file_ids.begin()));
       first = false;
       continue;
     }
-    set<FileId> intersection = base::STLSetIntersection<set<FileId> >(
-        file_ids, index_[trigram]);
+    set<FileId> intersection =
+        base::STLSetIntersection<set<FileId>>(file_ids, index_[trigram]);
     file_ids.swap(intersection);
   }
   vector<FilePath> result;
   FileIdsMap::const_iterator ids_it = file_ids_.begin();
   for (; ids_it != file_ids_.end(); ++ids_it) {
-    if (trigrams.empty() ||
-        file_ids.find(ids_it->second) != file_ids.end()) {
+    if (trigrams.empty() || file_ids.find(ids_it->second) != file_ids.end()) {
       result.push_back(ids_it->first);
     }
   }
@@ -280,15 +278,13 @@ DevToolsFileSystemIndexer::FileSystemIndexingJob::~FileSystemIndexingJob() {}
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::Start() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   BrowserThread::PostTask(
-      BrowserThread::FILE,
-      FROM_HERE,
+      BrowserThread::FILE, FROM_HERE,
       Bind(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::Stop() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(BrowserThread::FILE,
-                          FROM_HERE,
+  BrowserThread::PostTask(BrowserThread::FILE, FROM_HERE,
                           Bind(&FileSystemIndexingJob::StopOnFileThread, this));
 }
 
@@ -307,8 +303,7 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
   FilePath file_path = file_enumerator_->Next();
   if (file_path.empty()) {
     BrowserThread::PostTask(
-        BrowserThread::UI,
-        FROM_HERE,
+        BrowserThread::UI, FROM_HERE,
         Bind(total_work_callback_, file_path_times_.size()));
     indexing_it_ = file_path_times_.begin();
     IndexFiles();
@@ -322,8 +317,7 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
     file_path_times_[file_path] = current_last_modified_time;
   }
   BrowserThread::PostTask(
-      BrowserThread::FILE,
-      FROM_HERE,
+      BrowserThread::FILE, FROM_HERE,
       Bind(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
@@ -338,9 +332,8 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::IndexFiles() {
   }
   FilePath file_path = indexing_it_->first;
   current_file_.CreateOrOpen(
-        file_path,
-        base::File::FLAG_OPEN | base::File::FLAG_READ,
-        Bind(&FileSystemIndexingJob::StartFileIndexing, this));
+      file_path, base::File::FLAG_OPEN | base::File::FLAG_READ,
+      Bind(&FileSystemIndexingJob::StartFileIndexing, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::StartFileIndexing(
@@ -408,8 +401,8 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::FinishFileIndexing(
   CloseFile();
   if (success) {
     FilePath file_path = indexing_it_->first;
-    g_trigram_index.Get().SetTrigramsForFile(
-        file_path, current_trigrams_, file_path_times_[file_path]);
+    g_trigram_index.Get().SetTrigramsForFile(file_path, current_trigrams_,
+                                             file_path_times_[file_path]);
   }
   ReportWorked();
   ++indexing_it_;
@@ -435,14 +428,13 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::ReportWorked() {
   ++files_indexed_;
   if (should_send_worked_nitification) {
     last_worked_notification_time_ = current_time;
-    BrowserThread::PostTask(
-        BrowserThread::UI, FROM_HERE, Bind(worked_callback_, files_indexed_));
+    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                            Bind(worked_callback_, files_indexed_));
     files_indexed_ = 0;
   }
 }
 
-DevToolsFileSystemIndexer::DevToolsFileSystemIndexer() {
-}
+DevToolsFileSystemIndexer::DevToolsFileSystemIndexer() {}
 
 DevToolsFileSystemIndexer::~DevToolsFileSystemIndexer() {}
 
@@ -453,11 +445,9 @@ DevToolsFileSystemIndexer::IndexPath(
     const WorkedCallback& worked_callback,
     const DoneCallback& done_callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  scoped_refptr<FileSystemIndexingJob> indexing_job =
-      new FileSystemIndexingJob(FilePath::FromUTF8Unsafe(file_system_path),
-                                total_work_callback,
-                                worked_callback,
-                                done_callback);
+  scoped_refptr<FileSystemIndexingJob> indexing_job = new FileSystemIndexingJob(
+      FilePath::FromUTF8Unsafe(file_system_path), total_work_callback,
+      worked_callback, done_callback);
   indexing_job->Start();
   return indexing_job;
 }
@@ -467,13 +457,9 @@ void DevToolsFileSystemIndexer::SearchInPath(const string& file_system_path,
                                              const SearchCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   BrowserThread::PostTask(
-      BrowserThread::FILE,
-      FROM_HERE,
-      Bind(&DevToolsFileSystemIndexer::SearchInPathOnFileThread,
-           this,
-           file_system_path,
-           query,
-           callback));
+      BrowserThread::FILE, FROM_HERE,
+      Bind(&DevToolsFileSystemIndexer::SearchInPathOnFileThread, this,
+           file_system_path, query, callback));
 }
 
 void DevToolsFileSystemIndexer::SearchInPathOnFileThread(

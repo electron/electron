@@ -14,18 +14,16 @@ namespace content {
 class BrowserContext;
 }
 
-class TtsMessageFilter
-    : public content::BrowserMessageFilter,
-      public UtteranceEventDelegate,
-      public VoicesChangedDelegate {
+class TtsMessageFilter : public content::BrowserMessageFilter,
+                         public UtteranceEventDelegate,
+                         public VoicesChangedDelegate {
  public:
   explicit TtsMessageFilter(int render_process_id,
-      content::BrowserContext* browser_context);
+                            content::BrowserContext* browser_context);
 
   // content::BrowserMessageFilter implementation.
-  void OverrideThreadForMessage(
-      const IPC::Message& message,
-      content::BrowserThread::ID* thread) override;
+  void OverrideThreadForMessage(const IPC::Message& message,
+                                content::BrowserThread::ID* thread) override;
   bool OnMessageReceived(const IPC::Message& message) override;
   void OnChannelClosing() override;
   void OnDestruct() const override;

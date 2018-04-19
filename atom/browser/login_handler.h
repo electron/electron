@@ -16,7 +16,7 @@ class WebContents;
 namespace net {
 class AuthChallengeInfo;
 class URLRequest;
-}
+}  // namespace net
 
 namespace atom {
 

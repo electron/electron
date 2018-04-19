@@ -10,8 +10,7 @@
 
 namespace atom {
 
-UvTaskRunner::UvTaskRunner(uv_loop_t* loop) : loop_(loop) {
-}
+UvTaskRunner::UvTaskRunner(uv_loop_t* loop) : loop_(loop) {}
 
 UvTaskRunner::~UvTaskRunner() {
   for (auto& iter : tasks_) {
@@ -35,10 +34,9 @@ bool UvTaskRunner::RunsTasksInCurrentSequence() const {
   return true;
 }
 
-bool UvTaskRunner::PostNonNestableDelayedTask(
-    const base::Location& from_here,
-    base::OnceClosure task,
-    base::TimeDelta delay) {
+bool UvTaskRunner::PostNonNestableDelayedTask(const base::Location& from_here,
+                                              base::OnceClosure task,
+                                              base::TimeDelta delay) {
   return PostDelayedTask(from_here, std::move(task), delay);
 }
 

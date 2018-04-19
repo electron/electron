@@ -17,8 +17,10 @@ class MessageHandlerDelegate {
   // message was consumed by the delegate and should not be processed further
   // by the HWNDMessageHandler. In this case, |result| is returned. |result| is
   // not modified otherwise.
-  virtual bool PreHandleMSG(
-      UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result);
+  virtual bool PreHandleMSG(UINT message,
+                            WPARAM w_param,
+                            LPARAM l_param,
+                            LRESULT* result);
 };
 
 }  // namespace atom

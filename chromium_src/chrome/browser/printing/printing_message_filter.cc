@@ -16,10 +16,8 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/common/child_process_host.h"
 #include "printing/features/features.h"
-
 
 #if defined(OS_ANDROID)
 #include "base/strings/string_number_conversions.h"
@@ -86,15 +84,15 @@ PrintingMessageFilter::PrintingMessageFilter(int render_process_id)
   DCHECK(queue_.get());
 }
 
-PrintingMessageFilter::~PrintingMessageFilter() {
-}
+PrintingMessageFilter::~PrintingMessageFilter() {}
 
 void PrintingMessageFilter::OnDestruct() const {
   BrowserThread::DeleteOnUIThread::Destruct(this);
 }
 
 void PrintingMessageFilter::OverrideThreadForMessage(
-    const IPC::Message& message, BrowserThread::ID* thread) {
+    const IPC::Message& message,
+    BrowserThread::ID* thread) {
 #if defined(OS_ANDROID)
   if (message.type() == PrintHostMsg_AllocateTempFileForPrinting::ID ||
       message.type() == PrintHostMsg_TempFileForPrintingWritten::ID) {
@@ -174,8 +172,9 @@ void PrintingMessageFilter::OnGetDefaultPrintSettings(IPC::Message* reply_msg) {
                  printer_query, reply_msg));
 }
 
-void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& device_name,
-                                                        IPC::Message* reply_msg) {
+void PrintingMessageFilter::OnInitSettingWithDeviceName(
+    const base::string16& device_name,
+    IPC::Message* reply_msg) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   scoped_refptr<PrinterQuery> printer_query;
   printer_query = queue_->PopPrinterQuery(0);
@@ -187,17 +186,10 @@ void PrintingMessageFilter::OnInitSettingWithDeviceName(const base::string16& de
   // Loads default settings. This is asynchronous, only the IPC message sender
   // will hang until the settings are retrieved.
   printer_query->GetSettings(
-      PrinterQuery::GetSettingsAskParam::DEFAULTS,
-      0,
-      false,
-      DEFAULT_MARGINS,
-      true,
-      true,
-      device_name,
-      base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply,
-                 this,
-                 printer_query,
-                 reply_msg));
+      PrinterQuery::GetSettingsAskParam::DEFAULTS, 0, false, DEFAULT_MARGINS,
+      true, true, device_name,
+      base::Bind(&PrintingMessageFilter::OnGetDefaultPrintSettingsReply, this,
+                 printer_query, reply_msg));
 }
 
 void PrintingMessageFilter::OnGetDefaultPrintSettingsReply(
@@ -289,7 +281,8 @@ void PrintingMessageFilter::UpdateFileDescriptor(int render_view_id, int fd) {
 #endif
 
 void PrintingMessageFilter::OnUpdatePrintSettings(
-    int document_cookie, const base::DictionaryValue& job_settings,
+    int document_cookie,
+    const base::DictionaryValue& job_settings,
     IPC::Message* reply_msg) {
   std::unique_ptr<base::DictionaryValue> new_settings(job_settings.DeepCopy());
 

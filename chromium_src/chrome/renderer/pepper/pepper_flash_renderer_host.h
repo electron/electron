@@ -22,7 +22,7 @@ namespace ppapi {
 namespace proxy {
 struct PPBFlash_DrawGlyphs_Params;
 }
-}
+}  // namespace ppapi
 
 namespace content {
 class RendererPpapiHost;

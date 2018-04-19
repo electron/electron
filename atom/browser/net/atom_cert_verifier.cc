@@ -75,8 +75,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
     delete response;
   }
 
-  void Start(net::CRLSet* crl_set,
-             const net::NetLogWithSource& net_log) {
+  void Start(net::CRLSet* crl_set, const net::NetLogWithSource& net_log) {
     int error = cert_verifier_->default_verifier()->Verify(
         params_, crl_set, &result_,
         base::Bind(&CertVerifierRequest::OnDefaultVerificationDone,
@@ -158,13 +157,12 @@ void AtomCertVerifier::SetVerifyProc(const VerifyProc& proc) {
   verify_proc_ = proc;
 }
 
-int AtomCertVerifier::Verify(
-    const RequestParams& params,
-    net::CRLSet* crl_set,
-    net::CertVerifyResult* verify_result,
-    const net::CompletionCallback& callback,
-    std::unique_ptr<Request>* out_req,
-    const net::NetLogWithSource& net_log) {
+int AtomCertVerifier::Verify(const RequestParams& params,
+                             net::CRLSet* crl_set,
+                             net::CertVerifyResult* verify_result,
+                             const net::CompletionCallback& callback,
+                             std::unique_ptr<Request>* out_req,
+                             const net::NetLogWithSource& net_log) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   if (verify_proc_.is_null()) {

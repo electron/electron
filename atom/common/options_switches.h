@@ -70,8 +70,7 @@ extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
 extern const char kCustomArgs[];
 
-}   // namespace options
-
+}  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
 

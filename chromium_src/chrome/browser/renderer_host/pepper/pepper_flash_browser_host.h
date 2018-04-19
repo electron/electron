@@ -17,7 +17,7 @@ class Time;
 namespace content {
 class BrowserPpapiHost;
 class ResourceContext;
-}
+}  // namespace content
 
 class GURL;
 

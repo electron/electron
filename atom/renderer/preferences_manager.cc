@@ -13,11 +13,9 @@ PreferencesManager::PreferencesManager() {
   content::RenderThread::Get()->AddObserver(this);
 }
 
-PreferencesManager::~PreferencesManager() {
-}
+PreferencesManager::~PreferencesManager() {}
 
-bool PreferencesManager::OnControlMessageReceived(
-    const IPC::Message& message) {
+bool PreferencesManager::OnControlMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(PreferencesManager, message)
     IPC_MESSAGE_HANDLER(AtomMsg_UpdatePreferences, OnUpdatePreferences)

@@ -17,8 +17,7 @@
 
 namespace atom {
 
-class TrayIconCocoa : public TrayIcon,
-                      public AtomMenuModel::Observer {
+class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
  public:
   TrayIconCocoa();
   virtual ~TrayIconCocoa();

@@ -9,8 +9,8 @@
 
 #include "base/callback.h"
 #include "base/memory/ref_counted.h"
-#include "components/prefs/pref_member.h"
 #include "base/strings/string16.h"
+#include "components/prefs/pref_member.h"
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -41,16 +41,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
   // asynchronous, the actual printing will not be completed on the return of
   // this function. Returns false if printing is impossible at the moment.
   virtual bool PrintNow(content::RenderFrameHost* rfh,
-                        bool silent, bool print_background,
+                        bool silent,
+                        bool print_background,
                         const base::string16& device_name);
 #endif  // !DISABLE_BASIC_PRINTING
 
   // PrintedPagesSource implementation.
   base::string16 RenderSourceName();
 
-  void SetCallback(const base::Callback<void(bool)>& cb) {
-    callback = cb;
-  };
+  void SetCallback(const base::Callback<void(bool)>& cb) { callback = cb; };
 
  protected:
   explicit PrintViewManagerBase(content::WebContents* web_contents);

@@ -16,8 +16,8 @@ namespace api {
 class RenderProcessPreferences
     : public mate::Wrappable<RenderProcessPreferences> {
  public:
-  static mate::Handle<RenderProcessPreferences>
-      ForAllWebContents(v8::Isolate* isolate);
+  static mate::Handle<RenderProcessPreferences> ForAllWebContents(
+      v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

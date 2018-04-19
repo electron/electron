@@ -22,15 +22,15 @@ namespace {
 class Archive : public mate::Wrappable<Archive> {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate,
-                                      const base::FilePath& path) {
+                                     const base::FilePath& path) {
     std::unique_ptr<asar::Archive> archive(new asar::Archive(path));
     if (!archive->Init())
       return v8::False(isolate);
     return (new Archive(isolate, std::move(archive)))->GetWrapper();
   }
 
-  static void BuildPrototype(
-      v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype) {
     prototype->SetClassName(mate::StringToV8(isolate, "Archive"));
     mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
         .SetProperty("path", &Archive::GetPath)
@@ -50,13 +50,11 @@ class Archive : public mate::Wrappable<Archive> {
   }
 
   // Returns the path of the file.
-  base::FilePath GetPath() {
-    return archive_->path();
-  }
+  base::FilePath GetPath() { return archive_->path(); }
 
   // Reads the offset and size of file.
   v8::Local<v8::Value> GetFileInfo(v8::Isolate* isolate,
-                                    const base::FilePath& path) {
+                                   const base::FilePath& path) {
     asar::Archive::FileInfo info;
     if (!archive_ || !archive_->GetFileInfo(path, &info))
       return v8::False(isolate);
@@ -68,8 +66,7 @@ class Archive : public mate::Wrappable<Archive> {
   }
 
   // Returns a fake result of fs.stat(path).
-  v8::Local<v8::Value> Stat(v8::Isolate* isolate,
-                             const base::FilePath& path) {
+  v8::Local<v8::Value> Stat(v8::Isolate* isolate, const base::FilePath& path) {
     asar::Archive::Stats stats;
     if (!archive_ || !archive_->Stat(path, &stats))
       return v8::False(isolate);
@@ -84,7 +81,7 @@ class Archive : public mate::Wrappable<Archive> {
 
   // Returns all files under a directory.
   v8::Local<v8::Value> Readdir(v8::Isolate* isolate,
-                                const base::FilePath& path) {
+                               const base::FilePath& path) {
     std::vector<base::FilePath> files;
     if (!archive_ || !archive_->Readdir(path, &files))
       return v8::False(isolate);
@@ -93,7 +90,7 @@ class Archive : public mate::Wrappable<Archive> {
 
   // Returns the path of file with symbol link resolved.
   v8::Local<v8::Value> Realpath(v8::Isolate* isolate,
-                                 const base::FilePath& path) {
+                                const base::FilePath& path) {
     base::FilePath realpath;
     if (!archive_ || !archive_->Realpath(path, &realpath))
       return v8::False(isolate);
@@ -102,7 +99,7 @@ class Archive : public mate::Wrappable<Archive> {
 
   // Copy the file out into a temporary file and returns the new path.
   v8::Local<v8::Value> CopyFileOut(v8::Isolate* isolate,
-                                    const base::FilePath& path) {
+                                   const base::FilePath& path) {
     base::FilePath new_path;
     if (!archive_ || !archive_->CopyFileOut(path, &new_path))
       return v8::False(isolate);
@@ -117,9 +114,7 @@ class Archive : public mate::Wrappable<Archive> {
   }
 
   // Free the resources used by archive.
-  void Destroy() {
-    archive_.reset();
-  }
+  void Destroy() { archive_.reset(); }
 
  private:
   std::unique_ptr<asar::Archive> archive_;
@@ -138,14 +133,18 @@ void InitAsarSupport(v8::Isolate* isolate,
   // Initialize asar support.
   if (result->IsFunction()) {
     v8::Local<v8::Value> args[] = {
-        process, require, node::asar_value.ToStringChecked(isolate),
+        process,
+        require,
+        node::asar_value.ToStringChecked(isolate),
     };
     result.As<v8::Function>()->Call(result, 3, args);
   }
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createArchive", &Archive::Create);
   dict.SetMethod("initAsarSupport", &InitAsarSupport);

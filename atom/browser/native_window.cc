@@ -113,9 +113,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
     // Disable fullscreen button if 'fullscreen' is specified to false.
-  #if defined(OS_MACOSX)
+#if defined(OS_MACOSX)
     fullscreenable = false;
-  #endif
+#endif
   }
   // Overriden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
@@ -261,75 +261,59 @@ double NativeWindow::GetSheetOffsetY() {
   return sheet_offset_y_;
 }
 
-void NativeWindow::SetRepresentedFilename(const std::string& filename) {
-}
+void NativeWindow::SetRepresentedFilename(const std::string& filename) {}
 
 std::string NativeWindow::GetRepresentedFilename() {
   return "";
 }
 
-void NativeWindow::SetDocumentEdited(bool edited) {
-}
+void NativeWindow::SetDocumentEdited(bool edited) {}
 
 bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
-void NativeWindow::SetFocusable(bool focusable) {
-}
+void NativeWindow::SetFocusable(bool focusable) {}
 
-void NativeWindow::SetMenu(AtomMenuModel* menu) {
-}
+void NativeWindow::SetMenu(AtomMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
-void NativeWindow::SetAutoHideCursor(bool auto_hide) {
-}
+void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
-void NativeWindow::SelectPreviousTab() {
-}
+void NativeWindow::SelectPreviousTab() {}
 
-void NativeWindow::SelectNextTab() {
-}
+void NativeWindow::SelectNextTab() {}
 
-void NativeWindow::MergeAllWindows() {
-}
+void NativeWindow::MergeAllWindows() {}
 
-void NativeWindow::MoveTabToNewWindow() {
-}
+void NativeWindow::MoveTabToNewWindow() {}
 
-void NativeWindow::ToggleTabBar() {
-}
+void NativeWindow::ToggleTabBar() {}
 
 bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& filename) {
-}
+void NativeWindow::SetVibrancy(const std::string& filename) {}
 
 void NativeWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {
-}
+    const std::vector<mate::PersistentDictionary>& items) {}
 
-void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
-}
+void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {}
 
 void NativeWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {
-}
+    const mate::PersistentDictionary& item) {}
 
-void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
-}
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {}
 
 bool NativeWindow::IsMenuBarAutoHide() {
   return false;
 }
 
-void NativeWindow::SetMenuBarVisibility(bool visible) {
-}
+void NativeWindow::SetMenuBarVisibility(bool visible) {}
 
 bool NativeWindow::IsMenuBarVisible() {
   return true;
@@ -350,11 +334,9 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
 }
 
 void NativeWindow::PreviewFile(const std::string& path,
-                               const std::string& display_name) {
-}
+                               const std::string& display_name) {}
 
-void NativeWindow::CloseFilePreview() {
-}
+void NativeWindow::CloseFilePreview() {}
 
 void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
   for (NativeWindowObserver& observer : observers_)
@@ -510,13 +492,14 @@ void NativeWindow::NotifyTouchBarItemInteraction(
 }
 
 void NativeWindow::NotifyNewWindowForTab() {
-  for (NativeWindowObserver &observer : observers_)
+  for (NativeWindowObserver& observer : observers_)
     observer.OnNewWindowForTab();
 }
 
 #if defined(OS_WIN)
-void NativeWindow::NotifyWindowMessage(
-    UINT message, WPARAM w_param, LPARAM l_param) {
+void NativeWindow::NotifyWindowMessage(UINT message,
+                                       WPARAM w_param,
+                                       LPARAM l_param) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowMessage(message, w_param, l_param);
 }

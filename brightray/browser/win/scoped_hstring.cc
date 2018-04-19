@@ -6,18 +6,15 @@
 
 #include <winstring.h>
 
-ScopedHString::ScopedHString(const wchar_t* source)
-    : str_(nullptr) {
+ScopedHString::ScopedHString(const wchar_t* source) : str_(nullptr) {
   Reset(source);
 }
 
-ScopedHString::ScopedHString(const std::wstring& source)
-    : str_(nullptr) {
+ScopedHString::ScopedHString(const std::wstring& source) : str_(nullptr) {
   Reset(source);
 }
 
-ScopedHString::ScopedHString() : str_(nullptr) {
-}
+ScopedHString::ScopedHString() : str_(nullptr) {}
 
 ScopedHString::~ScopedHString() {
   Reset();

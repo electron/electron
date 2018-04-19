@@ -19,7 +19,7 @@
 namespace {
 
 GDesktopAppInfo* get_desktop_app_info() {
-  GDesktopAppInfo * ret = nullptr;
+  GDesktopAppInfo* ret = nullptr;
 
   std::string desktop_id;
   if (brightray::platform_util::GetDesktopName(&desktop_id))

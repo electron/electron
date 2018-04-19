@@ -6,29 +6,27 @@
 
 #include "base/bind.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/webplugininfo.h"
-#include "content/public/browser/plugin_service.h"
 #include "media/media_features.h"
 
+using content::BrowserThread;
 using content::PluginService;
 using content::WebPluginInfo;
-using content::BrowserThread;
 
 WidevineCdmMessageFilter::WidevineCdmMessageFilter(
     int render_process_id,
     content::BrowserContext* browser_context)
     : BrowserMessageFilter(ChromeMsgStart),
       render_process_id_(render_process_id),
-      browser_context_(browser_context) {
-}
+      browser_context_(browser_context) {}
 
 bool WidevineCdmMessageFilter::OnMessageReceived(const IPC::Message& message) {
   IPC_BEGIN_MESSAGE_MAP(WidevineCdmMessageFilter, message)
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
-    IPC_MESSAGE_HANDLER(
-        ChromeViewHostMsg_IsInternalPluginAvailableForMimeType,
-        OnIsInternalPluginAvailableForMimeType)
+    IPC_MESSAGE_HANDLER(ChromeViewHostMsg_IsInternalPluginAvailableForMimeType,
+                        OnIsInternalPluginAvailableForMimeType)
 #endif  // BUILDFLAG(ENABLE_LIBRARY_CDMS)
     IPC_MESSAGE_UNHANDLED(return false)
   IPC_END_MESSAGE_MAP()
@@ -49,7 +47,6 @@ void WidevineCdmMessageFilter::OnIsInternalPluginAvailableForMimeType(
     const std::vector<content::WebPluginMimeType>& mime_types =
         plugin.mime_types;
     for (size_t j = 0; j < mime_types.size(); ++j) {
-
       if (mime_types[j].mime_type == mime_type) {
         *is_available = true;
         *additional_param_names = mime_types[j].additional_param_names;
@@ -67,5 +64,4 @@ void WidevineCdmMessageFilter::OnDestruct() const {
   BrowserThread::DeleteOnUIThread::Destruct(this);
 }
 
-WidevineCdmMessageFilter::~WidevineCdmMessageFilter() {
-}
+WidevineCdmMessageFilter::~WidevineCdmMessageFilter() {}

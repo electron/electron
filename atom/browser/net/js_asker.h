@@ -42,17 +42,16 @@ bool IsErrorOptions(base::Value* value, int* error);
 
 }  // namespace internal
 
-template<typename RequestJob>
+template <typename RequestJob>
 class JsAsker : public RequestJob {
  public:
   JsAsker(net::URLRequest* request, net::NetworkDelegate* network_delegate)
       : RequestJob(request, network_delegate), weak_factory_(this) {}
 
   // Called by |CustomProtocolHandler| to store handler related information.
-  void SetHandlerInfo(
-      v8::Isolate* isolate,
-      net::URLRequestContextGetter* request_context_getter,
-      const JavaScriptHandler& handler) {
+  void SetHandlerInfo(v8::Isolate* isolate,
+                      net::URLRequestContextGetter* request_context_getter,
+                      const JavaScriptHandler& handler) {
     isolate_ = isolate;
     request_context_getter_ = request_context_getter;
     handler_ = handler;
@@ -75,14 +74,11 @@ class JsAsker : public RequestJob {
     FillRequestDetails(request_details.get(), RequestJob::request());
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&internal::AskForOptions,
-                   isolate_,
-                   handler_,
-                   base::Passed(&request_details),
-                   base::Bind(&JsAsker::BeforeStartInUI,
-                              weak_factory_.GetWeakPtr()),
-                   base::Bind(&JsAsker::OnResponse,
-                              weak_factory_.GetWeakPtr())));
+        base::Bind(
+            &internal::AskForOptions, isolate_, handler_,
+            base::Passed(&request_details),
+            base::Bind(&JsAsker::BeforeStartInUI, weak_factory_.GetWeakPtr()),
+            base::Bind(&JsAsker::OnResponse, weak_factory_.GetWeakPtr())));
   }
 
   int GetResponseCode() const override { return net::HTTP_OK; }

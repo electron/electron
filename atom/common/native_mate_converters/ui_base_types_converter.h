@@ -10,7 +10,7 @@
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<ui::MenuSourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const ui::MenuSourceType& in) {

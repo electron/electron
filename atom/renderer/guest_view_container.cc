@@ -22,8 +22,7 @@ static base::LazyInstance<GuestViewContainerMap>::DestructorAtExit
 }  // namespace
 
 GuestViewContainer::GuestViewContainer(content::RenderFrame* render_frame)
-    : weak_ptr_factory_(this) {
-}
+    : weak_ptr_factory_(this) {}
 
 GuestViewContainer::~GuestViewContainer() {
   if (element_instance_id_ > 0)

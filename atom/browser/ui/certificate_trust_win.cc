@@ -19,22 +19,15 @@ namespace certificate_trust {
 // This requires prompting the user to confirm they trust the certificate.
 BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
                            const scoped_refptr<net::X509Certificate>& cert) {
-  auto root_cert_store = CertOpenStore(
-      CERT_STORE_PROV_SYSTEM,
-      0,
-      NULL,
-      CERT_SYSTEM_STORE_CURRENT_USER,
-      L"Root");
+  auto root_cert_store = CertOpenStore(CERT_STORE_PROV_SYSTEM, 0, NULL,
+                                       CERT_SYSTEM_STORE_CURRENT_USER, L"Root");
 
   if (root_cert_store == NULL) {
     return false;
   }
 
   auto result = CertAddCertificateContextToStore(
-    root_cert_store,
-    cert_context,
-    CERT_STORE_ADD_REPLACE_EXISTING,
-    NULL);
+      root_cert_store, cert_context, CERT_STORE_ADD_REPLACE_EXISTING, NULL);
 
   if (result) {
     // force Chromium to reload it's database for this certificate
@@ -57,7 +50,7 @@ CERT_CHAIN_PARA GetCertificateChainParameters() {
   cert_usage.dwType = USAGE_MATCH_TYPE_AND;
   cert_usage.Usage = enhkey_usage;
 
-  CERT_CHAIN_PARA params = { sizeof(CERT_CHAIN_PARA) };
+  CERT_CHAIN_PARA params = {sizeof(CERT_CHAIN_PARA)};
   params.RequestedUsage = cert_usage;
 
   return params;
@@ -73,14 +66,8 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
 
   auto params = GetCertificateChainParameters();
 
-  if (CertGetCertificateChain(NULL,
-                              cert_context.get(),
-                              NULL,
-                              NULL,
-                              &params,
-                              NULL,
-                              NULL,
-                              &chain_context)) {
+  if (CertGetCertificateChain(NULL, cert_context.get(), NULL, NULL, &params,
+                              NULL, NULL, &chain_context)) {
     auto error_status = chain_context->TrustStatus.dwErrorStatus;
     if (error_status == CERT_TRUST_IS_SELF_SIGNED ||
         error_status == CERT_TRUST_IS_UNTRUSTED_ROOT) {

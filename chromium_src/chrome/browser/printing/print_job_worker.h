@@ -77,8 +77,7 @@ class PrintJobWorker {
   bool IsRunning() const;
 
   // Posts the given task to be run.
-  bool PostTask(const base::Location& from_here,
-                const base::Closure& task);
+  bool PostTask(const base::Location& from_here, const base::Closure& task);
 
   // Signals the thread to exit in the near future.
   void StopSoon();
@@ -114,10 +113,9 @@ class PrintJobWorker {
   // Asks the user for print settings. Must be called on the UI thread.
   // Required on Mac and Linux. Windows can display UI from non-main threads,
   // but sticks with this for consistency.
-  void GetSettingsWithUI(
-      int document_page_count,
-      bool has_selection,
-      bool is_scripted);
+  void GetSettingsWithUI(int document_page_count,
+                         bool has_selection,
+                         bool is_scripted);
 
   // Called on the UI thread to update the print settings.
   void UpdatePrintSettings(std::unique_ptr<base::DictionaryValue> new_settings);

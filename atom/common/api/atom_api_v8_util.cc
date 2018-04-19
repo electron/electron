@@ -30,7 +30,7 @@ struct hash<std::pair<Type1, Type2>> {
 
 namespace mate {
 
-template<typename Type1, typename Type2>
+template <typename Type1, typename Type2>
 struct Converter<std::pair<Type1, Type2>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -96,15 +96,17 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
 
 void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
   isolate->RequestGarbageCollectionForTesting(
-    v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+      v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
 }
 
 bool IsSameOrigin(const GURL& l, const GURL& r) {
   return url::Origin(l).IsSameOriginWith(url::Origin(r));
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);

@@ -7,20 +7,17 @@
 namespace atom {
 
 MenuModelAdapter::MenuModelAdapter(AtomMenuModel* menu_model)
-  : views::MenuModelAdapter(menu_model),
-    menu_model_(menu_model) {
-}
+    : views::MenuModelAdapter(menu_model), menu_model_(menu_model) {}
 
-MenuModelAdapter::~MenuModelAdapter() {
-}
+MenuModelAdapter::~MenuModelAdapter() {}
 
 bool MenuModelAdapter::GetAccelerator(int id,
                                       ui::Accelerator* accelerator) const {
   ui::MenuModel* model = menu_model_;
   int index = 0;
   if (ui::MenuModel::GetModelAndIndexForCommandId(id, &model, &index)) {
-    return static_cast<AtomMenuModel*>(model)->
-      GetAcceleratorAtWithParams(index, true, accelerator);
+    return static_cast<AtomMenuModel*>(model)->GetAcceleratorAtWithParams(
+        index, true, accelerator);
   }
   return false;
 }

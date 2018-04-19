@@ -24,15 +24,13 @@ PepperIsolatedFileSystemMessageFilter::Create(PP_Instance instance,
                                               content::BrowserPpapiHost* host) {
   int render_process_id;
   int unused_render_frame_id;
-  if (!host->GetRenderFrameIDsForInstance(
-          instance, &render_process_id, &unused_render_frame_id)) {
+  if (!host->GetRenderFrameIDsForInstance(instance, &render_process_id,
+                                          &unused_render_frame_id)) {
     return NULL;
   }
   return new PepperIsolatedFileSystemMessageFilter(
-      render_process_id,
-      host->GetProfileDataDirectory(),
-      host->GetDocumentURLForInstance(instance),
-      host->GetPpapiHost());
+      render_process_id, host->GetProfileDataDirectory(),
+      host->GetDocumentURLForInstance(instance), host->GetPpapiHost());
 }
 
 PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
@@ -43,8 +41,7 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
     : render_process_id_(render_process_id),
       profile_directory_(profile_directory),
       document_url_(document_url),
-      ppapi_host_(ppapi_host) {
-}
+      ppapi_host_(ppapi_host) {}
 
 PepperIsolatedFileSystemMessageFilter::
     ~PepperIsolatedFileSystemMessageFilter() {}
@@ -63,8 +60,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
     ppapi::host::HostMessageContext* context) {
   PPAPI_BEGIN_MESSAGE_MAP(PepperIsolatedFileSystemMessageFilter, msg)
     PPAPI_DISPATCH_HOST_RESOURCE_CALL(
-      PpapiHostMsg_IsolatedFileSystem_BrowserOpen,
-      OnOpenFileSystem)
+        PpapiHostMsg_IsolatedFileSystem_BrowserOpen, OnOpenFileSystem)
   PPAPI_END_MESSAGE_MAP()
   return PP_ERROR_FAILED;
 }

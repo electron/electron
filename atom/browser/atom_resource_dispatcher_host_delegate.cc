@@ -32,7 +32,6 @@
 #include "net/url_request/url_request.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
 
-
 using content::BrowserThread;
 
 namespace atom {

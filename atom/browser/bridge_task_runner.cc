@@ -21,18 +21,17 @@ void BridgeTaskRunner::MessageLoopIsReady() {
   }
 }
 
-bool BridgeTaskRunner::PostDelayedTask(
-    const base::Location& from_here,
-    base::OnceClosure task,
-    base::TimeDelta delay) {
+bool BridgeTaskRunner::PostDelayedTask(const base::Location& from_here,
+                                       base::OnceClosure task,
+                                       base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
     tasks_.push_back(std::make_tuple(from_here, std::move(task), delay));
     return true;
   }
 
-  return message_loop->task_runner()->PostDelayedTask(
-      from_here, std::move(task), delay);
+  return message_loop->task_runner()->PostDelayedTask(from_here,
+                                                      std::move(task), delay);
 }
 
 bool BridgeTaskRunner::RunsTasksInCurrentSequence() const {
@@ -49,8 +48,8 @@ bool BridgeTaskRunner::PostNonNestableDelayedTask(
     base::TimeDelta delay) {
   auto message_loop = base::MessageLoop::current();
   if (!message_loop) {
-    non_nestable_tasks_.push_back(std::make_tuple(
-        from_here, std::move(task), delay));
+    non_nestable_tasks_.push_back(
+        std::make_tuple(from_here, std::move(task), delay));
     return true;
   }
 

@@ -53,14 +53,13 @@ DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
   Init(isolate);
 }
 
-DesktopCapturer::~DesktopCapturer() {
-}
+DesktopCapturer::~DesktopCapturer() {}
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
                                     const gfx::Size& thumbnail_size) {
   webrtc::DesktopCaptureOptions options =
-    content::CreateDesktopCaptureOptions();
+      content::CreateDesktopCaptureOptions();
 #if defined(OS_WIN)
   using_directx_capturer_ = options.allow_directx_capturer();
 #endif  // defined(OS_WIN)
@@ -71,27 +70,22 @@ void DesktopCapturer::StartHandling(bool capture_window,
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer(
       capture_window ? webrtc::DesktopCapturer::CreateWindowCapturer(options)
                      : nullptr);
-  media_list_.reset(new NativeDesktopMediaList(
-      std::move(screen_capturer), std::move(window_capturer)));
+  media_list_.reset(new NativeDesktopMediaList(std::move(screen_capturer),
+                                               std::move(window_capturer)));
 
   media_list_->SetThumbnailSize(thumbnail_size);
   media_list_->StartUpdating(this);
 }
 
-void DesktopCapturer::OnSourceAdded(int index) {
-}
+void DesktopCapturer::OnSourceAdded(int index) {}
 
-void DesktopCapturer::OnSourceRemoved(int index) {
-}
+void DesktopCapturer::OnSourceRemoved(int index) {}
 
-void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {
-}
+void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {}
 
-void DesktopCapturer::OnSourceNameChanged(int index) {
-}
+void DesktopCapturer::OnSourceNameChanged(int index) {}
 
-void DesktopCapturer::OnSourceThumbnailChanged(int index) {
-}
+void DesktopCapturer::OnSourceThumbnailChanged(int index) {}
 
 bool DesktopCapturer::OnRefreshFinished() {
   const auto media_list_sources = media_list_->GetSources();
@@ -131,14 +125,13 @@ bool DesktopCapturer::OnRefreshFinished() {
   for (auto& source : sources) {
     if (source.media_list_source.id.type ==
         content::DesktopMediaID::TYPE_SCREEN) {
-      source.display_id =
-          base::Int64ToString(source.media_list_source.id.id);
+      source.display_id = base::Int64ToString(source.media_list_source.id.id);
     }
   }
 #endif  // defined(OS_WIN)
-// TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome only
-// supports capturing the entire desktop on Linux. Revisit this if individual
-// screen support is added.
+  // TODO(ajmacd): Add Linux support. The IDs across APIs differ but Chrome only
+  // supports capturing the entire desktop on Linux. Revisit this if individual
+  // screen support is added.
 
   Emit("finished", sources);
   return false;
@@ -151,7 +144,8 @@ mate::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
 
 // static
 void DesktopCapturer::BuildPrototype(
-    v8::Isolate* isolate, v8::Local<v8::FunctionTemplate> prototype) {
+    v8::Isolate* isolate,
+    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "DesktopCapturer"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
@@ -163,8 +157,10 @@ void DesktopCapturer::BuildPrototype(
 
 namespace {
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary dict(isolate, exports);
   dict.Set("desktopCapturer", atom::api::DesktopCapturer::Create(isolate));

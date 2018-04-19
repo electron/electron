@@ -17,7 +17,7 @@ class CrashReportSender;
 class CrashGenerationServer;
 class ClientInfo;
 
-}
+}  // namespace google_breakpad
 
 namespace breakpad {
 
@@ -70,17 +70,11 @@ class CrashService {
   static const char kReporterURL[];
 
   // Returns number of crash dumps handled.
-  int requests_handled() const {
-    return requests_handled_;
-  }
+  int requests_handled() const { return requests_handled_; }
   // Returns number of crash clients registered.
-  int clients_connected() const {
-    return clients_connected_;
-  }
+  int clients_connected() const { return clients_connected_; }
   // Returns number of crash clients terminated.
-  int clients_terminated() const {
-    return clients_terminated_;
-  }
+  int clients_terminated() const { return clients_terminated_; }
 
   // Starts the processing loop. This function does not return unless the
   // user is logging off or the user closes the crash service window. The

@@ -14,7 +14,7 @@
 #include "ui/gfx/native_widget_types.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
-typedef struct _DbusmenuServer   DbusmenuServer;
+typedef struct _DbusmenuServer DbusmenuServer;
 
 namespace ui {
 class Accelerator;
@@ -61,7 +61,10 @@ class GlobalMenuBarX11 {
   void RegisterAccelerator(DbusmenuMenuitem* item,
                            const ui::Accelerator& accelerator);
 
-  CHROMEG_CALLBACK_1(GlobalMenuBarX11, void, OnItemActivated, DbusmenuMenuitem*,
+  CHROMEG_CALLBACK_1(GlobalMenuBarX11,
+                     void,
+                     OnItemActivated,
+                     DbusmenuMenuitem*,
                      unsigned int);
   CHROMEG_CALLBACK_0(GlobalMenuBarX11, void, OnSubMenuShow, DbusmenuMenuitem*);
 

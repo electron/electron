@@ -229,13 +229,9 @@ class Browser : public WindowListObserver {
 
   void PreMainMessageLoopRun();
 
-  void AddObserver(BrowserObserver* obs) {
-    observers_.AddObserver(obs);
-  }
+  void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
 
-  void RemoveObserver(BrowserObserver* obs) {
-    observers_.RemoveObserver(obs);
-  }
+  void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }

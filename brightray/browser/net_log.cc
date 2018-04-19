@@ -33,8 +33,7 @@ std::unique_ptr<base::DictionaryValue> GetConstants() {
 
 }  // namespace
 
-NetLog::NetLog() {
-}
+NetLog::NetLog() {}
 
 NetLog::~NetLog() {
   if (file_net_log_observer_) {

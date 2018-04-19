@@ -25,8 +25,8 @@ const size_t kMaxDataLength = 1024;
 const size_t kMaxListSize = 512;
 
 void GetDataListSuggestions(const blink::WebInputElement& element,
-    std::vector<base::string16>* values,
-    std::vector<base::string16>* labels) {
+                            std::vector<base::string16>* values,
+                            std::vector<base::string16>* labels) {
   for (const auto& option : element.FilteredDataListOptions()) {
     values->push_back(option.Value().Utf16());
     if (option.Value() != option.Label())
@@ -49,12 +49,11 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 }
 }  // namespace
 
-AutofillAgent::AutofillAgent(
-    content::RenderFrame* frame)
-  : content::RenderFrameObserver(frame),
-    focused_node_was_last_clicked_(false),
-    was_focused_before_now_(false),
-    weak_ptr_factory_(this) {
+AutofillAgent::AutofillAgent(content::RenderFrame* frame)
+    : content::RenderFrameObserver(frame),
+      focused_node_was_last_clicked_(false),
+      was_focused_before_now_(false),
+      weak_ptr_factory_(this) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
 }
 
@@ -72,8 +71,7 @@ void AutofillAgent::FocusedNodeChanged(const blink::WebNode&) {
   HidePopup();
 }
 
-void AutofillAgent::TextFieldDidEndEditing(
-    const blink::WebInputElement&) {
+void AutofillAgent::TextFieldDidEndEditing(const blink::WebInputElement&) {
   HidePopup();
 }
 
@@ -125,13 +123,10 @@ void AutofillAgent::DataListOptionsChanged(
 }
 
 AutofillAgent::ShowSuggestionsOptions::ShowSuggestionsOptions()
-    : autofill_on_empty_values(false),
-      requires_caret_at_end(false) {
-}
+    : autofill_on_empty_values(false), requires_caret_at_end(false) {}
 
-void AutofillAgent::ShowSuggestions(
-    const blink::WebFormControlElement& element,
-    const ShowSuggestionsOptions& options) {
+void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
+                                    const ShowSuggestionsOptions& options) {
   if (!element.IsEnabled() || element.IsReadOnly())
     return;
   const blink::WebInputElement* input_element = ToWebInputElement(&element);
@@ -153,8 +148,8 @@ void AutofillAgent::ShowSuggestions(
   std::vector<base::string16> data_list_values;
   std::vector<base::string16> data_list_labels;
   if (input_element) {
-    GetDataListSuggestions(
-      *input_element, &data_list_values, &data_list_labels);
+    GetDataListSuggestions(*input_element, &data_list_values,
+                           &data_list_labels);
     TrimStringVectorForIPC(&data_list_values);
     TrimStringVectorForIPC(&data_list_labels);
   }
@@ -175,7 +170,7 @@ bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AutofillAgent, message)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameMsg_AcceptSuggestion,
-      OnAcceptSuggestion)
+                        OnAcceptSuggestion)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -190,21 +185,20 @@ void AutofillAgent::HidePopup() {
   Send(new AtomAutofillFrameHostMsg_HidePopup(render_frame()->GetRoutingID()));
 }
 
-void AutofillAgent::ShowPopup(
-    const blink::WebFormControlElement& element,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
+void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
+                              const std::vector<base::string16>& values,
+                              const std::vector<base::string16>& labels) {
   gfx::RectF bounds =
-    render_frame()->GetRenderView()->ElementBoundsInWindow(element);
-  Send(new AtomAutofillFrameHostMsg_ShowPopup(
-    render_frame()->GetRoutingID(), bounds, values, labels));
+      render_frame()->GetRenderView()->ElementBoundsInWindow(element);
+  Send(new AtomAutofillFrameHostMsg_ShowPopup(render_frame()->GetRoutingID(),
+                                              bounds, values, labels));
 }
 
 void AutofillAgent::OnAcceptSuggestion(base::string16 suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
     ToWebInputElement(&element)->SetAutofillValue(
-      blink::WebString::FromUTF16(suggestion));
+        blink::WebString::FromUTF16(suggestion));
   }
 }
 

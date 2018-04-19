@@ -11,12 +11,14 @@ namespace atom {
 
 class RemoteObjectFreer : public ObjectLifeMonitor {
  public:
-  static void BindTo(
-      v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id);
+  static void BindTo(v8::Isolate* isolate,
+                     v8::Local<v8::Object> target,
+                     int object_id);
 
  protected:
-  RemoteObjectFreer(
-      v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id);
+  RemoteObjectFreer(v8::Isolate* isolate,
+                    v8::Local<v8::Object> target,
+                    int object_id);
   ~RemoteObjectFreer() override;
 
   void RunDestructor() override;

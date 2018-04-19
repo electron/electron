@@ -12,11 +12,9 @@
 
 namespace brightray {
 
-PermissionManager::PermissionManager() {
-}
+PermissionManager::PermissionManager() {}
 
-PermissionManager::~PermissionManager() {
-}
+PermissionManager::~PermissionManager() {}
 
 int PermissionManager::RequestPermission(
     content::PermissionType permission,
@@ -25,8 +23,8 @@ int PermissionManager::RequestPermission(
     bool user_gesture,
     const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   if (permission == content::PermissionType::MIDI_SYSEX) {
-    content::ChildProcessSecurityPolicy::GetInstance()->
-        GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
+    content::ChildProcessSecurityPolicy::GetInstance()
+        ->GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
   }
   callback.Run(blink::mojom::PermissionStatus::GRANTED);
   return kNoPendingOperation;
@@ -37,14 +35,14 @@ int PermissionManager::RequestPermissions(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const base::Callback<void(
-        const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
+    const base::Callback<
+        void(const std::vector<blink::mojom::PermissionStatus>&)>& callback) {
   std::vector<blink::mojom::PermissionStatus> permissionStatuses;
 
   for (auto permission : permissions) {
     if (permission == content::PermissionType::MIDI_SYSEX) {
-      content::ChildProcessSecurityPolicy::GetInstance()->
-          GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
+      content::ChildProcessSecurityPolicy::GetInstance()
+          ->GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
     }
 
     permissionStatuses.push_back(blink::mojom::PermissionStatus::GRANTED);
@@ -54,14 +52,11 @@ int PermissionManager::RequestPermissions(
   return kNoPendingOperation;
 }
 
-void PermissionManager::CancelPermissionRequest(int request_id) {
-}
+void PermissionManager::CancelPermissionRequest(int request_id) {}
 
-void PermissionManager::ResetPermission(
-    content::PermissionType permission,
-    const GURL& requesting_origin,
-    const GURL& embedding_origin) {
-}
+void PermissionManager::ResetPermission(content::PermissionType permission,
+                                        const GURL& requesting_origin,
+                                        const GURL& embedding_origin) {}
 
 blink::mojom::PermissionStatus PermissionManager::GetPermissionStatus(
     content::PermissionType permission,

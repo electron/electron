@@ -61,17 +61,16 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
     flash_version_numbers.push_back("999");
   // E.g., "Shockwave Flash 10.2 r154":
   plugin.description = plugin.name + " " + flash_version_numbers[0] + "." +
-      flash_version_numbers[1] + " r" + flash_version_numbers[2];
+                       flash_version_numbers[1] + " r" +
+                       flash_version_numbers[2];
   plugin.version = base::JoinString(flash_version_numbers, ".");
-  content::WebPluginMimeType swf_mime_type(
-      content::kFlashPluginSwfMimeType,
-      content::kFlashPluginSwfExtension,
-      content::kFlashPluginSwfDescription);
+  content::WebPluginMimeType swf_mime_type(content::kFlashPluginSwfMimeType,
+                                           content::kFlashPluginSwfExtension,
+                                           content::kFlashPluginSwfDescription);
   plugin.mime_types.push_back(swf_mime_type);
-  content::WebPluginMimeType spl_mime_type(
-      content::kFlashPluginSplMimeType,
-      content::kFlashPluginSplExtension,
-      content::kFlashPluginSplDescription);
+  content::WebPluginMimeType spl_mime_type(content::kFlashPluginSplMimeType,
+                                           content::kFlashPluginSplExtension,
+                                           content::kFlashPluginSplDescription);
   plugin.mime_types.push_back(spl_mime_type);
 
   return plugin;
@@ -84,13 +83,11 @@ content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
   widevine_cdm.is_out_of_process = true;
   widevine_cdm.path = path;
   widevine_cdm.name = kWidevineCdmDisplayName;
-  widevine_cdm.description = kWidevineCdmDescription +
-                             std::string(" (version: ") +
-                             version + ")";
+  widevine_cdm.description =
+      kWidevineCdmDescription + std::string(" (version: ") + version + ")";
   widevine_cdm.version = version;
   content::WebPluginMimeType widevine_cdm_mime_type(
-      kWidevineCdmPluginMimeType,
-      kWidevineCdmPluginExtension,
+      kWidevineCdmPluginMimeType, kWidevineCdmPluginExtension,
       kWidevineCdmPluginMimeTypeDescription);
 
   // Add the supported codecs as if they came from the component manifest.
@@ -142,8 +139,7 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
   auto string_with_separator = command_line->GetSwitchValueASCII(cmd_switch);
   if (!string_with_separator.empty())
     *vec = base::SplitString(string_with_separator, separator,
-                             base::TRIM_WHITESPACE,
-                             base::SPLIT_WANT_NONEMPTY);
+                             base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
 }  // namespace
@@ -151,13 +147,13 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
 void AddPepperFlashFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath flash_path = command_line->GetSwitchValuePath(
-      switches::kPpapiFlashPath);
+  base::FilePath flash_path =
+      command_line->GetSwitchValuePath(switches::kPpapiFlashPath);
   if (flash_path.empty())
     return;
 
-  auto flash_version = command_line->GetSwitchValueASCII(
-      switches::kPpapiFlashVersion);
+  auto flash_version =
+      command_line->GetSwitchValueASCII(switches::kPpapiFlashVersion);
 
   plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
@@ -166,38 +162,36 @@ void AddPepperFlashFromCommandLine(
 void AddWidevineCdmFromCommandLine(
     std::vector<content::PepperPluginInfo>* plugins) {
   auto command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath widevine_cdm_path = command_line->GetSwitchValuePath(
-      switches::kWidevineCdmPath);
+  base::FilePath widevine_cdm_path =
+      command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
   if (widevine_cdm_path.empty())
     return;
 
   if (!base::PathExists(widevine_cdm_path))
     return;
 
-  auto widevine_cdm_version = command_line->GetSwitchValueASCII(
-      switches::kWidevineCdmVersion);
+  auto widevine_cdm_version =
+      command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
   if (widevine_cdm_version.empty())
     return;
 
-  plugins->push_back(CreateWidevineCdmInfo(widevine_cdm_path,
-                                           widevine_cdm_version));
+  plugins->push_back(
+      CreateWidevineCdmInfo(widevine_cdm_path, widevine_cdm_version));
 }
 #endif  //  defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
-AtomContentClient::AtomContentClient() {
-}
+AtomContentClient::AtomContentClient() {}
 
-AtomContentClient::~AtomContentClient() {
-}
+AtomContentClient::~AtomContentClient() {}
 
 std::string AtomContentClient::GetProduct() const {
   return "Chrome/" CHROME_VERSION_STRING;
 }
 
 std::string AtomContentClient::GetUserAgent() const {
-  return content::BuildUserAgentFromProduct(
-      "Chrome/" CHROME_VERSION_STRING " "
-      ATOM_PRODUCT_NAME "/" ATOM_VERSION_STRING);
+  return content::BuildUserAgentFromProduct("Chrome/" CHROME_VERSION_STRING
+                                            " " ATOM_PRODUCT_NAME
+                                            "/" ATOM_VERSION_STRING);
 }
 
 base::string16 AtomContentClient::GetLocalizedString(int message_id) const {

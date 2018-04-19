@@ -20,7 +20,7 @@ scoped_refptr<base::TaskRunner> IconLoader::GetReadIconTaskRunner() {
   // ReadIcon() calls into views::LinuxUI and GTK2 code, so it must be on the UI
   // thread.
   return content::BrowserThread::GetTaskRunnerForThread(
-    content::BrowserThread::UI);
+      content::BrowserThread::UI);
 }
 
 void IconLoader::ReadIcon() {

@@ -30,9 +30,9 @@ HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   }
 
   PROCESS_BASIC_INFORMATION pbi;
-  LONG status = NtQueryInformationProcess(
-      handle, ProcessBasicInformation,
-      &pbi, sizeof(PROCESS_BASIC_INFORMATION), NULL);
+  LONG status =
+      NtQueryInformationProcess(handle, ProcessBasicInformation, &pbi,
+                                sizeof(PROCESS_BASIC_INFORMATION), NULL);
   if (!NT_SUCCESS(status)) {
     LOG(ERROR) << "NtQueryInformationProcess failed";
     return NULL;
@@ -57,7 +57,8 @@ StringType AddQuoteForArg(const StringType& arg) {
     if (arg[i] == '\\') {
       // Find the extent of this run of backslashes.
       size_t start = i, end = start + 1;
-      for (; end < arg.size() && arg[end] == '\\'; ++end) {}
+      for (; end < arg.size() && arg[end] == '\\'; ++end) {
+      }
       size_t backslash_count = end - start;
 
       // Backslashes are escapes only if the run is followed by a double quote.

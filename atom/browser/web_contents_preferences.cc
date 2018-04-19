@@ -73,22 +73,22 @@ WebContentsPreferences::WebContentsPreferences(
   } else {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
   }
-  #if defined(OS_MACOSX)
+#if defined(OS_MACOSX)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
-  #endif
+#endif
   SetDefaultBoolIfUndefined("offscreen", false);
 
   last_dict_ = std::move(*dict_.CreateDeepCopy());
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
-  instances_.erase(
-      std::remove(instances_.begin(), instances_.end(), this),
-      instances_.end());
+  instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
+                   instances_.end());
 }
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
-    const base::StringPiece& key, bool val) {
+    const base::StringPiece& key,
+    bool val) {
   bool existing;
   if (!dict_.GetBoolean(key, &existing)) {
     dict_.SetBoolean(key, val);
@@ -186,8 +186,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   // Custom args for renderer process
   base::Value* customArgs;
-  if (dict_.Get(options::kCustomArgs, &customArgs) &&
-      customArgs->is_list()) {
+  if (dict_.Get(options::kCustomArgs, &customArgs) && customArgs->is_list()) {
     for (const base::Value& customArg : customArgs->GetList()) {
       if (customArg.is_string())
         command_line->AppendArg(customArg.GetString());

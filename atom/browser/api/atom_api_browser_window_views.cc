@@ -15,8 +15,8 @@ void BrowserWindow::UpdateDraggableRegions(
     const std::vector<DraggableRegion>& regions) {
   if (window_->has_frame())
     return;
-  static_cast<NativeWindowViews*>(window_.get())->UpdateDraggableRegions(
-      DraggableRegionsToSkRegion(regions));
+  static_cast<NativeWindowViews*>(window_.get())
+      ->UpdateDraggableRegions(DraggableRegionsToSkRegion(regions));
 }
 
 }  // namespace api

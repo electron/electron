@@ -18,10 +18,9 @@ namespace atom {
 
 namespace {
 
-void MediaAccessAllowed(
-    const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback,
-    bool allowed) {
+void MediaAccessAllowed(const content::MediaStreamRequest& request,
+                        const content::MediaResponseCallback& callback,
+                        bool allowed) {
   brightray::MediaStreamDevicesController controller(request, callback);
   if (allowed)
     controller.TakeAction();
@@ -46,11 +45,9 @@ void OnPermissionResponse(const base::Callback<void(bool)>& callback,
 
 WebContentsPermissionHelper::WebContentsPermissionHelper(
     content::WebContents* web_contents)
-    : web_contents_(web_contents) {
-}
+    : web_contents_(web_contents) {}
 
-WebContentsPermissionHelper::~WebContentsPermissionHelper() {
-}
+WebContentsPermissionHelper::~WebContentsPermissionHelper() {}
 
 void WebContentsPermissionHelper::RequestPermission(
     content::PermissionType permission,

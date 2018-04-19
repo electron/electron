@@ -22,8 +22,10 @@ class MenuMac : public Menu {
  protected:
   MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
-  void PopupAt(BrowserWindow* window,
-               int x, int y, int positioning_item,
+  void PopupAt(TopLevelWindow* window,
+               int x,
+               int y,
+               int positioning_item,
                const base::Closure& callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                  int32_t window_id,

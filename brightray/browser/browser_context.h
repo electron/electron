@@ -32,8 +32,8 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
  public:
   // Get the BrowserContext according to its |partition| and |in_memory|,
   // empty pointer when be returned when there is no matching BrowserContext.
-  static scoped_refptr<BrowserContext> Get(
-      const std::string& partition, bool in_memory);
+  static scoped_refptr<BrowserContext> Get(const std::string& partition,
+                                           bool in_memory);
 
   base::WeakPtr<BrowserContext> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

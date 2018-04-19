@@ -23,7 +23,7 @@ namespace ppapi {
 namespace proxy {
 struct SerializedFontDescription;
 }
-}
+}  // namespace ppapi
 
 class PepperFlashFontFileHost : public ppapi::host::ResourceHost {
  public:

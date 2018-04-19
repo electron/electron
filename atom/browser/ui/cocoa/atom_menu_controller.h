@@ -22,7 +22,7 @@ class AtomMenuModel;
 // allow for hierarchical menus). The tag is the index into that model for
 // that particular item. It is important that the model outlives this object
 // as it only maintains weak references.
-@interface AtomMenuController : NSObject<NSMenuDelegate> {
+@interface AtomMenuController : NSObject <NSMenuDelegate> {
  @protected
   atom::AtomMenuModel* model_;  // weak
   base::scoped_nsobject<NSMenu> menu_;

@@ -68,13 +68,15 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   int GetSelectedLine() { return selected_line_.value_or(-1); }
 
-  void WriteDragDataForView(
-    views::View*, const gfx::Point&, ui::OSExchangeData*) override {}
+  void WriteDragDataForView(views::View*,
+                            const gfx::Point&,
+                            ui::OSExchangeData*) override {}
   int GetDragOperationsForView(views::View*, const gfx::Point&) override {
     return ui::DragDropTypes::DRAG_NONE;
   }
-  bool CanStartDragForView(
-    views::View*, const gfx::Point&, const gfx::Point&) override {
+  bool CanStartDragForView(views::View*,
+                           const gfx::Point&,
+                           const gfx::Point&) override {
     return false;
   }
 

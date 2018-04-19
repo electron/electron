@@ -12,7 +12,6 @@
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
-#include "components/prefs/pref_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job.h"
@@ -22,6 +21,7 @@
 #include "chrome/browser/ui/simple_message_box.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/print_messages.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_service.h"
@@ -42,9 +42,7 @@ using content::BrowserThread;
 
 namespace printing {
 
-namespace {
-
-}  // namespace
+namespace {}  // namespace
 
 PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
@@ -67,12 +65,12 @@ PrintViewManagerBase::~PrintViewManagerBase() {
 
 #if !defined(DISABLE_BASIC_PRINTING)
 bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
-                                    bool silent, bool print_background,
+                                    bool silent,
+                                    bool print_background,
                                     const base::string16& device_name) {
   int32_t id = rfh->GetRoutingID();
-  return PrintNowInternal(
-      rfh,
-      std::make_unique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
+  return PrintNowInternal(rfh, std::make_unique<PrintMsg_PrintPages>(
+                                   id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 
@@ -114,7 +112,7 @@ void PrintViewManagerBase::OnDidGetDocumentCookie(int cookie) {
 }
 
 void PrintViewManagerBase::OnDidPrintPage(
-  const PrintHostMsg_DidPrintPage_Params& params) {
+    const PrintHostMsg_DidPrintPage_Params& params) {
   if (!OpportunisticallyCreatePrintJob(params.document_cookie))
     return;
 
@@ -153,18 +151,15 @@ void PrintViewManagerBase::OnDidPrintPage(
 
 #if !defined(OS_WIN)
   // Update the rendered document. It will send notifications to the listener.
-  document->SetPage(params.page_number,
-                    std::move(metafile),
-                    params.page_size,
+  document->SetPage(params.page_number, std::move(metafile), params.page_size,
                     params.content_area);
 
   ShouldQuitFromInnerMessageLoop();
 #else
   print_job_->AppendPrintedPage(params.page_number);
   if (metafile_must_be_valid) {
-    bool print_text_with_gdi =
-        document->settings().print_text_with_gdi() &&
-        !document->settings().printer_is_xps();
+    bool print_text_with_gdi = document->settings().print_text_with_gdi() &&
+                               !document->settings().printer_is_xps();
 
     scoped_refptr<base::RefCountedBytes> bytes = new base::RefCountedBytes(
         reinterpret_cast<const unsigned char*>(shared_buf.memory()),
@@ -172,8 +167,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 
     document->DebugDumpData(bytes.get(), FILE_PATH_LITERAL(".pdf"));
     print_job_->StartPdfToEmfConversion(
-        bytes, params.page_size, params.content_area,
-        print_text_with_gdi);
+        bytes, params.page_size, params.content_area, print_text_with_gdi);
   }
 #endif  // !OS_WIN
 }
@@ -284,8 +278,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
     return false;
 
   // We can't print if there is no renderer.
-  if (!web_contents() ||
-      !web_contents()->GetRenderViewHost() ||
+  if (!web_contents() || !web_contents()->GetRenderViewHost() ||
       !web_contents()->GetRenderViewHost()->IsRenderViewLive()) {
     return false;
   }
@@ -318,8 +311,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
 void PrintViewManagerBase::ShouldQuitFromInnerMessageLoop() {
   // Look at the reason.
   DCHECK(print_job_->document());
-  if (print_job_->document() &&
-      print_job_->document()->IsComplete() &&
+  if (print_job_->document() && print_job_->document()->IsComplete() &&
       inside_inner_message_loop_) {
     // We are in a message loop created by RenderAllMissingPagesNow. Quit from
     // it.
@@ -361,8 +353,7 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
   bool result = RenderAllMissingPagesNow();
 
   // Verify that assertion.
-  if (print_job_.get() &&
-      print_job_->document() &&
+  if (print_job_.get() && print_job_->document() &&
       !print_job_->document()->IsComplete()) {
     DCHECK(!result);
     // That failed.

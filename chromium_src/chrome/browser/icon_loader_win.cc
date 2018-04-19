@@ -4,8 +4,8 @@
 
 #include "chrome/browser/icon_loader.h"
 
-#include <windows.h>
 #include <shellapi.h>
+#include <windows.h>
 
 #include "base/bind.h"
 #include "base/message_loop/message_loop.h"
@@ -54,15 +54,15 @@ void IconLoader::ReadIcon() {
 
   std::unique_ptr<gfx::Image> image;
 
-  SHFILEINFO file_info = { 0 };
+  SHFILEINFO file_info = {0};
   if (SHGetFileInfo(group_.c_str(), FILE_ATTRIBUTE_NORMAL, &file_info,
-                     sizeof(SHFILEINFO),
-                     SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
+                    sizeof(SHFILEINFO),
+                    SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
     std::unique_ptr<SkBitmap> bitmap(
         IconUtil::CreateSkBitmapFromHICON(file_info.hIcon));
     if (bitmap.get()) {
-      gfx::ImageSkia image_skia(gfx::ImageSkiaRep(*bitmap,
-                                                  display::win::GetDPIScale()));
+      gfx::ImageSkia image_skia(
+          gfx::ImageSkiaRep(*bitmap, display::win::GetDPIScale()));
       image_skia.MakeThreadSafe();
       image = std::make_unique<gfx::Image>(image_skia);
       DestroyIcon(file_info.hIcon);

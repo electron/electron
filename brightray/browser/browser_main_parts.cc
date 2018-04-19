@@ -98,8 +98,7 @@ void OverrideLinuxAppDataPath() {
   if (PathService::Get(DIR_APP_DATA, &path))
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(),
-                                    base::nix::kXdgConfigHomeEnvVar,
+  path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
   PathService::Override(DIR_APP_DATA, path);
 }
@@ -167,11 +166,9 @@ base::string16 MediaStringProvider(media::MessageId id) {
 
 }  // namespace
 
-BrowserMainParts::BrowserMainParts() {
-}
+BrowserMainParts::BrowserMainParts() {}
 
-BrowserMainParts::~BrowserMainParts() {
-}
+BrowserMainParts::~BrowserMainParts() {}
 
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
@@ -220,7 +217,7 @@ void BrowserMainParts::ToolkitInitialized() {
   gfx::PlatformFontWin::adjust_font_callback = &AdjustUIFont;
   gfx::PlatformFontWin::get_minimum_font_size_callback = &GetMinimumFontSize;
 
-  wchar_t module_name[MAX_PATH] = { 0 };
+  wchar_t module_name[MAX_PATH] = {0};
   if (GetModuleFileName(NULL, module_name, MAX_PATH))
     ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
@@ -304,7 +301,7 @@ int BrowserMainParts::PreCreateThreads() {
 
   // Initialize the app locale.
   BrowserClient::SetApplicationLocale(
-    l10n_util::GetApplicationLocale(custom_locale_));
+      l10n_util::GetApplicationLocale(custom_locale_));
 
   // Manage global state of net and other IO thread related.
   io_thread_ = std::make_unique<IOThread>();

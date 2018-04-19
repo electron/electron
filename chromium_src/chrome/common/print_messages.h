@@ -14,8 +14,8 @@
 #include "printing/page_size_margins.h"
 #include "printing/print_job_constants.h"
 #include "third_party/WebKit/public/web/WebPrintScalingOption.h"
-#include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/native_widget_types.h"
 
 #if defined(OS_WIN)
 #include "ipc/ipc_platform_file.h"
@@ -71,8 +71,7 @@ struct PrintMsg_PrintPages_Params {
 
 #define IPC_MESSAGE_START PrintMsgStart
 
-IPC_ENUM_TRAITS_MAX_VALUE(printing::MarginType,
-                          printing::MARGIN_TYPE_LAST)
+IPC_ENUM_TRAITS_MAX_VALUE(printing::MarginType, printing::MARGIN_TYPE_LAST)
 IPC_ENUM_TRAITS_MIN_MAX_VALUE(printing::DuplexMode,
                               printing::UNKNOWN_DUPLEX_MODE,
                               printing::SHORT_EDGE)
@@ -224,7 +223,6 @@ IPC_STRUCT_BEGIN(PrintHostMsg_DidPreviewDocument_Params)
   IPC_STRUCT_MEMBER(int, preview_request_id)
 IPC_STRUCT_END()
 
-
 // Messages sent from the browser to the renderer.
 
 // Tells the render view to switch the CSS to print media type, renders every
@@ -235,14 +233,12 @@ IPC_MESSAGE_ROUTED3(PrintMsg_PrintPages,
                     base::string16 /* device name*/)
 
 // Tells the render view that printing is done so it can clean up.
-IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone,
-                    bool /* success */)
+IPC_MESSAGE_ROUTED1(PrintMsg_PrintingDone, bool /* success */)
 
 // Tells the render view to switch the CSS to print media type, renders every
 // requested pages for print preview using the given |settings|. This gets
 // called multiple times as the user updates settings.
-IPC_MESSAGE_ROUTED1(PrintMsg_PrintPreview,
-                    base::DictionaryValue /* settings */)
+IPC_MESSAGE_ROUTED1(PrintMsg_PrintPreview, base::DictionaryValue /* settings */)
 
 // Messages sent from the renderer to the browser.
 
@@ -279,8 +275,8 @@ IPC_SYNC_MESSAGE_ROUTED0_1(PrintHostMsg_GetDefaultPrintSettings,
 
 // you can set the printer
 IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_InitSettingWithDeviceName,
-    base::string16, /* device name */
-    PrintMsg_Print_Params /* default_settings */)
+                           base::string16, /* device name */
+                           PrintMsg_Print_Params /* default_settings */)
 
 // The renderer wants to update the current print settings with new
 // |job_settings|.
@@ -297,14 +293,13 @@ IPC_SYNC_MESSAGE_ROUTED2_2(PrintHostMsg_UpdatePrintSettings,
 IPC_SYNC_MESSAGE_ROUTED1_1(PrintHostMsg_ScriptedPrint,
                            PrintHostMsg_ScriptedPrint_Params,
                            PrintMsg_PrintPages_Params
-                               /* settings chosen by the user*/)
+                           /* settings chosen by the user*/)
 
 // This is sent when there are invalid printer settings.
 IPC_MESSAGE_ROUTED0(PrintHostMsg_ShowInvalidPrinterSettingsError)
 
 // Tell the browser printing failed.
-IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed,
-                    int /* document cookie */)
+IPC_MESSAGE_ROUTED1(PrintHostMsg_PrintingFailed, int /* document cookie */)
 
 // Sends back to the browser the complete rendered document (non-draft mode,
 // used for printing) that was requested by a PrintMsg_PrintPreview message.

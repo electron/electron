@@ -35,10 +35,16 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
+  // Common constructor.
+  TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
+  // Creating independent TopLevelWindow instance.
   TopLevelWindow(v8::Isolate* isolate,
                  v8::Local<v8::Object> wrapper,
                  const mate::Dictionary& options);
   ~TopLevelWindow() override;
+
+  // TrackableObject:
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -68,9 +74,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
   void OnNewWindowForTab() override;
-  #if defined(OS_WIN)
+#if defined(OS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
-  #endif
+#endif
 
   // Public APIs of NativeWindow.
   void Close();
@@ -107,9 +113,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetResizable(bool resizable);
   bool IsResizable();
   void SetMovable(bool movable);
-  #if defined(OS_WIN) || defined(OS_MACOSX)
+#if defined(OS_WIN) || defined(OS_MACOSX)
   void MoveTop();
-  #endif
+#endif
   bool IsMovable();
   void SetMinimizable(bool minimizable);
   bool IsMinimizable();
@@ -184,8 +190,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetIcon(mate::Handle<NativeImage> icon);
 #endif
 #if defined(OS_WIN)
-  typedef base::Callback<void(v8::Local<v8::Value>,
-                              v8::Local<v8::Value>)> MessageCallback;
+  typedef base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>
+      MessageCallback;
   bool HookWindowMessage(UINT message, const MessageCallback& callback);
   bool IsWindowMessageHooked(UINT message);
   void UnhookWindowMessage(UINT message);
@@ -222,5 +228,28 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 }  // namespace api
 
 }  // namespace atom
+
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::NativeWindow** out) {
+    // null would be tranfered to NULL.
+    if (val->IsNull()) {
+      *out = NULL;
+      return true;
+    }
+
+    atom::api::TopLevelWindow* window;
+    if (!Converter<atom::api::TopLevelWindow*>::FromV8(isolate, val, &window))
+      return false;
+    *out = window->window();
+    return true;
+  }
+};
+
+}  // namespace mate
 
 #endif  // ATOM_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_
