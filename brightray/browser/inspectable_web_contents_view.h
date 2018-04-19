@@ -25,9 +25,7 @@ class InspectableWebContentsView {
   void SetDelegate(InspectableWebContentsViewDelegate* delegate) {
     delegate_ = delegate;
   }
-  InspectableWebContentsViewDelegate* GetDelegate() const {
-    return delegate_;
-  }
+  InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
 #if defined(TOOLKIT_VIEWS)
   // Returns the container control, which has devtools view attached.

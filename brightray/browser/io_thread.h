@@ -13,7 +13,7 @@
 namespace net {
 class URLRequestContext;
 class URLRequestContextGetter;
-}
+}  // namespace net
 
 namespace brightray {
 

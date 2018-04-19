@@ -77,9 +77,7 @@ class NotificationDelegateImpl final : public brightray::NotificationDelegate {
 
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
-    : browser_client_(browser_client),
-      render_process_id_(-1) {
-}
+    : browser_client_(browser_client), render_process_id_(-1) {}
 
 PlatformNotificationService::~PlatformNotificationService() {}
 
@@ -128,17 +126,14 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const GURL& service_worker_scope,
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
-    const content::NotificationResources& notification_resources) {
-}
+    const content::NotificationResources& notification_resources) {}
 
 void PlatformNotificationService::ClosePersistentNotification(
     content::BrowserContext* browser_context,
-    const std::string& notification_id) {
-}
+    const std::string& notification_id) {}
 
 void PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,
-    const DisplayedNotificationsCallback& callback) {
-}
+    const DisplayedNotificationsCallback& callback) {}
 
 }  // namespace brightray

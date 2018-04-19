@@ -29,13 +29,13 @@ namespace brightray {
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
 
-class InspectableWebContentsImpl :
-    public InspectableWebContents,
-    public content::DevToolsAgentHostClient,
-    public content::WebContentsObserver,
-    public content::WebContentsDelegate,
-    public DevToolsEmbedderMessageDispatcher::Delegate,
-    public net::URLFetcherDelegate {
+class InspectableWebContentsImpl
+    : public InspectableWebContents,
+      public content::DevToolsAgentHostClient,
+      public content::WebContentsObserver,
+      public content::WebContentsDelegate,
+      public DevToolsEmbedderMessageDispatcher::Delegate,
+      public net::URLFetcherDelegate {
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
@@ -156,8 +156,8 @@ class InspectableWebContentsImpl :
       const GURL& target_url,
       const std::string& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
-  void HandleKeyboardEvent(
-      content::WebContents*, const content::NativeWebKeyboardEvent&) override;
+  void HandleKeyboardEvent(content::WebContents*,
+                           const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
   content::ColorChooser* OpenColorChooser(
       content::WebContents* source,
@@ -172,8 +172,7 @@ class InspectableWebContentsImpl :
   // net::URLFetcherDelegate:
   void OnURLFetchComplete(const net::URLFetcher* source) override;
 
-  void SendMessageAck(int request_id,
-                      const base::Value* arg1);
+  void SendMessageAck(int request_id, const base::Value* arg1);
 
   bool frontend_loaded_;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;

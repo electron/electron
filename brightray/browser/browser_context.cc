@@ -61,8 +61,8 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
 
 // static
-scoped_refptr<BrowserContext> BrowserContext::Get(
-    const std::string& partition, bool in_memory) {
+scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
+                                                  bool in_memory) {
   PartitionKey key(partition, in_memory);
   if (browser_context_map_[key].get())
     return WrapRefCounted(browser_context_map_[key].get());
@@ -137,13 +137,9 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
-      this,
-      static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()),
-      GetPath(),
-      in_memory_,
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-      protocol_handlers,
-      std::move(protocol_interceptors));
+      this, static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()), GetPath(),
+      in_memory_, BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
+      protocol_handlers, std::move(protocol_interceptors));
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
 }
@@ -204,8 +200,7 @@ content::PermissionManager* BrowserContext::GetPermissionManager() {
   return permission_manager_.get();
 }
 
-content::BackgroundFetchDelegate*
-BrowserContext::GetBackgroundFetchDelegate() {
+content::BackgroundFetchDelegate* BrowserContext::GetBackgroundFetchDelegate() {
   return nullptr;
 }
 
@@ -228,8 +223,7 @@ BrowserContext::CreateRequestContextForStoragePartition(
   return nullptr;
 }
 
-net::URLRequestContextGetter*
-BrowserContext::CreateMediaRequestContext() {
+net::URLRequestContextGetter* BrowserContext::CreateMediaRequestContext() {
   return url_request_getter_.get();
 }
 

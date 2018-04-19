@@ -87,8 +87,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
   } else {
-    contents_web_view_ = new views::Label(
-        base::ASCIIToUTF16("No content under offscreen mode"));
+    contents_web_view_ =
+        new views::Label(base::ASCIIToUTF16("No content under offscreen mode"));
   }
 
   devtools_web_view_->SetVisible(false);
@@ -168,9 +168,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked) {
     devtools_window_.reset(new views::Widget);
     devtools_window_web_view_ = new views::WebView(NULL);
     devtools_window_delegate_ = new DevToolsWindowDelegate(
-        this,
-        devtools_window_web_view_,
-        devtools_window_.get());
+        this, devtools_window_web_view_, devtools_window_.get());
 
     views::Widget::InitParams params;
     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
@@ -213,8 +211,8 @@ void InspectableWebContentsViewViews::Layout() {
   gfx::Size container_size(width(), height());
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
-  ApplyDevToolsContentsResizingStrategy(strategy_, container_size,
-      &new_devtools_bounds, &new_contents_bounds);
+  ApplyDevToolsContentsResizingStrategy(
+      strategy_, container_size, &new_devtools_bounds, &new_contents_bounds);
 
   // DevTools cares about the specific position, so we have to compensate RTL
   // layout here.

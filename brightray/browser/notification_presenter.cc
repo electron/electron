@@ -8,8 +8,7 @@
 
 namespace brightray {
 
-NotificationPresenter::NotificationPresenter() {
-}
+NotificationPresenter::NotificationPresenter() {}
 
 NotificationPresenter::~NotificationPresenter() {
   for (Notification* notification : notifications_)

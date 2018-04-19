@@ -34,7 +34,7 @@ class NetworkDelegate;
 class ProxyConfigService;
 class URLRequestContextStorage;
 class URLRequestJobFactory;
-}
+}  // namespace net
 
 namespace brightray {
 

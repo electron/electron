@@ -30,17 +30,14 @@ bool IsDesktopEnvironmentUnity() {
 
 namespace brightray {
 
-ViewsDelegate::ViewsDelegate() {
-}
+ViewsDelegate::ViewsDelegate() {}
 
-ViewsDelegate::~ViewsDelegate() {
-}
+ViewsDelegate::~ViewsDelegate() {}
 
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
                                         const std::string& window_name,
                                         const gfx::Rect& bounds,
-                                        ui::WindowShowState show_state) {
-}
+                                        ui::WindowShowState show_state) {}
 
 bool ViewsDelegate::GetSavedWindowPlacement(
     const views::Widget* widget,
@@ -50,23 +47,20 @@ bool ViewsDelegate::GetSavedWindowPlacement(
   return false;
 }
 
-void ViewsDelegate::NotifyAccessibilityEvent(
-    views::View* view, ui::AXEvent event_type) {
-}
+void ViewsDelegate::NotifyAccessibilityEvent(views::View* view,
+                                             ui::AXEvent event_type) {}
 
-void ViewsDelegate::NotifyMenuItemFocused(
-    const base::string16& menu_name,
-    const base::string16& menu_item_name,
-    int item_index,
-    int item_count,
-    bool has_submenu) {
-}
+void ViewsDelegate::NotifyMenuItemFocused(const base::string16& menu_name,
+                                          const base::string16& menu_item_name,
+                                          int item_index,
+                                          int item_count,
+                                          bool has_submenu) {}
 
 #if defined(OS_WIN)
 HICON ViewsDelegate::GetDefaultWindowIcon() const {
   // Use current exe's icon as default window icon.
   return LoadIcon(GetModuleHandle(NULL),
-                  MAKEINTRESOURCE(1  /* IDR_MAINFRAME */));
+                  MAKEINTRESOURCE(1 /* IDR_MAINFRAME */));
 }
 
 HICON ViewsDelegate::GetSmallWindowIcon() const {
@@ -88,11 +82,9 @@ views::NonClientFrameView* ViewsDelegate::CreateDefaultNonClientFrameView(
   return NULL;
 }
 
-void ViewsDelegate::AddRef() {
-}
+void ViewsDelegate::AddRef() {}
 
-void ViewsDelegate::ReleaseRef() {
-}
+void ViewsDelegate::ReleaseRef() {}
 
 content::WebContents* ViewsDelegate::CreateWebContents(
     content::BrowserContext* browser_context,
@@ -108,8 +100,7 @@ void ViewsDelegate::OnBeforeWidgetInit(
   if (params->native_widget)
     return;
 
-  if (params->parent &&
-      params->type != views::Widget::InitParams::TYPE_MENU &&
+  if (params->parent && params->type != views::Widget::InitParams::TYPE_MENU &&
       params->type != views::Widget::InitParams::TYPE_TOOLTIP) {
     params->native_widget = new views::NativeWidgetAura(delegate);
   } else {
