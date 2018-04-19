@@ -6,6 +6,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_mac.h"
+#include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
 
 @implementation AtomNSWindowDelegate
@@ -18,6 +19,8 @@
   }
   return self;
 }
+
+#pragma mark - NSWindowDelegate
 
 - (void)windowDidChangeOcclusionState:(NSNotification *)notification {
   // notification.object is the window that changed its state.
@@ -244,6 +247,16 @@
 - (IBAction)newWindowForTab:(id)sender {
   shell_->NotifyNewWindowForTab();
   atom::Browser::Get()->NewWindowForTab();
+}
+
+#pragma mark - NSTouchBarDelegate
+
+- (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier API_AVAILABLE(macosx(10.12.2)) {
+  if (touchBar && shell_->atom_touch_bar())
+    return [shell_->atom_touch_bar() makeItemForIdentifier:identifier];
+  else
+    return nil;
 }
 
 @end

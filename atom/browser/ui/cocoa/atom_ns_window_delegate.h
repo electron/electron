@@ -11,7 +11,8 @@ namespace atom {
 class NativeWindowMac;
 }
 
-@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
+@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate,
+                                           NSTouchBarDelegate> {
  @private
   atom::NativeWindowMac* shell_;
   bool is_zooming_;
