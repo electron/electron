@@ -253,8 +253,8 @@ void Cookies::Get(const base::DictionaryValue& filter,
   auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), Passed(&copied),
-                     callback));
+      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter),
+                     std::move(copied), callback));
 }
 
 void Cookies::Remove(const GURL& url,
@@ -273,8 +273,8 @@ void Cookies::Set(const base::DictionaryValue& details,
   auto getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), Passed(&copied),
-                     callback));
+      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter),
+                     std::move(copied), callback));
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {
