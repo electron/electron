@@ -305,7 +305,7 @@ def main():
             sys.stderr.writelines(errs)
             if outs == []:
                 continue
-            if args.quiet is None:
+            if not args.quiet:
                 print_diff(outs, use_color=colored_stdout)
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
