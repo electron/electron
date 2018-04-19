@@ -370,6 +370,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       consecutive dialog protection is triggered. If not defined the default
       message would be used, note that currently the default message is in
       English and not localized.
+    * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
+      file or link onto the page causes a navigation. Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

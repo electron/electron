@@ -285,6 +285,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   }
   if (dict_.GetBoolean("allowRunningInsecureContent", &b))
     prefs->allow_running_insecure_content = b;
+  if (dict_.GetBoolean("navigateOnDragDrop", &b))
+    prefs->navigate_on_drag_drop = b;
   const base::DictionaryValue* fonts = nullptr;
   if (dict_.GetDictionary("defaultFontFamily", &fonts)) {
     base::string16 font;
