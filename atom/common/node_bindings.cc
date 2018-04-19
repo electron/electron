@@ -318,8 +318,8 @@ void NodeBindings::UvRunOnce() {
 
 void NodeBindings::WakeupMainThread() {
   DCHECK(task_runner_);
-  task_runner_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
-                                               weak_factory_.GetWeakPtr()));
+  task_runner_->PostTask(FROM_HERE, base::BindOnce(&NodeBindings::UvRunOnce,
+                                                   weak_factory_.GetWeakPtr()));
 }
 
 void NodeBindings::WakeupEmbedThread() {
