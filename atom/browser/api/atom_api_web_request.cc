@@ -100,9 +100,9 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
     return;
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&CallNetworkDelegateMethod<Method, Event, Listener>,
-                 base::RetainedRef(url_request_context_getter), method, type,
-                 std::move(patterns), std::move(listener)));
+      base::BindOnce(&CallNetworkDelegateMethod<Method, Event, Listener>,
+                     base::RetainedRef(url_request_context_getter), method,
+                     type, std::move(patterns), std::move(listener)));
 }
 
 // static

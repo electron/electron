@@ -421,8 +421,8 @@ bool NotificationCallbackWrapper(
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
-    task_runner->PostTask(FROM_HERE,
-                          base::Bind(base::IgnoreResult(callback), cmd, cwd));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), cmd, cwd));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();

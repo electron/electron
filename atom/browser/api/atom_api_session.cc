@@ -244,15 +244,15 @@ class ResolveProxyHelper {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
         browser_context->url_request_context_getter();
     context_getter->GetNetworkTaskRunner()->PostTask(
-        FROM_HERE, base::Bind(&ResolveProxyHelper::ResolveProxy,
-                              base::Unretained(this), context_getter, url));
+        FROM_HERE, base::BindOnce(&ResolveProxyHelper::ResolveProxy,
+                                  base::Unretained(this), context_getter, url));
   }
 
   void OnResolveProxyCompleted(int result) {
     std::string proxy;
     if (result == net::OK)
       proxy = proxy_info_.ToPacString();
-    original_thread_->PostTask(FROM_HERE, base::Bind(callback_, proxy));
+    original_thread_->PostTask(FROM_HERE, base::BindOnce(callback_, proxy));
     delete this;
   }
 
@@ -291,7 +291,7 @@ void RunCallbackInUI(const base::Callback<void()>& callback) {
 template <typename... T>
 void RunCallbackInUI(const base::Callback<void(T...)>& callback, T... result) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(callback, result...));
+                          base::BindOnce(callback, result...));
 }
 
 // Callback of HttpCache::GetBackend.
@@ -529,9 +529,9 @@ template <Session::CacheAction action>
 void Session::DoCacheAction(const net::CompletionCallback& callback) {
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&DoCacheActionInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()), action,
-                 callback));
+      base::BindOnce(&DoCacheActionInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     action, callback));
 }
 
 void Session::ClearStorageData(mate::Arguments* args) {
@@ -592,7 +592,7 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(
+      base::BindOnce(
           &SetDevToolsNetworkEmulationClientIdInIO,
           base::RetainedRef(browser_context_->url_request_context_getter()),
           devtools_network_emulation_client_id_));
@@ -604,7 +604,7 @@ void Session::DisableNetworkEmulation() {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(
+      base::BindOnce(
           &SetDevToolsNetworkEmulationClientIdInIO,
           base::RetainedRef(browser_context_->url_request_context_getter()),
           std::string()));
@@ -620,8 +620,9 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
 
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&SetCertVerifyProcInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()), proc));
+      base::BindOnce(&SetCertVerifyProcInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     proc));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -642,9 +643,9 @@ void Session::ClearHostResolverCache(mate::Arguments* args) {
 
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&ClearHostResolverCacheInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 callback));
+      base::BindOnce(&ClearHostResolverCacheInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     callback));
 }
 
 void Session::ClearAuthCache(mate::Arguments* args) {
@@ -658,17 +659,17 @@ void Session::ClearAuthCache(mate::Arguments* args) {
 
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&ClearAuthCacheInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()), options,
-                 callback));
+      base::BindOnce(&ClearAuthCacheInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     options, callback));
 }
 
 void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&AllowNTLMCredentialsForDomainsInIO,
-                 WrapRefCounted(browser_context_->GetRequestContext()),
-                 domains));
+      base::BindOnce(&AllowNTLMCredentialsForDomainsInIO,
+                     WrapRefCounted(browser_context_->GetRequestContext()),
+                     domains));
 }
 
 void Session::SetUserAgent(const std::string& user_agent,
@@ -682,7 +683,7 @@ void Session::SetUserAgent(const std::string& user_agent,
       browser_context_->GetRequestContext());
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
-      base::Bind(&SetUserAgentInIO, getter, accept_lang, user_agent));
+      base::BindOnce(&SetUserAgentInIO, getter, accept_lang, user_agent));
 }
 
 std::string Session::GetUserAgent() {
@@ -697,8 +698,8 @@ void Session::GetBlobData(const std::string& uuid,
   AtomBlobReader* blob_reader = browser_context()->GetBlobReader();
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&AtomBlobReader::StartReading, base::Unretained(blob_reader),
-                 uuid, callback));
+      base::BindOnce(&AtomBlobReader::StartReading,
+                     base::Unretained(blob_reader), uuid, callback));
 }
 
 void Session::CreateInterruptedDownload(const mate::Dictionary& options) {
