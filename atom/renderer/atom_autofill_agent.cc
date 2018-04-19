@@ -82,8 +82,8 @@ void AutofillAgent::TextFieldDidChange(
 
   weak_ptr_factory_.InvalidateWeakPtrs();
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(&AutofillAgent::TextFieldDidChangeImpl,
-                            weak_ptr_factory_.GetWeakPtr(), element));
+      FROM_HERE, base::BindOnce(&AutofillAgent::TextFieldDidChangeImpl,
+                                weak_ptr_factory_.GetWeakPtr(), element));
 }
 
 void AutofillAgent::TextFieldDidChangeImpl(

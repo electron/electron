@@ -53,7 +53,7 @@ void GuestViewContainer::DidResizeElement(const gfx::Size& new_size) {
     return;
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(element_resize_callback_, new_size));
+      FROM_HERE, base::BindOnce(element_resize_callback_, new_size));
 }
 
 base::WeakPtr<content::BrowserPluginDelegate> GuestViewContainer::GetWeakPtr() {
