@@ -29,7 +29,7 @@ namespace api {
 BrowserWindow::BrowserWindow(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper,
                              const mate::Dictionary& options)
-    : TopLevelWindow(isolate, wrapper, options), weak_factory_(this) {
+    : TopLevelWindow(isolate, options), weak_factory_(this) {
   mate::Handle<class WebContents> web_contents;
 
   // Use options.webPreferences in WebContents.
@@ -397,7 +397,6 @@ mate::WrappableBase* BrowserWindow::New(mate::Arguments* args) {
 // static
 void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
-  TopLevelWindow::BuildPrototype(isolate, prototype);
   prototype->SetClassName(mate::StringToV8(isolate, "BrowserWindow"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
@@ -439,14 +438,8 @@ void Initialize(v8::Local<v8::Object> exports,
   templ->InstanceTemplate()->SetInternalFieldCount(1);
   BrowserWindow::BuildPrototype(isolate, templ);
 
-  mate::Dictionary browser_window(isolate, templ->GetFunction());
-  browser_window.SetMethod(
-      "fromId", &mate::TrackableObject<TopLevelWindow>::FromWeakMapID);
-  browser_window.SetMethod("getAllWindows",
-                           &mate::TrackableObject<TopLevelWindow>::GetAll);
-
   mate::Dictionary dict(isolate, exports);
-  dict.Set("BrowserWindow", browser_window);
+  dict.Set("BrowserWindow", templ->GetFunction());
 }
 
 }  // namespace

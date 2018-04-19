@@ -21,7 +21,7 @@ class MenuViews : public Menu {
   MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
  protected:
-  void PopupAt(BrowserWindow* window,
+  void PopupAt(TopLevelWindow* window,
                int x,
                int y,
                int positioning_item,

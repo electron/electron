@@ -35,10 +35,16 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   NativeWindow* window() const { return window_.get(); }
 
  protected:
+  // Common constructor.
+  TopLevelWindow(v8::Isolate* isolate, const mate::Dictionary& options);
+  // Creating independent TopLevelWindow instance.
   TopLevelWindow(v8::Isolate* isolate,
                  v8::Local<v8::Object> wrapper,
                  const mate::Dictionary& options);
   ~TopLevelWindow() override;
+
+  // TrackableObject:
+  void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
 
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
@@ -222,5 +228,28 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 }  // namespace api
 
 }  // namespace atom
+
+namespace mate {
+
+template<>
+struct Converter<atom::NativeWindow*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     atom::NativeWindow** out) {
+    // null would be tranfered to NULL.
+    if (val->IsNull()) {
+      *out = NULL;
+      return true;
+    }
+
+    atom::api::TopLevelWindow* window;
+    if (!Converter<atom::api::TopLevelWindow*>::FromV8(isolate, val, &window))
+      return false;
+    *out = window->window();
+    return true;
+  }
+};
+
+}  // namespace mate
 
 #endif  // ATOM_BROWSER_API_ATOM_API_TOP_LEVEL_WINDOW_H_

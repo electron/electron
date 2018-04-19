@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_browser_view.h"
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
@@ -70,7 +71,6 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
-                               v8::Local<v8::Object> wrapper,
                                const mate::Dictionary& options)
     : weak_factory_(this) {
   // The parent window.
@@ -99,13 +99,15 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   if (options.Get(options::kIcon, &icon) && !icon.IsEmpty())
     SetIcon(icon);
 #endif
+}
 
-  AttachAsUserData(window_.get());
-
-  // We can only append this window to parent window's child windows after this
-  // window's JS wrapper gets initialized.
-  if (!parent.IsEmpty())
-    parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
+TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
+                               v8::Local<v8::Object> wrapper,
+                               const mate::Dictionary& options)
+    : TopLevelWindow(isolate, options) {
+  InitWith(isolate, wrapper);
+  // Init window after everything has been setup.
+  window()->InitFromOptions(options);
 }
 
 TopLevelWindow::~TopLevelWindow() {
@@ -115,6 +117,21 @@ TopLevelWindow::~TopLevelWindow() {
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
   base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+}
+
+void TopLevelWindow::InitWith(v8::Isolate* isolate,
+                              v8::Local<v8::Object> wrapper) {
+  AttachAsUserData(window_.get());
+  mate::TrackableObject<TopLevelWindow>::InitWith(isolate, wrapper);
+
+  // We can only append this window to parent window's child windows after this
+  // window's JS wrapper gets initialized.
+  if (!parent_window_.IsEmpty()) {
+    mate::Handle<TopLevelWindow> parent;
+    mate::ConvertFromV8(isolate, GetParentWindow(), &parent);
+    DCHECK(!parent.IsEmpty());
+    parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
+  }
 }
 
 void TopLevelWindow::WillCloseWindow(bool* prevent_default) {

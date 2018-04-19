@@ -9,8 +9,6 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/sys_string_conversions.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
 
@@ -27,7 +25,7 @@ MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
       weak_factory_(this) {
 }
 
-void MenuMac::PopupAt(BrowserWindow* window,
+void MenuMac::PopupAt(TopLevelWindow* window,
                       int x, int y, int positioning_item,
                       const base::Closure& callback) {
   NativeWindow* native_window = window->window();
