@@ -4,11 +4,12 @@
 
 #include "chrome/common/chrome_paths_internal.h"
 
+#include <windows.h>
+
 #include <knownfolders.h>
 #include <shellapi.h>
 #include <shlobj.h>
 #include <shobjidl.h>
-#include <windows.h>
 
 #include "base/files/file_path.h"
 #include "base/path_service.h"
