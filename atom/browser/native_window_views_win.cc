@@ -5,6 +5,10 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "ui/base/win/accessibility_misc_utils.h"
+
+// Must be included after other Windows headers.
+#include <UIAutomationCoreApi.h>
 
 namespace atom {
 

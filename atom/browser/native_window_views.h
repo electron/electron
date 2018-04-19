@@ -16,11 +16,9 @@
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
-#include <UIAutomationCoreApi.h>
 #include "atom/browser/ui/win/message_handler_delegate.h"
 #include "atom/browser/ui/win/taskbar_host.h"
 #include "base/win/scoped_gdi_object.h"
-#include "ui/base/win/accessibility_misc_utils.h"
 #endif
 
 namespace views {
