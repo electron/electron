@@ -312,9 +312,10 @@ void CommonWebContentsDelegate::DevToolsSaveToFile(const std::string& url,
 
   saved_files_[url] = path;
   BrowserThread::PostTaskAndReply(
-      BrowserThread::FILE, FROM_HERE, base::Bind(&WriteToFile, path, content),
-      base::Bind(&CommonWebContentsDelegate::OnDevToolsSaveToFile,
-                 base::Unretained(this), url));
+      BrowserThread::FILE, FROM_HERE,
+      base::BindOnce(&WriteToFile, path, content),
+      base::BindOnce(&CommonWebContentsDelegate::OnDevToolsSaveToFile,
+                     base::Unretained(this), url));
 }
 
 void CommonWebContentsDelegate::DevToolsAppendToFile(
@@ -326,9 +327,9 @@ void CommonWebContentsDelegate::DevToolsAppendToFile(
 
   BrowserThread::PostTaskAndReply(
       BrowserThread::FILE, FROM_HERE,
-      base::Bind(&AppendToFile, it->second, content),
-      base::Bind(&CommonWebContentsDelegate::OnDevToolsAppendToFile,
-                 base::Unretained(this), url));
+      base::BindOnce(&AppendToFile, it->second, content),
+      base::BindOnce(&CommonWebContentsDelegate::OnDevToolsAppendToFile,
+                     base::Unretained(this), url));
 }
 
 void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
