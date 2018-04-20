@@ -9,7 +9,7 @@ var childProcess = require('child_process')
 var electronPath = require('electron')
 
 // spawn the process
-var env = { /*...*/ }
+var env = { /* ... */ }
 var stdio = ['inherit', 'inherit', 'inherit', 'ipc']
 var appProcess = childProcess.spawn(electronPath, ['./app'], {stdio, env})
 
