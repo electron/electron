@@ -38,14 +38,11 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
         exclude = []
 
     out = []
-    for file in files:
-        if recursive and os.path.isdir(file):
-            for dirpath, dnames, fnames in os.walk(file):
+    for f in files:
+        if recursive and os.path.isdir(f):
+            for dirpath, dnames, fnames in os.walk(f):
                 fpaths = [os.path.join(dirpath, fname) for fname in fnames]
                 for pattern in exclude:
-                    # os.walk() supports trimming down the dnames list
-                    # by modifying it in-place,
-                    # to avoid unnecessary directory listings.
                     dnames[:] = [
                         x for x in dnames
                         if
@@ -54,25 +51,25 @@ def list_files(files, recursive=False, extensions=None, exclude=None):
                     fpaths = [
                         x for x in fpaths if not fnmatch.fnmatch(x, pattern)
                     ]
-                for f in fpaths:
+                for fp in fpaths:
                     ext = os.path.splitext(f)[1][1:]
                     print(ext)
                     if ext in extensions:
-                        out.append(f)
+                        out.append(fp)
         else:
-            ext = os.path.splitext(file)[1][1:]
+            ext = os.path.splitext(f)[1][1:]
             if ext in extensions:
-                out.append(file)
+                out.append(f)
     return out
 
 
-def make_diff(file, original, reformatted):
+def make_diff(diff_file, original, reformatted):
     return list(
         difflib.unified_diff(
             original,
             reformatted,
-            fromfile='{}\t(original)'.format(file),
-            tofile='{}\t(reformatted)'.format(file),
+            fromfile='{}\t(original)'.format(diff_file),
+            tofile='{}\t(reformatted)'.format(diff_file),
             n=3))
 
 
@@ -89,24 +86,24 @@ class UnexpectedError(Exception):
         self.exc = exc
 
 
-def run_clang_format_diff_wrapper(args, file):
+def run_clang_format_diff_wrapper(args, file_name):
     try:
-        ret = run_clang_format_diff(args, file)
+        ret = run_clang_format_diff(args, file_name)
         return ret
     except DiffError:
         raise
     except Exception as e:
-        raise UnexpectedError('{}: {}: {}'.format(file, e.__class__.__name__,
-                                                  e), e)
+        raise UnexpectedError('{}: {}: {}'.format(
+            file_name, e.__class__.__name__, e), e)
 
 
-def run_clang_format_diff(args, file):
+def run_clang_format_diff(args, file_name):
     try:
         with io.open(file, 'r', encoding='utf-8') as f:
             original = f.readlines()
     except IOError as exc:
         raise DiffError(str(exc))
-    invocation = [args.clang_format_executable, file]
+    invocation = [args.clang_format_executable, file_name]
     try:
         proc = subprocess.Popen(
             invocation,
@@ -129,7 +126,7 @@ def run_clang_format_diff(args, file):
     proc.wait()
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
-            proc.returncode, file), errs)
+            proc.returncode, file_name), errs)
     return make_diff(file, original, outs), errs
 
 
@@ -253,7 +250,11 @@ def main():
     
     parse_files = []
     if args.changed:
-        popen = subprocess.Popen(["git", "diff", "--name-only", "origin/master"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        popen = subprocess.Popen(
+            ["git", "diff", "--name-only", "origin/master"], 
+            stdout=subprocess.PIPE, 
+            stderr=subprocess.STDOUT
+        )
         for line in popen.stdout:
             parse_files.append(line.rstrip())
     else:
