@@ -10,6 +10,9 @@ Thanks for opening an issue! A few things to keep in mind:
 * Electron version:
 * Operating system:
 
+<!-- If this used to work -->
+* Last known working Electron version: 
+
 ### Expected behavior
 
 <!-- What do you think should happen? -->
