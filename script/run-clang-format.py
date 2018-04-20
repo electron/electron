@@ -22,7 +22,7 @@ import traceback
 
 from functools import partial
 
-DEFAULT_EXTENSIONS = 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx'
+DEFAULT_EXTENSIONS = 'c,h,C,H,cpp,hpp,cc,hh,c++,h++,cxx,hxx,mm'
 
 
 class ExitStatus:
@@ -99,7 +99,7 @@ def run_clang_format_diff_wrapper(args, file_name):
 
 def run_clang_format_diff(args, file_name):
     try:
-        with io.open(file, 'r', encoding='utf-8') as f:
+        with io.open(file_name, 'r', encoding='utf-8') as f:
             original = f.readlines()
     except IOError as exc:
         raise DiffError(str(exc))
@@ -251,7 +251,7 @@ def main():
     parse_files = []
     if args.changed:
         popen = subprocess.Popen(
-            ["git", "diff", "--name-only", "origin/master"], 
+            ["git", "diff", "--name-only", "HEAD^", "HEAD"], 
             stdout=subprocess.PIPE, 
             stderr=subprocess.STDOUT
         )
