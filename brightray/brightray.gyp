@@ -260,6 +260,7 @@
                   '$(SDKROOT)/System/Library/Frameworks/Carbon.framework',
                   '$(SDKROOT)/System/Library/Frameworks/CoreFoundation.framework',
                   # device/gamepad/BUILD.gn:
+                  '$(SDKROOT)/System/Library/Frameworks/ForceFeedback.framework',
                   '$(SDKROOT)/System/Library/Frameworks/GameController.framework',
                   # content_browser.gypi:
                   '-lbsm',
