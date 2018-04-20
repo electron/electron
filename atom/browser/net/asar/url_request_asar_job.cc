@@ -109,15 +109,15 @@ void URLRequestAsarJob::Start() {
     }
     file_task_runner_->PostTaskAndReply(
         FROM_HERE,
-        base::Bind(&URLRequestAsarJob::FetchMetaInfo, file_path_, type_,
-                   base::Unretained(meta_info)),
-        base::Bind(&URLRequestAsarJob::DidFetchMetaInfo,
-                   weak_ptr_factory_.GetWeakPtr(), base::Owned(meta_info)));
+        base::BindOnce(&URLRequestAsarJob::FetchMetaInfo, file_path_, type_,
+                       base::Unretained(meta_info)),
+        base::BindOnce(&URLRequestAsarJob::DidFetchMetaInfo,
+                       weak_ptr_factory_.GetWeakPtr(), base::Owned(meta_info)));
   } else {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::Bind(&URLRequestAsarJob::DidOpen, weak_ptr_factory_.GetWeakPtr(),
-                   net::ERR_FILE_NOT_FOUND));
+        FROM_HERE, base::BindOnce(&URLRequestAsarJob::DidOpen,
+                                  weak_ptr_factory_.GetWeakPtr(),
+                                  net::ERR_FILE_NOT_FOUND));
   }
 }
 

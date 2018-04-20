@@ -43,7 +43,7 @@ void CreateDownloadPath(
 
   base::FilePath path(default_download_path.Append(generated_name));
   content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-                                   base::Bind(callback, path));
+                                   base::BindOnce(callback, path));
 }
 
 }  // namespace
@@ -165,10 +165,10 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
 
   content::BrowserThread::PostTask(
       content::BrowserThread::FILE, FROM_HERE,
-      base::Bind(&CreateDownloadPath, download->GetURL(),
-                 download->GetContentDisposition(),
-                 download->GetSuggestedFilename(), download->GetMimeType(),
-                 default_download_path, download_path_callback));
+      base::BindOnce(&CreateDownloadPath, download->GetURL(),
+                     download->GetContentDisposition(),
+                     download->GetSuggestedFilename(), download->GetMimeType(),
+                     default_download_path, download_path_callback));
   return true;
 }
 

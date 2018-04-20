@@ -279,13 +279,14 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::Start() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   BrowserThread::PostTask(
       BrowserThread::FILE, FROM_HERE,
-      Bind(&FileSystemIndexingJob::CollectFilesToIndex, this));
+      BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::Stop() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(BrowserThread::FILE, FROM_HERE,
-                          Bind(&FileSystemIndexingJob::StopOnFileThread, this));
+  BrowserThread::PostTask(
+      BrowserThread::FILE, FROM_HERE,
+      BindOnce(&FileSystemIndexingJob::StopOnFileThread, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::StopOnFileThread() {
@@ -304,7 +305,7 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
   if (file_path.empty()) {
     BrowserThread::PostTask(
         BrowserThread::UI, FROM_HERE,
-        Bind(total_work_callback_, file_path_times_.size()));
+        BindOnce(total_work_callback_, file_path_times_.size()));
     indexing_it_ = file_path_times_.begin();
     IndexFiles();
     return;
@@ -318,7 +319,7 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::CollectFilesToIndex() {
   }
   BrowserThread::PostTask(
       BrowserThread::FILE, FROM_HERE,
-      Bind(&FileSystemIndexingJob::CollectFilesToIndex, this));
+      BindOnce(&FileSystemIndexingJob::CollectFilesToIndex, this));
 }
 
 void DevToolsFileSystemIndexer::FileSystemIndexingJob::IndexFiles() {
@@ -429,7 +430,7 @@ void DevToolsFileSystemIndexer::FileSystemIndexingJob::ReportWorked() {
   if (should_send_worked_nitification) {
     last_worked_notification_time_ = current_time;
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                            Bind(worked_callback_, files_indexed_));
+                            BindOnce(worked_callback_, files_indexed_));
     files_indexed_ = 0;
   }
 }
@@ -458,8 +459,8 @@ void DevToolsFileSystemIndexer::SearchInPath(const string& file_system_path,
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   BrowserThread::PostTask(
       BrowserThread::FILE, FROM_HERE,
-      Bind(&DevToolsFileSystemIndexer::SearchInPathOnFileThread, this,
-           file_system_path, query, callback));
+      BindOnce(&DevToolsFileSystemIndexer::SearchInPathOnFileThread, this,
+               file_system_path, query, callback));
 }
 
 void DevToolsFileSystemIndexer::SearchInPathOnFileThread(
@@ -475,7 +476,8 @@ void DevToolsFileSystemIndexer::SearchInPathOnFileThread(
     if (path.IsParent(*it))
       result.push_back(it->AsUTF8Unsafe());
   }
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, Bind(callback, result));
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                          BindOnce(callback, result));
 }
 
 }  // namespace brightray

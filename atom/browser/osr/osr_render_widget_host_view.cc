@@ -167,8 +167,8 @@ class AtomCopyFrameGenerator {
         next_frame_time_ += frame_duration_;
         content::BrowserThread::PostDelayedTask(
             content::BrowserThread::UI, FROM_HERE,
-            base::Bind(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
-                       weak_ptr_factory_.GetWeakPtr(), damage_rect, bitmap),
+            base::BindOnce(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
+                           weak_ptr_factory_.GetWeakPtr(), damage_rect, bitmap),
             next_frame_in);
       } else {
         next_frame_time_ = now + frame_duration_;
@@ -187,8 +187,8 @@ class AtomCopyFrameGenerator {
       // Retry with the same |damage_rect|.
       content::BrowserThread::PostTask(
           content::BrowserThread::UI, FROM_HERE,
-          base::Bind(&AtomCopyFrameGenerator::GenerateCopyFrame,
-                     weak_ptr_factory_.GetWeakPtr(), damage_rect));
+          base::BindOnce(&AtomCopyFrameGenerator::GenerateCopyFrame,
+                         weak_ptr_factory_.GetWeakPtr(), damage_rect));
     }
   }
 
@@ -1030,8 +1030,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
     pending_resize_ = false;
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::Bind(&OffScreenRenderWidgetHostView::WasResized,
-                   weak_ptr_factory_.GetWeakPtr()));
+        base::BindOnce(&OffScreenRenderWidgetHostView::WasResized,
+                       weak_ptr_factory_.GetWeakPtr()));
   }
 }
 
@@ -1131,8 +1131,8 @@ void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
         // other callback.
         content::BrowserThread::PostTask(
             content::BrowserThread::UI, FROM_HERE,
-            base::Bind(&OffScreenRenderWidgetHostView::CancelWidget,
-                       popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
+            base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
+                           popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
     }
   }

@@ -141,7 +141,7 @@ void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
 
   // Emit the ReadyToShow event in next tick in case of pending drawing work.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::Bind(
+      FROM_HERE, base::BindOnce(
                      [](base::WeakPtr<BrowserWindow> self) {
                        if (self)
                          self->Emit("ready-to-show");

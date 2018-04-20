@@ -117,9 +117,9 @@ bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
     content::ResourceRequestInfo* info) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(&HandleExternalProtocolInUI, url,
-                                     info->GetWebContentsGetterForRequest(),
-                                     info->HasUserGesture()));
+                          base::BindOnce(&HandleExternalProtocolInUI, url,
+                                         info->GetWebContentsGetterForRequest(),
+                                         info->HasUserGesture()));
   return true;
 }
 

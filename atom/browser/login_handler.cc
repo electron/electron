@@ -47,9 +47,9 @@ LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
 
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(&Browser::RequestLogin, base::Unretained(Browser::Get()),
-                 base::RetainedRef(WrapRefCounted(this)),
-                 base::Passed(&request_details)));
+      base::BindOnce(&Browser::RequestLogin, base::Unretained(Browser::Get()),
+                     base::RetainedRef(WrapRefCounted(this)),
+                     std::move(request_details)));
 }
 
 LoginHandler::~LoginHandler() {}
@@ -69,7 +69,7 @@ void LoginHandler::Login(const base::string16& username,
     return;
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::Bind(&LoginHandler::DoLogin, this, username, password));
+      base::BindOnce(&LoginHandler::DoLogin, this, username, password));
 }
 
 void LoginHandler::CancelAuth() {
@@ -77,7 +77,7 @@ void LoginHandler::CancelAuth() {
   if (TestAndSetAuthHandled())
     return;
   BrowserThread::PostTask(BrowserThread::IO, FROM_HERE,
-                          base::Bind(&LoginHandler::DoCancelAuth, this));
+                          base::BindOnce(&LoginHandler::DoCancelAuth, this));
 }
 
 void LoginHandler::OnRequestCancelled() {

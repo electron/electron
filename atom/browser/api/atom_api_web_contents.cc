@@ -1363,7 +1363,8 @@ void WebContents::HasServiceWorker(const base::Callback<void(bool)>& callback) {
 
   context->CheckHasServiceWorker(
       web_contents()->GetLastCommittedURL(), GURL::EmptyGURL(),
-      base::Bind(&WrappedCallback::Run, base::Unretained(wrapped_callback)));
+      base::BindOnce(&WrappedCallback::Run,
+                     base::Unretained(wrapped_callback)));
 }
 
 void WebContents::UnregisterServiceWorker(

@@ -61,7 +61,7 @@ void AtomBlobReader::StartReading(
   auto callback = base::Bind(&RunCallbackInUI, completion_callback);
   if (!blob_data_handle) {
     BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                            base::Bind(callback, nullptr, 0));
+                            base::BindOnce(callback, nullptr, 0));
     return;
   }
 
@@ -117,7 +117,7 @@ void AtomBlobReader::BlobReadHelper::DidReadBlobData(
   char* data = new char[size];
   memcpy(data, blob_data->data(), size);
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(completion_callback_, data, size));
+                          base::BindOnce(completion_callback_, data, size));
   delete this;
 }
 

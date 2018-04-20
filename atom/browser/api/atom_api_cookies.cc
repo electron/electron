@@ -174,7 +174,7 @@ void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
                             const std::string& name,
                             const base::Closure& callback) {
   GetCookieStore(getter)->DeleteCookieAsync(
-      url, name, base::Bind(RunCallbackInUI, callback));
+      url, name, base::BindOnce(RunCallbackInUI, callback));
 }
 
 // Callback of SetCookie.
@@ -187,7 +187,7 @@ void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
 void FlushCookieStoreOnIOThread(
     scoped_refptr<net::URLRequestContextGetter> getter,
     const base::Closure& callback) {
-  GetCookieStore(getter)->FlushStore(base::Bind(RunCallbackInUI, callback));
+  GetCookieStore(getter)->FlushStore(base::BindOnce(RunCallbackInUI, callback));
 }
 
 // Sets cookie with |details| in IO thread.
@@ -232,7 +232,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
   GetCookieStore(getter)->SetCookieWithDetailsAsync(
       GURL(url), name, value, domain, path, creation_time, expiration_time,
       last_access_time, secure, http_only, net::CookieSameSite::DEFAULT_MODE,
-      net::COOKIE_PRIORITY_DEFAULT, base::Bind(OnSetCookie, callback));
+      net::COOKIE_PRIORITY_DEFAULT, base::BindOnce(OnSetCookie, callback));
 }
 
 }  // namespace
@@ -253,8 +253,8 @@ void Cookies::Get(const base::DictionaryValue& filter,
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), Passed(&copied),
-                     callback));
+      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter),
+                     std::move(copied), callback));
 }
 
 void Cookies::Remove(const GURL& url,
@@ -273,8 +273,8 @@ void Cookies::Set(const base::DictionaryValue& details,
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), Passed(&copied),
-                     callback));
+      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter),
+                     std::move(copied), callback));
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {
