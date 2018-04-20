@@ -8,11 +8,9 @@ namespace atom {
 
 AtomNativeWidgetMac::AtomNativeWidgetMac(
     views::internal::NativeWidgetDelegate* delegate)
-    : views::NativeWidgetMac(delegate) {
-}
+    : views::NativeWidgetMac(delegate) {}
 
-AtomNativeWidgetMac::~AtomNativeWidgetMac() {
-}
+AtomNativeWidgetMac::~AtomNativeWidgetMac() {}
 
 NativeWidgetMacNSWindow* AtomNativeWidgetMac::CreateNSWindow(
     const views::Widget::InitParams& params) {

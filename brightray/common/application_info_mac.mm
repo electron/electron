@@ -9,7 +9,8 @@ namespace brightray {
 namespace {
 
 std::string ApplicationInfoDictionaryValue(NSString* key) {
-  return base::SysNSStringToUTF8([MainApplicationBundle().infoDictionary objectForKey:key]);
+  return base::SysNSStringToUTF8(
+      [MainApplicationBundle().infoDictionary objectForKey:key]);
 }
 
 std::string ApplicationInfoDictionaryValue(CFStringRef key) {

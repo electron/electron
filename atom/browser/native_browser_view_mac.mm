@@ -15,36 +15,33 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
 @interface DragRegionView : NSView
 
-@property (assign) NSPoint initialLocation;
+@property(assign) NSPoint initialLocation;
 
 @end
 
 @interface NSWindow ()
-- (void)performWindowDragWithEvent:(NSEvent *)event;
+- (void)performWindowDragWithEvent:(NSEvent*)event;
 @end
 
 @implementation DragRegionView
 
 @synthesize initialLocation;
 
-- (BOOL)mouseDownCanMoveWindow
-{
+- (BOOL)mouseDownCanMoveWindow {
   return NO;
 }
 
-- (NSView *)hitTest:(NSPoint)aPoint
-{
-    // Pass-through events that don't hit one of the exclusion zones
-    for (NSView *exlusion_zones in [self subviews]) {
-      if ([exlusion_zones hitTest:aPoint])
-        return nil;
-    }
+- (NSView*)hitTest:(NSPoint)aPoint {
+  // Pass-through events that don't hit one of the exclusion zones
+  for (NSView* exlusion_zones in [self subviews]) {
+    if ([exlusion_zones hitTest:aPoint])
+      return nil;
+  }
 
-    return self;
+  return self;
 }
 
-- (void)mouseDown:(NSEvent *)event
-{
+- (void)mouseDown:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     // According to Google, using performWindowDragWithEvent:
     // does not generate a NSWindowWillMoveNotification. Hence post one.
@@ -65,8 +62,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   self.initialLocation = [event locationInWindow];
 }
 
-- (void)mouseDragged:(NSEvent *)theEvent
-{
+- (void)mouseDragged:(NSEvent*)theEvent {
   if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
     return;
   }
@@ -86,27 +82,27 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   newOrigin.x = currentLocation.x - self.initialLocation.x;
   newOrigin.y = currentLocation.y - self.initialLocation.y;
 
-  BOOL inMenuBar = (newOrigin.y + windowSize.height) > (screenFrame.origin.y + screenSize.height);
+  BOOL inMenuBar = (newOrigin.y + windowSize.height) >
+                   (screenFrame.origin.y + screenSize.height);
   BOOL screenAboveMainScreen = false;
 
   if (inMenuBar) {
-    for (NSScreen *screen in [NSScreen screens]) {
+    for (NSScreen* screen in [NSScreen screens]) {
       NSRect currentScreenFrame = [screen frame];
       BOOL isHigher = currentScreenFrame.origin.y > screenFrame.origin.y;
 
       // If there's another screen that is generally above the current screen,
-      // we'll draw a new rectangle that is just above the current screen. If the
-      // "higher" screen intersects with this rectangle, we'll allow drawing above
-      // the menubar.
+      // we'll draw a new rectangle that is just above the current screen. If
+      // the "higher" screen intersects with this rectangle, we'll allow drawing
+      // above the menubar.
       if (isHigher) {
-        NSRect aboveScreenRect = NSMakeRect(
-          screenFrame.origin.x,
-          screenFrame.origin.y + screenFrame.size.height - 10,
-          screenFrame.size.width,
-          200
-        );
+        NSRect aboveScreenRect =
+            NSMakeRect(screenFrame.origin.x,
+                       screenFrame.origin.y + screenFrame.size.height - 10,
+                       screenFrame.size.width, 200);
 
-        BOOL screenAboveIntersects = NSIntersectsRect(currentScreenFrame, aboveScreenRect);
+        BOOL screenAboveIntersects =
+            NSIntersectsRect(currentScreenFrame, aboveScreenRect);
 
         if (screenAboveIntersects) {
           screenAboveMainScreen = true;
@@ -118,7 +114,8 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 
   // Don't let window get dragged up under the menu bar
   if (inMenuBar && !screenAboveMainScreen) {
-    newOrigin.y = screenFrame.origin.y + (screenFrame.size.height - windowFrame.size.height);
+    newOrigin.y = screenFrame.origin.y +
+                  (screenFrame.size.height - windowFrame.size.height);
   }
 
   // Move the window to the new location

@@ -15,7 +15,7 @@ class ColorChooserMac;
 
 // A Listener class to act as a event target for NSColorPanel and send
 // the results to the C++ class, ColorChooserMac.
-@interface ColorPanelCocoa : NSObject<NSWindowDelegate> {
+@interface ColorPanelCocoa : NSObject <NSWindowDelegate> {
  @private
   // We don't call DidChooseColor if the change wasn't caused by the user
   // interacting with the panel.
@@ -65,8 +65,7 @@ ColorChooserMac* ColorChooserMac::Open(content::WebContents* web_contents,
   if (current_color_chooser_)
     current_color_chooser_->End();
   DCHECK(!current_color_chooser_);
-  current_color_chooser_ =
-      new ColorChooserMac(web_contents, initial_color);
+  current_color_chooser_ = new ColorChooserMac(web_contents, initial_color);
   return current_color_chooser_;
 }
 
@@ -97,7 +96,7 @@ void ColorChooserMac::End() {
   DCHECK(current_color_chooser_ == this);
   current_color_chooser_ = NULL;
   if (web_contents_)
-      web_contents_->DidEndColorChooser();
+    web_contents_->DidEndColorChooser();
 }
 
 void ColorChooserMac::SetSelectedColor(SkColor color) {

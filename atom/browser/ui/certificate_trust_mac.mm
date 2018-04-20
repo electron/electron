@@ -24,14 +24,14 @@
 }
 
 - (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
-      panel:(SFCertificateTrustPanel*)panel
-      cert:(const scoped_refptr<net::X509Certificate>&)cert
-      trust:(SecTrustRef)trust
-      certChain:(CFArrayRef)certChain
-      secPolicy:(SecPolicyRef)secPolicy;
+                 panel:(SFCertificateTrustPanel*)panel
+                  cert:(const scoped_refptr<net::X509Certificate>&)cert
+                 trust:(SecTrustRef)trust
+             certChain:(CFArrayRef)certChain
+             secPolicy:(SecPolicyRef)secPolicy;
 
 - (void)panelDidEnd:(NSWindow*)sheet
-        returnCode:(int)returnCode
+         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo;
 
 @end
@@ -48,11 +48,11 @@
 }
 
 - (id)initWithCallback:(const certificate_trust::ShowTrustCallback&)callback
-      panel:(SFCertificateTrustPanel*)panel
-      cert:(const scoped_refptr<net::X509Certificate>&)cert
-      trust:(SecTrustRef)trust
-      certChain:(CFArrayRef)certChain
-      secPolicy:(SecPolicyRef)secPolicy {
+                 panel:(SFCertificateTrustPanel*)panel
+                  cert:(const scoped_refptr<net::X509Certificate>&)cert
+                 trust:(SecTrustRef)trust
+             certChain:(CFArrayRef)certChain
+             secPolicy:(SecPolicyRef)secPolicy {
   if ((self = [super init])) {
     callback_ = callback;
     panel_ = panel;
@@ -66,7 +66,7 @@
 }
 
 - (void)panelDidEnd:(NSWindow*)sheet
-        returnCode:(int)returnCode
+         returnCode:(int)returnCode
         contextInfo:(void*)contextInfo {
   auto* cert_db = net::CertDatabase::GetInstance();
   // This forces Chromium to reload the certificate since it might be trusted
@@ -92,24 +92,22 @@ void ShowCertificateTrust(atom::NativeWindow* parent_window,
   SecTrustRef trust = nullptr;
   SecTrustCreateWithCertificates(cert_chain, sec_policy, &trust);
 
-  NSWindow* window = parent_window ?
-      parent_window->GetNativeWindow() :
-      nil;
+  NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
   auto msg = base::SysUTF8ToNSString(message);
 
   auto panel = [[SFCertificateTrustPanel alloc] init];
   auto delegate = [[TrustDelegate alloc] initWithCallback:callback
-                                         panel:panel
-                                         cert:cert
-                                         trust:trust
-                                         certChain:cert_chain
-                                         secPolicy:sec_policy];
+                                                    panel:panel
+                                                     cert:cert
+                                                    trust:trust
+                                                certChain:cert_chain
+                                                secPolicy:sec_policy];
   [panel beginSheetForWindow:window
-         modalDelegate:delegate
-         didEndSelector:@selector(panelDidEnd:returnCode:contextInfo:)
-         contextInfo:nil
-         trust:trust
-         message:msg];
+               modalDelegate:delegate
+              didEndSelector:@selector(panelDidEnd:returnCode:contextInfo:)
+                 contextInfo:nil
+                       trust:trust
+                     message:msg];
 }
 
 }  // namespace certificate_trust

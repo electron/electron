@@ -19,23 +19,27 @@ void OnStopAccessingSecurityScopedResource(NSURL* bookmarkUrl) {
 }
 
 // Get base64 encoded NSData, create a bookmark for it and start accessing it.
-base::Callback<void ()> App::StartAccessingSecurityScopedResource(mate::Arguments* args) {
+base::Callback<void()> App::StartAccessingSecurityScopedResource(
+    mate::Arguments* args) {
   std::string data;
   args->GetNext(&data);
-  NSString *base64str = base::SysUTF8ToNSString(data);
-  NSData *bookmarkData = [[NSData alloc] initWithBase64EncodedString: base64str options: 0];
+  NSString* base64str = base::SysUTF8ToNSString(data);
+  NSData* bookmarkData =
+      [[NSData alloc] initWithBase64EncodedString:base64str options:0];
 
   // Create bookmarkUrl from NSData.
   BOOL isStale = false;
-  NSError *error = nil;
-  NSURL *bookmarkUrl = [NSURL URLByResolvingBookmarkData: bookmarkData
-                                                 options: NSURLBookmarkResolutionWithSecurityScope
-                                           relativeToURL: nil
-                                     bookmarkDataIsStale: &isStale
-                                                   error: &error];
+  NSError* error = nil;
+  NSURL* bookmarkUrl =
+      [NSURL URLByResolvingBookmarkData:bookmarkData
+                                options:NSURLBookmarkResolutionWithSecurityScope
+                          relativeToURL:nil
+                    bookmarkDataIsStale:&isStale
+                                  error:&error];
 
   if (error != nil) {
-    NSString *err = [NSString stringWithFormat: @"NSError: %@ %@", error, [error userInfo]];
+    NSString* err =
+        [NSString stringWithFormat:@"NSError: %@ %@", error, [error userInfo]];
     args->ThrowError(base::SysNSStringToUTF8(err));
   }
 
@@ -54,6 +58,6 @@ base::Callback<void ()> App::StartAccessingSecurityScopedResource(mate::Argument
   return base::Bind(&OnStopAccessingSecurityScopedResource, bookmarkUrl);
 }
 
-} // namespace atom
+}  // namespace atom
 
-} // namespace api
+}  // namespace api

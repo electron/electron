@@ -16,7 +16,7 @@
     return NO;
   else
     return [super performKeyEquivalent:event];
- }
+}
 
 - (void)redispatchKeyEvent:(NSEvent*)event {
   NSEventType eventType = [event type];
