@@ -6,6 +6,14 @@
 # Everything that falls through the cracks:
 * @electron/reviewers
 
+# core
+/atom/ @electron/core
+/brightray/ @electron/core
+/chromium_src/ @electron/core
+/lib/ @electron/core
+/tools/ @electron/core
+/vendor/ @electron/core
+
 # filename patterns
 *browser_view* @electron/browserview
 *notification* @electron/notifications
