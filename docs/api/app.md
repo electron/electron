@@ -604,7 +604,7 @@ This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
 
-### `app.isDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
+### `app.isDefaultProtocolClient(protocol[, path, args])`
 
 * `protocol` String - The name of your protocol, without `://`.
 * `path` String (optional) _Windows_ - Defaults to `process.execPath`
