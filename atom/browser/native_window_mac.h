@@ -12,9 +12,13 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
+#include "ui/views/widget/widget_delegate.h"
+#include "ui/views/widget/widget_observer.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
+@class AtomPreviewItem;
+@class AtomTouchBar;
 @class FullSizeContentView;
 
 namespace atom {
@@ -134,6 +138,8 @@ class NativeWindowMac : public NativeWindow {
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
+  AtomPreviewItem* preview_item() const { return preview_item_.get(); }
+  AtomTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool simple_fullscreen() const { return always_simple_fullscreen_; }
@@ -146,6 +152,10 @@ class NativeWindowMac : public NativeWindow {
 
   base::scoped_nsobject<AtomNSWindow> window_;
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
+  base::scoped_nsobject<AtomPreviewItem> preview_item_;
+  base::scoped_nsobject<AtomTouchBar> touch_bar_;
+
+  std::unique_ptr<views::Widget> widget_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;

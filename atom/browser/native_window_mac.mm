@@ -5,11 +5,13 @@
 #include "atom/browser/native_window_mac.h"
 
 #include <AvailabilityMacros.h>
-#include <Quartz/Quartz.h>
+
 #include <string>
 
-#include "atom/browser/browser.h"
 #include "atom/browser/native_browser_view_mac.h"
+#include "atom/browser/ui/cocoa/atom_ns_window.h"
+#include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
+#include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
@@ -18,30 +20,12 @@
 #include "base/strings/sys_string_conversions.h"
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
-#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "native_mate/dictionary.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
-
-namespace {
-
-// Prevents window from resizing during the scope.
-class ScopedDisableResize {
- public:
-  ScopedDisableResize() { disable_resize_ = true; }
-  ~ScopedDisableResize() { disable_resize_ = false; }
-
-  static bool IsResizeDisabled() { return disable_resize_; }
-
- private:
-  static bool disable_resize_;
-};
-
-bool ScopedDisableResize::disable_resize_ = false;
-
-}  // namespace
+#include "ui/views/widget/widget.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless
 // windows.
@@ -164,281 +148,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 @end
 
-@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate> {
- @private
-  atom::NativeWindowMac* shell_;
-  bool is_zooming_;
-  int level_;
-  bool is_resizable_;
-}
-- (id)initWithShell:(atom::NativeWindowMac*)shell;
-@end
-
-@implementation AtomNSWindowDelegate
-
-- (id)initWithShell:(atom::NativeWindowMac*)shell {
-  if ((self = [super init])) {
-    shell_ = shell;
-    is_zooming_ = false;
-    level_ = [shell_->GetNativeWindow() level];
-  }
-  return self;
-}
-
-- (void)windowDidChangeOcclusionState:(NSNotification *)notification {
-  // notification.object is the window that changed its state.
-  // It's safe to use self.window instead if you don't assign one delegate to many windows
-  NSWindow *window = notification.object;
-
-  // check occlusion binary flag
-  if (window.occlusionState & NSWindowOcclusionStateVisible)   {
-     // The app is visible
-     shell_->NotifyWindowShow();
-   } else {
-     // The app is not visible
-     shell_->NotifyWindowHide();
-   }
-}
-
-// Called when the user clicks the zoom button or selects it from the Window
-// menu to determine the "standard size" of the window.
-- (NSRect)windowWillUseStandardFrame:(NSWindow*)window
-                        defaultFrame:(NSRect)frame {
-  if (!shell_->zoom_to_page_width())
-    return frame;
-
-  // If the shift key is down, maximize.
-  if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
-    return frame;
-
-  // Get preferred width from observers. Usually the page width.
-  int preferred_width = 0;
-  shell_->NotifyWindowRequestPreferredWith(&preferred_width);
-
-  // Never shrink from the current size on zoom.
-  NSRect window_frame = [window frame];
-  CGFloat zoomed_width = std::max(static_cast<CGFloat>(preferred_width),
-                                  NSWidth(window_frame));
-
-  // |frame| determines our maximum extents. We need to set the origin of the
-  // frame -- and only move it left if necessary.
-  if (window_frame.origin.x + zoomed_width > NSMaxX(frame))
-    frame.origin.x = NSMaxX(frame) - zoomed_width;
-  else
-    frame.origin.x = window_frame.origin.x;
-
-  // Set the width. Don't touch y or height.
-  frame.size.width = zoomed_width;
-
-  return frame;
-}
-
-- (void)windowDidBecomeMain:(NSNotification*)notification {
-  shell_->NotifyWindowFocus();
-}
-
-- (void)windowDidResignMain:(NSNotification*)notification {
-  shell_->NotifyWindowBlur();
-}
-
-- (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)frameSize {
-  NSSize newSize = frameSize;
-  double aspectRatio = shell_->GetAspectRatio();
-
-  if (aspectRatio > 0.0) {
-    gfx::Size windowSize = shell_->GetSize();
-    gfx::Size contentSize = shell_->GetContentSize();
-    gfx::Size extraSize = shell_->GetAspectRatioExtraSize();
-
-    double extraWidthPlusFrame =
-        windowSize.width() - contentSize.width() + extraSize.width();
-    double extraHeightPlusFrame =
-        windowSize.height() - contentSize.height() + extraSize.height();
-
-    newSize.width =
-        roundf((frameSize.height - extraHeightPlusFrame) * aspectRatio +
-               extraWidthPlusFrame);
-    newSize.height =
-        roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
-               extraHeightPlusFrame);
-  }
-
-  return newSize;
-}
-
-- (void)windowDidResize:(NSNotification*)notification {
-  shell_->NotifyWindowResize();
-}
-
-- (void)windowDidMove:(NSNotification*)notification {
-  // TODO(zcbenz): Remove the alias after figuring out a proper
-  // way to dispatch move.
-  shell_->NotifyWindowMove();
-  shell_->NotifyWindowMoved();
-}
-
-- (void)windowWillMiniaturize:(NSNotification*)notification {
-  NSWindow* window = shell_->GetNativeWindow();
-  // store the current status window level to be restored in windowDidDeminiaturize
-  level_ = [window level];
-  [window setLevel:NSNormalWindowLevel];
-}
-
-- (void)windowDidMiniaturize:(NSNotification*)notification {
-  shell_->NotifyWindowMinimize();
-}
-
-- (void)windowDidDeminiaturize:(NSNotification*)notification {
-  [shell_->GetNativeWindow() setLevel:level_];
-  shell_->NotifyWindowRestore();
-}
-
-- (BOOL)windowShouldZoom:(NSWindow*)window toFrame:(NSRect)newFrame {
-  is_zooming_ = true;
-  return YES;
-}
-
-- (void)windowDidEndLiveResize:(NSNotification*)notification {
-  if (is_zooming_) {
-    if (shell_->IsMaximized())
-      shell_->NotifyWindowMaximize();
-    else
-      shell_->NotifyWindowUnmaximize();
-    is_zooming_ = false;
-  }
-}
-
-- (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  // Setting resizable to true before entering fullscreen
-  is_resizable_ = shell_->IsResizable();
-  shell_->SetResizable(true);
-  // Hide the native toolbar before entering fullscreen, so there is no visual
-  // artifacts.
-  if (@available(macOS 10.10, *)) {
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      NSWindow* window = shell_->GetNativeWindow();
-      [window setToolbar:nil];
-    }
-  }
-}
-
-- (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  shell_->NotifyWindowEnterFullScreen();
-
-  if (@available(macOS 10.10, *)) {
-    // For frameless window we don't show set title for normal mode since the
-    // titlebar is expected to be empty, but after entering fullscreen mode we
-    // have to set one, because title bar is visible here.
-    NSWindow* window = shell_->GetNativeWindow();
-    if ((shell_->transparent() || !shell_->has_frame()) &&
-        // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
-        // fullscreen mode.
-        // Show title if fullscreen_window_title flag is set
-        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-         shell_->fullscreen_window_title())) {
-      [window setTitleVisibility:NSWindowTitleVisible];
-    }
-
-    // Restore the native toolbar immediately after entering fullscreen, if we do
-    // this before leaving fullscreen, traffic light buttons will be jumping.
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      base::scoped_nsobject<NSToolbar> toolbar(
-          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
-      [toolbar setShowsBaselineSeparator:NO];
-      [window setToolbar:toolbar];
-
-      // Set window style to hide the toolbar, otherwise the toolbar will show in
-      // fullscreen mode.
-      shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
-    }
-  }
-}
-
-- (void)windowWillExitFullScreen:(NSNotification*)notification {
-  if (@available(macOS 10.10, *)) {
-    // Restore the titlebar visibility.
-    NSWindow* window = shell_->GetNativeWindow();
-    if ((shell_->transparent() || !shell_->has_frame()) &&
-        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-         shell_->fullscreen_window_title())) {
-      [window setTitleVisibility:NSWindowTitleHidden];
-    }
-
-    // Turn off the style for toolbar.
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
-    }
-  }
-}
-
-- (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->SetResizable(is_resizable_);
-  shell_->NotifyWindowLeaveFullScreen();
-}
-
-- (void)windowWillClose:(NSNotification*)notification {
-  shell_->NotifyWindowClosed();
-
-  // Clears the delegate when window is going to be closed, since EL Capitan it
-  // is possible that the methods of delegate would get called after the window
-  // has been closed.
-  [shell_->GetNativeWindow() setDelegate:nil];
-}
-
-- (BOOL)windowShouldClose:(id)window {
-  shell_->NotifyWindowCloseButtonClicked();
-  return NO;
-}
-
-- (NSRect)window:(NSWindow*)window
-    willPositionSheet:(NSWindow*)sheet usingRect:(NSRect)rect {
-  NSView* view = window.contentView;
-
-  rect.origin.x = shell_->GetSheetOffsetX();
-  rect.origin.y = view.frame.size.height - shell_->GetSheetOffsetY();
-  return rect;
-}
-
-- (void)windowWillBeginSheet:(NSNotification *)notification {
-  shell_->NotifyWindowSheetBegin();
-}
-
-- (void)windowDidEndSheet:(NSNotification *)notification {
-  shell_->NotifyWindowSheetEnd();
-}
-
-- (IBAction)newWindowForTab:(id)sender {
-  shell_->NotifyNewWindowForTab();
-  atom::Browser::Get()->NewWindowForTab();
-}
-
-@end
-
-@interface AtomPreviewItem : NSObject <QLPreviewItem>
-
-@property (nonatomic, retain) NSURL* previewItemURL;
-@property (nonatomic, retain) NSString* previewItemTitle;
-
-- (id)initWithURL:(NSURL*)url title:(NSString*)title;
-
-@end
-
-@implementation AtomPreviewItem
-
-@synthesize previewItemURL;
-@synthesize previewItemTitle;
-
-- (id)initWithURL:(NSURL*)url title:(NSString*)title {
-  self = [super init];
-  if (self) {
-    self.previewItemURL = url;
-    self.previewItemTitle = title;
-  }
-  return self;
-}
-
-@end
-
 #if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum {
@@ -457,279 +166,6 @@ enum {
 @end
 
 #endif
-
-@interface AtomNSWindow : EventDispatchingWindow<QLPreviewPanelDataSource, QLPreviewPanelDelegate, NSTouchBarDelegate> {
- @private
-  atom::NativeWindowMac* shell_;
-  bool enable_larger_than_screen_;
-  base::scoped_nsobject<AtomTouchBar> atom_touch_bar_;
-  CGFloat windowButtonsInterButtonSpacing_;
-}
-@property BOOL acceptsFirstMouse;
-@property BOOL disableAutoHideCursor;
-@property BOOL disableKeyOrMainWindow;
-@property NSPoint windowButtonsOffset;
-@property (nonatomic, retain) AtomPreviewItem* quickLookItem;
-@property (nonatomic, retain) NSView* vibrantView;
-
-- (void)setShell:(atom::NativeWindowMac*)shell;
-- (void)setEnableLargerThanScreen:(bool)enable;
-- (void)enableWindowButtonsOffset;
-- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings;
-- (void)refreshTouchBarItem:(const std::string&)item_id;
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item;
-
-@end
-
-@implementation AtomNSWindow
-
-@synthesize acceptsFirstMouse;
-@synthesize disableAutoHideCursor;
-@synthesize disableKeyOrMainWindow;
-@synthesize windowButtonsOffset;
-@synthesize quickLookItem;
-@synthesize vibrantView;
-
-- (void)setShell:(atom::NativeWindowMac*)shell {
-  shell_ = shell;
-}
-
-- (void)setEnableLargerThanScreen:(bool)enable {
-  enable_larger_than_screen_ = enable;
-}
-
-- (void)resetTouchBar:(const std::vector<mate::PersistentDictionary>&)settings
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (![self respondsToSelector:@selector(touchBar)]) return;
-
-  atom_touch_bar_.reset([[AtomTouchBar alloc] initWithDelegate:self
-                                                        window:shell_
-                                                      settings:settings]);
-  self.touchBar = nil;
-}
-
-- (void)refreshTouchBarItem:(const std::string&)item_id
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_ && self.touchBar)
-    [atom_touch_bar_ refreshTouchBarItem:self.touchBar id:item_id];
-}
-
-- (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_)
-    return [atom_touch_bar_ makeTouchBar];
-  else
-    return nil;
-}
-
-- (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
-      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier API_AVAILABLE(macosx(10.12.2)) {
-  if (touchBar && atom_touch_bar_)
-    return [atom_touch_bar_ makeItemForIdentifier:identifier];
-  else
-    return nil;
-}
-
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
-  API_AVAILABLE(macosx(10.12.2)) {
-  if (atom_touch_bar_ && self.touchBar)
-    [atom_touch_bar_ setEscapeTouchBarItem:item forTouchBar:self.touchBar];
-}
-
-// NSWindow overrides.
-
-- (void)swipeWithEvent:(NSEvent *)event {
-  if (event.deltaY == 1.0) {
-    shell_->NotifyWindowSwipe("up");
-  } else if (event.deltaX == -1.0) {
-    shell_->NotifyWindowSwipe("right");
-  } else if (event.deltaY == -1.0) {
-    shell_->NotifyWindowSwipe("down");
-  } else if (event.deltaX == 1.0) {
-    shell_->NotifyWindowSwipe("left");
-  }
-}
-
-- (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
-  // Resizing is disabled.
-  if (ScopedDisableResize::IsResizeDisabled())
-    return [self frame];
-
-  // Enable the window to be larger than screen.
-  if (enable_larger_than_screen_)
-    return frameRect;
-  else
-    return [super constrainFrameRect:frameRect toScreen:screen];
-}
-
-- (void)setFrame:(NSRect)windowFrame display:(BOOL)displayViews {
-  // constrainFrameRect is not called on hidden windows so disable adjusting
-  // the frame directly when resize is disabled
-  if (!ScopedDisableResize::IsResizeDisabled())
-    [super setFrame:windowFrame display:displayViews];
-}
-
-- (id)accessibilityAttributeValue:(NSString*)attribute {
-  if (![attribute isEqualToString:@"AXChildren"])
-    return [super accessibilityAttributeValue:attribute];
-
-  // Filter out objects that aren't the title bar buttons. This has the effect
-  // of removing the window title, which VoiceOver already sees.
-  // * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but
-  //   still leaves the buttons available in the accessibility tree.
-  // * when VoiceOver is enabled, the full accessibility tree is used.
-  // Without removing the title and with VO disabled, the TTS would always read
-  // the window title instead of using Cmd+C to get the selected text.
-  NSPredicate *predicate = [NSPredicate predicateWithFormat:
-      @"(self isKindOfClass: %@) OR (self.className == %@)",
-      [NSButtonCell class],
-      @"RenderWidgetHostViewCocoa"];
-
-  NSArray *children = [super accessibilityAttributeValue:attribute];
-  return [children filteredArrayUsingPredicate:predicate];
-}
-
-- (BOOL)canBecomeMainWindow {
-  return !self.disableKeyOrMainWindow;
-}
-
-- (BOOL)canBecomeKeyWindow {
-  return !self.disableKeyOrMainWindow;
-}
-
-- (void)enableWindowButtonsOffset {
-  auto closeButton = [self standardWindowButton:NSWindowCloseButton];
-  auto miniaturizeButton = [self standardWindowButton:NSWindowMiniaturizeButton];
-  auto zoomButton = [self standardWindowButton:NSWindowZoomButton];
-
-  [closeButton setPostsFrameChangedNotifications:YES];
-  [miniaturizeButton setPostsFrameChangedNotifications:YES];
-  [zoomButton setPostsFrameChangedNotifications:YES];
-
-  windowButtonsInterButtonSpacing_ =
-    NSMinX([miniaturizeButton frame]) - NSMaxX([closeButton frame]);
-
-  auto center = [NSNotificationCenter defaultCenter];
-
-  [center addObserver:self
-             selector:@selector(adjustCloseButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:closeButton];
-
-  [center addObserver:self
-             selector:@selector(adjustMiniaturizeButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:miniaturizeButton];
-
-  [center addObserver:self
-             selector:@selector(adjustZoomButton:)
-                 name:NSViewFrameDidChangeNotification
-               object:zoomButton];
-}
-
-- (void)adjustCloseButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowCloseButton];
-}
-
-- (void)adjustMiniaturizeButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowMiniaturizeButton];
-}
-
-- (void)adjustZoomButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowZoomButton];
-}
-
-- (void)adjustButton:(NSButton*)button
-              ofKind:(NSWindowButton)kind {
-  NSRect buttonFrame = [button frame];
-  NSRect frameViewBounds = [[self frameView] bounds];
-  NSPoint offset = self.windowButtonsOffset;
-
-  buttonFrame.origin = NSMakePoint(
-    offset.x,
-    (NSHeight(frameViewBounds) - NSHeight(buttonFrame) - offset.y));
-
-  switch (kind) {
-    case NSWindowZoomButton:
-      buttonFrame.origin.x += NSWidth(
-        [[self standardWindowButton:NSWindowMiniaturizeButton] frame]);
-      buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      // fallthrough
-    case NSWindowMiniaturizeButton:
-      buttonFrame.origin.x += NSWidth(
-        [[self standardWindowButton:NSWindowCloseButton] frame]);
-      buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      // fallthrough
-    default:
-      break;
-  }
-
-  BOOL didPost = [button postsBoundsChangedNotifications];
-  [button setPostsFrameChangedNotifications:NO];
-  [button setFrame:buttonFrame];
-  [button setPostsFrameChangedNotifications:didPost];
-}
-
-- (NSView*)frameView {
-  return [[self contentView] superview];
-}
-
-// Quicklook methods
-
-- (BOOL)acceptsPreviewPanelControl:(QLPreviewPanel*)panel {
-  return YES;
-}
-
-- (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
-  panel.delegate = self;
-  panel.dataSource = self;
-}
-
-- (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
-  panel.delegate = nil;
-  panel.dataSource = nil;
-}
-
-- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel*)panel {
-  return 1;
-}
-
-- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel previewItemAtIndex:(NSInteger)index {
-  return [self quickLookItem];
-}
-
-- (void)previewFileAtPath:(NSString*)path  withName:(NSString*) fileName {
-  NSURL* url = [[[NSURL alloc] initFileURLWithPath:path] autorelease];
-  [self setQuickLookItem:[[[AtomPreviewItem alloc] initWithURL:url title:fileName] autorelease]];
-  [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
-}
-
-// Custom window button methods
-
-- (void)performClose:(id)sender {
-  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
-    [[self delegate] windowShouldClose:self];
-  else
-    [super performClose:sender];
-}
-
-- (void)toggleFullScreenMode:(id)sender {
-  if (shell_->simple_fullscreen())
-    shell_->SetSimpleFullScreen(!shell_->IsSimpleFullScreen());
-  else
-   [super toggleFullScreen:sender];
-}
-
-- (void)performMiniaturize:(id)sender {
-  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
-    [self miniaturize:self];
-  else
-    [super performMiniaturize:sender];
-}
-
-@end
 
 @interface AtomProgressBar : NSProgressIndicator
 @end
@@ -1290,9 +726,10 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
 void NativeWindowMac::PreviewFile(const std::string& path,
                                   const std::string& display_name) {
-  NSString* path_ns = [NSString stringWithUTF8String:path.c_str()];
-  NSString* name_ns = [NSString stringWithUTF8String:display_name.c_str()];
-  [window_ previewFileAtPath:path_ns withName:name_ns];
+  preview_item_.reset([[AtomPreviewItem alloc]
+      initWithURL:[NSURL fileURLWithPath:base::SysUTF8ToNSString(path)]
+            title:base::SysUTF8ToNSString(display_name)]);
+  [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
 void NativeWindowMac::CloseFilePreview() {
@@ -1787,15 +1224,28 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
-  [window_ resetTouchBar:items];
+  if (@available(macOS 10.12.2, *)) {
+    touch_bar_.reset([[AtomTouchBar alloc]
+        initWithDelegate:window_delegate_.get()
+                  window:this
+                settings:items]);
+    [window_ setTouchBar:nil];
+  }
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  [window_ refreshTouchBarItem:item_id];
+  if (@available(macOS 10.12.2, *)) {
+    if (touch_bar_ && [window_ touchBar])
+      [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
+  }
 }
 
-void NativeWindowMac::SetEscapeTouchBarItem(const mate::PersistentDictionary& item) {
-  [window_ setEscapeTouchBarItem:item];
+void NativeWindowMac::SetEscapeTouchBarItem(
+    const mate::PersistentDictionary& item) {
+  if (@available(macOS 10.12.2, *)) {
+    if (touch_bar_ && [window_ touchBar])
+      [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
+  }
 }
 
 gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
