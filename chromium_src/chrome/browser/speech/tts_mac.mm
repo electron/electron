@@ -49,16 +49,13 @@ class TtsPlatformImplMac;
 
 class TtsPlatformImplMac : public TtsPlatformImpl {
  public:
-  bool PlatformImplAvailable() override {
-    return true;
-  }
+  bool PlatformImplAvailable() override { return true; }
 
-  bool Speak(
-      int utterance_id,
-      const std::string& utterance,
-      const std::string& lang,
-      const VoiceData& voice,
-      const UtteranceContinuousParameters& params) override;
+  bool Speak(int utterance_id,
+             const std::string& utterance,
+             const std::string& lang,
+             const VoiceData& voice,
+             const UtteranceContinuousParameters& params) override;
 
   bool StopSpeaking() override;
 
@@ -101,12 +98,11 @@ TtsPlatformImpl* TtsPlatformImpl::GetInstance() {
   return TtsPlatformImplMac::GetInstance();
 }
 
-bool TtsPlatformImplMac::Speak(
-    int utterance_id,
-    const std::string& utterance,
-    const std::string& lang,
-    const VoiceData& voice,
-    const UtteranceContinuousParameters& params) {
+bool TtsPlatformImplMac::Speak(int utterance_id,
+                               const std::string& utterance,
+                               const std::string& lang,
+                               const VoiceData& voice,
+                               const UtteranceContinuousParameters& params) {
   // TODO: convert SSML to SAPI xml. http://crbug.com/88072
   utterance_ = utterance;
   paused_ = false;
@@ -119,9 +115,8 @@ bool TtsPlatformImplMac::Speak(
   // apply to the current utterance or a previous utterance. In
   // experimentation, the overhead of constructing and destructing a
   // NSSpeechSynthesizer is minimal.
-  speech_synthesizer_.reset(
-      [[SingleUseSpeechSynthesizer alloc]
-        initWithUtterance:utterance_nsstring]);
+  speech_synthesizer_.reset([[SingleUseSpeechSynthesizer alloc]
+      initWithUtterance:utterance_nsstring]);
   [speech_synthesizer_ setDelegate:delegate_];
 
   if (!voice.native_voice_identifier.empty()) {
@@ -136,9 +131,9 @@ bool TtsPlatformImplMac::Speak(
 
   if (params.rate >= 0.0) {
     // The TTS api defines rate via words per minute. Let 200 be the default.
-    [speech_synthesizer_
-        setObject:[NSNumber numberWithInt:params.rate * 200]
-        forProperty:NSSpeechRateProperty error:nil];
+    [speech_synthesizer_ setObject:[NSNumber numberWithInt:params.rate * 200]
+                       forProperty:NSSpeechRateProperty
+                             error:nil];
   }
 
   if (params.pitch >= 0.0) {
@@ -150,15 +145,15 @@ bool TtsPlatformImplMac::Speak(
                                          error:&errorCode];
     int defaultPitch = defaultPitchObj ? [defaultPitchObj intValue] : 48;
     int newPitch = static_cast<int>(defaultPitch * (0.5 * params.pitch + 0.5));
-    [speech_synthesizer_
-        setObject:[NSNumber numberWithInt:newPitch]
-        forProperty:NSSpeechPitchBaseProperty error:nil];
+    [speech_synthesizer_ setObject:[NSNumber numberWithInt:newPitch]
+                       forProperty:NSSpeechPitchBaseProperty
+                             error:nil];
   }
 
   if (params.volume >= 0.0) {
-    [speech_synthesizer_
-        setObject: [NSNumber numberWithFloat:params.volume]
-        forProperty:NSSpeechVolumeProperty error:nil];
+    [speech_synthesizer_ setObject:[NSNumber numberWithFloat:params.volume]
+                       forProperty:NSSpeechVolumeProperty
+                             error:nil];
   }
 
   bool success = [speech_synthesizer_ startSpeakingRetainedUtterance];
@@ -182,8 +177,8 @@ void TtsPlatformImplMac::Pause() {
   if (speech_synthesizer_.get() && utterance_id_ && !paused_) {
     [speech_synthesizer_ pauseSpeakingAtBoundary:NSSpeechImmediateBoundary];
     paused_ = true;
-    TtsController::GetInstance()->OnTtsEvent(
-        utterance_id_, TTS_EVENT_PAUSE, last_char_index_, "");
+    TtsController::GetInstance()->OnTtsEvent(utterance_id_, TTS_EVENT_PAUSE,
+                                             last_char_index_, "");
   }
 }
 
@@ -191,8 +186,8 @@ void TtsPlatformImplMac::Resume() {
   if (speech_synthesizer_.get() && utterance_id_ && paused_) {
     [speech_synthesizer_ continueSpeaking];
     paused_ = false;
-    TtsController::GetInstance()->OnTtsEvent(
-        utterance_id_, TTS_EVENT_RESUME, last_char_index_, "");
+    TtsController::GetInstance()->OnTtsEvent(utterance_id_, TTS_EVENT_RESUME,
+                                             last_char_index_, "");
   }
 }
 
@@ -260,11 +255,10 @@ void TtsPlatformImplMac::GetVoices(std::vector<VoiceData>* outVoices) {
   }
 }
 
-void TtsPlatformImplMac::OnSpeechEvent(
-    NSSpeechSynthesizer* sender,
-    TtsEventType event_type,
-    int char_index,
-    const std::string& error_message) {
+void TtsPlatformImplMac::OnSpeechEvent(NSSpeechSynthesizer* sender,
+                                       TtsEventType event_type,
+                                       int char_index,
+                                       const std::string& error_message) {
   // Don't send events from an utterance that's already completed.
   // This depends on the fact that we construct a new NSSpeechSynthesizer
   // each time we call Speak.
@@ -274,8 +268,7 @@ void TtsPlatformImplMac::OnSpeechEvent(
   if (event_type == TTS_EVENT_END)
     char_index = utterance_.size();
   TtsController* controller = TtsController::GetInstance();
-controller->OnTtsEvent(
-      utterance_id_, event_type, char_index, error_message);
+  controller->OnTtsEvent(utterance_id_, event_type, char_index, error_message);
   last_char_index_ = char_index;
 }
 
@@ -286,8 +279,7 @@ TtsPlatformImplMac::TtsPlatformImplMac() {
   delegate_.reset([[ChromeTtsDelegate alloc] initWithPlatformImplMac:this]);
 }
 
-TtsPlatformImplMac::~TtsPlatformImplMac() {
-}
+TtsPlatformImplMac::~TtsPlatformImplMac() {}
 
 // static
 TtsPlatformImplMac* TtsPlatformImplMac::GetInstance() {
@@ -311,17 +303,17 @@ TtsPlatformImplMac* TtsPlatformImplMac::GetInstance() {
 - (void)speechSynthesizer:(NSSpeechSynthesizer*)sender
             willSpeakWord:(NSRange)character_range
                  ofString:(NSString*)string {
-  ttsImplMac_->OnSpeechEvent(sender, TTS_EVENT_WORD,
-      character_range.location, "");
+  ttsImplMac_->OnSpeechEvent(sender, TTS_EVENT_WORD, character_range.location,
+                             "");
 }
 
 - (void)speechSynthesizer:(NSSpeechSynthesizer*)sender
- didEncounterErrorAtIndex:(NSUInteger)character_index
-                 ofString:(NSString*)string
-                  message:(NSString*)message {
+    didEncounterErrorAtIndex:(NSUInteger)character_index
+                    ofString:(NSString*)string
+                     message:(NSString*)message {
   std::string message_utf8 = base::SysNSStringToUTF8(message);
   ttsImplMac_->OnSpeechEvent(sender, TTS_EVENT_ERROR, character_index,
-      message_utf8);
+                             message_utf8);
 }
 
 @end

@@ -9,8 +9,8 @@
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/mac/dict_util.h"
-#include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
+#include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "net/base/mac/url_conversions.h"
@@ -28,27 +28,32 @@ std::map<int, id> g_id_map;
 
 }  // namespace
 
-void SystemPreferences::PostNotification(const std::string& name,
+void SystemPreferences::PostNotification(
+    const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, kNSDistributedNotificationCenter);
 }
 
 int SystemPreferences::SubscribeNotification(
-    const std::string& name, const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, kNSDistributedNotificationCenter);
+    const std::string& name,
+    const NotificationCallback& callback) {
+  return DoSubscribeNotification(name, callback,
+                                 kNSDistributedNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
 }
 
-void SystemPreferences::PostLocalNotification(const std::string& name,
+void SystemPreferences::PostLocalNotification(
+    const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, kNSNotificationCenter);
 }
 
 int SystemPreferences::SubscribeLocalNotification(
-    const std::string& name, const NotificationCallback& callback) {
+    const std::string& name,
+    const NotificationCallback& callback) {
   return DoSubscribeNotification(name, callback, kNSNotificationCenter);
 }
 
@@ -56,89 +61,102 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSNotificationCenter);
 }
 
-void SystemPreferences::PostWorkspaceNotification(const std::string& name,
+void SystemPreferences::PostWorkspaceNotification(
+    const std::string& name,
     const base::DictionaryValue& user_info) {
   DoPostNotification(name, user_info, kNSWorkspaceNotificationCenter);
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
-    const std::string& name, const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, kNSWorkspaceNotificationCenter);
+    const std::string& name,
+    const NotificationCallback& callback) {
+  return DoSubscribeNotification(name, callback,
+                                 kNSWorkspaceNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSWorkspaceNotificationCenter);
 }
 
-void SystemPreferences::DoPostNotification(const std::string& name,
-    const base::DictionaryValue& user_info, NotificationCenterKind kind) {
+void SystemPreferences::DoPostNotification(
+    const std::string& name,
+    const base::DictionaryValue& user_info,
+    NotificationCenterKind kind) {
   NSNotificationCenter* center;
   switch (kind) {
-    case kNSDistributedNotificationCenter: 
-      center = [NSDistributedNotificationCenter defaultCenter]; break;      
-    case kNSNotificationCenter: 
-      center = [NSNotificationCenter defaultCenter]; break;
-    case kNSWorkspaceNotificationCenter: 
-      center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+    case kNSDistributedNotificationCenter:
+      center = [NSDistributedNotificationCenter defaultCenter];
+      break;
+    case kNSNotificationCenter:
+      center = [NSNotificationCenter defaultCenter];
+      break;
+    case kNSWorkspaceNotificationCenter:
+      center = [[NSWorkspace sharedWorkspace] notificationCenter];
+      break;
     default:
       break;
   }
-  [center
-     postNotificationName:base::SysUTF8ToNSString(name)
-                   object:nil
-                 userInfo:DictionaryValueToNSDictionary(user_info)
-  ];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
-int SystemPreferences::DoSubscribeNotification(const std::string& name,
-  const NotificationCallback& callback, NotificationCenterKind kind) {
+int SystemPreferences::DoSubscribeNotification(
+    const std::string& name,
+    const NotificationCallback& callback,
+    NotificationCenterKind kind) {
   int request_id = g_next_id++;
   __block NotificationCallback copied_callback = callback;
   NSNotificationCenter* center;
   switch (kind) {
-    case kNSDistributedNotificationCenter: 
-      center = [NSDistributedNotificationCenter defaultCenter]; break;      
-    case kNSNotificationCenter: 
-      center = [NSNotificationCenter defaultCenter]; break;
-    case kNSWorkspaceNotificationCenter: 
-      center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+    case kNSDistributedNotificationCenter:
+      center = [NSDistributedNotificationCenter defaultCenter];
+      break;
+    case kNSNotificationCenter:
+      center = [NSNotificationCenter defaultCenter];
+      break;
+    case kNSWorkspaceNotificationCenter:
+      center = [[NSWorkspace sharedWorkspace] notificationCenter];
+      break;
     default:
       break;
   }
-  
+
   g_id_map[request_id] = [center
-    addObserverForName:base::SysUTF8ToNSString(name)
-    object:nil
-    queue:nil
-    usingBlock:^(NSNotification* notification) {
-      std::unique_ptr<base::DictionaryValue> user_info =
-        NSDictionaryToDictionaryValue(notification.userInfo);
-      if (user_info) {
-        copied_callback.Run(
-          base::SysNSStringToUTF8(notification.name),
-          *user_info);
-      } else {
-        copied_callback.Run(
-          base::SysNSStringToUTF8(notification.name),
-          base::DictionaryValue());
-      }
-    }
-  ];
+      addObserverForName:base::SysUTF8ToNSString(name)
+                  object:nil
+                   queue:nil
+              usingBlock:^(NSNotification* notification) {
+                std::unique_ptr<base::DictionaryValue> user_info =
+                    NSDictionaryToDictionaryValue(notification.userInfo);
+                if (user_info) {
+                  copied_callback.Run(
+                      base::SysNSStringToUTF8(notification.name), *user_info);
+                } else {
+                  copied_callback.Run(
+                      base::SysNSStringToUTF8(notification.name),
+                      base::DictionaryValue());
+                }
+              }];
   return request_id;
 }
 
-void SystemPreferences::DoUnsubscribeNotification(int request_id, NotificationCenterKind kind) {
+void SystemPreferences::DoUnsubscribeNotification(int request_id,
+                                                  NotificationCenterKind kind) {
   auto iter = g_id_map.find(request_id);
   if (iter != g_id_map.end()) {
     id observer = iter->second;
     NSNotificationCenter* center;
     switch (kind) {
-      case kNSDistributedNotificationCenter: 
-        center = [NSDistributedNotificationCenter defaultCenter]; break;      
-      case kNSNotificationCenter: 
-        center = [NSNotificationCenter defaultCenter]; break;
-      case kNSWorkspaceNotificationCenter: 
-        center = [[NSWorkspace sharedWorkspace] notificationCenter]; break;
+      case kNSDistributedNotificationCenter:
+        center = [NSDistributedNotificationCenter defaultCenter];
+        break;
+      case kNSNotificationCenter:
+        center = [NSNotificationCenter defaultCenter];
+        break;
+      case kNSWorkspaceNotificationCenter:
+        center = [[NSWorkspace sharedWorkspace] notificationCenter];
+        break;
       default:
         break;
     }
@@ -148,12 +166,13 @@ void SystemPreferences::DoUnsubscribeNotification(int request_id, NotificationCe
 }
 
 v8::Local<v8::Value> SystemPreferences::GetUserDefault(
-    const std::string& name, const std::string& type) {
+    const std::string& name,
+    const std::string& type) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   NSString* key = base::SysUTF8ToNSString(name);
   if (type == "string") {
-    return mate::StringToV8(isolate(),
-      base::SysNSStringToUTF8([defaults stringForKey:key]));
+    return mate::StringToV8(
+        isolate(), base::SysNSStringToUTF8([defaults stringForKey:key]));
   } else if (type == "boolean") {
     return v8::Boolean::New(isolate(), [defaults boolForKey:key]);
   } else if (type == "float") {
@@ -164,7 +183,7 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
     return v8::Number::New(isolate(), [defaults doubleForKey:key]);
   } else if (type == "url") {
     return mate::ConvertToV8(isolate(),
-      net::GURLWithNSURL([defaults URLForKey:key]));
+                             net::GURLWithNSURL([defaults URLForKey:key]));
   } else if (type == "array") {
     std::unique_ptr<base::ListValue> list =
         NSArrayToListValue([defaults arrayForKey:key]);
@@ -185,7 +204,7 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 void SystemPreferences::RegisterDefaults(mate::Arguments* args) {
   base::DictionaryValue value;
 
-  if(!args->GetNext(&value)) {
+  if (!args->GetNext(&value)) {
     args->ThrowError("Invalid userDefault data provided");
   } else {
     @try {

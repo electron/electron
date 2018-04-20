@@ -62,8 +62,7 @@ namespace extensions {
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  static GlobalShortcutListenerMac* instance =
-      new GlobalShortcutListenerMac();
+  static GlobalShortcutListenerMac* instance = new GlobalShortcutListenerMac();
   return instance;
 }
 
@@ -126,8 +125,8 @@ void GlobalShortcutListenerMac::OnHotKeyEvent(EventHotKeyID hot_key_id) {
 bool GlobalShortcutListenerMac::OnMediaOrVolumeKeyEvent(
     int media_or_volume_key_code) {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  ui::KeyboardCode key_code = MediaOrVolumeKeyCodeToKeyboardCode(
-      media_or_volume_key_code);
+  ui::KeyboardCode key_code =
+      MediaOrVolumeKeyCodeToKeyboardCode(media_or_volume_key_code);
   // Create an accelerator corresponding to the keyCode.
   ui::Accelerator accelerator(key_code, 0);
   // Look for a match with a bound hot_key.
@@ -181,8 +180,8 @@ void GlobalShortcutListenerMac::UnregisterAcceleratorImpl(
   accelerator_ids_.erase(accelerator);
 
   if (IsMediaOrVolumeKey(accelerator)) {
-    // If we unregistered a media/volume key, and now no media/volume keys are registered,
-    // stop the media/volume key tap.
+    // If we unregistered a media/volume key, and now no media/volume keys are
+    // registered, stop the media/volume key tap.
     if (!IsAnyMediaOrVolumeKeyRegistered())
       StopWatchingMediaOrVolumeKeys();
   } else {
@@ -195,7 +194,8 @@ void GlobalShortcutListenerMac::UnregisterAcceleratorImpl(
 }
 
 bool GlobalShortcutListenerMac::RegisterHotKey(
-    const ui::Accelerator& accelerator, KeyId hot_key_id) {
+    const ui::Accelerator& accelerator,
+    KeyId hot_key_id) {
   EventHotKeyID event_hot_key_id;
 
   // Signature uniquely identifies the application that owns this hot_key.
@@ -209,13 +209,14 @@ bool GlobalShortcutListenerMac::RegisterHotKey(
   modifiers |= (accelerator.IsAltDown() ? optionKey : 0);
   modifiers |= (accelerator.IsCmdDown() ? cmdKey : 0);
 
-  int key_code = ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), 0,
-      NULL, NULL);
+  int key_code =
+      ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), 0, NULL, NULL);
 
   // Register the event hot key.
   EventHotKeyRef hot_key_ref;
-  OSStatus status = RegisterEventHotKey(key_code, modifiers, event_hot_key_id,
-      GetApplicationEventTarget(), 0, &hot_key_ref);
+  OSStatus status =
+      RegisterEventHotKey(key_code, modifiers, event_hot_key_id,
+                          GetApplicationEventTarget(), 0, &hot_key_ref);
   if (status != noErr)
     return false;
 
@@ -243,31 +244,28 @@ void GlobalShortcutListenerMac::StartWatchingMediaOrVolumeKeys() {
   DCHECK(event_tap_source_ == NULL);
 
   // Add an event tap to intercept the system defined media/volume key events.
-  event_tap_ = CGEventTapCreate(kCGSessionEventTap,
-      kCGHeadInsertEventTap,
-      kCGEventTapOptionDefault,
-      CGEventMaskBit(NX_SYSDEFINED),
-      EventTapCallback,
-      this);
+  event_tap_ = CGEventTapCreate(
+      kCGSessionEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault,
+      CGEventMaskBit(NX_SYSDEFINED), EventTapCallback, this);
   if (event_tap_ == NULL) {
     LOG(ERROR) << "Error: failed to create event tap.";
     return;
   }
 
-  event_tap_source_ = CFMachPortCreateRunLoopSource(kCFAllocatorSystemDefault,
-      event_tap_, 0);
+  event_tap_source_ =
+      CFMachPortCreateRunLoopSource(kCFAllocatorSystemDefault, event_tap_, 0);
   if (event_tap_source_ == NULL) {
     LOG(ERROR) << "Error: failed to create new run loop source.";
     return;
   }
 
   CFRunLoopAddSource(CFRunLoopGetCurrent(), event_tap_source_,
-      kCFRunLoopCommonModes);
+                     kCFRunLoopCommonModes);
 }
 
 void GlobalShortcutListenerMac::StopWatchingMediaOrVolumeKeys() {
   CFRunLoopRemoveSource(CFRunLoopGetCurrent(), event_tap_source_,
-      kCFRunLoopCommonModes);
+                        kCFRunLoopCommonModes);
   // Ensure both event tap and source are initialized.
   DCHECK(event_tap_ != NULL);
   DCHECK(event_tap_source_ != NULL);
@@ -288,8 +286,8 @@ void GlobalShortcutListenerMac::StartWatchingHotKeys() {
   EventTypeSpec event_type;
   event_type.eventClass = kEventClassKeyboard;
   event_type.eventKind = kEventHotKeyPressed;
-  InstallApplicationEventHandler(
-      hot_key_function, 1, &event_type, this, &event_handler_);
+  InstallApplicationEventHandler(hot_key_function, 1, &event_type, this,
+                                 &event_handler_);
 }
 
 void GlobalShortcutListenerMac::StopWatchingHotKeys() {
@@ -323,8 +321,10 @@ bool GlobalShortcutListenerMac::IsAnyHotKeyRegistered() {
 // Returning event causes the event to propagate to other applications.
 // Returning NULL prevents the event from propagating.
 // static
-CGEventRef GlobalShortcutListenerMac::EventTapCallback(
-    CGEventTapProxy proxy, CGEventType type, CGEventRef event, void* refcon) {
+CGEventRef GlobalShortcutListenerMac::EventTapCallback(CGEventTapProxy proxy,
+                                                       CGEventType type,
+                                                       CGEventRef event,
+                                                       void* refcon) {
   GlobalShortcutListenerMac* shortcut_listener =
       static_cast<GlobalShortcutListenerMac*>(refcon);
 
@@ -341,8 +341,7 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
   }
 
   // Ignore events that are not system defined media/volume keys.
-  if (type != NX_SYSDEFINED ||
-      [ns_event type] != NSSystemDefined ||
+  if (type != NX_SYSDEFINED || [ns_event type] != NSSystemDefined ||
       [ns_event subtype] != kSystemDefinedEventMediaAndVolumeKeysSubtype) {
     return event;
   }
@@ -354,10 +353,8 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
   int key_code = (data1 & 0xFFFF0000) >> 16;
   if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
       key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
-      key_code != NX_KEYTYPE_REWIND &&
-      key_code != NX_KEYTYPE_SOUND_UP &&
-      key_code != NX_KEYTYPE_SOUND_DOWN &&
-      key_code != NX_KEYTYPE_MUTE) {
+      key_code != NX_KEYTYPE_REWIND && key_code != NX_KEYTYPE_SOUND_UP &&
+      key_code != NX_KEYTYPE_SOUND_DOWN && key_code != NX_KEYTYPE_MUTE) {
     return event;
   }
 
@@ -381,11 +378,14 @@ CGEventRef GlobalShortcutListenerMac::EventTapCallback(
 
 // static
 OSStatus GlobalShortcutListenerMac::HotKeyHandler(
-    EventHandlerCallRef next_handler, EventRef event, void* user_data) {
+    EventHandlerCallRef next_handler,
+    EventRef event,
+    void* user_data) {
   // Extract the hotkey from the event.
   EventHotKeyID hot_key_id;
-  OSStatus result = GetEventParameter(event, kEventParamDirectObject,
-      typeEventHotKeyID, NULL, sizeof(hot_key_id), NULL, &hot_key_id);
+  OSStatus result =
+      GetEventParameter(event, kEventParamDirectObject, typeEventHotKeyID, NULL,
+                        sizeof(hot_key_id), NULL, &hot_key_id);
   if (result != noErr)
     return result;
 

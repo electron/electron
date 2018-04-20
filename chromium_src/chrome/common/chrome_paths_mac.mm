@@ -235,8 +235,8 @@ NSBundle* OuterAppBundle() {
 
 bool GetUserDataDirectoryForBrowserBundle(NSBundle* bundle,
                                           base::FilePath* result) {
-  std::unique_ptr<char, base::FreeDeleter>
-      product_dir_name(ProductDirNameForBundle(bundle));
+  std::unique_ptr<char, base::FreeDeleter> product_dir_name(
+      ProductDirNameForBundle(bundle));
   return GetDefaultUserDataDirectoryForProduct(product_dir_name.get(), result);
 }
 

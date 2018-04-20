@@ -9,11 +9,9 @@
 
 namespace atom {
 
-ViewsDelegateMac::ViewsDelegateMac() {
-}
+ViewsDelegateMac::ViewsDelegateMac() {}
 
-ViewsDelegateMac::~ViewsDelegateMac() {
-}
+ViewsDelegateMac::~ViewsDelegateMac() {}
 
 void ViewsDelegateMac::OnBeforeWidgetInit(
     views::Widget::InitParams* params,

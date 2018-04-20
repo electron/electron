@@ -12,21 +12,30 @@
 
 @implementation AtomTouchBar
 
-static NSTouchBarItemIdentifier ButtonIdentifier = @"com.electron.touchbar.button.";
-static NSTouchBarItemIdentifier ColorPickerIdentifier = @"com.electron.touchbar.colorpicker.";
-static NSTouchBarItemIdentifier GroupIdentifier = @"com.electron.touchbar.group.";
-static NSTouchBarItemIdentifier LabelIdentifier = @"com.electron.touchbar.label.";
-static NSTouchBarItemIdentifier PopoverIdentifier = @"com.electron.touchbar.popover.";
-static NSTouchBarItemIdentifier SliderIdentifier = @"com.electron.touchbar.slider.";
-static NSTouchBarItemIdentifier SegmentedControlIdentifier = @"com.electron.touchbar.segmentedcontrol.";
-static NSTouchBarItemIdentifier ScrubberIdentifier = @"com.electron.touchbar.scrubber.";
+static NSTouchBarItemIdentifier ButtonIdentifier =
+    @"com.electron.touchbar.button.";
+static NSTouchBarItemIdentifier ColorPickerIdentifier =
+    @"com.electron.touchbar.colorpicker.";
+static NSTouchBarItemIdentifier GroupIdentifier =
+    @"com.electron.touchbar.group.";
+static NSTouchBarItemIdentifier LabelIdentifier =
+    @"com.electron.touchbar.label.";
+static NSTouchBarItemIdentifier PopoverIdentifier =
+    @"com.electron.touchbar.popover.";
+static NSTouchBarItemIdentifier SliderIdentifier =
+    @"com.electron.touchbar.slider.";
+static NSTouchBarItemIdentifier SegmentedControlIdentifier =
+    @"com.electron.touchbar.segmentedcontrol.";
+static NSTouchBarItemIdentifier ScrubberIdentifier =
+    @"com.electron.touchbar.scrubber.";
 
 static NSString* const TextScrubberItemIdentifier = @"scrubber.text.item";
 static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
                 window:(atom::NativeWindow*)window
-              settings:(const std::vector<mate::PersistentDictionary>&)settings {
+              settings:
+                  (const std::vector<mate::PersistentDictionary>&)settings {
   if ((self = [super init])) {
     delegate_ = delegate;
     window_ = window;
@@ -36,7 +45,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBar*)makeTouchBar {
-  NSMutableArray* identifiers = [self identifiersFromSettings:ordered_settings_];
+  NSMutableArray* identifiers =
+      [self identifiersFromSettings:ordered_settings_];
   return [self touchBarFromItemIdentifiers:identifiers];
 }
 
@@ -48,7 +58,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   return bar.autorelease();
 }
 
-- (NSMutableArray*)identifiersFromSettings:(const std::vector<mate::PersistentDictionary>&)dicts {
+- (NSMutableArray*)identifiersFromSettings:
+    (const std::vector<mate::PersistentDictionary>&)dicts {
   NSMutableArray* identifiers = [NSMutableArray array];
 
   if (@available(macOS 10.12.2, *)) {
@@ -93,7 +104,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     item_id = [self idFromIdentifier:identifier withPrefix:LabelIdentifier];
     return [self makeLabelForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ColorPickerIdentifier]) {
-    item_id = [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
+    item_id =
+        [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
     return [self makeColorPickerForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:SliderIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
@@ -105,7 +117,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     item_id = [self idFromIdentifier:identifier withPrefix:GroupIdentifier];
     return [self makeGroupForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:SegmentedControlIdentifier]) {
-    item_id = [self idFromIdentifier:identifier withPrefix:SegmentedControlIdentifier];
+    item_id = [self idFromIdentifier:identifier
+                          withPrefix:SegmentedControlIdentifier];
     return [self makeSegmentedControlForID:item_id withIdentifier:identifier];
   } else if ([identifier hasPrefix:ScrubberIdentifier]) {
     item_id = [self idFromIdentifier:identifier withPrefix:ScrubberIdentifier];
@@ -119,9 +132,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
                          id:(NSTouchBarItemIdentifier)identifier
                    withType:(const std::string&)item_type
                withSettings:(const mate::PersistentDictionary&)settings
-               API_AVAILABLE(macosx(10.12.2)) {
+    API_AVAILABLE(macosx(10.12.2)) {
   NSTouchBarItem* item = [touchBar itemForIdentifier:identifier];
-  if (!item) return;
+  if (!item)
+    return;
 
   if (item_type == "button") {
     [self updateButton:(NSCustomTouchBarItem*)item withSettings:settings];
@@ -135,7 +149,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   } else if (item_type == "popover") {
     [self updatePopover:(NSPopoverTouchBarItem*)item withSettings:settings];
   } else if (item_type == "segmented_control") {
-    [self updateSegmentedControl:(NSCustomTouchBarItem*)item withSettings:settings];
+    [self updateSegmentedControl:(NSCustomTouchBarItem*)item
+                    withSettings:settings];
   } else if (item_type == "scrubber") {
     [self updateScrubber:(NSCustomTouchBarItem*)item withSettings:settings];
   } else if (item_type == "group") {
@@ -143,12 +158,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   }
 }
 
-- (void)addNonDefaultTouchBarItems:(const std::vector<mate::PersistentDictionary>&)items {
+- (void)addNonDefaultTouchBarItems:
+    (const std::vector<mate::PersistentDictionary>&)items {
   [self identifiersFromSettings:items];
 }
 
-- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item forTouchBar:(NSTouchBar*)touchBar {
-  if (![touchBar respondsToSelector:@selector(escapeKeyReplacementItemIdentifier)]) return;
+- (void)setEscapeTouchBarItem:(const mate::PersistentDictionary&)item
+                  forTouchBar:(NSTouchBar*)touchBar {
+  if (![touchBar
+          respondsToSelector:@selector(escapeKeyReplacementItemIdentifier)])
+    return;
   std::string type;
   std::string item_id;
   NSTouchBarItemIdentifier identifier = nil;
@@ -156,7 +175,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     identifier = [self identifierFromID:item_id type:type];
   }
   if (identifier) {
-    [self addNonDefaultTouchBarItems:{ item }];
+    [self addNonDefaultTouchBarItems:{item}];
     touchBar.escapeKeyReplacementItemIdentifier = identifier;
   } else {
     touchBar.escapeKeyReplacementItemIdentifier = nil;
@@ -165,14 +184,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)refreshTouchBarItem:(NSTouchBar*)touchBar
                          id:(const std::string&)item_id {
-  if (![self hasItemWithID:item_id]) return;
+  if (![self hasItemWithID:item_id])
+    return;
 
   mate::PersistentDictionary settings = settings_[item_id];
   std::string item_type;
   settings.Get("type", &item_type);
 
   auto identifier = [self identifierFromID:item_id type:item_type];
-  if (!identifier) return;
+  if (!identifier)
+    return;
 
   std::vector<mate::Dictionary> parents;
   settings.Get("_parents", &parents);
@@ -182,18 +203,19 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
     if (!parent.Get("type", &parent_type) || !parent.Get("id", &parent_id))
       continue;
     auto parentIdentifier = [self identifierFromID:parent_id type:parent_type];
-    if (!parentIdentifier) continue;
+    if (!parentIdentifier)
+      continue;
 
     if (parent_type == "popover") {
       NSPopoverTouchBarItem* popoverItem =
-        [touchBar itemForIdentifier:parentIdentifier];
+          [touchBar itemForIdentifier:parentIdentifier];
       [self refreshTouchBarItem:popoverItem.popoverTouchBar
-                            id:identifier
-                      withType:item_type
-                  withSettings:settings];
+                             id:identifier
+                       withType:item_type
+                   withSettings:settings];
     } else if (parent_type == "group") {
       NSGroupTouchBarItem* groupItem =
-        [touchBar itemForIdentifier:parentIdentifier];
+          [touchBar itemForIdentifier:parentIdentifier];
       [self refreshTouchBarItem:groupItem.groupTouchBar
                              id:identifier
                        withType:item_type
@@ -208,15 +230,16 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)buttonAction:(id)sender {
-  NSString* item_id = [NSString stringWithFormat:@"%ld", ((NSButton*)sender).tag];
+  NSString* item_id =
+      [NSString stringWithFormat:@"%ld", ((NSButton*)sender).tag];
   window_->NotifyTouchBarItemInteraction([item_id UTF8String],
                                          base::DictionaryValue());
 }
 
 - (void)colorPickerAction:(id)sender {
   NSString* identifier = ((NSColorPickerTouchBarItem*)sender).identifier;
-  NSString* item_id = [self idFromIdentifier:identifier
-                                  withPrefix:ColorPickerIdentifier];
+  NSString* item_id =
+      [self idFromIdentifier:identifier withPrefix:ColorPickerIdentifier];
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
   std::string hex_color = atom::ToRGBHex(skia::NSDeviceColorToSkColor(color));
   base::DictionaryValue details;
@@ -226,8 +249,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)sliderAction:(id)sender {
   NSString* identifier = ((NSSliderTouchBarItem*)sender).identifier;
-  NSString* item_id = [self idFromIdentifier:identifier
-                                  withPrefix:SliderIdentifier];
+  NSString* item_id =
+      [self idFromIdentifier:identifier withPrefix:SliderIdentifier];
   base::DictionaryValue details;
   details.SetInteger("value",
                      [((NSSliderTouchBarItem*)sender).slider intValue]);
@@ -235,31 +258,41 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSString*)idFromIdentifier:(NSString*)identifier
-                  withPrefix:(NSString*)prefix {
+                   withPrefix:(NSString*)prefix {
   return [identifier substringFromIndex:[prefix length]];
 }
 
 - (void)segmentedControlAction:(id)sender {
-  NSString* item_id = [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
+  NSString* item_id =
+      [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
   base::DictionaryValue details;
-  details.SetInteger("selectedIndex", ((NSSegmentedControl*)sender).selectedSegment);
-  details.SetBoolean("isSelected", [((NSSegmentedControl*)sender) isSelectedForSegment:((NSSegmentedControl*)sender).selectedSegment]);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
-                                         details);
+  details.SetInteger("selectedIndex",
+                     ((NSSegmentedControl*)sender).selectedSegment);
+  details.SetBoolean(
+      "isSelected",
+      [((NSSegmentedControl*)sender)
+          isSelectedForSegment:((NSSegmentedControl*)sender).selectedSegment]);
+  window_->NotifyTouchBarItemInteraction([item_id UTF8String], details);
 }
 
-- (void)scrubber:(NSScrubber*)scrubber didSelectItemAtIndex:(NSInteger)selectedIndex API_AVAILABLE(macosx(10.12.2)) {
+- (void)scrubber:(NSScrubber*)scrubber
+    didSelectItemAtIndex:(NSInteger)selectedIndex
+    API_AVAILABLE(macosx(10.12.2)) {
   base::DictionaryValue details;
   details.SetInteger("selectedIndex", selectedIndex);
   details.SetString("type", "select");
-  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
+  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
+                                         details);
 }
 
-- (void)scrubber:(NSScrubber*)scrubber didHighlightItemAtIndex:(NSInteger)highlightedIndex API_AVAILABLE(macosx(10.12.2)) {
+- (void)scrubber:(NSScrubber*)scrubber
+    didHighlightItemAtIndex:(NSInteger)highlightedIndex
+    API_AVAILABLE(macosx(10.12.2)) {
   base::DictionaryValue details;
   details.SetInteger("highlightedIndex", highlightedIndex);
   details.SetString("type", "highlight");
-  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String], details);
+  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
+                                         details);
 }
 
 - (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
@@ -300,7 +333,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
                     withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
@@ -346,7 +380,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
@@ -375,11 +410,12 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
                          withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSColorPickerTouchBarItem> item([[NSClassFromString(
-    @"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier]);
+      @"NSColorPickerTouchBarItem") alloc] initWithIdentifier:identifier]);
   [item setTarget:self];
   [item setAction:@selector(colorPickerAction:)];
   [self updateColorPicker:item withSettings:settings];
@@ -390,13 +426,14 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
              withSettings:(const mate::PersistentDictionary&)settings {
   std::vector<std::string> colors;
   if (settings.Get("availableColors", &colors) && !colors.empty()) {
-    NSColorList* color_list  = [[[NSColorList alloc] initWithName:@""] autorelease];
+    NSColorList* color_list =
+        [[[NSColorList alloc] initWithName:@""] autorelease];
     for (size_t i = 0; i < colors.size(); ++i) {
       [color_list insertColor:[self colorFromHexColorString:colors[i]]
                           key:base::SysUTF8ToNSString(colors[i])
                       atIndex:i];
     }
-     item.colorList = color_list;
+    item.colorList = color_list;
   }
 
   std::string selectedColor;
@@ -408,7 +445,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (NSTouchBarItem*)makeSliderForID:(NSString*)id
                     withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSSliderTouchBarItem> item([[NSClassFromString(
@@ -440,7 +478,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
                      withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSPopoverTouchBarItem> item([[NSClassFromString(
@@ -467,59 +506,72 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   mate::PersistentDictionary child;
   std::vector<mate::PersistentDictionary> items;
   if (settings.Get("child", &child) && child.Get("ordereredItems", &items)) {
-    item.popoverTouchBar = [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
+    item.popoverTouchBar =
+        [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
   }
 }
 
 - (NSTouchBarItem*)makeGroupForID:(NSString*)id
                    withIdentifier:(NSString*)identifier {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
   mate::PersistentDictionary settings = settings_[s_id];
 
   mate::PersistentDictionary child;
-  if (!settings.Get("child", &child)) return nil;
+  if (!settings.Get("child", &child))
+    return nil;
   std::vector<mate::PersistentDictionary> items;
-  if (!child.Get("ordereredItems", &items)) return nil;
+  if (!child.Get("ordereredItems", &items))
+    return nil;
 
   NSMutableArray* generatedItems = [NSMutableArray array];
   NSMutableArray* identifiers = [self identifiersFromSettings:items];
   for (NSUInteger i = 0; i < [identifiers count]; ++i) {
-    if ([identifiers objectAtIndex:i] != NSTouchBarItemIdentifierOtherItemsProxy) {
-      NSTouchBarItem* generatedItem = [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
+    if ([identifiers objectAtIndex:i] !=
+        NSTouchBarItemIdentifierOtherItemsProxy) {
+      NSTouchBarItem* generatedItem =
+          [self makeItemForIdentifier:[identifiers objectAtIndex:i]];
       if (generatedItem) {
         [generatedItems addObject:generatedItem];
       }
     }
   }
-  return [NSClassFromString(@"NSGroupTouchBarItem") groupItemWithIdentifier:identifier
-                                                                      items:generatedItems];
+  return [NSClassFromString(@"NSGroupTouchBarItem")
+      groupItemWithIdentifier:identifier
+                        items:generatedItems];
 }
 
 - (void)updateGroup:(NSGroupTouchBarItem*)item
-    withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2)) {
-  
+       withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2)) {
   mate::PersistentDictionary child;
-  if (!settings.Get("child", &child)) return;
+  if (!settings.Get("child", &child))
+    return;
   std::vector<mate::PersistentDictionary> items;
-  if (!child.Get("ordereredItems", &items)) return;
+  if (!child.Get("ordereredItems", &items))
+    return;
 
-  item.groupTouchBar = [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
+  item.groupTouchBar =
+      [self touchBarFromItemIdentifiers:[self identifiersFromSettings:items]];
 }
 
 - (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id
-                              withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2)) {
+                              withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2)) {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
       @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
 
-  NSSegmentedControl* control = [NSSegmentedControl segmentedControlWithLabels:[NSMutableArray array]
-                                        trackingMode:NSSegmentSwitchTrackingSelectOne
-                                        target:self
-                                        action:@selector(segmentedControlAction:)];
+  NSSegmentedControl* control = [NSSegmentedControl
+      segmentedControlWithLabels:[NSMutableArray array]
+                    trackingMode:NSSegmentSwitchTrackingSelectOne
+                          target:self
+                          action:@selector(segmentedControlAction:)];
   control.tag = [id floatValue];
   [item setView:control];
 
@@ -528,8 +580,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
-                  withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2)) {
-
+                  withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2)) {
   NSSegmentedControl* control = item.view;
 
   std::string segmentStyle;
@@ -585,18 +637,23 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBarItem*)makeScrubberForID:(NSString*)id
-                     withIdentifier:(NSString*)identifier API_AVAILABLE(macosx(10.12.2)) {
+                      withIdentifier:(NSString*)identifier
+    API_AVAILABLE(macosx(10.12.2)) {
   std::string s_id([id UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   base::scoped_nsobject<NSCustomTouchBarItem> item([[NSClassFromString(
       @"NSCustomTouchBarItem") alloc] initWithIdentifier:identifier]);
 
-  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc] initWithFrame:NSZeroRect] autorelease];
+  NSScrubber* scrubber = [[[NSClassFromString(@"NSScrubber") alloc]
+      initWithFrame:NSZeroRect] autorelease];
 
-  [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView") forItemIdentifier:TextScrubberItemIdentifier];
-  [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView") forItemIdentifier:ImageScrubberItemIdentifier];
+  [scrubber registerClass:NSClassFromString(@"NSScrubberTextItemView")
+        forItemIdentifier:TextScrubberItemIdentifier];
+  [scrubber registerClass:NSClassFromString(@"NSScrubberImageItemView")
+        forItemIdentifier:ImageScrubberItemIdentifier];
 
   scrubber.delegate = self;
   scrubber.dataSource = self;
@@ -609,7 +666,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (void)updateScrubber:(NSCustomTouchBarItem*)item
-          withSettings:(const mate::PersistentDictionary&)settings API_AVAILABLE(macosx(10.12.2)) {
+          withSettings:(const mate::PersistentDictionary&)settings
+    API_AVAILABLE(macosx(10.12.2)) {
   NSScrubber* scrubber = item.view;
 
   bool showsArrowButtons = false;
@@ -622,17 +680,21 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   settings.Get("overlayStyle", &overlayStyle);
 
   if (selectedStyle == "outline") {
-    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
+    scrubber.selectionBackgroundStyle =
+        [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
   } else if (selectedStyle == "background") {
-    scrubber.selectionBackgroundStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
+    scrubber.selectionBackgroundStyle =
+        [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
   } else {
     scrubber.selectionBackgroundStyle = nil;
   }
 
   if (overlayStyle == "outline") {
-    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
+    scrubber.selectionOverlayStyle =
+        [NSClassFromString(@"NSScrubberSelectionStyle") outlineOverlayStyle];
   } else if (overlayStyle == "background") {
-    scrubber.selectionOverlayStyle = [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
+    scrubber.selectionOverlayStyle =
+        [NSClassFromString(@"NSScrubberSelectionStyle") roundedBackgroundStyle];
   } else {
     scrubber.selectionOverlayStyle = nil;
   }
@@ -652,9 +714,11 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   [scrubber reloadData];
 }
 
-- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber API_AVAILABLE(macosx(10.12.2)) {
+- (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber
+    API_AVAILABLE(macosx(10.12.2)) {
   std::string s_id([[scrubber identifier] UTF8String]);
-  if (![self hasItemWithID:s_id]) return 0;
+  if (![self hasItemWithID:s_id])
+    return 0;
 
   mate::PersistentDictionary settings = settings_[s_id];
   std::vector<mate::PersistentDictionary> items;
@@ -663,15 +727,19 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
-             viewForItemAtIndex:(NSInteger)index API_AVAILABLE(macosx(10.12.2)) {
+             viewForItemAtIndex:(NSInteger)index
+    API_AVAILABLE(macosx(10.12.2)) {
   std::string s_id([[scrubber identifier] UTF8String]);
-  if (![self hasItemWithID:s_id]) return nil;
+  if (![self hasItemWithID:s_id])
+    return nil;
 
   mate::PersistentDictionary settings = settings_[s_id];
   std::vector<mate::PersistentDictionary> items;
-  if (!settings.Get("items", &items)) return nil;
+  if (!settings.Get("items", &items))
+    return nil;
 
-  if (index >= static_cast<NSInteger>(items.size())) return nil;
+  if (index >= static_cast<NSInteger>(items.size()))
+    return nil;
 
   mate::PersistentDictionary item = items[index];
 
@@ -679,13 +747,14 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   std::string title;
 
   if (item.Get("label", &title)) {
-    NSScrubberTextItemView* view = [scrubber makeItemWithIdentifier:TextScrubberItemIdentifier
-                                                              owner:self];
+    NSScrubberTextItemView* view =
+        [scrubber makeItemWithIdentifier:TextScrubberItemIdentifier owner:self];
     view.title = base::SysUTF8ToNSString(title);
     itemView = view;
   } else {
-    NSScrubberImageItemView* view = [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
-                                                               owner:self];
+    NSScrubberImageItemView* view =
+        [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
+                                   owner:self];
     gfx::Image image;
     if (item.Get("icon", &image)) {
       view.image = image.AsNSImage();
@@ -696,30 +765,38 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   return itemView;
 }
 
-- (NSSize)scrubber:(NSScrubber *)scrubber layout:(NSScrubberFlowLayout *)layout sizeForItemAtIndex:(NSInteger)itemIndex
-API_AVAILABLE(macosx(10.12.2)) {
+- (NSSize)scrubber:(NSScrubber*)scrubber
+                layout:(NSScrubberFlowLayout*)layout
+    sizeForItemAtIndex:(NSInteger)itemIndex API_AVAILABLE(macosx(10.12.2)) {
   NSInteger width = 50;
   NSInteger height = 30;
   NSInteger margin = 15;
   NSSize defaultSize = NSMakeSize(width, height);
 
   std::string s_id([[scrubber identifier] UTF8String]);
-  if (![self hasItemWithID:s_id]) return defaultSize;
+  if (![self hasItemWithID:s_id])
+    return defaultSize;
 
   mate::PersistentDictionary settings = settings_[s_id];
   std::vector<mate::PersistentDictionary> items;
-  if (!settings.Get("items", &items)) return defaultSize;
+  if (!settings.Get("items", &items))
+    return defaultSize;
 
-  if (itemIndex >= static_cast<NSInteger>(items.size())) return defaultSize;
+  if (itemIndex >= static_cast<NSInteger>(items.size()))
+    return defaultSize;
 
   mate::PersistentDictionary item = items[itemIndex];
   std::string title;
 
   if (item.Get("label", &title)) {
     NSSize size = NSMakeSize(CGFLOAT_MAX, CGFLOAT_MAX);
-    NSRect textRect = [base::SysUTF8ToNSString(title) boundingRectWithSize:size
-                                          options:NSStringDrawingUsesLineFragmentOrigin |   NSStringDrawingUsesFontLeading
-                                          attributes:@{ NSFontAttributeName: [NSFont systemFontOfSize:0]}];
+    NSRect textRect = [base::SysUTF8ToNSString(title)
+        boundingRectWithSize:size
+                     options:NSStringDrawingUsesLineFragmentOrigin |
+                             NSStringDrawingUsesFontLeading
+                  attributes:@{
+                    NSFontAttributeName : [NSFont systemFontOfSize:0]
+                  }];
 
     width = textRect.size.width + margin;
   } else {

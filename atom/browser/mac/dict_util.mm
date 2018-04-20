@@ -61,14 +61,14 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   return result;
 }
 
-NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value) {
+NSDictionary* DictionaryValueToNSDictionary(
+    const base::DictionaryValue& value) {
   std::string json;
   if (!base::JSONWriter::Write(value, &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
-  id obj = [NSJSONSerialization JSONObjectWithData:jsonData
-                                           options:0
-                                             error:nil];
+  id obj =
+      [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
   if (![obj isKindOfClass:[NSDictionary class]])
     return nil;
   return obj;

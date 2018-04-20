@@ -24,7 +24,7 @@ int AtomMain(int argc, char* argv[]) {
 }
 
 #ifdef ENABLE_RUN_AS_NODE
-int AtomInitializeICUandStartNode(int argc, char *argv[]) {
+int AtomInitializeICUandStartNode(int argc, char* argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
   base::mac::SetOverrideFrameworkBundlePath(

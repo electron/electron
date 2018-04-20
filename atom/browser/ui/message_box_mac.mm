@@ -141,9 +141,9 @@ int ShowMessageBox(NativeWindow* parent_window,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
-  NSAlert* alert = CreateNSAlert(parent_window, type, buttons, default_id,
-                                 cancel_id, title, message, detail, "", false,
-                                 icon);
+  NSAlert* alert =
+      CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
+                    message, detail, "", false, icon);
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -194,10 +194,11 @@ void ShowMessageBox(NativeWindow* parent_window,
                                                          callEndModal:false];
 
     NSWindow* window = parent_window ? parent_window->GetNativeWindow() : nil;
-    [alert beginSheetModalForWindow:window
-                modalDelegate:delegate
+    [alert
+        beginSheetModalForWindow:window
+                   modalDelegate:delegate
                   didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
-                    contextInfo:nil];
+                     contextInfo:nil];
   }
 }
 

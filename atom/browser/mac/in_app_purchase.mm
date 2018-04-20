@@ -17,7 +17,7 @@
 
 // --------------------------------- Interface --------------------------------
 
-@interface InAppPurchase : NSObject<SKProductsRequestDelegate> {
+@interface InAppPurchase : NSObject <SKProductsRequestDelegate> {
  @private
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;

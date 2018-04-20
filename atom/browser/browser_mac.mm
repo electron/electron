@@ -4,12 +4,12 @@
 
 #include "atom/browser/browser.h"
 
-#include "atom/common/platform_util.h"
 #include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/platform_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
@@ -71,9 +71,9 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   // Apple's defaults first, so we'll use the first option that isn't our bundle
   CFStringRef other = nil;
   for (CFIndex i = 0; i < CFArrayGetCount(bundleList); ++i) {
-    other = base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList,
-                                                                  i));
-    if (![identifier isEqualToString: (__bridge NSString *)other]) {
+    other =
+        base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList, i));
+    if (![identifier isEqualToString:(__bridge NSString*)other]) {
       break;
     }
   }
@@ -92,9 +92,8 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  OSStatus return_code =
-      LSSetDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns),
-                                      base::mac::NSToCFCast(identifier));
+  OSStatus return_code = LSSetDefaultHandlerForURLScheme(
+      base::mac::NSToCFCast(protocol_ns), base::mac::NSToCFCast(identifier));
   return return_code == noErr;
 }
 
@@ -111,20 +110,18 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   CFStringRef bundle =
       LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns));
-  NSString* bundleId = static_cast<NSString*>(
-      base::mac::CFTypeRefToNSObjectAutorelease(bundle));
+  NSString* bundleId =
+      static_cast<NSString*>(base::mac::CFTypeRefToNSObjectAutorelease(bundle));
   if (!bundleId)
     return false;
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
-  NSComparisonResult result =
-      [bundleId caseInsensitiveCompare:identifier];
+  NSComparisonResult result = [bundleId caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 
-void Browser::SetAppUserModelID(const base::string16& name) {
-}
+void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetBadgeCount(int count) {
   DockSetBadgeText(count != 0 ? base::IntToString(count) : "");
@@ -206,8 +203,8 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 #if defined(MAS_BUILD)
   settings.open_at_login = platform_util::GetLoginItemEnabled();
 #else
-  settings.open_at_login = base::mac::CheckLoginItemStatus(
-      &settings.open_as_hidden);
+  settings.open_at_login =
+      base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
   settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
@@ -244,18 +241,18 @@ void Browser::DockCancelBounce(int request_id) {
 }
 
 void Browser::DockSetBadgeText(const std::string& label) {
-  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
   [tile setBadgeLabel:base::SysUTF8ToNSString(label)];
 }
 
 void Browser::DockDownloadFinished(const std::string& filePath) {
   [[NSDistributedNotificationCenter defaultCenter]
-      postNotificationName: @"com.apple.DownloadFileFinished"
-                    object: base::SysUTF8ToNSString(filePath)];
+      postNotificationName:@"com.apple.DownloadFileFinished"
+                    object:base::SysUTF8ToNSString(filePath)];
 }
 
 std::string Browser::DockGetBadgeText() {
-  NSDockTile *tile = [[AtomApplication sharedApplication] dockTile];
+  NSDockTile* tile = [[AtomApplication sharedApplication] dockTile];
   return base::SysNSStringToUTF8([tile badgeLabel]);
 }
 
@@ -263,19 +260,20 @@ void Browser::DockHide() {
   for (auto* const& window : WindowList::GetWindows())
     [window->GetNativeWindow() setCanHide:NO];
 
-  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  ProcessSerialNumber psn = {0, kCurrentProcess};
   TransformProcessType(&psn, kProcessTransformToUIElementApplication);
 }
 
 bool Browser::DockIsVisible() {
   // Because DockShow has a slight delay this may not be true immediately
   // after that call.
-  return ([[NSRunningApplication currentApplication] activationPolicy] == NSApplicationActivationPolicyRegular);
+  return ([[NSRunningApplication currentApplication] activationPolicy] ==
+          NSApplicationActivationPolicyRegular);
 }
 
 void Browser::DockShow() {
   BOOL active = [[NSRunningApplication currentApplication] isActive];
-  ProcessSerialNumber psn = { 0, kCurrentProcess };
+  ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
     // Workaround buggy behavior of TransformProcessType.
     // http://stackoverflow.com/questions/7596643/
@@ -300,7 +298,8 @@ void Browser::DockShow() {
 }
 
 void Browser::DockSetMenu(AtomMenuModel* model) {
-  AtomApplicationDelegate* delegate = (AtomApplicationDelegate*)[NSApp delegate];
+  AtomApplicationDelegate* delegate =
+      (AtomApplicationDelegate*)[NSApp delegate];
   [delegate setApplicationDockMenu:model];
 }
 
@@ -329,8 +328,7 @@ void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
   about_panel_options_.Clear();
 
   // Upper case option keys for orderFrontStandardAboutPanelWithOptions format
-  for (base::DictionaryValue::Iterator iter(options);
-       !iter.IsAtEnd();
+  for (base::DictionaryValue::Iterator iter(options); !iter.IsAtEnd();
        iter.Advance()) {
     std::string key = iter.key();
     std::string value;

@@ -43,16 +43,18 @@ void LoadCommonResources() {
 }
 
 void MainDelegate::OverrideFrameworkBundlePath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Framework.framework");
+  base::FilePath helper_path =
+      GetFrameworksPath().Append(GetApplicationName() + " Framework.framework");
 
   base::mac::SetOverrideFrameworkBundlePath(helper_path);
 }
 
 void MainDelegate::OverrideChildProcessPath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Helper.app")
-    .Append("Contents")
-    .Append("MacOS")
-    .Append(GetApplicationName() + " Helper");
+  base::FilePath helper_path = GetFrameworksPath()
+                                   .Append(GetApplicationName() + " Helper.app")
+                                   .Append("Contents")
+                                   .Append("MacOS")
+                                   .Append(GetApplicationName() + " Helper");
 
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }

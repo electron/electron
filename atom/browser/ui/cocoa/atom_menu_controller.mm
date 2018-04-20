@@ -25,35 +25,35 @@ struct Role {
   const char* role;
 };
 Role kRolesMap[] = {
-  { @selector(orderFrontStandardAboutPanel:), "about" },
-  { @selector(hide:), "hide" },
-  { @selector(hideOtherApplications:), "hideothers" },
-  { @selector(unhideAllApplications:), "unhide" },
-  { @selector(arrangeInFront:), "front" },
-  { @selector(undo:), "undo" },
-  { @selector(redo:), "redo" },
-  { @selector(cut:), "cut" },
-  { @selector(copy:), "copy" },
-  { @selector(paste:), "paste" },
-  { @selector(delete:), "delete" },
-  { @selector(pasteAndMatchStyle:), "pasteandmatchstyle" },
-  { @selector(selectAll:), "selectall" },
-  { @selector(startSpeaking:), "startspeaking" },
-  { @selector(stopSpeaking:), "stopspeaking" },
-  { @selector(performMiniaturize:), "minimize" },
-  { @selector(performClose:), "close" },
-  { @selector(performZoom:), "zoom" },
-  { @selector(terminate:), "quit" },
-  // ↓ is intentionally not `toggleFullScreen`. The macOS full screen menu item behaves weird.
-  // If we use `toggleFullScreen`, then the menu item will use the default label, and not take
-  // the one provided.
-  { @selector(toggleFullScreenMode:), "togglefullscreen" },
-  { @selector(toggleTabBar:), "toggletabbar" },
-  { @selector(selectNextTab:), "selectnexttab" },
-  { @selector(selectPreviousTab:), "selectprevioustab" },
-  { @selector(mergeAllWindows:), "mergeallwindows" },
-  { @selector(moveTabToNewWindow:), "movetabtonewwindow" },
-  { @selector(clearRecentDocuments:), "clearrecentdocuments" },
+    {@selector(orderFrontStandardAboutPanel:), "about"},
+    {@selector(hide:), "hide"},
+    {@selector(hideOtherApplications:), "hideothers"},
+    {@selector(unhideAllApplications:), "unhide"},
+    {@selector(arrangeInFront:), "front"},
+    {@selector(undo:), "undo"},
+    {@selector(redo:), "redo"},
+    {@selector(cut:), "cut"},
+    {@selector(copy:), "copy"},
+    {@selector(paste:), "paste"},
+    {@selector(delete:), "delete"},
+    {@selector(pasteAndMatchStyle:), "pasteandmatchstyle"},
+    {@selector(selectAll:), "selectall"},
+    {@selector(startSpeaking:), "startspeaking"},
+    {@selector(stopSpeaking:), "stopspeaking"},
+    {@selector(performMiniaturize:), "minimize"},
+    {@selector(performClose:), "close"},
+    {@selector(performZoom:), "zoom"},
+    {@selector(terminate:), "quit"},
+    // ↓ is intentionally not `toggleFullScreen`. The macOS full screen menu
+    // item behaves weird. If we use `toggleFullScreen`, then the menu item will
+    // use the default label, and not take the one provided.
+    {@selector(toggleFullScreenMode:), "togglefullscreen"},
+    {@selector(toggleTabBar:), "toggletabbar"},
+    {@selector(selectNextTab:), "selectnexttab"},
+    {@selector(selectPreviousTab:), "selectprevioustab"},
+    {@selector(mergeAllWindows:), "mergeallwindows"},
+    {@selector(moveTabToNewWindow:), "movetabtonewwindow"},
+    {@selector(clearRecentDocuments:), "clearrecentdocuments"},
 };
 
 }  // namespace
@@ -68,7 +68,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
 @synthesize model = model_;
 
-- (id)initWithModel:(atom::AtomMenuModel*)model useDefaultAccelerator:(BOOL)use {
+- (id)initWithModel:(atom::AtomMenuModel*)model
+    useDefaultAccelerator:(BOOL)use {
   if ((self = [super init])) {
     model_ = model;
     isMenuOpen_ = NO;
@@ -100,10 +101,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   if (!recentDocumentsMenuItem_) {
     // Locate & retain the recent documents menu item
-    recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
-        itemWithTitle:@"Electron"] submenu]
-        itemWithTitle:@"Open Recent"]
-        retain]);
+    recentDocumentsMenuItem_.reset(
+        [[[[[NSApp mainMenu] itemWithTitle:@"Electron"] submenu]
+            itemWithTitle:@"Open Recent"] retain]);
   }
 
   model_ = model;
@@ -146,15 +146,13 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // Adds a separator item at the given index. As the separator doesn't need
 // anything from the model, this method doesn't need the model index as the
 // other method below does.
-- (void)addSeparatorToMenu:(NSMenu*)menu
-                   atIndex:(int)index {
+- (void)addSeparatorToMenu:(NSMenu*)menu atIndex:(int)index {
   NSMenuItem* separator = [NSMenuItem separatorItem];
   [menu insertItem:separator atIndex:index];
 }
 
 // Empties the source menu items to the destination.
-- (void)moveMenuItems:(NSMenu*)source
-                   to:(NSMenu*)destination {
+- (void)moveMenuItems:(NSMenu*)source to:(NSMenu*)destination {
   const long count = [source numberOfItems];
   for (long index = 0; index < count; index++) {
     NSMenuItem* removedItem = [[[source itemAtIndex:0] retain] autorelease];
@@ -166,12 +164,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // Replaces the item's submenu instance with the singleton recent documents
 // menu. Previously replaced menu items will be recovered.
 - (void)replaceSubmenuShowingRecentDocuments:(NSMenuItem*)item {
-  NSMenu* recentDocumentsMenu = [[[recentDocumentsMenuItem_ submenu]
-      retain] autorelease];
+  NSMenu* recentDocumentsMenu =
+      [[[recentDocumentsMenuItem_ submenu] retain] autorelease];
 
   // Remove menu items in recent documents back to swap menu
-  [self moveMenuItems:recentDocumentsMenu
-                   to:recentDocumentsMenuSwap_];
+  [self moveMenuItems:recentDocumentsMenu to:recentDocumentsMenuSwap_];
   // Swap back the submenu
   [recentDocumentsMenuItem_ setSubmenu:recentDocumentsMenuSwap_];
 
@@ -179,8 +176,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   recentDocumentsMenuSwap_.reset([[item submenu] retain]);
 
   // Repopulate with items from the submenu to be replaced
-  [self moveMenuItems:recentDocumentsMenuSwap_
-                   to:recentDocumentsMenu];
+  [self moveMenuItems:recentDocumentsMenuSwap_ to:recentDocumentsMenu];
   // Update the submenu's title
   [recentDocumentsMenu setTitle:[recentDocumentsMenuSwap_ title]];
   // Replace submenu
@@ -198,10 +194,10 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   base::string16 label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
-  base::scoped_nsobject<NSMenuItem> item(
-      [[NSMenuItem alloc] initWithTitle:label
-                                 action:@selector(itemSelected:)
-                          keyEquivalent:@""]);
+  base::scoped_nsobject<NSMenuItem> item([[NSMenuItem alloc]
+      initWithTitle:label
+             action:@selector(itemSelected:)
+      keyEquivalent:@""]);
 
   // If the menu item has an icon, set it.
   gfx::Image icon;
@@ -214,8 +210,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
-    atom::AtomMenuModel* submenuModel = static_cast<atom::AtomMenuModel*>(
-        model->GetSubmenuModelAt(index));
+    atom::AtomMenuModel* submenuModel =
+        static_cast<atom::AtomMenuModel*>(model->GetSubmenuModelAt(index));
     NSMenu* submenu = [self menuFromModel:submenuModel];
     [submenu setTitle:[item title]];
     [item setSubmenu:submenu];
@@ -239,15 +235,15 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSValue* modelObject = [NSValue valueWithPointer:model];
     [item setRepresentedObject:modelObject];  // Retains |modelObject|.
     ui::Accelerator accelerator;
-    if (model->GetAcceleratorAtWithParams(
-            index, useDefaultAccelerator_, &accelerator)) {
+    if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
+                                          &accelerator)) {
       const ui::PlatformAcceleratorCocoa* platformAccelerator =
           static_cast<const ui::PlatformAcceleratorCocoa*>(
               accelerator.platform_accelerator());
       if (platformAccelerator) {
         [item setKeyEquivalent:platformAccelerator->characters()];
-        [item setKeyEquivalentModifierMask:
-            platformAccelerator->modifier_mask()];
+        [item
+            setKeyEquivalentModifierMask:platformAccelerator->modifier_mask()];
       }
     }
 
@@ -275,9 +271,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     return NO;
 
   NSInteger modelIndex = [item tag];
-  atom::AtomMenuModel* model =
-      static_cast<atom::AtomMenuModel*>(
-          [[(id)item representedObject] pointerValue]);
+  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(
+      [[(id)item representedObject] pointerValue]);
   DCHECK(model);
   if (model) {
     BOOL checked = model->IsItemCheckedAt(modelIndex);
@@ -303,9 +298,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // item chosen.
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
-  atom::AtomMenuModel* model =
-      static_cast<atom::AtomMenuModel*>(
-          [[sender representedObject] pointerValue]);
+  atom::AtomMenuModel* model = static_cast<atom::AtomMenuModel*>(
+      [[sender representedObject] pointerValue]);
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
@@ -338,8 +332,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (isMenuOpen_) {
     isMenuOpen_ = NO;
     model_->MenuWillClose();
-    // Post async task so that itemSelected runs before the close callback	
-    // deletes the controller from the map which deallocates it	
+    // Post async task so that itemSelected runs before the close callback
+    // deletes the controller from the map which deallocates it
     if (!closeCallback.is_null()) {
       BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, closeCallback);
     }

@@ -19,12 +19,13 @@ CocoaNotification* NotificationPresenterMac::GetNotification(
   for (Notification* notification : notifications()) {
     auto* native_notification = static_cast<CocoaNotification*>(notification);
     if ([native_notification->notification().identifier
-          isEqual:ns_notification.identifier])
+            isEqual:ns_notification.identifier])
       return native_notification;
   }
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
-    LOG(INFO) << "Could not find notification for " << [ns_notification.identifier UTF8String];
+    LOG(INFO) << "Could not find notification for "
+              << [ns_notification.identifier UTF8String];
   }
 
   return nullptr;

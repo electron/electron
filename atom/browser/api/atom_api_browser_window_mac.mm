@@ -38,7 +38,9 @@ namespace {
 // Return a vector of non-draggable regions that fill a window of size
 // |width| by |height|, but leave gaps where the window should be draggable.
 std::vector<gfx::Rect> CalculateNonDraggableRegions(
-    std::unique_ptr<SkRegion> draggable, int width, int height) {
+    std::unique_ptr<SkRegion> draggable,
+    int width,
+    int height) {
   std::vector<gfx::Rect> result;
   std::unique_ptr<SkRegion> non_draggable(new SkRegion);
   non_draggable->op(0, 0, width, height, SkRegion::kUnion_Op);

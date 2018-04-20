@@ -23,19 +23,20 @@
 
 #pragma mark - NSWindowDelegate
 
-- (void)windowDidChangeOcclusionState:(NSNotification *)notification {
+- (void)windowDidChangeOcclusionState:(NSNotification*)notification {
   // notification.object is the window that changed its state.
-  // It's safe to use self.window instead if you don't assign one delegate to many windows
-  NSWindow *window = notification.object;
+  // It's safe to use self.window instead if you don't assign one delegate to
+  // many windows
+  NSWindow* window = notification.object;
 
   // check occlusion binary flag
-  if (window.occlusionState & NSWindowOcclusionStateVisible)   {
-     // The app is visible
-     shell_->NotifyWindowShow();
-   } else {
-     // The app is not visible
-     shell_->NotifyWindowHide();
-   }
+  if (window.occlusionState & NSWindowOcclusionStateVisible) {
+    // The app is visible
+    shell_->NotifyWindowShow();
+  } else {
+    // The app is not visible
+    shell_->NotifyWindowHide();
+  }
 }
 
 // Called when the user clicks the zoom button or selects it from the Window
@@ -55,8 +56,8 @@
 
   // Never shrink from the current size on zoom.
   NSRect window_frame = [window frame];
-  CGFloat zoomed_width = std::max(static_cast<CGFloat>(preferred_width),
-                                  NSWidth(window_frame));
+  CGFloat zoomed_width =
+      std::max(static_cast<CGFloat>(preferred_width), NSWidth(window_frame));
 
   // |frame| determines our maximum extents. We need to set the origin of the
   // frame -- and only move it left if necessary.
@@ -117,7 +118,8 @@
 
 - (void)windowWillMiniaturize:(NSNotification*)notification {
   NSWindow* window = shell_->GetNativeWindow();
-  // store the current status window level to be restored in windowDidDeminiaturize
+  // store the current status window level to be restored in
+  // windowDidDeminiaturize
   level_ = [window level];
   [window setLevel:NSNormalWindowLevel];
 }
@@ -177,16 +179,16 @@
       [window setTitleVisibility:NSWindowTitleVisible];
     }
 
-    // Restore the native toolbar immediately after entering fullscreen, if we do
-    // this before leaving fullscreen, traffic light buttons will be jumping.
+    // Restore the native toolbar immediately after entering fullscreen, if we
+    // do this before leaving fullscreen, traffic light buttons will be jumping.
     if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
       base::scoped_nsobject<NSToolbar> toolbar(
           [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
       [toolbar setShowsBaselineSeparator:NO];
       [window setToolbar:toolbar];
 
-      // Set window style to hide the toolbar, otherwise the toolbar will show in
-      // fullscreen mode.
+      // Set window style to hide the toolbar, otherwise the toolbar will show
+      // in fullscreen mode.
       shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
     }
   }
@@ -229,7 +231,8 @@
 }
 
 - (NSRect)window:(NSWindow*)window
-    willPositionSheet:(NSWindow*)sheet usingRect:(NSRect)rect {
+    willPositionSheet:(NSWindow*)sheet
+            usingRect:(NSRect)rect {
   NSView* view = window.contentView;
 
   rect.origin.x = shell_->GetSheetOffsetX();
@@ -237,11 +240,11 @@
   return rect;
 }
 
-- (void)windowWillBeginSheet:(NSNotification *)notification {
+- (void)windowWillBeginSheet:(NSNotification*)notification {
   shell_->NotifyWindowSheetBegin();
 }
 
-- (void)windowDidEndSheet:(NSNotification *)notification {
+- (void)windowDidEndSheet:(NSNotification*)notification {
   shell_->NotifyWindowSheetEnd();
 }
 
@@ -253,7 +256,8 @@
 #pragma mark - NSTouchBarDelegate
 
 - (NSTouchBarItem*)touchBar:(NSTouchBar*)touchBar
-      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier API_AVAILABLE(macosx(10.12.2)) {
+      makeItemForIdentifier:(NSTouchBarItemIdentifier)identifier
+    API_AVAILABLE(macosx(10.12.2)) {
   if (touchBar && shell_->touch_bar())
     return [shell_->touch_bar() makeItemForIdentifier:identifier];
   else
@@ -266,8 +270,8 @@
   return 1;
 }
 
-- (id <QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel
-                previewItemAtIndex:(NSInteger)index {
+- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel
+               previewItemAtIndex:(NSInteger)index {
   return shell_->preview_item();
 }
 

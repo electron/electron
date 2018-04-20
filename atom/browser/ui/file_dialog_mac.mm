@@ -63,7 +63,8 @@
 @implementation AtomAccessoryView
 
 - (void)dealloc {
-  auto* popupButton = static_cast<NSPopUpButton*>([[self subviews] objectAtIndex: 1]);
+  auto* popupButton =
+      static_cast<NSPopUpButton*>([[self subviews] objectAtIndex:1]);
   [[popupButton target] release];
   [super dealloc];
 }
@@ -88,7 +89,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         base::SysUTF8ToCFStringRef(filter.first));
     [filter_names addObject:base::mac::CFToNSCast(name_cf.get())];
     for (const std::string& ext : filter.second) {
-      base::ScopedCFTypeRef<CFStringRef> ext_cf(base::SysUTF8ToCFStringRef(ext));
+      base::ScopedCFTypeRef<CFStringRef> ext_cf(
+          base::SysUTF8ToCFStringRef(ext));
       [file_type_set addObject:base::mac::CFToNSCast(ext_cf.get())];
     }
     [file_types_list addObject:[file_type_set allObjects]];
@@ -121,10 +123,12 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [label setBezeled:NO];
   [label setDrawsBackground:NO];
 
-  NSPopUpButton* popupButton = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0)
-                                                          pullsDown:NO];
-  PopUpButtonHandler* popUpButtonHandler = [[PopUpButtonHandler alloc] initWithPanel:dialog
-                                                                        andTypesList:file_types_list];
+  NSPopUpButton* popupButton =
+      [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0)
+                                 pullsDown:NO];
+  PopUpButtonHandler* popUpButtonHandler =
+      [[PopUpButtonHandler alloc] initWithPanel:dialog
+                                   andTypesList:file_types_list];
   [popupButton addItemsWithTitles:filter_names];
   [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
@@ -135,8 +139,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [dialog setAccessoryView:[accessoryView autorelease]];
 }
 
-void SetupDialog(NSSavePanel* dialog,
-                 const DialogSettings& settings) {
+void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   if (!settings.title.empty())
     [dialog setTitle:base::SysUTF8ToNSString(settings.title)];
 
@@ -147,7 +150,8 @@ void SetupDialog(NSSavePanel* dialog,
     [dialog setMessage:base::SysUTF8ToNSString(settings.message)];
 
   if (!settings.name_field_label.empty())
-    [dialog setNameFieldLabel:base::SysUTF8ToNSString(settings.name_field_label)];
+    [dialog
+        setNameFieldLabel:base::SysUTF8ToNSString(settings.name_field_label)];
 
   [dialog setShowsTagField:settings.shows_tag_field];
 
@@ -213,9 +217,9 @@ int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger c) {
-      chosen = c;
-      [NSApp stopModal];
-    }];
+                     chosen = c;
+                     [NSApp stopModal];
+                   }];
     [NSApp runModalForWindow:window];
   }
 
@@ -225,23 +229,25 @@ int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 // Create bookmark data and serialise it into a base64 string.
 std::string GetBookmarkDataFromNSURL(NSURL* url) {
   // Create the file if it doesn't exist (necessary for NSSavePanel options).
-  NSFileManager *defaultManager = [NSFileManager defaultManager];
-  if (![defaultManager fileExistsAtPath: [url path]]) {
-    [defaultManager createFileAtPath: [url path] contents: nil attributes: nil];
+  NSFileManager* defaultManager = [NSFileManager defaultManager];
+  if (![defaultManager fileExistsAtPath:[url path]]) {
+    [defaultManager createFileAtPath:[url path] contents:nil attributes:nil];
   }
 
-  NSError *error = nil;
-  NSData *bookmarkData = [url bookmarkDataWithOptions: NSURLBookmarkCreationWithSecurityScope
-                       includingResourceValuesForKeys: nil
-                                        relativeToURL: nil
-                                                error: &error];
+  NSError* error = nil;
+  NSData* bookmarkData =
+      [url bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
+          includingResourceValuesForKeys:nil
+                           relativeToURL:nil
+                                   error:&error];
   if (error != nil) {
     // Send back an empty string if there was an error.
     return "";
   } else {
     // Encode NSData in base64 then convert to NSString.
-    NSString *base64data = [[NSString alloc] initWithData: [bookmarkData base64EncodedDataWithOptions: 0]
-                                                 encoding: NSUTF8StringEncoding];
+    NSString* base64data = [[NSString alloc]
+        initWithData:[bookmarkData base64EncodedDataWithOptions:0]
+            encoding:NSUTF8StringEncoding];
     return base::SysNSStringToUTF8(base64data);
   }
 }
@@ -280,30 +286,31 @@ bool ShowOpenDialog(const DialogSettings& settings,
   return true;
 }
 
-void OpenDialogCompletion(int chosen, NSOpenPanel* dialog,
+void OpenDialogCompletion(int chosen,
+                          NSOpenPanel* dialog,
                           const DialogSettings& settings,
                           const OpenDialogCallback& callback) {
   if (chosen == NSFileHandlingPanelCancelButton) {
-    #if defined(MAS_BUILD)
-      callback.Run(false, std::vector<base::FilePath>(),
-                   std::vector<std::string>());
-    #else
-      callback.Run(false, std::vector<base::FilePath>());
-    #endif
+#if defined(MAS_BUILD)
+    callback.Run(false, std::vector<base::FilePath>(),
+                 std::vector<std::string>());
+#else
+    callback.Run(false, std::vector<base::FilePath>());
+#endif
   } else {
     std::vector<base::FilePath> paths;
-    #if defined(MAS_BUILD)
-      std::vector<std::string> bookmarks;
-      if (settings.security_scoped_bookmarks) {
-        ReadDialogPathsWithBookmarks(dialog, &paths, &bookmarks);
-      } else {
-        ReadDialogPaths(dialog, &paths);
-      }
-      callback.Run(true, paths, bookmarks);
-    #else
+#if defined(MAS_BUILD)
+    std::vector<std::string> bookmarks;
+    if (settings.security_scoped_bookmarks) {
+      ReadDialogPathsWithBookmarks(dialog, &paths, &bookmarks);
+    } else {
       ReadDialogPaths(dialog, &paths);
-      callback.Run(true, paths);
-    #endif
+    }
+    callback.Run(true, paths, bookmarks);
+#else
+    ReadDialogPaths(dialog, &paths);
+    callback.Run(true, paths);
+#endif
   }
 }
 
@@ -327,13 +334,12 @@ void ShowOpenDialog(const DialogSettings& settings,
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
-      OpenDialogCompletion(chosen, dialog, settings, callback);
-    }];
+                     OpenDialogCompletion(chosen, dialog, settings, callback);
+                   }];
   }
 }
 
-bool ShowSaveDialog(const DialogSettings& settings,
-                    base::FilePath* path) {
+bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
   DCHECK(path);
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
@@ -347,26 +353,27 @@ bool ShowSaveDialog(const DialogSettings& settings,
   return true;
 }
 
-void SaveDialogCompletion(int chosen, NSSavePanel* dialog,
+void SaveDialogCompletion(int chosen,
+                          NSSavePanel* dialog,
                           const DialogSettings& settings,
                           const SaveDialogCallback& callback) {
   if (chosen == NSFileHandlingPanelCancelButton) {
-    #if defined(MAS_BUILD)
-      callback.Run(false, base::FilePath(), "");
-    #else
-      callback.Run(false, base::FilePath());
-    #endif
+#if defined(MAS_BUILD)
+    callback.Run(false, base::FilePath(), "");
+#else
+    callback.Run(false, base::FilePath());
+#endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
-    #if defined(MAS_BUILD)
-      std::string bookmark;
-      if (settings.security_scoped_bookmarks) {
-        bookmark = GetBookmarkDataFromNSURL([dialog URL]);
-      }
-      callback.Run(true, base::FilePath(path), bookmark);
-    #else
-      callback.Run(true, base::FilePath(path));
-    #endif
+#if defined(MAS_BUILD)
+    std::string bookmark;
+    if (settings.security_scoped_bookmarks) {
+      bookmark = GetBookmarkDataFromNSURL([dialog URL]);
+    }
+    callback.Run(true, base::FilePath(path), bookmark);
+#else
+    callback.Run(true, base::FilePath(path));
+#endif
   }
 }
 
@@ -388,8 +395,8 @@ void ShowSaveDialog(const DialogSettings& settings,
     NSWindow* window = settings.parent_window->GetNativeWindow();
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger chosen) {
-      SaveDialogCompletion(chosen, dialog, settings, callback);
-    }];
+                     SaveDialogCompletion(chosen, dialog, settings, callback);
+                   }];
   }
 }
 

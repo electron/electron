@@ -4,8 +4,8 @@
 
 #import "atom/browser/mac/atom_application_delegate.h"
 
-#import "atom/browser/mac/atom_application.h"
 #include "atom/browser/browser.h"
+#import "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "base/allocator/allocator_shim.h"
 #include "base/allocator/features.h"
@@ -46,20 +46,24 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
   // Don't add the "Enter Full Screen" menu item automatically.
-  [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"NSFullScreenMenuItemEverywhere"];
+  [[NSUserDefaults standardUserDefaults]
+      setBool:NO
+       forKey:@"NSFullScreenMenuItemEverywhere"];
 
   atom::Browser::Get()->WillFinishLaunching();
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
-  NSUserNotification *user_notification = [notify userInfo][(id)@"NSApplicationLaunchUserNotificationKey"];
+  NSUserNotification* user_notification =
+      [notify userInfo][(id) @"NSApplicationLaunchUserNotificationKey"];
 
   if (user_notification.userInfo != nil) {
     std::unique_ptr<base::DictionaryValue> launch_info =
-      atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
+        atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
     atom::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
-    std::unique_ptr<base::DictionaryValue> empty_info(new base::DictionaryValue);
+    std::unique_ptr<base::DictionaryValue> empty_info(
+        new base::DictionaryValue);
     atom::Browser::Get()->DidFinishLaunching(*empty_info);
   }
 
@@ -81,8 +85,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
     return nil;
 }
 
-- (BOOL)application:(NSApplication*)sender
-           openFile:(NSString*)filename {
+- (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename {
   std::string filename_str(base::SysNSStringToUTF8(filename));
   return atom::Browser::Get()->OpenFile(filename_str) ? YES : NO;
 }
@@ -94,13 +97,14 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   return flag;
 }
 
--  (BOOL)application:(NSApplication*)sender
-continueUserActivity:(NSUserActivity*)userActivity
-  restorationHandler:(void (^)(NSArray*restorableObjects))restorationHandler
-  API_AVAILABLE(macosx(10.10)) {
+- (BOOL)application:(NSApplication*)sender
+    continueUserActivity:(NSUserActivity*)userActivity
+      restorationHandler:
+          (void (^)(NSArray* restorableObjects))restorationHandler
+    API_AVAILABLE(macosx(10.10)) {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   std::unique_ptr<base::DictionaryValue> user_info =
-    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
   if (!user_info)
     return NO;
 
@@ -108,16 +112,20 @@ continueUserActivity:(NSUserActivity*)userActivity
   return browser->ContinueUserActivity(activity_type, *user_info) ? YES : NO;
 }
 
-- (BOOL)application:(NSApplication*)application willContinueUserActivityWithType:(NSString*)userActivityType {
+- (BOOL)application:(NSApplication*)application
+    willContinueUserActivityWithType:(NSString*)userActivityType {
   std::string activity_type(base::SysNSStringToUTF8(userActivityType));
 
   atom::Browser* browser = atom::Browser::Get();
   return browser->WillContinueUserActivity(activity_type) ? YES : NO;
 }
 
-- (void)application:(NSApplication*)application didFailToContinueUserActivityWithType:(NSString*)userActivityType error:(NSError*)error {
+- (void)application:(NSApplication*)application
+    didFailToContinueUserActivityWithType:(NSString*)userActivityType
+                                    error:(NSError*)error {
   std::string activity_type(base::SysNSStringToUTF8(userActivityType));
-  std::string error_message(base::SysNSStringToUTF8([error localizedDescription]));
+  std::string error_message(
+      base::SysNSStringToUTF8([error localizedDescription]));
 
   atom::Browser* browser = atom::Browser::Get();
   browser->DidFailToContinueUserActivity(activity_type, error_message);

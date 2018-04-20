@@ -36,7 +36,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // NSWindow overrides.
 
-- (void)swipeWithEvent:(NSEvent *)event {
+- (void)swipeWithEvent:(NSEvent*)event {
   if (event.deltaY == 1.0) {
     shell_->NotifyWindowSwipe("up");
   } else if (event.deltaX == -1.0) {
@@ -78,12 +78,11 @@ bool ScopedDisableResize::disable_resize_ = false;
   // * when VoiceOver is enabled, the full accessibility tree is used.
   // Without removing the title and with VO disabled, the TTS would always read
   // the window title instead of using Cmd+C to get the selected text.
-  NSPredicate *predicate = [NSPredicate predicateWithFormat:
-      @"(self isKindOfClass: %@) OR (self.className == %@)",
-      [NSButtonCell class],
-      @"RenderWidgetHostViewCocoa"];
+  NSPredicate* predicate = [NSPredicate
+      predicateWithFormat:@"(self isKindOfClass: %@) OR (self.className == %@)",
+                          [NSButtonCell class], @"RenderWidgetHostViewCocoa"];
 
-  NSArray *children = [super accessibilityAttributeValue:attribute];
+  NSArray* children = [super accessibilityAttributeValue:attribute];
   return [children filteredArrayUsingPredicate:predicate];
 }
 
@@ -97,7 +96,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 - (void)enableWindowButtonsOffset {
   auto closeButton = [self standardWindowButton:NSWindowCloseButton];
-  auto miniaturizeButton = [self standardWindowButton:NSWindowMiniaturizeButton];
+  auto miniaturizeButton =
+      [self standardWindowButton:NSWindowMiniaturizeButton];
   auto zoomButton = [self standardWindowButton:NSWindowZoomButton];
 
   [closeButton setPostsFrameChangedNotifications:YES];
@@ -105,7 +105,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   [zoomButton setPostsFrameChangedNotifications:YES];
 
   windowButtonsInterButtonSpacing_ =
-    NSMinX([miniaturizeButton frame]) - NSMaxX([closeButton frame]);
+      NSMinX([miniaturizeButton frame]) - NSMaxX([closeButton frame]);
 
   auto center = [NSNotificationCenter defaultCenter];
 
@@ -126,39 +126,34 @@ bool ScopedDisableResize::disable_resize_ = false;
 }
 
 - (void)adjustCloseButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowCloseButton];
+  [self adjustButton:[notification object] ofKind:NSWindowCloseButton];
 }
 
 - (void)adjustMiniaturizeButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowMiniaturizeButton];
+  [self adjustButton:[notification object] ofKind:NSWindowMiniaturizeButton];
 }
 
 - (void)adjustZoomButton:(NSNotification*)notification {
-  [self adjustButton:[notification object]
-              ofKind:NSWindowZoomButton];
+  [self adjustButton:[notification object] ofKind:NSWindowZoomButton];
 }
 
-- (void)adjustButton:(NSButton*)button
-              ofKind:(NSWindowButton)kind {
+- (void)adjustButton:(NSButton*)button ofKind:(NSWindowButton)kind {
   NSRect buttonFrame = [button frame];
   NSRect frameViewBounds = [[self frameView] bounds];
   NSPoint offset = self.windowButtonsOffset;
 
   buttonFrame.origin = NSMakePoint(
-    offset.x,
-    (NSHeight(frameViewBounds) - NSHeight(buttonFrame) - offset.y));
+      offset.x, (NSHeight(frameViewBounds) - NSHeight(buttonFrame) - offset.y));
 
   switch (kind) {
     case NSWindowZoomButton:
       buttonFrame.origin.x += NSWidth(
-        [[self standardWindowButton:NSWindowMiniaturizeButton] frame]);
+          [[self standardWindowButton:NSWindowMiniaturizeButton] frame]);
       buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
       // fallthrough
     case NSWindowMiniaturizeButton:
-      buttonFrame.origin.x += NSWidth(
-        [[self standardWindowButton:NSWindowCloseButton] frame]);
+      buttonFrame.origin.x +=
+          NSWidth([[self standardWindowButton:NSWindowCloseButton] frame]);
       buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
       // fallthrough
     default:
@@ -194,7 +189,8 @@ bool ScopedDisableResize::disable_resize_ = false;
 // Custom window button methods
 
 - (void)performClose:(id)sender {
-  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
+  if (shell_->title_bar_style() ==
+      atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
     [[self delegate] windowShouldClose:self];
   else
     [super performClose:sender];
@@ -204,11 +200,12 @@ bool ScopedDisableResize::disable_resize_ = false;
   if (shell_->simple_fullscreen())
     shell_->SetSimpleFullScreen(!shell_->IsSimpleFullScreen());
   else
-   [super toggleFullScreen:sender];
+    [super toggleFullScreen:sender];
 }
 
 - (void)performMiniaturize:(id)sender {
-  if (shell_->title_bar_style() == atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
+  if (shell_->title_bar_style() ==
+      atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER)
     [self miniaturize:self];
   else
     [super performMiniaturize:sender];

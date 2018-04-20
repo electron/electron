@@ -25,7 +25,8 @@ void AtomBrowserMainParts::PreMainMessageLoopStart() {
   // Prevent Cocoa from turning command-line arguments into
   // |-application:openFiles:|, since we already handle them directly.
   [[NSUserDefaults standardUserDefaults]
-      setObject:@"NO" forKey:@"NSTreatUnknownArgumentsAsOpen"];
+      setObject:@"NO"
+         forKey:@"NSTreatUnknownArgumentsAsOpen"];
 }
 
 void AtomBrowserMainParts::FreeAppDelegate() {

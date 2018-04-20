@@ -17,8 +17,7 @@ int g_identifier_ = 1;
 
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
-    : Notification(delegate, presenter) {
-}
+    : Notification(delegate, presenter) {}
 
 CocoaNotification::~CocoaNotification() {
   if (notification_)
@@ -29,7 +28,8 @@ CocoaNotification::~CocoaNotification() {
 void CocoaNotification::Show(const NotificationOptions& options) {
   notification_.reset([[NSUserNotification alloc] init]);
 
-  NSString* identifier = [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
+  NSString* identifier =
+      [NSString stringWithFormat:@"ElectronNotification%d", g_identifier_++];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];
@@ -58,23 +58,28 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   int i = 0;
   action_index_ = UINT_MAX;
-  NSMutableArray* additionalActions = [[[NSMutableArray alloc] init] autorelease];
+  NSMutableArray* additionalActions =
+      [[[NSMutableArray alloc] init] autorelease];
   for (const auto& action : options.actions) {
     if (action.type == base::ASCIIToUTF16("button")) {
       if (action_index_ == UINT_MAX) {
         // First button observed is the displayed action
         [notification_ setHasActionButton:true];
-        [notification_ setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
+        [notification_
+            setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
         action_index_ = i;
       } else {
         // All of the rest are appended to the list of additional actions
-        NSString* actionIdentifier = [NSString stringWithFormat:@"%@Action%d", identifier, i];
+        NSString* actionIdentifier =
+            [NSString stringWithFormat:@"%@Action%d", identifier, i];
         if (@available(macOS 10.10, *)) {
           NSUserNotificationAction* notificationAction =
-            [NSUserNotificationAction actionWithIdentifier:actionIdentifier
-                                                     title:base::SysUTF16ToNSString(action.text)];
+              [NSUserNotificationAction
+                  actionWithIdentifier:actionIdentifier
+                                 title:base::SysUTF16ToNSString(action.text)];
           [additionalActions addObject:notificationAction];
-          additional_action_indices_.insert(std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
+          additional_action_indices_.insert(
+              std::make_pair(base::SysNSStringToUTF8(actionIdentifier), i));
         }
       }
     }
@@ -88,12 +93,14 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   }
 
   if (options.has_reply) {
-    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(options.reply_placeholder)];
+    [notification_ setResponsePlaceholder:base::SysUTF16ToNSString(
+                                              options.reply_placeholder)];
     [notification_ setHasReplyButton:true];
   }
 
   if (!options.close_button_text.empty()) {
-    [notification_ setOtherButtonTitle:base::SysUTF16ToNSString(options.close_button_text)];
+    [notification_ setOtherButtonTitle:base::SysUTF16ToNSString(
+                                           options.close_button_text)];
   }
 
   [NSUserNotificationCenter.defaultUserNotificationCenter
@@ -131,7 +138,8 @@ void CocoaNotification::NotificationActivated() {
   this->LogAction("button clicked");
 }
 
-void CocoaNotification::NotificationActivated(NSUserNotificationAction* action) {
+void CocoaNotification::NotificationActivated(
+    NSUserNotificationAction* action) {
   if (delegate()) {
     unsigned index = action_index_;
     std::string identifier = base::SysNSStringToUTF8(action.identifier);
@@ -151,7 +159,8 @@ void CocoaNotification::NotificationActivated(NSUserNotificationAction* action) 
 void CocoaNotification::LogAction(const char* action) {
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     NSString* identifier = [notification_ valueForKey:@"identifier"];
-    LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String] << ")";
+    LOG(INFO) << "Notification " << action << " (" << [identifier UTF8String]
+              << ")";
   }
 }
 

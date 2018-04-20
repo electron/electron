@@ -16,7 +16,7 @@
 
 // --------------------------------- Interface --------------------------------
 
-@interface InAppPurchaseProduct : NSObject<SKProductsRequestDelegate> {
+@interface InAppPurchaseProduct : NSObject <SKProductsRequestDelegate> {
  @private
   in_app_purchase::InAppPurchaseProductsCallback callback_;
 }

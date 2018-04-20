@@ -22,7 +22,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
 }  // namespace
 
-@interface InAppTransactionObserver : NSObject<SKPaymentTransactionObserver> {
+@interface InAppTransactionObserver : NSObject <SKPaymentTransactionObserver> {
  @private
   InAppTransactionCallback callback_;
 }

@@ -56,8 +56,8 @@ bool PrintWebViewHelper::RenderPreviewPage(
   std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
 
-  bool render_to_draft = print_preview_context_.IsModifiable() &&
-                         is_print_ready_metafile_sent_;
+  bool render_to_draft =
+      print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_;
 
   if (render_to_draft) {
     draft_metafile.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
@@ -69,8 +69,8 @@ bool PrintWebViewHelper::RenderPreviewPage(
   gfx::Size page_size;
   RenderPage(printParams, page_number, print_preview_context_.prepared_frame(),
              true, initial_render_metafile, &page_size, NULL);
-  print_preview_context_.RenderedPreviewPage(
-      base::TimeTicks::Now() - begin_time);
+  print_preview_context_.RenderedPreviewPage(base::TimeTicks::Now() -
+                                             begin_time);
 
   if (draft_metafile.get()) {
     draft_metafile->FinishDocument();

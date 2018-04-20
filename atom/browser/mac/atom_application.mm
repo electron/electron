@@ -4,9 +4,9 @@
 
 #import "atom/browser/mac/atom_application.h"
 
+#include "atom/browser/browser.h"
 #import "atom/browser/mac/atom_application_delegate.h"
 #include "atom/browser/mac/dict_util.h"
-#include "atom/browser/browser.h"
 #include "base/auto_reset.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -92,23 +92,28 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [handoffLock_ unlock];
 }
 
-- (void)userActivityWillSave:(NSUserActivity *)userActivity API_AVAILABLE(macosx(10.10)) {
+- (void)userActivityWillSave:(NSUserActivity*)userActivity
+    API_AVAILABLE(macosx(10.10)) {
   __block BOOL shouldWait = NO;
   dispatch_sync_main(^{
-    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::string activity_type(
+        base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
-      atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+        atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     atom::Browser* browser = atom::Browser::Get();
-    shouldWait = browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;    
+    shouldWait =
+        browser->UpdateUserActivityState(activity_type, *user_info) ? YES : NO;
   });
 
   if (shouldWait) {
     [handoffLock_ lock];
     updateReceived_ = NO;
     while (!updateReceived_) {
-      BOOL isSignaled = [handoffLock_ waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]];
-      if (!isSignaled) break;
+      BOOL isSignaled =
+          [handoffLock_ waitUntilDate:[NSDate dateWithTimeIntervalSinceNow:1]];
+      if (!isSignaled)
+        break;
     }
     [handoffLock_ unlock];
   }
@@ -116,11 +121,13 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [userActivity setNeedsSave:YES];
 }
 
-- (void)userActivityWasContinued:(NSUserActivity *)userActivity API_AVAILABLE(macosx(10.10)) {
+- (void)userActivityWasContinued:(NSUserActivity*)userActivity
+    API_AVAILABLE(macosx(10.10)) {
   dispatch_async(dispatch_get_main_queue(), ^{
-    std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+    std::string activity_type(
+        base::SysNSStringToUTF8(userActivity.activityType));
     std::unique_ptr<base::DictionaryValue> user_info =
-    atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
+        atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
 
     atom::Browser* browser = atom::Browser::Get();
     browser->UserActivityWasContinued(activity_type, *user_info);
@@ -140,27 +147,26 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
         withReplyEvent:(NSAppleEventDescriptor*)replyEvent {
-  NSString* url = [
-      [event paramDescriptorForKeyword:keyDirectObject] stringValue];
+  NSString* url =
+      [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
   atom::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
 - (bool)voiceOverEnabled {
-  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   [defaults addSuiteNamed:@"com.apple.universalaccess"];
   [defaults synchronize];
 
   return [defaults boolForKey:@"voiceOverOnOffKey"];
 }
 
-- (void)accessibilitySetValue:(id)value forAttribute:(NSString *)attribute {
+- (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
   // Undocumented attribute that VoiceOver happens to set while running.
   // Chromium uses this too, even though it's not exactly right.
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
     bool enableAccessibility = ([self voiceOverEnabled] && [value boolValue]);
     [self updateAccessibilityEnabled:enableAccessibility];
-  }
-  else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
+  } else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
     [self updateAccessibilityEnabled:[value boolValue]];
   }
   return [super accessibilitySetValue:value forAttribute:attribute];

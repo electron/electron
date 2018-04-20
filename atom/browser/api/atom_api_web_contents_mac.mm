@@ -12,7 +12,8 @@ namespace api {
 
 bool WebContents::IsFocused() const {
   auto* view = web_contents()->GetRenderWidgetHostView();
-  if (!view) return false;
+  if (!view)
+    return false;
 
   if (GetType() != BACKGROUND_PAGE) {
     auto window = [web_contents()->GetNativeView() window];
