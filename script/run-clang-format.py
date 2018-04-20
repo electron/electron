@@ -247,12 +247,12 @@ def main():
         colored_stderr = sys.stderr.isatty()
 
     retcode = ExitStatus.SUCCESS
-    
+
     parse_files = []
     if args.changed:
         popen = subprocess.Popen(
-            ["git", "diff", "--name-only", "HEAD^", "HEAD"], 
-            stdout=subprocess.PIPE, 
+            ["git", "diff", "--name-only", "--cached"],
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
         for line in popen.stdout:
