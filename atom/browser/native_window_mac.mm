@@ -1224,25 +1224,28 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetTouchBar(
     const std::vector<mate::PersistentDictionary>& items) {
-  if (![window_ respondsToSelector:@selector(touchBar)])
-    return;
-
-  touch_bar_.reset([[AtomTouchBar alloc]
-      initWithDelegate:window_delegate_.get()
-                window:this
-              settings:items]);
-  [window_ setTouchBar:nil];
+  if (@available(macOS 10.12.2, *)) {
+    touch_bar_.reset([[AtomTouchBar alloc]
+        initWithDelegate:window_delegate_.get()
+                  window:this
+                settings:items]);
+    [window_ setTouchBar:nil];
+  }
 }
 
 void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
-  if (touch_bar_ && [window_ touchBar])
-    [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
+  if (@available(macOS 10.12.2, *)) {
+    if (touch_bar_ && [window_ touchBar])
+      [touch_bar_ refreshTouchBarItem:[window_ touchBar] id:item_id];
+  }
 }
 
 void NativeWindowMac::SetEscapeTouchBarItem(
     const mate::PersistentDictionary& item) {
-  if (touch_bar_ && [window_ touchBar])
-    [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
+  if (@available(macOS 10.12.2, *)) {
+    if (touch_bar_ && [window_ touchBar])
+      [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
+  }
 }
 
 gfx::Rect NativeWindowMac::ContentBoundsToWindowBounds(
