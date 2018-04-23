@@ -113,9 +113,9 @@ describe('app module', () => {
     })
   })
 
-  describe('app.isPackaged()', () => {
+  describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
-      assert.equal(app.isPackaged(), false)
+      assert.equal(app.isPackaged, false)
     })
   })
 
