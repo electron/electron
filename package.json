@@ -62,7 +62,7 @@
     "mock-release": "node ./script/ci-release-build.js",
     "preinstall": "node -e 'process.exit(0)'",
     "publish-to-npm": "node ./script/publish-to-npm.js",
-    "precommit": "python script/run-clang-format.py -r -c -q atom/ chromium_src/ brightray/ || (echo \"Code not formatted correctly.\" && exit 1)",
+    "precommit": "python script/run-clang-format.py -r -c atom/ chromium_src/ brightray/ || (echo \"Code not formatted correctly.\" && exit 1)",
     "prepack": "check-for-leaks",
     "prepush": "check-for-leaks",
     "prepare-release": "node ./script/prepare-release.js",
