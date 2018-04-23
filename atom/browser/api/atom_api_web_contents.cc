@@ -872,7 +872,7 @@ void WebContents::DidGetResourceResponseStart(
       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME ||
        details.resource_type == content::RESOURCE_TYPE_SUB_FRAME))
     return;
-  Emit("did-get-response-details", details.socket_address.IsEmpty(),
+  Emit("-did-get-response-details", details.socket_address.IsEmpty(),
        details.url, details.original_url, details.http_response_code,
        details.method, details.referrer, details.headers.get(),
        ResourceTypeToString(details.resource_type));
@@ -880,7 +880,7 @@ void WebContents::DidGetResourceResponseStart(
 
 void WebContents::DidGetRedirectForResourceRequest(
     const content::ResourceRedirectDetails& details) {
-  Emit("did-get-redirect-request", details.url, details.new_url,
+  Emit("-did-get-redirect-request", details.url, details.new_url,
        (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
        details.http_response_code, details.method, details.referrer,
        details.headers.get());

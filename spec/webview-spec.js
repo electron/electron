@@ -1088,7 +1088,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('did-get-response-details event', () => {
+  describe('did-get-response-details event (deprecated)', () => {
     it('emits for the page and its resources', (done) => {
       // expected {fileName: resourceType} pairs
       const expectedResources = {
@@ -1096,7 +1096,7 @@ describe('<webview> tag', function () {
         'logo.png': 'image'
       }
       let responses = 0
-      webview.addEventListener('did-get-response-details', (event) => {
+      webview.addEventListener('-did-get-response-details', (event) => {
         responses += 1
         const fileName = event.newURL.slice(event.newURL.lastIndexOf('/') + 1)
         const expectedType = expectedResources[fileName]
