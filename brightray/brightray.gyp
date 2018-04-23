@@ -114,6 +114,7 @@
                   '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
@@ -123,6 +124,7 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  '<(libchromiumcontent_dir)/libviz_service.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
@@ -204,6 +206,7 @@
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdesktop_capture.a',
+                  '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
                   '<(libchromiumcontent_dir)/librtc_base_generic.a',
@@ -213,6 +216,7 @@
                   '<(libchromiumcontent_dir)/libyuv.a',
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
+                  '<(libchromiumcontent_dir)/libviz_service.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
@@ -340,6 +344,7 @@
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
                   '<(libchromiumcontent_dir)/desktop_capture.lib',
+                  '<(libchromiumcontent_dir)/device_service.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
                   '<(libchromiumcontent_dir)/rtc_base_generic.lib',
@@ -349,6 +354,7 @@
                   '<(libchromiumcontent_dir)/libyuv.lib',
                   '<(libchromiumcontent_dir)/renderer.lib',
                   '<(libchromiumcontent_dir)/security_state.lib',
+                  '<(libchromiumcontent_dir)/viz_service.lib',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/power_save_blocker.lib',
                   # Friends of pdf.lib:
