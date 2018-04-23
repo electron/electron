@@ -428,11 +428,6 @@ app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
 app.exit(0)
 ```
 
-### `app.isPackaged()`
-
-Returns `Boolean` - `true` if the app is packaged, `false` otherwise. For many apps,
-this function can be used to distinguish development and production environments.
-
 ### `app.isReady()`
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
@@ -1110,6 +1105,13 @@ Sets the application's [dock menu][dock-menu].
 * `image` ([NativeImage](native-image.md) | String)
 
 Sets the `image` associated with this dock icon.
+
+## Properties
+
+### `app.isPackaged`
+
+`true` if the app is packaged, `false` otherwise. For many apps, this property 
+can be used to distinguish development and production environments.
 
 [dock-menu]:https://developer.apple.com/library/mac/documentation/Carbon/Conceptual/customizing_docktile/concepts/dockconcepts.html#//apple_ref/doc/uid/TP30000986-CH2-TPXREF103
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
