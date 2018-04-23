@@ -180,14 +180,14 @@ bool MoveItemToTrashSync(const base::FilePath& full_path) {
                  << " to trash";
   return status;
 }
-  
+
 void MoveItemToTrash(const base::FilePath& full_path,
                      MoveItemToTrashCallback callback) {
   base::PostTaskWithTraitsAndReplyWithResult(
     FROM_HERE,
     {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
-    base::Bind(&MoveItemToTrashSync, full_path),
-    callback);
+    base::BindOnce(&MoveItemToTrashSync, full_path),
+    std::move(callback));
 }
 
 void Beep() {

@@ -70,10 +70,10 @@ class MoveItemToTrashRequest {
 
     args_->Return(resolver_handle_.Get(isolate_)->GetPromise().As<v8::Value>());
 
-    auto callback = base::Bind(
+    auto callback = base::BindOnce(
       &MoveItemToTrashRequest::OnMoveItemToTrashFinished,
       base::Unretained(this));
-    platform_util::MoveItemToTrash(file_path_, callback);
+    platform_util::MoveItemToTrash(file_path_, std::move(callback));
   }
 
   void OnMoveItemToTrashFinished(bool result) {

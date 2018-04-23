@@ -152,8 +152,8 @@ void MoveItemToTrash(const base::FilePath& full_path,
   base::PostTaskWithTraitsAndReplyWithResult(
     FROM_HERE,
     {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
-    base::Bind(&MoveItemToTrashSync, full_path),
-    callback);
+    base::BindOnce(&MoveItemToTrashSync, full_path),
+    std::move(callback));
 }
 
 void Beep() {

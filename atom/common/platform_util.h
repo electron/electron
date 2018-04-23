@@ -23,7 +23,7 @@ class FilePath;
 namespace platform_util {
 
 typedef base::Callback<void(const std::string&)> OpenExternalCallback;
-typedef base::Callback<void(bool)> MoveItemToTrashCallback;
+typedef base::OnceCallback<void(bool)> MoveItemToTrashCallback;
 
 // Show the given file in a file manager. If possible, select the file.
 // Must be called from the UI thread.
