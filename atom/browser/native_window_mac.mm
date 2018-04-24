@@ -27,6 +27,7 @@
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
+#include "ui/views/cocoa/bridged_native_widget.h"
 #include "ui/views/widget/widget.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless
@@ -449,8 +450,13 @@ void NativeWindowMac::SetContentView(
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal())
+  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
+    base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+    [background_layer
+        setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
+    [[window_ contentView] setLayer:background_layer];
     [[window_ contentView] setWantsLayer:YES];
+  }
 
   if (has_frame()) {
     [content_view_ setFrame:[[window_ contentView] bounds]];
@@ -974,7 +980,17 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
-  widget_->GetRootView()->SetBackground(views::CreateSolidBackground(color));
+  base::ScopedCFTypeRef<CGColorRef> cgcolor(
+      skia::CGColorCreateFromSkColor(color));
+  // views::Widget adds a layer for the content view.
+  auto* bridge = views::NativeWidgetMac::GetBridgeForNativeWindow(window_);
+  NSView* compositor_superview =
+      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)->
+          AcceleratedWidgetGetNSView();
+  [[compositor_superview layer] setBackgroundColor:cgcolor];
+  // When using WebContents as content view, the contentView also has layer.
+  if ([[window_ contentView] wantsLayer])
+    [[[window_ contentView] layer] setBackgroundColor:cgcolor];
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
