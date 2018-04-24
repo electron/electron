@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/browser/native_browser_view_mac.h"
+#include "atom/browser/ui/cocoa/atom_native_widget_mac.h"
 #include "atom/browser/ui/cocoa/atom_ns_window.h"
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
@@ -247,9 +248,10 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   options.Get(options::kHeight, &height);
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
-  NSRect cocoa_bounds = NSMakeRect(
-      round((NSWidth(main_screen_rect) - width) / 2),
-      round((NSHeight(main_screen_rect) - height) / 2), width, height);
+  gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
+                   round((NSHeight(main_screen_rect) - height) / 2),
+                   width,
+                   height);
 
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
@@ -303,10 +305,18 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     styleMask |= NSResizableWindowMask;
   }
 
-  window_.reset([[AtomNSWindow alloc] initWithContentRect:cocoa_bounds
-                                                styleMask:styleMask
-                                                  backing:NSBackingStoreBuffered
-                                                    defer:YES]);
+  // Create views::Widget and assign window_ with it.
+  // TODO(zcbenz): Get rid of the window_ in future.
+  widget_.reset(new views::Widget());
+  views::Widget::InitParams params;
+  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  params.bounds = bounds;
+  params.delegate = this;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
+  params.native_widget = new AtomNativeWidgetMac(styleMask, widget_.get());
+  widget_->Init(params);
+  window_ = static_cast<AtomNSWindow*>(widget_->GetNativeWindow());
+
   [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
@@ -357,9 +367,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     }
   }
 
-  // We will manage window's lifetime ourselves.
-  [window_ setReleasedWhenClosed:NO];
-
   // Hide the title bar background
   if (title_bar_style_ != NORMAL) {
     if (@available(macOS 10.10, *)) {
@@ -384,7 +391,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
   if (!has_frame() || !use_content_size)
-    SetSize(gfx::Size(width, height));
+    NativeWindow::SetSize(gfx::Size(width, height));
 
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
 
@@ -1145,7 +1152,7 @@ void NativeWindowMac::ToggleTabBar() {
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
-  if (window_.get() == window->GetNativeWindow()) {
+  if (window_ == window->GetNativeWindow()) {
     return false;
   } else {
     if (@available(macOS 10.12, *))
@@ -1287,6 +1294,17 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   } else {
     return bounds;
   }
+}
+
+void NativeWindowMac::DeleteDelegate() {
+}
+
+views::Widget* NativeWindowMac::GetWidget() {
+  return widget_.get();
+}
+
+const views::Widget* NativeWindowMac::GetWidget() const {
+  return widget_.get();
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,

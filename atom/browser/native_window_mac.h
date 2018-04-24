@@ -23,7 +23,8 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow {
+class NativeWindowMac : public NativeWindow,
+                        public views::WidgetDelegate {
  public:
   NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -144,18 +145,24 @@ class NativeWindowMac : public NativeWindow {
   bool fullscreen_window_title() const { return fullscreen_window_title_; }
   bool simple_fullscreen() const { return always_simple_fullscreen_; }
 
+ protected:
+  // views::WidgetDelegate:
+  void DeleteDelegate() override;
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
+
  private:
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
   void SetForwardMouseMessages(bool forward);
 
-  base::scoped_nsobject<AtomNSWindow> window_;
+  std::unique_ptr<views::Widget> widget_;
+  AtomNSWindow* window_;  // Weak ref, managed by widget_.
+
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<AtomPreviewItem> preview_item_;
   base::scoped_nsobject<AtomTouchBar> touch_bar_;
-
-  std::unique_ptr<views::Widget> widget_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;

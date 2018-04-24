@@ -11,7 +11,8 @@ namespace atom {
 
 class AtomNativeWidgetMac : public views::NativeWidgetMac {
  public:
-  explicit AtomNativeWidgetMac(views::internal::NativeWidgetDelegate* delegate);
+  AtomNativeWidgetMac(NSUInteger style_mask,
+                      views::internal::NativeWidgetDelegate* delegate);
   ~AtomNativeWidgetMac() override;
 
  protected:
@@ -20,6 +21,8 @@ class AtomNativeWidgetMac : public views::NativeWidgetMac {
       const views::Widget::InitParams& params) override;
 
  private:
+  NSUInteger style_mask_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomNativeWidgetMac);
 };
 

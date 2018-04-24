@@ -26,7 +26,7 @@ class ScopedDisableResize {
 
 }  // namespace atom
 
-@interface AtomNSWindow : EventDispatchingWindow {
+@interface AtomNSWindow : NativeWidgetMacNSWindow {
  @private
   atom::NativeWindowMac* shell_;
   CGFloat windowButtonsInterButtonSpacing_;

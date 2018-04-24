@@ -9,11 +9,21 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
+#include "ui/views/widget/native_widget_mac.h"
 
 @implementation AtomNSWindowDelegate
 
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
-  if ((self = [super init])) {
+  // The views library assumes the window delegate must be an instance of
+  // ViewsNSWindowDelegate, since we don't have a way to override the creation
+  // of NSWindowDelegate, we have to dynamically replace the window delegate
+  // on the fly.
+  // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
+  // window delegate.
+  views::BridgedNativeWidget* bridget_view =
+      views::NativeWidgetMac::GetBridgeForNativeWindow(
+          shell->GetNativeWindow());
+  if ((self = [super initWithBridgedNativeWidget:bridget_view])) {
     shell_ = shell;
     is_zooming_ = false;
     level_ = [shell_->GetNativeWindow() level];
