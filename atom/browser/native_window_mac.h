@@ -150,6 +150,7 @@ class NativeWindowMac : public NativeWindow,
   void DeleteDelegate() override;
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
+  bool CanResize() const override;
 
  private:
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
@@ -174,12 +175,10 @@ class NativeWindowMac : public NativeWindow,
   NSView* content_view_;
 
   bool is_kiosk_;
-
   bool was_fullscreen_;
-
   bool zoom_to_page_width_;
-
   bool fullscreen_window_title_;
+  bool resizable_;
 
   NSInteger attention_request_id_;  // identifier from requestUserAttention
 

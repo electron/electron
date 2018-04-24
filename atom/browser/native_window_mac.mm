@@ -26,6 +26,7 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless
@@ -239,6 +240,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
       was_fullscreen_(false),
       zoom_to_page_width_(false),
       fullscreen_window_title_(false),
+      resizable_(true),
       attention_request_id_(0),
       title_bar_style_(NORMAL),
       always_simple_fullscreen_(false),
@@ -253,8 +255,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                    width,
                    height);
 
-  bool resizable = true;
-  options.Get(options::kResizable, &resizable);
+  options.Get(options::kResizable, &resizable_);
+  options.Get(options::kTitleBarStyle, &title_bar_style_);
+  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
+  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
+  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -264,8 +269,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   bool closable = true;
   options.Get(options::kClosable, &closable);
-
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   std::string tabbingIdentifier;
   options.Get(options::kTabbingIdentifier, &tabbingIdentifier);
@@ -300,9 +303,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
-  }
-  if (resizable) {
-    styleMask |= NSResizableWindowMask;
   }
 
   // Create views::Widget and assign window_ with it.
@@ -387,17 +387,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     }
   }
 
-  // On macOS the initial window size doesn't include window frame.
+  // Resize to content bounds.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
-  if (!has_frame() || !use_content_size)
-    NativeWindow::SetSize(gfx::Size(width, height));
-
-  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
-
-  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
-
-  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  if (!has_frame() || use_content_size)
+    SetContentSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
@@ -719,6 +713,7 @@ void NativeWindowMac::SetContentSizeConstraints(
 void NativeWindowMac::MoveTop() {
   [window_ orderWindow:NSWindowAbove relativeTo:0];
 }
+
 void NativeWindowMac::SetResizable(bool resizable) {
   SetStyleMask(resizable, NSResizableWindowMask);
 }
@@ -979,9 +974,7 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
-  base::ScopedCFTypeRef<CGColorRef> cgcolor(
-      skia::CGColorCreateFromSkColor(color));
-  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+  widget_->GetRootView()->SetBackground(views::CreateSolidBackground(color));
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
@@ -1305,6 +1298,10 @@ views::Widget* NativeWindowMac::GetWidget() {
 
 const views::Widget* NativeWindowMac::GetWidget() const {
   return widget_.get();
+}
+
+bool NativeWindowMac::CanResize() const {
+  return resizable_;
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,

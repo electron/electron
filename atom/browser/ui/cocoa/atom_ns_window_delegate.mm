@@ -116,10 +116,12 @@
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
+  [super windowDidResize:notification];
   shell_->NotifyWindowResize();
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
+  [super windowDidMove:notification];
   // TODO(zcbenz): Remove the alias after figuring out a proper
   // way to dispatch move.
   shell_->NotifyWindowMove();
@@ -135,10 +137,12 @@
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
+  [super windowDidMiniaturize:notification];
   shell_->NotifyWindowMinimize();
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
+  [super windowDidDeminiaturize:notification];
   [shell_->GetNativeWindow() setLevel:level_];
   shell_->NotifyWindowRestore();
 }
