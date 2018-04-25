@@ -138,7 +138,6 @@ class NativeWindowViews : public NativeWindow,
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
@@ -160,8 +159,6 @@ class NativeWindowViews : public NativeWindow,
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,
@@ -210,7 +207,6 @@ class NativeWindowViews : public NativeWindow,
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
-  std::unique_ptr<views::Widget> widget_;
   views::View* content_view_;  // Weak ref.
   views::View* focused_view_;  // The view should be focused by default.
 

@@ -144,8 +144,6 @@ class NativeWindowMac : public NativeWindow {
 
  protected:
   // views::WidgetDelegate:
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
   bool CanResize() const override;
 
  private:
@@ -154,7 +152,6 @@ class NativeWindowMac : public NativeWindow {
 
   void SetForwardMouseMessages(bool forward);
 
-  std::unique_ptr<views::Widget> widget_;
   AtomNSWindow* window_;  // Weak ref, managed by widget_.
 
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;

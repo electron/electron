@@ -120,7 +120,6 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
-      widget_(new views::Widget),
       content_view_(nullptr),
       focused_view_(nullptr),
       menu_bar_autohide_(false),
@@ -1262,14 +1261,6 @@ base::string16 NativeWindowViews::GetWindowTitle() const {
 
 bool NativeWindowViews::ShouldHandleSystemCommands() const {
   return true;
-}
-
-views::Widget* NativeWindowViews::GetWidget() {
-  return widget();
-}
-
-const views::Widget* NativeWindowViews::GetWidget() const {
-  return widget();
 }
 
 views::View* NativeWindowViews::GetContentsView() {
