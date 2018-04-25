@@ -15,6 +15,10 @@
 #include "content/public/browser/notification_observer.h"
 #include "content/public/browser/notification_registrar.h"
 
+#if defined(OS_WIN)
+#include "printing/printed_page_win.h"
+#endif
+
 namespace base {
 class RefCountedMemory;
 }
