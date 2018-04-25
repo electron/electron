@@ -46,7 +46,7 @@ TARGET_BINARIES = {
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
     'natives_blob.bin',
-    'snapshot_blob.bin',
+    'v8_context_snapshot.bin',
   ],
   'linux': [
     PROJECT_NAME,  # 'electron'
@@ -60,7 +60,7 @@ TARGET_BINARIES = {
     'ui_resources_200_percent.pak',
     'views_resources_200_percent.pak',
     'natives_blob.bin',
-    'snapshot_blob.bin',
+    'v8_context_snapshot.bin',
   ],
 }
 TARGET_BINARIES_EXT = []
