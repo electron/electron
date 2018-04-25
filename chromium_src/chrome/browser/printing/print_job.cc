@@ -25,6 +25,7 @@
 #if defined(OS_WIN)
 #include "chrome/browser/printing/pdf_to_emf_converter.h"
 #include "printing/pdf_render_settings.h"
+#include "printing/metafile.h"
 #endif
 
 using base::TimeDelta;
