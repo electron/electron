@@ -373,7 +373,7 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
       !widget()->native_widget_private()->IsVisible())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(false);
+    NativeWindow::parent()->SetEnabled(false);
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
@@ -398,7 +398,7 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(true);
+    NativeWindow::parent()->SetEnabled(true);
 
   widget()->Hide();
 
@@ -1163,10 +1163,9 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
 }
 #elif defined(USE_X11)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(icon,
-                                                                        icon);
+  auto* tree_host = static_cast<views::DesktopWindowTreeHost*>(
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget()));
+  tree_host->SetWindowIcons(icon, icon);
 }
 #endif
 
@@ -1224,8 +1223,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 
 void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && NativeWindow::parent()) {
-    NativeWindowViews* parent =
-        static_cast<NativeWindowViews*>(NativeWindow::parent());
+    auto* parent = NativeWindow::parent();
     // Enable parent window after current window gets closed.
     parent->SetEnabled(true);
     // Focus on parent window.
