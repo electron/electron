@@ -606,14 +606,11 @@ void NativeWindowViews::SetContentSizeConstraints(
   // this to determine whether native widget has initialized.
   if (widget() && widget()->widget_delegate())
     widget()->OnSizeConstraintsChanged();
-#if defined(OS_WIN) || defined(USE_X11)
   if (resizable_)
     old_size_constraints_ = size_constraints;
-#endif
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-#if defined(OS_WIN) || defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
@@ -627,7 +624,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
   }
-#endif
 #if defined(OS_WIN)
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
@@ -650,11 +646,8 @@ bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-  else
-    return CanResize();
-#else
-  return CanResize();
 #endif
+  return CanResize();
 }
 
 void NativeWindowViews::SetMovable(bool movable) {
