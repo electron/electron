@@ -128,7 +128,7 @@ void PlatformNotificationService::ClosePersistentNotification(
 void PlatformNotificationService::CloseNotification(
     content::BrowserContext* browser_context,
     const std::string& notification_id) {
-  auto presenter = browser_client_->GetNotificationPresenter();
+  auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
   presenter->CloseNotificationWithId(notification_id);
