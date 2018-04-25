@@ -7,6 +7,16 @@
 #include <set>
 #include <string>
 
+// We have problems with redefinition of ssize_t between node.h and
+// port_chromium.h, and the latter was introduced by leveldb.mojom.h.
+// The best solution is to not include content/browser/frame_host/ headers
+// and node.h in the same file, but for now I'm just working around the
+// problem.
+#if defined(OS_WIN)
+#define COMPONENTS_SERVICES_LEVELDB_PUBLIC_INTERFACES_LEVELDB_MOJOM_H_
+#define COMPONENTS_LEVELDB_PUBLIC_INTERFACES_LEVELDB_MOJOM_H_
+#endif
+
 #include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/api/atom_api_debugger.h"
 #include "atom/browser/api/atom_api_session.h"
