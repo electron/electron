@@ -138,6 +138,9 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
       maximizable_(true),
       minimizable_(true),
       fullscreenable_(true) {
+  // The root view is this class, it is managed by us.
+  set_owned_by_client();
+
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 

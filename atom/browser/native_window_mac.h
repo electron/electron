@@ -12,8 +12,6 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
-#include "ui/views/widget/widget_delegate.h"
-#include "ui/views/widget/widget_observer.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -23,8 +21,7 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow,
-                        public views::WidgetDelegate {
+class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;

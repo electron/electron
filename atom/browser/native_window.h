@@ -16,6 +16,7 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
 
@@ -47,7 +48,8 @@ class NativeBrowserView;
 
 struct DraggableRegion;
 
-class NativeWindow : public base::SupportsUserData {
+class NativeWindow : public base::SupportsUserData,
+                     public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
 

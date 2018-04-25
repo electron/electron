@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atom/browser/ui/accelerator_util.h"
-#include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -41,7 +40,7 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
                           public MessageHandlerDelegate,
 #endif
-                          public views::WidgetDelegateView,
+                          public views::View,
                           public views::WidgetObserver {
  public:
   NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
