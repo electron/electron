@@ -69,7 +69,7 @@ class Dictionary {
   }
 
   template<typename T>
-  bool Set(const base::StringPiece& key, T val) {
+  bool Set(const base::StringPiece& key, const T& val) {
     v8::Local<v8::Value> v8_value;
     if (!TryConvertToV8(isolate_, val, &v8_value))
       return false;

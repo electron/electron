@@ -343,7 +343,7 @@ struct ToV8Traits<T, false> {
 
 template <typename T>
 bool TryConvertToV8(v8::Isolate* isolate,
-                    T input,
+                    const T& input,
                     v8::Local<v8::Value>* output) {
   return ToV8Traits<T>::TryConvertToV8(isolate, input, output);
 }
