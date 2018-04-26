@@ -147,7 +147,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  void DeleteDelegate() override;
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
   bool CanResize() const override;

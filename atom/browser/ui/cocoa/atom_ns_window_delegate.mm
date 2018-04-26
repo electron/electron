@@ -20,10 +20,10 @@
   // on the fly.
   // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
   // window delegate.
-  views::BridgedNativeWidget* bridget_view =
+  views::BridgedNativeWidget* bridged_view =
       views::NativeWidgetMac::GetBridgeForNativeWindow(
           shell->GetNativeWindow());
-  if ((self = [super initWithBridgedNativeWidget:bridget_view])) {
+  if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
     shell_ = shell;
     is_zooming_ = false;
     level_ = [shell_->GetNativeWindow() level];

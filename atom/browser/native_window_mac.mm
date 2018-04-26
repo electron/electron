@@ -1305,9 +1305,6 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   }
 }
 
-void NativeWindowMac::DeleteDelegate() {
-}
-
 views::Widget* NativeWindowMac::GetWidget() {
   return widget_.get();
 }
