@@ -102,6 +102,8 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   v8::Local<v8::Value> NextSibling() const;
   v8::Local<v8::Value> GetFrameForSelector(const std::string& selector) const;
   v8::Local<v8::Value> FindFrameByName(const std::string& name) const;
+  v8::Local<v8::Value> FindFrameByRoutingId(int routing_id) const;
+  v8::Local<v8::Value> RoutingId() const;
 
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 
