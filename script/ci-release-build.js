@@ -1,7 +1,6 @@
 const assert = require('assert')
 const request = require('request')
 const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
-const jenkinsServer = 'https://mac-ci.electronjs.org'
 
 const circleCIJobs = [
   'electron-linux-arm',
@@ -9,10 +8,6 @@ const circleCIJobs = [
   'electron-linux-ia32',
 //  'electron-linux-mips64el',
   'electron-linux-x64'
-]
-
-const jenkinsJobs = [
-  'electron-release'
 ]
 
 async function makeRequest (requestOptions, parseResponse) {
@@ -118,71 +113,6 @@ function buildCircleCI (targetBranch, options) {
   }
 }
 
-async function buildJenkins (targetBranch, options) {
-  assert(process.env.JENKINS_AUTH_TOKEN, 'JENKINS_AUTH_TOKEN not found in environment')
-  assert(process.env.JENKINS_BUILD_TOKEN, 'JENKINS_BUILD_TOKEN not found in environment')
-  let jenkinsCrumb = await getJenkinsCrumb()
-
-  if (options.job) {
-    assert(jenkinsJobs.includes(options.job), `Unknown CI job name: ${options.job}.`)
-    callJenkinsBuild(options.job, jenkinsCrumb, targetBranch, options)
-  } else {
-    jenkinsJobs.forEach((job) => {
-      callJenkinsBuild(job, jenkinsCrumb, targetBranch, options)
-    })
-  }
-}
-
-async function callJenkins (path, requestParameters, requestHeaders) {
-  let requestOptions = {
-    url: `${jenkinsServer}/${path}`,
-    auth: {
-      user: 'build',
-      pass: process.env.JENKINS_AUTH_TOKEN
-    },
-    qs: requestParameters
-  }
-  if (requestHeaders) {
-    requestOptions.headers = requestHeaders
-  }
-  let jenkinsResponse = await makeRequest(requestOptions).catch(err => {
-    console.log(`Error calling Jenkins:`, err)
-  })
-  return jenkinsResponse
-}
-
-async function callJenkinsBuild (job, jenkinsCrumb, targetBranch, options) {
-  console.log(`Triggering Jenkins to run build job: ${job} on branch: ${targetBranch} with release flag.`)
-  let jenkinsParams = {
-    token: process.env.JENKINS_BUILD_TOKEN,
-    BRANCH: targetBranch
-  }
-  if (!options.ghRelease) {
-    jenkinsParams.RUN_RELEASE_BUILD = 1
-  }
-  if (options.automaticRelease) {
-    jenkinsParams.AUTO_RELEASE = 'true'
-  }
-  await callJenkins(`job/${job}/buildWithParameters`, jenkinsParams, jenkinsCrumb)
-    .catch(err => {
-      console.log(`Error calling Jenkins build`, err)
-    })
-  let buildUrl = `${jenkinsServer}/job/${job}/lastBuild/`
-  console.log(`Jenkins build request successful.  Check build status at ${buildUrl}.`)
-}
-
-async function getJenkinsCrumb () {
-  let crumbResponse = await callJenkins('crumbIssuer/api/xml', {
-    xpath: 'concat(//crumbRequestField,":",//crumb)'
-  }).catch(err => {
-    console.log(`Error getting jenkins crumb:`, err)
-  })
-  let crumbDetails = crumbResponse.split(':')
-  let crumbHeader = {}
-  crumbHeader[crumbDetails[0]] = crumbDetails[1]
-  return crumbHeader
-}
-
 function runRelease (targetBranch, options) {
   if (options.ci) {
     switch (options.ci) {
@@ -194,15 +124,10 @@ function runRelease (targetBranch, options) {
         buildAppVeyor(targetBranch, options)
         break
       }
-      case 'Jenkins': {
-        buildJenkins(targetBranch, options)
-        break
-      }
     }
   } else {
     buildCircleCI(targetBranch, options)
     buildAppVeyor(targetBranch, options)
-    buildJenkins(targetBranch, options)
   }
 }
 
@@ -215,7 +140,7 @@ if (require.main === module) {
   const targetBranch = args._[0]
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor|Jenkins] [--ghRelease] [--automaticRelease] TARGET_BRANCH
+    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor] [--ghRelease] [--automaticRelease] TARGET_BRANCH
     `)
     process.exit(0)
   }
