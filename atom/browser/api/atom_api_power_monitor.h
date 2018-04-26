@@ -36,6 +36,10 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   void UnblockShutdown();
 #endif
 
+#if defined(OS_MACOSX)
+  void InitPlatformSpecificMonitors();
+#endif
+
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
