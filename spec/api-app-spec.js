@@ -809,13 +809,6 @@ describe('app module', () => {
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
 
     beforeEach(function (done) {
-      // XXX(alexeykuzmin): Calling `.skip()` inside a `before` hook
-      // doesn't affect nested `describe`s.
-      // FIXME Get these specs running on Linux
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-
       fs.unlink(socketPath, () => {
         server = net.createServer()
         server.listen(socketPath)
