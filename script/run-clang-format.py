@@ -196,10 +196,10 @@ def main():
     parser.add_argument('files', metavar='file', nargs='+')
     parser.add_argument(
         '-q',
-        '--quiet', 
+        '--quiet',
         action='store_true')
     parser.add_argument(
-        '-c', 
+        '-c',
         '--changed',
         action='store_true',
         help='only run on changed files')
@@ -256,7 +256,11 @@ def main():
             stderr=subprocess.STDOUT
         )
         for line in popen.stdout:
-            parse_files.append(line.rstrip())
+            file_name = line.rstrip()
+            # don't check deleted files
+            if os.path.isfile(file_name):
+                parse_files.append(file_name)
+
     else:
         parse_files = args.files
 
