@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/browser/native_browser_view_mac.h"
+#include "atom/browser/ui/cocoa/atom_native_widget_mac.h"
 #include "atom/browser/ui/cocoa/atom_ns_window.h"
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
@@ -25,6 +26,8 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/background.h"
+#include "ui/views/cocoa/bridged_native_widget.h"
 #include "ui/views/widget/widget.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless
@@ -238,6 +241,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
       was_fullscreen_(false),
       zoom_to_page_width_(false),
       fullscreen_window_title_(false),
+      resizable_(true),
       attention_request_id_(0),
       title_bar_style_(NORMAL),
       always_simple_fullscreen_(false),
@@ -247,12 +251,16 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   options.Get(options::kHeight, &height);
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
-  NSRect cocoa_bounds = NSMakeRect(
-      round((NSWidth(main_screen_rect) - width) / 2),
-      round((NSHeight(main_screen_rect) - height) / 2), width, height);
+  gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
+                   round((NSHeight(main_screen_rect) - height) / 2),
+                   width,
+                   height);
 
-  bool resizable = true;
-  options.Get(options::kResizable, &resizable);
+  options.Get(options::kResizable, &resizable_);
+  options.Get(options::kTitleBarStyle, &title_bar_style_);
+  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
+  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
+  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -262,8 +270,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   bool closable = true;
   options.Get(options::kClosable, &closable);
-
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   std::string tabbingIdentifier;
   options.Get(options::kTabbingIdentifier, &tabbingIdentifier);
@@ -299,14 +305,19 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
-  if (resizable) {
-    styleMask |= NSResizableWindowMask;
-  }
 
-  window_.reset([[AtomNSWindow alloc] initWithContentRect:cocoa_bounds
-                                                styleMask:styleMask
-                                                  backing:NSBackingStoreBuffered
-                                                    defer:YES]);
+  // Create views::Widget and assign window_ with it.
+  // TODO(zcbenz): Get rid of the window_ in future.
+  widget_.reset(new views::Widget());
+  views::Widget::InitParams params;
+  params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+  params.bounds = bounds;
+  params.delegate = this;
+  params.type = views::Widget::InitParams::TYPE_WINDOW;
+  params.native_widget = new AtomNativeWidgetMac(styleMask, widget_.get());
+  widget_->Init(params);
+  window_ = static_cast<AtomNSWindow*>(widget_->GetNativeWindow());
+
   [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
@@ -357,9 +368,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     }
   }
 
-  // We will manage window's lifetime ourselves.
-  [window_ setReleasedWhenClosed:NO];
-
   // Hide the title bar background
   if (title_bar_style_ != NORMAL) {
     if (@available(macOS 10.10, *)) {
@@ -380,17 +388,11 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     }
   }
 
-  // On macOS the initial window size doesn't include window frame.
+  // Resize to content bounds.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
-  if (!has_frame() || !use_content_size)
-    SetSize(gfx::Size(width, height));
-
-  options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
-
-  options.Get(options::kFullscreenWindowTitle, &fullscreen_window_title_);
-
-  options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
+  if (!has_frame() || use_content_size)
+    SetContentSize(gfx::Size(width, height));
 
   // Enable the NSView to accept first mouse event.
   bool acceptsFirstMouse = false;
@@ -448,8 +450,13 @@ void NativeWindowMac::SetContentView(
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal())
+  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
+    base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+    [background_layer
+        setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
+    [[window_ contentView] setLayer:background_layer];
     [[window_ contentView] setWantsLayer:YES];
+  }
 
   if (has_frame()) {
     [content_view_ setFrame:[[window_ contentView] bounds]];
@@ -712,6 +719,7 @@ void NativeWindowMac::SetContentSizeConstraints(
 void NativeWindowMac::MoveTop() {
   [window_ orderWindow:NSWindowAbove relativeTo:0];
 }
+
 void NativeWindowMac::SetResizable(bool resizable) {
   SetStyleMask(resizable, NSResizableWindowMask);
 }
@@ -974,7 +982,15 @@ bool NativeWindowMac::IsKiosk() {
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
   base::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
-  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+  // views::Widget adds a layer for the content view.
+  auto* bridge = views::NativeWidgetMac::GetBridgeForNativeWindow(window_);
+  NSView* compositor_superview =
+      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)->
+          AcceleratedWidgetGetNSView();
+  [[compositor_superview layer] setBackgroundColor:cgcolor];
+  // When using WebContents as content view, the contentView also has layer.
+  if ([[window_ contentView] wantsLayer])
+    [[[window_ contentView] layer] setBackgroundColor:cgcolor];
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
@@ -1145,7 +1161,7 @@ void NativeWindowMac::ToggleTabBar() {
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
-  if (window_.get() == window->GetNativeWindow()) {
+  if (window_ == window->GetNativeWindow()) {
     return false;
   } else {
     if (@available(macOS 10.12, *))
@@ -1287,6 +1303,18 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   } else {
     return bounds;
   }
+}
+
+views::Widget* NativeWindowMac::GetWidget() {
+  return widget_.get();
+}
+
+const views::Widget* NativeWindowMac::GetWidget() const {
+  return widget_.get();
+}
+
+bool NativeWindowMac::CanResize() const {
+  return resizable_;
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
