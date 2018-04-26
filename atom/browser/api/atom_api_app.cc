@@ -561,11 +561,15 @@ App::~App() {
 }
 
 void App::OnBeforeQuit(bool* prevent_default) {
-  *prevent_default = Emit("before-quit");
+  if (Emit("before-quit")) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnWillQuit(bool* prevent_default) {
-  *prevent_default = Emit("will-quit");
+  if (Emit("will-quit")) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnWindowAllClosed() {
@@ -583,7 +587,9 @@ void App::OnQuit() {
 }
 
 void App::OnOpenFile(bool* prevent_default, const std::string& file_path) {
-  *prevent_default = Emit("open-file", file_path);
+  if (Emit("open-file", file_path)) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnOpenURL(const std::string& url) {
@@ -621,7 +627,9 @@ void App::OnAccessibilitySupportChanged() {
 #if defined(OS_MACOSX)
 void App::OnWillContinueUserActivity(bool* prevent_default,
                                      const std::string& type) {
-  *prevent_default = Emit("will-continue-activity", type);
+  if (Emit("will-continue-activity", type)) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnDidFailToContinueUserActivity(const std::string& type,
@@ -632,7 +640,9 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
                                  const base::DictionaryValue& user_info) {
-  *prevent_default = Emit("continue-activity", type, user_info);
+  if (Emit("continue-activity", type, user_info)) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
@@ -643,7 +653,9 @@ void App::OnUserActivityWasContinued(const std::string& type,
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
                                     const base::DictionaryValue& user_info) {
-  *prevent_default = Emit("update-activity-state", type, user_info);
+  if (Emit("update-activity-state", type, user_info)) {
+    *prevent_default = true;
+  }
 }
 
 void App::OnNewWindowForTab() {

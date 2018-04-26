@@ -135,7 +135,9 @@ void TopLevelWindow::InitWith(v8::Isolate* isolate,
 }
 
 void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
-  *prevent_default = Emit("close");
+  if (Emit("close")) {
+    *prevent_default = true;
+  }
 }
 
 void TopLevelWindow::OnWindowClosed() {
