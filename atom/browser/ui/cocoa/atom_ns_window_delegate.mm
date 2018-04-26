@@ -9,11 +9,21 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
+#include "ui/views/widget/native_widget_mac.h"
 
 @implementation AtomNSWindowDelegate
 
 - (id)initWithShell:(atom::NativeWindowMac*)shell {
-  if ((self = [super init])) {
+  // The views library assumes the window delegate must be an instance of
+  // ViewsNSWindowDelegate, since we don't have a way to override the creation
+  // of NSWindowDelegate, we have to dynamically replace the window delegate
+  // on the fly.
+  // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
+  // window delegate.
+  views::BridgedNativeWidget* bridged_view =
+      views::NativeWidgetMac::GetBridgeForNativeWindow(
+          shell->GetNativeWindow());
+  if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
     shell_ = shell;
     is_zooming_ = false;
     level_ = [shell_->GetNativeWindow() level];
@@ -106,10 +116,12 @@
 }
 
 - (void)windowDidResize:(NSNotification*)notification {
+  [super windowDidResize:notification];
   shell_->NotifyWindowResize();
 }
 
 - (void)windowDidMove:(NSNotification*)notification {
+  [super windowDidMove:notification];
   // TODO(zcbenz): Remove the alias after figuring out a proper
   // way to dispatch move.
   shell_->NotifyWindowMove();
@@ -125,10 +137,12 @@
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
+  [super windowDidMiniaturize:notification];
   shell_->NotifyWindowMinimize();
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
+  [super windowDidDeminiaturize:notification];
   [shell_->GetNativeWindow() setLevel:level_];
   shell_->NotifyWindowRestore();
 }

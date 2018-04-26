@@ -13,9 +13,9 @@ namespace atom {
 class NativeWindowMac;
 }
 
-@interface AtomNSWindowDelegate : NSObject<NSWindowDelegate,
-                                           NSTouchBarDelegate,
-                                           QLPreviewPanelDataSource> {
+@interface AtomNSWindowDelegate :
+    ViewsNSWindowDelegate<NSTouchBarDelegate,
+                          QLPreviewPanelDataSource> {
  @private
   atom::NativeWindowMac* shell_;
   bool is_zooming_;

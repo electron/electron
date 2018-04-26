@@ -370,4 +370,26 @@ describe('remote module', () => {
       assert.equal(method(), 'method')
     })
   })
+
+  describe('remote exception', () => {
+    const throwFunction = remote.require(path.join(fixtures, 'module', 'exception.js'))
+
+    it('throws errors from the main process', () => {
+      assert.throws(() => {
+        throwFunction()
+      })
+    })
+
+    it('throws custom errors from the main process', () => {
+      let err = new Error('error')
+      err.cause = new Error('cause')
+      err.prop = 'error prop'
+      try {
+        throwFunction(err)
+      } catch (error) {
+        assert.ok(error.from)
+        assert.deepEqual(error.cause, err)
+      }
+    })
+  })
 })
