@@ -46,7 +46,7 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #endif
   base::PowerMonitor::Get()->AddObserver(this);
   Init(isolate);
-#if defined(OS_MACOSX)
+#if defined(OS_MACOSX) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
 #endif
 }
