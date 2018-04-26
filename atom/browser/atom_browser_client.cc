@@ -211,6 +211,7 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->webgl1_enabled = true;
   prefs->webgl2_enabled = true;
   prefs->allow_running_insecure_content = false;
+  prefs->navigate_on_drag_drop = false;
 
   // Custom preferences of guest page.
   auto* web_contents = content::WebContents::FromRenderViewHost(host);
