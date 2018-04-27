@@ -7,6 +7,14 @@
 
 namespace {
 
+bool IsOffscreenRenderingEnabled() {
+#if defined(ENABLE_OSR)
+  return true;
+#else
+  return false;
+#endif
+}
+
 bool IsPDFViewerEnabled() {
 #if defined(ENABLE_PDF_VIEWER)
   return true;
@@ -20,6 +28,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
 }
 
