@@ -226,7 +226,7 @@ void RendererClientBase::AddSupportedKeySystems(
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
-    v8::Isolate* isolate) {
+    v8::Isolate* isolate) const {
   if (isolated_world())
     return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
   else
