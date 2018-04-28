@@ -127,7 +127,7 @@ def run_clang_format_diff(args, file_name):
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
             proc.returncode, file_name), errs)
-    return make_diff(file, original, outs), errs
+    return make_diff(file_name, original, outs), errs
 
 
 def bold_red(s):
