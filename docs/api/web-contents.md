@@ -67,6 +67,8 @@ Returns:
 * `errorDescription` String
 * `validatedURL` String
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -78,6 +80,8 @@ Returns:
 
 * `event` Event
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
 Emitted when a frame has done navigation.
 
@@ -195,14 +199,47 @@ this purpose.
 
 Calling `event.preventDefault()` will prevent the navigation.
 
+#### Event: 'did-start-navigation'
+
+Returns:
+
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when any frame (including main) starts navigating. `isInplace` will be
+`true` for in-page navigations.
+
 #### Event: 'did-navigate'
 
 Returns:
 
 * `event` Event
 * `url` String
+* `httpResponseCode` Integer - -1 for non HTTP navigations
+* `httpStatusText` String - empty for non HTTP navigations
 
-Emitted when a navigation is done.
+Emitted when a main frame navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+#### Event: 'did-frame-navigate'
+
+Returns:
+
+* `event` Event
+* `url` String
+* `httpResponseCode` Integer - -1 for non HTTP navigations
+* `httpStatusText` String - empty for non HTTP navigations,
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when any frame navigation is done.
 
 This event is not emitted for in-page navigations, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
@@ -215,8 +252,10 @@ Returns:
 * `event` Event
 * `url` String
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
-Emitted when an in-page navigation happened.
+Emitted when an in-page navigation happened in any frame.
 
 When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
@@ -1439,7 +1478,14 @@ more details.
 
 #### `contents.getOSProcessId()`
 
-Returns `Integer` - The `pid` of the associated renderer process.
+Returns `Integer` - The operating system `pid` of the associated renderer
+process.
+
+#### `contents.getProcessId()`
+
+Returns `Integer` - The chromium internal `pid` of the associated renderer. Can
+be compared to the `frameProcessId` passed by frame specific navigation events
+(e.g. `did-frame-navigate`) 
 
 ### Instance Properties
 
