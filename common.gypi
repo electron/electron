@@ -14,7 +14,7 @@
     'debug_http2': 'false',
     'debug_nghttp2': 'false',
     # XXX(alexeykuzmin): Must match the clang version we use. See `clang -v`.
-    'llvm_version': '6.0',
+    'llvm_version': '7.0',
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
