@@ -177,7 +177,9 @@ void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
 }
 
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
+#if defined(OS_MACOSX)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
+#endif
 }
 
 void Tray::DisplayBalloon(mate::Arguments* args,

@@ -287,24 +287,16 @@ const CGFloat kVerticalTitleMargin = 2;
 
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
-  if (ignoreDoubleClickEvents_ == YES) {
-    trayIcon_->NotifyClicked(
-        gfx::ScreenRectFromNSRect(event.window.frame),
-        gfx::ScreenPointFromNSPoint([event locationInWindow]),
-        ui::EventFlagsFromModifiers([event modifierFlags]));
-    [self setNeedsDisplay:YES];
-    return;
-  }
-
-  // Single click event.
-  if (event.clickCount == 1)
+  BOOL shouldBeHandledAsASingleClick = (event.clickCount == 1) || ignoreDoubleClickEvents_;
+  if (shouldBeHandledAsASingleClick)
     trayIcon_->NotifyClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
         gfx::ScreenPointFromNSPoint([event locationInWindow]),
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
-  if (event.clickCount == 2)
+  BOOL shouldBeHandledAsADoubleClick = (event.clickCount == 2) && !ignoreDoubleClickEvents_;
+  if (shouldBeHandledAsADoubleClick)
     trayIcon_->NotifyDoubleClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
         ui::EventFlagsFromModifiers([event modifierFlags]));
