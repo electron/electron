@@ -3,10 +3,7 @@
 ## Finding Support
 
 If you have a security concern,
-please see the [security document](../../security.md).
-
-If you've found a bug in a [supported version](#supported-versions) of Electron,
-please report it with the [issue tracker](../development/issues.md).
+please see the [security document](../../SECURITY.md).
 
 If you need programming help,
 or want to join in the discussion with other Electron developers,
@@ -14,11 +11,14 @@ or want to find sample starter applications,
 see [these community resources](../../README.md#community).
 
 If you'd like to contribute to Electron,
-see [contributing.md](../../CONTRIBUTING.md) document.
+see the [contributing document](../../CONTRIBUTING.md).
+
+If you've found a bug in a [supported version](#supported-versions) of Electron,
+please report it with the [issue tracker](../development/issues.md).
 
 ## Supported Versions
 
-The Electron maintainers support the latest three release branches.
+The latest three release branches are supported by the Electron team.
 For example, if the latest release is 2.0.x, then the 2-0-x series
 is supported, as are the two previous release series 1-7-x and 1-8-x.
 
