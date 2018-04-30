@@ -368,6 +368,8 @@
       'atom/browser/ui/views/menu_model_adapter.h',
       'atom/browser/ui/views/native_frame_view.cc',
       'atom/browser/ui/views/native_frame_view.h',
+      'atom/browser/ui/views/root_view.cc',
+      'atom/browser/ui/views/root_view.h',
       'atom/browser/ui/views/submenu_button.cc',
       'atom/browser/ui/views/submenu_button.h',
       'atom/browser/ui/views/win_frame_view.cc',

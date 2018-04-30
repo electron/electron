@@ -9,9 +9,7 @@
 
 #include <set>
 #include <string>
-#include <vector>
 
-#include "atom/browser/ui/accelerator_util.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -27,7 +25,7 @@ class UnhandledKeyboardEventHandler;
 namespace atom {
 
 class GlobalMenuBarX11;
-class MenuBar;
+class RootView;
 class WindowStateWatcher;
 
 #if defined(OS_WIN)
@@ -40,7 +38,6 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
                           public MessageHandlerDelegate,
 #endif
-                          public views::View,
                           public views::WidgetObserver {
  public:
   NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
@@ -195,25 +192,13 @@ class NativeWindowViews : public NativeWindow,
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
 
-  // views::View:
-  void Layout() override;
-  gfx::Size GetMinimumSize() const override;
-  gfx::Size GetMaximumSize() const override;
-  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
-
-  // Register accelerators supported by the menu model.
-  void RegisterAccelerators(AtomMenuModel* menu_model);
-
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
+  std::unique_ptr<RootView> root_view_;
+
   views::View* content_view_;  // Weak ref.
   views::View* focused_view_;  // The view should be focused by default.
-
-  std::unique_ptr<MenuBar> menu_bar_;
-  bool menu_bar_autohide_;
-  bool menu_bar_visible_;
-  bool menu_bar_alt_pressed_;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes
@@ -280,9 +265,6 @@ class NativeWindowViews : public NativeWindow,
 
   // Handles unhandled keyboard messages coming back from the renderer process.
   std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
-
-  // Map from accelerator to menu item's command id.
-  accelerator_util::AcceleratorTable accelerator_table_;
 
   // For custom drag, the whole window is non-draggable and the draggable region
   // has to been explicitly provided.
