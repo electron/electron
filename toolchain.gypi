@@ -5,6 +5,9 @@
     # Set this to true when building with Clang.
     'clang%': 1,
 
+    # Set this to the absolute path to sccache when building with sccache
+    'cc_wrapper%': '',
+
     # Path to mips64el toolchain.
     'make_mips64_dir%': 'vendor/gcc-4.8.3-d197-n64-loongson/usr',
 
@@ -101,6 +104,15 @@
     ],
   },
   'conditions': [
+    # Setup cc_wrapper
+    ['cc_wrapper!=""', {
+      'make_global_settings': [
+        ['CC_wrapper', '<(cc_wrapper)'],
+        ['CXX_wrapper', '<(cc_wrapper)'],
+        ['CC.host_wrapper', '<(cc_wrapper)'],
+        ['CXX.host_wrapper', '<(cc_wrapper)']
+      ],
+    }],
     # Setup building with clang.
     ['clang==1', {
       'make_global_settings': [
