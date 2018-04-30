@@ -113,6 +113,8 @@ def parse_args():
                       help='The static library path of libchromiumcontent.')
   parser.add_argument('--defines', default='',
                       help='The build variables passed to gyp')
+  parser.add_argument('--cc_wrapper',
+                      help='Sets cc_wrapper for build. E.g. $(which sccache)')
   return parser.parse_args()
 
 
@@ -123,6 +125,8 @@ def args_to_defines(args):
   if args.clang_dir:
     defines += ' make_clang_dir=' + args.clang_dir
     defines += ' clang_use_chrome_plugins=0'
+  if args.cc_wrapper is not None:
+    defines += ' cc_wrapper=' + args.cc_wrapper
   return defines
 
 
