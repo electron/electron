@@ -1,5 +1,21 @@
 # Electron Support
 
+## Finding Support
+
+If you have a security concern,
+please see the [security document](../../security.md).
+
+If you've found a bug in a [supported version](#supported-versions) of Electron,
+please report it with the [issue tracker](../development/issues.md).
+
+If you need programming help,
+or want to join in the discussion with other Electron developers,
+or want to find sample starter applications,
+see [these community resources](../../README.md#community).
+
+If you'd like to contribute to Electron,
+see [contributing.md](../../CONTRIBUTING.md) document.
+
 ## Supported Versions
 
 The Electron maintainers support the latest three release branches.
@@ -20,9 +36,8 @@ on an unsupported series of Electron, developers can silence the
 end-of-support warning by omitting the final release from the app's
 `package.json` `devDependencies`. For example, since the 1-6-x series
 ended with an end-of-support 1.6.18 release, developers could choose
-to stay in the 1-6-x series without warnings with `devDependency  of
+to stay in the 1-6-x series without warnings with `devDependency` of
 `"electron": 1.6.0 - 1.6.17`.
-
 
 ## Supported Platforms
 
