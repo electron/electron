@@ -13,6 +13,7 @@
 #include "atom/common/color_util.h"
 #include "atom/common/options_switches.h"
 #include "native_mate/dictionary.h"
+#include "ui/views/widget/widget.h"
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -20,7 +21,8 @@ namespace atom {
 
 NativeWindow::NativeWindow(const mate::Dictionary& options,
                            NativeWindow* parent)
-    : has_frame_(true),
+    : widget_(new views::Widget),
+      has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
       is_closed_(false),
@@ -508,6 +510,14 @@ void NativeWindow::NotifyWindowMessage(UINT message,
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
+
+views::Widget* NativeWindow::GetWidget() {
+  return widget();
+}
+
+const views::Widget* NativeWindow::GetWidget() const {
+  return widget();
+}
 
 NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
   : key(UserDataKey()), window(window) {}

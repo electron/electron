@@ -12,8 +12,6 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
-#include "ui/views/widget/widget_delegate.h"
-#include "ui/views/widget/widget_observer.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
@@ -23,8 +21,7 @@
 
 namespace atom {
 
-class NativeWindowMac : public NativeWindow,
-                        public views::WidgetDelegate {
+class NativeWindowMac : public NativeWindow {
  public:
   NativeWindowMac(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -147,8 +144,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
   bool CanResize() const override;
 
  private:
@@ -157,7 +152,6 @@ class NativeWindowMac : public NativeWindow,
 
   void SetForwardMouseMessages(bool forward);
 
-  std::unique_ptr<views::Widget> widget_;
   AtomNSWindow* window_;  // Weak ref, managed by widget_.
 
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;

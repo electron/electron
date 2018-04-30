@@ -16,6 +16,7 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
 
@@ -47,7 +48,8 @@ class NativeBrowserView;
 
 struct DraggableRegion;
 
-class NativeWindow : public base::SupportsUserData {
+class NativeWindow : public base::SupportsUserData,
+                     public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
 
@@ -259,6 +261,8 @@ class NativeWindow : public base::SupportsUserData {
     observers_.RemoveObserver(obs);
   }
 
+  views::Widget* widget() const { return widget_.get(); }
+
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
 
@@ -272,11 +276,17 @@ class NativeWindow : public base::SupportsUserData {
  protected:
   NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
 
+  // views::WidgetDelegate:
+  views::Widget* GetWidget() override;
+  const views::Widget* GetWidget() const override;
+
   void set_browser_view(NativeBrowserView* browser_view) {
     browser_view_ = browser_view;
   }
 
  private:
+  std::unique_ptr<views::Widget> widget_;
+
   // Whether window has standard frame.
   bool has_frame_;
 

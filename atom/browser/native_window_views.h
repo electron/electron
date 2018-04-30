@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "atom/browser/ui/accelerator_util.h"
-#include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(OS_WIN)
@@ -41,7 +40,7 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
                           public MessageHandlerDelegate,
 #endif
-                          public views::WidgetDelegateView,
+                          public views::View,
                           public views::WidgetObserver {
  public:
   NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
@@ -139,7 +138,6 @@ class NativeWindowViews : public NativeWindow,
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  views::Widget* widget() const { return window_.get(); }
   views::View* content_view() const { return content_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
@@ -161,8 +159,6 @@ class NativeWindowViews : public NativeWindow,
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
   bool ShouldHandleSystemCommands() const override;
-  views::Widget* GetWidget() override;
-  const views::Widget* GetWidget() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,
@@ -211,7 +207,6 @@ class NativeWindowViews : public NativeWindow,
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();
 
-  std::unique_ptr<views::Widget> window_;
   views::View* content_view_;  // Weak ref.
   views::View* focused_view_;  // The view should be focused by default.
 
@@ -219,6 +214,12 @@ class NativeWindowViews : public NativeWindow,
   bool menu_bar_autohide_;
   bool menu_bar_visible_;
   bool menu_bar_alt_pressed_;
+
+  // The "resizable" flag on Linux is implemented by setting size constraints,
+  // we need to make sure size constraints are restored when window becomes
+  // resizable again. This is also used on Windows, to keep taskbar resize
+  // events from resizing the window.
+  extensions::SizeConstraints old_size_constraints_;
 
 #if defined(USE_X11)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
@@ -229,13 +230,7 @@ class NativeWindowViews : public NativeWindow,
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
-#if defined(OS_WIN) || defined(USE_X11)
-  // The "resizable" flag on Linux is implemented by setting size constraints,
-  // we need to make sure size constraints are restored when window becomes
-  // resizable again. This is also used on Windows, to keep taskbar resize
-  // events from resizing the window.
-  extensions::SizeConstraints old_size_constraints_;
-#endif
+
 #if defined(OS_WIN)
   // Weak ref.
   AtomDesktopWindowTreeHostWin* atom_desktop_window_tree_host_win_;

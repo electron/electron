@@ -308,15 +308,14 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
-  widget_.reset(new views::Widget());
   views::Widget::InitParams params;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new AtomNativeWidgetMac(styleMask, widget_.get());
-  widget_->Init(params);
-  window_ = static_cast<AtomNSWindow*>(widget_->GetNativeWindow());
+  params.native_widget = new AtomNativeWidgetMac(styleMask, widget());
+  widget()->Init(params);
+  window_ = static_cast<AtomNSWindow*>(widget()->GetNativeWindow());
 
   [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
@@ -1303,14 +1302,6 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   } else {
     return bounds;
   }
-}
-
-views::Widget* NativeWindowMac::GetWidget() {
-  return widget_.get();
-}
-
-const views::Widget* NativeWindowMac::GetWidget() const {
-  return widget_.get();
 }
 
 bool NativeWindowMac::CanResize() const {

@@ -120,7 +120,6 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
-      window_(new views::Widget),
       content_view_(nullptr),
       focused_view_(nullptr),
       menu_bar_autohide_(false),
@@ -138,6 +137,9 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
       maximizable_(true),
       minimizable_(true),
       fullscreenable_(true) {
+  // The root view is this class, it is managed by us.
+  set_owned_by_client();
+
   options.Get(options::kTitle, &title_);
   options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
 
@@ -168,7 +170,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   gfx::Rect bounds(0, 0, width, height);
   widget_size_ = bounds.size();
 
-  window_->AddObserver(this);
+  widget()->AddObserver(this);
 
   views::Widget::InitParams params;
   params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
@@ -193,9 +195,9 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (parent)
     params.parent = parent->GetNativeWindow();
 
-  params.native_widget = new AtomDesktopNativeWidgetAura(window_.get());
+  params.native_widget = new AtomDesktopNativeWidgetAura(widget());
   atom_desktop_window_tree_host_win_ = new AtomDesktopWindowTreeHostWin(
-      this, window_.get(),
+      this, widget(),
       static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
   params.desktop_window_tree_host = atom_desktop_window_tree_host_win_;
 #elif defined(USE_X11)
@@ -207,7 +209,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   params.wm_class_class = name;
 #endif
 
-  window_->Init(params);
+  widget()->Init(params);
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
@@ -287,8 +289,8 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (has_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
-    window_->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
-    window_->FrameTypeChanged();
+    widget()->set_frame_type(views::Widget::FrameType::FRAME_TYPE_FORCE_NATIVE);
+    widget()->FrameTypeChanged();
 #if defined(OS_WIN)
     // thickFrame also works for normal window.
     if (!thick_frame_)
@@ -302,7 +304,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
       use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
-  window_->CenterWindow(size);
+  widget()->CenterWindow(size);
 
 #if defined(OS_WIN)
   // Save initial window state.
@@ -315,7 +317,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 }
 
 NativeWindowViews::~NativeWindowViews() {
-  window_->RemoveObserver(this);
+  widget()->RemoveObserver(this);
 
 #if defined(OS_WIN)
   // Disable mouse forwarding to relinquish resources, should any be held.
@@ -345,11 +347,11 @@ void NativeWindowViews::Close() {
     return;
   }
 
-  window_->Close();
+  widget()->Close();
 }
 
 void NativeWindowViews::CloseImmediately() {
-  window_->CloseNow();
+  widget()->CloseNow();
 }
 
 void NativeWindowViews::Focus(bool focus) {
@@ -358,22 +360,22 @@ void NativeWindowViews::Focus(bool focus) {
     return;
 
   if (focus) {
-    window_->Activate();
+    widget()->Activate();
   } else {
-    window_->Deactivate();
+    widget()->Deactivate();
   }
 }
 
 bool NativeWindowViews::IsFocused() {
-  return window_->IsActive();
+  return widget()->IsActive();
 }
 
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
-      !window_->native_widget_private()->IsVisible())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(false);
+      !widget()->native_widget_private()->IsVisible())
+    NativeWindow::parent()->SetEnabled(false);
 
-  window_->native_widget_private()->ShowWithWindowState(GetRestoredState());
+  widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
   NotifyWindowShow();
 
@@ -384,7 +386,7 @@ void NativeWindowViews::Show() {
 }
 
 void NativeWindowViews::ShowInactive() {
-  window_->ShowInactive();
+  widget()->ShowInactive();
 
   NotifyWindowShow();
 
@@ -396,9 +398,9 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())->SetEnabled(true);
+    NativeWindow::parent()->SetEnabled(true);
 
-  window_->Hide();
+  widget()->Hide();
 
   NotifyWindowHide();
 
@@ -409,7 +411,7 @@ void NativeWindowViews::Hide() {
 }
 
 bool NativeWindowViews::IsVisible() {
-  return window_->IsVisible();
+  return widget()->IsVisible();
 }
 
 bool NativeWindowViews::IsEnabled() {
@@ -460,9 +462,9 @@ void NativeWindowViews::Maximize() {
 #endif
 
   if (IsVisible())
-    window_->Maximize();
+    widget()->Maximize();
   else
-    window_->native_widget_private()->ShowWithWindowState(
+    widget()->native_widget_private()->ShowWithWindowState(
         ui::SHOW_STATE_MAXIMIZED);
 }
 
@@ -474,27 +476,27 @@ void NativeWindowViews::Unmaximize() {
   }
 #endif
 
-  window_->Restore();
+  widget()->Restore();
 }
 
 bool NativeWindowViews::IsMaximized() {
-  return window_->IsMaximized();
+  return widget()->IsMaximized();
 }
 
 void NativeWindowViews::Minimize() {
   if (IsVisible())
-    window_->Minimize();
+    widget()->Minimize();
   else
-    window_->native_widget_private()->ShowWithWindowState(
+    widget()->native_widget_private()->ShowWithWindowState(
         ui::SHOW_STATE_MINIMIZED);
 }
 
 void NativeWindowViews::Restore() {
-  window_->Restore();
+  widget()->Restore();
 }
 
 bool NativeWindowViews::IsMinimized() {
-  return window_->IsMinimized();
+  return widget()->IsMinimized();
 }
 
 void NativeWindowViews::SetFullScreen(bool fullscreen) {
@@ -529,19 +531,19 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 
   // We set the new value after notifying, so we can handle the size event
   // correctly.
-  window_->SetFullscreen(fullscreen);
+  widget()->SetFullscreen(fullscreen);
 
   // If restoring from fullscreen and the window isn't visible, force visible,
   // else a non-responsive window shell could be rendered.
   // (this situation may arise when app starts with fullscreen: true)
-  // Note: the following must be after "window_->SetFullscreen(fullscreen);"
+  // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
 #else
   if (IsVisible())
-    window_->SetFullscreen(fullscreen);
+    widget()->SetFullscreen(fullscreen);
   else if (fullscreen)
-    window_->native_widget_private()->ShowWithWindowState(
+    widget()->native_widget_private()->ShowWithWindowState(
         ui::SHOW_STATE_FULLSCREEN);
 
   // Auto-hide menubar when in fullscreen.
@@ -553,7 +555,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 }
 
 bool NativeWindowViews::IsFullscreen() const {
-  return window_->IsFullscreen();
+  return widget()->IsFullscreen();
 }
 
 void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -566,16 +568,16 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
   }
 #endif
 
-  window_->SetBounds(bounds);
+  widget()->SetBounds(bounds);
 }
 
 gfx::Rect NativeWindowViews::GetBounds() {
 #if defined(OS_WIN)
   if (IsMinimized())
-    return window_->GetRestoredBounds();
+    return widget()->GetRestoredBounds();
 #endif
 
-  return window_->GetWindowBoundsInScreen();
+  return widget()->GetWindowBoundsInScreen();
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() {
@@ -602,16 +604,13 @@ void NativeWindowViews::SetContentSizeConstraints(
 #endif
   // widget_delegate() is only available after Init() is called, we make use of
   // this to determine whether native widget has initialized.
-  if (window_ && window_->widget_delegate())
-    window_->OnSizeConstraintsChanged();
-#if defined(OS_WIN) || defined(USE_X11)
+  if (widget() && widget()->widget_delegate())
+    widget()->OnSizeConstraintsChanged();
   if (resizable_)
     old_size_constraints_ = size_constraints;
-#endif
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-#if defined(OS_WIN) || defined(USE_X11)
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
@@ -625,7 +624,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
   }
-#endif
 #if defined(OS_WIN)
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
@@ -648,11 +646,8 @@ bool NativeWindowViews::IsResizable() {
 #if defined(OS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-  else
-    return CanResize();
-#else
-  return CanResize();
 #endif
+  return CanResize();
 }
 
 void NativeWindowViews::SetMovable(bool movable) {
@@ -736,24 +731,24 @@ void NativeWindowViews::SetAlwaysOnTop(bool top,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
-  window_->SetAlwaysOnTop(top);
+  widget()->SetAlwaysOnTop(top);
 }
 
 bool NativeWindowViews::IsAlwaysOnTop() {
-  return window_->IsAlwaysOnTop();
+  return widget()->IsAlwaysOnTop();
 }
 
 void NativeWindowViews::Center() {
-  window_->CenterWindow(GetSize());
+  widget()->CenterWindow(GetSize());
 }
 
 void NativeWindowViews::Invalidate() {
-  window_->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
+  widget()->SchedulePaintInRect(gfx::Rect(GetBounds().size()));
 }
 
 void NativeWindowViews::SetTitle(const std::string& title) {
   title_ = title;
-  window_->UpdateWindowTitle();
+  widget()->UpdateWindowTitle();
 }
 
 std::string NativeWindowViews::GetTitle() {
@@ -773,7 +768,7 @@ void NativeWindowViews::FlashFrame(bool flash) {
     return;
   }
 #endif
-  window_->FlashFrame(flash);
+  widget()->FlashFrame(flash);
 }
 
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
@@ -1015,11 +1010,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
 }
 
 gfx::NativeView NativeWindowViews::GetNativeView() const {
-  return window_->GetNativeView();
+  return widget()->GetNativeView();
 }
 
 gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
-  return window_->GetNativeWindow();
+  return widget()->GetNativeWindow();
 }
 
 void NativeWindowViews::SetProgressBar(double progress,
@@ -1073,7 +1068,7 @@ bool NativeWindowViews::IsMenuBarVisible() {
 }
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
-  window_->SetVisibleOnAllWorkspaces(visible);
+  widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
@@ -1104,7 +1099,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   gfx::Rect dpi_bounds = display::win::ScreenWin::DIPToScreenRect(hwnd, bounds);
   window_bounds = display::win::ScreenWin::ScreenToDIPRect(
       hwnd,
-      window_->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
+      widget()->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
 #endif
 
   if (menu_bar_ && menu_bar_visible_) {
@@ -1161,16 +1156,15 @@ void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
 }
 #elif defined(USE_X11)
 void NativeWindowViews::SetIcon(const gfx::ImageSkia& icon) {
-  views::DesktopWindowTreeHostX11* tree_host =
-      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget());
-  static_cast<views::DesktopWindowTreeHost*>(tree_host)->SetWindowIcons(icon,
-                                                                        icon);
+  auto* tree_host = static_cast<views::DesktopWindowTreeHost*>(
+      views::DesktopWindowTreeHostX11::GetHostForXID(GetAcceleratedWidget()));
+  tree_host->SetWindowIcons(icon, icon);
 }
 #endif
 
-void NativeWindowViews::OnWidgetActivationChanged(views::Widget* widget,
+void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
                                                   bool active) {
-  if (widget != window_.get())
+  if (changed_widget != widget())
     return;
 
   // Post the notification to next tick.
@@ -1187,9 +1181,9 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* widget,
   menu_bar_alt_pressed_ = false;
 }
 
-void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* widget,
+void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
                                               const gfx::Rect& bounds) {
-  if (widget != window_.get())
+  if (changed_widget != widget())
     return;
 
   // Note: We intentionally use `GetBounds()` instead of `bounds` to properly
@@ -1222,8 +1216,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* widget,
 
 void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && NativeWindow::parent()) {
-    NativeWindowViews* parent =
-        static_cast<NativeWindowViews*>(NativeWindow::parent());
+    auto* parent = NativeWindow::parent();
     // Enable parent window after current window gets closed.
     parent->SetEnabled(true);
     // Focus on parent window.
@@ -1261,14 +1254,6 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
   return true;
 }
 
-views::Widget* NativeWindowViews::GetWidget() {
-  return window_.get();
-}
-
-const views::Widget* NativeWindowViews::GetWidget() const {
-  return window_.get();
-}
-
 views::View* NativeWindowViews::GetContentsView() {
   return this;
 }
@@ -1284,7 +1269,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
   // And the events on border for dragging resizable frameless window.
   if (!has_frame() && CanResize()) {
     FramelessView* frame =
-        static_cast<FramelessView*>(window_->non_client_view()->frame_view());
+        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
   }
 
