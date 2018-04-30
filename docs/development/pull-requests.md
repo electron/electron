@@ -110,6 +110,16 @@ Common prefixes:
   - refactor: A code change that neither fixes a bug nor adds a feature
   - style: Changes that do not affect the meaning of the code (linting)
 
+Other things to keep in mind when writing a commit message:
+
+1. The first line should:
+   - contain a short description of the change (preferably 50 characters or less,
+     and no more than 72 characters)
+   - be entirely in lowercase with the exception of proper nouns, acronyms, and
+   the words that refer to code, like function/variable names
+2. Keep the second line blank.
+3. Wrap all other lines at 72 columns.
+
 #### Breaking Changes
 
 A commit that has the text `BREAKING CHANGE:` at the beginning of its optional 
