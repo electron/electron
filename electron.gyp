@@ -165,6 +165,9 @@
               # of /SUBSYSTEM:WINDOWS,5.02
               'MinimumRequiredVersion': '5.02',
               'SubSystem': '2',
+              'AdditionalDependencies': [
+                'wtsapi32.lib',
+              ],
             },
           },
           'copies': [

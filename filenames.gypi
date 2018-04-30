@@ -136,6 +136,8 @@
       'atom/browser/api/atom_api_net.h',
       'atom/browser/api/atom_api_notification.cc',
       'atom/browser/api/atom_api_notification.h',
+      'atom/browser/api/atom_api_power_monitor_mac.mm',
+      'atom/browser/api/atom_api_power_monitor_win.cc',
       'atom/browser/api/atom_api_power_monitor.cc',
       'atom/browser/api/atom_api_power_monitor.h',
       'atom/browser/api/atom_api_power_save_blocker.cc',

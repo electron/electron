@@ -47,6 +47,14 @@ invokes `e.preventDefault()`, Electron will attempt to delay system shutdown in
 order for the app to exit cleanly. If `e.preventDefault()` is called, the app
 should exit as soon as possible by calling something like `app.quit()`.
 
+### Event: 'lock-screen' _macOS_ _Windows_
+
+Emitted when the system is about to lock the screen.
+
+### Event: 'unlock-screen' _macOS_ _Windows_
+
+Emitted as soon as the systems screen is unlocked.
+
 ## Methods
 
 The `powerMonitor` module has the following methods:

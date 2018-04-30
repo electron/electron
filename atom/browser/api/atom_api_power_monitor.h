@@ -36,6 +36,10 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   void UnblockShutdown();
 #endif
 
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  void InitPlatformSpecificMonitors();
+#endif
+
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
@@ -46,6 +50,28 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
                             int idle_threshold,
                             const ui::IdleCallback& callback);
   void QuerySystemIdleTime(const ui::IdleTimeCallback& callback);
+
+#if defined(OS_WIN)
+  // Static callback invoked when a message comes in to our messaging window.
+  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
+                                        UINT message,
+                                        WPARAM wparam,
+                                        LPARAM lparam);
+
+  LRESULT CALLBACK WndProc(HWND hwnd,
+                           UINT message,
+                           WPARAM wparam,
+                           LPARAM lparam);
+
+  // The window class of |window_|.
+  ATOM atom_;
+
+  // The handle of the module that contains the window procedure of |window_|.
+  HMODULE instance_;
+
+  // The window used for processing events.
+  HWND window_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
