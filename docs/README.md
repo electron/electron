@@ -61,7 +61,7 @@ an issue:
   * [DevTools Extension](tutorial/devtools-extension.md)
   * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
 * [Application Distribution](tutorial/application-distribution.md)
-  * [Supported Platforms](tutorial/supported-platforms.md)
+  * [Supported](tutorial/supported.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
