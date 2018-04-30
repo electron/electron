@@ -5,16 +5,31 @@
 If you have a security concern,
 please see the [security document](../../SECURITY.md).
 
-If you need programming help,
-or want to join in the discussion with other Electron developers,
-or want to find sample starter applications,
-see [these community resources](../../README.md#community).
+If you're looking for programming help,
+for answers to questions,
+or to join in discussion with other developers who use Electron,
+you can interact with the community in these locations:
+- [`electron`](https://discuss.atom.io/c/electron) category on the Atom
+forums
+- `#atom-shell` channel on Freenode
+- [`Atom`](https://atom-slack.herokuapp.com) channel on Slack
+- [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
+- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
+- [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
+- [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
+- [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
+- [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
+- [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 If you'd like to contribute to Electron,
 see the [contributing document](../../CONTRIBUTING.md).
 
 If you've found a bug in a [supported version](#supported-versions) of Electron,
 please report it with the [issue tracker](../development/issues.md).
+
+[awesome-electron](https://github.com/sindresorhus/awesome-electron)
+is a community-maintained list of useful example apps,
+tools and resources.
 
 ## Supported Versions
 
