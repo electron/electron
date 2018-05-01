@@ -955,14 +955,31 @@ void WebContents::DidFinishNavigation(
   if (!navigation_handle->IsErrorPage()) {
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
-    if (is_main_frame && !is_same_document) {
-      Emit("did-navigate", url);
-    } else if (is_same_document) {
+    if (is_same_document) {
       Emit("did-navigate-in-page",
+        url,
+        is_main_frame,
+        frame_process_id,
+        frame_routing_id);
+    } else {
+      const net::HttpResponseHeaders* http_response
+        = navigation_handle->GetResponseHeaders();
+      std::string http_status_text;
+      int http_response_code = -1;
+      if (http_response) {
+        http_status_text = http_response->GetStatusText();
+        http_response_code = http_response->response_code();
+      }
+      Emit("did-frame-navigate",
            url,
+           http_response_code,
+           http_status_text,
            is_main_frame,
            frame_process_id,
            frame_routing_id);
+      if (is_main_frame) {
+        Emit("did-navigate", url, http_response_code, http_status_text);
+      }
     }
   } else {
     auto url = navigation_handle->GetURL();

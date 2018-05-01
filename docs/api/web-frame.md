@@ -235,6 +235,15 @@ Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
 would be returned if there's no such frame or if the frame is not in the current
 renderer process.
 
+### `webFrame.findFrameByRoutingId(routingId)`
+
+* `routingId` Integer - A unique frame id in the current renderer process.
+  Routing IDs can be retrieved from `WebFrame` instances (`webFrame.routingId`)
+  and are also passed by frame specific `WebContents` navigation events (e.g. 
+  `did-frame-navigate`)
+  
+Returns `WebFrame` - that has the supplied `routingId`, `null` if not found. 
+
 ## Properties
 
 ### `webFrame.top`
@@ -262,5 +271,10 @@ current renderer process.
 ### `webFrame.nextSibling`
 
 A `WebFrame` representing next sibling frame, the property would be `null` if
-`webFrame` is the last frame its parent or if the next sibling is not in the
+`webFrame` is the last frame in its parent or if the next sibling is not in the
 current renderer process.
+
+### `webFrame.routingId`
+
+A unique frame id in the current renderer process. Distinct WebFrame instances
+that refer to the same underlying frame will have the same `routingId`.
