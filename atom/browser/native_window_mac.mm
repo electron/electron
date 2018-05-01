@@ -252,8 +252,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
-                   round((NSHeight(main_screen_rect) - height) / 2),
-                   width,
+                   round((NSHeight(main_screen_rect) - height) / 2), width,
                    height);
 
   options.Get(options::kResizable, &resizable_);
@@ -432,19 +431,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);
-}
-
-NativeWindowMac::~NativeWindowMac() {
-  [NSEvent removeMonitor:wheel_event_monitor_];
-}
-
-void NativeWindowMac::SetContentView(
-    brightray::InspectableWebContents* web_contents) {
-  if (content_view_)
-    [content_view_ removeFromSuperview];
-
-  content_view_ = web_contents->GetView()->GetNativeView();
-  [content_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
@@ -457,10 +443,7 @@ void NativeWindowMac::SetContentView(
     [[window_ contentView] setWantsLayer:YES];
   }
 
-  if (has_frame()) {
-    [content_view_ setFrame:[[window_ contentView] bounds]];
-    [[window_ contentView] addSubview:content_view_];
-  } else {
+  if (!has_frame()) {
     // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
     // produces warnings. To eliminate the warnings, we resize the contentView
     // to fill the window, and add subviews to that.
@@ -469,27 +452,15 @@ void NativeWindowMac::SetContentView(
     [container_view_
         setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
-
-    // Move the vibrantView from the old content view.
-    if ([window_ vibrantView]) {
-      [[window_ vibrantView] removeFromSuperview];
-      [container_view_ addSubview:[window_ vibrantView]
-                       positioned:NSWindowBelow
-                       relativeTo:nil];
-    }
-
     [window_ setContentView:container_view_];
-
-    [content_view_ setFrame:[container_view_ bounds]];
-    [container_view_ addSubview:content_view_];
 
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* window_button_view = [[[CustomWindowButtonView alloc]
+      NSView* buttonsView = [[[CustomWindowButtonView alloc]
           initWithFrame:NSZeroRect] autorelease];
-      [container_view_ addSubview:window_button_view];
+      [[window_ contentView] addSubview:buttonsView];
     } else {
       if (title_bar_style_ != NORMAL) {
         if (base::mac::IsOS10_9()) {
@@ -510,6 +481,29 @@ void NativeWindowMac::SetContentView(
     // determine whether to show custom UI on hover, so we disable it here to
     // prevent them from doing so in a frameless app window.
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
+  }
+}
+
+NativeWindowMac::~NativeWindowMac() {
+  [NSEvent removeMonitor:wheel_event_monitor_];
+}
+
+void NativeWindowMac::SetContentView(
+    brightray::InspectableWebContents* web_contents) {
+  if (content_view_)
+    [content_view_ removeFromSuperview];
+
+  content_view_ = web_contents->GetView()->GetNativeView();
+  [content_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+  [content_view_ setFrame:[[window_ contentView] bounds]];
+
+  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
+    NSView* buttonsView = [[[window_ contentView] subviews] lastObject];
+    [[window_ contentView] addSubview:content_view_
+                           positioned:NSWindowBelow
+                           relativeTo:buttonsView];
+  } else {
+    [[window_ contentView] addSubview:content_view_];
   }
 }
 
@@ -984,8 +978,8 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
   // views::Widget adds a layer for the content view.
   auto* bridge = views::NativeWidgetMac::GetBridgeForNativeWindow(window_);
   NSView* compositor_superview =
-      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)->
-          AcceleratedWidgetGetNSView();
+      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)
+          ->AcceleratedWidgetGetNSView();
   [[compositor_superview layer] setBackgroundColor:cgcolor];
   // When using WebContents as content view, the contentView also has layer.
   if ([[window_ contentView] wantsLayer])
