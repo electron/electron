@@ -7,12 +7,12 @@
 #if defined(OS_WIN)
 #include <objbase.h>
 #endif
-#include <string>
+
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
-#include "atom/browser/ui/views/menu_bar.h"
+#include "atom/browser/ui/views/root_view.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
@@ -23,7 +23,6 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
@@ -67,13 +66,6 @@ namespace atom {
 
 namespace {
 
-// The menu bar height in pixels.
-#if defined(OS_WIN)
-const int kMenuBarHeight = 20;
-#else
-const int kMenuBarHeight = 25;
-#endif
-
 #if defined(OS_WIN)
 void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   DWORD style = ::GetWindowLong(handle, GWL_STYLE);
@@ -85,33 +77,22 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
 }
 #endif
 
-bool IsAltKey(const content::NativeWebKeyboardEvent& event) {
-  return event.windows_key_code == ui::VKEY_MENU;
-}
-bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
-  typedef content::NativeWebKeyboardEvent::Modifiers Modifiers;
-  int modifiers = event.GetModifiers();
-  modifiers &= ~Modifiers::kNumLockOn;
-  modifiers &= ~Modifiers::kCapsLockOn;
-  return (modifiers == Modifiers::kAltKey) ||
-         (modifiers == (Modifiers::kAltKey | Modifiers::kIsLeft)) ||
-         (modifiers == (Modifiers::kAltKey | Modifiers::kIsRight));
-}
-
 class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
-                         NativeWindowViews* contents_view)
-      : views::ClientView(widget, contents_view) {}
+                         views::View* root_view,
+                         NativeWindowViews* window)
+      : views::ClientView(widget, root_view), window_(window) {}
   virtual ~NativeWindowClientView() {}
 
   bool CanClose() override {
-    static_cast<NativeWindowViews*>(contents_view())
-        ->NotifyWindowCloseButtonClicked();
+    window_->NotifyWindowCloseButtonClicked();
     return false;
   }
 
  private:
+  NativeWindowViews* window_;
+
   DISALLOW_COPY_AND_ASSIGN(NativeWindowClientView);
 };
 
@@ -120,11 +101,9 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
+      root_view_(new RootView(this)),
       content_view_(nullptr),
       focused_view_(nullptr),
-      menu_bar_autohide_(false),
-      menu_bar_visible_(false),
-      menu_bar_alt_pressed_(false),
 #if defined(OS_WIN)
       checked_for_a11y_support_(false),
       thick_frame_(true),
@@ -137,11 +116,11 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
       maximizable_(true),
       minimizable_(true),
       fullscreenable_(true) {
-  // The root view is this class, it is managed by us.
-  set_owned_by_client();
-
   options.Get(options::kTitle, &title_);
-  options.Get(options::kAutoHideMenuBar, &menu_bar_autohide_);
+
+  bool menu_bar_autohide;
+  if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
+    root_view_->SetAutoHideMenuBar(menu_bar_autohide);
 
 #if defined(OS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -328,7 +307,7 @@ NativeWindowViews::~NativeWindowViews() {
 void NativeWindowViews::SetContentView(
     brightray::InspectableWebContents* web_contents) {
   if (content_view_) {
-    RemoveChildView(content_view_);
+    root_view_->RemoveChildView(content_view_);
     if (browser_view()) {
       content_view_->RemoveChildView(
           browser_view()->GetInspectableWebContentsView()->GetView());
@@ -337,8 +316,8 @@ void NativeWindowViews::SetContentView(
   }
   content_view_ = web_contents->GetView()->GetView();
   focused_view_ = web_contents->GetView()->GetWebView();
-  AddChildView(content_view_);
-  Layout();
+  root_view_->AddChildView(content_view_);
+  root_view_->Layout();
 }
 
 void NativeWindowViews::Close() {
@@ -550,7 +529,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (fullscreen)
     SetMenuBarVisibility(false);
   else
-    SetMenuBarVisibility(!menu_bar_autohide_);
+    SetMenuBarVisibility(!IsMenuBarAutoHide());
 #endif
 }
 
@@ -809,7 +788,7 @@ bool NativeWindowViews::IsKiosk() {
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  SetBackground(views::CreateSolidBackground(background_color));
+  root_view_->SetBackground(views::CreateSolidBackground(background_color));
 
 #if defined(OS_WIN)
   // Set the background color of native window.
@@ -901,22 +880,10 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 }
 
 void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
-  if (menu_model == nullptr) {
-    // Remove accelerators
-    accelerator_table_.clear();
-    GetFocusManager()->UnregisterAccelerators(this);
-    // and menu bar.
 #if defined(USE_X11)
+  if (menu_model == nullptr)
     global_menu_bar_.reset();
-#endif
-    SetMenuBarVisibility(false);
-    menu_bar_.reset();
-    return;
-  }
 
-  RegisterAccelerators(menu_model);
-
-#if defined(USE_X11)
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
     global_menu_bar_.reset(new GlobalMenuBarX11(this));
 
@@ -927,40 +894,33 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   }
 #endif
 
-  // Do not show menu bar in frameless window.
-  if (!has_frame())
-    return;
+  // Should reset content size when setting menu.
+  gfx::Size content_size = GetContentSize();
+  bool should_reset_size = use_content_size_ && has_frame() &&
+                           !IsMenuBarAutoHide() &&
+                           ((!!menu_model) != root_view_->HasMenu());
 
-  if (!menu_bar_) {
-    gfx::Size content_size = GetContentSize();
-    menu_bar_.reset(new MenuBar(this));
-    menu_bar_->set_owned_by_client();
+  root_view_->SetMenu(menu_model);
 
-    if (!menu_bar_autohide_) {
-      SetMenuBarVisibility(true);
-      if (use_content_size_) {
-        // Enlarge the size constraints for the menu.
-        extensions::SizeConstraints constraints = GetContentSizeConstraints();
-        if (constraints.HasMinimumSize()) {
-          gfx::Size min_size = constraints.GetMinimumSize();
-          min_size.set_height(min_size.height() + kMenuBarHeight);
-          constraints.set_minimum_size(min_size);
-        }
-        if (constraints.HasMaximumSize()) {
-          gfx::Size max_size = constraints.GetMaximumSize();
-          max_size.set_height(max_size.height() + kMenuBarHeight);
-          constraints.set_maximum_size(max_size);
-        }
-        SetContentSizeConstraints(constraints);
-
-        // Resize the window to make sure content size is not changed.
-        SetContentSize(content_size);
-      }
+  if (should_reset_size) {
+    // Enlarge the size constraints for the menu.
+    int menu_bar_height = root_view_->GetMenuBarHeight();
+    extensions::SizeConstraints constraints = GetContentSizeConstraints();
+    if (constraints.HasMinimumSize()) {
+      gfx::Size min_size = constraints.GetMinimumSize();
+      min_size.set_height(min_size.height() + menu_bar_height);
+      constraints.set_minimum_size(min_size);
     }
-  }
+    if (constraints.HasMaximumSize()) {
+      gfx::Size max_size = constraints.GetMaximumSize();
+      max_size.set_height(max_size.height() + menu_bar_height);
+      constraints.set_maximum_size(max_size);
+    }
+    SetContentSizeConstraints(constraints);
 
-  menu_bar_->SetMenu(menu_model);
-  Layout();
+    // Resize the window to make sure content size is not changed.
+    SetContentSize(content_size);
+  }
 }
 
 void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
@@ -1036,35 +996,19 @@ void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
-  menu_bar_autohide_ = auto_hide;
+  root_view_->SetAutoHideMenuBar(auto_hide);
 }
 
 bool NativeWindowViews::IsMenuBarAutoHide() {
-  return menu_bar_autohide_;
+  return root_view_->IsMenuBarAutoHide();
 }
 
 void NativeWindowViews::SetMenuBarVisibility(bool visible) {
-  if (!menu_bar_ || menu_bar_visible_ == visible)
-    return;
-
-  // Always show the accelerator when the auto-hide menu bar shows.
-  if (menu_bar_autohide_)
-    menu_bar_->SetAcceleratorVisibility(visible);
-
-  menu_bar_visible_ = visible;
-  if (visible) {
-    DCHECK_EQ(child_count(), 1);
-    AddChildView(menu_bar_.get());
-  } else {
-    DCHECK_EQ(child_count(), 2);
-    RemoveChildView(menu_bar_.get());
-  }
-
-  Layout();
+  root_view_->SetMenuBarVisibility(visible);
 }
 
 bool NativeWindowViews::IsMenuBarVisible() {
-  return menu_bar_visible_;
+  return root_view_->IsMenuBarVisible();
 }
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
@@ -1102,9 +1046,10 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
       widget()->non_client_view()->GetWindowBoundsForClientBounds(dpi_bounds));
 #endif
 
-  if (menu_bar_ && menu_bar_visible_) {
-    window_bounds.set_y(window_bounds.y() - kMenuBarHeight);
-    window_bounds.set_height(window_bounds.height() + kMenuBarHeight);
+  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
+    int menu_bar_height = root_view_->GetMenuBarHeight();
+    window_bounds.set_y(window_bounds.y() - menu_bar_height);
+    window_bounds.set_height(window_bounds.height() + menu_bar_height);
   }
   return window_bounds;
 }
@@ -1130,9 +1075,10 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
       display::win::ScreenWin::ScreenToDIPSize(hwnd, content_bounds.size()));
 #endif
 
-  if (menu_bar_ && menu_bar_visible_) {
-    content_bounds.set_y(content_bounds.y() + kMenuBarHeight);
-    content_bounds.set_height(content_bounds.height() - kMenuBarHeight);
+  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
+    int menu_bar_height = root_view_->GetMenuBarHeight();
+    content_bounds.set_y(content_bounds.y() + menu_bar_height);
+    content_bounds.set_height(content_bounds.height() - menu_bar_height);
   }
   return content_bounds;
 }
@@ -1175,10 +1121,10 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
                  GetWeakPtr()));
 
   // Hide menu bar when window is blured.
-  if (!active && menu_bar_autohide_ && menu_bar_visible_)
+  if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
 
-  menu_bar_alt_pressed_ = false;
+  root_view_->ResetAltState();
 }
 
 void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
@@ -1255,7 +1201,7 @@ bool NativeWindowViews::ShouldHandleSystemCommands() const {
 }
 
 views::View* NativeWindowViews::GetContentsView() {
-  return this;
+  return root_view_.get();
 }
 
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
@@ -1277,7 +1223,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, this);
+  return new NativeWindowClientView(widget, root_view_.get(), this);
 }
 
 views::NonClientFrameView* NativeWindowViews::CreateNonClientFrameView(
@@ -1304,86 +1250,9 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-  keyboard_event_handler_->HandleKeyboardEvent(event, GetFocusManager());
-
-  if (!menu_bar_)
-    return;
-
-  // Show accelerator when "Alt" is pressed.
-  if (menu_bar_visible_ && IsAltKey(event))
-    menu_bar_->SetAcceleratorVisibility(event.GetType() ==
-                                        blink::WebInputEvent::kRawKeyDown);
-
-  // Show the submenu when "Alt+Key" is pressed.
-  if (event.GetType() == blink::WebInputEvent::kRawKeyDown &&
-      !IsAltKey(event) && IsAltModifier(event)) {
-    if (!menu_bar_visible_ &&
-        (menu_bar_->HasAccelerator(event.windows_key_code)))
-      SetMenuBarVisibility(true);
-    menu_bar_->ActivateAccelerator(event.windows_key_code);
-    return;
-  }
-
-  if (!menu_bar_autohide_)
-    return;
-
-  // Toggle the menu bar only when a single Alt is released.
-  if (event.GetType() == blink::WebInputEvent::kRawKeyDown && IsAltKey(event)) {
-    // When a single Alt is pressed:
-    menu_bar_alt_pressed_ = true;
-  } else if (event.GetType() == blink::WebInputEvent::kKeyUp &&
-             IsAltKey(event) && menu_bar_alt_pressed_) {
-    // When a single Alt is released right after a Alt is pressed:
-    menu_bar_alt_pressed_ = false;
-    SetMenuBarVisibility(!menu_bar_visible_);
-  } else {
-    // When any other keys except single Alt have been pressed/released:
-    menu_bar_alt_pressed_ = false;
-  }
-}
-
-void NativeWindowViews::Layout() {
-  if (!content_view_)  // Not ready yet.
-    return;
-
-  const auto size = GetContentsBounds().size();
-  const auto menu_bar_bounds =
-      menu_bar_visible_ ? gfx::Rect(0, 0, size.width(), kMenuBarHeight)
-                        : gfx::Rect();
-  if (menu_bar_) {
-    menu_bar_->SetBoundsRect(menu_bar_bounds);
-  }
-
-  content_view_->SetBoundsRect(
-      gfx::Rect(0, menu_bar_bounds.height(), size.width(),
-                size.height() - menu_bar_bounds.height()));
-}
-
-gfx::Size NativeWindowViews::GetMinimumSize() const {
-  return NativeWindow::GetMinimumSize();
-}
-
-gfx::Size NativeWindowViews::GetMaximumSize() const {
-  return NativeWindow::GetMaximumSize();
-}
-
-bool NativeWindowViews::AcceleratorPressed(const ui::Accelerator& accelerator) {
-  return accelerator_util::TriggerAcceleratorTableCommand(&accelerator_table_,
-                                                          accelerator);
-}
-
-void NativeWindowViews::RegisterAccelerators(AtomMenuModel* menu_model) {
-  // Clear previous accelerators.
-  views::FocusManager* focus_manager = GetFocusManager();
-  accelerator_table_.clear();
-  focus_manager->UnregisterAccelerators(this);
-
-  // Register accelerators with focus manager.
-  accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
-  for (const auto& iter : accelerator_table_) {
-    focus_manager->RegisterAccelerator(
-        iter.first, ui::AcceleratorManager::kNormalPriority, this);
-  }
+  keyboard_event_handler_->HandleKeyboardEvent(event,
+                                               root_view_->GetFocusManager());
+  root_view_->HandleKeyEvent(event);
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
