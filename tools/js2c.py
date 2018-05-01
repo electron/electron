@@ -24,14 +24,15 @@ namespace node {{
 
 
 def main():
-  natives = os.path.abspath(sys.argv[1])
-  js_source_files = glob.glob('{0}/*.js'.format(sys.argv[2]))
+  node_path = os.path.abspath(sys.argv[1])
+  natives = os.path.abspath(sys.argv[2])
+  js_source_files = glob.glob('{0}/*.js'.format(sys.argv[3]))
 
-  call_js2c(natives, js_source_files)
+  call_js2c(node_path, natives, js_source_files)
 
 
-def call_js2c(natives, js_source_files):
-  js2c = os.path.join(SOURCE_ROOT, 'vendor', 'node', 'tools', 'js2c.py')
+def call_js2c(node_path, natives, js_source_files):
+  js2c = os.path.join(node_path, 'tools', 'js2c.py')
   src_dir = os.path.dirname(js_source_files[0])
   with scoped_cwd(src_dir):
     subprocess.check_call(

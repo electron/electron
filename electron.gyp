@@ -304,6 +304,7 @@
         '<(libchromiumcontent_src_dir)/third_party/',
         '<(libchromiumcontent_src_dir)/components/cdm',
         '<(libchromiumcontent_src_dir)/third_party/widevine',
+        '<(libchromiumcontent_src_dir)/third_party/widevine/cdm/stub',
         '<(libchromiumcontent_src_dir)/third_party/protobuf/src',
         # The 'third_party/webrtc/modules/desktop_capture/desktop_capture_options.h' is using 'rtc_base/constructormagic.h'.
         '<(libchromiumcontent_src_dir)/third_party/webrtc',
@@ -584,6 +585,7 @@
           'action': [
             'python',
             'tools/js2c.py',
+            'vendor/node',
             '<@(_outputs)',
             '<(js2c_input_dir)',
           ],

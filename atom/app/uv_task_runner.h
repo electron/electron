@@ -10,7 +10,7 @@
 #include "base/callback.h"
 #include "base/location.h"
 #include "base/single_thread_task_runner.h"
-#include "vendor/node/deps/uv/include/uv.h"
+#include "uv.h"  // NOLINT(build/include)
 
 namespace atom {
 
