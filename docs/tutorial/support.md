@@ -12,7 +12,7 @@ you can interact with the community in these locations:
 - [`electron`](https://discuss.atom.io/c/electron) category on the Atom
 forums
 - `#atom-shell` channel on Freenode
-- [`Atom`](https://atom-slack.herokuapp.com) channel on Slack
+- [`Electron`](https://atom-slack.herokuapp.com) channel on Atom's Slack
 - [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 - [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
 - [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
