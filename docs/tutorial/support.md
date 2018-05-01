@@ -72,9 +72,6 @@ Both `ia32` (`x86`) and `x64` (`amd64`) binaries are provided for Windows.
 Running Electron apps on Windows for ARM devices is possible by using the
 ia32 binary.
 
-Another option for running Electron apps on Windows for `ARM` devices is
-to use the ia32 emulator that comes with Windows for ARM.
-
 ### Linux
 
 The prebuilt `ia32` (`i686`) and `x64` (`amd64`) binaries of Electron are built on
