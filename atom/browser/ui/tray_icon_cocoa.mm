@@ -90,7 +90,7 @@ const CGFloat kVerticalTitleMargin = 2;
   CGFloat thickness = [[statusItem_ statusBar] thickness];
 
   // Draw the system bar background.
-  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:highlight];
+  [statusItem_ drawStatusBarBackgroundInRect:self.bounds withHighlight:shouldHighlight];
 
   // Determine which image to use.
   NSImage* image = image_.get();
