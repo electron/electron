@@ -54,9 +54,8 @@ describe('security warnings', () => {
   })
 
   afterEach(() => {
-    closeWindow(w).then(() => { w = null })
-
     useCsp = true
+    return closeWindow(w).then(() => { w = null })
   })
 
   it('should warn about Node.js integration with remote content', (done) => {
