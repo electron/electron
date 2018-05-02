@@ -14,6 +14,7 @@
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
+#include "atom/browser/ui/cocoa/root_view_mac.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -236,7 +237,8 @@ namespace atom {
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent),
-      content_view_(nil),
+      root_view_(new RootViewMac(this)),
+      content_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -458,9 +460,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* buttonsView = [[[CustomWindowButtonView alloc]
-          initWithFrame:NSZeroRect] autorelease];
-      [[window_ contentView] addSubview:buttonsView];
+      buttons_view_.reset(
+          [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
+      [[window_ contentView] addSubview:buttons_view_];
     } else {
       if (title_bar_style_ != NORMAL) {
         if (base::mac::IsOS10_9()) {
@@ -490,21 +492,21 @@ NativeWindowMac::~NativeWindowMac() {
 
 void NativeWindowMac::SetContentView(
     brightray::InspectableWebContents* web_contents) {
+  views::View* root_view = GetContentsView();
   if (content_view_)
-    [content_view_ removeFromSuperview];
+    root_view->RemoveChildView(content_view_);
 
-  content_view_ = web_contents->GetView()->GetNativeView();
-  [content_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [content_view_ setFrame:[[window_ contentView] bounds]];
+  content_view_ = new views::NativeViewHost();
+  root_view->AddChildView(content_view_);
+  content_view_->Attach(web_contents->GetView()->GetNativeView());
 
-  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-    NSView* buttonsView = [[[window_ contentView] subviews] lastObject];
-    [[window_ contentView] addSubview:content_view_
-                           positioned:NSWindowBelow
-                           relativeTo:buttonsView];
-  } else {
-    [[window_ contentView] addSubview:content_view_];
+  if (buttons_view_) {
+    // Ensure the buttons view are always floated on the top.
+    [buttons_view_ removeFromSuperview];
+    [[window_ contentView] addSubview:buttons_view_];
   }
+
+  root_view->Layout();
 }
 
 void NativeWindowMac::Close() {
@@ -1300,6 +1302,10 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 
 bool NativeWindowMac::CanResize() const {
   return resizable_;
+}
+
+views::View* NativeWindowMac::GetContentsView() {
+  return root_view_.get();
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,

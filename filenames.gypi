@@ -330,6 +330,8 @@
       'atom/browser/ui/cocoa/atom_touch_bar.mm',
       'atom/browser/ui/cocoa/views_delegate_mac.h',
       'atom/browser/ui/cocoa/views_delegate_mac.mm',
+      'atom/browser/ui/cocoa/root_view_mac.mm',
+      'atom/browser/ui/cocoa/root_view_mac.h',
       'atom/browser/ui/cocoa/touch_bar_forward_declarations.h',
       'atom/browser/ui/drag_util_mac.mm',
       'atom/browser/ui/drag_util_views.cc',
