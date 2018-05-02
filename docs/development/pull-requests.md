@@ -12,10 +12,10 @@
   * [Step 6: Rebase](#step-6-rebase)
   * [Step 7: Test](#step-7-test)
   * [Step 8: Push](#step-8-push)
-  * [Step 9: Opening the Pull Request](#step-8-opening-the-pull-request)
-  * [Step 10: Discuss and Update](#step-9-discuss-and-update)
+  * [Step 9: Opening the Pull Request](#step-9-opening-the-pull-request)
+  * [Step 10: Discuss and Update](#step-10-discuss-and-update)
     * [Approval and Request Changes Workflow](#approval-and-request-changes-workflow)
-  * [Step 11: Landing](#step-10-landing)
+  * [Step 11: Landing](#step-11-landing)
   * [Continuous Integration Testing](#continuous-integration-testing)
 
 ## Setting up your local environment
