@@ -63,7 +63,7 @@ an issue:
 * Packaging
   * [Code Signing](tutorial/code-signing.md)
 * [Distribution](tutorial/application-distribution.md)
-  * [Supported Platforms](tutorial/supported-platforms.md)
+  * [Support](tutorial/support.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)

@@ -122,6 +122,8 @@ void AtomRendererClient::DidCreateScriptContext(
 void AtomRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
   injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
