@@ -300,6 +300,14 @@ Returns:
 
 Emitted when the renderer process crashes or is killed.
 
+#### Event: 'unresponsive'
+
+Emitted when the web page becomes unresponsive.
+
+#### Event: 'responsive'
+
+Emitted when the unresponsive web page becomes responsive again.
+
 #### Event: 'plugin-crashed'
 
 Returns:
