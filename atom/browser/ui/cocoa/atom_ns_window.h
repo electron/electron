@@ -37,8 +37,10 @@ class ScopedDisableResize {
 @property BOOL disableKeyOrMainWindow;
 @property NSPoint windowButtonsOffset;
 @property(nonatomic, retain) NSView* vibrantView;
-- (void)setShell:(atom::NativeWindowMac*)shell;
+- (id)initWithShell:(atom::NativeWindowMac*)shell
+          styleMask:(NSUInteger)styleMask;
 - (atom::NativeWindowMac*)shell;
+- (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (void)enableWindowButtonsOffset;
 - (void)toggleFullScreenMode:(id)sender;
 @end

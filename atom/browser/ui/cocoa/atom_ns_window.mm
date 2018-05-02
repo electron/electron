@@ -7,6 +7,7 @@
 #include "atom/browser/native_window_mac.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
+#include "ui/base/cocoa/window_size_constants.h"
 
 namespace atom {
 
@@ -23,12 +24,23 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize windowButtonsOffset;
 @synthesize vibrantView;
 
-- (void)setShell:(atom::NativeWindowMac*)shell {
-  shell_ = shell;
+- (id)initWithShell:(atom::NativeWindowMac*)shell
+          styleMask:(NSUInteger)styleMask {
+  if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
+                               styleMask:styleMask
+                                 backing:NSBackingStoreBuffered
+                                   defer:YES])) {
+    shell_ = shell;
+  }
+  return self;
 }
 
 - (atom::NativeWindowMac*)shell {
   return shell_;
+}
+
+- (NSRect)originalContentRectForFrameRect:(NSRect)frameRect {
+  return [super contentRectForFrameRect:frameRect];
 }
 
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
@@ -50,6 +62,13 @@ bool ScopedDisableResize::disable_resize_ = false;
   } else if (event.deltaX == 1.0) {
     shell_->NotifyWindowSwipe("left");
   }
+}
+
+- (NSRect)contentRectForFrameRect:(NSRect)frameRect {
+  if (shell_->has_frame())
+    return [super contentRectForFrameRect:frameRect];
+  else
+    return frameRect;
 }
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {

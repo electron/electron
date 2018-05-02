@@ -232,7 +232,6 @@ void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
   // For frameless window, resize the view to cover full window.
   if ([self superview])
     size = [[self superview] bounds].size;
-  // [super setFrameSize:size];
   auto super_impl = reinterpret_cast<decltype(&SetFrameSize)>(
       [[self superclass] instanceMethodForSelector:_cmd]);
   super_impl(self, _cmd, size);
@@ -332,11 +331,10 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new AtomNativeWidgetMac(styleMask, widget());
+  params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
   widget()->Init(params);
   window_ = static_cast<AtomNSWindow*>(widget()->GetNativeWindow());
 
-  [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
@@ -714,7 +712,7 @@ void NativeWindowMac::SetContentSizeConstraints(
     // will result in actual content size being larger.
     if (!has_frame()) {
       NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
-      NSRect content = [window_ contentRectForFrameRect:frame];
+      NSRect content = [window_ originalContentRectForFrameRect:frame];
       return content.size;
     } else {
       return NSMakeSize(size.width(), size.height());
