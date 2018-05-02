@@ -350,8 +350,8 @@ struct Converter<content::CertificateRequestResultType> {
 namespace atom {
 
 ProcessMetric::ProcessMetric(int type,
-    base::ProcessId pid,
-    std::unique_ptr<base::ProcessMetrics> metrics) {
+                             base::ProcessId pid,
+                             std::unique_ptr<base::ProcessMetrics> metrics) {
   this->type = type;
   this->pid = pid;
   this->metrics = std::move(metrics);
@@ -864,25 +864,52 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
-bool App::MakeSingleInstance(
-    const ProcessSingleton::NotificationCallback& callback) {
+bool App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
+                           const base::FilePath& cwd) {
+  Emit("second-instance", cmd, cwd);
+  // This value is used literally no where, but we need it for Reasons(tm)
+  return false;
+}
+
+bool App::IsPrimaryInstance(mate::Arguments* args) {
+  if (single_instance_state_ == SingleInstanceState::UNINITIALIZED) {
+    args->ThrowError(
+        "You can not check if you are the primary instance without calling "
+        "makeSingleInstance");
+  }
+  return single_instance_state_ == SingleInstanceState::PRIMARY;
+}
+
+bool App::IsSingleInstance() {
   if (process_singleton_)
+    return true;
+  return false;
+}
+
+bool App::MakeSingleInstance() {
+  if (IsSingleInstance())
     return false;
 
   base::FilePath user_dir;
   PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+
+  ProcessSingleton::NotificationCallback cb =
+      base::Bind(&App::OnSecondInstance, base::Unretained(this));
+
   process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+      user_dir, base::Bind(NotificationCallbackWrapper, cb)));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
+      single_instance_state_ = SingleInstanceState::SECONDARY;
       return true;
     }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
+      single_instance_state_ = SingleInstanceState::PRIMARY;
       return false;
   }
 }
@@ -1252,6 +1279,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
+      .SetMethod("isSingleInstance", &App::IsSingleInstance)
+      .SetMethod("isPrimaryInstance", &App::IsPrimaryInstance)
       .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
       .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
       .SetMethod("relaunch", &App::Relaunch)

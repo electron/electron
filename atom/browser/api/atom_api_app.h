@@ -45,6 +45,12 @@ namespace atom {
 enum class JumpListResult : int;
 #endif
 
+enum SingleInstanceState {
+  UNINITIALIZED,
+  PRIMARY,
+  SECONDARY,
+};
+
 struct ProcessMetric {
   int type;
   base::ProcessId pid;
@@ -178,8 +184,11 @@ class App : public AtomBrowserClient::Delegate,
 
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
-  bool MakeSingleInstance(
-      const ProcessSingleton::NotificationCallback& callback);
+  bool OnSecondInstance(const base::CommandLine::StringVector& cmd,
+                        const base::FilePath& cwd);
+  bool IsPrimaryInstance(mate::Arguments* args);
+  bool IsSingleInstance();
+  bool MakeSingleInstance();
   void ReleaseSingleInstance();
   bool Relaunch(mate::Arguments* args);
   void DisableHardwareAcceleration(mate::Arguments* args);
@@ -228,6 +237,9 @@ class App : public AtomBrowserClient::Delegate,
   using ProcessMetricMap =
       std::unordered_map<base::ProcessId, std::unique_ptr<atom::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
+
+  SingleInstanceState single_instance_state_ =
+      SingleInstanceState::UNINITIALIZED;
 
   DISALLOW_COPY_AND_ASSIGN(App);
 };

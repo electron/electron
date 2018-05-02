@@ -373,6 +373,22 @@ app.on('session-created', (event, session) => {
 })
 ```
 
+### Event: 'second-instance'
+
+Returns:
+
+* `argv` String[] - An array of the second instance's command line arguments
+* `workingDirectory` String - The second instance's working directory
+
+This event will be emitted inside the primary instance of your application
+when a second instance has been executed. `argv` is an Array of the second instance's
+command line arguments, and `workingDirectory` is its current working directory. Usually
+applications respond to this by making their primary window focused and
+non-minimized.
+
+This event is guaranteed to be emitted after the `ready` event of `app`
+gets emitted.
+
 ## Methods
 
 The `app` object has the following methods:
@@ -742,32 +758,30 @@ app.setJumpList([
 ])
 ```
 
-### `app.makeSingleInstance(callback)`
-
-* `callback` Function
-  * `argv` String[] - An array of the second instance's command line arguments
-  * `workingDirectory` String - The second instance's working directory
-
-Returns `Boolean`.
+### `app.makeSingleInstance()`
 
 This method makes your application a Single Instance Application - instead of
 allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-`callback` will be called by the first instance with `callback(argv, workingDirectory)`
-when a second instance has been executed. `argv` is an Array of the second instance's
-command line arguments, and `workingDirectory` is its current working directory. Usually
-applications respond to this by making their primary window focused and
-non-minimized.
+### `app.isSingleInstance()`
 
-The `callback` is guaranteed to be executed after the `ready` event of `app`
-gets emitted.
+Returns `Boolean`
 
-This method returns `false` if your process is the primary instance of the
-application and your app should continue loading. And returns `true` if your
+This methods returns whether or not `makeSingleInstance` has been called.
+
+### `app.isPrimaryInstance()`
+
+Returns `Boolean`
+
+This method returns `true` if your process is the primary instance of the
+application and your app should continue loading. And returns `false` if your
 process has sent its parameters to another instance, and you should immediately
 quit.
+
+This method will throw an error if you call it without first calling
+`app.makeSingleInstance()`.
 
 On macOS the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
@@ -782,7 +796,9 @@ starts:
 const {app} = require('electron')
 let myWindow = null
 
-const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
+app.makeSingleInstance()
+
+app.on('second-instance', (commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
   if (myWindow) {
     if (myWindow.isMinimized()) myWindow.restore()
@@ -790,7 +806,9 @@ const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) 
   }
 })
 
-if (isSecondInstance) {
+const isPrimaryInstance = app.isPrimaryInstance()
+
+if (!isPrimaryInstance) {
   app.quit()
 }
 
