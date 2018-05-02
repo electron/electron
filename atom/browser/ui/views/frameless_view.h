@@ -18,7 +18,7 @@ class NativeWindowViews;
 class FramelessView : public views::NonClientFrameView {
  public:
   FramelessView();
-  virtual ~FramelessView();
+  ~FramelessView() override;
 
   virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
