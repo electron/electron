@@ -129,10 +129,6 @@ closed.
 as a successfully downloaded update will always be applied the next time the 
 application starts.
 
-**Note:** If the application is quit without calling this API after the
-`update-downloaded` event has been emitted, the application will still be
-replaced by the updated one on the next run.
-
 [squirrel-mac]: https://github.com/Squirrel/Squirrel.Mac
 [server-support]: https://github.com/Squirrel/Squirrel.Mac#server-support
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
