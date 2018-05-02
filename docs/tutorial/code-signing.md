@@ -1,8 +1,15 @@
 # Code Signing
 
 Code signing is a security technology that you use to certify that an app was 
-created by you. Once an app is signed, the system can detect any change to the 
-app, whether the change is introduced accidentally or by malicious code.
+created by you.
+
+On macOS the system can detect any change to the  app, whether the change is
+introduced accidentally or by malicious code.
+
+On Windows the system assigns a trust level to your code signing certificate which
+if you don't have, or if your trust level is low will cause security dialogs to
+appear when users start using your application.  Trust level builds over time
+so it's better to start code signing as early as possible.
 
 While it is possible to distribute unsigned apps, it is not recommended. 
 For example, here's what macOS users see when attempting to start an unsigned app:
