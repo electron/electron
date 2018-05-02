@@ -188,6 +188,7 @@ class App : public AtomBrowserClient::Delegate,
                         const base::FilePath& cwd);
   bool IsPrimaryInstance(mate::Arguments* args);
   bool IsSingleInstance();
+  // TODO(MarshallOfSound): Remove return value in 4.0
   bool MakeSingleInstance();
   void ReleaseSingleInstance();
   bool Relaunch(mate::Arguments* args);
