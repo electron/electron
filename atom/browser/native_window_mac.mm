@@ -244,7 +244,9 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
     // [BridgedContentView viewDidMoveToSuperview];
     auto original = reinterpret_cast<decltype(&ViewDidMoveToSuperview)>(
         original_view_did_move_to_superview);
-    return original(self, _cmd);
+    if (original)
+      original(self, _cmd);
+    return;
   }
   [self setFrame:[[self superview] bounds]];
 }
