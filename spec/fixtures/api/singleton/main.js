@@ -5,7 +5,7 @@ app.once('ready', () => {
 })
 
 const shouldExit = app.makeSingleInstance(() => {
-  process.nextTick(() => app.exit(0))
+  setImmediate(() => app.exit(0))
 })
 
 if (shouldExit) {
