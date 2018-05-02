@@ -83,24 +83,52 @@ Note that multiple commits often get squashed when they are landed.
 
 #### Commit message guidelines
 
-A good commit message should describe what changed and why.
+A good commit message should describe what changed and why. The Electron project
+uses [semantic commit messages](https://conventionalcommits.org/) to streamline 
+the release process.
+
+Before a pull request can be merged, it should include at least one semantic 
+commit message, though it's not necessary for all commits in the pull request 
+to be semantic. Alternatively, you can **update your pull request title**  to 
+start with a semantic prefix.
+
+Examples of commit messages with semantic prefixes:
+
+- `fix: don't overwrite prevent_default if default wasn't prevented`
+- `feat: add app.isPackaged() method`
+- `docs: app.isDefaultProtocolClient is now available on Linux` 
+
+Common prefixes:
+
+  - fix: A bug fix
+  - feat: A new feature
+  - docs: Documentation changes
+  - test: Adding missing tests or correcting existing tests
+  - build: Changes that affect the build system
+  - ci: Changes to our CI configuration files and scripts
+  - perf: A code change that improves performance
+  - refactor: A code change that neither fixes a bug nor adds a feature
+  - style: Changes that do not affect the meaning of the code (linting)
+
+Other things to keep in mind when writing a commit message:
 
 1. The first line should:
    - contain a short description of the change (preferably 50 characters or less,
      and no more than 72 characters)
    - be entirely in lowercase with the exception of proper nouns, acronyms, and
    the words that refer to code, like function/variable names
-
-   Examples:
-   - `updated osx build documentation for new sdk`
-   - `fixed typos in atom_api_menu.h`
-
-
 2. Keep the second line blank.
 3. Wrap all other lines at 72 columns.
 
-See [this article](https://chris.beams.io/posts/git-commit/) for more examples
-of how to write good git commit messages.
+#### Breaking Changes
+
+A commit that has the text `BREAKING CHANGE:` at the beginning of its optional 
+body or footer section introduces a breaking API change (correlating with Major 
+in semantic versioning). A breaking change can be part of commits of any type. 
+e.g., a `fix:`, `feat:` & `chore:` types would all be valid, in addition to any 
+other type.
+
+See [conventionalcommits.org](https://conventionalcommits.org) for more details.
 
 ### Step 6: Rebase
 
