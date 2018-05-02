@@ -5,6 +5,7 @@
 #include "atom/browser/native_window_mac.h"
 
 #include <AvailabilityMacros.h>
+#include <objc/objc-runtime.h>
 
 #include <string>
 
@@ -127,31 +128,6 @@
 
 @end
 
-// This view always takes the size of its superview. It is intended to be used
-// as a NSWindow's contentView.  It is needed because NSWindow's implementation
-// explicitly resizes the contentView at inopportune times.
-@interface FullSizeContentView : NSView
-@end
-
-@implementation FullSizeContentView
-
-// This method is directly called by NSWindow during a window resize on OSX
-// 10.10.0, beta 2. We must override it to prevent the content view from
-// shrinking.
-- (void)setFrameSize:(NSSize)size {
-  if ([self superview])
-    size = [[self superview] bounds].size;
-  [super setFrameSize:size];
-}
-
-// The contentView gets moved around during certain full-screen operations.
-// This is less than ideal, and should eventually be removed.
-- (void)viewDidMoveToSuperview {
-  [self setFrame:[[self superview] bounds]];
-}
-
-@end
-
 #if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum { NSWindowTabbingModeDisallowed = 2 };
@@ -233,6 +209,48 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 }  // namespace mate
 
 namespace atom {
+
+namespace {
+
+bool IsFramelessWindow(NSView* view) {
+  NativeWindow* window = [static_cast<AtomNSWindow*>([view window]) shell];
+  return window && !window->has_frame();
+}
+
+IMP original_set_frame_size = nullptr;
+IMP original_view_did_move_to_superview = nullptr;
+
+// This method is directly called by NSWindow during a window resize on OSX
+// 10.10.0, beta 2. We must override it to prevent the content view from
+// shrinking.
+void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
+  if (!IsFramelessWindow(self)) {
+    auto original =
+        reinterpret_cast<decltype(&SetFrameSize)>(original_set_frame_size);
+    return original(self, _cmd, size);
+  }
+  // For frameless window, resize the view to cover full window.
+  if ([self superview])
+    size = [[self superview] bounds].size;
+  // [super setFrameSize:size];
+  auto super_impl = reinterpret_cast<decltype(&SetFrameSize)>(
+      [[self superclass] instanceMethodForSelector:_cmd]);
+  super_impl(self, _cmd, size);
+}
+
+// The contentView gets moved around during certain full-screen operations.
+// This is less than ideal, and should eventually be removed.
+void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
+  if (!IsFramelessWindow(self)) {
+    // [BridgedContentView viewDidMoveToSuperview];
+    auto original = reinterpret_cast<decltype(&ViewDidMoveToSuperview)>(
+        original_view_did_move_to_superview);
+    return original(self, _cmd);
+  }
+  [self setFrame:[[self superview] bounds]];
+}
+
+}  // namespace
 
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
@@ -450,11 +468,15 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     // produces warnings. To eliminate the warnings, we resize the contentView
     // to fill the window, and add subviews to that.
     // http://crbug.com/380412
-    container_view_.reset([[FullSizeContentView alloc] init]);
-    [container_view_
-        setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
-    [window_ setContentView:container_view_];
+    if (!original_set_frame_size) {
+      Class cl = [[window_ contentView] class];
+      original_set_frame_size = class_replaceMethod(
+          cl, @selector(setFrameSize:), (IMP)SetFrameSize, "v@:{_NSSize=ff}");
+      original_view_did_move_to_superview =
+          class_replaceMethod(cl, @selector(viewDidMoveToSuperview),
+                              (IMP)ViewDidMoveToSuperview, "v@:");
+      [[window_ contentView] viewDidMoveToWindow];
+    }
 
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];

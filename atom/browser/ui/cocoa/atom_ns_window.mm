@@ -27,6 +27,10 @@ bool ScopedDisableResize::disable_resize_ = false;
   shell_ = shell;
 }
 
+- (atom::NativeWindowMac*)shell {
+  return shell_;
+}
+
 - (NSTouchBar*)makeTouchBar API_AVAILABLE(macosx(10.12.2)) {
   if (shell_->touch_bar())
     return [shell_->touch_bar() makeTouchBar];
