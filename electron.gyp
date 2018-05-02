@@ -281,6 +281,8 @@
       ],
       'sources': [
         '<@(lib_sources)',
+        '<@(native_mate_files)',
+        '<(SHARED_INTERMEDIATE_DIR)/atom_natives.h',
       ],
       'include_dirs': [
         '.',
@@ -358,6 +360,16 @@
             'vendor/breakpad/breakpad.gyp:breakpad_sender',
           ],
         }],  # OS=="win"
+        ['OS=="mac"', {
+          'sources': [
+            '<@(lib_sources_mac)',
+          ],
+        }],
+        ['OS!="mac"', {
+          'sources': [
+            '<@(lib_sources_views)',
+          ],
+        }],
         ['OS=="mac" and mas_build==0', {
           'dependencies': [
             'vendor/crashpad/client/client.gyp:crashpad_client',
