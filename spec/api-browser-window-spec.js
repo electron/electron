@@ -3065,7 +3065,9 @@ describe('BrowserWindow module', () => {
   describe('offscreen rendering', () => {
     beforeEach(function () {
       if (!features.isOffscreenRenderingEnabled()) {
-        return
+        // XXX(alexeykuzmin): "afterEach" hook is not called
+        // for skipped tests, we have to close the window manually.
+        return closeTheWindow().then(() => { this.skip() })
       }
 
       if (w != null) w.destroy()
