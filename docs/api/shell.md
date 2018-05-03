@@ -53,8 +53,8 @@ example, mailto: URLs in the user's default mail agent).
 
 * `fullPath` String
 
-Returns `Promise` - Which is resolved to `undefined` in case of success or
-rejected with `Error` in case of failure.
+Returns `Promise` - Which is fulfilled in case of success or rejected with
+`Error` in case of failure.
 
 Asynchronously move the given file or directory to trash.
 

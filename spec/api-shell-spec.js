@@ -81,8 +81,19 @@ describe('shell module', () => {
   })
 
   describe('shell.moveItemToTrash', () => {
-    const filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
-    fs.writeFileSync(filePath, '# Hello')
+    let filePath
+    beforeEach(() => {
+      filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
+      fs.writeFileSync(filePath, '# Hello')
+    })
+
+    afterEach(() => {
+      try {
+        fs.unlinkSync(filePath)
+      } catch (e) {
+        // Meh.
+      }
+    })
 
     it('moves file to trash asynchronously', done => {
       shell.moveItemToTrash(filePath).then(() => {
@@ -105,8 +116,19 @@ describe('shell module', () => {
   })
 
   describe('shell.moveItemToTrashSync', () => {
-    const filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
-    fs.writeFileSync(filePath, '# Hello')
+    let filePath
+    beforeEach(() => {
+      filePath = path.join(os.tmpdir(), `${Date.now()}.md`)
+      fs.writeFileSync(filePath, '# Hello')
+    })
+
+    afterEach(() => {
+      try {
+        fs.unlinkSync(filePath)
+      } catch (e) {
+        // Meh.
+      }
+    })
 
     it('moves file to trash synchronously', () => {
       assert.equal(fs.existsSync(filePath), true)
