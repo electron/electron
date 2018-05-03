@@ -16,11 +16,15 @@
 
 using content::BrowserThread;
 
+namespace {
+
+static NSMenu* applicationMenu_ = nil;
+
+}  // namespace
+
 namespace atom {
 
 namespace api {
-
-static NSMenu* applicationMenu_ = nil;
 
 MenuMac::MenuMac(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
     : Menu(isolate, wrapper), weak_factory_(this) {}
