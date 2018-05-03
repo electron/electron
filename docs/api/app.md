@@ -801,12 +801,12 @@ app.on('second-instance', (commandLine, workingDirectory) => {
 })
 
 if (!gotTheLock) {
-  return app.quit()
+  app.quit()
+} else {
+  // Create myWindow, load the rest of the app, etc...
+  app.on('ready', () => {
+  })
 }
-
-// Create myWindow, load the rest of the app, etc...
-app.on('ready', () => {
-})
 ```
 
 ### `app.hasSingleInstanceLock()`
