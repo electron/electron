@@ -4,12 +4,10 @@ app.once('ready', () => {
   console.log('started')  // ping parent
 })
 
-const gotTheLock = app.requestSingleInstanceLock()
-
-app.on('second-instance', () => {
+const shouldExit = app.makeSingleInstance(() => {
   setImmediate(() => app.exit(0))
 })
 
-if (!gotTheLock) {
+if (shouldExit) {
   app.exit(1)
 }

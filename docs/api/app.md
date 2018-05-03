@@ -758,30 +758,24 @@ app.setJumpList([
 ])
 ```
 
-### `app.makeSingleInstance()`
+### `app.requestSingleInstanceLock()`
+
+Returns `Boolean`
 
 This method makes your application a Single Instance Application - instead of
 allowing multiple instances of your app to run, this will ensure that only a
 single instance of your app is running, and other instances signal this
 instance and exit.
 
-### `app.isSingleInstance()`
+The return value of this method indicates whether or not this instance of your
+application successfully obtained the lock.  If it failed to obtain the lock
+you can assume that another instance of your application is already running with
+the lock and exit immediately.
 
-Returns `Boolean`
-
-This methods returns whether or not `makeSingleInstance` has been called.
-
-### `app.isPrimaryInstance()`
-
-Returns `Boolean`
-
-This method returns `true` if your process is the primary instance of the
-application and your app should continue loading. And returns `false` if your
-process has sent its parameters to another instance, and you should immediately
-quit.
-
-This method will throw an error if you call it without first calling
-`app.makeSingleInstance()`.
+I.e. This methods returns `true` if your process is the primary instance of your
+application and your app should continue loading.  It returns `false` if your
+process should immediately quit as it has sent it's parameters to another
+instance that has already acquired the lock.
 
 On macOS the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
@@ -796,7 +790,7 @@ starts:
 const {app} = require('electron')
 let myWindow = null
 
-app.makeSingleInstance()
+const gotTheLock = app.requestSingleInstanceLock()
 
 app.on('second-instance', (commandLine, workingDirectory) => {
   // Someone tried to run a second instance, we should focus our window.
@@ -806,10 +800,8 @@ app.on('second-instance', (commandLine, workingDirectory) => {
   }
 })
 
-const isPrimaryInstance = app.isPrimaryInstance()
-
-if (!isPrimaryInstance) {
-  app.quit()
+if (!gotTheLock) {
+  return app.quit()
 }
 
 // Create myWindow, load the rest of the app, etc...
@@ -817,10 +809,19 @@ app.on('ready', () => {
 })
 ```
 
-### `app.releaseSingleInstance()`
+### `app.hasSingleInstanceLock()`
 
-Releases all locks that were created by `makeSingleInstance`. This will allow
-multiple instances of the application to once again run side by side.
+Returns `Boolean`
+
+This methods returns whether or not this instance of your app is currently
+holding the single instance lock.  You can request the lock with
+`app.requestSingleInstanceLock()` and release with
+`app.releaseSingleInstanceLock()`
+
+### `app.releaseSingleInstanceLock()`
+
+Releases all locks that were created by `requestSingleInstanceLock`. This will
+allow multiple instances of the application to once again run side by side.
 
 ### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
 
