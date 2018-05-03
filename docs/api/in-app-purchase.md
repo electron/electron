@@ -30,7 +30,7 @@ The `inAppPurchase` module has the following methods:
 
 ### `inAppPurchase.canMakePayments()`
 
-Returns `true` if the user can make a payment and `false` otherwise.
+Returns `Boolean`, whether a user can make a payment.
 
 ### `inAppPurchase.getReceiptURL()`
 
