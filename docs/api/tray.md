@@ -250,6 +250,10 @@ to detect every individual click of the tray icon.
 
 This value is set to false by default.
 
+### `tray.getIgnoreDoubleClickEvents()` _macOS_
+
+Returns `Boolean` - Whether double click events will be ignored.
+
 #### `tray.displayBalloon(options)` _Windows_
 
 * `options` Object
