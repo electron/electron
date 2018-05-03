@@ -23,6 +23,10 @@ describe('BrowserWindow module', () => {
   let server
   let postData
 
+  const closeTheWindow = function () {
+    return closeWindow(w).then(() => { w = null })
+  }
+
   before((done) => {
     const filePath = path.join(fixtures, 'pages', 'a.html')
     const fileStats = fs.statSync(filePath)
@@ -84,9 +88,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  afterEach(() => {
-    return closeWindow(w).then(() => { w = null })
-  })
+  afterEach(closeTheWindow)
 
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', () => {
