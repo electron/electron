@@ -871,7 +871,7 @@ void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
   Emit("second-instance", cmd, cwd);
 }
 
-bool App::HasSingleInstanceLock() {
+bool App::HasSingleInstanceLock() const {
   if (process_singleton_)
     return true;
   return false;

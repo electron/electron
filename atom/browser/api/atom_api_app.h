@@ -180,7 +180,7 @@ class App : public AtomBrowserClient::Delegate,
   std::string GetLocale();
   void OnSecondInstance(const base::CommandLine::StringVector& cmd,
                         const base::FilePath& cwd);
-  bool HasSingleInstanceLock();
+  bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock();
   void ReleaseSingleInstanceLock();
   bool Relaunch(mate::Arguments* args);
