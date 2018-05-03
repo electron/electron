@@ -11,6 +11,8 @@ const {closeWindow} = require('./window-helpers')
 const {ipcRenderer, remote, screen} = require('electron')
 const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
+const features = process.atomBinding('features')
+
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
@@ -20,6 +22,10 @@ describe('BrowserWindow module', () => {
   let ws = null
   let server
   let postData
+
+  const closeTheWindow = function () {
+    return closeWindow(w).then(() => { w = null })
+  }
 
   before((done) => {
     const filePath = path.join(fixtures, 'pages', 'a.html')
@@ -82,9 +88,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  afterEach(() => {
-    return closeWindow(w).then(() => { w = null })
-  })
+  afterEach(closeTheWindow)
 
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', () => {
@@ -3059,17 +3063,13 @@ describe('BrowserWindow module', () => {
   })
 
   describe('offscreen rendering', () => {
-    const isOffscreenRenderingDisabled = () => {
-      const contents = webContents.create({})
-      const disabled = typeof contents.isOffscreen !== 'function'
-      contents.destroy()
-      return disabled
-    }
+    beforeEach(function () {
+      if (!features.isOffscreenRenderingEnabled()) {
+        // XXX(alexeykuzmin): "afterEach" hook is not called
+        // for skipped tests, we have to close the window manually.
+        return closeTheWindow().then(() => { this.skip() })
+      }
 
-    // Offscreen rendering can be disabled in the build
-    if (isOffscreenRenderingDisabled()) return
-
-    beforeEach(() => {
       if (w != null) w.destroy()
       w = new BrowserWindow({
         width: 100,
