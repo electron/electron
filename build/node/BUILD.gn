@@ -1,0 +1,72 @@
+action("gyp_node") {
+  script = "//tools/gyp/gyp_main.py"
+  inputs = [
+    "//third_party/electron_node/common.gypi",
+    "//third_party/electron_node/node.gyp",
+    "//third_party/electron_node/node.gypi",
+    "node.gypi",
+  ]
+  outputs = [
+    "$target_out_dir/Release_Base/build.ninja",
+  ]
+  args = [
+    "-I", rebase_path("node.gypi", root_build_dir),
+    "-D", "component=shared_library",
+    "-D", "buildtype=Custom",
+    "-D", "target_arch=x64",
+    "-D", "host_arch=x64",
+    "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
+    "-fninja",
+    rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
+  ]
+}
+
+action("build_node") {
+  deps = [
+    "//third_party/icu",
+    "//v8",
+    "//v8:v8_libbase",
+    "//v8:v8_libplatform",
+    ":gyp_node",
+  ]
+  script = "//electron/build/run-ninja.py"
+  args = [
+    "-C", rebase_path(target_out_dir, root_build_dir) + "/Release_Base",
+    "node_lib"
+  ]
+  outputs = [
+    "$target_out_dir/Release_Base/libnode.dylib"
+  ]
+}
+
+copy("copy_node") {
+  deps = [ ":build_node" ]
+  sources = [ "$target_out_dir/Release_Base/libnode.dylib" ]
+  outputs = [ "$root_out_dir/{{source_file_part}}" ]
+}
+
+config("node_config") {
+  include_dirs = [
+    "//third_party/electron_node/src",
+    "//third_party/electron_node/deps/uv/include",
+    "//third_party/electron_node/deps/cares/include",
+  ]
+  libs = [
+    "$target_out_dir/Release_Base/libnode.dylib"
+  ]
+  cflags_cc = [
+    "-Wno-deprecated-declarations",
+  ]
+  defines = [
+    # We need to access internal implementations of Node.
+    "NODE_WANT_INTERNALS=1",
+    "NODE_SHARED_MODE",
+    "HAVE_OPENSSL=1",
+    "HAVE_INSPECTOR=1",
+  ]
+}
+
+group("node") {
+  public_configs = [ ":node_config" ]
+  public_deps = [ ":copy_node" ]
+}

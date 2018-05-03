@@ -1,0 +1,42 @@
+import("//build/config/ui.gni")
+
+filenames_gypi = exec_script(
+  "//build/gypi_to_gn.py",
+  [ rebase_path("filenames.gypi") ],
+  "scope",
+  [ "filenames.gypi" ]
+)
+
+static_library("brightray") {
+  deps = [
+    "//base",
+    "//components/network_session_configurator/common",
+    "//components/prefs",
+    "//content/public/browser",
+    "//content/shell:resources",
+    "//net:net_with_v8",
+    "//skia",
+    "//ui/views",
+  ]
+
+  include_dirs = [
+    "..",
+  ]
+
+  defines = [
+    "DISABLE_NACL=1",
+  ]
+
+  extra_source_filters = []
+  if (is_mac) {
+    extra_source_filters += [
+      "*_views.cc",
+      "*_views.h",
+      "*\bviews/*",
+    ]
+  }
+
+  set_sources_assignment_filter(sources_assignment_filter + extra_source_filters)
+  sources = filenames_gypi.brightray_sources
+  set_sources_assignment_filter(sources_assignment_filter)
+}
