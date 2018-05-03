@@ -45,7 +45,9 @@ UtteranceContinuousParameters::UtteranceContinuousParameters()
 VoiceData::VoiceData()
     : gender(TTS_GENDER_NONE), remote(false), native(false) {}
 
-VoiceData::~VoiceData() {}
+VoiceData::VoiceData(const VoiceData&) = default;
+
+VoiceData::~VoiceData() = default;
 
 //
 // Utterance

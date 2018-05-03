@@ -323,7 +323,7 @@ void BrowserWindow::BlurWebView() {
 }
 
 bool BrowserWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
+  auto* host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
   return host_view && host_view->HasFocus();
 }
 

@@ -401,8 +401,6 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   void RestoreSize();
   void CopySelection(const WebPreferences& preferences);
 
-  base::WeakPtrFactory<PrepareFrameAndViewForPrint> weak_ptr_factory_;
-
   FrameReference frame_;
   blink::WebNode node_to_print_;
   bool owns_web_view_;
@@ -415,6 +413,8 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   bool should_print_selection_only_;
   bool is_printing_started_;
 
+  base::WeakPtrFactory<PrepareFrameAndViewForPrint> weak_ptr_factory_;
+
   DISALLOW_COPY_AND_ASSIGN(PrepareFrameAndViewForPrint);
 };
 
@@ -423,14 +423,14 @@ PrepareFrameAndViewForPrint::PrepareFrameAndViewForPrint(
     blink::WebLocalFrame* frame,
     const blink::WebNode& node,
     bool ignore_css_margins)
-    : weak_ptr_factory_(this),
-      frame_(frame),
+    : frame_(frame),
       node_to_print_(node),
       owns_web_view_(false),
       expected_pages_count_(0),
       should_print_backgrounds_(params.should_print_backgrounds),
       should_print_selection_only_(params.selection_only),
-      is_printing_started_(false) {
+      is_printing_started_(false),
+      weak_ptr_factory_(this) {
   PrintMsg_Print_Params print_params = params;
   if (!should_print_selection_only_ ||
       !PrintingNodeOrPdfFrame(frame, node_to_print_)) {

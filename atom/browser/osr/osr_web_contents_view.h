@@ -24,7 +24,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
   OffScreenWebContentsView(bool transparent, const OnPaintCallback& callback);
-  ~OffScreenWebContentsView();
+  ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
 
