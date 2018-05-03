@@ -424,7 +424,7 @@ int GetPathConstant(const std::string& name) {
 bool NotificationCallbackWrapper(
     const base::Callback<
         void(const base::CommandLine::StringVector& command_line,
-             const base::FilePath& current_directory)> callback,
+             const base::FilePath& current_directory)>& callback,
     const base::CommandLine::StringVector& cmd,
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.

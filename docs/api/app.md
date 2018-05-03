@@ -772,9 +772,9 @@ application successfully obtained the lock.  If it failed to obtain the lock
 you can assume that another instance of your application is already running with
 the lock and exit immediately.
 
-I.e. This methods returns `true` if your process is the primary instance of your
+I.e. This method returns `true` if your process is the primary instance of your
 application and your app should continue loading.  It returns `false` if your
-process should immediately quit as it has sent it's parameters to another
+process should immediately quit as it has sent its parameters to another
 instance that has already acquired the lock.
 
 On macOS the system enforces single instance automatically when users try to open
@@ -792,17 +792,17 @@ let myWindow = null
 
 const gotTheLock = app.requestSingleInstanceLock()
 
-app.on('second-instance', (commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, we should focus our window.
-  if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore()
-    myWindow.focus()
-  }
-})
-
 if (!gotTheLock) {
   app.quit()
 } else {
+  app.on('second-instance', (commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (myWindow) {
+      if (myWindow.isMinimized()) myWindow.restore()
+      myWindow.focus()
+    }
+  })
+
   // Create myWindow, load the rest of the app, etc...
   app.on('ready', () => {
   })
@@ -813,7 +813,7 @@ if (!gotTheLock) {
 
 Returns `Boolean`
 
-This methods returns whether or not this instance of your app is currently
+This method returns whether or not this instance of your app is currently
 holding the single instance lock.  You can request the lock with
 `app.requestSingleInstanceLock()` and release with
 `app.releaseSingleInstanceLock()`
