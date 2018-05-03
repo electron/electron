@@ -16,9 +16,6 @@ void TrayIcon::SetTitle(const std::string& title) {}
 
 void TrayIcon::SetHighlightMode(TrayIcon::HighlightMode mode) {}
 
-void TrayIcon::SetIgnoreDoubleClickEvents(bool ignore) {
-}
-
 void TrayIcon::DisplayBalloon(ImageType icon,
                               const base::string16& title,
                               const base::string16& contents) {}

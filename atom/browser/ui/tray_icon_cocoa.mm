@@ -206,8 +206,12 @@ const CGFloat kVerticalTitleMargin = 2;
   [self setNeedsDisplay:YES];
 }
 
-- (void) setIgnoreDoubleClickEvents:(BOOL)ignore {
+- (void)setIgnoreDoubleClickEvents:(BOOL)ignore {
   ignoreDoubleClickEvents_ = ignore;
+}
+
+- (BOOL)getIgnoreDoubleClickEvents {
+  return ignoreDoubleClickEvents_;
 }
 
 - (void)setTitle:(NSString*)title {
@@ -448,6 +452,10 @@ void TrayIconCocoa::SetHighlightMode(TrayIcon::HighlightMode mode) {
 
 void TrayIconCocoa::SetIgnoreDoubleClickEvents(bool ignore) {
   [status_item_view_ setIgnoreDoubleClickEvents:ignore];
+}
+
+bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
+  return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,

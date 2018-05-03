@@ -182,6 +182,14 @@ void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 #endif
 }
 
+bool Tray::GetIgnoreDoubleClickEvents() {
+#if defined(OS_MACOSX)
+  return tray_icon_->GetIgnoreDoubleClickEvents();
+#else
+  return false;
+#endif
+}
+
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
   mate::Handle<NativeImage> icon;
@@ -232,6 +240,8 @@ void Tray::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
+      .SetMethod("getIgnoreDoubleClickEvents",
+                 &Tray::GetIgnoreDoubleClickEvents)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
