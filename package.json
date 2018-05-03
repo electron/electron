@@ -17,6 +17,7 @@
     "electron-typescript-definitions": "^1.3.2",
     "github": "^9.2.0",
     "husky": "^0.14.3",
+    "lint": "^1.1.2",
     "minimist": "^1.2.0",
     "nugget": "^2.0.1",
     "remark-cli": "^4.0.0",
@@ -77,8 +78,5 @@
   "author": "Electron Community",
   "keywords": [
     "electron"
-  ],
-  "dependencies": {
-    "lint": "^1.1.2"
-  }
+  ]
 }
