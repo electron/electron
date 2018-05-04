@@ -4,6 +4,7 @@ skip_branch_with_pr: true
 image: electron-16-vs2017
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
+  matrix:
   - TARGET_ARCH: ia32
   - TARGET_ARCH: x64
 build_script:
