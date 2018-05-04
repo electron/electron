@@ -302,20 +302,20 @@ browser windows.
 
 ## Menu Item Position
 
-You can make use of `before/after`, `beforeGroupContaining/afterGroupContaining` and `id` to control how the item will be placed when building a menu with `Menu.buildFromTemplate`.
+You can make use of `before`, `after`, `beforeGroupContaining`, `afterGroupContaining` and `id` to control how the item will be placed when building a menu with `Menu.buildFromTemplate`.
 
-* `before` - Inserts this item before the label referenced item. If the
+* `before` - Inserts this item before the item with the specified label.. If the
   referenced item doesn't exist the item will be inserted at the end of
-  the menu. Also implies that the menu item in question should be placed in the same “group” as the item
-* `after` - Inserts this item after the label referenced item. If the
+  the menu. Also implies that the menu item in question should be placed in the same “group” as the item.
+* `after` - Inserts this item after the item with the specified label. If the
   referenced item doesn't exist the item will be inserted at the end of
-  the menu. Also implies that the menu item in question should be placed in the same “group” as the item
+  the menu. Also implies that the menu item in question should be placed in the same “group” as the item.
 * `beforeGroupContaining` - Provides a means for a single context menu to declare
-  the placement of their containing group after to the containing group of the label specified item.
-* `afterGroupContaining` Provides a means for a single context menu to declare
-  the placement of their containing group before the containing group of the label specified item.
+  the placement of their containing group after the containing group of the item with the specified label.
+* `afterGroupContaining` - Provides a means for a single context menu to declare
+  the placement of their containing group after the containing group of the item with the specified label.
 
-By default, items will be inserted in the order they exist in the template unless one of the specified positioning keywords is utilized. 
+By default, items will be inserted in the order they exist in the template unless one of the specified positioning keywords is used.
 
 ### Examples
 
@@ -323,11 +323,10 @@ Template:
 
 ```javascript
 [
-  {label: '4', id: '4'},
-  {label: '5', id: '5'},
-  {label: '1', id: '1', position: 'before=4'},
-  {label: '2', id: '2'},
-  {label: '3', id: '3'}
+  { id: '1', label: 'one'},
+  { id: '2', label: 'two' }
+  { id: '3', label: 'three' },
+  { id: '4', label: 'four' }
 ]
 ```
 
@@ -338,19 +337,39 @@ Menu:
 - 2
 - 3
 - 4
-- 5
 ```
 
 Template:
 
 ```javascript
 [
-  {label: 'a', position: 'endof=letters'},
-  {label: '1', position: 'endof=numbers'},
-  {label: 'b', position: 'endof=letters'},
-  {label: '2', position: 'endof=numbers'},
-  {label: 'c', position: 'endof=letters'},
-  {label: '3', position: 'endof=numbers'}
+  { id: '1', label: 'one'},
+  { type: 'separator' },
+  { id: '3', label: 'three', beforeGroupContaining: ['1'] },
+  { id: '4', label: 'four', afterGroupContaining: ['2'] },
+  { type: 'separator' },
+  { id: '2', label: 'two' }
+]
+```
+
+Menu:
+
+```sh
+- 3
+- 4
+- ---
+- 1
+- ---
+- 2
+```
+
+Template:
+
+```javascript
+[
+  { id: '1', label: 'one', after: ['3'] },
+  { id: '2', label: 'two', before: ['1'] },
+  { id: '3', label: 'three' }
 ]
 ```
 
@@ -358,13 +377,9 @@ Menu:
 
 ```sh
 - ---
-- a
-- b
-- c
-- ---
-- 1
-- 2
 - 3
+- 2
+- 1
 ```
 
 [AboutInformationPropertyListFiles]: https://developer.apple.com/library/ios/documentation/general/Reference/InfoPlistKeyReference/Articles/AboutInformationPropertyListFiles.html
