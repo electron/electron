@@ -323,8 +323,8 @@ Template:
 
 ```javascript
 [
-  { id: '1', label: 'one'},
-  { id: '2', label: 'two' }
+  { id: '1', label: 'one' },
+  { id: '2', label: 'two' },
   { id: '3', label: 'three' },
   { id: '4', label: 'four' }
 ]
@@ -343,7 +343,7 @@ Template:
 
 ```javascript
 [
-  { id: '1', label: 'one'},
+  { id: '1', label: 'one' },
   { type: 'separator' },
   { id: '3', label: 'three', beforeGroupContaining: ['1'] },
   { id: '4', label: 'four', afterGroupContaining: ['2'] },
