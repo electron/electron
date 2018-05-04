@@ -104,7 +104,7 @@ OffScreenWebContentsView::CreateViewForWidget(
         render_widget_host->GetView());
   }
 
-  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
+  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
       transparent_, painting_, GetFrameRate(), callback_, render_widget_host,
       nullptr, relay->window.get());
@@ -113,7 +113,7 @@ OffScreenWebContentsView::CreateViewForWidget(
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
-  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
+  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
 
   content::WebContentsImpl* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);

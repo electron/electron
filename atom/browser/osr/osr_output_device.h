@@ -17,7 +17,7 @@ typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 class OffScreenOutputDevice : public viz::SoftwareOutputDevice {
  public:
   OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
-  ~OffScreenOutputDevice();
+  ~OffScreenOutputDevice() override;
 
   // viz::SoftwareOutputDevice:
   void Resize(const gfx::Size& pixel_size, float scale_factor) override;

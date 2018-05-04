@@ -218,7 +218,7 @@ class OffScreenRenderWidgetHostView
   void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void AddViewProxy(OffscreenViewProxy* proxy);
   void RemoveViewProxy(OffscreenViewProxy* proxy);
-  void ProxyViewDestroyed(OffscreenViewProxy* proxy);
+  void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void RegisterGuestViewFrameSwappedCallback(
       content::RenderWidgetHostViewGuest* guest_host_view);
@@ -227,7 +227,7 @@ class OffScreenRenderWidgetHostView
 
   void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
   void OnPopupPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
-  void OnProxyViewPaint(const gfx::Rect& damage_rect);
+  void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
   bool IsPopupWidget() const { return popup_type_ != blink::kWebPopupTypeNone; }
 

@@ -641,11 +641,11 @@ void OffScreenRenderWidgetHostView::Destroy() {
         // Guest RWHVs will be destroyed when the associated RWHVGuest is
         // destroyed. This parent RWHV may be destroyed first, so disassociate
         // the guest RWHVs here without destroying them.
-        for (auto guest_host_view : guest_host_views_)
+        for (auto* guest_host_view : guest_host_views_)
           guest_host_view->parent_host_view_ = nullptr;
         guest_host_views_.clear();
       }
-      for (auto proxy_view : proxy_views_)
+      for (auto* proxy_view : proxy_views_)
         proxy_view->RemoveObserver();
       Hide();
     }
@@ -978,7 +978,7 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
           bitmap, pos.x(), pos.y(), pos.width(), pos.height()));
     }
 
-    for (auto proxy_view : proxy_views_) {
+    for (auto* proxy_view : proxy_views_) {
       gfx::Rect pos = proxy_view->GetBounds();
       damage.Union(pos);
       damages.push_back(pos);
@@ -1059,7 +1059,7 @@ void OffScreenRenderWidgetHostView::ProcessKeyboardEvent(
 void OffScreenRenderWidgetHostView::ProcessMouseEvent(
     const blink::WebMouseEvent& event,
     const ui::LatencyInfo& latency) {
-  for (auto proxy_view : proxy_views_) {
+  for (auto* proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
     if (bounds.Contains(event.PositionInWidget().x,
                         event.PositionInWidget().y)) {
@@ -1098,7 +1098,7 @@ void OffScreenRenderWidgetHostView::ProcessMouseEvent(
 void OffScreenRenderWidgetHostView::ProcessMouseWheelEvent(
     const blink::WebMouseWheelEvent& event,
     const ui::LatencyInfo& latency) {
-  for (auto proxy_view : proxy_views_) {
+  for (auto* proxy_view : proxy_views_) {
     gfx::Rect bounds = proxy_view->GetBounds();
     if (bounds.Contains(event.PositionInWidget().x,
                         event.PositionInWidget().y)) {
@@ -1170,7 +1170,7 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
 
   SetupFrameRate(true);
 
-  for (auto guest_host_view : guest_host_views_)
+  for (auto* guest_host_view : guest_host_views_)
     guest_host_view->SetFrameRate(frame_rate);
 }
 

@@ -29,6 +29,7 @@
 
 struct PrintMsg_Print_Params {
   PrintMsg_Print_Params();
+  PrintMsg_Print_Params(const PrintMsg_Print_Params&);
   ~PrintMsg_Print_Params();
 
   // Resets the members of the struct to 0.
@@ -58,6 +59,7 @@ struct PrintMsg_Print_Params {
 
 struct PrintMsg_PrintPages_Params {
   PrintMsg_PrintPages_Params();
+  PrintMsg_PrintPages_Params(const PrintMsg_PrintPages_Params&);
   ~PrintMsg_PrintPages_Params();
 
   // Resets the members of the struct to 0.
