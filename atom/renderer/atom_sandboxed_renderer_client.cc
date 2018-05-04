@@ -165,7 +165,7 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string left = "(function(binding, preloadPath, require) {\n";
+  std::string left = "(function(binding, preloadPath, preloadSrc, require) {\n";
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
   auto script = v8::Script::Compile(v8::String::Concat(
@@ -174,14 +174,25 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
                          mate::ConvertToV8(isolate, right)->ToString())));
   auto func =
       v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
+  // Load the preload script if specified
+  std::string preload_script;
+  if (!preload_script_path.empty()) {
+    IPC::SyncMessage* message = new AtomViewHostMsg_GetPreloadScript(
+        render_frame->GetRoutingID(), &preload_script);
+    if (!render_frame->Send(message)) {
+      PLOG(WARNING) << "Unable to send AtomViewHostMsg_GetPreloadScript";
+    }
+  }
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
   AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {
-      binding, mate::ConvertToV8(isolate, preload_script_path.value())};
+      binding, mate::ConvertToV8(isolate, preload_script_path.value()),
+      mate::ConvertToV8(isolate, preload_script)};
   // Execute the function with proper arguments
-  ignore_result(func->Call(context, v8::Null(isolate), 2, args));
+  ignore_result(
+      func->Call(context, v8::Null(isolate), node::arraysize(args), args));
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
