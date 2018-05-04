@@ -5,6 +5,7 @@
 #include "atom/browser/native_window_mac.h"
 
 #include <AvailabilityMacros.h>
+#include <objc/objc-runtime.h>
 
 #include <string>
 
@@ -14,6 +15,7 @@
 #include "atom/browser/ui/cocoa/atom_ns_window_delegate.h"
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
+#include "atom/browser/ui/cocoa/root_view_mac.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/options_switches.h"
 #include "base/mac/mac_util.h"
@@ -126,31 +128,6 @@
 
 @end
 
-// This view always takes the size of its superview. It is intended to be used
-// as a NSWindow's contentView.  It is needed because NSWindow's implementation
-// explicitly resizes the contentView at inopportune times.
-@interface FullSizeContentView : NSView
-@end
-
-@implementation FullSizeContentView
-
-// This method is directly called by NSWindow during a window resize on OSX
-// 10.10.0, beta 2. We must override it to prevent the content view from
-// shrinking.
-- (void)setFrameSize:(NSSize)size {
-  if ([self superview])
-    size = [[self superview] bounds].size;
-  [super setFrameSize:size];
-}
-
-// The contentView gets moved around during certain full-screen operations.
-// This is less than ideal, and should eventually be removed.
-- (void)viewDidMoveToSuperview {
-  [self setFrame:[[self superview] bounds]];
-}
-
-@end
-
 #if !defined(AVAILABLE_MAC_OS_X_VERSION_10_12_AND_LATER)
 
 enum { NSWindowTabbingModeDisallowed = 2 };
@@ -233,10 +210,54 @@ struct Converter<atom::NativeWindowMac::TitleBarStyle> {
 
 namespace atom {
 
+namespace {
+
+bool IsFramelessWindow(NSView* view) {
+  NativeWindow* window = [static_cast<AtomNSWindow*>([view window]) shell];
+  return window && !window->has_frame();
+}
+
+IMP original_set_frame_size = nullptr;
+IMP original_view_did_move_to_superview = nullptr;
+
+// This method is directly called by NSWindow during a window resize on OSX
+// 10.10.0, beta 2. We must override it to prevent the content view from
+// shrinking.
+void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
+  if (!IsFramelessWindow(self)) {
+    auto original =
+        reinterpret_cast<decltype(&SetFrameSize)>(original_set_frame_size);
+    return original(self, _cmd, size);
+  }
+  // For frameless window, resize the view to cover full window.
+  if ([self superview])
+    size = [[self superview] bounds].size;
+  auto super_impl = reinterpret_cast<decltype(&SetFrameSize)>(
+      [[self superclass] instanceMethodForSelector:_cmd]);
+  super_impl(self, _cmd, size);
+}
+
+// The contentView gets moved around during certain full-screen operations.
+// This is less than ideal, and should eventually be removed.
+void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
+  if (!IsFramelessWindow(self)) {
+    // [BridgedContentView viewDidMoveToSuperview];
+    auto original = reinterpret_cast<decltype(&ViewDidMoveToSuperview)>(
+        original_view_did_move_to_superview);
+    if (original)
+      original(self, _cmd);
+    return;
+  }
+  [self setFrame:[[self superview] bounds]];
+}
+
+}  // namespace
+
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent),
-      content_view_(nil),
+      root_view_(new RootViewMac(this)),
+      content_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -252,8 +273,7 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
 
   NSRect main_screen_rect = [[[NSScreen screens] firstObject] frame];
   gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
-                   round((NSHeight(main_screen_rect) - height) / 2),
-                   width,
+                   round((NSHeight(main_screen_rect) - height) / 2), width,
                    height);
 
   options.Get(options::kResizable, &resizable_);
@@ -313,11 +333,10 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.native_widget = new AtomNativeWidgetMac(styleMask, widget());
+  params.native_widget = new AtomNativeWidgetMac(this, styleMask, widget());
   widget()->Init(params);
   window_ = static_cast<AtomNSWindow*>(widget()->GetNativeWindow());
 
-  [window_ setShell:this];
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
@@ -432,19 +451,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
   SetMaximizable(maximizable);
-}
-
-NativeWindowMac::~NativeWindowMac() {
-  [NSEvent removeMonitor:wheel_event_monitor_];
-}
-
-void NativeWindowMac::SetContentView(
-    brightray::InspectableWebContents* web_contents) {
-  if (content_view_)
-    [content_view_ removeFromSuperview];
-
-  content_view_ = web_contents->GetView()->GetNativeView();
-  [content_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
@@ -457,39 +463,28 @@ void NativeWindowMac::SetContentView(
     [[window_ contentView] setWantsLayer:YES];
   }
 
-  if (has_frame()) {
-    [content_view_ setFrame:[[window_ contentView] bounds]];
-    [[window_ contentView] addSubview:content_view_];
-  } else {
+  if (!has_frame()) {
     // In OSX 10.10, adding subviews to the root view for the NSView hierarchy
     // produces warnings. To eliminate the warnings, we resize the contentView
     // to fill the window, and add subviews to that.
     // http://crbug.com/380412
-    container_view_.reset([[FullSizeContentView alloc] init]);
-    [container_view_
-        setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [container_view_ setFrame:[[[window_ contentView] superview] bounds]];
-
-    // Move the vibrantView from the old content view.
-    if ([window_ vibrantView]) {
-      [[window_ vibrantView] removeFromSuperview];
-      [container_view_ addSubview:[window_ vibrantView]
-                       positioned:NSWindowBelow
-                       relativeTo:nil];
+    if (!original_set_frame_size) {
+      Class cl = [[window_ contentView] class];
+      original_set_frame_size = class_replaceMethod(
+          cl, @selector(setFrameSize:), (IMP)SetFrameSize, "v@:{_NSSize=ff}");
+      original_view_did_move_to_superview =
+          class_replaceMethod(cl, @selector(viewDidMoveToSuperview),
+                              (IMP)ViewDidMoveToSuperview, "v@:");
+      [[window_ contentView] viewDidMoveToWindow];
     }
-
-    [window_ setContentView:container_view_];
-
-    [content_view_ setFrame:[container_view_ bounds]];
-    [container_view_ addSubview:content_view_];
 
     // The fullscreen button should always be hidden for frameless window.
     [[window_ standardWindowButton:NSWindowFullScreenButton] setHidden:YES];
 
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
-      NSView* window_button_view = [[[CustomWindowButtonView alloc]
-          initWithFrame:NSZeroRect] autorelease];
-      [container_view_ addSubview:window_button_view];
+      buttons_view_.reset(
+          [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
+      [[window_ contentView] addSubview:buttons_view_];
     } else {
       if (title_bar_style_ != NORMAL) {
         if (base::mac::IsOS10_9()) {
@@ -511,6 +506,29 @@ void NativeWindowMac::SetContentView(
     // prevent them from doing so in a frameless app window.
     [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:NO];
   }
+}
+
+NativeWindowMac::~NativeWindowMac() {
+  [NSEvent removeMonitor:wheel_event_monitor_];
+}
+
+void NativeWindowMac::SetContentView(
+    brightray::InspectableWebContents* web_contents) {
+  views::View* root_view = GetContentsView();
+  if (content_view_)
+    root_view->RemoveChildView(content_view_);
+
+  content_view_ = new views::NativeViewHost();
+  root_view->AddChildView(content_view_);
+  content_view_->Attach(web_contents->GetView()->GetNativeView());
+
+  if (buttons_view_) {
+    // Ensure the buttons view are always floated on the top.
+    [buttons_view_ removeFromSuperview];
+    [[window_ contentView] addSubview:buttons_view_];
+  }
+
+  root_view->Layout();
 }
 
 void NativeWindowMac::Close() {
@@ -696,7 +714,7 @@ void NativeWindowMac::SetContentSizeConstraints(
     // will result in actual content size being larger.
     if (!has_frame()) {
       NSRect frame = NSMakeRect(0, 0, size.width(), size.height());
-      NSRect content = [window_ contentRectForFrameRect:frame];
+      NSRect content = [window_ originalContentRectForFrameRect:frame];
       return content.size;
     } else {
       return NSMakeSize(size.width(), size.height());
@@ -984,8 +1002,8 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
   // views::Widget adds a layer for the content view.
   auto* bridge = views::NativeWidgetMac::GetBridgeForNativeWindow(window_);
   NSView* compositor_superview =
-      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)->
-          AcceleratedWidgetGetNSView();
+      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)
+          ->AcceleratedWidgetGetNSView();
   [[compositor_superview layer] setBackgroundColor:cgcolor];
   // When using WebContents as content view, the contentView also has layer.
   if ([[window_ contentView] wantsLayer])
@@ -1306,6 +1324,10 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 
 bool NativeWindowMac::CanResize() const {
   return resizable_;
+}
+
+views::View* NativeWindowMac::GetContentsView() {
+  return root_view_.get();
 }
 
 void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,

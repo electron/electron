@@ -12,14 +12,22 @@
 
 #include "atom/browser/native_window.h"
 #include "base/mac/scoped_nsobject.h"
+#include "ui/views/controls/native/native_view_host.h"
 
 @class AtomNSWindow;
 @class AtomNSWindowDelegate;
 @class AtomPreviewItem;
 @class AtomTouchBar;
+@class CustomWindowButtonView;
 @class FullSizeContentView;
 
+namespace views {
+class NativeViewHost;
+}
+
 namespace atom {
+
+class RootViewMac;
 
 class NativeWindowMac : public NativeWindow {
  public:
@@ -136,6 +144,7 @@ class NativeWindowMac : public NativeWindow {
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
+  views::View* content_view() { return content_view_; }
   AtomPreviewItem* preview_item() const { return preview_item_.get(); }
   AtomTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
@@ -145,6 +154,7 @@ class NativeWindowMac : public NativeWindow {
  protected:
   // views::WidgetDelegate:
   bool CanResize() const override;
+  views::View* GetContentsView() override;
 
  private:
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
@@ -157,6 +167,7 @@ class NativeWindowMac : public NativeWindow {
   base::scoped_nsobject<AtomNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<AtomPreviewItem> preview_item_;
   base::scoped_nsobject<AtomTouchBar> touch_bar_;
+  base::scoped_nsobject<CustomWindowButtonView> buttons_view_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
@@ -164,8 +175,11 @@ class NativeWindowMac : public NativeWindow {
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> container_view_;
 
-  // The content view passed by SetContentView, weak ref.
-  NSView* content_view_;
+  // The view that fills the client area.
+  std::unique_ptr<RootViewMac> root_view_;
+
+  // The content view, managed by widget_.
+  views::NativeViewHost* content_view_;
 
   bool is_kiosk_;
   bool was_fullscreen_;
