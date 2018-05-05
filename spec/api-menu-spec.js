@@ -2,6 +2,7 @@ const assert = require('assert')
 
 const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
+const {sortMenuItems} = require('../lib/browser/api/menu-utils')
 const {closeWindow} = require('./window-helpers')
 
 describe('Menu module', () => {
@@ -37,91 +38,445 @@ describe('Menu module', () => {
       })
     })
 
-    describe('Menu.buildFromTemplate should reorder based on item position specifiers', () => {
+    describe('Menu sorting and building', () => {
+      describe('sorts groups', () => {
+        it('does a simple sort', () => {
+          const items = [
+            {
+              label: 'two',
+              id: '2',
+              afterGroupContaining: ['1'] },
+            { type: 'separator' },
+            {
+              id: '1',
+              label: 'one'
+            }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['1']
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('resolves cycles by ignoring things that conflict', () => {
+          const items = [
+            {
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['1']
+            },
+            { type: 'separator' },
+            {
+              id: '1',
+              label: 'one',
+              afterGroupContaining: ['2']
+            }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one',
+              afterGroupContaining: ['2']
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['1']
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('ignores references to commands that do not exist', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['does-not-exist']
+            }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two',
+              afterGroupContaining: ['does-not-exist']
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              beforeGroupContaining: ['1']
+            },
+            {
+              id: '4',
+              label: 'four',
+              afterGroupContaining: ['2']
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          const expected = [
+            {
+              id: '3',
+              label: 'three',
+              beforeGroupContaining: ['1']
+            },
+            {
+              id: '4',
+              label: 'four',
+              afterGroupContaining: ['2']
+            },
+            { type: 'separator' },
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+      })
+
+      describe('moves an item to a different group by merging groups', () => {
+        it('can move a group of one item', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1']
+            },
+            { type: 'separator' }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1']
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it("moves all items in the moving item's group", () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1']
+            },
+            {
+              id: '4',
+              label: 'four'
+            },
+            { type: 'separator' }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1']
+            },
+            {
+              id: '4',
+              label: 'four'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it("ignores positions relative to commands that don't exist", () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              after: ['does-not-exist']
+            },
+            {
+              id: '4',
+              label: 'four',
+              after: ['1']
+            },
+            { type: 'separator' }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            {
+              id: '3',
+              label: 'three',
+              after: ['does-not-exist']
+            },
+            {
+              id: '4',
+              label: 'four',
+              after: ['1']
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('can handle recursive group merging', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one',
+              after: ['3']
+            },
+            {
+              id: '2',
+              label: 'two',
+              before: ['1']
+            },
+            {
+              id: '3',
+              label: 'three'
+            }
+          ]
+
+          const expected = [
+            {
+              id: '3',
+              label: 'three'
+            },
+            {
+              id: '2',
+              label: 'two',
+              before: ['1']
+            },
+            {
+              id: '1',
+              label: 'one',
+              after: ['3']
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('can merge multiple groups when given a list of before/after commands', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1', '2']
+            }
+          ]
+
+          const expected = [
+            {
+              id: '2',
+              label: 'two'
+            },
+            {
+              id: '1',
+              label: 'one'
+            },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1', '2']
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+
+        it('can merge multiple groups based on both before/after commands', () => {
+          const items = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            { type: 'separator' },
+            {
+              id: '2',
+              label: 'two'
+            },
+            { type: 'separator' },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1'],
+              before: ['2']
+            }
+          ]
+
+          const expected = [
+            {
+              id: '1',
+              label: 'one'
+            },
+            {
+              id: '3',
+              label: 'three',
+              after: ['1'],
+              before: ['2']
+            },
+            {
+              id: '2',
+              label: 'two'
+            }
+          ]
+
+          assert.deepEqual(sortMenuItems(items), expected)
+        })
+      })
+
       it('should position before existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
-            label: '2',
-            id: '2'
+            id: '2',
+            label: 'two'
           }, {
-            label: '3',
-            id: '3'
+            id: '3',
+            label: 'three'
           }, {
-            label: '1',
             id: '1',
-            position: 'before=2'
+            label: 'one',
+            before: ['2']
           }
         ])
-        assert.equal(menu.items[0].label, '1')
-        assert.equal(menu.items[1].label, '2')
-        assert.equal(menu.items[2].label, '3')
+
+        assert.equal(menu.items[0].label, 'one')
+        assert.equal(menu.items[1].label, 'two')
+        assert.equal(menu.items[2].label, 'three')
       })
 
       it('should position after existing item', () => {
         const menu = Menu.buildFromTemplate([
           {
-            label: '1',
-            id: '1'
-          }, {
-            label: '3',
-            id: '3'
-          }, {
-            label: '2',
             id: '2',
-            position: 'after=1'
-          }
-        ])
-        assert.equal(menu.items[0].label, '1')
-        assert.equal(menu.items[1].label, '2')
-        assert.equal(menu.items[2].label, '3')
-      })
-
-      it('should position at endof existing separator groups', () => {
-        const menu = Menu.buildFromTemplate([
+            label: 'two',
+            after: ['1']
+          },
           {
-            label: 'first',
-            id: 'first'
-          }, {
-            type: 'separator',
-            id: 'numbers'
-          }, {
-            label: 'a',
-            id: 'a',
-            position: 'endof=letters'
-          }, {
-            type: 'separator',
-            id: 'letters'
-          }, {
-            label: '1',
             id: '1',
-            position: 'endof=numbers'
+            label: 'one'
           }, {
-            label: 'b',
-            id: 'b',
-            position: 'endof=letters'
-          }, {
-            label: '2',
-            id: '2',
-            position: 'endof=numbers'
-          }, {
-            label: 'c',
-            id: 'c',
-            position: 'endof=letters'
-          }, {
-            label: '3',
             id: '3',
-            position: 'endof=numbers'
+            label: 'three'
           }
         ])
 
-        assert.equal(menu.items[1].id, 'numbers')
-        assert.equal(menu.items[2].label, '1')
-        assert.equal(menu.items[3].label, '2')
-        assert.equal(menu.items[4].label, '3')
-        assert.equal(menu.items[5].id, 'letters')
-        assert.equal(menu.items[6].label, 'a')
-        assert.equal(menu.items[7].label, 'b')
-        assert.equal(menu.items[8].label, 'c')
+        assert.equal(menu.items[0].label, 'one')
+        assert.equal(menu.items[1].label, 'two')
+        assert.equal(menu.items[2].label, 'three')
       })
 
       it('should filter excess menu separators', () => {
@@ -168,69 +523,32 @@ describe('Menu module', () => {
         assert.equal(menuTwo.items[2].label, 'c')
       })
 
-      it('should create separator group if endof does not reference existing separator group', () => {
-        const menu = Menu.buildFromTemplate([
-          {
-            label: 'a',
-            id: 'a',
-            position: 'endof=letters'
-          }, {
-            label: '1',
-            id: '1',
-            position: 'endof=numbers'
-          }, {
-            label: 'b',
-            id: 'b',
-            position: 'endof=letters'
-          }, {
-            label: '2',
-            id: '2',
-            position: 'endof=numbers'
-          }, {
-            label: 'c',
-            id: 'c',
-            position: 'endof=letters'
-          }, {
-            label: '3',
-            id: '3',
-            position: 'endof=numbers'
-          }
-        ])
-        assert.equal(menu.items[0].id, 'letters')
-        assert.equal(menu.items[1].label, 'a')
-        assert.equal(menu.items[2].label, 'b')
-        assert.equal(menu.items[3].label, 'c')
-        assert.equal(menu.items[4].id, 'numbers')
-        assert.equal(menu.items[5].label, '1')
-        assert.equal(menu.items[6].label, '2')
-        assert.equal(menu.items[7].label, '3')
-      })
-
       it('should continue inserting items at next index when no specifier is present', () => {
         const menu = Menu.buildFromTemplate([
           {
-            label: '4',
-            id: '4'
+            id: '2',
+            label: 'two'
           }, {
-            label: '5',
-            id: '5'
+            id: '3',
+            label: 'three'
           }, {
-            label: '1',
+            id: '4',
+            label: 'four'
+          }, {
+            id: '5',
+            label: 'five'
+          }, {
             id: '1',
-            position: 'before=4'
-          }, {
-            label: '2',
-            id: '2'
-          }, {
-            label: '3',
-            id: '3'
+            label: 'one',
+            before: ['2']
           }
         ])
-        assert.equal(menu.items[0].label, '1')
-        assert.equal(menu.items[1].label, '2')
-        assert.equal(menu.items[2].label, '3')
-        assert.equal(menu.items[3].label, '4')
-        assert.equal(menu.items[4].label, '5')
+
+        assert.equal(menu.items[0].label, 'one')
+        assert.equal(menu.items[1].label, 'two')
+        assert.equal(menu.items[2].label, 'three')
+        assert.equal(menu.items[3].label, 'four')
+        assert.equal(menu.items[4].label, 'five')
       })
     })
   })
@@ -243,7 +561,7 @@ describe('Menu module', () => {
           submenu: [
             {
               label: 'Enter Fullscreen',
-              accelerator: 'Control+Command+F',
+              accelerator: 'ControlCommandF',
               id: 'fullScreen'
             }
           ]
