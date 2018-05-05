@@ -218,8 +218,9 @@ node::Environment* AtomRendererClient::GetEnvironment(
   if (injected_frames_.find(render_frame) == injected_frames_.end())
     return nullptr;
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-  node::Environment* env = node::Environment::GetCurrent(
-      render_frame->GetWebFrame()->MainWorldScriptContext());
+  auto context =
+      GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
+  node::Environment* env = node::Environment::GetCurrent(context);
   if (environments_.find(env) == environments_.end())
     return nullptr;
   return env;
