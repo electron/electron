@@ -304,14 +304,14 @@ browser windows.
 
 You can make use of `before`, `after`, `beforeGroupContaining`, `afterGroupContaining` and `id` to control how the item will be placed when building a menu with `Menu.buildFromTemplate`.
 
-* `before` - Inserts this item before the item with the specified label.. If the
+* `before` - Inserts this item before the item with the specified label. If the
   referenced item doesn't exist the item will be inserted at the end of
   the menu. Also implies that the menu item in question should be placed in the same “group” as the item.
 * `after` - Inserts this item after the item with the specified label. If the
   referenced item doesn't exist the item will be inserted at the end of
   the menu. Also implies that the menu item in question should be placed in the same “group” as the item.
 * `beforeGroupContaining` - Provides a means for a single context menu to declare
-  the placement of their containing group after the containing group of the item with the specified label.
+  the placement of their containing group before the containing group of the item with the specified label.
 * `afterGroupContaining` - Provides a means for a single context menu to declare
   the placement of their containing group after the containing group of the item with the specified label.
 
