@@ -350,8 +350,8 @@ struct Converter<content::CertificateRequestResultType> {
 namespace atom {
 
 ProcessMetric::ProcessMetric(int type,
-    base::ProcessId pid,
-    std::unique_ptr<base::ProcessMetrics> metrics) {
+                             base::ProcessId pid,
+                             std::unique_ptr<base::ProcessMetrics> metrics) {
   this->type = type;
   this->pid = pid;
   this->metrics = std::move(metrics);
@@ -422,7 +422,9 @@ int GetPathConstant(const std::string& name) {
 }
 
 bool NotificationCallbackWrapper(
-    const ProcessSingleton::NotificationCallback& callback,
+    const base::Callback<
+        void(const base::CommandLine::StringVector& command_line,
+             const base::FilePath& current_directory)>& callback,
     const base::CommandLine::StringVector& cmd,
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.
@@ -864,30 +866,43 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
-bool App::MakeSingleInstance(
-    const ProcessSingleton::NotificationCallback& callback) {
+void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
+                           const base::FilePath& cwd) {
+  Emit("second-instance", cmd, cwd);
+}
+
+bool App::HasSingleInstanceLock() const {
   if (process_singleton_)
-    return false;
+    return true;
+  return false;
+}
+
+bool App::RequestSingleInstanceLock() {
+  if (HasSingleInstanceLock())
+    return true;
 
   base::FilePath user_dir;
   PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+
+  auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
+
   process_singleton_.reset(new ProcessSingleton(
-      user_dir, base::Bind(NotificationCallbackWrapper, callback)));
+      user_dir, base::Bind(NotificationCallbackWrapper, cb)));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
       process_singleton_.reset();
-      return true;
+      return false;
     }
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
     default:  // Shouldn't be needed, but VS warns if it is not there.
-      return false;
+      return true;
   }
 }
 
-void App::ReleaseSingleInstance() {
+void App::ReleaseSingleInstanceLock() {
   if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
@@ -1252,8 +1267,9 @@ void App::BuildPrototype(v8::Isolate* isolate,
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
-      .SetMethod("makeSingleInstance", &App::MakeSingleInstance)
-      .SetMethod("releaseSingleInstance", &App::ReleaseSingleInstance)
+      .SetMethod("hasSingleInstanceLock", &App::HasSingleInstanceLock)
+      .SetMethod("requestSingleInstanceLock", &App::RequestSingleInstanceLock)
+      .SetMethod("releaseSingleInstanceLock", &App::ReleaseSingleInstanceLock)
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)

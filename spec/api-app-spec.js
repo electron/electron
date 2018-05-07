@@ -185,7 +185,29 @@ describe('app module', () => {
     })
   })
 
+  // TODO(MarshallOfSound) - Remove in 4.0.0
   describe('app.makeSingleInstance', () => {
+    it('prevents the second launch of app', function (done) {
+      this.timeout(120000)
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton-old')
+      // First launch should exit with 0.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath])
+      first.once('exit', (code) => {
+        assert.equal(code, 0)
+      })
+      // Start second app when received output.
+      first.stdout.once('data', () => {
+        // Second launch should exit with 1.
+        const second = ChildProcess.spawn(remote.process.execPath, [appPath])
+        second.once('exit', (code) => {
+          assert.equal(code, 1)
+          done()
+        })
+      })
+    })
+  })
+
+  describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', function (done) {
       this.timeout(120000)
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')

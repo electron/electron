@@ -178,9 +178,11 @@ class App : public AtomBrowserClient::Delegate,
 
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
-  bool MakeSingleInstance(
-      const ProcessSingleton::NotificationCallback& callback);
-  void ReleaseSingleInstance();
+  void OnSecondInstance(const base::CommandLine::StringVector& cmd,
+                        const base::FilePath& cwd);
+  bool HasSingleInstanceLock() const;
+  bool RequestSingleInstanceLock();
+  void ReleaseSingleInstanceLock();
   bool Relaunch(mate::Arguments* args);
   void DisableHardwareAcceleration(mate::Arguments* args);
   void DisableDomainBlockingFor3DAPIs(mate::Arguments* args);
