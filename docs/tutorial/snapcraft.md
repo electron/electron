@@ -153,8 +153,8 @@ apps:
 ```
 
 As you can see, the `snapcraft.yaml` instructs the system to launch a file
-called `electron-launch`. In this example, it simply passes information on
-to the app's binary:
+called `electron-launch`. In this example, it passes information on to the
+app's binary:
 
 ```sh
 #!/bin/sh

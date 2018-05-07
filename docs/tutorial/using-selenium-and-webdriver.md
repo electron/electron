@@ -160,7 +160,7 @@ client
 
 ## Workflow
 
-To test your application without rebuilding Electron, simply
+To test your application without rebuilding Electron,
 [place](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md)
 your app source into Electron's resource directory.
 

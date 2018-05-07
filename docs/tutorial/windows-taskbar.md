@@ -78,7 +78,7 @@ particular window's command without restoring or activating the window.
 
 From MSDN, it's illustrated:
 
-> This toolbar is simply the familiar standard toolbar common control. It has a
+> This toolbar is the familiar standard toolbar common control. It has a
 > maximum of seven buttons. Each button's ID, image, tooltip, and state are defined
 > in a structure, which is then passed to the taskbar. The application can show,
 > enable, disable, or hide buttons from the thumbnail toolbar as required by its

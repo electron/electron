@@ -399,7 +399,7 @@ subsequent resources via `HTTP` is also known as "mixed content".
 
 ### Why?
 
-Simply put, loading content over `HTTPS` assures the authenticity and integrity
+Loading content over `HTTPS` assures the authenticity and integrity
 of the loaded resources while encrypting the traffic itself. See the section on
 [only displaying secure content](#1-only-load-secure-content) for more details.
 

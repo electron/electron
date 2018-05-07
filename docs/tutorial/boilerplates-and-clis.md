@@ -15,7 +15,7 @@ app.
 
 ## Boilerplate vs CLI
 
-A boilerplate is simply a starting point - a canvas, so to speak - from which
+A boilerplate is only a starting point - a canvas, so to speak - from which
 you build your application. They usually come in the form of a repository you
 can clone and customize to your heart's content.
 
@@ -54,7 +54,7 @@ You can find more information and documentation in [the repository](https://gith
 
 ## electron-react-boilerplate
 
-If you don't want any tools but simply a solid boilerplate to build from,
+If you don't want any tools but only a solid boilerplate to build from,
 CT Lin's [`electron-react-boilerplate`](https://github.com/chentsulin/electron-react-boilerplate) might be worth
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
