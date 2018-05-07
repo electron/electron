@@ -40,6 +40,9 @@ def main():
   if args.target_arch == 'mips64el':
     download_mips64el_toolchain()
 
+  if args.target_arch.startswith('arm'):
+    download_native_mksnapshot(args.target_arch)
+
   # Redirect to use local libchromiumcontent build.
   if args.build_release_libcc or args.build_debug_libcc:
     build_libchromiumcontent(args.verbose, args.target_arch,
@@ -220,6 +223,15 @@ def download_mips64el_toolchain():
     subprocess.check_call(['tar', '-xf', tar_name, '-C', VENDOR_DIR])
     os.remove(tar_name)
 
+def download_native_mksnapshot(arch):
+  if not os.path.exists(os.path.join(VENDOR_DIR,
+                                     'native_mksnapshot')):
+    tar_name = 'native-mksnapshot.tar.bz2'
+    url = '{0}/linux/{1}/{2}/{3}'.format(BASE_URL, arch,
+           get_libchromiumcontent_commit(), tar_name)
+    download(tar_name, url, os.path.join(SOURCE_ROOT, tar_name))
+    subprocess.call(['tar', '-jxf', tar_name, '-C', VENDOR_DIR])
+    os.remove(tar_name)
 
 def create_chrome_version_h():
   version_file = os.path.join(VENDOR_DIR, 'libchromiumcontent', 'VERSION')
