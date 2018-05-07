@@ -7,6 +7,7 @@
 
 #include <array>
 #include <string>
+
 #include "atom/browser/api/event_emitter.h"
 #include "atom/browser/api/trackable_object.h"
 #include "base/memory/weak_ptr.h"
