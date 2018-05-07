@@ -369,8 +369,7 @@ that is not known in advance.
 The `eval()` method has precisely one mission: To evaluate a series of
 characters as JavaScript and execute it. It is a required method whenever you
 need to evaluate code that is not known ahead of time. While legitimate use
-cases exist, just like any other code generators, `eval()` is difficult to
-harden.
+cases exist, like any other code generators, `eval()` is difficult to harden.
 
 Generally speaking, it is easier to completely disable `eval()` than to make
 it bulletproof. Thus, if you do not need it, it is a good idea to disable it.

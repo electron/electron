@@ -45,7 +45,7 @@ main process or the renderer process), use the userland module
 [electron-windows-notifications](https://github.com/felixrieseberg/electron-windows-notifications),
 which uses native Node addons to send `ToastNotification` and `TileNotification` objects.
 
-While notifications including buttons work with just `electron-windows-notifications`,
+While notifications including buttons work with `electron-windows-notifications`,
 handling replies requires the use of [`electron-windows-interactive-notifications`](https://github.com/felixrieseberg/electron-windows-interactive-notifications), which
 helps with registering the required COM components and calling your Electron app with
 the entered user data.

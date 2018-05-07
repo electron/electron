@@ -44,7 +44,7 @@ npm install --save-dev electron-installer-snap
 
 Package the application using [electron-packager][electron-packager] (or a
 similar tool). Make sure to remove `node_modules` that you don't need in your
-final application, since any module you don't actually need will just increase
+final application, since any module you don't actually need will increase
 your application's size.
 
 The output should look roughly like this:

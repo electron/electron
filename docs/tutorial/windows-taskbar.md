@@ -58,7 +58,7 @@ app.setUserTasks([
 ])
 ```
 
-To clean your tasks list, just call `app.setUserTasks` with an empty array:
+To clean your tasks list, call `app.setUserTasks` with an empty array:
 
 ```javascript
 const { app } = require('electron')

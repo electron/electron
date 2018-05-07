@@ -82,7 +82,7 @@ See https://chromium.googlesource.com/chromium/src/+/master/mojo/README.md
 
 Native modules (also called [addons] in
 Node.js) are modules written in C or C++ that can be loaded into Node.js or
-Electron using the require() function, and used just as if they were an
+Electron using the require() function, and used as if they were an
 ordinary Node.js module. They are used primarily to provide an interface
 between JavaScript running in Node.js and C/C++ libraries.
 

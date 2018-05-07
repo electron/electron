@@ -16,7 +16,7 @@ it should be only available in the main process. You need to be familiar with
 the concept of [main process vs. renderer process](../tutorial/application-architecture.md#main-and-renderer-processes)
 scripts to be able to use those modules.
 
-The main process script is just like a normal Node.js script:
+The main process script is like a normal Node.js script:
 
 ```javascript
 const {app, BrowserWindow} = require('electron')

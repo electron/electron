@@ -44,7 +44,7 @@ npm install -g electron-windows-store
 
 Package the application using [electron-packager][electron-packager] (or a similar tool).
 Make sure to remove `node_modules` that you don't need in your final application, since
-any module you don't actually need will just increase your application's size.
+any module you don't actually need will increase your application's size.
 
 The output should look roughly like this:
 
@@ -108,7 +108,7 @@ In order to run your package, your users will need Windows 10 with the so-called
 
 In opposition to traditional UWP apps, packaged apps currently need to undergo a
 manual verification process, for which you can apply [here][centennial-campaigns].
-In the meantime, all users will be able to just install your package by double-clicking it,
+In the meantime, all users will be able to install your package by double-clicking it,
 so a submission to the store might not be necessary if you're looking for an
 easier installation method. In managed environments (usually enterprises), the
 `Add-AppxPackage` [PowerShell Cmdlet can be used to install it in an automated fashion][add-appxpackage].
