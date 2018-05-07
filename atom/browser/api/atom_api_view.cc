@@ -12,11 +12,16 @@ namespace atom {
 
 namespace api {
 
+View::View(views::View* view) : view_(view) {}
+
 View::View() : view_(new views::View()) {
   view_->set_owned_by_client();
 }
 
-View::~View() {}
+View::~View() {
+  if (delete_view_)
+    delete view_;
+}
 
 // static
 mate::WrappableBase* View::New(mate::Arguments* args) {

@@ -21,12 +21,19 @@ class View : public mate::EventEmitter<View> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  views::View* view() const { return view_; }
+
  protected:
+  explicit View(views::View* view);
   View();
   ~View() override;
 
+  // Should delete the |view_| in destructor.
+  void set_delete_view(bool should) { delete_view_ = should; }
+
  private:
-  std::unique_ptr<views::View> view_;
+  bool delete_view_ = true;
+  views::View* view_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(View);
 };
