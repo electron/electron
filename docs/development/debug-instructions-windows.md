@@ -4,7 +4,7 @@ If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky, especially for developers not used to native/C++
 debugging. However, using Visual Studio, GitHub's hosted Electron Symbol Server,
-and the Electron source code, it is fairly easy to enable step-through debugging
+and the Electron source code, you can enable step-through debugging
 with breakpoints inside Electron's source code.
 
 ## Requirements
@@ -12,7 +12,7 @@ with breakpoints inside Electron's source code.
 * **A debug build of Electron**: The easiest way is usually building it
   yourself, using the tools and prerequisites listed in the
   [build instructions for Windows](build-instructions-windows.md). While you can
-  easily attach to and debug Electron as you can download it directly, you will
+  attach to and debug Electron as you can download it directly, you will
   find that it is heavily optimized, making debugging substantially more
   difficult: The debugger will not be able to show you the content of all
   variables and the execution path can seem strange because of inlining,
@@ -47,8 +47,7 @@ source code matches the code running in the attached process and break
 accordingly.
 
 Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./brightray/browser` and `./brightray/common`. If you're hardcore,
-you can also debug Chromium directly, which is obviously found in `chromium_src`.
+`./brightray/browser` and `./brightray/common`.
 
 ### Attaching
 

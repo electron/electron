@@ -858,7 +858,7 @@ Returns:
 
 Fired when the guest page has sent an asynchronous message to embedder page.
 
-With `sendToHost` method and `ipc-message` event you can easily communicate
+With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:
 
 ```javascript

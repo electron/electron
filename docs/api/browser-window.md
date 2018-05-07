@@ -500,7 +500,7 @@ Emitted when the window is being resized.
 
 Emitted when the window is being moved to a new position.
 
-__Note__: On macOS this event is just an alias of `moved`.
+__Note__: On macOS this event is an alias of `moved`.
 
 #### Event: 'moved' _macOS_
 
@@ -825,7 +825,7 @@ on the right edge and 50 pixels of controls below the player. In order to
 maintain a 16:9 aspect ratio (standard aspect ratio for HD @1920x1080) within
 the player itself we would call this function with arguments of 16/9 and
 [ 40, 50 ]. The second argument doesn't care where the extra width and height
-are within the content view--only that they exist. Just sum any extra width and
+are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
 
 #### `win.previewFile(path[, displayName])` _macOS_

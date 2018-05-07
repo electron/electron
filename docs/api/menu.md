@@ -49,7 +49,7 @@ for more information on macOS' native actions.
 
 Returns `Menu`
 
-Generally, the `template` is just an array of `options` for constructing a
+Generally, the `template` is an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
 
 You can also attach other fields to the element of the `template` and they

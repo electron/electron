@@ -152,7 +152,7 @@ button {
 }
 ```
 
-If you're setting just a custom titlebar as draggable, you also need to make all
+If you're only setting a custom titlebar as draggable, you also need to make all
 buttons in titlebar non-draggable.
 
 ## Text selection

@@ -19,7 +19,7 @@ menu.append(new MenuItem({
 }))
 ```
 
-It's easy to configure different key combinations based on the user's operating system.
+You can configure different key combinations based on the user's operating system.
 
 ```js
 {

@@ -28,7 +28,7 @@ beginners, using a command line tool is likely to be helpful*.
 
 A "complete tool for building modern Electron applications". Electron Forge
 unifies the existing (and well maintained) build tools for Electron development
-into a simple, easy to use package so that anyone can jump right in to Electron
+into a cohesive package so that anyone can jump right in to Electron
 development.
 
 Forge comes with [ready-to-use templates](https://electronforge.io/templates) for popular
