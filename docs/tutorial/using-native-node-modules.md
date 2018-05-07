@@ -78,7 +78,7 @@ following things:
 
 ## Modules that rely on `prebuild`
 
-[`prebuild`](https://github.com/mafintosh/prebuild) provides a way to easily
+[`prebuild`](https://github.com/mafintosh/prebuild) provides a way to
 publish native Node modules with prebuilt binaries for multiple versions of Node
 and Electron.
 

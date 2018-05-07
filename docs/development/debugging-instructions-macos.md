@@ -3,8 +3,8 @@
 If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky, especially for developers not used to native/C++
-debugging. However, using lldb, and the Electron source code, it is fairly easy
-to enable step-through debugging with breakpoints inside Electron's source code.
+debugging. However, using lldb, and the Electron source code, you can enable
+step-through debugging with breakpoints inside Electron's source code.
 You can also use [XCode for debugging](debugging-instructions-macos-xcode.md) if
 you prefer a graphical interface.
 
@@ -13,7 +13,7 @@ you prefer a graphical interface.
 * **A debug build of Electron**: The easiest way is usually building it
   yourself, using the tools and prerequisites listed in the
   [build instructions for macOS](build-instructions-osx.md). While you can
-  easily attach to and debug Electron as you can download it directly, you will
+  attach to and debug Electron as you can download it directly, you will
   find that it is heavily optimized, making debugging substantially more
   difficult: The debugger will not be able to show you the content of all
   variables and the execution path can seem strange because of inlining,
@@ -42,8 +42,7 @@ that isn't behaving correctly - so you'd like to break on that command's C++
 counterpart inside the Electron source.
 
 Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./brightray/browser` and `./brightray/common`. If you're hardcore,
-you can also debug Chromium directly, which is obviously found in `chromium_src`.
+`./brightray/browser` and `./brightray/common`.
 
 Let's assume that you want to debug `app.setName()`, which is defined in `browser.cc`
 as `Browser::SetName()`. Set the breakpoint using the `breakpoint` command, specifying

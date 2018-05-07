@@ -26,7 +26,7 @@ this event represents the `applicationWillFinishLaunching` notification of
 `NSApplication`. You would usually set up listeners for the `open-file` and
 `open-url` events here, and start the crash reporter and auto updater.
 
-In most cases, you should just do everything in the `ready` event handler.
+In most cases, you should do everything in the `ready` event handler.
 
 ### Event: 'ready'
 

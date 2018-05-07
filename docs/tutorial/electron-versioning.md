@@ -31,7 +31,7 @@ There are several major changes from our 1.x strategy outlined below. Each chang
 1. Strict use of semver
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
-4. Clearly defined stabilization branches
+4. Well-defined stabilization branches
 5. The `master` branch is versionless; only stabilization branches contain version information
 
 We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
