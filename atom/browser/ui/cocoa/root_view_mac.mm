@@ -4,7 +4,7 @@
 
 #include "atom/browser/ui/cocoa/root_view_mac.h"
 
-#include "atom/browser/native_window_mac.h"
+#include "atom/browser/native_window.h"
 
 namespace atom {
 
@@ -15,12 +15,10 @@ RootViewMac::RootViewMac(NativeWindow* window) : window_(window) {
 RootViewMac::~RootViewMac() {}
 
 void RootViewMac::Layout() {
-  views::View* content_view =
-      static_cast<NativeWindowMac*>(window_)->content_view();
-  if (!content_view)  // Not ready yet.
+  if (!window_->content_view())  // Not ready yet.
     return;
 
-  content_view->SetBoundsRect(gfx::Rect(gfx::Point(), size()));
+  window_->content_view()->SetBoundsRect(gfx::Rect(gfx::Point(), size()));
 }
 
 gfx::Size RootViewMac::GetMinimumSize() const {

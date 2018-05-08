@@ -4,7 +4,7 @@
 
 #include "atom/browser/ui/views/root_view.h"
 
-#include "atom/browser/native_window_views.h"
+#include "atom/browser/native_window.h"
 #include "atom/browser/ui/views/menu_bar.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 
@@ -86,7 +86,7 @@ bool RootView::IsMenuBarAutoHide() const {
 }
 
 void RootView::SetMenuBarVisibility(bool visible) {
-  if (!menu_bar_ || menu_bar_visible_ == visible)
+  if (!window_->content_view() || !menu_bar_ || menu_bar_visible_ == visible)
     return;
 
   // Always show the accelerator when the auto-hide menu bar shows.
@@ -151,9 +151,7 @@ void RootView::ResetAltState() {
 }
 
 void RootView::Layout() {
-  views::View* content_view =
-      static_cast<NativeWindowViews*>(window_)->content_view();
-  if (!content_view)  // Not ready yet.
+  if (!window_->content_view())  // Not ready yet.
     return;
 
   const auto menu_bar_bounds =
@@ -162,7 +160,7 @@ void RootView::Layout() {
   if (menu_bar_)
     menu_bar_->SetBoundsRect(menu_bar_bounds);
 
-  content_view->SetBoundsRect(
+  window_->content_view()->SetBoundsRect(
       gfx::Rect(0, menu_bar_bounds.height(), size().width(),
                 size().height() - menu_bar_bounds.height()));
 }
