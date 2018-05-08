@@ -276,6 +276,9 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 #endif
   }
 
+  // Default content view.
+  SetContentView(new views::View());
+
   gfx::Size size = bounds.size();
   if (has_frame() &&
       options.Get(options::kUseContentSize, &use_content_size_) &&

@@ -451,6 +451,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // by calls to other APIs.
   SetMaximizable(maximizable);
 
+  // Default content view.
+  SetContentView(new views::View());
+
   // Make sure the bottom corner is rounded for non-modal windows:
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
