@@ -18,7 +18,7 @@ using content::BrowserThread;
 
 namespace {
 
-static NSMenu* applicationMenu_ = nil;
+static scoped_nsobject<NSMenu> applicationMenu_;
 
 }  // namespace
 
@@ -143,7 +143,7 @@ void Menu::SetApplicationMenu(Menu* base_menu) {
   [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)
                                  target:NSApp
                                argument:applicationMenu_];
-  applicationMenu_ = [menu_controller menu];
+  applicationMenu_.reset([[menu_controller menu] retain]);
   [[NSRunLoop currentRunLoop]
       performSelector:@selector(setMainMenu:)
                target:NSApp
