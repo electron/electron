@@ -7,7 +7,10 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "native_mate/dictionary.h"
-#include "ui/views/controls/native/native_view_host.h"
+
+#if defined(OS_MACOSX)
+#include "atom/browser/ui/cocoa/delayed_native_view_host.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -20,7 +23,7 @@ WebContentsView::WebContentsView(
     v8::Local<v8::Value> web_contents_wrapper,
     brightray::InspectableWebContents* web_contents)
 #if defined(OS_MACOSX)
-    : View(new views::NativeViewHost()),
+    : View(new DelayedNativeViewHost(web_contents->GetView()->GetNativeView())),
 #else
     : View(web_contents->GetView()->GetView()),
 #endif
@@ -28,9 +31,7 @@ WebContentsView::WebContentsView(
 #if defined(OS_MACOSX)
   // On macOS a View is created to wrap the NSView, and its lifetime is managed
   // by us.
-  auto* host = static_cast<views::NativeViewHost*>(view());
-  host->set_owned_by_client();
-  host->Attach(web_contents->GetView()->GetNativeView());
+  view()->set_owned_by_client();
 #else
   // On other platforms the View is managed by InspectableWebContents.
   set_delete_view(false);

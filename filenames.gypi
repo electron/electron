@@ -335,6 +335,8 @@
       'atom/browser/ui/cocoa/atom_preview_item.mm',
       'atom/browser/ui/cocoa/atom_touch_bar.h',
       'atom/browser/ui/cocoa/atom_touch_bar.mm',
+      'atom/browser/ui/cocoa/delayed_native_view_host.cc',
+      'atom/browser/ui/cocoa/delayed_native_view_host.h',
       'atom/browser/ui/cocoa/views_delegate_mac.h',
       'atom/browser/ui/cocoa/views_delegate_mac.mm',
       'atom/browser/ui/cocoa/root_view_mac.mm',
