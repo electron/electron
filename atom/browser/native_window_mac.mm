@@ -257,7 +257,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(new RootViewMac(this)),
-      content_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -512,15 +511,13 @@ NativeWindowMac::~NativeWindowMac() {
   [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
-void NativeWindowMac::SetContentView(
-    brightray::InspectableWebContents* web_contents) {
+void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
-  if (content_view_)
-    root_view->RemoveChildView(content_view_);
+  if (content_view())
+    root_view->RemoveChildView(content_view());
 
-  content_view_ = new views::NativeViewHost();
-  root_view->AddChildView(content_view_);
-  content_view_->Attach(web_contents->GetView()->GetNativeView());
+  set_content_view(view);
+  root_view->AddChildView(content_view());
 
   if (buttons_view_) {
     // Ensure the buttons view are always floated on the top.

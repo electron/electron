@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_browser_window.h"
 
+#include "atom/browser/api/atom_api_web_contents_view.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -67,6 +68,11 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());
 
+  // Create a WebContentsView for the WebContents.
+  auto* web_contents_view = static_cast<WebContentsView*>(
+      WebContentsView::New(isolate, web_contents));
+  web_contents_view_.Reset(isolate, web_contents_view->GetWrapper());
+
   // Keep a copy of the options for later use.
   mate::Dictionary(isolate, web_contents->GetWrapper())
       .Set("browserWindowOptions", options);
@@ -77,7 +83,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
-  window()->SetContentView(web_contents->managed_web_contents());
+  window()->SetContentView(web_contents_view->view());
 
   auto* host = web_contents->web_contents()->GetRenderViewHost();
   if (host)

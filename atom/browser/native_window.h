@@ -20,10 +20,6 @@
 
 class SkRegion;
 
-namespace brightray {
-class InspectableWebContents;
-}
-
 namespace content {
 struct NativeWebKeyboardEvent;
 }
@@ -60,8 +56,7 @@ class NativeWindow : public base::SupportsUserData,
 
   void InitFromOptions(const mate::Dictionary& options);
 
-  virtual void SetContentView(
-      brightray::InspectableWebContents* web_contents) = 0;
+  virtual void SetContentView(views::View* view) = 0;
 
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
@@ -264,6 +259,7 @@ class NativeWindow : public base::SupportsUserData,
   }
 
   views::Widget* widget() const { return widget_.get(); }
+  views::View* content_view() const { return content_view_; }
 
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
@@ -282,12 +278,16 @@ class NativeWindow : public base::SupportsUserData,
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
 
+  void set_content_view(views::View* view) { content_view_ = view; }
   void set_browser_view(NativeBrowserView* browser_view) {
     browser_view_ = browser_view;
   }
 
  private:
   std::unique_ptr<views::Widget> widget_;
+
+  // The content view, weak ref.
+  views::View* content_view_;
 
   // Whether window has standard frame.
   bool has_frame_;

@@ -48,6 +48,7 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 NativeWindow::NativeWindow(const mate::Dictionary& options,
                            NativeWindow* parent)
     : widget_(new views::Widget),
+      content_view_(nullptr),
       has_frame_(true),
       transparent_(false),
       enable_larger_than_screen_(false),
