@@ -152,7 +152,7 @@ we appreciate your help.
   * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
     the place where you'll upload node.js headers as well as symbols
   * `ELECTRON_RELEASE` - Set to `true` and the upload part will run, leave unset
-    and `surf-build` will just do CI-type checks, appropriate to run for every
+    and `surf-build` will do CI-type checks, appropriate to run for every
     pull request.
   * `CI` - Set to `true` or else it will fail
   * `GITHUB_TOKEN` - set it to the same as `ELECTRON_GITHUB_TOKEN`

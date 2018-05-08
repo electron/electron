@@ -15,7 +15,7 @@ the following Python modules:
 
 ## macOS SDK
 
-If you're simply developing Electron and don't plan to redistribute your
+If you're developing Electron and don't plan to redistribute your
 custom Electron build, you may skip this section.
 
 For certain features (e.g. pinch-zoom) to work properly, you must target the

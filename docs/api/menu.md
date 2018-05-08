@@ -37,7 +37,7 @@ be dynamically modified.
 * `action` String
 
 Sends the `action` to the first responder of application. This is used for
-emulating default macOS menu behaviors. Usually you would just use the
+emulating default macOS menu behaviors. Usually you would use the
 [`role`](menu-item.md#roles) property of a [`MenuItem`](menu-item.md).
 
 See the [macOS Cocoa Event Handling Guide](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html#//apple_ref/doc/uid/10000060i-CH3-SW7)

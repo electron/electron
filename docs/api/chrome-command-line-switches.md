@@ -175,7 +175,7 @@ Gives the per-module maximal V-logging levels to override the value given by
 source files `my_module.*` and `foo*.*`.
 
 Any pattern containing a forward or backward slash will be tested against the
-whole pathname and not just the module. E.g. `*/foo/bar/*=2` would change the
+whole pathname and not only the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.

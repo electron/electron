@@ -17,4 +17,4 @@ following criteria.
 * App is signed
 * App has it's `NSUserNotificationAlertStyle` set to `alert` in the `Info.plist`.
 
-If either of these requirements are not met the button simply won't appear.
+If either of these requirements are not met the button won't appear.

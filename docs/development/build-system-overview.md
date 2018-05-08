@@ -45,7 +45,7 @@ can switch the download address to it via
 `export LIBCHROMIUMCONTENT_MIRROR=http://7xk3d2.dl1.z0.glb.clouddn.com/`
 
 If you only want to build Electron quickly for testing or development, you
-can download just the shared library versions by passing the `--dev` parameter:
+can download the shared library versions by passing the `--dev` parameter:
 
 ```sh
 $ ./script/bootstrap.py --dev
@@ -69,7 +69,7 @@ uses `R` and `D` instead. This is because `gyp` randomly crashes if there is
 only one `Release` or `Debug` build configuration defined, and Electron only has
 to generate one target at a time as stated above.
 
-This only affects developers, if you are just building Electron for rebranding
+This only affects developers, if you are building Electron for rebranding
 you are not affected.
 
 ## Tests
@@ -95,7 +95,7 @@ $ npm run build && npm test
 
 You can make the test suite run faster by isolating the specific test or block
 you're currently working on using Mocha's
-[exclusive tests](https://mochajs.org/#exclusive-tests) feature. Just append
+[exclusive tests](https://mochajs.org/#exclusive-tests) feature. Append
 `.only` to any `describe` or `it` function call:
 
 ```js

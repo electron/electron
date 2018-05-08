@@ -37,7 +37,7 @@ do in chromium (i.e. they do not return a [`BrowserWindowProxy`](browser-window-
 
 ## Example
 
-To create a sandboxed window, simply pass `sandbox: true` to `webPreferences`:
+To create a sandboxed window, pass `sandbox: true` to `webPreferences`:
 
 ```js
 let win
@@ -86,7 +86,7 @@ It is not possible to have the OS sandbox active only for some renderers, if
 `--enable-sandbox` is enabled, normal electron windows cannot be created.
 
 If you need to mix sandboxed and non-sandboxed renderers in one application,
-simply omit the `--enable-sandbox` argument. Without this argument, windows
+omit the `--enable-sandbox` argument. Without this argument, windows
 created with `sandbox: true` will still have node.js disabled and communicate
 only via IPC, which by itself is already a gain from security POV.
 

@@ -119,7 +119,7 @@ install it as a dependency:
 npm install --save aws-sdk
 ```
 
-Then, in your Electron app, simply require and use the module as if you were
+Then, in your Electron app, require and use the module as if you were
 building a Node.js application:
 
 ```javascript
