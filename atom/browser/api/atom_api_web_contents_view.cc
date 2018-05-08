@@ -42,16 +42,18 @@ WebContentsView::~WebContentsView() {}
 
 // static
 mate::WrappableBase* WebContentsView::New(
-    v8::Isolate* isolate,
+    mate::Arguments* args,
     mate::Handle<WebContents> web_contents) {
   if (!web_contents->managed_web_contents()) {
     const char* error = "The WebContents must be created by user";
-    isolate->ThrowException(
-        v8::Exception::Error(mate::StringToV8(isolate, error)));
+    args->isolate()->ThrowException(
+        v8::Exception::Error(mate::StringToV8(args->isolate(), error)));
     return nullptr;
   }
-  return new WebContentsView(isolate, web_contents->GetWrapper(),
-                             web_contents->managed_web_contents());
+  auto* view = new WebContentsView(args->isolate(), web_contents->GetWrapper(),
+                                   web_contents->managed_web_contents());
+  view->InitWith(args->isolate(), args->GetThis());
+  return view;
 }
 
 // static

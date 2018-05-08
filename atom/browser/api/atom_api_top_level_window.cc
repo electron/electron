@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_browser_view.h"
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/api/atom_api_view.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -266,6 +267,11 @@ void TopLevelWindow::OnWindowMessage(UINT message,
   }
 }
 #endif
+
+void TopLevelWindow::SetContentView(mate::Handle<View> view) {
+  content_view_.Reset(isolate(), view.ToV8());
+  window_->SetContentView(view->view());
+}
 
 void TopLevelWindow::Close() {
   window_->Close();
@@ -767,6 +773,13 @@ void TopLevelWindow::CloseFilePreview() {
   window_->CloseFilePreview();
 }
 
+v8::Local<v8::Value> TopLevelWindow::GetContentView() const {
+  if (content_view_.IsEmpty())
+    return v8::Null(isolate());
+  else
+    return v8::Local<v8::Value>::New(isolate(), content_view_);
+}
+
 v8::Local<v8::Value> TopLevelWindow::GetParentWindow() const {
   if (parent_window_.IsEmpty())
     return v8::Null(isolate());
@@ -915,6 +928,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "TopLevelWindow"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
+      .SetMethod("setContentView", &TopLevelWindow::SetContentView)
       .SetMethod("close", &TopLevelWindow::Close)
       .SetMethod("focus", &TopLevelWindow::Focus)
       .SetMethod("blur", &TopLevelWindow::Blur)
@@ -1024,6 +1038,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAspectRatio", &TopLevelWindow::SetAspectRatio)
       .SetMethod("previewFile", &TopLevelWindow::PreviewFile)
       .SetMethod("closeFilePreview", &TopLevelWindow::CloseFilePreview)
+      .SetMethod("getContentView", &TopLevelWindow::GetContentView)
       .SetMethod("getParentWindow", &TopLevelWindow::GetParentWindow)
       .SetMethod("getChildWindows", &TopLevelWindow::GetChildWindows)
       .SetMethod("getBrowserView", &TopLevelWindow::GetBrowserView)

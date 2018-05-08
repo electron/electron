@@ -25,7 +25,9 @@ View::~View() {
 
 // static
 mate::WrappableBase* View::New(mate::Arguments* args) {
-  return new View();
+  auto* view = new View();
+  view->InitWith(args->isolate(), args->GetThis());
+  return view;
 }
 
 // static

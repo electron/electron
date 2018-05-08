@@ -20,7 +20,7 @@ class WebContents;
 
 class WebContentsView : public View {
  public:
-  static mate::WrappableBase* New(v8::Isolate* isolate,
+  static mate::WrappableBase* New(mate::Arguments* args,
                                   mate::Handle<WebContents> web_contents);
 
   static void BuildPrototype(v8::Isolate* isolate,

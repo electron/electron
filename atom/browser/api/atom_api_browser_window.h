@@ -109,8 +109,6 @@ class BrowserWindow : public TopLevelWindow,
   v8::Global<v8::Value> web_contents_;
   api::WebContents* api_web_contents_;
 
-  v8::Global<v8::Value> web_contents_view_;
-
   base::WeakPtrFactory<BrowserWindow> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserWindow);

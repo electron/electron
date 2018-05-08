@@ -42,4 +42,21 @@ class View : public mate::EventEmitter<View> {
 
 }  // namespace atom
 
+namespace mate {
+
+template <>
+struct Converter<views::View*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::View** out) {
+    atom::api::View* view;
+    if (!Converter<atom::api::View*>::FromV8(isolate, val, &view))
+      return false;
+    *out = view->view();
+    return true;
+  }
+};
+
+}  // namespace mate
+
 #endif  // ATOM_BROWSER_API_ATOM_API_VIEW_H_
