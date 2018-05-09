@@ -35,8 +35,6 @@ Create a token from https://windows-ci.electronjs.org/api-token
 If you don't have an account, ask a team member to add you.
 * `CIRCLE_TOKEN`:
 Create a token from "Personal API Tokens" at https://circleci.com/account/api
-* `JENKINS_AUTH_TOKEN` and `JENKINS_BUILD_TOKEN`:
-Are provided by a Jenkins admin
 
 ## Run the prepare-release script
 The prepare release script will do the following:
@@ -86,9 +84,7 @@ $ ./script/bump-version.py --bump minor --dry-run
 The `prepare-release` script will trigger the builds via API calls.
 To monitor the build progress, see the following pages:
 
-- [mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-mas-x64-release/activity) for Mac App Store
-- [mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity](https://mac-ci.electronjs.org/blue/organizations/jenkins/electron-osx-x64-release/activity) for OS X
-- [circleci.com/gh/electron/electron](https://circleci.com/gh/electron) for Linux
+- [circleci.com/gh/electron/electron](https://circleci.com/gh/electron) for OS X and Linux
 - [windows-ci.electronjs.org/project/AppVeyor/electron](https://windows-ci.electronjs.org/project/AppVeyor/electron) for Windows
 
 ## Compile release notes
