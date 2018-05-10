@@ -69,3 +69,7 @@ IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
                     GURL /* url */,
                     content::Referrer /* referrer */)
+
+// Sent by sandboxed renderer to get the preload script.
+IPC_SYNC_MESSAGE_ROUTED0_1(AtomViewHostMsg_GetPreloadScript,
+                           std::string /* result */)

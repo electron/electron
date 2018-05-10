@@ -54,9 +54,11 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -330,6 +332,10 @@ struct WebContents::FrameDispatchHelper {
                              const base::ListValue& args,
                              IPC::Message* message) {
     api_web_contents->OnRendererMessageSync(rfh, channel, args, message);
+  }
+
+  void OnGetPreloadScript(IPC::Message* reply_msg) {
+    api_web_contents->OnGetPreloadScript(rfh, reply_msg);
   }
 };
 
@@ -1106,6 +1112,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_GetZoomLevel, &helper,
                                     FrameDispatchHelper::OnGetZoomLevel)
+    IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomViewHostMsg_GetPreloadScript, &helper,
+                                    FrameDispatchHelper::OnGetPreloadScript)
 #if defined(TOOLKIT_VIEWS)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_ShowPopup, ShowAutofillPopup)
     IPC_MESSAGE_HANDLER(AtomAutofillFrameHostMsg_HidePopup, HideAutofillPopup)
@@ -1933,6 +1941,26 @@ void WebContents::OnSetTemporaryZoomLevel(content::RenderFrameHost* rfh,
 void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
                                  IPC::Message* reply_msg) {
   AtomFrameHostMsg_GetZoomLevel::WriteReplyParams(reply_msg, GetZoomLevel());
+  rfh->Send(reply_msg);
+}
+
+void WebContents::OnGetPreloadScript(content::RenderFrameHost* rfh,
+                                     IPC::Message* reply_msg) {
+  std::string preload_script;
+
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    base::FilePath::StringType preload;
+    if (web_preferences->dict()->GetString(options::kPreloadScript, &preload)) {
+      base::ScopedAllowBlockingForTesting allow_blocking;
+      if (!base::ReadFileToString(base::FilePath(preload), &preload_script)) {
+        PLOG(WARNING) << "Failed to read preload script from: " << preload;
+        preload_script.clear();
+      }
+    }
+  }
+
+  AtomViewHostMsg_GetPreloadScript::WriteReplyParams(reply_msg, preload_script);
   rfh->Send(reply_msg);
 }
 
