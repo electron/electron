@@ -11,8 +11,8 @@
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
+#include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
-#include "vendor/node/deps/uv/include/uv.h"
 
 namespace node {
 class Environment;

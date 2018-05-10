@@ -20,8 +20,7 @@
 #include "media/base/key_system_properties.h"
 #include "media/media_features.h"
 
-// #include "widevine_cdm_version.h" // In SHARED_INTERMEDIATE_DIR.
-#include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
+#include "widevine_cdm_version.h"  // In SHARED_INTERMEDIATE_DIR.
 
 // The following must be after widevine_cdm_version.h.
 

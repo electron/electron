@@ -5,7 +5,7 @@
 #include "atom/common/atom_command_line.h"
 
 #include "base/command_line.h"
-#include "node/deps/uv/include/uv.h"
+#include "uv.h"  // NOLINT(build/include)
 
 namespace atom {
 

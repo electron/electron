@@ -14,9 +14,9 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
-#include "vendor/crashpad/client/crashpad_client.h"
-#include "vendor/crashpad/client/crashpad_info.h"
-#include "vendor/crashpad/client/settings.h"
+#include "crashpad/client/crashpad_client.h"
+#include "crashpad/client/crashpad_info.h"
+#include "crashpad/client/settings.h"
 
 namespace crash_reporter {
 

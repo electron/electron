@@ -15,7 +15,7 @@
 #include "gin/v8_initializer.h"
 
 #include "atom/common/node_includes.h"
-#include "vendor/node/src/tracing/trace_event.h"
+#include "tracing/trace_event.h"
 
 namespace atom {
 

@@ -11,7 +11,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/native_mate/arguments.h"
+#include "native_mate/arguments.h"
 
 namespace mate {
 

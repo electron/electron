@@ -12,8 +12,8 @@
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
 #include "base/strings/string_piece.h"
-#include "vendor/crashpad/client/crash_report_database.h"
-#include "vendor/crashpad/client/simple_string_dictionary.h"
+#include "crashpad/client/crash_report_database.h"
+#include "crashpad/client/simple_string_dictionary.h"
 
 namespace base {
 template <typename T>
