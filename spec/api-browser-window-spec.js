@@ -2699,64 +2699,104 @@ describe('BrowserWindow module', () => {
     })
 
     describe('BrowserWindow.addDevToolsExtension', () => {
-      beforeEach(() => {
-        BrowserWindow.removeDevToolsExtension('foo')
-        assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), false)
+      describe('for invalid extensions', () => {
+        it('throws errors for missing manifest.json files', () => {
+          const nonexistentExtensionPath = path.join(__dirname, 'does-not-exist')
+          assert.throws(() => {
+            BrowserWindow.addDevToolsExtension(nonexistentExtensionPath)
+          }, /ENOENT: no such file or directory/)
+        })
 
-        var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
-        BrowserWindow.addDevToolsExtension(extensionPath)
-        assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty('foo'), true)
-
-        showLastDevToolsPanel()
-
-        w.loadURL('about:blank')
-      })
-
-      it('throws errors for missing manifest.json files', () => {
-        assert.throws(() => {
-          BrowserWindow.addDevToolsExtension(path.join(__dirname, 'does-not-exist'))
-        }, /ENOENT: no such file or directory/)
-      })
-
-      it('throws errors for invalid manifest.json files', () => {
-        assert.throws(() => {
-          BrowserWindow.addDevToolsExtension(path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest'))
-        }, /Unexpected token }/)
-      })
-
-      describe('when the devtools is docked', () => {
-        it('creates the extension', (done) => {
-          w.webContents.openDevTools({mode: 'bottom'})
-
-          ipcMain.once('answer', function (event, message) {
-            assert.equal(message.runtimeId, 'foo')
-            assert.equal(message.tabId, w.webContents.id)
-            assert.equal(message.i18nString, 'foo - bar (baz)')
-            assert.deepEqual(message.storageItems, {
-              local: {
-                set: {hello: 'world', world: 'hello'},
-                remove: {world: 'hello'},
-                clear: {}
-              },
-              sync: {
-                set: {foo: 'bar', bar: 'foo'},
-                remove: {foo: 'bar'},
-                clear: {}
-              }
-            })
-            done()
-          })
+        it('throws errors for invalid manifest.json files', () => {
+          const badManifestExtensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'bad-manifest')
+          assert.throws(() => {
+            BrowserWindow.addDevToolsExtension(badManifestExtensionPath)
+          }, /Unexpected token }/)
         })
       })
 
-      describe('when the devtools is undocked', () => {
-        it('creates the extension', (done) => {
-          w.webContents.openDevTools({mode: 'undocked'})
+      describe('for a valid extension', () => {
+        const extensionName = 'foo'
 
-          ipcMain.once('answer', function (event, message, extensionId) {
-            assert.equal(message.runtimeId, 'foo')
-            assert.equal(message.tabId, w.webContents.id)
-            done()
+        const removeExtension = () => {
+          BrowserWindow.removeDevToolsExtension('foo')
+          assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty(extensionName), false)
+        }
+
+        const addExtension = () => {
+          const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+          BrowserWindow.addDevToolsExtension(extensionPath)
+          assert.equal(BrowserWindow.getDevToolsExtensions().hasOwnProperty(extensionName), true)
+
+          showLastDevToolsPanel()
+
+          w.loadURL('about:blank')
+        }
+
+        // After* hooks won't be called if a test fail.
+        // So let's make a clean-up in the before hook.
+        beforeEach(removeExtension)
+
+        describe('when the devtools is docked', () => {
+          beforeEach(function (done) {
+            addExtension()
+            w.webContents.openDevTools({mode: 'bottom'})
+            ipcMain.once('answer', (event, message) => {
+              this.message = message
+              done()
+            })
+          })
+
+          describe('created extension', function () {
+            it('has proper runtimeId', function () {
+              expect(this.message).to.have.own.property('runtimeId')
+              expect(this.message.runtimeId).to.equal(extensionName)
+            })
+            it('has tabId matching webContents id', function () {
+              expect(this.message).to.have.own.property('tabId')
+              expect(this.message.tabId).to.equal(w.webContents.id)
+            })
+            it('has i18nString with proper contents', function () {
+              expect(this.message).to.have.own.property('i18nString')
+              expect(this.message.i18nString).to.equal('foo - bar (baz)')
+            })
+            it('has storageItems with proper contents', function () {
+              expect(this.message).to.have.own.property('storageItems')
+              expect(this.message.storageItems).to.deep.equal({
+                local: {
+                  set: {hello: 'world', world: 'hello'},
+                  remove: {world: 'hello'},
+                  clear: {}
+                },
+                sync: {
+                  set: {foo: 'bar', bar: 'foo'},
+                  remove: {foo: 'bar'},
+                  clear: {}
+                }
+              })
+            })
+          })
+        })
+
+        describe('when the devtools is undocked', () => {
+          beforeEach(function (done) {
+            addExtension()
+            w.webContents.openDevTools({mode: 'undocked'})
+            ipcMain.once('answer', (event, message, extensionId) => {
+              this.message = message
+              done()
+            })
+          })
+
+          describe('created extension', function () {
+            it('has proper runtimeId', function () {
+              expect(this.message).to.have.own.property('runtimeId')
+              expect(this.message.runtimeId).to.equal(extensionName)
+            })
+            it('has tabId matching webContents id', function () {
+              expect(this.message).to.have.own.property('tabId')
+              expect(this.message.tabId).to.equal(w.webContents.id)
+            })
           })
         })
       })
