@@ -15,16 +15,14 @@
 
 namespace {
 
-bool IsDesktopEnvironmentUnity() {
 #if defined(OS_LINUX)
+bool IsDesktopEnvironmentUnity() {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   base::nix::DesktopEnvironment desktop_env =
       base::nix::GetDesktopEnvironment(env.get());
   return desktop_env == base::nix::DESKTOP_ENVIRONMENT_UNITY;
-#else
-  return false;
-#endif
 }
+#endif
 
 }  // namespace
 
