@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const {expect} = require('chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
