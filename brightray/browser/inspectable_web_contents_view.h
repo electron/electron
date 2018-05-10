@@ -27,7 +27,7 @@ class InspectableWebContentsView {
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
 
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   // Returns the container control, which has devtools view attached.
   virtual views::View* GetView() = 0;
 
