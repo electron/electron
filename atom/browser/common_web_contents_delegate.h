@@ -15,7 +15,7 @@
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
 #endif
 
@@ -91,7 +91,7 @@ class CommonWebContentsDelegate
       const content::NativeWebKeyboardEvent& event) override;
 
   // Autofill related events.
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   void ShowAutofillPopup(bool offscreen,
                          content::RenderFrameHost* frame_host,
                          const gfx::RectF& bounds,
@@ -118,7 +118,7 @@ class CommonWebContentsDelegate
                             const std::string& query) override;
 
   // brightray::InspectableWebContentsViewDelegate:
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
 #if defined(USE_X11)
@@ -165,7 +165,7 @@ class CommonWebContentsDelegate
   bool native_fullscreen_;
 
   // UI related helper classes.
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   std::unique_ptr<AutofillPopup> autofill_popup_;
 #endif
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;

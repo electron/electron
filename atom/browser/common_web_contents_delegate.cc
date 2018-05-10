@@ -178,7 +178,7 @@ void CommonWebContentsDelegate::SetOwnerWindow(
   auto relay = std::make_unique<NativeWindowRelay>(owner_window_);
   auto* relay_key = relay->key;
   if (owner_window) {
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
     autofill_popup_.reset(new AutofillPopup());
 #endif
     web_contents->SetUserData(relay_key, std::move(relay));
