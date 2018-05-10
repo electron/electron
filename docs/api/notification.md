@@ -111,6 +111,8 @@ shown notification and create a new one with identical properties.
 
 Dismisses the notification.
 
+_macOS_: Removes notification from Notification Center. Caveat: Only the last notification can be removed via this API.
+
 ### Playing Sounds
 
 On macOS, you can specify the name of the sound you'd like to play when the
