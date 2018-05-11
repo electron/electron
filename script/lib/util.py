@@ -193,6 +193,12 @@ def electron_gyp():
     obj = eval(f.read());
     return obj['variables']
 
+def electron_features():
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  gyp = os.path.join(SOURCE_ROOT, 'features.gypi')
+  with open(gyp) as f:
+    obj = eval(f.read());
+    return obj['variables']['variables']
 
 def get_electron_version():
   return 'v' + electron_gyp()['version%']
