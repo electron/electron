@@ -58,17 +58,11 @@ DesktopCapturer::~DesktopCapturer() {}
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
                                     const gfx::Size& thumbnail_size) {
-  webrtc::DesktopCaptureOptions options =
-      content::desktop_capture::CreateDesktopCaptureOptions();
-#if defined(OS_WIN)
-  using_directx_capturer_ = options.allow_directx_capturer();
-#endif  // defined(OS_WIN)
-
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
-      capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)
+      capture_screen ? content::desktop_capture::CreateScreenCapturer()
                      : nullptr);
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer(
-      capture_window ? webrtc::DesktopCapturer::CreateWindowCapturer(options)
+      capture_window ? content::desktop_capture::CreateScreenCapturer()
                      : nullptr);
   media_list_.reset(new NativeDesktopMediaList(std::move(screen_capturer),
                                                std::move(window_capturer)));

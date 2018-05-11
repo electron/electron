@@ -199,7 +199,6 @@
                 'libraries': [
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libhttp_server.a',
-                  '<(libchromiumcontent_dir)/libdesktop_capture.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
