@@ -1445,8 +1445,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('disableguestresize attribute', () => {
+  describe('disableguestresize attribute', () => {
     it('does not have attribute by default', () => {
       document.body.appendChild(webview)
       assert(!webview.hasAttribute('disableguestresize'))
