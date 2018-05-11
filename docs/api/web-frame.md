@@ -276,5 +276,6 @@ current renderer process.
 
 ### `webFrame.routingId`
 
-A unique frame id in the current renderer process. Distinct WebFrame instances
-that refer to the same underlying frame will have the same `routingId`.
+An `Integer` representing a unique frame id in the current renderer process.
+Distinct WebFrame instances that refer to the same underlying frame will have
+the same `routingId`.
