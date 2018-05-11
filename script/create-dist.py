@@ -14,7 +14,7 @@ if sys.platform == "win32":
 from lib.config import BASE_URL, PLATFORM, enable_verbose_mode, \
                        get_target_arch, get_zip_name, build_env
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
-                     execute, electron_gyp
+                     execute, electron_gyp, electron_features
 
 
 ELECTRON_VERSION = get_electron_version()
@@ -28,6 +28,7 @@ NATIVE_MKSNAPSHOT_DIR = os.path.join(SOURCE_ROOT, 'vendor', 'native_mksnapshot')
 
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
+PDF_VIEWER_ENABLED = electron_features()['enable_pdf_viewer%']
 
 TARGET_BINARIES = {
   'darwin': [
@@ -35,7 +36,6 @@ TARGET_BINARIES = {
   'win32': [
     '{0}.exe'.format(PROJECT_NAME),  # 'electron.exe'
     'content_shell.pak',
-    'pdf_viewer_resources.pak',
     'd3dcompiler_47.dll',
     'icudtl.dat',
     'libEGL.dll',
@@ -52,7 +52,6 @@ TARGET_BINARIES = {
   'linux': [
     PROJECT_NAME,  # 'electron'
     'content_shell.pak',
-    'pdf_viewer_resources.pak',
     'icudtl.dat',
     'libffmpeg.so',
     'libnode.so',
@@ -125,6 +124,10 @@ def force_build():
 def copy_binaries():
   for binary in TARGET_BINARIES[PLATFORM]:
     shutil.copy2(os.path.join(OUT_DIR, binary), DIST_DIR)
+
+  if PLATFORM != 'darwin' and PDF_VIEWER_ENABLED:
+    shutil.copy2(os.path.join(OUT_DIR, 'pdf_viewer_resources.pak'),
+                 DIST_DIR)
 
   for directory in TARGET_DIRECTORIES[PLATFORM]:
     shutil.copytree(os.path.join(OUT_DIR, directory),
@@ -255,6 +258,8 @@ def create_dist_zip():
   with scoped_cwd(DIST_DIR):
     files = TARGET_BINARIES[PLATFORM] + TARGET_BINARIES_EXT + ['LICENSE',
             'LICENSES.chromium.html', 'version']
+    if PLATFORM != 'darwin' and PDF_VIEWER_ENABLED:
+      files += ['pdf_viewer_resources.pak']
     dirs = TARGET_DIRECTORIES[PLATFORM]
     make_zip(zip_file, files, dirs)
 
