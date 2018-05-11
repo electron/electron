@@ -670,8 +670,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-opened event', () => {
+  describe('devtools-opened event', () => {
     it('should fire when webview.openDevTools() is called', (done) => {
       const listener = () => {
         webview.removeEventListener('devtools-opened', listener)
@@ -687,8 +686,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-closed event', () => {
+  describe('devtools-closed event', () => {
     it('should fire when webview.closeDevTools() is called', (done) => {
       const listener2 = () => {
         webview.removeEventListener('devtools-closed', listener2)
@@ -708,8 +706,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-focused event', () => {
+  describe('devtools-focused event', () => {
     it('should fire when webview.openDevTools() is called', (done) => {
       const listener = () => {
         webview.removeEventListener('devtools-focused', listener)
