@@ -237,10 +237,10 @@ renderer process.
 
 ### `webFrame.findFrameByRoutingId(routingId)`
 
-* `routingId` Integer - A unique frame id in the current renderer process.
-  Routing IDs can be retrieved from `WebFrame` instances (`webFrame.routingId`)
-  and are also passed by frame specific `WebContents` navigation events (e.g. 
-  `did-frame-navigate`)
+* `routingId` Integer - An `Integer` representing the unique frame id in the
+   current renderer process. Routing IDs can be retrieved from `WebFrame`
+   instances (`webFrame.routingId`) and are also passed by frame
+   specific `WebContents` navigation events (e.g. `did-frame-navigate`)
   
 Returns `WebFrame` - that has the supplied `routingId`, `null` if not found. 
 
@@ -276,5 +276,6 @@ current renderer process.
 
 ### `webFrame.routingId`
 
-A unique frame id in the current renderer process. Distinct WebFrame instances
-that refer to the same underlying frame will have the same `routingId`.
+An `Integer` representing the unique frame id in the current renderer process.
+Distinct WebFrame instances that refer to the same underlying frame will have
+the same `routingId`.
