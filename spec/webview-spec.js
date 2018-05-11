@@ -924,8 +924,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('media-started-playing media-paused events', () => {
+  describe('media-started-playing media-paused events', () => {
     it('emits when audio starts and stops playing', (done) => {
       let audioPlayed = false
       webview.addEventListener('media-started-playing', () => {
@@ -1480,8 +1479,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('disableguestresize attribute', () => {
+  describe('disableguestresize attribute', () => {
     it('does not have attribute by default', () => {
       document.body.appendChild(webview)
       assert(!webview.hasAttribute('disableguestresize'))
