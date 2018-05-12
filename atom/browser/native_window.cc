@@ -25,20 +25,19 @@ namespace atom {
 namespace {
 
 #if defined(OS_WIN)
-  gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
-    if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
-      return size;
+gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+  if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
+    return size;
 
-    gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
+  gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
       window->GetAcceleratedWidget(), gfx::Size(64, 64));
 
-    // Some AMD drivers can't display windows that are less than 64x64 pixels,
-    // so expand them to be at least that size. http://crbug.com/286609
-    gfx::Size expanded(
-      std::max(size.width(), min_size.width()),
-      std::max(size.height(), min_size.height()));
-    return expanded;
-  }
+  // Some AMD drivers can't display windows that are less than 64x64 pixels,
+  // so expand them to be at least that size. http://crbug.com/286609
+  gfx::Size expanded(std::max(size.width(), min_size.width()),
+                     std::max(size.height(), min_size.height()));
+  return expanded;
+}
 #endif
 
 }  // namespace
