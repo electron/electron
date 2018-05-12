@@ -100,11 +100,11 @@ gfx::Size FramelessView::CalculatePreferredSize() const {
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
-  return window_->GetContentSizeConstraints().GetMinimumSize();
+  return window_->GetContentMinimumSize();
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  return window_->GetContentSizeConstraints().GetMaximumSize();
+  return window_->GetContentMaximumSize();
 }
 
 const char* FramelessView::GetClassName() const {

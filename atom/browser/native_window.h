@@ -102,6 +102,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize() const;
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize() const;
+  virtual gfx::Size GetContentMinimumSize() const;
+  virtual gfx::Size GetContentMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
