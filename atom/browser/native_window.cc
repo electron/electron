@@ -14,9 +14,12 @@
 #include "atom/common/color_util.h"
 #include "atom/common/options_switches.h"
 #include "native_mate/dictionary.h"
+#include "ui/views/widget/widget.h"
+
+#if defined(OS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/views/widget/widget.h"
+#endif
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
@@ -556,7 +559,7 @@ const views::Widget* NativeWindow::GetWidget() const {
 }
 
 NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-  : key(UserDataKey()), window(window) {}
+    : key(UserDataKey()), window(window) {}
 
 NativeWindowRelay::~NativeWindowRelay() = default;
 
