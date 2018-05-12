@@ -758,66 +758,6 @@ app.setJumpList([
 ])
 ```
 
-### `app.makeSingleInstance(callback)` *(Deprecated)*
-
-* `callback` Function
-  * `argv` String[] - An array of the second instance's command line arguments
-  * `workingDirectory` String - The second instance's working directory
-
-Returns `Boolean`.
-
-**Deprecated**: This method has been deprecated and is scheduled for removal.
-Please use `app.requestSingleInstanceLock()` instead.
-
-This method makes your application a Single Instance Application - instead of
-allowing multiple instances of your app to run, this will ensure that only a
-single instance of your app is running, and other instances signal this
-instance and exit.
-
-`callback` will be called by the first instance with `callback(argv, workingDirectory)`
-when a second instance has been executed. `argv` is an Array of the second instance's
-command line arguments, and `workingDirectory` is its current working directory. Usually
-applications respond to this by making their primary window focused and
-non-minimized.
-
-The `callback` is guaranteed to be executed after the `ready` event of `app`
-gets emitted.
-
-This method returns `false` if your process is the primary instance of the
-application and your app should continue loading. And returns `true` if your
-process has sent its parameters to another instance, and you should immediately
-quit.
-
-On macOS the system enforces single instance automatically when users try to open
-a second instance of your app in Finder, and the `open-file` and `open-url`
-events will be emitted for that. However when users start your app in command
-line the system's single instance mechanism will be bypassed and you have to
-use this method to ensure single instance.
-
-An example of activating the window of primary instance when a second instance
-starts:
-
-```javascript
-const {app} = require('electron')
-let myWindow = null
-
-const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, we should focus our window.
-  if (myWindow) {
-    if (myWindow.isMinimized()) myWindow.restore()
-    myWindow.focus()
-  }
-})
-
-if (isSecondInstance) {
-  app.quit()
-}
-
-// Create myWindow, load the rest of the app, etc...
-app.on('ready', () => {
-})
-```
-
 ### `app.requestSingleInstanceLock()`
 
 Returns `Boolean`
@@ -877,15 +817,6 @@ This method returns whether or not this instance of your app is currently
 holding the single instance lock.  You can request the lock with
 `app.requestSingleInstanceLock()` and release with
 `app.releaseSingleInstanceLock()`
-
-### `app.releaseSingleInstance()` *(Deprecated)*
-
-Releases all locks that were created by `makeSingleInstance`. This will allow
-multiple instances of the application to once again run side by side.
-
-**Deprecated**: This method has been deprecated and is scheduled for removal.
-Please use the `app.requestSingleInstanceLock()` and `app.releaseSingleInstanceLock()`
-methods instead.
 
 ### `app.releaseSingleInstanceLock()`
 
