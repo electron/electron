@@ -5,57 +5,37 @@
 #ifndef ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 #define ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 
+#include "content/public/browser/web_contents.h"
+
 #include "base/callback.h"
-#include "base/memory/weak_ptr.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "mojo/public/cpp/bindings/binding.h"
-#include "services/viz/privileged/interfaces/compositing/frame_sink_video_capture.mojom.h"
-#include "third_party/skia/include/core/SkBitmap.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
+#include "content/public/browser/web_contents_observer.h"
+#include "ui/gfx/image/image.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
 namespace api {
 
-class FrameSubscriber : public viz::mojom::FrameSinkVideoConsumer {
+class WebContents;
+
+class FrameSubscriber : public content::WebContentsObserver {
  public:
   using FrameCaptureCallback =
-      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
+      base::Callback<void(const gfx::Image&, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
-                  content::RenderWidgetHostView* view,
+                  content::WebContents* web_contents,
                   const FrameCaptureCallback& callback);
-  ~FrameSubscriber() override;
+  ~FrameSubscriber();
 
  private:
-  void OnFrameCaptured(
-    mojo::ScopedSharedBufferHandle buffer,
-    uint32_t buffer_size,
-    ::media::mojom::VideoFrameInfoPtr info,
-    const gfx::Rect& update_rect,
-    const gfx::Rect& content_rect,
-    viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) override;
-  void OnTargetLost(const viz::FrameSinkId& frame_sink_id) override;
-  void OnStopped() override;
-  viz::mojom::FrameSinkVideoCapturerPtr CreateVideoCapturer();
+  gfx::Rect GetDamageRect();
+  void DidReceiveCompositorFrame() override;
+  void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
   v8::Isolate* isolate_;
-  content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
-
-  SkBitmap frame_;
-
-  // This object keeps the shared memory that backs |frame_| mapped.
-  mojo::ScopedSharedBufferMapping shared_memory_mapping_;
-
-  // This object prevents FrameSinkVideoCapturer from recycling the shared
-  // memory that backs |frame_|.
-  viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr shared_memory_releaser_;
-
-  viz::mojom::FrameSinkVideoCapturerPtr video_capturer_;
-  mojo::Binding<viz::mojom::FrameSinkVideoConsumer> video_consumer_binding_;
-
-  base::WeakPtrFactory<FrameSubscriber> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
