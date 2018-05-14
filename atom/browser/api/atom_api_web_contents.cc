@@ -1634,15 +1634,17 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
 }
 
 void WebContents::BeginFrameSubscription(mate::Arguments* args) {
+  bool only_dirty = false;
   FrameSubscriber::FrameCaptureCallback callback;
 
+  args->GetNext(&only_dirty);
   if (!args->GetNext(&callback)) {
     args->ThrowError();
     return;
   }
 
   frame_subscriber_.reset(
-      new FrameSubscriber(isolate(), web_contents(), callback));
+      new FrameSubscriber(isolate(), web_contents(), callback, only_dirty));
 }
 
 void WebContents::EndFrameSubscription() {

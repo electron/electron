@@ -26,7 +26,8 @@ class FrameSubscriber : public content::WebContentsObserver {
 
   FrameSubscriber(v8::Isolate* isolate,
                   content::WebContents* web_contents,
-                  const FrameCaptureCallback& callback);
+                  const FrameCaptureCallback& callback,
+                  bool only_dirty);
   ~FrameSubscriber();
 
  private:
@@ -36,6 +37,7 @@ class FrameSubscriber : public content::WebContentsObserver {
 
   v8::Isolate* isolate_;
   FrameCaptureCallback callback_;
+  bool only_dirty_;
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
