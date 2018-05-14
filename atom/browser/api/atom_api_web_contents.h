@@ -47,6 +47,7 @@ class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
+class FrameSubscriber;
 
 #if defined(ENABLE_OSR)
 class OffScreenWebContentsView;

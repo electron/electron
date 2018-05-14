@@ -1681,10 +1681,8 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    frame_subscriber_.reset(new FrameSubscriber(isolate(), view, callback));
-  }
+  frame_subscriber_.reset(
+      new FrameSubscriber(isolate(), web_contents(), callback));
 }
 
 void WebContents::EndFrameSubscription() {
