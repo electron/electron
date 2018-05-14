@@ -1319,23 +1319,20 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 * `onlyDirty` Boolean (optional) - Defaults to `false`.
 * `callback` Function
-  * `frameBuffer` Buffer
+  * `image` [NativeImage](native-image.md)
   * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 Begin subscribing for presentation events and captured frames, the `callback`
-will be called with `callback(frameBuffer, dirtyRect)` when there is a
-presentation event.
+will be called with `callback(image, dirtyRect)` when there is a presentation
+event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
-the pixel data is effectively stored in 32bit BGRA format, but the actual
-representation depends on the endianness of the processor (most modern
-processors are little-endian, on machines with big-endian processors the data
-is in 32bit ARGB format).
+The `image` is an instance of [NativeImage](native-image.md) that stores the
+captured frame.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
-`true`, `frameBuffer` will only contain the repainted area. `onlyDirty`
-defaults to `false`.
+`true`, `image` will only contain the repainted area. `onlyDirty` defaults to
+`false`.
 
 #### `contents.endFrameSubscription()`
 
@@ -1460,7 +1457,7 @@ process.
 
 Returns `Integer` - The chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
-(e.g. `did-frame-navigate`) 
+(e.g. `did-frame-navigate`)
 
 ### Instance Properties
 
