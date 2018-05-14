@@ -50,6 +50,7 @@ def main():
   github = GitHub(auth_token())
   releases = github.repos(ELECTRON_REPO).releases.get()
   tag_exists = False
+  release = None
   for r in releases:
     if not r['draft'] and r['tag_name'] == args.version:
       release = r
@@ -62,6 +63,9 @@ def main():
     if not args.overwrite:
       release = create_or_get_release_draft(github, releases, args.version,
                                             tag_exists)
+  elif release is None:
+      release = dict(tag_name=args.version)
+
 
   # Upload Electron with GitHub Releases API.
   upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME),
