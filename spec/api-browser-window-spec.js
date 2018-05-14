@@ -2235,6 +2235,24 @@ describe('BrowserWindow module', () => {
           assert.equal(w.isResizable(), false)
         }
       })
+
+      if (process.platform === 'win32') {
+        it('works for a window smaller than 64x64', () => {
+          w.destroy()
+          w = new BrowserWindow({
+            show: false,
+            frame: false,
+            resizable: false,
+            transparent: true
+          })
+          w.setContentSize(60, 60)
+          assertBoundsEqual(w.getContentSize(), [60, 60])
+          w.setContentSize(30, 30)
+          assertBoundsEqual(w.getContentSize(), [30, 30])
+          w.setContentSize(10, 10)
+          assertBoundsEqual(w.getContentSize(), [10, 10])
+        })
+      }
     })
 
     describe('loading main frame state', () => {
