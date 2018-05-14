@@ -1,4 +1,5 @@
 const assert = require('assert')
+const {expect} = require('chai')
 const path = require('path')
 const http = require('http')
 const url = require('url')
@@ -846,9 +847,11 @@ describe('<webview> tag', function () {
     })
 
     it('throws a custom error when an API method is called before the event is emitted', () => {
-      assert.throws(() => {
-        webview.stop()
-      }, 'Cannot call stop because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.')
+      const expectedErrorMessage =
+          'Cannot call stop because the webContents is unavailable. ' +
+          'The WebView must be attached to the DOM ' +
+          'and the dom-ready event emitted before this method can be called.'
+      expect(() => { webview.stop() }).to.throw(expectedErrorMessage)
     })
   })
 
