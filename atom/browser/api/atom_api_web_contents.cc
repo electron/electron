@@ -1621,7 +1621,9 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
+#endif
       } else {
         rwh->ForwardMouseEvent(mouse_event);
       }
@@ -1639,8 +1641,10 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
             mouse_wheel_event);
+#endif
       } else {
         rwh->ForwardWheelEvent(mouse_wheel_event);
       }
