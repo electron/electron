@@ -217,6 +217,11 @@
               ],
             },
           ],
+          'link_settings': {
+            'ldflags': [
+              '-Wl,-z,noexecstack',
+            ],
+          },
         }],  # OS=="linux"
       ],
     },  # target <(project_name)
