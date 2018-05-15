@@ -210,7 +210,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
     return path;
 
   GSList* filters = gtk_file_chooser_list_filters(GTK_FILE_CHOOSER(dialog_));
-  int i = g_slist_index(filters, selected_filter);
+  size_t i = g_slist_index(filters, selected_filter);
   g_slist_free(filters);
   if (i >= filters_.size())
     return path;
