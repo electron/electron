@@ -84,6 +84,8 @@ void OffScreenWebContentsView::StoreFocus() {}
 
 void OffScreenWebContentsView::RestoreFocus() {}
 
+void OffScreenWebContentsView::FocusThroughTabTraversal(bool reverse) {}
+
 content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
@@ -146,26 +148,6 @@ void OffScreenWebContentsView::RenderViewSwappedIn(
     content::RenderViewHost* host) {}
 
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
-
-void OffScreenWebContentsView::GetScreenInfo(
-    content::ScreenInfo* screen_info) const {
-  screen_info->depth = 24;
-  screen_info->depth_per_component = 8;
-  screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = 1.0;
-  screen_info->orientation_type =
-      content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
-
-  if (GetView()) {
-    screen_info->rect = gfx::Rect(GetView()->size());
-    screen_info->available_rect = gfx::Rect(GetView()->size());
-  } else {
-    const display::Display display =
-        display::Screen::GetScreen()->GetPrimaryDisplay();
-    screen_info->rect = display.bounds();
-    screen_info->available_rect = display.work_area();
-  }
-}
 
 #if defined(OS_MACOSX)
 void OffScreenWebContentsView::SetAllowOtherViews(bool allow) {}

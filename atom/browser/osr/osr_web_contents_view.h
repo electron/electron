@@ -38,6 +38,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void SetInitialFocus() override;
   void StoreFocus() override;
   void RestoreFocus() override;
+  void FocusThroughTabTraversal(bool reverse) override;
   content::DropData* GetDropData() const override;
   gfx::Rect GetViewBounds() const override;
   void CreateView(const gfx::Size& initial_size,
@@ -51,7 +52,6 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewCreated(content::RenderViewHost* host) override;
   void RenderViewSwappedIn(content::RenderViewHost* host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
-  void GetScreenInfo(content::ScreenInfo* screen_info) const override;
 
 #if defined(OS_MACOSX)
   void SetAllowOtherViews(bool allow) override;

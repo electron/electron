@@ -797,9 +797,8 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::ResizeDueToAutoResize(
-    content::WebContents* web_contents,
-    const gfx::Size& new_size) {
+void WebContents::ResizeDueToAutoResize(content::WebContents* web_contents,
+                                        const gfx::Size& new_size) {
   if (IsGuest()) {
     guest_delegate_->ResizeDueToAutoResize(new_size);
   }
@@ -865,9 +864,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   bool is_main_frame = !render_frame_host->GetParent();
   int frame_process_id = render_frame_host->GetProcess()->GetID();
   int frame_routing_id = render_frame_host->GetRoutingID();
-  Emit("did-frame-finish-load",
-       is_main_frame,
-       frame_process_id,
+  Emit("did-frame-finish-load", is_main_frame, frame_process_id,
        frame_routing_id);
 
   if (is_main_frame)
@@ -881,13 +878,8 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
   bool is_main_frame = !render_frame_host->GetParent();
   int frame_process_id = render_frame_host->GetProcess()->GetID();
   int frame_routing_id = render_frame_host->GetRoutingID();
-  Emit("did-fail-load",
-       error_code,
-       error_description,
-       url,
-       is_main_frame,
-       frame_process_id,
-       frame_routing_id);
+  Emit("did-fail-load", error_code, error_description, url, is_main_frame,
+       frame_process_id, frame_routing_id);
 }
 
 void WebContents::DidStartLoading() {
@@ -903,9 +895,9 @@ void WebContents::DidStartNavigation(
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
   content::FrameTreeNode* frame_tree_node =
-    content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
   content::RenderFrameHostManager* render_manager =
-    frame_tree_node->render_manager();
+      frame_tree_node->render_manager();
   content::RenderFrameHost* frame_host = nullptr;
   if (render_manager) {
     frame_host = render_manager->speculative_frame_host();
@@ -919,12 +911,8 @@ void WebContents::DidStartNavigation(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  Emit("did-start-navigation",
-       url,
-       is_same_document,
-       is_main_frame,
-       frame_process_id,
-       frame_routing_id);
+  Emit("did-start-navigation", url, is_same_document, is_main_frame,
+       frame_process_id, frame_routing_id);
 }
 
 void WebContents::DidFinishNavigation(
@@ -933,7 +921,7 @@ void WebContents::DidFinishNavigation(
     return;
   bool is_main_frame = navigation_handle->IsInMainFrame();
   content::RenderFrameHost* frame_host =
-    navigation_handle->GetRenderFrameHost();
+      navigation_handle->GetRenderFrameHost();
   int frame_process_id = -1, frame_routing_id = -1;
   if (frame_host) {
     frame_process_id = frame_host->GetProcess()->GetID();
@@ -943,27 +931,19 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
-      Emit("did-navigate-in-page",
-        url,
-        is_main_frame,
-        frame_process_id,
-        frame_routing_id);
+      Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
+           frame_routing_id);
     } else {
-      const net::HttpResponseHeaders* http_response
-        = navigation_handle->GetResponseHeaders();
+      const net::HttpResponseHeaders* http_response =
+          navigation_handle->GetResponseHeaders();
       std::string http_status_text;
       int http_response_code = -1;
       if (http_response) {
         http_status_text = http_response->GetStatusText();
         http_response_code = http_response->response_code();
       }
-      Emit("did-frame-navigate",
-           url,
-           http_response_code,
-           http_status_text,
-           is_main_frame,
-           frame_process_id,
-           frame_routing_id);
+      Emit("did-frame-navigate", url, http_response_code, http_status_text,
+           is_main_frame, frame_process_id, frame_routing_id);
       if (is_main_frame) {
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
@@ -972,23 +952,13 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     int code = navigation_handle->GetNetErrorCode();
     auto description = net::ErrorToShortString(code);
-    Emit("did-fail-provisional-load",
-         code,
-         description,
-         url,
-         is_main_frame,
-         frame_process_id,
-         frame_routing_id);
+    Emit("did-fail-provisional-load", code, description, url, is_main_frame,
+         frame_process_id, frame_routing_id);
 
     // Do not emit "did-fail-load" for canceled requests.
     if (code != net::ERR_ABORTED)
-      Emit("did-fail-load",
-           code,
-           description,
-           url,
-           is_main_frame,
-           frame_process_id,
-           frame_routing_id);
+      Emit("did-fail-load", code, description, url, is_main_frame,
+           frame_process_id, frame_routing_id);
   }
 }
 
@@ -1650,7 +1620,11 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      rwh->ForwardMouseEvent(mouse_event);
+      if (IsOffScreen()) {
+        GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
+      } else {
+        rwh->ForwardMouseEvent(mouse_event);
+      }
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
@@ -1664,7 +1638,12 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      rwh->ForwardWheelEvent(mouse_wheel_event);
+      if (IsOffScreen()) {
+        GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
+            mouse_wheel_event);
+      } else {
+        rwh->ForwardWheelEvent(mouse_wheel_event);
+      }
       return;
     }
   }
@@ -1860,8 +1839,7 @@ int WebContents::GetFrameRate() const {
 void WebContents::Invalidate() {
   if (IsOffScreen()) {
 #if defined(ENABLE_OSR)
-    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-        web_contents()->GetRenderWidgetHostView());
+    auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
     if (osr_rwhv)
       osr_rwhv->Invalidate();
 #endif
