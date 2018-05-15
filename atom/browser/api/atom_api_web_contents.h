@@ -51,6 +51,7 @@ class FrameSubscriber;
 
 #if defined(ENABLE_OSR)
 class OffScreenWebContentsView;
+class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -402,6 +403,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 #if defined(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
   // Called when we receive a CursorChange message from chromium.

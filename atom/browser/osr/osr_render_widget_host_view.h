@@ -85,9 +85,7 @@ class OffScreenRenderWidgetHostView
   ~OffScreenRenderWidgetHostView() override;
 
   // content::RenderWidgetHostView:
-  bool OnMessageReceived(const IPC::Message&) override;
   void InitAsChild(gfx::NativeView) override;
-  content::RenderWidgetHost* GetRenderWidgetHost(void) const override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
   gfx::Vector2dF GetLastScrollOffset(void) const override;
@@ -108,6 +106,7 @@ class OffScreenRenderWidgetHostView
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
   void SetNeedsBeginFrames(bool needs_begin_frames) override;
+  void SetWantsAnimateOnlyBeginFrames() override;
 #if defined(OS_MACOSX)
   ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
@@ -122,8 +121,10 @@ class OffScreenRenderWidgetHostView
   void DidCreateNewRendererCompositorFrameSink(
       viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink)
       override;
-  void SubmitCompositorFrame(const viz::LocalSurfaceId& local_surface_id,
-                             viz::CompositorFrame frame) override;
+  void SubmitCompositorFrame(
+      const viz::LocalSurfaceId& local_surface_id,
+      viz::CompositorFrame frame,
+      viz::mojom::HitTestRegionListPtr hit_test_region_list) override;
 
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
@@ -136,28 +137,22 @@ class OffScreenRenderWidgetHostView
   void RenderProcessGone(base::TerminationStatus, int) override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16&) override;
-#if defined(OS_MACOSX)
-  void SelectionChanged(const base::string16& text,
-                        size_t offset,
-                        const gfx::Range& range) override;
-#endif
   void SelectionBoundsChanged(
       const ViewHostMsg_SelectionBounds_Params&) override;
-  void CopyFromSurface(const gfx::Rect& src_subrect,
-                       const gfx::Size& dst_size,
-                       const content::ReadbackRequestCallback& callback,
-                       const SkColorType color_type) override;
-  void CopyFromSurfaceToVideoFrame(
-      const gfx::Rect& src_subrect,
-      scoped_refptr<media::VideoFrame> target,
-      const base::Callback<void(const gfx::Rect&, bool)>& callback) override;
+  void CopyFromSurface(
+      const gfx::Rect& src_rect,
+      const gfx::Size& output_size,
+      base::OnceCallback<void(const SkBitmap&)> callback) override;
+  void GetScreenInfo(content::ScreenInfo* results) const override;
   void InitAsGuest(content::RenderWidgetHostView*,
                    content::RenderWidgetHostViewGuest*) override;
-  bool HasAcceleratedSurface(const gfx::Size&) override;
+  gfx::Vector2d GetOffsetFromRootSurface() override;
   gfx::Rect GetBoundsInRootWindow(void) override;
+  content::RenderWidgetHostImpl* GetRenderWidgetHostImpl() const override;
+  viz::SurfaceId GetCurrentSurfaceId() const override;
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
-  gfx::Size GetPhysicalBackingSize() const override;
+  gfx::Size GetCompositorViewportPixelSize() const override;
   gfx::Size GetRequestedRendererSize() const override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
@@ -170,13 +165,15 @@ class OffScreenRenderWidgetHostView
   int DelegatedFrameHostGetGpuMemoryBufferClientId(void) const;
   ui::Layer* DelegatedFrameHostGetLayer(void) const override;
   bool DelegatedFrameHostIsVisible(void) const override;
-  SkColor DelegatedFrameHostGetGutterColor(SkColor) const override;
-  gfx::Size DelegatedFrameHostDesiredSizeInDIP(void) const override;
+  SkColor DelegatedFrameHostGetGutterColor() const override;
   bool DelegatedFrameCanCreateResizeLock() const override;
   std::unique_ptr<content::CompositorResizeLock>
   DelegatedFrameHostCreateResizeLock() override;
   viz::LocalSurfaceId GetLocalSurfaceId() const override;
-  void OnBeginFrame() override;
+  void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
+  void OnBeginFrame(base::TimeTicks frame_time) override;
+  void OnFrameTokenChanged(uint32_t frame_token) override;
+  void DidReceiveFirstFrameAfterNavigation() override;
   // CompositorResizeLockClient implementation.
   std::unique_ptr<ui::CompositorLock> GetCompositorLock(
       ui::CompositorLockClient* client) override;
@@ -184,13 +181,13 @@ class OffScreenRenderWidgetHostView
   bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
 
-  bool TransformPointToLocalCoordSpace(const gfx::Point& point,
+  bool TransformPointToLocalCoordSpace(const gfx::PointF& point,
                                        const viz::SurfaceId& original_surface,
-                                       gfx::Point* transformed_point) override;
+                                       gfx::PointF* transformed_point) override;
   bool TransformPointToCoordSpaceForView(
-      const gfx::Point& point,
+      const gfx::PointF& point,
       RenderWidgetHostViewBase* target_view,
-      gfx::Point* transformed_point) override;
+      gfx::PointF* transformed_point) override;
 
   // ui::CompositorDelegate:
   std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
@@ -232,12 +229,8 @@ class OffScreenRenderWidgetHostView
   void ReleaseResize();
   void WasResized();
 
-  void ProcessKeyboardEvent(const content::NativeWebKeyboardEvent& event,
-                            const ui::LatencyInfo& latency) override;
-  void ProcessMouseEvent(const blink::WebMouseEvent& event,
-                         const ui::LatencyInfo& latency) override;
-  void ProcessMouseWheelEvent(const blink::WebMouseWheelEvent& event,
-                              const ui::LatencyInfo& latency) override;
+  void SendMouseEvent(const blink::WebMouseEvent& event);
+  void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
 
   void SetPainting(bool painting);
   bool IsPainting() const;
@@ -330,7 +323,6 @@ class OffScreenRenderWidgetHostView
   uint64_t begin_frame_number_ = viz::BeginFrameArgs::kStartingFrameNumber;
 
 #if defined(OS_MACOSX)
-  CALayer* background_layer_;
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
 
   // Can not be managed by smart pointer because its header can not be included

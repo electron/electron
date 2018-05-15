@@ -34,6 +34,8 @@ class AutofillPopup : public views::ViewObserver {
                 const std::vector<base::string16>& labels);
   void UpdatePopupBounds();
 
+  gfx::Rect popup_bounds_in_view();
+
  private:
   friend class AutofillPopupView;
 
@@ -59,7 +61,6 @@ class AutofillPopup : public views::ViewObserver {
 
   // Popup location
   gfx::Rect popup_bounds_;
-  gfx::Rect popup_bounds_in_view_;
 
   // Bounds of the autofilled element
   gfx::Rect element_bounds_;
