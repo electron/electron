@@ -14,7 +14,7 @@ describe('security warnings', () => {
   let w = null
   let useCsp = true
 
-  before(() => {
+  before((done) => {
     // Create HTTP Server
     server = http.createServer((request, response) => {
       const uri = url.parse(request.url).pathname
@@ -44,7 +44,7 @@ describe('security warnings', () => {
           response.end()
         })
       })
-    }).listen(8881)
+    }).listen(8881, () => done())
   })
 
   after(() => {
@@ -60,8 +60,8 @@ describe('security warnings', () => {
 
   it('should warn about Node.js integration with remote content', (done) => {
     w = new BrowserWindow({ show: false })
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('Node.js Integration with Remote Content'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Node.js Integration with Remote Content'), message)
       done()
     })
 
@@ -76,8 +76,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('Disabled webSecurity'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Disabled webSecurity'), message)
       done()
     })
 
@@ -92,8 +92,8 @@ describe('security warnings', () => {
       }
     })
 
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('Insecure Content-Security-Policy'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Insecure Content-Security-Policy'), message)
       done()
     })
 
@@ -109,8 +109,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('allowRunningInsecureContent'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('allowRunningInsecureContent'), message)
       done()
     })
 
@@ -125,8 +125,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('experimentalFeatures'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('experimentalFeatures'), message)
       done()
     })
 
@@ -141,8 +141,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      assert(message.includes('blinkFeatures'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('blinkFeatures'), message)
       done()
     })
 
@@ -156,9 +156,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      console.log(message)
-      assert(message.includes('allowpopups'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('allowpopups'), message)
       done()
     })
 
@@ -172,9 +171,8 @@ describe('security warnings', () => {
         nodeIntegration: false
       }
     })
-    w.webContents.on('console-message', (e, level, message) => {
-      console.log(message)
-      assert(message.includes('Insecure Resources'))
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Insecure Resources'), message)
       done()
     })
 
