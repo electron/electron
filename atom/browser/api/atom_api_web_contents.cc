@@ -786,9 +786,8 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::ResizeDueToAutoResize(
-    content::WebContents* web_contents,
-    const gfx::Size& new_size) {
+void WebContents::ResizeDueToAutoResize(content::WebContents* web_contents,
+                                        const gfx::Size& new_size) {
   if (IsGuest()) {
     guest_delegate_->ResizeDueToAutoResize(new_size);
   }
@@ -1610,7 +1609,13 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      rwh->ForwardMouseEvent(mouse_event);
+      if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
+        GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
+#endif
+      } else {
+        rwh->ForwardMouseEvent(mouse_event);
+      }
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
@@ -1624,7 +1629,14 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      rwh->ForwardWheelEvent(mouse_wheel_event);
+      if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
+        GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
+            mouse_wheel_event);
+#endif
+      } else {
+        rwh->ForwardWheelEvent(mouse_wheel_event);
+      }
       return;
     }
   }
@@ -1820,8 +1832,7 @@ int WebContents::GetFrameRate() const {
 void WebContents::Invalidate() {
   if (IsOffScreen()) {
 #if defined(ENABLE_OSR)
-    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-        web_contents()->GetRenderWidgetHostView());
+    auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
     if (osr_rwhv)
       osr_rwhv->Invalidate();
 #endif

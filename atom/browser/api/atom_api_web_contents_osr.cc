@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/osr/osr_web_contents_view.h"
 #include "content/browser/web_contents/web_contents_impl.h"
 
@@ -19,6 +20,12 @@ OffScreenWebContentsView* WebContents::GetOffScreenWebContentsView() const {
   const auto* impl =
       static_cast<const content::WebContentsImpl*>(web_contents());
   return static_cast<OffScreenWebContentsView*>(impl->GetView());
+}
+
+OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
+    const {
+  return static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
 }
 
 }  // namespace api

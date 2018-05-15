@@ -22,13 +22,6 @@ class MacHelper : public content::BrowserCompositorMacClient,
   virtual ~MacHelper() {}
 
   // content::BrowserCompositorMacClient:
-  NSView* BrowserCompositorMacGetNSView() const override {
-    // Intentionally return nil so that
-    // BrowserCompositorMac::DelegatedFrameHostDesiredSizeInDIP uses the layer
-    // size instead of the NSView size.
-    return nil;
-  }
-
   SkColor BrowserCompositorMacGetGutterColor(SkColor color) const override {
     // When making an element on the page fullscreen the element's background
     // may not match the page's, so use black as the gutter color to avoid
@@ -42,8 +35,8 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void BrowserCompositorMacOnBeginFrame() override {}
 
-  viz::LocalSurfaceId GetLocalSurfaceId() const override {
-    return view_->local_surface_id();
+  void OnFrameTokenChanged(uint32_t frame_token) override {
+    view_->render_widget_host()->DidProcessFrame(frame_token);
   }
 
   // ui::AcceleratedWidgetMacNSView:
@@ -60,18 +53,17 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void AcceleratedWidgetSwapCompleted() override {}
 
+  void DidReceiveFirstFrameAfterNavigation() override {
+    view_->render_widget_host()->DidReceiveFirstFrameAfterNavigation();
+  }
+
+  void DestroyCompositorForShutdown() override {}
+
  private:
   OffScreenRenderWidgetHostView* view_;
 
   DISALLOW_COPY_AND_ASSIGN(MacHelper);
 };
-
-ui::AcceleratedWidgetMac*
-OffScreenRenderWidgetHostView::GetAcceleratedWidgetMac() const {
-  if (browser_compositor_)
-    return browser_compositor_->GetAcceleratedWidgetMac();
-  return nullptr;
-}
 
 void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
@@ -89,24 +81,8 @@ bool OffScreenRenderWidgetHostView::IsSpeaking() const {
 
 void OffScreenRenderWidgetHostView::StopSpeaking() {}
 
-void OffScreenRenderWidgetHostView::SelectionChanged(const base::string16& text,
-                                                     size_t offset,
-                                                     const gfx::Range& range) {
-  if (range.is_empty() || text.empty()) {
-    selected_text_.clear();
-  } else {
-    size_t pos = range.GetMin() - offset;
-    size_t n = range.length();
-
-    DCHECK(pos + n <= text.length()) << "The text can not fully cover range.";
-    if (pos >= text.length()) {
-      DCHECK(false) << "The text can not cover range.";
-      return;
-    }
-    selected_text_ = base::UTF16ToUTF8(text.substr(pos, n));
-  }
-
-  RenderWidgetHostViewBase::SelectionChanged(text, offset, range);
+bool CefRenderWidgetHostViewOSR::ShouldContinueToPauseForFrame() {
+  return browser_compositor_->ShouldContinueToPauseForFrame();
 }
 
 void OffScreenRenderWidgetHostView::CreatePlatformWidget(
