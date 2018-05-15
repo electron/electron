@@ -1,6 +1,5 @@
 version: 1.0.{build}
 build_cloud: electron-16
-skip_branch_with_pr: true
 image: electron-16-vs2017
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
@@ -9,33 +8,38 @@ environment:
   - TARGET_ARCH: x64
 build_script:
 - ps: >-
-    Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
+    if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+      Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
 
-    $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
-
-    $Message = (git log --format=%B -n 1 HEAD) | Out-String
-
-    if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
-      $env:ELECTRON_RELEASE = '1'
-      Write-Output "release build triggered from api"
-    }
-
-    if ((Test-Path Env:\ELECTRON_RELEASE)) {
-      Write-Output "Running release build"
-      python script\bootstrap.py --target_arch=$env:TARGET_ARCH
-      python script\build.py -c R
-      python script\create-dist.py
     } else {
-      Write-Output "Running debug build"
-      python script\bootstrap.py --target_arch=$env:TARGET_ARCH --dev
-      python script\build.py -c D
+      Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
+
+      $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
+
+      $Message = (git log --format=%B -n 1 HEAD) | Out-String
+
+      if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
+        $env:ELECTRON_RELEASE = '1'
+        Write-Output "release build triggered from api"
+      }
+
+      if ((Test-Path Env:\ELECTRON_RELEASE)) {
+        Write-Output "Running release build"
+        python script\bootstrap.py --target_arch=$env:TARGET_ARCH
+        python script\build.py -c R
+        python script\create-dist.py
+      } else {
+        Write-Output "Running debug build"
+        python script\bootstrap.py --target_arch=$env:TARGET_ARCH --dev
+        python script\build.py -c D
+      }
+      if ($? -ne 'True') {
+        throw "Build failed with exit code $?"
+      } else {
+        "Build succeeded."
+      }
     }
 
-    if ($? -ne 'True') {
-      throw "Build failed with exit code $?"
-    } else {
-      "Build succeeded."
-    }
 test_script:
 - ps: >-
     if (Test-Path Env:\ELECTRON_RELEASE) {
