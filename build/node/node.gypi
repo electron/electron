@@ -40,7 +40,6 @@
     'debug_nghttp2': 0,
 
     'node_module_version': '0',
-    'shlib_suffix': 'dylib',
   },
   # Settings to compile node under Windows.
   'target_defaults': {
@@ -136,10 +135,10 @@
       }],
       ['_target_name=="node_lib"', {
         'include_dirs': [
-          '../../../v8',
-          '../../../v8/include',
-          '../../../third_party/icu/source/common',
-          '../../../third_party/icu/source/i18n',
+          '<(chromium_src_dir)/v8',
+          '<(chromium_src_dir)/v8/include',
+          '<(chromium_src_dir)/third_party/icu/source/common',
+          '<(chromium_src_dir)/third_party/icu/source/i18n',
         ],
         'defines': [
           # Export V8 symbols from node.dll / libnode.so
@@ -159,10 +158,10 @@
           'OTHER_CFLAGS': ['-fno-rtti'],
         },
         'libraries': [
-          '../../../../../../libv8.dylib',
-          '../../../../../../libv8_libbase.dylib',
-          '../../../../../../libv8_libplatform.dylib',
-          '../../../../../../libicuuc.dylib',
+          '<(chromium_root_out_dir)/libv8<(SHARED_LIB_SUFFIX)',
+          '<(chromium_root_out_dir)/libv8_libbase<(SHARED_LIB_SUFFIX)',
+          '<(chromium_root_out_dir)/libv8_libplatform<(SHARED_LIB_SUFFIX)',
+          '<(chromium_root_out_dir)/libicuuc<(SHARED_LIB_SUFFIX)',
         ],
         'conditions': [
           #['OS=="mac" and libchromiumcontent_component==0', {
@@ -242,21 +241,21 @@
       }],
       ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node_lib"]', {
         'conditions': [
-          #['libchromiumcontent_component==0', {
-            #'libraries': [
-              #'<(libchromiumcontent_dir)/libc++.a',
-            #],
-            #'ldflags': [
-              #'-lpthread',
-            ##],
-          #}, {
-            #'libraries': [
-              #'<(libchromiumcontent_dir)/libc++.so',
-            #],
-            #'ldflags': [
-              #'-Wl,-rpath=\$$ORIGIN',
-            #],
-          #}],
+          ['is_component_build==0', {
+            'libraries': [
+              '<(chromium_root_out_dir)/libc++.a',
+            ],
+            'ldflags': [
+              '-lpthread',
+            ],
+          }, {
+            'libraries': [
+              '<(chromium_root_out_dir)/libc++.so',
+            ],
+            'ldflags': [
+              '-Wl,-rpath=\$$ORIGIN',
+            ],
+          }],
         ],
       }]
     ],
@@ -280,26 +279,4 @@
       4996,  # (atlapp.h) 'GetVersionExW': was declared deprecated
     ],
   },
-  'conditions': [
-    # The breakdpad on Windows assumes Debug_x64 and Release_x64 configurations.
-    ['OS=="win"', {
-      'target_defaults': {
-        'configurations': {
-          'Debug_x64': {
-          },
-          'Release_x64': {
-          },
-        },
-      },
-    }],  # OS=="win"
-    # The breakdpad on Mac assumes Release_Base configuration.
-    ['OS=="mac"', {
-      'target_defaults': {
-        'configurations': {
-          'Release_Base': {
-          },
-        },
-      },
-    }],  # OS=="mac"
-  ],
 }
