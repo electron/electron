@@ -49,6 +49,8 @@
   V(atom_browser_top_level_window)           \
   V(atom_browser_tray)                       \
   V(atom_browser_web_contents)               \
+  V(atom_browser_web_contents_view)          \
+  V(atom_browser_view)                       \
   V(atom_browser_web_view_manager)           \
   V(atom_browser_window)                     \
   V(atom_common_asar)                        \

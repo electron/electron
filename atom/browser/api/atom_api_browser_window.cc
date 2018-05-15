@@ -77,7 +77,6 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
-  window()->SetContentView(web_contents->managed_web_contents());
 
   auto* host = web_contents->web_contents()->GetRenderViewHost();
   if (host)

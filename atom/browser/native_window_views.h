@@ -44,7 +44,7 @@ class NativeWindowViews : public NativeWindow,
   ~NativeWindowViews() override;
 
   // NativeWindow:
-  void SetContentView(brightray::InspectableWebContents* web_contents) override;
+  void SetContentView(views::View* view) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -135,7 +135,6 @@ class NativeWindowViews : public NativeWindow,
   void SetIcon(const gfx::ImageSkia& icon);
 #endif
 
-  views::View* content_view() const { return content_view_; }
   SkRegion* draggable_region() const { return draggable_region_.get(); }
 
 #if defined(OS_WIN)
@@ -197,7 +196,6 @@ class NativeWindowViews : public NativeWindow,
 
   std::unique_ptr<RootView> root_view_;
 
-  views::View* content_view_;  // Weak ref.
   views::View* focused_view_;  // The view should be focused by default.
 
   // The "resizable" flag on Linux is implemented by setting size constraints,

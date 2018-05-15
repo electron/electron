@@ -20,6 +20,8 @@ namespace atom {
 
 namespace api {
 
+class View;
+
 class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
                        public NativeWindowObserver {
  public:
@@ -79,6 +81,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 #endif
 
   // Public APIs of NativeWindow.
+  void SetContentView(mate::Handle<View> view);
   void Close();
   virtual void Focus();
   virtual void Blur();
@@ -179,6 +182,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void CloseFilePreview();
 
   // Public getters of NativeWindow.
+  v8::Local<v8::Value> GetContentView() const;
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
   v8::Local<v8::Value> GetBrowserView() const;
@@ -215,6 +219,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   MessageCallbackMap messages_callback_map_;
 #endif
 
+  v8::Global<v8::Value> content_view_;
   v8::Global<v8::Value> browser_view_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
@@ -231,7 +236,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<atom::NativeWindow*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,

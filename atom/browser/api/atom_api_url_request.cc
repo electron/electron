@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_url_request.h"
+
 #include <string>
+
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/atom_url_request.h"
 #include "atom/common/api/event_emitter_caller.h"
