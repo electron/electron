@@ -105,7 +105,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
 
 void ToDictionary(base::DictionaryValue* details,
                   const net::HttpRequestHeaders& headers) {
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  auto dict = std::make_unique<base::DictionaryValue>();
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
     dict->SetKey(it.name(), base::Value(it.value()));
@@ -117,7 +117,7 @@ void ToDictionary(base::DictionaryValue* details,
   if (!headers)
     return;
 
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  auto dict = std::make_unique<base::DictionaryValue>();
   size_t iter = 0;
   std::string key;
   std::string value;
@@ -127,7 +127,7 @@ void ToDictionary(base::DictionaryValue* details,
       if (dict->GetList(key, &values))
         values->AppendString(value);
     } else {
-      std::unique_ptr<base::ListValue> values(new base::ListValue);
+      auto values = std::make_unique<base::ListValue>();
       values->AppendString(value);
       dict->Set(key, std::move(values));
     }
@@ -388,7 +388,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
   if (!MatchesFilterCondition(request, info.url_patterns))
     return net::OK;
 
-  std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+  auto details = std::make_unique<base::DictionaryValue>();
   FillDetailsObject(details.get(), request, args...);
 
   int render_process_id, render_frame_id;
@@ -416,7 +416,7 @@ void AtomNetworkDelegate::HandleSimpleEvent(SimpleEvent type,
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
-  std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+  auto details = std::make_unique<base::DictionaryValue>();
   FillDetailsObject(details.get(), request, args...);
 
   int render_process_id, render_frame_id;

@@ -547,9 +547,9 @@ App::App(v8::Isolate* isolate) {
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
   base::ProcessId pid = base::GetCurrentProcId();
-  std::unique_ptr<atom::ProcessMetric> process_metric(new atom::ProcessMetric(
+  auto process_metric = std::make_unique<atom::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, pid,
-      base::ProcessMetrics::CreateCurrentProcessMetrics()));
+      base::ProcessMetrics::CreateCurrentProcessMetrics());
   app_metrics_[pid] = std::move(process_metric);
   Init(isolate);
 }
@@ -811,9 +811,8 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
   std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
-  std::unique_ptr<atom::ProcessMetric> process_metric(
-      new atom::ProcessMetric(process_type, pid, std::move(metrics)));
-  app_metrics_[pid] = std::move(process_metric);
+  app_metrics_[pid] = std::make_unique<atom::ProcessMetric>(process_type, pid,
+                                                            std::move(metrics));
 }
 
 void App::ChildProcessDisconnected(base::ProcessId pid) {

@@ -772,9 +772,7 @@ void WebContents::RequestToLockMouse(content::WebContents* web_contents,
 std::unique_ptr<content::BluetoothChooser> WebContents::RunBluetoothChooser(
     content::RenderFrameHost* frame,
     const content::BluetoothChooser::EventHandler& event_handler) {
-  std::unique_ptr<BluetoothChooser> bluetooth_chooser(
-      new BluetoothChooser(this, event_handler));
-  return std::move(bluetooth_chooser);
+  return std::make_unique<BluetoothChooser>(this, event_handler);
 }
 
 content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(

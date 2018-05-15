@@ -209,10 +209,9 @@ v8::Local<v8::Value> Converter<scoped_refptr<ResourceRequestBody>>::ToV8(
     const scoped_refptr<ResourceRequestBody>& val) {
   if (!val)
     return v8::Null(isolate);
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  auto list = std::make_unique<base::ListValue>();
   for (const auto& element : *(val->elements())) {
-    std::unique_ptr<base::DictionaryValue> post_data_dict(
-        new base::DictionaryValue);
+    auto post_data_dict = std::make_unique<base::DictionaryValue>();
     auto type = element.type();
     if (type == ResourceRequestBody::Element::TYPE_BYTES) {
       std::unique_ptr<base::Value> bytes(base::Value::CreateWithCopiedBuffer(
@@ -249,7 +248,7 @@ bool Converter<scoped_refptr<ResourceRequestBody>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     scoped_refptr<ResourceRequestBody>* out) {
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  auto list = std::make_unique<base::ListValue>();
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
   *out = new content::ResourceRequestBody();

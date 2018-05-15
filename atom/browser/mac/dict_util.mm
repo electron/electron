@@ -26,7 +26,7 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   if (!arr)
     return nullptr;
 
-  std::unique_ptr<base::ListValue> result(new base::ListValue);
+  auto result = std::make_unique<base::ListValue>();
   for (id value in arr) {
     if ([value isKindOfClass:[NSString class]]) {
       result->AppendString(base::SysNSStringToUTF8(value));
@@ -79,7 +79,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
   if (!dict)
     return nullptr;
 
-  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
+  auto result = std::make_unique<base::DictionaryValue>();
   for (id key in dict) {
     std::string str_key = base::SysNSStringToUTF8(
         [key isKindOfClass:[NSString class]] ? key : [key description]);

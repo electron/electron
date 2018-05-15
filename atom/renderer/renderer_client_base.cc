@@ -136,9 +136,7 @@ void RendererClientBase::RenderThreadStarted() {
 #if defined(OS_MACOSX)
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   bool scroll_bounce = command_line->HasSwitch(switches::kScrollBounce);
-  base::ScopedCFTypeRef<CFStringRef> rubber_banding_key(
-      base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
-  CFPreferencesSetAppValue(rubber_banding_key,
+  CFPreferencesSetAppValue(CFSTR("NSScrollViewRubberbanding"),
                            scroll_bounce ? kCFBooleanTrue : kCFBooleanFalse,
                            kCFPreferencesCurrentApplication);
   CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);

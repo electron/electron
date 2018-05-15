@@ -429,7 +429,7 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
       val->CreationContext() != isolate->GetCurrentContext())
     scope.reset(new v8::Context::Scope(val->CreationContext()));
 
-  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
+  auto result = std::make_unique<base::DictionaryValue>();
   v8::Local<v8::Array> property_names(val->GetOwnPropertyNames());
 
   for (uint32_t i = 0; i < property_names->Length(); ++i) {

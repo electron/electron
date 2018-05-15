@@ -62,9 +62,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
         atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
     atom::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
-    std::unique_ptr<base::DictionaryValue> empty_info(
-        new base::DictionaryValue);
-    atom::Browser::Get()->DidFinishLaunching(*empty_info);
+    atom::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
   }
 
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)

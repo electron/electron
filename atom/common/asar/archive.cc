@@ -291,7 +291,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return true;
   }
 
-  std::unique_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
+  auto temp_file = std::make_unique<ScopedTemporaryFile>();
   base::FilePath::StringType ext = path.Extension();
   if (!temp_file->InitFromFile(&file_, ext, info.offset, info.size))
     return false;

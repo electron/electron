@@ -38,7 +38,7 @@ int NodeMain(int argc, char* argv[]) {
     base::ThreadTaskRunnerHandle handle(uv_task_runner);
 
     // Initialize feature list.
-    std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
+    auto feature_list = std::make_unique<base::FeatureList>();
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 

@@ -88,7 +88,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 
   void OnDefaultVerificationDone(int error) {
     error_ = error;
-    std::unique_ptr<VerifyRequestParams> request(new VerifyRequestParams());
+    auto request = std::make_unique<VerifyRequestParams>();
     request->hostname = params_.hostname();
     request->default_result = net::ErrorToString(error);
     request->error_code = error;
@@ -174,8 +174,7 @@ int AtomCertVerifier::Verify(const RequestParams& params,
     CertVerifierRequest* request = FindRequest(params);
     if (!request) {
       out_req->reset();
-      std::unique_ptr<CertVerifierRequest> new_request =
-          std::make_unique<CertVerifierRequest>(params, this);
+      auto new_request = std::make_unique<CertVerifierRequest>(params, this);
       new_request->Start(crl_set, net_log);
       request = new_request.get();
       *out_req = std::move(new_request);

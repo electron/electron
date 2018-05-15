@@ -158,7 +158,7 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
         if (response_headers.GetList(key, &values))
           values->AppendString(value);
       } else {
-        std::unique_ptr<base::ListValue> values(new base::ListValue());
+        auto values = std::make_unique<base::ListValue>();
         values->AppendString(value);
         response_headers.Set(key, std::move(values));
       }
@@ -208,12 +208,11 @@ void FillRequestDetails(base::DictionaryValue* details,
     url = request->url().spec();
   details->SetKey("url", base::Value(url));
   details->SetString("referrer", request->referrer());
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  auto list = std::make_unique<base::ListValue>();
   GetUploadData(list.get(), request);
   if (!list->empty())
     details->Set("uploadData", std::move(list));
-  std::unique_ptr<base::DictionaryValue> headers_value(
-      new base::DictionaryValue);
+  auto headers_value = std::make_unique<base::DictionaryValue>();
   for (net::HttpRequestHeaders::Iterator it(request->extra_request_headers());
        it.GetNext();) {
     headers_value->SetString(it.name(), it.value());
@@ -229,8 +228,7 @@ void GetUploadData(base::ListValue* upload_data_list,
   const std::vector<std::unique_ptr<net::UploadElementReader>>* readers =
       upload_data->GetElementReaders();
   for (const auto& reader : *readers) {
-    std::unique_ptr<base::DictionaryValue> upload_data_dict(
-        new base::DictionaryValue);
+    auto upload_data_dict = std::make_unique<base::DictionaryValue>();
     if (reader->AsBytesReader()) {
       const net::UploadBytesElementReader* bytes_reader =
           reader->AsBytesReader();
