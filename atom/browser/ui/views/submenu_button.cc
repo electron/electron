@@ -31,7 +31,7 @@ SubmenuButton::SubmenuButton(const base::string16& title,
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
-  SetBorder(std::move(CreateDefaultBorder()));
+  SetBorder(CreateDefaultBorder());
 #endif
 
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
