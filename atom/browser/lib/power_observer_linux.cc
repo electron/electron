@@ -23,7 +23,7 @@ std::string get_executable_basename() {
   if (!uv_exepath(buf, &buf_size)) {
     rv = strrchr(static_cast<const char*>(buf), '/') + 1;
   }
-  return std::move(rv);
+  return rv;
 }
 
 }  // namespace
