@@ -7,10 +7,11 @@ action("gyp_node") {
     "node.gypi",
   ]
   outputs = [
-    "$target_out_dir/Release_Base/build.ninja",
+    "$target_out_dir/Release/build.ninja",
   ]
   args = [
     "-I", rebase_path("node.gypi", root_build_dir),
+    "-I", rebase_path("//third_party/electron_node/common.gypi", root_build_dir),
     "-D", "component=shared_library",
     "-D", "buildtype=Custom",
     "-D", "target_arch=x64",
@@ -31,17 +32,17 @@ action("build_node") {
   ]
   script = "//electron/build/run-ninja.py"
   args = [
-    "-C", rebase_path(target_out_dir, root_build_dir) + "/Release_Base",
+    "-C", rebase_path(target_out_dir, root_build_dir) + "/Release",
     "node_lib"
   ]
   outputs = [
-    "$target_out_dir/Release_Base/libnode.dylib"
+    "$target_out_dir/Release/libnode.dylib"
   ]
 }
 
 copy("copy_node") {
   deps = [ ":build_node" ]
-  sources = [ "$target_out_dir/Release_Base/libnode.dylib" ]
+  sources = [ "$target_out_dir/Release/libnode.dylib" ]
   outputs = [ "$root_out_dir/{{source_file_part}}" ]
 }
 
@@ -52,7 +53,7 @@ config("node_config") {
     "//third_party/electron_node/deps/cares/include",
   ]
   libs = [
-    "$target_out_dir/Release_Base/libnode.dylib"
+    "$target_out_dir/Release/libnode.dylib"
   ]
   cflags_cc = [
     "-Wno-deprecated-declarations",
