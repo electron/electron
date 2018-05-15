@@ -1,0 +1,29 @@
+import("npm.gni")
+
+template("asar") {
+  assert(defined(invoker.sources),
+         "Need sources in $target_name listing the JS files.")
+  assert(defined(invoker.outputs),
+         "Need asar name (as 1-element array, e.g. \$root_out_dir/foo.asar)")
+  assert(defined(invoker.root),
+         "Need asar root directory")
+  asar_root = invoker.root
+  copy_target_name = target_name + "_inputs"
+  copy(copy_target_name) {
+    sources = invoker.sources
+    outputs = [
+      "$target_gen_dir/$target_name/{{source_target_relative}}"
+    ]
+  }
+  npm_action(target_name) {
+    forward_variables_from(invoker, ["deps", "public_deps"])
+    deps = [":$copy_target_name"]
+    sources = invoker.sources
+    script = "asar"
+    outputs = invoker.outputs
+    args = [
+      "pack",
+      rebase_path("$target_gen_dir/$target_name/$asar_root")
+    ] + rebase_path(outputs)
+  }
+}

@@ -40,6 +40,7 @@
   },
   "private": true,
   "scripts": {
+    "asar": "asar",
     "bootstrap": "python ./script/bootstrap.py",
     "browserify": "browserify",
     "bump-version": "./script/bump-version.py",
