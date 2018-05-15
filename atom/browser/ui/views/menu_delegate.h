@@ -21,7 +21,7 @@ class MenuBar;
 class MenuDelegate : public views::MenuDelegate {
  public:
   explicit MenuDelegate(MenuBar* menu_bar);
-  virtual ~MenuDelegate();
+  ~MenuDelegate() override;
 
   void RunMenu(AtomMenuModel* model, views::MenuButton* button);
 

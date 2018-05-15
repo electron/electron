@@ -61,7 +61,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
 
 void Browser::Focus() {
   // Focus on the first visible window.
-  for (const auto& window : WindowList::GetWindows()) {
+  for (auto* const window : WindowList::GetWindows()) {
     if (window->IsVisible()) {
       window->Focus(true);
       break;

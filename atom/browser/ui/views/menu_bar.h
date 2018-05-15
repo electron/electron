@@ -23,7 +23,7 @@ class MenuBar : public views::View,
                 public views::FocusChangeListener {
  public:
   explicit MenuBar(views::View* window);
-  virtual ~MenuBar();
+  ~MenuBar() override;
 
   // Replaces current menu with a new one.
   void SetMenu(AtomMenuModel* menu_model);

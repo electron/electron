@@ -83,7 +83,7 @@ class NativeWindowClientView : public views::ClientView {
                          views::View* root_view,
                          NativeWindowViews* window)
       : views::ClientView(widget, root_view), window_(window) {}
-  virtual ~NativeWindowClientView() {}
+  ~NativeWindowClientView() override = default;
 
   bool CanClose() override {
     window_->NotifyWindowCloseButtonClicked();

@@ -14,7 +14,7 @@ namespace atom {
 class WindowStateWatcher : public ui::PlatformEventObserver {
  public:
   explicit WindowStateWatcher(NativeWindowViews* window);
-  virtual ~WindowStateWatcher();
+  ~WindowStateWatcher() override;
 
  protected:
   // ui::PlatformEventObserver:

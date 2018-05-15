@@ -16,7 +16,7 @@ class SubmenuButton : public views::MenuButton {
   SubmenuButton(const base::string16& title,
                 views::MenuButtonListener* menu_button_listener,
                 const SkColor& background_color);
-  virtual ~SubmenuButton();
+  ~SubmenuButton() override;
 
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);

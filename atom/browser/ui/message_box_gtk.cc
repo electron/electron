@@ -86,7 +86,7 @@ class GtkMessageBox : public NativeWindowObserver {
     }
   }
 
-  ~GtkMessageBox() {
+  ~GtkMessageBox() override {
     gtk_widget_destroy(dialog_);
     if (parent_) {
       parent_->RemoveObserver(this);

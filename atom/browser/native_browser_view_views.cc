@@ -17,6 +17,10 @@ NativeBrowserViewViews::NativeBrowserViewViews(
 
 NativeBrowserViewViews::~NativeBrowserViewViews() {}
 
+void NativeBrowserViewViews::SetAutoResizeFlags(uint8_t flags) {
+  auto_resize_flags_ = flags;
+}
+
 void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   auto* view = GetInspectableWebContentsView()->GetView();
   view->SetBoundsRect(bounds);

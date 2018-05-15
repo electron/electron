@@ -1592,12 +1592,12 @@ void WebContents::Focus() {
 
 #if !defined(OS_MACOSX)
 bool WebContents::IsFocused() const {
-  auto view = web_contents()->GetRenderWidgetHostView();
+  auto* view = web_contents()->GetRenderWidgetHostView();
   if (!view)
     return false;
 
   if (GetType() != BACKGROUND_PAGE) {
-    auto window = web_contents()->GetNativeView()->GetToplevelWindow();
+    auto* window = web_contents()->GetNativeView()->GetToplevelWindow();
     if (window && !window->IsVisible())
       return false;
   }
