@@ -22,6 +22,8 @@ class MenuBar : public views::View,
                 public views::MenuButtonListener,
                 public views::FocusChangeListener {
  public:
+  static const char kViewClassName[];
+
   explicit MenuBar(views::View* window);
   virtual ~MenuBar();
 

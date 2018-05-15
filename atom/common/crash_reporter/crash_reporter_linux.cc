@@ -28,8 +28,6 @@ namespace crash_reporter {
 
 namespace {
 
-static const size_t kDistroSize = 128;
-
 // Define a preferred limit on minidump sizes, because Crash Server currently
 // throws away any larger than 1.2MB (1.2 * 1024 * 1024).  A value of -1 means
 // no limit.
