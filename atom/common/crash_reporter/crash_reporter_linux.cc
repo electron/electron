@@ -18,8 +18,8 @@
 #include "base/memory/singleton.h"
 #include "base/process/memory.h"
 #include "base/threading/thread_restrictions.h"
-#include "vendor/breakpad/src/client/linux/handler/exception_handler.h"
-#include "vendor/breakpad/src/common/linux/linux_libc_support.h"
+#include "breakpad/src/client/linux/handler/exception_handler.h"
+#include "breakpad/src/common/linux/linux_libc_support.h"
 
 using google_breakpad::ExceptionHandler;
 using google_breakpad::MinidumpDescriptor;

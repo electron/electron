@@ -11,7 +11,7 @@
 #include <sys/types.h>
 
 #include "base/macros.h"
-#include "vendor/breakpad/src/common/simple_string_dictionary.h"
+#include "breakpad/src/common/simple_string_dictionary.h"
 
 namespace crash_reporter {
 
