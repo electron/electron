@@ -17,6 +17,7 @@ class NativeWindowViews;
 
 class FramelessView : public views::NonClientFrameView {
  public:
+  static const char kViewClassName[];
   FramelessView();
   ~FramelessView() override;
 

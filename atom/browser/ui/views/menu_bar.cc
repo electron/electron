@@ -18,12 +18,12 @@ namespace atom {
 
 namespace {
 
-const char kViewClassName[] = "ElectronMenuBar";
-
 // Default color of the menu bar.
 const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 }  // namespace
+
+const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
 MenuBar::MenuBar(views::View* window)
     : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {

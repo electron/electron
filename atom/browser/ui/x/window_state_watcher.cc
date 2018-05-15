@@ -11,15 +11,6 @@
 
 namespace atom {
 
-namespace {
-
-const char* kAtomsToCache[] = {
-    "_NET_WM_STATE",
-    NULL,
-};
-
-}  // namespace
-
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window),
       widget_(window->GetAcceleratedWidget()),
