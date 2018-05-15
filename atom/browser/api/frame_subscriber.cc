@@ -10,6 +10,7 @@
 #include "components/viz/service/surfaces/surface_manager.h"
 #include "content/browser/compositor/surface_utils.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
+#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace atom {
