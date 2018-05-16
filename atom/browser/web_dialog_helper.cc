@@ -168,10 +168,10 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
   filters.push_back(file_dialog::Filter());
 
-  if (valid_type_count > 1 ||
-      (valid_type_count == 1 && description.empty() && extensions.size() > 1))
+  if (valid_type_count > 1 || (valid_type_count == 1 && description.empty()))
     description = "Custom Files";
 
+  DCHECK(!description.empty());
   filters[0].first = description;
 
   for (const auto& extension : extensions) {
