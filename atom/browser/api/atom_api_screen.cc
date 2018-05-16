@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string>
 
+#include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/bind.h"
@@ -15,6 +16,10 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+
+#if defined(OS_WIN)
+#include "ui/display/win/screen_win.h"
+#endif
 
 #include "atom/common/node_includes.h"
 
@@ -79,6 +84,22 @@ display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
   return screen_->GetDisplayMatching(match_rect);
 }
 
+#if defined(OS_WIN)
+
+static gfx::Rect ScreenToDIPRect(atom::NativeWindow* window,
+                                 const gfx::Rect& rect) {
+  HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
+  return display::win::ScreenWin::ScreenToDIPRect(hwnd, rect);
+}
+
+static gfx::Rect DIPToScreenRect(atom::NativeWindow* window,
+                                 const gfx::Rect& rect) {
+  HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
+  return display::win::ScreenWin::DIPToScreenRect(hwnd, rect);
+}
+
+#endif
+
 void Screen::OnDisplayAdded(const display::Display& new_display) {
   Emit("display-added", new_display);
 }
@@ -119,6 +140,12 @@ void Screen::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPrimaryDisplay", &Screen::GetPrimaryDisplay)
       .SetMethod("getAllDisplays", &Screen::GetAllDisplays)
       .SetMethod("getDisplayNearestPoint", &Screen::GetDisplayNearestPoint)
+#if defined(OS_WIN)
+      .SetMethod("screenToDipPoint", &display::win::ScreenWin::ScreenToDIPPoint)
+      .SetMethod("dipToScreenPoint", &display::win::ScreenWin::DIPToScreenPoint)
+      .SetMethod("screenToDipRect", &ScreenToDIPRect)
+      .SetMethod("dipToScreenRect", &DIPToScreenRect)
+#endif
 #if defined(OS_MACOSX)
       .SetMethod("getMenuBarHeight", &Screen::getMenuBarHeight)
 #endif
