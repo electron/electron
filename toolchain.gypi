@@ -2,6 +2,7 @@
   'variables': {
     # Clang stuff.
     'make_clang_dir%': 'vendor/llvm-build/Release+Asserts',
+    
     # Set this to true when building with Clang.
     'clang%': 1,
 
@@ -23,6 +24,9 @@
 
       # Abosulte path to source root.
       'source_root%': '<!(node <(DEPTH)/tools/atom_source_root.js)',
+
+      # Set this to 1 when you want to use clang-cl on Windows.
+      'clang_cl_windows%': 0,
     },
 
     # Copy conditionally-set variables out one scope.
@@ -30,6 +34,7 @@
     'arm_version%': '<(arm_version)',
     'arm_neon%': '<(arm_neon)',
     'source_root%': '<(source_root)',
+    'clang_cl_windows%': '<(clang_cl_windows)',
 
     # Variables to control Link-Time Optimization (LTO).
     'use_lto%': 0,
@@ -101,6 +106,16 @@
         'arm_float_abi%': 'hard',
         'arm_thumb%': 1,
       }],  # arm_version==7
+
+      ['clang_cl_windows==1', {
+        # Clang-cl binaries useful on Windows
+        'clang_cc_binary%' : 'clang-cl',
+        'clang_cxx_binary%' : 'clang-cl'
+      },{
+        # Default clang binaries
+        'clang_cc_binary%' : 'clang',
+        'clang_cxx_binary%' : 'clang++',
+      }]
     ],
   },
   'conditions': [
@@ -116,8 +131,8 @@
     # Setup building with clang.
     ['clang==1', {
       'make_global_settings': [
-        ['CC', '<(make_clang_dir)/bin/clang'],
-        ['CXX', '<(make_clang_dir)/bin/clang++'],
+        ['CC', '<(make_clang_dir)/bin/<(clang_cc_binary)'],
+        ['CXX', '<(make_clang_dir)/bin/<(clang_cxx_binary)'],
         ['CC.host', '$(CC)'],
         ['CXX.host', '$(CXX)'],
       ],
