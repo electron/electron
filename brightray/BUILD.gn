@@ -7,6 +7,28 @@ filenames_gypi = exec_script(
   [ "filenames.gypi" ]
 )
 
+
+if (is_linux) {
+  # TODO: Experiment with using //tools/generate_library_loader for generating
+  # the libnotify loader.
+  copy("libnotify_headers") {
+    sources = [
+      "/usr/include/libnotify/notify.h",
+      "/usr/include/libnotify/notification.h",
+      "/usr/include/libnotify/notify-enum-types.h",
+      "/usr/include/libnotify/notify-features.h",
+    ]
+    outputs = [ "$target_gen_dir/libnotify-copy/libnotify/{{source_file_part}}" ]
+  }
+  config("libnotify_config") {
+    include_dirs = [ "$target_gen_dir/libnotify-copy" ]
+  }
+  group("libnotify") {
+    deps = [ ":libnotify_headers" ]
+    public_configs = [ ":libnotify_config" ]
+  }
+}
+
 static_library("brightray") {
   deps = [
     "//base",
@@ -26,6 +48,13 @@ static_library("brightray") {
   defines = [
     "DISABLE_NACL=1",
   ]
+
+  if (is_linux) {
+    deps += [
+      "//build/config/linux/gtk3",
+      ":libnotify",
+    ]
+  }
 
   extra_source_filters = []
   if (is_mac) {

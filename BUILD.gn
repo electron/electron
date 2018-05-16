@@ -9,6 +9,14 @@ if (is_mac) {
   import("//v8/gni/v8.gni")
 }
 
+if (is_linux) {
+  import("//build/config/linux/pkg_config.gni")
+
+  pkg_config("gio_unix") {
+    packages = [ "gio-unix-2.0" ]
+  }
+}
+
 declare_args() {
   electron_project_name = "electron"
   electron_product_name = "Electron"
@@ -164,13 +172,13 @@ action("atom_js2c") {
 
 asar("js2asar") {
   sources = filenames_gypi.js_sources
-  outputs = [ "$root_out_dir/electron.asar" ]
+  outputs = [ "$root_out_dir/resources/electron.asar" ]
   root = "lib"
 }
 
 asar("app2asar") {
   sources = filenames_gypi.default_app_sources
-  outputs = [ "$root_out_dir/default_app.asar" ]
+  outputs = [ "$root_out_dir/resources/default_app.asar" ]
   root = "default_app"
 }
 
@@ -224,6 +232,20 @@ static_library("electron_lib") {
       "//base/allocator:features",
     ]
   }
+  if (is_linux) {
+    deps += [
+      "//build/config/linux/gtk3",
+      "//chrome/browser/ui/libgtkui",
+      "//device/bluetooth",
+      "//third_party/breakpad:client",
+      "//ui/events/devices/x11",
+      "//ui/events/platform/x11",
+      "//ui/native_theme",
+      "//ui/views/controls/webview",
+      "//ui/wm",
+    ]
+    configs += [ ":gio_unix" ]
+  }
   defines = [
     # This is defined in skia/skia_common.gypi.
     "SK_SUPPORT_LEGACY_GETTOPDEVICE",
@@ -250,6 +272,11 @@ static_library("electron_lib") {
     # the #includes can be agnostic about where crashpad is vendored.
     "//third_party/crashpad",
   ]
+  if (is_linux) {
+    include_dirs += [
+      "//third_party/breakpad",
+    ]
+  }
 
   extra_source_filters = []
   if (!is_linux) {
@@ -259,6 +286,12 @@ static_library("electron_lib") {
       "*_x11.cc",
       "*_gtk.h",
       "*_gtk.cc",
+    ]
+  }
+  if (!is_win) {
+    extra_source_filters += [
+      "*\bwin_*.h",
+      "*\bwin_*.cc",
     ]
   }
   if (is_mac) {
@@ -318,6 +351,7 @@ static_library("electron_lib") {
   }
   if (is_linux) {
     sources += filenames_gypi.lib_sources_linux
+    sources += filenames_gypi.lib_sources_nss
   }
 }
 
@@ -463,8 +497,8 @@ if (is_mac) {
       ":app2asar",
     ]
     sources = [
-      "$root_out_dir/electron.asar",
-      "$root_out_dir/default_app.asar",
+      "$root_out_dir/resources/electron.asar",
+      "$root_out_dir/resources/default_app.asar",
     ]
     outputs = [
       "{{bundle_resources_dir}}/{{source_file_part}}"
@@ -510,6 +544,25 @@ if (is_mac) {
     ldflags = [
       "-rpath",
       "@executable_path/../Frameworks",
+    ]
+  }
+}
+
+if (is_linux) {
+  executable("electron_app") {
+    output_name = electron_project_name
+    sources = filenames_gypi.app_sources
+    include_dirs = [ "." ]
+    deps = [
+      ":app2asar",
+      ":electron_lib",
+      ":js2asar",
+      "//build/config:exe_and_shlib_deps",
+      "//chrome:packed_resources",
+      "//content/shell:copy_shell_resources",
+      "//content/shell:pak",
+      "//third_party/WebKit/public:image_resources",
+      "//ui/strings",
     ]
   }
 }

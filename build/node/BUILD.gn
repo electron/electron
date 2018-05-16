@@ -9,13 +9,27 @@ action("gyp_node") {
   outputs = [
     "$target_out_dir/Release/build.ninja",
   ]
+
+  # TODO(jeremy): should shlib_suffix be set inside node.gypi?
+  if (is_mac) {
+    shlib_suffix = "dylib"
+  } else if (is_linux) {
+    shlib_suffix = "so"
+  }
   args = [
+    "-I", rebase_path("toolchain.gypi", root_build_dir),
     "-I", rebase_path("node.gypi", root_build_dir),
     "-I", rebase_path("//third_party/electron_node/common.gypi", root_build_dir),
+    # TODO(jeremy): make these paths relative instead of absolute, to help
+    # caches.
+    "-D", "chromium_root_out_dir=" + rebase_path(root_out_dir),
+    "-D", "chromium_src_dir=" + rebase_path("//"),
     "-D", "component=shared_library",
     "-D", "buildtype=Custom",
     "-D", "target_arch=x64",
     "-D", "host_arch=x64",
+    "-D", "shlib_suffix=$shlib_suffix",
+    "-D", "is_component_build=$is_component_build",
     "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
     "-fninja",
     rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
@@ -35,14 +49,19 @@ action("build_node") {
     "-C", rebase_path(target_out_dir, root_build_dir) + "/Release",
     "node_lib"
   ]
-  outputs = [
-    "$target_out_dir/Release/libnode.dylib"
-  ]
+  if (is_mac) {
+    outputs = [ "$target_out_dir/Release/libnode.dylib" ]
+  }
+  if (is_linux) {
+    outputs = [ "$target_out_dir/Release/lib/libnode.so" ]
+  }
 }
+
+node_libs = get_target_outputs(":build_node")
 
 copy("copy_node") {
   deps = [ ":build_node" ]
-  sources = [ "$target_out_dir/Release/libnode.dylib" ]
+  sources = node_libs
   outputs = [ "$root_out_dir/{{source_file_part}}" ]
 }
 
@@ -52,9 +71,7 @@ config("node_config") {
     "//third_party/electron_node/deps/uv/include",
     "//third_party/electron_node/deps/cares/include",
   ]
-  libs = [
-    "$target_out_dir/Release/libnode.dylib"
-  ]
+  libs = node_libs
   cflags_cc = [
     "-Wno-deprecated-declarations",
   ]
