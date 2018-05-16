@@ -4,6 +4,7 @@
 
 #include "atom/browser/native_window.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,9 +48,34 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
+#if defined(OS_WIN)
+#include "ui/base/win/shell.h"
+#include "ui/display/win/screen_win.h"
+#endif
+
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
+
+namespace {
+
+#if defined(OS_WIN)
+gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+  if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
+    return size;
+
+  gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
+      window->GetAcceleratedWidget(), gfx::Size(64, 64));
+
+  // Some AMD drivers can't display windows that are less than 64x64 pixels,
+  // so expand them to be at least that size. http://crbug.com/286609
+  gfx::Size expanded(std::max(size.width(), min_size.width()),
+                     std::max(size.height(), min_size.height()));
+  return expanded;
+}
+#endif
+
+}  // namespace
 
 NativeWindow::NativeWindow(
     brightray::InspectableWebContents* inspectable_web_contents,
@@ -305,6 +331,19 @@ void NativeWindow::SetMaximumSize(const gfx::Size& size) {
 
 gfx::Size NativeWindow::GetMaximumSize() const {
   return GetSizeConstraints().GetMaximumSize();
+}
+
+gfx::Size NativeWindow::GetContentMinimumSize() const {
+  return GetContentSizeConstraints().GetMinimumSize();
+}
+
+gfx::Size NativeWindow::GetContentMaximumSize() const {
+  gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
+#if defined(OS_WIN)
+  return GetExpandedWindowSize(this, maximum_size);
+#else
+  return maximum_size;
+#endif
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {

@@ -41,7 +41,7 @@ namespace gfx {
 class Point;
 class Rect;
 class Size;
-}
+}  // namespace gfx
 
 namespace mate {
 class Dictionary;
@@ -109,6 +109,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetMinimumSize() const;
   virtual void SetMaximumSize(const gfx::Size& size);
   virtual gfx::Size GetMaximumSize() const;
+  virtual gfx::Size GetContentMinimumSize() const;
+  virtual gfx::Size GetContentMaximumSize() const;
   virtual void SetSheetOffset(const double offsetX, const double offsetY);
   virtual double GetSheetOffsetX();
   virtual double GetSheetOffsetY();
@@ -160,15 +162,14 @@ class NativeWindow : public base::SupportsUserData,
 
   // Taskbar/Dock APIs.
   enum ProgressState {
-    PROGRESS_NONE,               // no progress, no marking
-    PROGRESS_INDETERMINATE,      // progress, indeterminate
-    PROGRESS_ERROR,              // progress, errored (red)
-    PROGRESS_PAUSED,             // progress, paused (yellow)
-    PROGRESS_NORMAL,             // progress, not marked (green)
+    PROGRESS_NONE,           // no progress, no marking
+    PROGRESS_INDETERMINATE,  // progress, indeterminate
+    PROGRESS_ERROR,          // progress, errored (red)
+    PROGRESS_PAUSED,         // progress, paused (yellow)
+    PROGRESS_NORMAL,         // progress, not marked (green)
   };
 
-  virtual void SetProgressBar(double progress,
-                              const ProgressState state) = 0;
+  virtual void SetProgressBar(double progress, const ProgressState state) = 0;
   virtual void SetOverlayIcon(const gfx::Image& overlay,
                               const std::string& description) = 0;
 
@@ -230,12 +231,11 @@ class NativeWindow : public base::SupportsUserData,
   virtual void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) {}
-  virtual void ShowAutofillPopup(
-    content::RenderFrameHost* frame_host,
-    content::WebContents* web_contents,
-    const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {}
+  virtual void ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                                 content::WebContents* web_contents,
+                                 const gfx::RectF& bounds,
+                                 const std::vector<base::string16>& values,
+                                 const std::vector<base::string16>& labels) {}
   virtual void HideAutofillPopup(content::RenderFrameHost* frame_host) {}
 
   virtual void UpdateDraggableRegionViews() {}
@@ -270,13 +270,11 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
 
-  #if defined(OS_WIN)
+#if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
-  #endif
+#endif
 
-  void AddObserver(NativeWindowObserver* obs) {
-    observers_.AddObserver(obs);
-  }
+  void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
   }
@@ -390,11 +388,11 @@ class NativeWindow : public base::SupportsUserData,
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.
-class NativeWindowRelay :
-    public content::WebContentsUserData<NativeWindowRelay> {
+class NativeWindowRelay
+    : public content::WebContentsUserData<NativeWindowRelay> {
  public:
   explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-    : key(UserDataKey()), window(window) {}
+      : key(UserDataKey()), window(window) {}
 
   static void* UserDataKey() {
     return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
