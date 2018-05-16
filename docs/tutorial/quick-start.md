@@ -18,5 +18,5 @@ To learn more about Electron, check out the
 
 [first-app]: ./first-app.md
 [processes]: ./application-architecture.md#main-and-renderer-processes
-[readme]: ../README.md
+[readme]: ../
 
