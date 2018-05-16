@@ -26,7 +26,7 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
 MenuBar::MenuBar(views::View* window)
-    : background_color_(kDefaultColor), menu_model_(NULL), window_(window) {
+    : background_color_(kDefaultColor), window_(window), menu_model_(NULL) {
   RefreshColorCache();
   UpdateViewColors();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
@@ -60,7 +60,7 @@ bool MenuBar::HasAccelerator(base::char16 key) {
 }
 
 void MenuBar::ActivateAccelerator(base::char16 key) {
-  auto child = FindAccelChild(key);
+  auto* child = FindAccelChild(key);
   if (child)
     static_cast<SubmenuButton*>(child)->Activate(nullptr);
 }
@@ -150,7 +150,7 @@ void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
-    auto button =
+    auto* button =
         new SubmenuButton(menu_model_->GetLabelAt(i), this, background_color_);
     button->set_tag(i);
     AddChildView(button);
@@ -168,7 +168,7 @@ void MenuBar::UpdateViewColors() {
 #if defined(USE_X11)
   const auto& textColor = has_focus_ ? enabled_color_ : disabled_color_;
   for (auto* child : GetChildrenInZOrder()) {
-    auto button = static_cast<SubmenuButton*>(child);
+    auto* button = static_cast<SubmenuButton*>(child);
     button->SetTextColor(views::Button::STATE_NORMAL, textColor);
     button->SetTextColor(views::Button::STATE_DISABLED, disabled_color_);
     button->SetTextColor(views::Button::STATE_PRESSED, enabled_color_);

@@ -184,6 +184,7 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<ui::CompositorLock> GetCompositorLock(
       ui::CompositorLockClient* client) override;
   void CompositorResizeLockEnded() override;
+  bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
 
   bool TransformPointToLocalCoordSpace(const gfx::Point& point,
@@ -199,7 +200,6 @@ class OffScreenRenderWidgetHostView
       ui::Compositor* compositor) override;
 
   bool InstallTransparency();
-  bool IsAutoResizeEnabled() const;
 
   // NativeWindowObserver:
   void OnWindowResize() override;

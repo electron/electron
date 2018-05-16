@@ -43,7 +43,7 @@ class CrashReporterLinux : public CrashReporter {
   friend struct base::DefaultSingletonTraits<CrashReporterLinux>;
 
   CrashReporterLinux();
-  virtual ~CrashReporterLinux();
+  ~CrashReporterLinux() override;
 
   void EnableCrashDumping(const base::FilePath& crashes_dir);
 

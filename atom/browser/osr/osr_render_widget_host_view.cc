@@ -783,6 +783,10 @@ void OffScreenRenderWidgetHostView::CompositorResizeLockEnded() {
   ReleaseResize();
 }
 
+bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
+  return render_widget_host_->auto_resize_enabled();
+}
+
 #endif  // !defined(OS_MACOSX)
 
 bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
@@ -911,10 +915,6 @@ bool OffScreenRenderWidgetHostView::InstallTransparency() {
     return true;
   }
   return false;
-}
-
-bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
-  return render_widget_host_->auto_resize_enabled();
 }
 
 void OffScreenRenderWidgetHostView::SetNeedsBeginFrames(

@@ -38,7 +38,7 @@ AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
 
 AutofillPopupView::~AutofillPopupView() {
   if (popup_) {
-    auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
+    auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
     host->RemoveKeyPressEventCallback(keypress_callback_);
     popup_->view_ = nullptr;
     popup_ = nullptr;
@@ -100,7 +100,7 @@ void AutofillPopupView::Show() {
 
   keypress_callback_ = base::Bind(&AutofillPopupView::HandleKeyPressEvent,
                                   base::Unretained(this));
-  auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
+  auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
   NotifyAccessibilityEvent(ui::AX_EVENT_MENU_START, true);
@@ -108,7 +108,7 @@ void AutofillPopupView::Show() {
 
 void AutofillPopupView::Hide() {
   if (popup_) {
-    auto host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
+    auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
     host->RemoveKeyPressEventCallback(keypress_callback_);
     popup_ = nullptr;
   }
@@ -216,7 +216,7 @@ void AutofillPopupView::CreateChildViews() {
   RemoveAllChildViews(true);
 
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
-    auto child_view = new AutofillPopupChildView(popup_->GetValueAt(i));
+    auto* child_view = new AutofillPopupChildView(popup_->GetValueAt(i));
     child_view->set_drag_controller(this);
     AddChildView(child_view);
   }
