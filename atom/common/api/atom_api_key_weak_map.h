@@ -6,6 +6,7 @@
 #define ATOM_COMMON_API_ATOM_API_KEY_WEAK_MAP_H_
 
 #include "atom/common/key_weak_map.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/handle.h"
 #include "native_mate/object_template_builder.h"
 #include "native_mate/wrappable.h"
@@ -15,7 +16,8 @@ namespace atom {
 namespace api {
 
 template <typename K>
-class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
+class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>>,
+                   public KeyWeakMapObserver<K> {
  public:
   static mate::Handle<KeyWeakMap<K>> Create(v8::Isolate* isolate) {
     return mate::CreateHandle(isolate, new KeyWeakMap<K>(isolate));
@@ -28,14 +30,34 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
         .SetMethod("set", &KeyWeakMap<K>::Set)
         .SetMethod("get", &KeyWeakMap<K>::Get)
         .SetMethod("has", &KeyWeakMap<K>::Has)
-        .SetMethod("remove", &KeyWeakMap<K>::Remove);
+        .SetMethod("remove", &KeyWeakMap<K>::Remove)
+        .SetMethod("setCallback", &KeyWeakMap<K>::SetCallback);
+  }
+
+  // KeyWeakMapObserver:
+  void OnRemoved(const K& key) override {
+    auto handler = [](KeyWeakMap<K>* self, const K& key) {
+      auto isolate = self->isolate();
+      v8::HandleScope scope(isolate);
+
+      auto callback = v8::Local<v8::Function>::New(isolate, self->callback_);
+      if (callback.IsEmpty())
+        return;
+
+      v8::Local<v8::Value> args[] = {mate::ConvertToV8(isolate, key)};
+      callback->Call(v8::Undefined(isolate), arraysize(args), args);
+    };
+
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
+        FROM_HERE, base::Bind(handler, this, key));
   }
 
  protected:
   explicit KeyWeakMap(v8::Isolate* isolate) {
     mate::Wrappable<KeyWeakMap<K>>::Init(isolate);
+    key_weak_map_.AddObserver(this);
   }
-  ~KeyWeakMap() override {}
+  ~KeyWeakMap() override { key_weak_map_.RemoveObserver(this); }
 
  private:
   // API for KeyWeakMap.
@@ -51,7 +73,13 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
 
   void Remove(const K& key) { key_weak_map_.Remove(key); }
 
+  void SetCallback(v8::Local<v8::Function> callback) {
+    auto isolate = mate::Wrappable<KeyWeakMap<K>>::isolate();
+    callback_ = v8::Global<v8::Function>(isolate, callback);
+  }
+
   atom::KeyWeakMap<K> key_weak_map_;
+  v8::Global<v8::Function> callback_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
