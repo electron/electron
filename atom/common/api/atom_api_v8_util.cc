@@ -6,8 +6,6 @@
 #include <utility>
 
 #include "atom/common/api/atom_api_key_weak_map.h"
-#include "atom/common/api/remote_callback_freer.h"
-#include "atom/common/api/remote_object_freer.h"
 #include "atom/common/native_mate_converters/content_converter.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
@@ -43,6 +41,14 @@ struct Converter<std::pair<Type1, Type2>> {
       return false;
     return Converter<Type1>::FromV8(isolate, array->Get(0), &out->first) &&
            Converter<Type2>::FromV8(isolate, array->Get(1), &out->second);
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::pair<Type1, Type2>& value) {
+    auto array = v8::Array::New(isolate);
+    array->Set(0, Converter<Type1>::ToV8(isolate, value.first));
+    array->Set(1, Converter<Type2>::ToV8(isolate, value.second));
+    return array;
   }
 };
 
@@ -113,11 +119,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-  dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
-  dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
   dict.SetMethod("createDoubleIDWeakMap",
-                 &atom::api::KeyWeakMap<std::pair<int64_t, int32_t>>::Create);
+                 &atom::api::KeyWeakMap<std::pair<int32_t, int32_t>>::Create);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);

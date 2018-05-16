@@ -10,9 +10,19 @@
 #include <vector>
 
 #include "base/macros.h"
+#include "base/observer_list.h"
 #include "v8/include/v8.h"
 
 namespace atom {
+
+template <typename K>
+class KeyWeakMapObserver {
+ public:
+  virtual void OnRemoved(const K& key) = 0;
+
+ protected:
+  ~KeyWeakMapObserver() {}
+};
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
 template <typename K>
@@ -69,15 +79,25 @@ class KeyWeakMap {
     map_.erase(iter);
   }
 
+  void AddObserver(KeyWeakMapObserver<K>* obs) { observers_.AddObserver(obs); }
+
+  void RemoveObserver(KeyWeakMapObserver<K>* obs) {
+    observers_.RemoveObserver(obs);
+  }
+
  private:
   static void OnObjectGC(
       const v8::WeakCallbackInfo<typename KeyWeakMap<K>::KeyObject>& data) {
     KeyWeakMap<K>::KeyObject* key_object = data.GetParameter();
+    for (auto& observer : key_object->self->observers_)
+      observer.OnRemoved(key_object->key);
     key_object->self->Remove(key_object->key);
   }
 
   // Map of stored objects.
   std::unordered_map<K, std::pair<KeyObject, v8::Global<v8::Object>>> map_;
+
+  base::ObserverList<KeyWeakMapObserver<K>> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };
