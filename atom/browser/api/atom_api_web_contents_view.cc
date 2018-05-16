@@ -18,16 +18,16 @@ namespace atom {
 
 namespace api {
 
-WebContentsView::WebContentsView(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> web_contents_wrapper,
-    brightray::InspectableWebContents* web_contents)
+WebContentsView::WebContentsView(v8::Isolate* isolate,
+                                 mate::Handle<WebContents> web_contents,
+                                 brightray::InspectableWebContents* iwc)
 #if defined(OS_MACOSX)
-    : View(new DelayedNativeViewHost(web_contents->GetView()->GetNativeView())),
+    : View(new DelayedNativeViewHost(iwc->GetView()->GetNativeView())),
 #else
-    : View(web_contents->GetView()->GetView()),
+    : View(iwc->GetView()->GetView()),
 #endif
-      web_contents_wrapper_(isolate, web_contents_wrapper) {
+      web_contents_(isolate, web_contents->GetWrapper()),
+      api_web_contents_(web_contents.get()) {
 #if defined(OS_MACOSX)
   // On macOS a View is created to wrap the NSView, and its lifetime is managed
   // by us.
@@ -36,9 +36,17 @@ WebContentsView::WebContentsView(
   // On other platforms the View is managed by InspectableWebContents.
   set_delete_view(false);
 #endif
+  api_web_contents_->AddObserver(this);
 }
 
-WebContentsView::~WebContentsView() {}
+WebContentsView::~WebContentsView() {
+  api_web_contents_->RemoveObserver(this);
+  api_web_contents_->DestroyWebContents(false /* async */);
+}
+
+void WebContentsView::OnCloseContents() {
+  // TODO(zcbenz): WebContents is closed, report the event.
+}
 
 // static
 mate::WrappableBase* WebContentsView::New(
@@ -50,7 +58,7 @@ mate::WrappableBase* WebContentsView::New(
         v8::Exception::Error(mate::StringToV8(args->isolate(), error)));
     return nullptr;
   }
-  auto* view = new WebContentsView(args->isolate(), web_contents->GetWrapper(),
+  auto* view = new WebContentsView(args->isolate(), web_contents,
                                    web_contents->managed_web_contents());
   view->InitWith(args->isolate(), args->GetThis());
   return view;
