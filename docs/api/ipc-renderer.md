@@ -74,13 +74,31 @@ and replies by setting `event.returnValue`.
 **Note:** Sending a synchronous message will block the whole renderer process,
 unless you know what you are doing you should never use it.
 
-### `ipcRenderer.sendTo(windowId, channel, [, arg1][, arg2][, ...])`
+### `ipcRenderer.sendTo(webContentsId, channel, [, arg1][, arg2][, ...])`
 
-* `windowId` Number
+* `webContentsId` Number
 * `channel` String
 * `...args` any[]
 
-Sends a message to a window with `windowid` via `channel`.
+Sends a message to a webContents with `webContentsId` asynchronously via `channel`.
+
+The renderer process handles it by listening for `channel` with [`ipcRenderer`](ipc-renderer.md) module.
+
+### `ipcRenderer.sendToSync(webContentsId, channel, [, arg1][, arg2][, ...])`
+
+* `webContentsId` Number
+* `channel` String
+* `...args` any[]
+
+Returns `any` - The value sent back by the [`ipcRenderer`](ipc-renderer.md) handler.
+
+Sends a message to a webContents with `webContentsId` synchronously via `channel`.
+
+The renderer process handles it by listening for `channel` with [`ipcRenderer`](ipc-renderer.md) module,
+and replies by setting `event.returnValue`.
+
+**Note:** Sending a synchronous message will block the whole renderer process,
+unless you know what you are doing you should never use it.
 
 ### `ipcRenderer.sendToHost(channel[, arg1][, arg2][, ...])`
 
