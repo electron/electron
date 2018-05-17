@@ -11,7 +11,6 @@
 #include <set>
 
 #include "base/strings/string_piece.h"
-#include "native_mate/compat.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -36,7 +35,7 @@ struct Converter {};
 template<>
 struct Converter<void*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, void* val) {
-    return MATE_UNDEFINED(isolate);
+    return v8::Undefined(isolate);
   }
 };
 
@@ -208,7 +207,7 @@ struct Converter<std::vector<T> > {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const std::vector<T>& val) {
     v8::Local<v8::Array> result(
-        MATE_ARRAY_NEW(isolate, static_cast<int>(val.size())));
+        v8::Array::New(isolate, static_cast<int>(val.size())));
     for (size_t i = 0; i < val.size(); ++i) {
       result->Set(static_cast<int>(i), Converter<T>::ToV8(isolate, val[i]));
     }
@@ -241,7 +240,7 @@ struct Converter<std::set<T> > {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                     const std::set<T>& val) {
     v8::Local<v8::Array> result(
-        MATE_ARRAY_NEW(isolate, static_cast<int>(val.size())));
+        v8::Array::New(isolate, static_cast<int>(val.size())));
     typename std::set<T>::const_iterator it;
     int i;
     for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)

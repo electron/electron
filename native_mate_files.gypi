@@ -3,7 +3,6 @@
     'native_mate_files': [
       'native_mate/arguments.cc',
       'native_mate/arguments.h',
-      'native_mate/compat.h',
       'native_mate/constructor.h',
       'native_mate/converter.cc',
       'native_mate/converter.h',

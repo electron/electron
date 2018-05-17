@@ -4,7 +4,6 @@
 
 #include "native_mate/converter.h"
 
-#include "native_mate/compat.h"
 #include "v8/include/v8.h"
 
 using v8::Array;
@@ -22,7 +21,7 @@ using v8::Value;
 namespace mate {
 
 Local<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
-  return MATE_BOOLEAN_NEW(isolate, val);
+  return v8::Boolean::New(isolate, val);
 }
 
 bool Converter<bool>::FromV8(Isolate* isolate, Local<Value> val, bool* out) {
@@ -35,7 +34,7 @@ bool Converter<bool>::FromV8(Isolate* isolate, Local<Value> val, bool* out) {
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
 Local<Value> Converter<unsigned long>::ToV8(Isolate* isolate,
                                              unsigned long val) {
-  return MATE_INTEGER_NEW(isolate, val);
+  return v8::Integer::New(isolate, val);
 }
 
 bool Converter<unsigned long>::FromV8(Isolate* isolate, Local<Value> val,
@@ -48,7 +47,7 @@ bool Converter<unsigned long>::FromV8(Isolate* isolate, Local<Value> val,
 #endif
 
 Local<Value> Converter<int32_t>::ToV8(Isolate* isolate, int32_t val) {
-  return MATE_INTEGER_NEW(isolate, val);
+  return v8::Integer::New(isolate, val);
 }
 
 bool Converter<int32_t>::FromV8(Isolate* isolate, Local<Value> val,
@@ -60,7 +59,7 @@ bool Converter<int32_t>::FromV8(Isolate* isolate, Local<Value> val,
 }
 
 Local<Value> Converter<uint32_t>::ToV8(Isolate* isolate, uint32_t val) {
-  return MATE_INTEGER_NEW_UNSIGNED(isolate, val);
+  return v8::Integer::NewFromUnsigned(isolate, val);
 }
 
 bool Converter<uint32_t>::FromV8(Isolate* isolate, Local<Value> val,
@@ -72,7 +71,7 @@ bool Converter<uint32_t>::FromV8(Isolate* isolate, Local<Value> val,
 }
 
 Local<Value> Converter<int64_t>::ToV8(Isolate* isolate, int64_t val) {
-  return MATE_NUMBER_NEW(isolate, static_cast<double>(val));
+  return v8::Number::New(isolate, static_cast<double>(val));
 }
 
 bool Converter<int64_t>::FromV8(Isolate* isolate, Local<Value> val,
@@ -86,7 +85,7 @@ bool Converter<int64_t>::FromV8(Isolate* isolate, Local<Value> val,
 }
 
 Local<Value> Converter<uint64_t>::ToV8(Isolate* isolate, uint64_t val) {
-  return MATE_NUMBER_NEW(isolate, static_cast<double>(val));
+  return v8::Number::New(isolate, static_cast<double>(val));
 }
 
 bool Converter<uint64_t>::FromV8(Isolate* isolate, Local<Value> val,
@@ -98,7 +97,7 @@ bool Converter<uint64_t>::FromV8(Isolate* isolate, Local<Value> val,
 }
 
 Local<Value> Converter<float>::ToV8(Isolate* isolate, float val) {
-  return MATE_NUMBER_NEW(isolate, val);
+  return v8::Number::New(isolate, val);
 }
 
 bool Converter<float>::FromV8(Isolate* isolate, Local<Value> val,
@@ -110,7 +109,7 @@ bool Converter<float>::FromV8(Isolate* isolate, Local<Value> val,
 }
 
 Local<Value> Converter<double>::ToV8(Isolate* isolate, double val) {
-  return MATE_NUMBER_NEW(isolate, val);
+  return v8::Number::New(isolate, val);
 }
 
 bool Converter<double>::FromV8(Isolate* isolate, Local<Value> val,
@@ -123,13 +122,15 @@ bool Converter<double>::FromV8(Isolate* isolate, Local<Value> val,
 
 Local<Value> Converter<const char*>::ToV8(
     Isolate* isolate, const char* val) {
-  return MATE_STRING_NEW_FROM_UTF8(isolate, val, -1);
+  return v8::String::NewFromUtf8(isolate, val);
 }
 
 Local<Value> Converter<base::StringPiece>::ToV8(
     Isolate* isolate, const base::StringPiece& val) {
-  return MATE_STRING_NEW_FROM_UTF8(isolate, val.data(),
-                                   static_cast<uint32_t>(val.length()));
+  return v8::String::NewFromUtf8(isolate,
+                                 val.data(),
+                                 v8::String::kNormalString,
+                                 static_cast<uint32_t>(val.length()));
 }
 
 Local<Value> Converter<std::string>::ToV8(Isolate* isolate,
@@ -228,9 +229,10 @@ bool Converter<Local<Value> >::FromV8(Isolate* isolate, Local<Value> val,
 
 v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
                                       const base::StringPiece& val) {
-  return MATE_STRING_NEW_SYMBOL(isolate,
-                                val.data(),
-                                static_cast<uint32_t>(val.length()));
+  return v8::String::NewFromUtf8(isolate,
+                                 val.data(),
+                                 v8::String::kInternalizedString,
+                                 static_cast<uint32_t>(val.length()));
 }
 
 std::string V8ToString(v8::Local<v8::Value> value) {

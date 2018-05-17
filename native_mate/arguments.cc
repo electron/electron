@@ -31,7 +31,7 @@ Arguments::Arguments()
       insufficient_arguments_(false) {
 }
 
-Arguments::Arguments(const MATE_METHOD_ARGS_TYPE& info)
+Arguments::Arguments(const v8::FunctionCallbackInfo<v8::Value>& info)
     : isolate_(info.GetIsolate()),
       info_(&info),
       next_(0),
@@ -57,16 +57,16 @@ v8::Local<v8::Value> Arguments::ThrowError() const {
 }
 
 v8::Local<v8::Value> Arguments::ThrowError(const std::string& message) const {
-  MATE_THROW_EXCEPTION(isolate_, v8::Exception::Error(
+  isolate_->ThrowException(v8::Exception::Error(
       StringToV8(isolate_, message)));
-  return MATE_UNDEFINED(isolate_);
+  return v8::Undefined(isolate_);
 }
 
 v8::Local<v8::Value> Arguments::ThrowTypeError(
     const std::string& message) const {
-  MATE_THROW_EXCEPTION(isolate_, v8::Exception::TypeError(
+  isolate_->ThrowException(v8::Exception::TypeError(
       StringToV8(isolate_, message)));
-  return MATE_UNDEFINED(isolate_);
+  return v8::Undefined(isolate_);
 }
 
 }  // namespace mate

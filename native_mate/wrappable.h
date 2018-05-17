@@ -6,7 +6,6 @@
 #define NATIVE_MATE_WRAPPABLE_H_
 
 #include "base/bind.h"
-#include "native_mate/compat.h"
 #include "native_mate/converter.h"
 #include "native_mate/constructor.h"
 #include "gin/per_isolate_data.h"

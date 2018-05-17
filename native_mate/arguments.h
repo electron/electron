@@ -6,7 +6,6 @@
 #define NATIVE_MATE_ARGUMENTS_H_
 
 #include "base/macros.h"
-#include "native_mate/compat.h"
 #include "native_mate/converter.h"
 
 namespace mate {
@@ -17,7 +16,7 @@ namespace mate {
 class Arguments {
  public:
   Arguments();
-  explicit Arguments(const MATE_METHOD_ARGS_TYPE& info);
+  explicit Arguments(const v8::FunctionCallbackInfo<v8::Value>& info);
   ~Arguments();
 
   v8::Local<v8::Object> GetHolder() const {
@@ -75,12 +74,10 @@ class Arguments {
     return info_->Length();
   }
 
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
   template<typename T>
   void Return(T val) {
     info_->GetReturnValue().Set(ConvertToV8(isolate_, val));
   }
-#endif
 
   v8::Local<v8::Value> PeekNext() const;
 
@@ -92,7 +89,7 @@ class Arguments {
 
  private:
   v8::Isolate* isolate_;
-  const MATE_METHOD_ARGS_TYPE* info_;
+  const v8::FunctionCallbackInfo<v8::Value>* info_;
   int next_;
   bool insufficient_arguments_;
 };

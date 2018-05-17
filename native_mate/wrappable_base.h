@@ -1,8 +1,6 @@
 #ifndef NATIVE_MATE_WRAPPABLE_BASE_H_
 #define NATIVE_MATE_WRAPPABLE_BASE_H_
 
-#include "native_mate/compat.h"
-
 namespace mate {
 
 namespace internal {
