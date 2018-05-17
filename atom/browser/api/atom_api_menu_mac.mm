@@ -16,6 +16,12 @@
 
 using content::BrowserThread;
 
+namespace {
+
+static scoped_nsobject<NSMenu> applicationMenu_;
+
+}  // namespace
+
 namespace atom {
 
 namespace api {
@@ -132,7 +138,18 @@ void Menu::SetApplicationMenu(Menu* base_menu) {
   base::scoped_nsobject<AtomMenuController> menu_controller([
       [AtomMenuController alloc] initWithModel:menu->model_.get()
                          useDefaultAccelerator:YES]);
-  [NSApp setMainMenu:[menu_controller menu]];
+
+  NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
+  [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)
+                                 target:NSApp
+                               argument:applicationMenu_];
+  applicationMenu_.reset([[menu_controller menu] retain]);
+  [[NSRunLoop currentRunLoop]
+      performSelector:@selector(setMainMenu:)
+               target:NSApp
+             argument:applicationMenu_
+                order:0
+                modes:[NSArray arrayWithObject:NSDefaultRunLoopMode]];
 
   // Ensure the menu_controller_ is destroyed after main menu is set.
   menu_controller.swap(menu->menu_controller_);
