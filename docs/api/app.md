@@ -64,6 +64,9 @@ terminating the application.
 then `before-quit` is emitted *after* emitting `close` event on all windows and
 closing them.
 
+**Note:** This event will not be emitted if the application is killed, or closed
+due to a shutdown, restart, or user logout of Windows.
+
 ### Event: 'will-quit'
 
 Returns:
@@ -77,6 +80,9 @@ terminating the application.
 See the description of the `window-all-closed` event for the differences between
 the `will-quit` and `window-all-closed` events.
 
+**Note:** This event will not be emitted if the application is killed, or closed
+due to a shutdown, restart, or user logout of Windows.
+
 ### Event: 'quit'
 
 Returns:
@@ -85,6 +91,9 @@ Returns:
 * `exitCode` Integer
 
 Emitted when the application is quitting.
+
+**Note:** This event will not be emitted if the application is killed, or closed
+due to a shutdown, restart, or user logout of Windows.
 
 ### Event: 'open-file' _macOS_
 
