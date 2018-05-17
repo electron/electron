@@ -1,7 +1,7 @@
 const assert = require('assert')
 const {dialog} = require('electron').remote
 
-describe.only('dialog module', () => {
+describe('dialog module', () => {
   describe('showOpenDialog', () => {
     it('throws errors when the options are invalid', () => {
       assert.throws(() => {
