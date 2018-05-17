@@ -11,7 +11,7 @@ platforms is planned.
 """
 
 import errno
-import optparse
+import argparse
 import os
 import Queue
 import re
@@ -218,44 +218,29 @@ def GenerateSymbols(options, binaries):
 
 
 def main():
-  parser = optparse.OptionParser()
-  parser.add_option('', '--build-dir', default='',
+  parser = argparse.ArgumentParser(description='Generate Breakpad Symbols Project')
+  parser.add_argument('--build-dir', required=True,
                     help='The build output directory.')
-  parser.add_option('', '--symbols-dir', default='',
+  parser.add_argument('--symbols-dir', required=True,
                     help='The directory where to write the symbols file.')
-  parser.add_option('', '--libchromiumcontent-dir', default='',
+  parser.add_argument('--libchromiumcontent-dir', required=True,
                     help='The directory where libchromiumcontent is downloaded.')
-  parser.add_option('', '--binary', default='',
+  parser.add_argument('--binary', action='append', required=True,
                     help='The path of the binary to generate symbols for.')
-  parser.add_option('', '--clear', default=False, action='store_true',
+  parser.add_argument('--clear', default=False, action='store_true',
                     help='Clear the symbols directory before writing new '
                          'symbols.')
-  parser.add_option('-j', '--jobs', default=CONCURRENT_TASKS, action='store',
-                    type='int', help='Number of parallel tasks to run.')
-  parser.add_option('-v', '--verbose', action='store_true',
+  parser.add_argument('-j', '--jobs', default=CONCURRENT_TASKS, action='store',
+                    type=int, help='Number of parallel tasks to run.')
+  parser.add_argument('-v', '--verbose', action='store_true',
                     help='Print verbose status output.')
 
-  (options, _) = parser.parse_args()
+  options = parser.parse_args()
 
-  if not options.symbols_dir:
-    print "Required option --symbols-dir missing."
-    return 1
-
-  if not options.build_dir:
-    print "Required option --build-dir missing."
-    return 1
-
-  if not options.libchromiumcontent_dir:
-    print "Required option --libchromiumcontent-dir missing."
-    return 1
-
-  if not options.binary:
-    print "Required option --binary missing."
-    return 1
-
-  if not os.access(options.binary, os.X_OK):
-    print "Cannot find %s." % options.binary
-    return 1
+  for bin_file in options.binary:
+    if not os.access(bin_file, os.X_OK):
+      print "Cannot find %s." % options.binary
+      return 1
 
   if options.clear:
     try:
@@ -264,11 +249,12 @@ def main():
       pass
 
   # Build the transitive closure of all dependencies.
-  binaries = set([options.binary])
-  queue = [options.binary]
-  exe_path = os.path.dirname(options.binary)
+  binaries = set(options.binary)
+  queue = options.binary
   while queue:
-    deps = GetSharedLibraryDependencies(options, queue.pop(0), exe_path)
+    current_bin = queue.pop(0)
+    exe_path = os.path.dirname(current_bin)
+    deps = GetSharedLibraryDependencies(options, current_bin, exe_path)
     new_deps = set(deps) - binaries
     binaries |= new_deps
     queue.extend(list(new_deps))

@@ -22,18 +22,24 @@ def main(destination):
     generate_breakpad_symbols = os.path.join(SOURCE_ROOT, 'tools', 'posix',
                                              'generate_breakpad_symbols.py')
     if PLATFORM == 'darwin':
-      start = os.path.join(OUT_DIR, '{0}.app'.format(product_name), 'Contents',
+      #macOS has an additional helper app, so provide the path to that binary as well.
+      main_app = os.path.join(OUT_DIR, '{0}.app'.format(product_name), 'Contents',
                            'MacOS', product_name)
+      helper_app = os.path.join(OUT_DIR, '{0}.app'.format(product_name + " Helper"), 'Contents',
+                           'MacOS', product_name + " Helper")
+      binaries = [main_app, helper_app]
     else:
-      start = os.path.join(OUT_DIR, project_name)
+      binaries = [os.path.join(OUT_DIR, project_name)]
     args = [
       '--build-dir={0}'.format(OUT_DIR),
-      '--binary={0}'.format(start),
       '--symbols-dir={0}'.format(destination),
       '--libchromiumcontent-dir={0}'.format(CHROMIUM_DIR),
       '--clear',
       '--jobs=16',
     ]
+    for binary in binaries:
+      args += '--binary={0}'.format(binary),
+
   else:
     generate_breakpad_symbols = os.path.join(SOURCE_ROOT, 'tools', 'win',
                                              'generate_breakpad_symbols.py')
