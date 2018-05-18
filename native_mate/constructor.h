@@ -117,11 +117,11 @@ inline WrappableBase* InvokeFactory(
 };
 
 template<typename Sig>
-MATE_METHOD_RETURN_TYPE InvokeNew(const base::Callback<Sig>& factory,
-                                  v8::Isolate* isolate, Arguments* args) {
+void InvokeNew(const base::Callback<Sig>& factory,
+               v8::Isolate* isolate, Arguments* args) {
   if (!args->IsConstructCall()) {
     args->ThrowError("Requires constructor call");
-    MATE_METHOD_RETURN_UNDEFINED();
+    return;
   }
 
   WrappableBase* object;
@@ -131,14 +131,14 @@ MATE_METHOD_RETURN_TYPE InvokeNew(const base::Callback<Sig>& factory,
     object = internal::InvokeFactory(args, factory);
     if (try_catch.HasCaught()) {
       try_catch.ReThrow();
-      MATE_METHOD_RETURN_UNDEFINED();
+      return;
     }
   }
 
   if (!object)
     args->ThrowError();
 
-  MATE_METHOD_RETURN_UNDEFINED();
+  return;
 }
 
 }  // namespace internal

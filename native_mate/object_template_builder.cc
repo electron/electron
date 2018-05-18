@@ -24,10 +24,8 @@ ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(
 ObjectTemplateBuilder& ObjectTemplateBuilder::SetPropertyImpl(
     const base::StringPiece& name, v8::Local<v8::FunctionTemplate> getter,
     v8::Local<v8::FunctionTemplate> setter) {
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
   template_->SetAccessorProperty(StringToSymbol(isolate_, name), getter,
                                  setter);
-#endif
   return *this;
 }
 
