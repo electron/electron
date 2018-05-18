@@ -310,6 +310,11 @@ void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
+void ScaleWebMouseEvent(blink::WebMouseEvent& event, float scale) {
+  blink::WebFloatPoint pos = event.PositionInWidget();
+  event.SetPositionInWidget(round(pos.x / scale), round(pos.y / scale));
+}
+
 }  // namespace
 
 struct WebContents::FrameDispatchHelper {
@@ -390,6 +395,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
   session_.Reset(isolate, session.ToV8());
 
+#if defined(ENABLE_OSR)
+  float scaleFactor = 1.0f;
+  options.Get("scaleFactor", &scaleFactor);
+#endif
+
   content::WebContents* web_contents;
   if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
@@ -403,7 +413,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if defined(ENABLE_OSR)
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
-          false, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+          false, scaleFactor,
+          base::Bind(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
 
@@ -420,7 +431,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
-        transparent, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+        transparent, scaleFactor,
+        base::Bind(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
 
@@ -1616,12 +1628,14 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       web_contents()->GetRenderWidgetHostView());
   if (!view)
     return;
+  float scale = GetScaleFactor();
 
   blink::WebInputEvent::Type type =
       mate::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
+      ScaleWebMouseEvent(mouse_event, scale);
       view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
@@ -1636,6 +1650,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
+      ScaleWebMouseEvent(mouse_wheel_event, scale);
       view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
       return;
     }
@@ -1851,6 +1866,30 @@ void WebContents::Invalidate() {
   }
 }
 
+void WebContents::SetScaleFactor(float factor) {
+#if defined(ENABLE_OSR)
+  if (IsOffScreen()) {
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+    HideAutofillPopup();
+#endif
+
+    auto* view = GetOffScreenWebContentsView();
+    if (view)
+      view->SetScaleFactor(factor);
+  }
+#endif
+}
+
+float WebContents::GetScaleFactor() {
+#if defined(ENABLE_OSR)
+  if (IsOffScreen()) {
+    auto* view = GetOffScreenWebContentsView();
+    return view ? view->GetScaleFactor() : 0.0f;
+  }
+#endif
+  return 0.0f;
+}
+
 gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
   if (IsOffScreen() && wc == web_contents()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents());
@@ -2052,6 +2091,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetMethod("invalidate", &WebContents::Invalidate)
+      .SetMethod("setScaleFactor", &WebContents::SetScaleFactor)
+      .SetMethod("getScaleFactor", &WebContents::GetScaleFactor)
       .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
       .SetMethod("_getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)

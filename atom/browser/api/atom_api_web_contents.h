@@ -209,6 +209,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
   void Invalidate();
+  void SetScaleFactor(float factor);
+  float GetScaleFactor();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
 
   // Methods for zoom handling.

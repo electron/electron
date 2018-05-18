@@ -128,6 +128,12 @@ void AutofillPopupView::OnSuggestionsChanged() {
   DoUpdateBoundsAndRedrawPopup();
 }
 
+#if defined(ENABLE_OSR)
+float AutofillPopupView::ScaleFactor() {
+  return view_proxy_.get() ? view_proxy_->GetScaleFactor() : 1.0f;
+}
+#endif
+
 void AutofillPopupView::WriteDragDataForView(views::View*,
                                              const gfx::Point&,
                                              ui::OSExchangeData*) {}
@@ -234,10 +240,12 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
 #if defined(ENABLE_OSR)
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
-    bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
-                          popup_->popup_bounds_in_view_.height(), true);
+    float scale = view_proxy_->GetScaleFactor();
+    int width = std::floor(popup_->popup_bounds_in_view().width() * scale);
+    int height = std::floor(popup_->popup_bounds_in_view().height() * scale);
+    bitmap.allocN32Pixels(width, height, true);
     paint_canvas.reset(new cc::SkiaPaintCanvas(bitmap));
-    draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
+    draw_canvas = new gfx::Canvas(paint_canvas.get(), scale);
   }
 #endif
 
@@ -248,12 +256,21 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
     gfx::Rect line_rect = popup_->GetRowBounds(i);
 
+#if defined(ENABLE_OSR)
+    if (view_proxy_.get()) {
+      float scale = view_proxy_->GetScaleFactor();
+      line_rect = gfx::ScaleToEnclosedRect(line_rect, scale);
+    }
+#endif
+
     DrawAutofillEntry(draw_canvas, i, line_rect);
   }
 
 #if defined(ENABLE_OSR)
   if (view_proxy_.get()) {
-    view_proxy_->SetBounds(popup_->popup_bounds_in_view_);
+    float scale = view_proxy_->GetScaleFactor();
+    draw_canvas->Scale(scale, scale);
+    view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
 #endif

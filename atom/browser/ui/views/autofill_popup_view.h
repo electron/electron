@@ -73,6 +73,10 @@ class AutofillPopupView : public views::WidgetDelegateView,
                            const gfx::Point&,
                            const gfx::Point&) override;
 
+#if defined(ENABLE_OSR)
+  float ScaleFactor();
+#endif
+
  private:
   friend class AutofillPopup;
 

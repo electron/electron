@@ -87,6 +87,10 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
       web_preferences.Get("offscreen", &offscreen) && offscreen) {
     const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
   }
+
+  v8::Local<v8::Value> scaleFactor;
+  if (options.Get("scaleFactor", &scaleFactor))
+    web_preferences.Set("scaleFactor", scaleFactor);
 #endif
 
   // Creates NativeWindow.

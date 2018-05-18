@@ -33,6 +33,8 @@ class AutofillPopup : public views::ViewObserver {
                 const std::vector<base::string16>& labels);
   void UpdatePopupBounds();
 
+  gfx::Rect popup_bounds_in_view();
+
  private:
   friend class AutofillPopupView;
 
@@ -45,8 +47,8 @@ class AutofillPopup : public views::ViewObserver {
   int GetDesiredPopupHeight();
   int GetDesiredPopupWidth();
   gfx::Rect GetRowBounds(int i);
-  const gfx::FontList& GetValueFontListForRow(int index) const;
-  const gfx::FontList& GetLabelFontListForRow(int index) const;
+  const gfx::FontList GetValueFontListForRow(int index) const;
+  const gfx::FontList GetLabelFontListForRow(int index) const;
   ui::NativeTheme::ColorId GetBackgroundColorIDForRow(int index) const;
 
   int GetLineCount();

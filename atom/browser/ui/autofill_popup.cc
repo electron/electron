@@ -198,9 +198,13 @@ void AutofillPopup::UpdatePopupBounds() {
   popup_bounds_ =
       gfx::Rect(popup_x_and_width.first, popup_y_and_height.first,
                 popup_x_and_width.second, popup_y_and_height.second);
-  popup_bounds_in_view_ =
-      gfx::Rect(popup_bounds_in_view_.origin(),
-                gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
+}
+
+gfx::Rect AutofillPopup::popup_bounds_in_view() {
+  gfx::Point origin(popup_bounds_.origin());
+  views::View::ConvertPointFromScreen(parent_, &origin);
+
+  return gfx::Rect(origin, popup_bounds_.size());
 }
 
 void AutofillPopup::OnViewBoundsChanged(views::View* view) {
@@ -241,11 +245,25 @@ gfx::Rect AutofillPopup::GetRowBounds(int index) {
                    kRowHeight);
 }
 
-const gfx::FontList& AutofillPopup::GetValueFontListForRow(int index) const {
+const gfx::FontList AutofillPopup::GetValueFontListForRow(int index) const {
+#if defined(ENABLE_OSR)
+  if (view_) {
+    int delta = -std::ceil(bold_font_list_.GetFontSize() *
+                           (1.0f - view_->ScaleFactor()));
+    return bold_font_list_.DeriveWithSizeDelta(delta);
+  }
+#endif
   return bold_font_list_;
 }
 
-const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
+const gfx::FontList AutofillPopup::GetLabelFontListForRow(int index) const {
+#if defined(ENABLE_OSR)
+  if (view_) {
+    int delta = -std::ceil(smaller_font_list_.GetFontSize() *
+                           (1.0f - view_->ScaleFactor()));
+    return smaller_font_list_.DeriveWithSizeDelta(delta);
+  }
+#endif
   return smaller_font_list_;
 }
 
