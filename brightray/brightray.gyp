@@ -164,13 +164,20 @@
                 ],
               },
             }],
+            # This lib does not exist on arm.
             ['target_arch=="arm"', {
+              'link_settings': {
+                'libraries!': [
+                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
+                ],
+              },
+            }],
+            # Due to strange linker behavior, component build of arm needs to
+            # be linked with libjpeg.a explicitly.
+            ['target_arch=="arm" and libchromiumcontent_component==1', {
               'link_settings': {
                 'libraries': [
                   '<(libchromiumcontent_dir)/libjpeg.a',
-                ],
-                'libraries!': [
-                  '<(libchromiumcontent_dir)/libdesktop_capture_differ_sse2.a',
                 ],
               },
             }],
