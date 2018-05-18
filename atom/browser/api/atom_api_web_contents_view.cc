@@ -63,12 +63,15 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
-  api_web_contents_->RemoveObserver(this);
-  api_web_contents_->DestroyWebContents(false /* async */);
+  if (api_web_contents_) {
+    api_web_contents_->RemoveObserver(this);
+    api_web_contents_->DestroyWebContents(false /* async */);
+  }
 }
 
 void WebContentsView::OnCloseContents() {
-  // TODO(zcbenz): WebContents is closed, report the event.
+  api_web_contents_ = nullptr;
+  web_contents_.Reset();
 }
 
 // static
