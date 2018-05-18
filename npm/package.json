@@ -12,7 +12,7 @@
   "types": "electron.d.ts",
   "dependencies": {
     "@types/node": "^8.0.24",
-    "electron-download": "^3.0.1",
+    "electron-download": "^4.1.0",
     "extract-zip": "^1.0.3"
   },
   "devDependencies": {
@@ -22,5 +22,8 @@
   },
   "directories": {
     "test": "test"
+  },
+  "engines": {
+    "node": ">= 4.0"
   }
 }
