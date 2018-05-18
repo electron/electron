@@ -340,7 +340,9 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 gfx::Size NativeWindow::GetContentMaximumSize() const {
   gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
 #if defined(OS_WIN)
-  return GetExpandedWindowSize(this, maximum_size);
+  return GetContentSizeConstraints().HasMaximumSize()
+             ? GetExpandedWindowSize(this, maximum_size)
+             : maximum_size;
 #else
   return maximum_size;
 #endif
