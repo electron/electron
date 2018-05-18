@@ -620,6 +620,7 @@ void WebContents::CloseContents(content::WebContents* source) {
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
+  source->Focus();
   Emit("activate");
 }
 
