@@ -6,7 +6,12 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_
 
 #include "atom/browser/api/atom_api_view.h"
-#include "atom/browser/api/atom_api_web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
+#include "native_mate/handle.h"
+
+namespace brightray {
+class InspectableWebContents;
+}
 
 namespace atom {
 
@@ -14,7 +19,7 @@ namespace api {
 
 class WebContents;
 
-class WebContentsView : public View, public ExtendedWebContentsObserver {
+class WebContentsView : public View, public content::WebContentsObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args,
                                   mate::Handle<WebContents> web_contents);
@@ -28,8 +33,8 @@ class WebContentsView : public View, public ExtendedWebContentsObserver {
                   brightray::InspectableWebContents* iwc);
   ~WebContentsView() override;
 
-  // ExtendedWebContentsObserver:
-  void OnCloseContents() override;
+  // content::WebContentsObserver:
+  void WebContentsDestroyed() override;
 
  private:
   // Keep a reference to v8 wrapper.

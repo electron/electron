@@ -59,17 +59,15 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
   set_delete_view(false);
 #endif
   WebContentsViewRelay::CreateForWebContents(web_contents->web_contents());
-  api_web_contents_->AddObserver(this);
+  Observe(web_contents->web_contents());
 }
 
 WebContentsView::~WebContentsView() {
-  if (api_web_contents_) {
-    api_web_contents_->RemoveObserver(this);
+  if (api_web_contents_)
     api_web_contents_->DestroyWebContents(false /* async */);
-  }
 }
 
-void WebContentsView::OnCloseContents() {
+void WebContentsView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
 }
