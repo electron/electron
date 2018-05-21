@@ -44,7 +44,7 @@ const char* AppCommandToString(int command_id) {
     case APPCOMMAND_MEDIA_STOP:
       return "media-stop";
     case APPCOMMAND_MEDIA_PLAY_PAUSE:
-      return "media-play_pause";
+      return "media-play-pause";
     case APPCOMMAND_LAUNCH_MAIL:
       return "launch-mail";
     case APPCOMMAND_LAUNCH_MEDIA_SELECT:
@@ -142,6 +142,11 @@ HHOOK NativeWindowViews::mouse_hook_ = NULL;
 bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);
+
+  if (command_id == APPCOMMAND_MEDIA_PLAY_PAUSE)
+    // FIXME(htk3): Remove media-play_pause in 3.0
+    NotifyWindowExecuteWindowsCommand("media-play_pause");
+
   return false;
 }
 
