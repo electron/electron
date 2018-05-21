@@ -91,7 +91,7 @@ def parse_args():
                       help='Manually specify the arch to build for')
   parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
   parser.add_argument('--use_clang_cl_on_windows', action='store_true', 
-                      default=True, help='Download clang-cl on Windows and' \
+                      default=False, help='Download clang-cl on Windows and' \
                       ' use it as a compiler')
   parser.add_argument('--disable_clang', action='store_true',
                       help='Use compilers other than clang for building')
