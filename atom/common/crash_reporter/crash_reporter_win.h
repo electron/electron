@@ -64,8 +64,8 @@ class CrashReporterWin : public CrashReporter {
   std::vector<google_breakpad::CustomInfoEntry> custom_info_entries_;
   google_breakpad::CustomClientInfo custom_info_;
 
-  bool skip_system_crash_handler_;
-  bool code_range_registered_;
+  bool skip_system_crash_handler_ = false;
+  bool code_range_registered_ = false;
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterWin);

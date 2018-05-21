@@ -102,8 +102,8 @@ class CrashService {
   // LocalFree.
   PSECURITY_DESCRIPTOR GetSecurityDescriptorForLowIntegrity();
 
-  google_breakpad::CrashGenerationServer* dumper_;
-  google_breakpad::CrashReportSender* sender_;
+  google_breakpad::CrashGenerationServer* dumper_ = nullptr;
+  google_breakpad::CrashReportSender* sender_ = nullptr;
 
   // the extra tag sent to the server with each dump.
   std::wstring reporter_tag_;
@@ -112,10 +112,10 @@ class CrashService {
   std::wstring reporter_url_;
 
   // clients serviced statistics:
-  int requests_handled_;
-  int requests_sent_;
-  volatile LONG clients_connected_;
-  volatile LONG clients_terminated_;
+  int requests_handled_ = 0;
+  int requests_sent_ = 0;
+  volatile LONG clients_connected_ = 0;
+  volatile LONG clients_terminated_ = 0;
   base::Lock sending_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashService);

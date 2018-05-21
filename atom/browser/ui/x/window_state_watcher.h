@@ -27,8 +27,8 @@ class WindowStateWatcher : public ui::PlatformEventObserver {
   NativeWindowViews* window_;
   gfx::AcceleratedWidget widget_;
 
-  bool was_minimized_;
-  bool was_maximized_;
+  bool was_minimized_ = false;
+  bool was_maximized_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };

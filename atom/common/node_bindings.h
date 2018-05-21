@@ -87,7 +87,7 @@ class NodeBindings {
   static void EmbedThreadRunner(void* arg);
 
   // Whether the libuv loop has ended.
-  bool embed_closed_;
+  bool embed_closed_ = false;
 
   // Loop used when constructed in WORKER mode
   uv_loop_t worker_loop_;
@@ -102,7 +102,7 @@ class NodeBindings {
   uv_sem_t embed_sem_;
 
   // Environment that to wrap the uv loop.
-  node::Environment* uv_env_;
+  node::Environment* uv_env_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_;
 

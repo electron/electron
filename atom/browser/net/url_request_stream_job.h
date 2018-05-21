@@ -52,10 +52,10 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   void CopyMoreDataDone(scoped_refptr<net::IOBuffer> io_buf, int read_count);
 
   std::deque<char> buffer_;
-  bool ended_;
-  bool errored_;
+  bool ended_ = false;
+  bool errored_ = false;
   scoped_refptr<net::IOBuffer> pending_io_buf_;
-  int pending_io_buf_size_;
+  int pending_io_buf_size_ = 0;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
   mate::EventSubscriber<URLRequestStreamJob>::SafePtr subscriber_;
   base::WeakPtrFactory<URLRequestStreamJob> weak_factory_;

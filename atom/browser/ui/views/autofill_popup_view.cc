@@ -25,12 +25,7 @@ void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
 
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
-    : popup_(popup),
-      parent_widget_(parent_widget),
-#if defined(ENABLE_OSR)
-      view_proxy_(nullptr),
-#endif
-      weak_ptr_factory_(this) {
+    : popup_(popup), parent_widget_(parent_widget), weak_ptr_factory_(this) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);

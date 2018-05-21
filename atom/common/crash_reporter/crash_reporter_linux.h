@@ -54,10 +54,10 @@ class CrashReporterLinux : public CrashReporter {
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
   std::unique_ptr<CrashKeyStorage> crash_keys_;
 
-  uint64_t process_start_time_;
-  pid_t pid_;
+  uint64_t process_start_time_ = 0;
+  pid_t pid_ = 0;
   std::string upload_url_;
-  bool upload_to_server_;
+  bool upload_to_server_ = true;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterLinux);
 };

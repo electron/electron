@@ -63,7 +63,7 @@ class Debugger : public mate::TrackableObject<Debugger>,
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
   PendingRequestMap pending_requests_;
-  int previous_request_id_;
+  int previous_request_id_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(Debugger);
 };

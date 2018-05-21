@@ -46,7 +46,7 @@ class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
   base::scoped_nsobject<AtomMenuController> menu_;
 
   // Used for unregistering observer.
-  AtomMenuModel* menu_model_;  // weak ref.
+  AtomMenuModel* menu_model_ = nullptr;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };

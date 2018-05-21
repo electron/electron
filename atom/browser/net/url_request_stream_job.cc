@@ -21,11 +21,6 @@ namespace atom {
 URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
                                          net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestJob>(request, network_delegate),
-      ended_(false),
-      errored_(false),
-      pending_io_buf_(nullptr),
-      pending_io_buf_size_(0),
-      response_headers_(nullptr),
       weak_factory_(this) {}
 
 URLRequestStreamJob::~URLRequestStreamJob() = default;

@@ -102,19 +102,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
       root_view_(new RootView(this)),
-      focused_view_(nullptr),
-#if defined(OS_WIN)
-      checked_for_a11y_support_(false),
-      thick_frame_(true),
-#endif
-      keyboard_event_handler_(new views::UnhandledKeyboardEventHandler),
-      disable_count_(0),
-      use_content_size_(false),
-      movable_(true),
-      resizable_(true),
-      maximizable_(true),
-      minimizable_(true),
-      fullscreenable_(true) {
+      keyboard_event_handler_(new views::UnhandledKeyboardEventHandler) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;

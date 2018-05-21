@@ -20,7 +20,7 @@ namespace atom {
 namespace api {
 
 Menu::Menu(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : model_(new AtomMenuModel(this)), parent_(nullptr) {
+    : model_(new AtomMenuModel(this)) {
   InitWith(isolate, wrapper);
   model_->AddObserver(this);
 }

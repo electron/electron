@@ -12,7 +12,7 @@
 
 namespace mate {
 
-Event::Event(v8::Isolate* isolate) : sender_(nullptr), message_(nullptr) {
+Event::Event(v8::Isolate* isolate) {
   Init(isolate);
 }
 

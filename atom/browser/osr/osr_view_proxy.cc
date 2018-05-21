@@ -6,8 +6,7 @@
 
 namespace atom {
 
-OffscreenViewProxy::OffscreenViewProxy(views::View* view)
-    : view_(view), observer_(nullptr) {
+OffscreenViewProxy::OffscreenViewProxy(views::View* view) : view_(view) {
   view_bitmap_.reset(new SkBitmap);
 }
 

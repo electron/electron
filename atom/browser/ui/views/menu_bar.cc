@@ -26,7 +26,7 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
 MenuBar::MenuBar(views::View* window)
-    : background_color_(kDefaultColor), window_(window), menu_model_(NULL) {
+    : background_color_(kDefaultColor), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
   SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));

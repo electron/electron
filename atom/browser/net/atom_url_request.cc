@@ -48,7 +48,6 @@ class UploadOwnedIOBufferElementReader : public net::UploadBytesElementReader {
 
 AtomURLRequest::AtomURLRequest(api::URLRequest* delegate)
     : delegate_(delegate),
-      is_chunked_upload_(false),
       response_read_buffer_(new net::IOBuffer(kBufferSize)) {}
 
 AtomURLRequest::~AtomURLRequest() {

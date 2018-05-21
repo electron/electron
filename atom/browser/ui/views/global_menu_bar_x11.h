@@ -71,7 +71,7 @@ class GlobalMenuBarX11 {
   NativeWindowViews* window_;
   gfx::AcceleratedWidget xid_;
 
-  DbusmenuServer* server_;
+  DbusmenuServer* server_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(GlobalMenuBarX11);
 };

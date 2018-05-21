@@ -76,7 +76,6 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
 AtomBrowserMainParts::AtomBrowserMainParts()
     : fake_browser_process_(new BrowserProcess),
-      exit_code_(nullptr),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),

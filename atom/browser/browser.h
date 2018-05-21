@@ -254,7 +254,7 @@ class Browser : public WindowListObserver {
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
-  bool is_quiting_;
+  bool is_quiting_ = false;
 
  private:
   // WindowListObserver implementations:
@@ -265,13 +265,13 @@ class Browser : public WindowListObserver {
   base::ObserverList<BrowserObserver> observers_;
 
   // Whether `app.exit()` has been called
-  bool is_exiting_;
+  bool is_exiting_ = false;
 
   // Whether "ready" event has been emitted.
-  bool is_ready_;
+  bool is_ready_ = false;
 
   // The browser is being shutdown.
-  bool is_shutdown_;
+  bool is_shutdown_ = false;
 
   int badge_count_ = 0;
 

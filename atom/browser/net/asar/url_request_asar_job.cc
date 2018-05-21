@@ -32,20 +32,9 @@
 
 namespace asar {
 
-URLRequestAsarJob::FileMetaInfo::FileMetaInfo()
-    : file_size(0),
-      mime_type_result(false),
-      file_exists(false),
-      is_directory(false) {}
-
 URLRequestAsarJob::URLRequestAsarJob(net::URLRequest* request,
                                      net::NetworkDelegate* network_delegate)
-    : net::URLRequestJob(request, network_delegate),
-      type_(TYPE_ERROR),
-      remaining_bytes_(0),
-      seek_offset_(0),
-      range_parse_result_(net::OK),
-      weak_ptr_factory_(this) {}
+    : net::URLRequestJob(request, network_delegate), weak_ptr_factory_(this) {}
 
 URLRequestAsarJob::~URLRequestAsarJob() {}
 

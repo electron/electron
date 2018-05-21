@@ -53,7 +53,7 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
   bool TestAndSetAuthHandled();
 
   // True if we've handled auth (Login or CancelAuth has been called).
-  bool handled_auth_;
+  bool handled_auth_ = false;
   mutable base::Lock handled_auth_lock_;
 
   // Who/where/what asked for the authentication.
@@ -61,11 +61,11 @@ class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
 
   // The request that wants login data.
   // This should only be accessed on the IO loop.
-  net::URLRequest* request_;
+  net::URLRequest* request_ = nullptr;
 
   // Cached from the net::URLRequest, in case it goes NULL on us.
-  int render_process_host_id_;
-  int render_frame_id_;
+  int render_process_host_id_ = 0;
+  int render_frame_id_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };

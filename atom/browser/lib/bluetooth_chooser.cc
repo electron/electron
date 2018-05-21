@@ -42,9 +42,7 @@ void OnDeviceChosen(const content::BluetoothChooser::EventHandler& handler,
 
 BluetoothChooser::BluetoothChooser(api::WebContents* contents,
                                    const EventHandler& event_handler)
-    : api_web_contents_(contents),
-      event_handler_(event_handler),
-      num_retries_(0) {}
+    : api_web_contents_(contents), event_handler_(event_handler) {}
 
 BluetoothChooser::~BluetoothChooser() {}
 

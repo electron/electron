@@ -95,7 +95,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // The zoom controller of the embedder that is used
   // to subscribe for zoom changes.
-  WebContentsZoomController* embedder_zoom_controller_;
+  WebContentsZoomController* embedder_zoom_controller_ = nullptr;
 
   // The size of the container element.
   gfx::Size element_size_;
@@ -105,10 +105,10 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   gfx::Size guest_size_;
 
   // A pointer to the guest_host.
-  content::GuestHost* guest_host_;
+  content::GuestHost* guest_host_ = nullptr;
 
   // Indicates whether autosize mode is enabled or not.
-  bool auto_size_enabled_;
+  bool auto_size_enabled_ = false;
 
   // The maximum size constraints of the container element in autosize mode.
   gfx::Size max_auto_size_;
@@ -120,12 +120,12 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   gfx::Size normal_size_;
 
   // Whether the guest view is inside a plugin document.
-  bool is_full_page_plugin_;
+  bool is_full_page_plugin_ = false;
 
   // Whether attached.
-  bool attached_;
+  bool attached_ = false;
 
-  api::WebContents* api_web_contents_;
+  api::WebContents* api_web_contents_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };

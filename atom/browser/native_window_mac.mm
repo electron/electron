@@ -255,17 +255,7 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 
 NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
                                  NativeWindow* parent)
-    : NativeWindow(options, parent),
-      root_view_(new RootViewMac(this)),
-      is_kiosk_(false),
-      was_fullscreen_(false),
-      zoom_to_page_width_(false),
-      fullscreen_window_title_(false),
-      resizable_(true),
-      attention_request_id_(0),
-      title_bar_style_(NORMAL),
-      always_simple_fullscreen_(false),
-      is_simple_fullscreen_(false) {
+    : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
   options.Get(options::kHeight, &height);

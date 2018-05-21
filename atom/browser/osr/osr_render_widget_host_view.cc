@@ -117,8 +117,6 @@ class AtomCopyFrameGenerator {
   AtomCopyFrameGenerator(OffScreenRenderWidgetHostView* view,
                          int frame_rate_threshold_us)
       : view_(view),
-        frame_retry_count_(0),
-        next_frame_time_(base::TimeTicks::Now()),
         frame_duration_(
             base::TimeDelta::FromMicroseconds(frame_rate_threshold_us)),
         weak_ptr_factory_(this) {
@@ -204,8 +202,8 @@ class AtomCopyFrameGenerator {
 
   base::Time last_time_;
 
-  int frame_retry_count_;
-  base::TimeTicks next_frame_time_;
+  int frame_retry_count_ = 0;
+  base::TimeTicks next_frame_time_ = base::TimeTicks::Now();
   base::TimeDelta frame_duration_;
 
   base::WeakPtrFactory<AtomCopyFrameGenerator> weak_ptr_factory_;
@@ -257,27 +255,14 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     NativeWindow* native_window)
     : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       parent_host_view_(parent_host_view),
-      popup_host_view_(nullptr),
-      child_host_view_(nullptr),
       native_window_(native_window),
-      software_output_device_(nullptr),
       transparent_(transparent),
       callback_(callback),
-      parent_callback_(nullptr),
       frame_rate_(frame_rate),
-      frame_rate_threshold_us_(0),
-      last_time_(base::Time::Now()),
       scale_factor_(kDefaultScaleFactor),
       size_(native_window->GetSize()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
-      is_destroyed_(false),
-      popup_position_(gfx::Rect()),
-      hold_resize_(false),
-      pending_resize_(false),
-      paint_callback_running_(false),
-      renderer_compositor_frame_sink_(nullptr),
-      background_color_(SkColor()),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;

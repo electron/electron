@@ -46,7 +46,7 @@ class OffscreenViewProxy {
   gfx::Rect view_bounds_;
   std::unique_ptr<SkBitmap> view_bitmap_;
 
-  OffscreenViewProxyObserver* observer_;
+  OffscreenViewProxyObserver* observer_ = nullptr;
 };
 
 }  // namespace atom

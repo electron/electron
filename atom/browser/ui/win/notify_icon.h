@@ -79,7 +79,7 @@ class NotifyIcon : public TrayIcon {
   base::win::ScopedHICON icon_;
 
   // The context menu.
-  AtomMenuModel* menu_model_;
+  AtomMenuModel* menu_model_ = nullptr;
 
   // Context menu associated with this icon (if any).
   std::unique_ptr<views::MenuRunner> menu_runner_;

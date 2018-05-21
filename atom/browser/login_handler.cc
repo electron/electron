@@ -32,11 +32,7 @@ void ResetLoginHandlerForRequest(net::URLRequest* request) {
 
 LoginHandler::LoginHandler(net::AuthChallengeInfo* auth_info,
                            net::URLRequest* request)
-    : handled_auth_(false),
-      auth_info_(auth_info),
-      request_(request),
-      render_process_host_id_(0),
-      render_frame_id_(0) {
+    : auth_info_(auth_info), request_(request) {
   content::ResourceRequestInfo::ForRequest(request_)->GetAssociatedRenderFrame(
       &render_process_host_id_, &render_frame_id_);
 

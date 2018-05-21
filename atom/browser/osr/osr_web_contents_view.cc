@@ -15,11 +15,7 @@ namespace atom {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     const OnPaintCallback& callback)
-    : transparent_(transparent),
-      painting_(true),
-      frame_rate_(60),
-      callback_(callback),
-      web_contents_(nullptr) {
+    : transparent_(transparent), callback_(callback) {
 #if defined(OS_MACOSX)
   PlatformCreate();
 #endif

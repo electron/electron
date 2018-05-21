@@ -42,7 +42,6 @@ class GtkMessageBox : public NativeWindowObserver {
                 const std::string& checkbox_label,
                 bool checkbox_checked)
       : cancel_id_(cancel_id),
-        checkbox_checked_(false),
         parent_(static_cast<NativeWindow*>(parent_window)) {
     // Create dialog.
     dialog_ =
@@ -160,9 +159,9 @@ class GtkMessageBox : public NativeWindowObserver {
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
-  int cancel_id_;
+  int cancel_id_ = 0;
 
-  bool checkbox_checked_;
+  bool checkbox_checked_ = false;
 
   NativeWindow* parent_;
   GtkWidget* dialog_;

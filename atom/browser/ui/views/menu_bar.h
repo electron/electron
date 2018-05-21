@@ -72,8 +72,8 @@ class MenuBar : public views::View,
   SkColor disabled_color_;
 #endif
 
-  views::View* window_;
-  AtomMenuModel* menu_model_;
+  views::View* window_ = nullptr;
+  AtomMenuModel* menu_model_ = nullptr;
 
   View* FindAccelChild(base::char16 key);
 

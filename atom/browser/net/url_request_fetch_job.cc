@@ -46,8 +46,7 @@ net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
 // Pipe the response writer back to URLRequestFetchJob.
 class ResponsePiper : public net::URLFetcherResponseWriter {
  public:
-  explicit ResponsePiper(URLRequestFetchJob* job)
-      : first_write_(true), job_(job) {}
+  explicit ResponsePiper(URLRequestFetchJob* job) : job_(job) {}
 
   // net::URLFetcherResponseWriter:
   int Initialize(const net::CompletionCallback& callback) override {
@@ -69,7 +68,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
   }
 
  private:
-  bool first_write_;
+  bool first_write_ = true;
   URLRequestFetchJob* job_;
 
   DISALLOW_COPY_AND_ASSIGN(ResponsePiper);
@@ -79,9 +78,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 
 URLRequestFetchJob::URLRequestFetchJob(net::URLRequest* request,
                                        net::NetworkDelegate* network_delegate)
-    : JsAsker<net::URLRequestJob>(request, network_delegate),
-      pending_buffer_size_(0),
-      write_num_bytes_(0) {}
+    : JsAsker<net::URLRequestJob>(request, network_delegate) {}
 
 URLRequestFetchJob::~URLRequestFetchJob() = default;
 

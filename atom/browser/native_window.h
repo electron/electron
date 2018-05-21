@@ -287,41 +287,41 @@ class NativeWindow : public base::SupportsUserData,
   std::unique_ptr<views::Widget> widget_;
 
   // The content view, weak ref.
-  views::View* content_view_;
+  views::View* content_view_ = nullptr;
 
   // Whether window has standard frame.
-  bool has_frame_;
+  bool has_frame_ = true;
 
   // Whether window is transparent.
-  bool transparent_;
+  bool transparent_ = false;
 
   // Minimum and maximum size, stored as content size.
   extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
-  bool enable_larger_than_screen_;
+  bool enable_larger_than_screen_ = false;
 
   // The windows has been closed.
-  bool is_closed_;
+  bool is_closed_ = false;
 
   // Used to display sheets at the appropriate horizontal and vertical offsets
   // on macOS.
-  double sheet_offset_x_;
-  double sheet_offset_y_;
+  double sheet_offset_x_ = 0.0;
+  double sheet_offset_y_ = 0.0;
 
   // Used to maintain the aspect ratio of a view which is inside of the
   // content view.
-  double aspect_ratio_;
+  double aspect_ratio_ = 0.0;
   gfx::Size aspect_ratio_extraSize_;
 
   // The parent window, it is guaranteed to be valid during this window's life.
-  NativeWindow* parent_;
+  NativeWindow* parent_ = nullptr;
 
   // Is this a modal window.
-  bool is_modal_;
+  bool is_modal_ = false;
 
   // The browser view layer.
-  NativeBrowserView* browser_view_;
+  NativeBrowserView* browser_view_ = nullptr;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;

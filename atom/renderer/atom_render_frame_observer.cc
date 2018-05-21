@@ -72,8 +72,7 @@ AtomRenderFrameObserver::AtomRenderFrameObserver(
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(frame),
       render_frame_(frame),
-      renderer_client_(renderer_client),
-      document_created_(false) {
+      renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }

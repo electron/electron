@@ -155,14 +155,14 @@ class CommonWebContentsDelegate
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;
 
-  bool offscreen_;
-  bool ignore_menu_shortcuts_;
+  bool offscreen_ = false;
+  bool ignore_menu_shortcuts_ = false;
 
   // Whether window is fullscreened by HTML5 api.
-  bool html_fullscreen_;
+  bool html_fullscreen_ = false;
 
   // Whether window is fullscreened by window api.
-  bool native_fullscreen_;
+  bool native_fullscreen_ = false;
 
   // UI related helper classes.
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)

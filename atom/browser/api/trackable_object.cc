@@ -28,8 +28,7 @@ class IDUserData : public base::SupportsUserData::Data {
 
 }  // namespace
 
-TrackableObjectBase::TrackableObjectBase()
-    : weak_map_id_(0), weak_factory_(this) {
+TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
   atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
       GetDestroyClosure());
 }
@@ -54,8 +53,8 @@ void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
 int32_t TrackableObjectBase::GetIDFromWrappedClass(
     base::SupportsUserData* wrapped) {
   if (wrapped) {
-    auto* id = static_cast<IDUserData*>(
-        wrapped->GetUserData(kTrackedObjectKey));
+    auto* id =
+        static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
     if (id)
       return *id;
   }

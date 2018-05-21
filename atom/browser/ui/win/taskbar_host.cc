@@ -50,7 +50,7 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
 
 }  // namespace
 
-TaskbarHost::TaskbarHost() : thumbar_buttons_added_(false) {}
+TaskbarHost::TaskbarHost() {}
 
 TaskbarHost::~TaskbarHost() {}
 

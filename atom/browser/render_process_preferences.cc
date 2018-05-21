@@ -12,7 +12,7 @@
 namespace atom {
 
 RenderProcessPreferences::RenderProcessPreferences(const Predicate& predicate)
-    : predicate_(predicate), next_id_(0), cache_needs_update_(true) {
+    : predicate_(predicate) {
   registrar_.Add(this, content::NOTIFICATION_RENDERER_PROCESS_CREATED,
                  content::NotificationService::AllBrowserContextsAndSources());
 }
