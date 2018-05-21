@@ -10,7 +10,7 @@
   'includes': [
     'features.gypi',
     'filenames.gypi',
-    'vendor/native_mate/native_mate_files.gypi',
+    'native_mate/native_mate_files.gypi',
   ],
   'target_defaults': {
     'defines': [
@@ -285,7 +285,7 @@
       'include_dirs': [
         '.',
         'chromium_src',
-        'vendor/native_mate',
+        'native_mate',
         # Include atom_natives.h.
         '<(SHARED_INTERMEDIATE_DIR)',
         # Include directories for uv and node.
