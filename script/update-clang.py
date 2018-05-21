@@ -152,22 +152,49 @@ def GetVSVersion():
       vs_toolchain.GetVisualStudioVersion())
   return vs_version
 
+def ValidVS2017Path():
+  vs2017Path = os.path.join(os.environ['ProgramFiles(x86)'], \
+                            'Microsoft Visual Studio', '2017')
+  vs2017Variants = ['Enterprise', 'Professional', 'Community']
+
+  for vs2017Variant in vs2017Variants:
+    possiblePath = os.path.join(vs2017Path, vs2017Variant)
+    if os.path.exists(possiblePath):
+      return possiblePath
+  
+  return ''
+
+
+def ValidVS2015Path():
+  vs2015Path = os.path.join(os.environ['ProgramFiles(x86)'], \
+                            'Microsoft Visual Studio 14.0')
+  if os.path.exists(vs2015Path):
+    return vs2015Path
+  return ''
+
+
+def ValidVSPath():
+  result = ValidVS2017Path()
+  if (len(result) == 0):
+    result = ValidVS2015Path()
+  if (len(result) == 0):
+    raise IOError
+  
+  return result
+
 
 def CopyDiaDllTo(target_dir):
   # This script always wants to use the 64-bit msdia*.dll.
-
-  vs2017Path = os.path.join(os.environ['ProgramFiles(x86)'], \
-                            'Microsoft Visual Studio', '2017')
-  vs2017PathEnt = os.path.join(vs2017Path, 'Enterprise')
-  
+  vsPath = ValidVSPath()
   msdia140Path = os.path.join('DIA SDK', 'bin', 'amd64', 'msdia140.dll')
 
-  dia_dll_path = os.path.join(vs2017PathEnt, msdia140Path)
+  dia_dll_path = os.path.join(vsPath, msdia140Path)
   if not os.path.exists(dia_dll_path):
     raise IOError
 
   dia_dll =  dia_dll_path
   CopyFile(dia_dll, target_dir)
+
 
 def UpdateClang():
   cds_file = "clang-%s.tgz" %  PACKAGE_VERSION
