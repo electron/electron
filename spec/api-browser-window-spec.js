@@ -1204,6 +1204,18 @@ describe('BrowserWindow module', () => {
         })
       })
 
+      it('should focus on window correctly', () => {
+        w.destroy()
+        w = new BrowserWindow({
+            webPreferences: {
+            sandbox: true
+          }
+        })
+
+        w.focus()
+        assert(w.isFocused())
+      })
+
       it('exposes ipcRenderer to preload script', (done) => {
         ipcMain.once('answer', function (event, test) {
           assert.equal(test, 'preload')
