@@ -26,7 +26,8 @@ PACKAGE_VERSION = "%s-%s" % (CLANG_REVISION, CLANG_SUB_REVISION)
 
 # Path constants. (All of these should be absolute paths.)
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
-LLVM_BUILD_DIR = os.path.realpath(os.path.join(THIS_DIR, '..', 'vendor', 'llvm-build'))
+LLVM_DIR = os.path.join(THIS_DIR, '..', 'vendor', 'llvm-build')
+LLVM_BUILD_DIR = os.path.realpath(LLVM_DIR)
 STAMP_FILE = os.path.join(LLVM_BUILD_DIR, 'cr_build_revision')
 
 # URL for pre-built binaries.
@@ -113,7 +114,7 @@ def WriteStampFile(s, path=STAMP_FILE):
     f.write('\n')
 
 
-def RmTree(dir):
+def RmTree(directoryPath):
   """Delete dir."""
   def ChmodAndRetry(func, path, _):
     # Subversion can leave read-only files around.
@@ -122,7 +123,7 @@ def RmTree(dir):
       return func(path)
     raise
 
-  shutil.rmtree(dir, onerror=ChmodAndRetry)
+  shutil.rmtree(directoryPath, onerror=ChmodAndRetry)
 
 
 def CopyFile(src, dst):
@@ -155,7 +156,8 @@ def GetVSVersion():
 def CopyDiaDllTo(target_dir):
   # This script always wants to use the 64-bit msdia*.dll.
 
-  vs2017Path = os.path.join(os.environ['ProgramFiles(x86)'], 'Microsoft Visual Studio', '2017')
+  vs2017Path = os.path.join(os.environ['ProgramFiles(x86)'], \
+                            'Microsoft Visual Studio', '2017')
   vs2017PathEnt = os.path.join(vs2017Path, 'Enterprise')
   
   msdia140Path = os.path.join('DIA SDK', 'bin', 'amd64', 'msdia140.dll')
