@@ -121,7 +121,10 @@ int AtomBrowserMainParts::GetExitCode() {
 
 void AtomBrowserMainParts::RegisterDestructionCallback(
     base::OnceClosure callback) {
-  destructors_.insert(destructors_.end(), std::move(callback));
+  // The destructors should be called in reversed order, so dependencies between
+  // JavaScript objects can be correctly resolved.
+  // For example WebContentsView => WebContents => Session.
+  destructors_.insert(destructors_.begin(), std::move(callback));
 }
 
 void AtomBrowserMainParts::PreEarlyInitialization() {

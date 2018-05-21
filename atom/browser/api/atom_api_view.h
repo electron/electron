@@ -7,14 +7,14 @@
 
 #include <memory>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "ui/views/view.h"
 
 namespace atom {
 
 namespace api {
 
-class View : public mate::EventEmitter<View> {
+class View : public mate::TrackableObject<View> {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 

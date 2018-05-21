@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_VIEW_H_
 
 #include "atom/browser/api/atom_api_view.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
 
 namespace brightray {
@@ -18,7 +19,7 @@ namespace api {
 
 class WebContents;
 
-class WebContentsView : public View {
+class WebContentsView : public View, public content::WebContentsObserver {
  public:
   static mate::WrappableBase* New(mate::Arguments* args,
                                   mate::Handle<WebContents> web_contents);
@@ -28,13 +29,17 @@ class WebContentsView : public View {
 
  protected:
   WebContentsView(v8::Isolate* isolate,
-                  v8::Local<v8::Value> web_contents_wrapper,
-                  brightray::InspectableWebContents* web_contents);
+                  mate::Handle<WebContents> web_contents,
+                  brightray::InspectableWebContents* iwc);
   ~WebContentsView() override;
+
+  // content::WebContentsObserver:
+  void WebContentsDestroyed() override;
 
  private:
   // Keep a reference to v8 wrapper.
-  v8::Global<v8::Value> web_contents_wrapper_;
+  v8::Global<v8::Value> web_contents_;
+  api::WebContents* api_web_contents_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsView);
 };
