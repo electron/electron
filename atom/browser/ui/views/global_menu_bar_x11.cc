@@ -209,7 +209,9 @@ void GlobalMenuBarX11::SetMenu(AtomMenuModel* menu_model) {
   DbusmenuMenuitem* root_item = menuitem_new();
   menuitem_property_set(root_item, kPropertyLabel, "Root");
   menuitem_property_set_bool(root_item, kPropertyVisible, true);
-  BuildMenuFromModel(menu_model, root_item);
+  if (menu_model != nullptr) {
+    BuildMenuFromModel(menu_model, root_item);
+  }
 
   server_set_root(server_, root_item);
   g_object_unref(root_item);
