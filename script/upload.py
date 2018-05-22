@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import datetime
 import errno
 import hashlib
 import os
@@ -34,6 +35,9 @@ PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 
 def main():
   args = parse_args()
+  if  args.upload_to_s3:
+    utcnow = datetime.datetime.utcnow()
+    args.upload_timestamp = utcnow.strftime('%Y-%m-%d_%H:%M:%S')
 
   if not dist_newer_than_head():
     run_python_script('create-dist.py')
@@ -67,39 +71,37 @@ def main():
 
 
   # Upload Electron with GitHub Releases API.
-  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME),
-                  args.upload_to_s3)
+  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME), args)
   if get_target_arch() != 'mips64el':
-    upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME),
-                    args.upload_to_s3)
+    upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
   if PLATFORM == 'darwin':
     upload_electron(github, release, os.path.join(DIST_DIR,
-                    'electron-api.json'), args.upload_to_s3)
+                    'electron-api.json'), args)
     upload_electron(github, release, os.path.join(DIST_DIR, 'electron.d.ts'),
-                    args.upload_to_s3)
+                    args)
     upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME),
-                    args.upload_to_s3)
+                    args)
   elif PLATFORM == 'win32':
     upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME),
-                    args.upload_to_s3)
+                    args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
   upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg),
-                  args.upload_to_s3)
+                  args)
 
   chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
   upload_electron(github, release, os.path.join(DIST_DIR, chromedriver),
-                  args.upload_to_s3)
+                  args)
   mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
   upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
-                args.upload_to_s3)
+                args)
 
   if get_target_arch().startswith('arm'):
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
     upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
-                    args.upload_to_s3)
+                    args)
 
   if PLATFORM == 'win32' and not tag_exists and not args.upload_to_s3:
     # Upload PDBs to Windows symbol server.
@@ -209,12 +211,13 @@ def create_release_draft(github, tag):
   return r
 
 
-def upload_electron(github, release, file_path, upload_to_s3):
+def upload_electron(github, release, file_path, args):
 
   # if upload_to_s3 is set, skip github upload.
-  if upload_to_s3:
+  if args.upload_to_s3:
     bucket, access_key, secret_key = s3_config()
-    key_prefix = 'electron-artifacts/{0}'.format(release['tag_name'])
+    key_prefix = 'electron-artifacts/{0}_{1}'.format(release['tag_name'],
+                                                     args.upload_timestamp)
     s3put(bucket, access_key, secret_key, os.path.dirname(file_path),
           key_prefix, [file_path])
     upload_sha256_checksum(release['tag_name'], file_path, key_prefix)
