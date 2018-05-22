@@ -31,6 +31,7 @@
   V(atom_browser_app)                        \
   V(atom_browser_auto_updater)               \
   V(atom_browser_browser_view)               \
+  V(atom_browser_box_layout)                 \
   V(atom_browser_content_tracing)            \
   V(atom_browser_debugger)                   \
   V(atom_browser_desktop_capturer)           \
@@ -38,6 +39,7 @@
   V(atom_browser_download_item)              \
   V(atom_browser_global_shortcut)            \
   V(atom_browser_in_app_purchase)            \
+  V(atom_browser_layout_manager)             \
   V(atom_browser_menu)                       \
   V(atom_browser_net)                        \
   V(atom_browser_power_monitor)              \

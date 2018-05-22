@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_web_contents_view.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/common/api/constructor.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "native_mate/dictionary.h"
@@ -117,13 +118,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  WebContentsView::SetConstructor(isolate, base::Bind(&WebContentsView::New));
-
-  mate::Dictionary constructor(
-      isolate, WebContentsView::GetConstructor(isolate)->GetFunction());
-
   mate::Dictionary dict(isolate, exports);
-  dict.Set("WebContentsView", constructor);
+  dict.Set("WebContentsView", mate::CreateConstructor<WebContentsView>(
+                                  isolate, base::Bind(&WebContentsView::New)));
 }
 
 }  // namespace
