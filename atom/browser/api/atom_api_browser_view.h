@@ -59,7 +59,7 @@ class BrowserView : public mate::TrackableObject<BrowserView> {
   v8::Local<v8::Value> GetWebContents();
 
   v8::Global<v8::Value> web_contents_;
-  class WebContents* api_web_contents_;
+  class WebContents* api_web_contents_ = nullptr;
 
   std::unique_ptr<NativeBrowserView> view_;
 

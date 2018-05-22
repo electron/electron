@@ -437,22 +437,22 @@ class WebContents : public mate::TrackableObject<WebContents>,
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
 
   // The host webcontents that may contain this webcontents.
-  WebContents* embedder_;
+  WebContents* embedder_ = nullptr;
 
   // The zoom controller for this webContents.
-  WebContentsZoomController* zoom_controller_;
+  WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
-  Type type_;
+  Type type_ = BROWSER_WINDOW;
 
   // Request id used for findInPage request.
-  uint32_t request_id_;
+  uint32_t request_id_ = 0;
 
   // Whether background throttling is disabled.
-  bool background_throttling_;
+  bool background_throttling_ = true;
 
   // Whether to enable devtools.
-  bool enable_devtools_;
+  bool enable_devtools_ = true;
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;

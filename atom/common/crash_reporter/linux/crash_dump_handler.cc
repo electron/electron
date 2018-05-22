@@ -152,10 +152,10 @@ class MimeWriter {
   void AddItemWithoutTrailingSpaces(const void* base, size_t size);
 
   struct kernel_iovec iov_[kIovCapacity];
-  int iov_index_;
+  int iov_index_ = 0;
 
   // Output file descriptor.
-  int fd_;
+  int fd_ = -1;
 
   const char* const mime_boundary_;
 
@@ -164,7 +164,7 @@ class MimeWriter {
 };
 
 MimeWriter::MimeWriter(int fd, const char* const mime_boundary)
-    : iov_index_(0), fd_(fd), mime_boundary_(mime_boundary) {}
+    : fd_(fd), mime_boundary_(mime_boundary) {}
 
 MimeWriter::~MimeWriter() {}
 

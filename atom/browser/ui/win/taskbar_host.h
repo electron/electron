@@ -69,7 +69,7 @@ class TaskbarHost {
   base::win::ScopedComPtr<ITaskbarList3> taskbar_;
 
   // Whether we have already added the buttons to thumbar.
-  bool thumbar_buttons_added_;
+  bool thumbar_buttons_added_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };

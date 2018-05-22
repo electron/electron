@@ -51,8 +51,7 @@ namespace api {
 
 BrowserView::BrowserView(v8::Isolate* isolate,
                          v8::Local<v8::Object> wrapper,
-                         const mate::Dictionary& options)
-    : api_web_contents_(nullptr) {
+                         const mate::Dictionary& options) {
   Init(isolate, wrapper, options);
 }
 

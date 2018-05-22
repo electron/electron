@@ -53,7 +53,7 @@ class PdfViewerHandler : public content::WebUIMessageHandler,
   void AddObserver();
   void RemoveObserver();
   std::unique_ptr<base::Value> initialize_callback_id_;
-  content::StreamInfo* stream_;
+  content::StreamInfo* stream_ = nullptr;
   std::string original_url_;
 
   DISALLOW_COPY_AND_ASSIGN(PdfViewerHandler);

@@ -94,7 +94,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
 
   // Pointer to exit code.
-  int* exit_code_;
+  int* exit_code_ = nullptr;
 
   std::unique_ptr<Browser> browser_;
   std::unique_ptr<JavascriptEnvironment> js_env_;

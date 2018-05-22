@@ -31,7 +31,7 @@ class OffScreenOutputDevice : public viz::SoftwareOutputDevice {
   const bool transparent_;
   OnPaintCallback callback_;
 
-  bool active_;
+  bool active_ = false;
 
   std::unique_ptr<SkCanvas> canvas_;
   std::unique_ptr<SkBitmap> bitmap_;

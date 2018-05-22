@@ -21,12 +21,7 @@ namespace atom {
 
 WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents),
-      zoom_mode_(ZOOM_MODE_DEFAULT),
-      zoom_level_(1.0),
-      old_process_id_(-1),
-      old_view_id_(-1),
-      embedder_zoom_controller_(nullptr) {
+    : content::WebContentsObserver(web_contents) {
   default_zoom_factor_ = content::kEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
 }

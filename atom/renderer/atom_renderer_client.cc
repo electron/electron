@@ -37,8 +37,7 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_integration_initialized_(false),
-      node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
+    : node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
       atom_bindings_(new AtomBindings(uv_default_loop())) {}
 
 AtomRendererClient::~AtomRendererClient() {

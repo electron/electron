@@ -45,12 +45,12 @@ class RenderProcessPreferences : public content::NotificationObserver {
 
   Predicate predicate_;
 
-  int next_id_;
+  int next_id_ = 0;
   std::unordered_map<int, std::unique_ptr<base::DictionaryValue>> entries_;
 
   // We need to convert the |entries_| to ListValue for multiple times, this
   // caches is only updated when we are sending messages.
-  bool cache_needs_update_;
+  bool cache_needs_update_ = true;
   base::ListValue cached_entries_;
 
   DISALLOW_COPY_AND_ASSIGN(RenderProcessPreferences);

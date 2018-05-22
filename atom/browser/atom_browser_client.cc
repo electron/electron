@@ -88,7 +88,7 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
   g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient() : delegate_(nullptr) {}
+AtomBrowserClient::AtomBrowserClient() {}
 
 AtomBrowserClient::~AtomBrowserClient() {}
 

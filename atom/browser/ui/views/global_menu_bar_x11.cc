@@ -181,8 +181,7 @@ std::string GetMenuModelStatus(AtomMenuModel* model) {
 
 GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
     : window_(window),
-      xid_(window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget()),
-      server_(NULL) {
+      xid_(window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget()) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xid_);

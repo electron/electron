@@ -291,7 +291,8 @@ const CGFloat kVerticalTitleMargin = 2;
 
   // If we are ignoring double click events, we should ignore the `clickCount`
   // value and immediately emit a click event.
-  BOOL shouldBeHandledAsASingleClick = (event.clickCount == 1) || ignoreDoubleClickEvents_;
+  BOOL shouldBeHandledAsASingleClick =
+      (event.clickCount == 1) || ignoreDoubleClickEvents_;
   if (shouldBeHandledAsASingleClick)
     trayIcon_->NotifyClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
@@ -299,7 +300,8 @@ const CGFloat kVerticalTitleMargin = 2;
         ui::EventFlagsFromModifiers([event modifierFlags]));
 
   // Double click event.
-  BOOL shouldBeHandledAsADoubleClick = (event.clickCount == 2) && !ignoreDoubleClickEvents_;
+  BOOL shouldBeHandledAsADoubleClick =
+      (event.clickCount == 2) && !ignoreDoubleClickEvents_;
   if (shouldBeHandledAsADoubleClick)
     trayIcon_->NotifyDoubleClicked(
         gfx::ScreenRectFromNSRect(event.window.frame),
@@ -417,7 +419,7 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace atom {
 
-TrayIconCocoa::TrayIconCocoa() : menu_model_(nullptr) {}
+TrayIconCocoa::TrayIconCocoa() {}
 
 TrayIconCocoa::~TrayIconCocoa() {
   [status_item_view_ removeItem];

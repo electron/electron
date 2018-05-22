@@ -47,8 +47,7 @@ int GetKeyboardModifers() {
 
 }  // namespace
 
-NotifyIconHost::NotifyIconHost()
-    : next_icon_id_(1), atom_(0), instance_(NULL), window_(NULL) {
+NotifyIconHost::NotifyIconHost() {
   // Register our window class
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(

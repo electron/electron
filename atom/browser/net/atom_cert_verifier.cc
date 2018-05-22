@@ -48,9 +48,6 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
                       AtomCertVerifier* cert_verifier)
       : params_(params),
         cert_verifier_(cert_verifier),
-        error_(net::ERR_IO_PENDING),
-        custom_response_(net::ERR_IO_PENDING),
-        first_response_(true),
         weak_ptr_factory_(this) {}
 
   ~CertVerifierRequest() override {
@@ -142,9 +139,9 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
 
   const AtomCertVerifier::RequestParams params_;
   AtomCertVerifier* cert_verifier_;
-  int error_;
-  int custom_response_;
-  bool first_response_;
+  int error_ = net::ERR_IO_PENDING;
+  int custom_response_ = net::ERR_IO_PENDING;
+  bool first_response_ = true;
   ResponseList response_list_;
   net::CertVerifyResult result_;
   std::unique_ptr<AtomCertVerifier::Request> default_verifier_request_;

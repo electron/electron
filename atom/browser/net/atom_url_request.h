@@ -103,7 +103,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   std::unique_ptr<net::URLRequest> request_;
   scoped_refptr<net::URLRequestContextGetter> request_context_getter_;
 
-  bool is_chunked_upload_;
+  bool is_chunked_upload_ = false;
   std::string redirect_policy_;
   std::unique_ptr<net::ChunkedUploadDataStream> chunked_stream_;
   std::unique_ptr<net::ChunkedUploadDataStream::Writer> chunked_stream_writer_;

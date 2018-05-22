@@ -58,21 +58,21 @@ class V8ValueConverter {
                             v8::Isolate* isolate) const;
 
   // If true, we will convert RegExp JavaScript objects to string.
-  bool reg_exp_allowed_;
+  bool reg_exp_allowed_ = false;
 
   // If true, we will convert Function JavaScript objects to dictionaries.
-  bool function_allowed_;
+  bool function_allowed_ = false;
 
   // If true, will not use node::Buffer::Copy to deserialize byte arrays.
   // node::Buffer::Copy depends on a working node.js environment, and this is
   // not desirable in sandboxed renderers. That means Buffer instances sent from
   // browser process will be deserialized as browserify-based Buffer(which are
   // wrappers around Uint8Array).
-  bool disable_node_;
+  bool disable_node_ = false;
 
   // If true, undefined and null values are ignored when converting v8 objects
   // into Values.
-  bool strip_null_from_objects_;
+  bool strip_null_from_objects_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(V8ValueConverter);
 };

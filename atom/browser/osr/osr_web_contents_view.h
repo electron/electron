@@ -83,12 +83,12 @@ class OffScreenWebContentsView : public content::WebContentsView,
   OffScreenRenderWidgetHostView* GetView() const;
 
   const bool transparent_;
-  bool painting_;
-  int frame_rate_;
+  bool painting_ = true;
+  int frame_rate_ = 60;
   OnPaintCallback callback_;
 
   // Weak refs.
-  content::WebContents* web_contents_;
+  content::WebContents* web_contents_ = nullptr;
 
 #if defined(OS_MACOSX)
   OffScreenView* offScreenView_;

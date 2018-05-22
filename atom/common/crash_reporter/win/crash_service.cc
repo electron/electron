@@ -188,13 +188,7 @@ const char CrashService::kDumpsDir[] = "dumps-dir";
 const char CrashService::kPipeName[] = "pipe-name";
 const char CrashService::kReporterURL[] = "reporter-url";
 
-CrashService::CrashService()
-    : sender_(NULL),
-      dumper_(NULL),
-      requests_handled_(0),
-      requests_sent_(0),
-      clients_connected_(0),
-      clients_terminated_(0) {}
+CrashService::CrashService() {}
 
 CrashService::~CrashService() {
   base::AutoLock lock(sending_);

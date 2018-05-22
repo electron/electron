@@ -56,7 +56,7 @@ void PopulateStreamInfo(base::DictionaryValue* stream_info,
 }  // namespace
 
 PdfViewerHandler::PdfViewerHandler(const std::string& src)
-    : stream_(nullptr), original_url_(src) {}
+    : original_url_(src) {}
 
 PdfViewerHandler::~PdfViewerHandler() {
   RemoveObserver();

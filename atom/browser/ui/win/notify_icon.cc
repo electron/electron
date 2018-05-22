@@ -19,11 +19,7 @@
 namespace atom {
 
 NotifyIcon::NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message)
-    : host_(host),
-      icon_id_(id),
-      window_(window),
-      message_id_(message),
-      menu_model_(NULL) {
+    : host_(host), icon_id_(id), window_(window), message_id_(message) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_MESSAGE;

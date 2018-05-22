@@ -13,7 +13,7 @@ namespace atom {
 
 OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
                                              const OnPaintCallback& callback)
-    : transparent_(transparent), callback_(callback), active_(false) {
+    : transparent_(transparent), callback_(callback) {
   DCHECK(!callback_.is_null());
 }
 

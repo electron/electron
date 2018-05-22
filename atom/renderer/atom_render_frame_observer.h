@@ -56,7 +56,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
-  bool document_created_;
+  bool document_created_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(AtomRenderFrameObserver);
 };

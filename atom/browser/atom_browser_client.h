@@ -147,7 +147,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
 
-  Delegate* delegate_;
+  Delegate* delegate_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

@@ -50,10 +50,7 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 }  // namespace
 
 AutofillAgent::AutofillAgent(content::RenderFrame* frame)
-    : content::RenderFrameObserver(frame),
-      focused_node_was_last_clicked_(false),
-      was_focused_before_now_(false),
-      weak_ptr_factory_(this) {
+    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
 }
 

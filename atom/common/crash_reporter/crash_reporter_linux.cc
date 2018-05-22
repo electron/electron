@@ -35,8 +35,7 @@ static const off_t kMaxMinidumpFileSize = 1258291;
 
 }  // namespace
 
-CrashReporterLinux::CrashReporterLinux()
-    : process_start_time_(0), pid_(getpid()), upload_to_server_(true) {
+CrashReporterLinux::CrashReporterLinux() : pid_(getpid()) {
   // Set the base process start time value.
   struct timeval tv;
   if (!gettimeofday(&tv, NULL)) {

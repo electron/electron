@@ -285,38 +285,38 @@ class OffScreenRenderWidgetHostView
   // Weak ptrs.
   content::RenderWidgetHostImpl* render_widget_host_;
 
-  OffScreenRenderWidgetHostView* parent_host_view_;
-  OffScreenRenderWidgetHostView* popup_host_view_;
+  OffScreenRenderWidgetHostView* parent_host_view_ = nullptr;
+  OffScreenRenderWidgetHostView* popup_host_view_ = nullptr;
   std::unique_ptr<SkBitmap> popup_bitmap_;
-  OffScreenRenderWidgetHostView* child_host_view_;
+  OffScreenRenderWidgetHostView* child_host_view_ = nullptr;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
   NativeWindow* native_window_;
-  OffScreenOutputDevice* software_output_device_;
+  OffScreenOutputDevice* software_output_device_ = nullptr;
 
   const bool transparent_;
   OnPaintCallback callback_;
   OnPaintCallback parent_callback_;
 
-  int frame_rate_;
-  int frame_rate_threshold_us_;
+  int frame_rate_ = 0;
+  int frame_rate_threshold_us_ = 0;
 
-  base::Time last_time_;
+  base::Time last_time_ = base::Time::Now();
 
   float scale_factor_;
   gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;
 
-  bool is_showing_;
-  bool is_destroyed_;
+  bool is_showing_ = false;
+  bool is_destroyed_ = false;
   gfx::Rect popup_position_;
 
-  bool hold_resize_;
-  bool pending_resize_;
+  bool hold_resize_ = false;
+  bool pending_resize_ = false;
 
-  bool paint_callback_running_;
+  bool paint_callback_running_ = false;
 
   viz::LocalSurfaceId local_surface_id_;
   viz::LocalSurfaceIdAllocator local_surface_id_allocator_;
@@ -344,9 +344,10 @@ class OffScreenRenderWidgetHostView
   std::string selected_text_;
 #endif
 
-  viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_;
+  viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
+      nullptr;
 
-  SkColor background_color_;
+  SkColor background_color_ = SkColor();
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
 

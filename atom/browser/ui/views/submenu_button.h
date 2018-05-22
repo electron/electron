@@ -39,15 +39,15 @@ class SubmenuButton : public views::MenuButton {
                             int index,
                             int* pos) const;
 
-  base::char16 accelerator_;
+  base::char16 accelerator_ = 0;
 
-  bool show_underline_;
+  bool show_underline_ = false;
 
-  int underline_start_;
-  int underline_end_;
-  int text_width_;
-  int text_height_;
-  SkColor underline_color_;
+  int underline_start_ = 0;
+  int underline_end_ = 0;
+  int text_width_ = 0;
+  int text_height_ = 0;
+  SkColor underline_color_ = SK_ColorBLACK;
   SkColor background_color_;
 
   DISALLOW_COPY_AND_ASSIGN(SubmenuButton);

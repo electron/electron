@@ -39,7 +39,7 @@ class BluetoothChooser : public content::BluetoothChooser {
   std::vector<DeviceInfo> device_list_;
   api::WebContents* api_web_contents_;
   EventHandler event_handler_;
-  int num_retries_;
+  int num_retries_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(BluetoothChooser);
 };

@@ -39,7 +39,7 @@ class TrackableObjectBase {
   // Returns a closure that can destroy the native class.
   base::OnceClosure GetDestroyClosure();
 
-  int32_t weak_map_id_;
+  int32_t weak_map_id_ = 0;
 
  private:
   void Destroy();

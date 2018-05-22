@@ -74,19 +74,17 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // URLRequestFileJob and also passed between threads because disk access is
   // necessary to obtain it.
   struct FileMetaInfo {
-    FileMetaInfo();
-
     // Size of the file.
-    int64_t file_size;
+    int64_t file_size = 0;
     // Mime type associated with the file.
     std::string mime_type;
     // Result returned from GetMimeTypeFromFile(), i.e. flag showing whether
     // obtaining of the mime type was successful.
-    bool mime_type_result;
+    bool mime_type_result = false;
     // Flag showing whether the file exists.
-    bool file_exists;
+    bool file_exists = false;
     // Flag showing whether the file name actually refers to a directory.
-    bool is_directory;
+    bool is_directory = false;
     // Path to the file.
     base::FilePath file_path;
   };
@@ -109,7 +107,7 @@ class URLRequestAsarJob : public net::URLRequestJob {
   // Callback after data is asynchronously read from the file into |buf|.
   void DidRead(scoped_refptr<net::IOBuffer> buf, int result);
 
-  JobType type_;
+  JobType type_ = TYPE_ERROR;
 
   std::shared_ptr<Archive> archive_;
   base::FilePath file_path_;
@@ -120,10 +118,10 @@ class URLRequestAsarJob : public net::URLRequestJob {
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
   net::HttpByteRange byte_range_;
-  int64_t remaining_bytes_;
-  int64_t seek_offset_;
+  int64_t remaining_bytes_ = 0;
+  int64_t seek_offset_ = 0;
 
-  net::Error range_parse_result_;
+  net::Error range_parse_result_ = net::OK;
 
   base::WeakPtrFactory<URLRequestAsarJob> weak_ptr_factory_;
 

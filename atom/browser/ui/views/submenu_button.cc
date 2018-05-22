@@ -22,13 +22,6 @@ SubmenuButton::SubmenuButton(const base::string16& title,
     : views::MenuButton(gfx::RemoveAcceleratorChar(title, '&', NULL, NULL),
                         menu_button_listener,
                         false),
-      accelerator_(0),
-      show_underline_(false),
-      underline_start_(0),
-      underline_end_(0),
-      text_width_(0),
-      text_height_(0),
-      underline_color_(SK_ColorBLACK),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.

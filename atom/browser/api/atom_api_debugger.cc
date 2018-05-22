@@ -26,7 +26,7 @@ namespace atom {
 namespace api {
 
 Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
-    : web_contents_(web_contents), previous_request_id_(0) {
+    : web_contents_(web_contents) {
   Init(isolate);
 }
 

@@ -44,8 +44,8 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
 
  private:
   // Replyer for the synchronous messages.
-  content::RenderFrameHost* sender_;
-  IPC::Message* message_;
+  content::RenderFrameHost* sender_ = nullptr;
+  IPC::Message* message_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

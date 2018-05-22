@@ -122,11 +122,7 @@ class V8ValueConverter::ScopedUniquenessGuard {
   DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
-V8ValueConverter::V8ValueConverter()
-    : reg_exp_allowed_(false),
-      function_allowed_(false),
-      disable_node_(false),
-      strip_null_from_objects_(false) {}
+V8ValueConverter::V8ValueConverter() {}
 
 void V8ValueConverter::SetRegExpAllowed(bool val) {
   reg_exp_allowed_ = val;
