@@ -682,40 +682,30 @@ describe('app module', () => {
       }
     })
 
-    it('does not launch for blacklisted argument', function (done) {
+    it('does not launch for argument following a URL', function (done) {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with non 123 code.
-      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher=cmd.exe /c start calc'])
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test:?', 'abc'])
       first.once('exit', (code) => {
         assert.notEqual(code, 123)
         done()
       })
     })
 
-    it('launches successfully for multiple uris in cmd args', function (done) {
+    it('launches successfully for argument following a file path', function (done) {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with code 123.
-      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'http://electronjs.org', 'electron-test://testdata'])
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'e:\\abc', 'abc'])
       first.once('exit', (code) => {
         assert.equal(code, 123)
         done()
       })
     })
 
-    it('does not launch for encoded space', function (done) {
+    it('launches successfully for multiple URIs following --', function (done) {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
-      // App should exit with non 123 code.
-      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--no-sandbox', '--gpu-launcher%20"cmd.exe /c start calc'])
-      first.once('exit', (code) => {
-        assert.notEqual(code, 123)
-        done()
-      })
-    })
-
-    it('launches successfully for argnames similar to blacklisted ones', function (done) {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
-      // inspect is blacklisted, but inspector should work, and app launch should succeed
-      const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test://?', '--inspector'])
+      // App should exit with code 123.
+      const first = ChildProcess.spawn(remote.process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata'])
       first.once('exit', (code) => {
         assert.equal(code, 123)
         done()
