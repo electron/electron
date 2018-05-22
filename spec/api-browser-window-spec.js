@@ -1207,11 +1207,10 @@ describe('BrowserWindow module', () => {
       it('should focus on window correctly', () => {
         w.destroy()
         w = new BrowserWindow({
-            webPreferences: {
+          webPreferences: {
             sandbox: true
           }
         })
-
         w.focus()
         assert(w.isFocused())
       })
