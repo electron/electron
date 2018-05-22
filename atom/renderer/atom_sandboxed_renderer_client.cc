@@ -81,11 +81,19 @@ base::CommandLine::StringVector GetArgv() {
   return base::CommandLine::ForCurrentProcess()->argv();
 }
 
+v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
+                                         v8::Local<v8::String> preloadSrc) {
+  auto script = v8::Script::Compile(preloadSrc);
+  auto func = script->Run();
+  return func;
+}
+
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
+  b.SetMethod("createPreloadScript", CreatePreloadScript);
   b.SetMethod("crash", AtomBindings::Crash);
   b.SetMethod("hang", AtomBindings::Hang);
   b.SetMethod("getArgv", GetArgv);
