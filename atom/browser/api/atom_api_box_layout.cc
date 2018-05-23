@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/browser/api/atom_api_view.h"
 #include "atom/common/api/constructor.h"
 #include "native_mate/dictionary.h"
 
@@ -42,6 +43,11 @@ BoxLayout::BoxLayout(views::BoxLayout::Orientation orientation)
 
 BoxLayout::~BoxLayout() {}
 
+void BoxLayout::SetFlexForView(mate::Handle<View> view, int flex) {
+  auto* box_layout = static_cast<views::BoxLayout*>(layout_manager());
+  box_layout->SetFlexForView(view->view(), flex);
+}
+
 // static
 mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
                                     views::BoxLayout::Orientation orientation) {
@@ -52,7 +58,11 @@ mate::WrappableBase* BoxLayout::New(mate::Arguments* args,
 
 // static
 void BoxLayout::BuildPrototype(v8::Isolate* isolate,
-                               v8::Local<v8::FunctionTemplate> prototype) {}
+                               v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "BoxLayout"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("setFlexForView", &BoxLayout::SetFlexForView);
+}
 
 }  // namespace api
 

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_VIEW_H_
 
 #include <memory>
+#include <vector>
 
 #include "atom/browser/api/atom_api_layout_manager.h"
 #include "native_mate/handle.h"
@@ -23,6 +24,8 @@ class View : public mate::TrackableObject<View> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
   void SetLayoutManager(mate::Handle<LayoutManager> layout_manager);
+  void AddChildView(mate::Handle<View> view);
+  void AddChildViewAt(mate::Handle<View> view, size_t index);
 
   views::View* view() const { return view_; }
 
@@ -36,6 +39,7 @@ class View : public mate::TrackableObject<View> {
 
  private:
   v8::Global<v8::Object> layout_manager_;
+  std::vector<v8::Global<v8::Object>> child_views_;
 
   bool delete_view_ = true;
   views::View* view_ = nullptr;

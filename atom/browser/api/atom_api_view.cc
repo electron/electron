@@ -30,6 +30,18 @@ void View::SetLayoutManager(mate::Handle<LayoutManager> layout_manager) {
   view()->SetLayoutManager(layout_manager->TakeOver().release());
 }
 
+void View::AddChildView(mate::Handle<View> child) {
+  AddChildViewAt(child, child_views_.size());
+}
+
+void View::AddChildViewAt(mate::Handle<View> child, size_t index) {
+  if (index > child_views_.size())
+    return;
+  child_views_.emplace(child_views_.begin() + index,     // index
+                       isolate(), child->GetWrapper());  // v8::Global(args...)
+  view()->AddChildViewAt(child->view(), index);
+}
+
 // static
 mate::WrappableBase* View::New(mate::Arguments* args) {
   auto* view = new View();
@@ -42,7 +54,9 @@ void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "View"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setLayoutManager", &View::SetLayoutManager);
+      .SetMethod("setLayoutManager", &View::SetLayoutManager)
+      .SetMethod("addChildView", &View::AddChildView)
+      .SetMethod("addChildViewAt", &View::AddChildViewAt);
 }
 
 }  // namespace api

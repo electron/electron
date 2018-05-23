@@ -6,11 +6,14 @@
 #define ATOM_BROWSER_API_ATOM_API_BOX_LAYOUT_H_
 
 #include "atom/browser/api/atom_api_layout_manager.h"
+#include "native_mate/handle.h"
 #include "ui/views/layout/box_layout.h"
 
 namespace atom {
 
 namespace api {
+
+class View;
 
 class BoxLayout : public LayoutManager {
  public:
@@ -19,6 +22,8 @@ class BoxLayout : public LayoutManager {
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+
+  void SetFlexForView(mate::Handle<View> view, int flex);
 
  protected:
   explicit BoxLayout(views::BoxLayout::Orientation orientation);
