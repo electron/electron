@@ -238,7 +238,8 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--bucket', bucket,
     '--prefix', prefix,
     '--key_prefix', key_prefix,
-    '--grant', 'public-read'
+    '--grant', 'public-read',
+    '--debug', '2'
   ] + files
 
   run_boto_script(access_key, secret_key, 's3put', *args)
