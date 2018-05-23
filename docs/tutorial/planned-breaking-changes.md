@@ -53,20 +53,6 @@ ses.setCertificateVerifyProc(function (request, callback) {
 })
 ```
 
-## `Tray`
-
-```js
-// Deprecated
-tray.setHighlightMode(true)
-// Replace with
-tray.setHighlightMode('on')
-
-// Deprecated
-tray.setHighlightMode(false)
-// Replace with
-tray.setHighlightMode('off')
-```
-
 ## `webContents`
 
 ```js
