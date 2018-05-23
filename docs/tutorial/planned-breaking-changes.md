@@ -40,15 +40,6 @@ nativeImage.createFromBuffer(buffer, {
 })
 ```
 
-## `screen`
-
-```js
-// Deprecated
-screen.getMenuBarHeight()
-// Replace with
-screen.getPrimaryDisplay().workArea
-```
-
 ## `session`
 
 ```js
