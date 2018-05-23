@@ -29,23 +29,6 @@ window.on('app-command', (e, cmd) => {
 })
 ```
 
-## `crashReporter`
-
-```js
-// Deprecated
-crashReporter.start({
-  companyName: 'Crashly',
-  submitURL: 'https://crash.server.com',
-  autoSubmit: true
-})
-// Replace with
-crashReporter.start({
-  companyName: 'Crashly',
-  submitURL: 'https://crash.server.com',
-  uploadToServer: true
-})
-```
-
 ## `nativeImage`
 
 ```js
