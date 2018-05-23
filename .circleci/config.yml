@@ -56,51 +56,51 @@ build-steps: &build-steps
     #       else
     #         echo 'Skipping upload distribution because build is not for release'
     #       fi
-    - run:
-        name: Setup for headless testing
-        command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_HEADLESS_TESTS" == "true" ]; then
-            echo 'Setup for headless testing'
-            sh -e /etc/init.d/xvfb start
-          else
-            echo 'Headless testing not needed'
-          fi
-    - run:
-        name: Test
-        environment:
-          MOCHA_FILE: junit/test-results.xml
-          MOCHA_REPORTER: mocha-junit-reporter
-        command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
-            echo 'Testing Electron debug build'
-            mkdir junit
-            script/test.py --ci
-          else
-            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              echo 'Skipping testing on release build'
-            else
-              echo 'Skipping tests due to configuration'
-            fi
-          fi
-    - run:
-        name: Verify FFmpeg
-        command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
-            echo 'Verifying ffmpeg on debug build'
-            script/verify-ffmpeg.py
-          else
-            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              echo 'Skipping verify ffmpeg on release build'
-            else
-              echo 'Skipping tests due to configuration'
-            fi
-          fi
-    - run:
-        name: Generate Typescript Definitions
-        command: |
-          if [ "$CREATE_TYPESCRIPT_DEFS" == "true" ]; then
-            npm run create-typescript-definitions
-          fi
+    # - run:
+    #     name: Setup for headless testing
+    #     command: |
+    #       if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_HEADLESS_TESTS" == "true" ]; then
+    #         echo 'Setup for headless testing'
+    #         sh -e /etc/init.d/xvfb start
+    #       else
+    #         echo 'Headless testing not needed'
+    #       fi
+    # - run:
+    #     name: Test
+    #     environment:
+    #       MOCHA_FILE: junit/test-results.xml
+    #       MOCHA_REPORTER: mocha-junit-reporter
+    #     command: |
+    #       if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
+    #         echo 'Testing Electron debug build'
+    #         mkdir junit
+    #         script/test.py --ci
+    #       else
+    #         if [ "$ELECTRON_RELEASE" == "1" ]; then
+    #           echo 'Skipping testing on release build'
+    #         else
+    #           echo 'Skipping tests due to configuration'
+    #         fi
+    #       fi
+    # - run:
+    #     name: Verify FFmpeg
+    #     command: |
+    #       if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
+    #         echo 'Verifying ffmpeg on debug build'
+    #         script/verify-ffmpeg.py
+    #       else
+    #         if [ "$ELECTRON_RELEASE" == "1" ]; then
+    #           echo 'Skipping verify ffmpeg on release build'
+    #         else
+    #           echo 'Skipping tests due to configuration'
+    #         fi
+    #       fi
+    # - run:
+    #     name: Generate Typescript Definitions
+    #     command: |
+    #       if [ "$CREATE_TYPESCRIPT_DEFS" == "true" ]; then
+    #         npm run create-typescript-definitions
+    #       fi
     - persist_to_workspace:
         root: out
         paths:
