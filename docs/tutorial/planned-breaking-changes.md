@@ -40,15 +40,6 @@ ses.setCertificateVerifyProc(function (request, callback) {
 })
 ```
 
-## `webContents`
-
-```js
-// Deprecated
-webContents.openDevTools({detach: true})
-// Replace with
-webContents.openDevTools({mode: 'detach'})
-```
-
 ## `webFrame`
 
 ```js

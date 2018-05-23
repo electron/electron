@@ -1300,11 +1300,6 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
-
-      // TODO(kevinsawicki) Remove in 2.0
-      options.Get("detach", &detach);
-      if (state.empty() && detach)
-        state = "detach";
     }
   }
   managed_web_contents()->SetDockState(state);
