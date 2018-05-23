@@ -78,7 +78,7 @@ improve the security of your application.
 7. [Override and disable `eval`](#7-override-and-disable-eval), which allows strings to be executed as code.
 8. [Do not set `allowRunningInsecureContent` to `true`](#8-do-not-set-allowrunninginsecurecontent-to-true)
 9. [Do not enable experimental features](#9-do-not-enable-experimental-features)
-10. [Do not use `blinkFeatures`](#10-do-not-use-blinkfeatures)
+10. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
 11. [WebViews: Do not use `allowpopups`](#11-do-not-use-allowpopups)
 12. [WebViews: Verify the options and params of all `<webview>` tags](#12-verify-webview-options-before-creation)
 
@@ -452,12 +452,12 @@ const mainWindow = new BrowserWindow({})
 ```
 
 
-## 10) Do Not Use `blinkFeatures`
+## 10) Do Not Use `enableBlinkFeatures`
 
 _Recommendation is Electron's default_
 
 Blink is the name of the rendering engine behind Chromium. As with
-`experimentalFeatures`, the `blinkFeatures` property allows developers to
+`experimentalFeatures`, the `enableBlinkFeatures` property allows developers to
 enable features that have been disabled by default.
 
 ### Why?
@@ -473,7 +473,7 @@ no circumstances should you enable features speculatively.
 // Bad
 const mainWindow = new BrowserWindow({
   webPreferences: {
-    blinkFeatures: ['ExecCommandInJavaScript']
+    enableBlinkFeatures: ['ExecCommandInJavaScript']
   }
 })
 ```

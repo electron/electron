@@ -64,7 +64,7 @@ extern const char kExperimentalFeatures[];
 extern const char kExperimentalCanvasFeatures[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];
-extern const char kBlinkFeatures[];
+extern const char kEnableBlinkFeatures[];
 extern const char kDisableBlinkFeatures[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];

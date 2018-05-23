@@ -127,8 +127,7 @@ const char kOpenerID[] = "openerId";
 const char kScrollBounce[] = "scrollBounce";
 
 // Enable blink features.
-// TODO(kevinsawicki) Rename to enableBlinkFeatures in 2.0
-const char kBlinkFeatures[] = "blinkFeatures";
+const char kBlinkFeatures[] = "enableBlinkFeatures";
 
 // Disable blink features.
 const char kDisableBlinkFeatures[] = "disableBlinkFeatures";
