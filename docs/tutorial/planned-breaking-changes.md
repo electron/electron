@@ -44,11 +44,6 @@ ses.setCertificateVerifyProc(function (request, callback) {
 
 ```js
 // Deprecated
-webFrame.registerURLSchemeAsSecure('app')
-// Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
-
-// Deprecated
 webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
 // Replace with
 protocol.registerStandardSchemes(['app'], {secure: true})
