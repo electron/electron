@@ -137,7 +137,7 @@ let image = nativeImage.createFromPath('/Users/somebody/images/icon.png')
 console.log(image)
 ```
 
-### `nativeImage.createFromBuffer(buffer, options)`
+### `nativeImage.createFromBuffer(buffer[, options])`
 
 * `buffer` [Buffer][buffer]
 * `options` Object (optional)
