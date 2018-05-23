@@ -41,17 +41,21 @@ build-steps: &build-steps
             echo 'Skipping create distribution because build is not for release'
           fi
     - run:
-        name: Upload distribution
+        name: Test Upload Symbols to Sym Server
         command: |
-          if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
-            echo 'Uploading Electron release distribution to github releases'
-            script/upload.py
-          elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
-            echo 'Uploading Electron release distribution to s3'
-            script/upload.py --upload_to_s3
-          else
-            echo 'Skipping upload distribution because build is not for release'
-          fi
+          script/upload-symbols.py
+          # - run:
+    #     name: Upload distribution
+    #     command: |
+    #       if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+    #         echo 'Uploading Electron release distribution to github releases'
+    #         script/upload.py
+    #       elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+    #         echo 'Uploading Electron release distribution to s3'
+    #         script/upload.py --upload_to_s3
+    #       else
+    #         echo 'Skipping upload distribution because build is not for release'
+    #       fi
     - run:
         name: Setup for headless testing
         command: |
@@ -237,6 +241,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_TESTS: true
+      RUN_RELEASE_BUILD: true
     macos:
       xcode: "9.0"
     <<: *build-steps
