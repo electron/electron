@@ -5,15 +5,6 @@ The following list includes the APIs that will be removed in Electron 3.0.
 There is no timetable for when this release will occur but deprecation
 warnings will be added at least [one major version](electron-versioning.md#semver) beforehand.
 
-## `app`
-
-```js
-// Deprecated
-app.getAppMemoryInfo()
-// Replace with
-app.getAppMetrics()
-```
-
 ## `BrowserWindow`
 
 ```js
@@ -36,30 +27,6 @@ window.on('app-command', (e, cmd) => {
     // do something
   }
 })
-```
-
-## `clipboard`
-
-```js
-// Deprecated
-clipboard.readRtf()
-// Replace with
-clipboard.readRTF()
-
-// Deprecated
-clipboard.writeRtf()
-// Replace with
-clipboard.writeRTF()
-
-// Deprecated
-clipboard.readHtml()
-// Replace with
-clipboard.readHTML()
-
-// Deprecated
-clipboard.writeHtml()
-// Replace with
-clipboard.writeHTML()
 ```
 
 ## `crashReporter`
