@@ -16,30 +16,6 @@ let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
 let windowB = new BrowserWindow(optionsB)
 ```
 
-## `nativeImage`
-
-```js
-// Deprecated
-nativeImage.createFromBuffer(buffer, 1.0)
-// Replace with
-nativeImage.createFromBuffer(buffer, {
-  scaleFactor: 1.0
-})
-```
-
-## `session`
-
-```js
-// Deprecated
-ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
-  callback(true)
-})
-// Replace with
-ses.setCertificateVerifyProc(function (request, callback) {
-  callback(0)
-})
-```
-
 ## Node Headers URL
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
@@ -48,12 +24,6 @@ command line flag when building native Node modules.
 Deprecated: https://atom.io/download/atom-shell
 
 Replace with: https://atom.io/download/electron
-
-## `FIXME` comments
-
-The `FIXME` string is used in code comments to denote things that should be
-fixed for the 3.0 release. See
-https://github.com/electron/electron/search?q=fixme
 
 # Planned Breaking API Changes (4.0)
 
@@ -95,3 +65,9 @@ app.releaseSingleInstance()
 // Replace with
 app.releaseSingleInstanceLock()
 ```
+
+## `FIXME` comments
+
+The `FIXME` string is used in code comments to denote things that should be
+fixed for the 3.0 release. See
+https://github.com/electron/electron/search?q=fixme
