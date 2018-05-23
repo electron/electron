@@ -40,15 +40,6 @@ ses.setCertificateVerifyProc(function (request, callback) {
 })
 ```
 
-## `webFrame`
-
-```js
-// Deprecated
-webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
-// Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
-```
-
 ## Node Headers URL
 
 This is the URL specified as `disturl` in a `.npmrc` file or as the `--dist-url`
@@ -70,6 +61,17 @@ The following list includes the APIs that will be removed in Electron 4.0.
 
 There is no timetable for when this release will occur but deprecation
 warnings will be added at least [one major version](electron-versioning.md#semver) beforehand.
+
+## `webFrame`
+
+```js
+// Deprecated
+webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
+// Replace with
+protocol.registerStandardSchemes(['app'], {secure: true})
+```
+
+*Nota Bene:* Before we can remove this we need to update all of the relevant specs to `protocol.registerStandardSchemes(['app'], {secure: true})`.
 
 ## `app.makeSingleInstance`
 
