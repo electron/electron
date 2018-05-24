@@ -4,7 +4,7 @@ import os
 import glob
 import sys
 
-from lib.config import PLATFORM, s3_config
+from lib.config import PLATFORM, s3_config, enable_verbose_mode
 from lib.util import electron_gyp, execute, rm_rf, safe_mkdir, s3put
 
 
@@ -27,6 +27,7 @@ PDB_LIST = [
 
 
 def main():
+  enable_verbose_mode()
   os.chdir(SOURCE_ROOT)
   if PLATFORM == 'win32':
     for pdb in PDB_LIST:
