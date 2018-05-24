@@ -19,6 +19,10 @@ Button::Button(views::Button* button) : View(button) {
 
 Button::~Button() {}
 
+void Button::ButtonPressed(views::Button* sender, const ui::Event& event) {
+  Emit("click");
+}
+
 // static
 mate::WrappableBase* Button::New(mate::Arguments* args) {
   args->ThrowError("Button can not be created directly");

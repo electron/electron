@@ -67,6 +67,7 @@
 #define ELECTRON_VIEW_MODULES(V) \
   V(atom_browser_box_layout)     \
   V(atom_browser_button)         \
+  V(atom_browser_label_button)   \
   V(atom_browser_layout_manager) \
   V(atom_browser_text_field)
 

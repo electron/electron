@@ -7,22 +7,25 @@
 
 #include "atom/browser/api/atom_api_view.h"
 #include "native_mate/handle.h"
-#include "ui/views/controls/button/label_button.h"
+#include "ui/views/controls/button/button.h"
 
 namespace atom {
 
 namespace api {
 
-class Button : public View, views::ButtonListener {
+class Button : public View, public views::ButtonListener {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
- private:
+ protected:
   explicit Button(views::Button* view);
   ~Button() override;
+
+  // views::ButtonListener:
+  void ButtonPressed(views::Button* sender, const ui::Event& event) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Button);
