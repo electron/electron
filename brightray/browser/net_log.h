@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_NET_LOG_H_
 #define BRIGHTRAY_BROWSER_NET_LOG_H_
 
+#include "base/files/file_path.h"
 #include "net/log/net_log.h"
 
 namespace net {
@@ -18,7 +19,8 @@ class NetLog : public net::NetLog {
   NetLog();
   ~NetLog() override;
 
-  void StartLogging();
+  void StartLogging(const base::FilePath& path);
+  void StopLogging();
 
  private:
   // This observer handles writing NetLogs.

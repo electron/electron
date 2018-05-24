@@ -42,19 +42,17 @@ NetLog::~NetLog() {
   }
 }
 
-void NetLog::StartLogging() {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (!command_line->HasSwitch(switches::kLogNetLog))
-    return;
-
-  base::FilePath log_path =
-      command_line->GetSwitchValuePath(switches::kLogNetLog);
-  std::unique_ptr<base::Value> constants(GetConstants());
+void NetLog::StartLogging(const base::FilePath& log_path) {
+  std::unique_ptr<base::Value> constants(GetConstants());  // Net constants
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
 
   file_net_log_observer_ =
       net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
   file_net_log_observer_->StartObserving(this, capture_mode);
+}
+
+void NetLog::StopLogging() {
+  file_net_log_observer_->StopObserving(nullptr, base::OnceClosure());
 }
 
 }  // namespace brightray

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_NET_H_
 
 #include "atom/browser/api/event_emitter.h"
+#include "brightray/browser/net_log.h"
 
 namespace atom {
 
@@ -19,12 +20,16 @@ class Net : public mate::EventEmitter<Net> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Value> URLRequest(v8::Isolate* isolate);
+  void StartLogging(mate::Arguments* args);
+  void StopLogging();
 
  protected:
   explicit Net(v8::Isolate* isolate);
   ~Net() override;
 
  private:
+  brightray::NetLog* net_log_;
+
   DISALLOW_COPY_AND_ASSIGN(Net);
 };
 
