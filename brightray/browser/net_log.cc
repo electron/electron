@@ -50,8 +50,7 @@ void NetLog::StartLogging() {
   base::FilePath log_path =
       command_line->GetSwitchValuePath(switches::kLogNetLog);
   std::unique_ptr<base::Value> constants(GetConstants());
-  net::NetLogCaptureMode capture_mode =
-      net::NetLogCaptureMode::IncludeCookiesAndCredentials();
+  net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
 
   file_net_log_observer_ =
       net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
