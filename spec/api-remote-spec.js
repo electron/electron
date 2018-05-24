@@ -259,12 +259,94 @@ describe('remote module', () => {
       assert.ok(arrayWithBuffer[2].equals(printName.echo(arrayWithBuffer)[2]))
     })
 
-    it('supports TypedArray', () => {
-      const values = [1, 2, 3, 4]
-      assert.deepEqual(printName.typedArray(values), values)
+    it('supports instanceof ArrayBuffer', () => {
+      const buffer = new ArrayBuffer(8)
+      const view = new DataView(buffer)
 
-      const int16values = new Int16Array([1, 2, 3, 4])
-      assert.deepEqual(printName.typedArray(int16values), int16values)
+      view.setFloat64(0, Math.PI)
+      assert.deepEqual(printName.echo(buffer), buffer)
+      assert.equal(printName.print(buffer), 'ArrayBuffer')
+    })
+
+    it('supports instanceof Int8Array', () => {
+      const values = [1, 2, 3, 4]
+      assert.deepEqual(printName.typedArray('Int8Array', values), values)
+
+      const int8values = new Int8Array(values)
+      assert.deepEqual(printName.typedArray('Int8Array', int8values), int8values)
+      assert.equal(printName.print(int8values), 'Int8Array')
+    })
+
+    it('supports instanceof Uint8Array', () => {
+      const values = [1, 2, 3, 4]
+      assert.deepEqual(printName.typedArray('Uint8Array', values), values)
+
+      const uint8values = new Uint8Array(values)
+      assert.deepEqual(printName.typedArray('Uint8Array', uint8values), uint8values)
+      assert.equal(printName.print(uint8values), 'Uint8Array')
+    })
+
+    it('supports instanceof Uint8ClampedArray', () => {
+      const values = [1, 2, 3, 4]
+      assert.deepEqual(printName.typedArray('Uint8ClampedArray', values), values)
+
+      const uint8values = new Uint8ClampedArray(values)
+      assert.deepEqual(printName.typedArray('Uint8ClampedArray', uint8values), uint8values)
+      assert.equal(printName.print(uint8values), 'Uint8ClampedArray')
+    })
+
+    it('supports instanceof Int16Array', () => {
+      const values = [0x1234, 0x2345, 0x3456, 0x4567]
+      assert.deepEqual(printName.typedArray('Int16Array', values), values)
+
+      const int16values = new Int16Array(values)
+      assert.deepEqual(printName.typedArray('Int16Array', int16values), int16values)
+      assert.equal(printName.print(int16values), 'Int16Array')
+    })
+
+    it('supports instanceof Uint16Array', () => {
+      const values = [0x1234, 0x2345, 0x3456, 0x4567]
+      assert.deepEqual(printName.typedArray('Uint16Array', values), values)
+
+      const uint16values = new Uint16Array(values)
+      assert.deepEqual(printName.typedArray('Uint16Array', uint16values), uint16values)
+      assert.equal(printName.print(uint16values), 'Uint16Array')
+    })
+
+    it('supports instanceof Int32Array', () => {
+      const values = [0x12345678, 0x23456789]
+      assert.deepEqual(printName.typedArray('Int32Array', values), values)
+
+      const int32values = new Int32Array(values)
+      assert.deepEqual(printName.typedArray('Int32Array', int32values), int32values)
+      assert.equal(printName.print(int32values), 'Int32Array')
+    })
+
+    it('supports instanceof Uint32Array', () => {
+      const values = [0x12345678, 0x23456789]
+      assert.deepEqual(printName.typedArray('Uint32Array', values), values)
+
+      const uint32values = new Uint32Array(values)
+      assert.deepEqual(printName.typedArray('Uint32Array', uint32values), uint32values)
+      assert.equal(printName.print(uint32values), 'Uint32Array')
+    })
+
+    it('supports instanceof Float32Array', () => {
+      const values = [0.5, 1.0, 1.5]
+      assert.deepEqual(printName.typedArray('Float32Array', values), values)
+
+      const float32values = new Float32Array()
+      assert.deepEqual(printName.typedArray('Float32Array', float32values), float32values)
+      assert.equal(printName.print(float32values), 'Float32Array')
+    })
+
+    it('supports instanceof Float64Array', () => {
+      const values = [0.5, 1.0, 1.5]
+      assert.deepEqual(printName.typedArray('Float64Array', values), values)
+
+      const float64values = new Float64Array([0.5, 1.0, 1.5])
+      assert.deepEqual(printName.typedArray('Float64Array', float64values), float64values)
+      assert.equal(printName.print(float64values), 'Float64Array')
     })
   })
 
