@@ -23,6 +23,27 @@ View::~View() {
     delete view_;
 }
 
+#if defined(ENABLE_VIEW_API)
+void View::SetLayoutManager(mate::Handle<LayoutManager> layout_manager) {
+  layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
+  // TODO(zcbenz): New versions of Chrome takes std::unique_ptr instead of raw
+  // pointer, remove the "release()" call when we upgraded to it.
+  view()->SetLayoutManager(layout_manager->TakeOver().release());
+}
+
+void View::AddChildView(mate::Handle<View> child) {
+  AddChildViewAt(child, child_views_.size());
+}
+
+void View::AddChildViewAt(mate::Handle<View> child, size_t index) {
+  if (index > child_views_.size())
+    return;
+  child_views_.emplace(child_views_.begin() + index,     // index
+                       isolate(), child->GetWrapper());  // v8::Global(args...)
+  view()->AddChildViewAt(child->view(), index);
+}
+#endif
+
 // static
 mate::WrappableBase* View::New(mate::Arguments* args) {
   auto* view = new View();
@@ -32,7 +53,15 @@ mate::WrappableBase* View::New(mate::Arguments* args) {
 
 // static
 void View::BuildPrototype(v8::Isolate* isolate,
-                          v8::Local<v8::FunctionTemplate> prototype) {}
+                          v8::Local<v8::FunctionTemplate> prototype) {
+  prototype->SetClassName(mate::StringToV8(isolate, "View"));
+#if defined(ENABLE_VIEW_API)
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("setLayoutManager", &View::SetLayoutManager)
+      .SetMethod("addChildView", &View::AddChildView)
+      .SetMethod("addChildViewAt", &View::AddChildViewAt);
+#endif
+}
 
 }  // namespace api
 

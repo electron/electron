@@ -6,8 +6,10 @@
 #define ATOM_BROWSER_API_ATOM_API_VIEW_H_
 
 #include <memory>
+#include <vector>
 
-#include "atom/browser/api/trackable_object.h"
+#include "atom/browser/api/atom_api_layout_manager.h"
+#include "native_mate/handle.h"
 #include "ui/views/view.h"
 
 namespace atom {
@@ -21,6 +23,12 @@ class View : public mate::TrackableObject<View> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+#if defined(ENABLE_VIEW_API)
+  void SetLayoutManager(mate::Handle<LayoutManager> layout_manager);
+  void AddChildView(mate::Handle<View> view);
+  void AddChildViewAt(mate::Handle<View> view, size_t index);
+#endif
+
   views::View* view() const { return view_; }
 
  protected:
@@ -32,6 +40,9 @@ class View : public mate::TrackableObject<View> {
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
+  v8::Global<v8::Object> layout_manager_;
+  std::vector<v8::Global<v8::Object>> child_views_;
+
   bool delete_view_ = true;
   views::View* view_ = nullptr;
 

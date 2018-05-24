@@ -65,6 +65,10 @@
   V(atom_renderer_ipc)                       \
   V(atom_renderer_web_frame)
 
+#define ELECTRON_VIEW_MODULES(V) \
+  V(atom_browser_box_layout)     \
+  V(atom_browser_layout_manager)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -72,6 +76,9 @@
 // implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
+#if defined(ENABLE_VIEW_API)
+ELECTRON_VIEW_MODULES(V)
+#endif
 #undef V
 
 namespace {
@@ -165,6 +172,9 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   ELECTRON_BUILTIN_MODULES(V)
+#if defined(ENABLE_VIEW_API)
+  ELECTRON_VIEW_MODULES(V)
+#endif
 #undef V
 }
 

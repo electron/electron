@@ -436,6 +436,7 @@
       'atom/common/api/atom_api_v8_util.cc',
       'atom/common/api/atom_bindings.cc',
       'atom/common/api/atom_bindings.h',
+      'atom/common/api/constructor.h',
       'atom/common/api/event_emitter_caller.cc',
       'atom/common/api/event_emitter_caller.h',
       'atom/common/api/features.cc',
@@ -774,6 +775,18 @@
           'atom/app/node_main.h',
         ],
       }],  # enable_run_as_node
+      ['enable_view_api==1', {
+        'js_sources': [
+          'lib/browser/api/box-layout.js',
+          'lib/browser/api/layout-manager.js',
+        ],
+        'lib_sources': [
+          'atom/browser/api/atom_api_box_layout.cc',
+          'atom/browser/api/atom_api_box_layout.h',
+          'atom/browser/api/atom_api_layout_manager.cc',
+          'atom/browser/api/atom_api_layout_manager.h',
+        ],
+      }],  # enable_view_api
       ['mas_build==1', {
         'lib_sources': [
           'atom/browser/api/atom_api_app_mas.mm',
