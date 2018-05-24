@@ -1,4 +1,4 @@
-# UploadFileSystem Object
+# UploadFileSystem Object _deprecated_
 
 * `type` String - `fileSystem`.
 * `filsSystemURL` String - FileSystem url to read data for upload.
