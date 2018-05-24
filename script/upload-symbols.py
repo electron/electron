@@ -33,9 +33,9 @@ def main():
     for pdb in PDB_LIST:
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
-    files = [f.lower() for f in files]
   else:
     files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+  files = [f.lower() for f in files]
 
   print "FILESSSSSSSSS:::::"
   print files
