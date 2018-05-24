@@ -13,7 +13,6 @@
       'lib/browser/api/auto-updater/auto-updater-native.js',
       'lib/browser/api/auto-updater/auto-updater-win.js',
       'lib/browser/api/auto-updater/squirrel-update-win.js',
-      'lib/browser/api/box-layout.js',
       'lib/browser/api/browser-view.js',
       'lib/browser/api/browser-window.js',
       'lib/browser/api/content-tracing.js',
@@ -22,7 +21,6 @@
       'lib/browser/api/global-shortcut.js',
       'lib/browser/api/ipc-main.js',
       'lib/browser/api/in-app-purchase.js',
-      'lib/browser/api/layout-manager.js',
       'lib/browser/api/menu-item-roles.js',
       'lib/browser/api/menu-item.js',
       'lib/browser/api/menu-utils.js',
@@ -115,8 +113,6 @@
       'atom/browser/api/atom_api_app.h',
       'atom/browser/api/atom_api_auto_updater.cc',
       'atom/browser/api/atom_api_auto_updater.h',
-      'atom/browser/api/atom_api_box_layout.cc',
-      'atom/browser/api/atom_api_box_layout.h',
       'atom/browser/api/atom_api_browser_view.cc',
       'atom/browser/api/atom_api_browser_view.h',
       'atom/browser/api/atom_api_content_tracing.cc',
@@ -133,8 +129,6 @@
       'atom/browser/api/atom_api_global_shortcut.h',
       'atom/browser/api/atom_api_in_app_purchase.cc',
       'atom/browser/api/atom_api_in_app_purchase.h',
-      'atom/browser/api/atom_api_layout_manager.cc',
-      'atom/browser/api/atom_api_layout_manager.h',
       'atom/browser/api/atom_api_menu.cc',
       'atom/browser/api/atom_api_menu.h',
       'atom/browser/api/atom_api_menu_mac.h',
@@ -781,6 +775,18 @@
           'atom/app/node_main.h',
         ],
       }],  # enable_run_as_node
+      ['enable_view_api==1', {
+        'js_sources': [
+          'lib/browser/api/box-layout.js',
+          'lib/browser/api/layout-manager.js',
+        ],
+        'lib_sources': [
+          'atom/browser/api/atom_api_box_layout.cc',
+          'atom/browser/api/atom_api_box_layout.h',
+          'atom/browser/api/atom_api_layout_manager.cc',
+          'atom/browser/api/atom_api_layout_manager.h',
+        ],
+      }],  # enable_view_api
       ['mas_build==1', {
         'lib_sources': [
           'atom/browser/api/atom_api_app_mas.mm',

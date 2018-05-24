@@ -23,9 +23,11 @@ class View : public mate::TrackableObject<View> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+#if defined(ENABLE_VIEW_API)
   void SetLayoutManager(mate::Handle<LayoutManager> layout_manager);
   void AddChildView(mate::Handle<View> view);
   void AddChildViewAt(mate::Handle<View> view, size_t index);
+#endif
 
   views::View* view() const { return view_; }
 

@@ -38,6 +38,11 @@
           'ENABLE_RUN_AS_NODE',
         ],
       }],  # enable_run_as_node
+      ['enable_view_api==1', {
+        'defines': [
+          'ENABLE_VIEW_API',
+        ],
+      }],  # enable_view_api
     ],
   },
   'targets': [
