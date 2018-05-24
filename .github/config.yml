@@ -12,11 +12,7 @@ newIssueWelcomeComment: |
 newPRWelcomeComment: |
   💖 Thanks for opening this pull request! 💖
 
-  We use 
-  [semantic commit messages](https://github.com/electron/electron/blob/semantic-first-pr/docs/development/pull-requests.md#commit-message-guidelines) 
-  to streamline the release process. Before your pull request can be merged, you 
-  should **update your pull request title** to start with a semantic prefix, 
-  OR prefix at least one of your commit messages.
+  We use [semantic commit messages](https://github.com/electron/electron/blob/semantic-first-pr/docs/development/pull-requests.md#commit-message-guidelines) to streamline the release process. Before your pull request can be merged, you should **update your pull request title** to start with a semantic prefix, OR prefix at least one of your commit messages.
 
   Examples of commit messages with semantic prefixes:
 
