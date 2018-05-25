@@ -310,9 +310,9 @@ void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
   callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
-void ScaleWebMouseEvent(blink::WebMouseEvent& event, float scale) {
-  blink::WebFloatPoint pos = event.PositionInWidget();
-  event.SetPositionInWidget(round(pos.x / scale), round(pos.y / scale));
+void ScaleWebMouseEvent(blink::WebMouseEvent* event, float scale) {
+  blink::WebFloatPoint pos = event->PositionInWidget();
+  event->SetPositionInWidget(round(pos.x / scale), round(pos.y / scale));
 }
 
 }  // namespace
@@ -1635,7 +1635,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      ScaleWebMouseEvent(mouse_event, scale);
+      ScaleWebMouseEvent(&mouse_event, scale);
       view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
       return;
     }
@@ -1650,7 +1650,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      ScaleWebMouseEvent(mouse_wheel_event, scale);
+      ScaleWebMouseEvent(&mouse_wheel_event, scale);
       view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
       return;
     }

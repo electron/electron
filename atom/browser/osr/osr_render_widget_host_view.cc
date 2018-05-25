@@ -116,7 +116,7 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
 
 class AtomCopyFrameGenerator {
  public:
-  AtomCopyFrameGenerator(OffScreenRenderWidgetHostView* view)
+  explicit AtomCopyFrameGenerator(OffScreenRenderWidgetHostView* view)
       : view_(view), weak_ptr_factory_(this) {}
 
   void GenerateCopyFrame(const gfx::Rect& damage_rect) {
