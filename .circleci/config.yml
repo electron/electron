@@ -55,7 +55,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -172,7 +172,7 @@ jobs:
                 script/upload-symbols.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -293,7 +293,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -397,7 +397,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -483,7 +483,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -605,7 +605,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
@@ -705,7 +705,7 @@ jobs:
                 script/upload.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
-                script/upload.py --upload_to_s3
+                script/upload-symbols.py
              else
                 echo 'Skipping upload distribution because build is not for release'
              fi
