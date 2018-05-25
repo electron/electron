@@ -1499,7 +1499,7 @@ process.
 
 Returns `Integer` - The chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
-(e.g. `did-frame-navigate`) 
+(e.g. `did-frame-navigate`)
 
 ### Instance Properties
 

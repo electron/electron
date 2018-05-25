@@ -1,5 +1,7 @@
 # UploadFileSystem Object
 
+*(Deprecated)*
+
 * `type` String - `fileSystem`.
 * `filsSystemURL` String - FileSystem url to read data for upload.
 * `offset` Integer - Defaults to `0`.
