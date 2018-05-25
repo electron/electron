@@ -3222,6 +3222,29 @@ describe('BrowserWindow module', () => {
         w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
       })
     })
+
+    describe('window.webContents.getScaleFactor()', () => {
+      it('has default scale factor', (done) => {
+        w.webContents.once('paint', function (event, rect, data) {
+          assert.equal(w.webContents.getScaleFactor(), 1.0)
+          done()
+        })
+        w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+      })
+    })
+
+    describe('window.webContents.setScaleFactor(scaleFactor)', () => {
+      it('sets custom scale factor', (done) => {
+        w.webContents.on('dom-ready', () => {
+          w.webContents.setScaleFactor(2.0)
+          w.webContents.once('paint', function (event, rect, data) {
+            assert.equal(w.webContents.getScaleFactor(), 2.0)
+            done()
+          })
+        })
+        w.loadURL('file://' + fixtures + '/api/offscreen-rendering.html')
+      })
+    })
   })
 })
 

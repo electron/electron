@@ -335,6 +335,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       window. Defaults to `false`. See the
       [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
       more details.
+    * `scaleFactor` Number (optional) - The scale factor to use in offscreen rendering mode. The default value is `1.0`.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs in will still
