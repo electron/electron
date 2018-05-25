@@ -151,7 +151,6 @@
       'atom/browser/api/atom_api_render_process_preferences.h',
       'atom/browser/api/atom_api_screen.cc',
       'atom/browser/api/atom_api_screen.h',
-      'atom/browser/api/atom_api_screen_mac.mm',
       'atom/browser/api/atom_api_session.cc',
       'atom/browser/api/atom_api_session.h',
       'atom/browser/api/atom_api_system_preferences.cc',
