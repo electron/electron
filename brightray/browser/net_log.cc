@@ -38,6 +38,16 @@ NetLog::~NetLog() {
   StopLogging();
 }
 
+void NetLog::StartLogging() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kLogNetLog)) {
+    base::FilePath log_path;
+    log_path = command_line->GetSwitchValuePath(switches::kLogNetLog);
+
+    StartLogging(log_path);
+  }
+}
+
 void NetLog::StartLogging(const base::FilePath& log_path) {
   if (file_net_log_observer_)
     return;

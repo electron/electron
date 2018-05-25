@@ -20,6 +20,7 @@ class NetLog : public net::NetLog {
   NetLog();
   ~NetLog() override;
 
+  void StartLogging();
   void StartLogging(const base::FilePath& path);
   bool IsLogging();
   void StopLogging(base::OnceClosure callback = base::OnceClosure());

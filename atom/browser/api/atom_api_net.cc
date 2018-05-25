@@ -32,15 +32,18 @@ v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {
 
 void Net::StartLogging(mate::Arguments* args) {
   if (net_log_) {
-    base::FilePath path;
-    if (!args->GetNext(&path)) {  // Prefer argument
-      auto* command_line = base::CommandLine::ForCurrentProcess();
-      if (command_line->HasSwitch(switches::kLogNetLog))
-        path = command_line->GetSwitchValuePath(switches::kLogNetLog);
-    }
-    if (!path.empty()) {
+    if (args->Length() >= 1) {
+      base::FilePath path;
+      if (!args->GetNext(&path)) {
+        args->ThrowError("Invalid file path");
+        return;
+      }
+
       net_log_->StartLogging(path);
+      return;
     }
+
+    net_log_->StartLogging();
   }
 }
 
