@@ -49,7 +49,7 @@ void NetLog::StartLogging() {
 }
 
 void NetLog::StartLogging(const base::FilePath& log_path) {
-  if (file_net_log_observer_)
+  if (file_net_log_observer_ || log_path.empty())
     return;
 
   std::unique_ptr<base::Value> constants(GetConstants());  // Net constants

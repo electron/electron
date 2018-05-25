@@ -39,11 +39,6 @@ void Net::StartLogging(mate::Arguments* args) {
         return;
       }
 
-      if (path.empty()) {
-        args->ThrowError("Empty File path");
-        return;
-      }
-
       net_log_->StartLogging(path);
       return;
     }
