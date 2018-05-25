@@ -6,6 +6,7 @@ jobs:
       - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm
+          RUN_RELEASE_BUILD: true
     resource_class: 2xlarge
     steps:
       - checkout
@@ -122,6 +123,7 @@ jobs:
       - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: arm64
+          RUN_RELEASE_BUILD: true
     resource_class: 2xlarge
     steps:
       - checkout
@@ -167,7 +169,7 @@ jobs:
           command: |
              if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
                 echo 'Uploading Electron release distribution to github releases'
-                script/upload.py
+                script/upload-symbols.py
              elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
                 echo 'Uploading Electron release distribution to s3'
                 script/upload.py --upload_to_s3
@@ -239,6 +241,7 @@ jobs:
         environment:
           TARGET_ARCH: ia32
           DISPLAY: ':99.0'
+          RUN_RELEASE_BUILD: true
     resource_class: xlarge
     steps:
       - checkout
@@ -345,6 +348,7 @@ jobs:
       - image: electronbuilds/electron:0.0.7
         environment:
           TARGET_ARCH: mips64el
+          RUN_RELEASE_BUILD: true
     resource_class: xlarge
     steps:
       - checkout
@@ -427,6 +431,7 @@ jobs:
         environment:
           TARGET_ARCH: x64
           DISPLAY: ':99.0'
+          RUN_RELEASE_BUILD: true
     resource_class: xlarge
     steps:
       - checkout
@@ -542,6 +547,7 @@ jobs:
   electron-osx-x64:
     environment:
       TARGET_ARCH: x64
+      RUN_RELEASE_BUILD: true
     macos:
         xcode: "9.0"
     resource_class: xlarge
@@ -641,6 +647,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       MAS_BUILD: 1
+      RUN_RELEASE_BUILD: true
     macos:
         xcode: "9.0"
     resource_class: xlarge
