@@ -5,8 +5,10 @@
 #include "atom/browser/api/atom_api_net.h"
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_client.h"
+#include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
+#include "base/callback.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 
@@ -42,9 +44,19 @@ void Net::StartLogging(mate::Arguments* args) {
   }
 }
 
-void Net::StopLogging() {
+bool Net::IsLogging() {
   if (net_log_) {
-    net_log_->StopLogging();
+    return net_log_->IsLogging();
+  }
+  return false;
+}
+
+void Net::StopLogging(mate::Arguments* args) {
+  if (net_log_) {
+    base::OnceClosure callback;
+    args->GetNext(&callback);
+
+    net_log_->StopLogging(std::move(callback));
   }
 }
 
@@ -54,6 +66,7 @@ void Net::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetProperty("URLRequest", &Net::URLRequest)
+      .SetProperty("isLogging", &Net::IsLogging)
       .SetMethod("startLogging", &Net::StartLogging)
       .SetMethod("stopLogging", &Net::StopLogging);
 }

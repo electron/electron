@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/values.h"
@@ -36,13 +35,13 @@ std::unique_ptr<base::DictionaryValue> GetConstants() {
 NetLog::NetLog() {}
 
 NetLog::~NetLog() {
-  if (file_net_log_observer_) {
-    file_net_log_observer_->StopObserving(nullptr, base::Closure());
-    file_net_log_observer_.reset();
-  }
+  StopLogging();
 }
 
 void NetLog::StartLogging(const base::FilePath& log_path) {
+  if (file_net_log_observer_)
+    return;
+
   std::unique_ptr<base::Value> constants(GetConstants());  // Net constants
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
 
@@ -51,8 +50,16 @@ void NetLog::StartLogging(const base::FilePath& log_path) {
   file_net_log_observer_->StartObserving(this, capture_mode);
 }
 
-void NetLog::StopLogging() {
-  file_net_log_observer_->StopObserving(nullptr, base::OnceClosure());
+bool NetLog::IsLogging() {
+  return !!file_net_log_observer_;
+}
+
+void NetLog::StopLogging(base::OnceClosure callback) {
+  if (!file_net_log_observer_)
+    return;
+
+  file_net_log_observer_->StopObserving(nullptr, std::move(callback));
+  file_net_log_observer_.reset();
 }
 
 }  // namespace brightray
