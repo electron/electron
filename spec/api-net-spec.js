@@ -1645,11 +1645,12 @@ describe('net module', () => {
 
     it('should begin logging automatically when --log-net-log is passed', (done) => {
       let appProcess = ChildProcess.spawn(remote.process.execPath,
-        [appPath, `--log-net-log=${dumpFileA}`], {
-        env: {
-          TEST_URL: server.url
-        }
-      })
+        [appPath, `--log-net-log=${dumpFileA}`],
+        {
+          env: {
+            TEST_URL: server.url
+          }
+        })
 
       appProcess.once('exit', () => {
         assert(fs.existsSync(dumpFileA))
@@ -1673,12 +1674,13 @@ describe('net module', () => {
 
     it('should begin logging to file specified by --log-net-log when .startLogging() is called', (done) => {
       let appProcess = ChildProcess.spawn(remote.process.execPath,
-        [appPath, `--log-net-log=${dumpFileA}`], {
-        env: {
-          TEST_URL: server.url,
-          TEST_DUMP_FILE_B: "--log-net-log"
-        }
-      })
+        [appPath, `--log-net-log=${dumpFileA}`],
+        {
+          env: {
+            TEST_URL: server.url,
+            TEST_DUMP_FILE_B: '--log-net-log'
+          }
+        })
 
       appProcess.once('exit', () => {
         assert(fs.existsSync(dumpFileA))  // dumpFileA will be written twice
@@ -1687,14 +1689,15 @@ describe('net module', () => {
     })
 
     it('should begin and stop logging to file when .startLogging() and .stopLogging([callback]) is called', (done) => {
-      let appProcess = ChildProcess.spawn(remote.process.execPath, [appPath], {
-        env: {
-          TEST_URL: server.url,
-          TEST_DUMP_FILE_A: dumpFileA,
-          TEST_DUMP_FILE_B: dumpFileB
-        }
-      })
-      
+      let appProcess = ChildProcess.spawn(remote.process.execPath, [appPath],
+        {
+          env: {
+            TEST_URL: server.url,
+            TEST_DUMP_FILE_A: dumpFileA,
+            TEST_DUMP_FILE_B: dumpFileB
+          }
+        })
+
       appProcess.once('exit', () => {
         assert(fs.existsSync(dumpFileA))
         assert(fs.existsSync(dumpFileB))
