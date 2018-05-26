@@ -27,18 +27,16 @@ app.on('ready', async () => {
 
   await request()
 
-  await stopLogging()
-
   // Optional second phase
   if (process.env.TEST_DUMP_FILE_B) {
-    if (process.env.TEST_DUMP_FILE_B === "--log-net-log")
+    await stopLogging()
+
+    if (process.env.TEST_DUMP_FILE_B === '--log-net-log')
       net.startLogging()  // Log to file path specified by --log-net-log
     else
       net.startLogging(process.env.TEST_DUMP_FILE_B)
 
     await request()
-
-    await stopLogging()
   }
 
   app.quit()
