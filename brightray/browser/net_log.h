@@ -28,6 +28,7 @@ class NetLog : public net::NetLog {
  private:
   // This observer handles writing NetLogs.
   std::unique_ptr<net::FileNetLogObserver> file_net_log_observer_;
+  base::FilePath file_net_log_path_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };
