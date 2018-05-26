@@ -19,8 +19,7 @@ namespace api {
 Net::Net(v8::Isolate* isolate) {
   Init(isolate);
 
-  net_log_ = static_cast<brightray::NetLog*>(
-      atom::AtomBrowserClient::Get()->GetNetLog());
+  net_log_ = atom::AtomBrowserClient::Get()->GetNetLog();
 }
 
 Net::~Net() {}
@@ -31,36 +30,29 @@ v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {
 }
 
 void Net::StartLogging(mate::Arguments* args) {
-  if (net_log_) {
-    if (args->Length() >= 1) {
-      base::FilePath path;
-      if (!args->GetNext(&path)) {
-        args->ThrowError("Invalid file path");
-        return;
-      }
-
-      net_log_->StartLogging(path);
+  if (args->Length() >= 1) {
+    base::FilePath path;
+    if (!args->GetNext(&path)) {
+      args->ThrowError("Invalid file path");
       return;
     }
 
-    net_log_->StartLogging();
+    net_log_->StartLogging(path);
+    return;
   }
+
+  net_log_->StartLogging();
 }
 
 bool Net::IsLogging() {
-  if (net_log_) {
-    return net_log_->IsLogging();
-  }
-  return false;
+  return net_log_->IsLogging();
 }
 
 void Net::StopLogging(mate::Arguments* args) {
-  if (net_log_) {
-    base::OnceClosure callback;
-    args->GetNext(&callback);
+  base::OnceClosure callback;
+  args->GetNext(&callback);
 
-    net_log_->StopLogging(std::move(callback));
-  }
+  net_log_->StopLogging(std::move(callback));
 }
 
 // static
