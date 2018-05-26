@@ -1619,6 +1619,89 @@ describe('net module', () => {
       `)
     })
   })
+
+  describe('Logging API', () => {
+    const fs = require('fs')
+    const path = require('path')
+    const ChildProcess = require('child_process')
+    const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
+    const dumpFileA = path.join(__dirname, '_a.json')
+    const dumpFileB = path.join(__dirname, '_b.json')
+
+    beforeEach(() => {
+      server.on('request', (request, response) => {
+        response.end()
+      })
+    })
+
+    afterEach(() => {
+      try {
+        fs.unlinkSync(dumpFileA)
+        fs.unlinkSync(dumpFileB)
+      } catch (e) {
+        // Ignore error
+      }
+    })
+
+    it('should begin logging automatically when --log-net-log is passed', (done) => {
+      let appProcess = ChildProcess.spawn(remote.process.execPath,
+        [appPath, `--log-net-log=${dumpFileA}`], {
+        env: {
+          TEST_URL: server.url
+        }
+      })
+
+      appProcess.once('exit', () => {
+        assert(fs.existsSync(dumpFileA))
+        done()
+      })
+    })
+
+    it('should begin logging when .startLogging(path) is called with file path provided', (done) => {
+      let appProcess = ChildProcess.spawn(remote.process.execPath, [appPath], {
+        env: {
+          TEST_URL: server.url,
+          TEST_DUMP_FILE_A: dumpFileA
+        }
+      })
+
+      appProcess.once('exit', () => {
+        assert(fs.existsSync(dumpFileA))
+        done()
+      })
+    })
+
+    it('should begin logging to file specified by --log-net-log when .startLogging() is called', (done) => {
+      let appProcess = ChildProcess.spawn(remote.process.execPath,
+        [appPath, `--log-net-log=${dumpFileA}`], {
+        env: {
+          TEST_URL: server.url,
+          TEST_DUMP_FILE_B: "--log-net-log"
+        }
+      })
+
+      appProcess.once('exit', () => {
+        assert(fs.existsSync(dumpFileA))  // dumpFileA will be written twice
+        done()
+      })
+    })
+
+    it('should begin and stop logging to file when .startLogging() and .stopLogging([callback]) is called', (done) => {
+      let appProcess = ChildProcess.spawn(remote.process.execPath, [appPath], {
+        env: {
+          TEST_URL: server.url,
+          TEST_DUMP_FILE_A: dumpFileA,
+          TEST_DUMP_FILE_B: dumpFileB
+        }
+      })
+      
+      appProcess.once('exit', () => {
+        assert(fs.existsSync(dumpFileA))
+        assert(fs.existsSync(dumpFileB))
+        done()
+      })
+    })
+  })
 })
 
 function handleUnexpectedURL (request, response) {
