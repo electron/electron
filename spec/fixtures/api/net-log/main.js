@@ -14,9 +14,7 @@ function request() {
 
 function stopLogging () {
   return new Promise((resolve) => {
-    console.log('before', net.isLogging)
     net.stopLogging(() => {
-      console.log('after', net.isLogging)
       resolve()
     })
   })
