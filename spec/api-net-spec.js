@@ -1524,7 +1524,7 @@ describe('net module', () => {
     })
   })
 
-  describe('Stability and performance', (done) => {
+  describe('Stability and performance', () => {
     it('should free unreferenced, never-started request objects without crash', (done) => {
       const requestUrl = '/requestUrl'
       ipcRenderer.once('api-net-spec-done', () => {
