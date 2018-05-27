@@ -403,6 +403,11 @@ const CGFloat kVerticalTitleMargin = 2;
   return YES;
 }
 
+- (void)setNeedsDisplay:(BOOL)display {
+  [self updateAttributedTitle];
+  [super setNeedsDisplay:display];
+}
+
 - (BOOL)shouldHighlight {
   switch (highlight_mode_) {
     case atom::TrayIcon::HighlightMode::ALWAYS:
