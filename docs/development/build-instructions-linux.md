@@ -12,7 +12,7 @@ Follow the guidelines below for building Electron on Linux.
   For a quick test, run the following script:
 
   ```sh
-  $ python ./script/check-tls.py
+  $ python ./script/tls.py
   ```
 
   If the script returns that your configuration is using an outdated security
