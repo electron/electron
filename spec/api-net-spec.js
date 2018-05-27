@@ -1623,10 +1623,11 @@ describe('net module', () => {
   describe('Logging API', () => {
     const fs = require('fs')
     const path = require('path')
+    const os = require('os')
     const ChildProcess = require('child_process')
     const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
-    const dumpFileA = path.join(__dirname, '_a.json')
-    const dumpFileB = path.join(__dirname, '_b.json')
+    const dumpFileA = path.join(os.tmpdir(), '_a.json')
+    const dumpFileB = path.join(os.tmpdir(), '_b.json')
 
     beforeEach(() => {
       server.on('request', (request, response) => {
