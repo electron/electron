@@ -77,8 +77,8 @@ bool NetLog::IsLogging() {
 
 void NetLog::StopLogging(base::OnceClosure callback) {
   if (!file_net_log_observer_) {
-    // Immediate callback
-    std::move(callback).Run();
+    if (callback)
+      std::move(callback).Run();
     return;
   }
 
