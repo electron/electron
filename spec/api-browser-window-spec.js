@@ -2589,6 +2589,29 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('exits HTML fullscreen when window leaves fullscreen', (done) => {
+      w.destroy()
+      w = new BrowserWindow()
+      w.webContents.once('did-finish-load', () => {
+        w.once('enter-full-screen', () => {
+          w.once('leave-html-full-screen', () => {
+            done()
+          })
+          w.setFullScreen(false)
+        })
+        w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true)
+      })
+      w.loadURL('about:blank')
+    })
+  })
+
   describe('parent window', () => {
     let c = null
 
