@@ -149,6 +149,8 @@ const char kSandbox[] = "sandbox";
 
 const char kWebSecurity[] = "webSecurity";
 
+const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
+
 }  // namespace options
 
 namespace switches {

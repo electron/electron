@@ -70,9 +70,9 @@ WebContentsPreferences::WebContentsPreferences(
   // insecureContent
   if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
       !webSecurity) {
-    SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
+    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, true);
   } else {
-    SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
+    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
 #if defined(OS_MACOSX)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
@@ -283,7 +283,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (dict_.GetBoolean("allowRunningInsecureContent", &b))
+  if (dict_.GetBoolean(options::kAllowRunningInsecureContent, &b))
     prefs->allow_running_insecure_content = b;
   if (dict_.GetBoolean("navigateOnDragDrop", &b))
     prefs->navigate_on_drag_drop = b;
