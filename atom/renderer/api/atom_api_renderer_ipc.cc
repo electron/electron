@@ -57,15 +57,14 @@ v8::Local<v8::Value> SendSync(mate::Arguments* args,
   if (!success)
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
 
-  std::unique_ptr<atom::V8ValueConverter> v8_converter(
-      new atom::V8ValueConverter);
+  atom::V8ValueConverter v8_converter;
   mate::Dictionary global(args->isolate(),
                           args->isolate()->GetCurrentContext()->Global());
   v8::Local<v8::Value> sandboxed;
   if (global.GetHidden("sandboxed", &sandboxed) && sandboxed->IsTrue()) {
-    v8_converter->SetDisableNode(true);
+    v8_converter.SetDisableNode(true);
   }
-  return v8_converter->ToV8Value(&result, args->isolate()->GetCurrentContext());
+  return v8_converter.ToV8Value(&result, args->isolate()->GetCurrentContext());
 }
 
 void Initialize(v8::Local<v8::Object> exports,
