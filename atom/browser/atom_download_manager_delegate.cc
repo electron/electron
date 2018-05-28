@@ -11,6 +11,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/common/options_switches.h"
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "chrome/common/pref_names.h"
@@ -90,7 +91,8 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     window = relay->window.get();
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  bool offscreen = !web_preferences || web_preferences->IsEnabled("offscreen");
+  bool offscreen =
+      !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   base::FilePath path;
   GetItemSavePath(item, &path);

@@ -151,6 +151,8 @@ const char kWebSecurity[] = "webSecurity";
 
 const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
 
+const char kOffscreen[] = "offscreen";
+
 }  // namespace options
 
 namespace switches {

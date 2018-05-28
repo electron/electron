@@ -77,7 +77,7 @@ WebContentsPreferences::WebContentsPreferences(
 #if defined(OS_MACOSX)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
-  SetDefaultBoolIfUndefined("offscreen", false);
+  SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
   last_dict_ = std::move(*dict_.CreateDeepCopy());
 }

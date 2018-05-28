@@ -14,6 +14,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_dialog_helper.h"
 #include "atom/common/atom_constants.h"
+#include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
@@ -156,7 +157,8 @@ void CommonWebContentsDelegate::InitWithWebContents(
 
   // Determien whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  offscreen_ = !web_preferences || web_preferences->IsEnabled("offscreen");
+  offscreen_ =
+      !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
   web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));

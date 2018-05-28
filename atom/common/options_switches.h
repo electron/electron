@@ -74,6 +74,7 @@ extern const char kPlugins[];
 extern const char kSandbox[];
 extern const char kWebSecurity[];
 extern const char kAllowRunningInsecureContent[];
+extern const char kOffscreen[];
 
 }  // namespace options
 

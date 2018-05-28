@@ -368,7 +368,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   else if (options.Get("isBrowserView", &b) && b)
     type_ = BROWSER_VIEW;
 #if defined(ENABLE_OSR)
-  else if (options.Get("offscreen", &b) && b)
+  else if (options.Get(options::kOffscreen, &b) && b)
     type_ = OFF_SCREEN;
 #endif
 

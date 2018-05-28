@@ -11,6 +11,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/browser/web_contents_preferences.h"
+#include "atom/common/options_switches.h"
 #include "base/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/image/image_skia.h"
@@ -66,7 +67,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
 
   // Don't set parent for offscreen window.
   NativeWindow* window = nullptr;
-  if (web_preferences && !web_preferences->IsEnabled("offscreen")) {
+  if (web_preferences && !web_preferences->IsEnabled(options::kOffscreen)) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents);
     if (relay)
       window = relay->window.get();
