@@ -297,20 +297,12 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  // FIXME(zcbenz): We should read "type" parameter for better design, but
-  // on Windows we have encountered a compiler bug that if we read "type"
-  // from |options| and then set |type_|, a memory corruption will happen
-  // and Electron will soon crash.
-  // Remvoe this after we upgraded to use VS 2015 Update 3.
+  // Get type
+  options.Get("type", &type_);
+
   bool b = false;
-  if (options.Get("isGuest", &b) && b)
-    type_ = Type::WEB_VIEW;
-  else if (options.Get("isBackgroundPage", &b) && b)
-    type_ = Type::BACKGROUND_PAGE;
-  else if (options.Get("isBrowserView", &b) && b)
-    type_ = Type::BROWSER_VIEW;
 #if BUILDFLAG(ENABLE_OSR)
-  else if (options.Get(options::kOffscreen, &b) && b)
+  if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::OFF_SCREEN;
 #endif
 
@@ -2266,7 +2258,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("startDrag", &WebContents::StartDrag)
-      .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
