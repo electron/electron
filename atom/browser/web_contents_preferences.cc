@@ -58,7 +58,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
   SetDefaultBoolIfUndefined("sandbox", false);
-  SetDefaultBoolIfUndefined("nativeWindowOpen", false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined("javascript", true);
   SetDefaultBoolIfUndefined("images", true);
@@ -165,7 +165,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
     command_line->AppendSwitch(::switches::kNoSandbox);
-  if (dict_.GetBoolean("nativeWindowOpen", &b) && b)
+  if (dict_.GetBoolean(options::kNativeWindowOpen, &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.

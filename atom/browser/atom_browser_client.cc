@@ -182,7 +182,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
       WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
   if (web_preferences) {
     prefs.sandbox = web_preferences->IsEnabled("sandbox");
-    prefs.native_window_open = web_preferences->IsEnabled("nativeWindowOpen");
+    prefs.native_window_open =
+        web_preferences->IsEnabled(options::kNativeWindowOpen);
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
   }
   AddProcessPreferences(host->GetID(), prefs);
