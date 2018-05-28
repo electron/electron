@@ -72,6 +72,7 @@ extern const char kNativeWindowOpen[];
 extern const char kCustomArgs[];
 extern const char kPlugins[];
 extern const char kSandbox[];
+extern const char kWebSecurity[];
 
 }  // namespace options
 

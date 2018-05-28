@@ -147,6 +147,8 @@ const char kPlugins[] = "plugins";
 
 const char kSandbox[] = "sandbox";
 
+const char kWebSecurity[] = "webSecurity";
+
 }  // namespace options
 
 namespace switches {

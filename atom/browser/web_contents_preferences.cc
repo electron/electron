@@ -65,10 +65,11 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined("textAreasAreResizable", true);
   SetDefaultBoolIfUndefined("webgl", true);
   bool webSecurity = true;
-  SetDefaultBoolIfUndefined("webSecurity", webSecurity);
+  SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
   // insecureContent
-  if (web_preferences.Get("webSecurity", &webSecurity) && !webSecurity) {
+  if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
+      !webSecurity) {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
   } else {
     SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
@@ -278,7 +279,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
-  if (dict_.GetBoolean("webSecurity", &b)) {
+  if (dict_.GetBoolean(options::kWebSecurity, &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
