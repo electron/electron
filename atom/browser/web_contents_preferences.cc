@@ -57,7 +57,7 @@ WebContentsPreferences::WebContentsPreferences(
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
-  SetDefaultBoolIfUndefined("sandbox", false);
+  SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined("javascript", true);
@@ -161,7 +161,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (dict_.GetBoolean("sandbox", &b) && b)
+  if (dict_.GetBoolean(options::kSandbox, &b) && b)
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
     command_line->AppendSwitch(::switches::kNoSandbox);

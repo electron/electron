@@ -143,6 +143,8 @@ const char kNativeWindowOpen[] = "nativeWindowOpen";
 
 const char kCustomArgs[] = "additionalArguments";
 
+const char kSandbox[] = "sandbox";
+
 }  // namespace options
 
 namespace switches {
