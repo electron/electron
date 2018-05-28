@@ -51,7 +51,7 @@ WebContentsPreferences::WebContentsPreferences(
   instances_.push_back(this);
 
   // Set WebPreferences defaults onto the JS object
-  SetDefaultBoolIfUndefined("plugins", false);
+  SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
   SetDefaultBoolIfUndefined(options::kExperimentalCanvasFeatures, false);
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
@@ -131,7 +131,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line) {
   bool b;
   // Check if plugins are enabled.
-  if (dict_.GetBoolean("plugins", &b) && b)
+  if (dict_.GetBoolean(options::kPlugins, &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // Experimental flags.
