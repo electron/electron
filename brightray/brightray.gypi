@@ -251,7 +251,7 @@
             # perform FPO regardless, so we must explicitly disable.
             # We still want the false setting above to avoid having
             # "/Oy /Oy-" and warnings about overriding.
-            'AdditionalOptions': ['/Oy-', '/d2guard4'],
+            'AdditionalOptions': ['/Oy-', '/guard:cf'],
           },
           'VCLibrarianTool': {
             'LinkTimeCodeGeneration': 'true',  # /LTCG
