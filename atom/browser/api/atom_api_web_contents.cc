@@ -355,20 +355,12 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
-  // FIXME(zcbenz): We should read "type" parameter for better design, but
-  // on Windows we have encountered a compiler bug that if we read "type"
-  // from |options| and then set |type_|, a memory corruption will happen
-  // and Electron will soon crash.
-  // Remvoe this after we upgraded to use VS 2015 Update 3.
+  // Get type
+  options.Get("type", &type_);
+
   bool b = false;
-  if (options.Get("isGuest", &b) && b)
-    type_ = WEB_VIEW;
-  else if (options.Get("isBackgroundPage", &b) && b)
-    type_ = BACKGROUND_PAGE;
-  else if (options.Get("isBrowserView", &b) && b)
-    type_ = BROWSER_VIEW;
 #if defined(ENABLE_OSR)
-  else if (options.Get("offscreen", &b) && b)
+  if (options.Get("offscreen", &b) && b)
     type_ = OFF_SCREEN;
 #endif
 
