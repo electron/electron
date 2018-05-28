@@ -344,6 +344,7 @@
               '-lwinmm.lib',
               '-lcrypt32.lib',
               '-luiautomationcore.lib',
+              '-lPropsys.lib'
             ],
           },
           'dependencies': [
