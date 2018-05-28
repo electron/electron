@@ -113,6 +113,7 @@
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture_generic.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/libsystem_wrappers.a',
@@ -198,6 +199,7 @@
                 'libraries': [
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libhttp_server.a',
+                  '<(libchromiumcontent_dir)/libdesktop_capture_generic.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
                   '<(libchromiumcontent_dir)/librtc_base.a',
@@ -336,6 +338,7 @@
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',
+                  '<(libchromiumcontent_dir)/desktop_capture_generic.lib',
                   '<(libchromiumcontent_dir)/device_service.lib',
                   '<(libchromiumcontent_dir)/dom_keycode_converter.lib',
                   '<(libchromiumcontent_dir)/rtc_base.lib',
