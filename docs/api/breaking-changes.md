@@ -7,6 +7,37 @@ Breaking changes will be included in this documentation, and deprecation warning
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
 
+# Planned Breaking API Changes (4.0)
+
+The following list includes the APIs that will be removed in Electron 4.0.
+
+There is no timetable for when this release will occur but deprecation
+warnings will be added at least [one major version](electron-versioning.md#semver) beforehand.
+
+## `app.makeSingleInstance`
+
+```js
+// Deprecated
+app.makeSingleInstance(function (argv, cwd) {
+
+})
+// Replace with
+app.requestSingleInstanceLock()
+app.on('second-instance', function (argv, cwd) {
+
+})
+```
+
+## `app.releaseSingleInstance`
+
+```js
+// Deprecated
+app.releaseSingleInstance()
+// Replace with
+app.releaseSingleInstanceLock()
+```
+
+
 # Planned Breaking API Changes (3.0)
 
 The following list includes the APIs that will be removed in Electron 3.0.
@@ -163,34 +194,4 @@ command line flag when building native Node modules.
 Deprecated: https://atom.io/download/atom-shell
 
 Replace with: https://atom.io/download/electron
-
-# Planned Breaking API Changes (4.0)
-
-The following list includes the APIs that will be removed in Electron 4.0.
-
-There is no timetable for when this release will occur but deprecation
-warnings will be added at least [one major version](electron-versioning.md#semver) beforehand.
-
-## `app.makeSingleInstance`
-
-```js
-// Deprecated
-app.makeSingleInstance(function (argv, cwd) {
-
-})
-// Replace with
-app.requestSingleInstanceLock()
-app.on('second-instance', function (argv, cwd) {
-
-})
-```
-
-## `app.releaseSingleInstance`
-
-```js
-// Deprecated
-app.releaseSingleInstance()
-// Replace with
-app.releaseSingleInstanceLock()
-```
 
