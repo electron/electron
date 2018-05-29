@@ -212,23 +212,23 @@ let windowB = new BrowserWindow(optionsB)
 ## `menu`
 
 ```js
-// Deprecated
+// Removed
 menu.popup(browserWindow, 100, 200, 2)
-// Replace with
+// Replaced with
 menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
 ```
 
 ## `nativeImage`
 
 ```js
-// Deprecated
+// Removed
 nativeImage.toPng()
-// Replace with
+// Replaced with
 nativeImage.toPNG()
 
-// Deprecated
+// Removed
 nativeImage.toJpeg()
-// Replace with
+// Replaced with
 nativeImage.toJPEG()
 ```
 
@@ -241,43 +241,43 @@ nativeImage.toJPEG()
 ## `webContents`
 
 ```js
-// Deprecated
+// Removed
 webContents.setZoomLevelLimits(1, 2)
-// Replace with
+// Replaced with
 webContents.setVisualZoomLevelLimits(1, 2)
 ```
 
 ## `webFrame`
 
 ```js
-// Deprecated
+// Removed
 webFrame.setZoomLevelLimits(1, 2)
-// Replace with
+// Replaced with
 webFrame.setVisualZoomLevelLimits(1, 2)
 ```
 
 ## `<webview>`
 
 ```js
-// Deprecated
+// Removed
 webview.setZoomLevelLimits(1, 2)
-// Replace with
+// Replaced with
 webview.setVisualZoomLevelLimits(1, 2)
 ```
 
 ## Duplicate ARM Assets
 
-Each Electron release includes two identical ARM builds with slightly different 
-filenames, like `electron-v1.7.3-linux-arm.zip` and 
-`electron-v1.7.3-linux-armv7l.zip`. The asset with the `v7l` prefix was added 
-to clarify to users which ARM version it supports, and to disambiguate it from 
+Each Electron release includes two identical ARM builds with slightly different
+filenames, like `electron-v1.7.3-linux-arm.zip` and
+`electron-v1.7.3-linux-armv7l.zip`. The asset with the `v7l` prefix was added
+to clarify to users which ARM version it supports, and to disambiguate it from
 future armv6l and arm64 assets that may be produced.
 
-The file _without the prefix_ is still being published to avoid breaking any 
-setups that may be consuming it. Starting at 2.0, the un-prefixed file will 
+The file _without the prefix_ is still being published to avoid breaking any
+setups that may be consuming it. Starting at 2.0, the un-prefixed file will
 no longer be published.
 
 For details, see
 [6986](https://github.com/electron/electron/pull/6986)
-and 
+and
 [7189](https://github.com/electron/electron/pull/7189).
