@@ -195,3 +195,88 @@ Deprecated: https://atom.io/download/atom-shell
 
 Replace with: https://atom.io/download/electron
 
+
+# Breaking API Changes (2.0)
+
+## `BrowserWindow`
+
+```js
+// Deprecated
+let optionsA = {titleBarStyle: 'hidden-inset'}
+let windowA = new BrowserWindow(optionsA)
+// Replace with
+let optionsB = {titleBarStyle: 'hiddenInset'}
+let windowB = new BrowserWindow(optionsB)
+```
+
+## `menu`
+
+```js
+// Deprecated
+menu.popup(browserWindow, 100, 200, 2)
+// Replace with
+menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
+```
+
+
+```js
+// Deprecated
+nativeImage.toPng()
+// Replace with
+nativeImage.toPNG()
+
+// Deprecated
+nativeImage.toJpeg()
+// Replace with
+nativeImage.toJPEG()
+```
+
+## `process`
+
+* `process.versions.electron` and `process.version.chrome` will be made
+  read-only properties for consistency with the other `process.versions`
+  properties set by Node.
+
+## `webContents`
+
+```js
+// Deprecated
+webContents.setZoomLevelLimits(1, 2)
+// Replace with
+webContents.setVisualZoomLevelLimits(1, 2)
+```
+
+## `webFrame`
+
+```js
+// Deprecated
+webFrame.setZoomLevelLimits(1, 2)
+// Replace with
+webFrame.setVisualZoomLevelLimits(1, 2)
+```
+
+## `<webview>`
+
+```js
+// Deprecated
+webview.setZoomLevelLimits(1, 2)
+// Replace with
+webview.setVisualZoomLevelLimits(1, 2)
+```
+
+## Duplicate ARM Assets
+
+Each Electron release includes two identical ARM builds with slightly different 
+filenames, like `electron-v1.7.3-linux-arm.zip` and 
+`electron-v1.7.3-linux-armv7l.zip`. The asset with the `v7l` prefix was added 
+to clarify to users which ARM version it supports, and to disambiguate it from 
+future armv6l and arm64 assets that may be produced.
+
+The file _without the prefix_ is still being published to avoid breaking any 
+setups that may be consuming it. Starting at 2.0, the un-prefixed file will 
+no longer be published.
+
+For details, see
+[6986](https://github.com/electron/electron/pull/6986)
+and 
+[7189](https://github.com/electron/electron/pull/7189).
