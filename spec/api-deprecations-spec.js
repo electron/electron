@@ -73,6 +73,22 @@ describe('deprecations', () => {
     assert.strictEqual(o[oldPropertyName], value)
   })
 
+  it('warns if deprecated property is already set', () => {
+    let msg
+    deprecations.setHandler((m) => { msg = m })
+
+    const oldPropertyName = 'dingyOldName'
+    const newPropertyName = 'shinyNewName'
+    const value = 0
+
+    let o = { [oldPropertyName]: value }
+    deprecate.property(o, oldPropertyName, newPropertyName)
+
+    assert.strictEqual(typeof msg, 'string')
+    assert.ok(msg.includes(oldPropertyName))
+    assert.ok(msg.includes(newPropertyName))
+  })
+
   it('throws an exception if no deprecation handler is specified', () => {
     assert.throws(() => {
       deprecate.log('this is deprecated')
