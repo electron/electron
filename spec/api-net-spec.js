@@ -1619,29 +1619,6 @@ describe('net module', () => {
       `)
     })
   })
-
-  describe('Logging API', () => {
-    const fs = require('fs')
-    const os = require('os')
-    const path = require('path')
-    const dumpFile = path.join(os.tmpdir(), 'net_log.json')
-
-    afterEach(() => {
-      try {
-        fs.unlinkSync(dumpFile)
-      } catch (e) {
-        // Ignore error
-      }
-    })
-
-    it('should begin and stop logging to file when .startLogging() and .stopLogging() is called', (done) => {
-      net.startLogging(dumpFile)
-      net.stopLogging(() => {
-        assert(fs.existsSync(dumpFile))
-        done()
-      })
-    })
-  })
 })
 
 function handleUnexpectedURL (request, response) {
