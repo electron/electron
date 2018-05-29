@@ -21,14 +21,16 @@ class NetLog : public net::NetLog {
   ~NetLog() override;
 
   void StartLogging();
-  void StartLogging(const base::FilePath& path);
-  bool IsLogging();
   void StopLogging(base::OnceClosure callback = base::OnceClosure());
+
+  void StartDynamicLogging(const base::FilePath& path);
+  bool IsDynamicLogging();
+  void StopDynamicLogging(base::OnceClosure callback = base::OnceClosure());
 
  private:
   // This observer handles writing NetLogs.
   std::unique_ptr<net::FileNetLogObserver> file_net_log_observer_;
-  base::FilePath file_net_log_path_;
+  std::unique_ptr<net::FileNetLogObserver> dynamic_file_net_log_observer_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };

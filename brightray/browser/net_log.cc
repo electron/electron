@@ -35,44 +35,26 @@ std::unique_ptr<base::DictionaryValue> GetConstants() {
 NetLog::NetLog() {}
 
 NetLog::~NetLog() {
+  StopDynamicLogging();
   StopLogging();
 }
 
-/**
- * Starts logging to the filepath remembered, otherwise to the default specified
- * via --log-net-log.
- */
 void NetLog::StartLogging() {
-  if (file_net_log_observer_)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(switches::kLogNetLog))
     return;
 
-  if (file_net_log_path_.empty()) {
-    auto* command_line = base::CommandLine::ForCurrentProcess();
-    if (!command_line->HasSwitch(switches::kLogNetLog)) {
-      return;
-    }
-    file_net_log_path_ = command_line->GetSwitchValuePath(switches::kLogNetLog);
-  }
+  base::FilePath log_path;
+  log_path = command_line->GetSwitchValuePath(switches::kLogNetLog);
+  if (log_path.empty())
+    return;
 
   std::unique_ptr<base::Value> constants(GetConstants());  // Net constants
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
 
-  file_net_log_observer_ = net::FileNetLogObserver::CreateUnbounded(
-      file_net_log_path_, std::move(constants));
+  file_net_log_observer_ =
+      net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
   file_net_log_observer_->StartObserving(this, capture_mode);
-}
-
-void NetLog::StartLogging(const base::FilePath& log_path) {
-  // Cannot set path when already logging
-  if (file_net_log_observer_ || log_path.empty())
-    return;
-
-  file_net_log_path_ = log_path;
-  StartLogging();
-}
-
-bool NetLog::IsLogging() {
-  return !!file_net_log_observer_;
 }
 
 void NetLog::StopLogging(base::OnceClosure callback) {
@@ -84,6 +66,33 @@ void NetLog::StopLogging(base::OnceClosure callback) {
 
   file_net_log_observer_->StopObserving(nullptr, std::move(callback));
   file_net_log_observer_.reset();
+}
+
+void NetLog::StartDynamicLogging(const base::FilePath& log_path) {
+  if (dynamic_file_net_log_observer_ || log_path.empty())
+    return;
+
+  std::unique_ptr<base::Value> constants(GetConstants());  // Net constants
+  net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
+
+  dynamic_file_net_log_observer_ =
+      net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
+  dynamic_file_net_log_observer_->StartObserving(this, capture_mode);
+}
+
+bool NetLog::IsDynamicLogging() {
+  return !!dynamic_file_net_log_observer_;
+}
+
+void NetLog::StopDynamicLogging(base::OnceClosure callback) {
+  if (!dynamic_file_net_log_observer_) {
+    if (callback)
+      std::move(callback).Run();
+    return;
+  }
+
+  dynamic_file_net_log_observer_->StopObserving(nullptr, std::move(callback));
+  dynamic_file_net_log_observer_.reset();
 }
 
 }  // namespace brightray

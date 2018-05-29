@@ -20,17 +20,12 @@ class Net : public mate::EventEmitter<Net> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
   v8::Local<v8::Value> URLRequest(v8::Isolate* isolate);
-  void StartLogging(mate::Arguments* args);
-  bool IsLogging();
-  void StopLogging(mate::Arguments* args);
 
  protected:
   explicit Net(v8::Isolate* isolate);
   ~Net() override;
 
  private:
-  brightray::NetLog* net_log_;
-
   DISALLOW_COPY_AND_ASSIGN(Net);
 };
 

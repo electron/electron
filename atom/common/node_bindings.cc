@@ -40,6 +40,7 @@
   V(atom_browser_in_app_purchase)            \
   V(atom_browser_menu)                       \
   V(atom_browser_net)                        \
+  V(atom_browser_net_log)                    \
   V(atom_browser_power_monitor)              \
   V(atom_browser_power_save_blocker)         \
   V(atom_browser_protocol)                   \

@@ -4,12 +4,8 @@
 
 #include "atom/browser/api/atom_api_net.h"
 #include "atom/browser/api/atom_api_url_request.h"
-#include "atom/browser/atom_browser_client.h"
-#include "atom/common/native_mate_converters/callback.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/callback.h"
-#include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {
@@ -18,8 +14,6 @@ namespace api {
 
 Net::Net(v8::Isolate* isolate) {
   Init(isolate);
-
-  net_log_ = atom::AtomBrowserClient::Get()->GetNetLog();
 }
 
 Net::~Net() {}
@@ -29,41 +23,12 @@ v8::Local<v8::Value> Net::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new Net(isolate)).ToV8();
 }
 
-void Net::StartLogging(mate::Arguments* args) {
-  if (args->Length() >= 1) {
-    base::FilePath path;
-    if (!args->GetNext(&path)) {
-      args->ThrowError("Invalid file path");
-      return;
-    }
-
-    net_log_->StartLogging(path);
-    return;
-  }
-
-  net_log_->StartLogging();
-}
-
-bool Net::IsLogging() {
-  return net_log_->IsLogging();
-}
-
-void Net::StopLogging(mate::Arguments* args) {
-  base::OnceClosure callback;
-  args->GetNext(&callback);
-
-  net_log_->StopLogging(std::move(callback));
-}
-
 // static
 void Net::BuildPrototype(v8::Isolate* isolate,
                          v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Net"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("URLRequest", &Net::URLRequest)
-      .SetProperty("isLogging", &Net::IsLogging)
-      .SetMethod("startLogging", &Net::StartLogging)
-      .SetMethod("stopLogging", &Net::StopLogging);
+      .SetProperty("URLRequest", &Net::URLRequest);
 }
 
 v8::Local<v8::Value> Net::URLRequest(v8::Isolate* isolate) {
