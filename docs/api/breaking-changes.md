@@ -1,9 +1,15 @@
+# API Contract
+
+Breaking changes will be included in this documentation, and deprecation warnings added to JS code where possible, at least [one major version](electron-versioning.md#semver) before the change is made.
+
+# `FIXME` comments
+
+The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
+
+
 # Planned Breaking API Changes (3.0)
 
 The following list includes the APIs that will be removed in Electron 3.0.
-
-There is no timetable for when this release will occur but deprecation
-warnings will be added at least [one major version](electron-versioning.md#semver) beforehand.
 
 ## `app`
 
@@ -158,12 +164,6 @@ Deprecated: https://atom.io/download/atom-shell
 
 Replace with: https://atom.io/download/electron
 
-## `FIXME` comments
-
-The `FIXME` string is used in code comments to denote things that should be
-fixed for the 3.0 release. See
-https://github.com/electron/electron/search?q=fixme
-
 # Planned Breaking API Changes (4.0)
 
 The following list includes the APIs that will be removed in Electron 4.0.
@@ -193,3 +193,4 @@ app.releaseSingleInstance()
 // Replace with
 app.releaseSingleInstanceLock()
 ```
+
