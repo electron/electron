@@ -7,6 +7,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
@@ -58,10 +59,7 @@ v8::Local<v8::Value> SendSync(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
 
   atom::V8ValueConverter v8_converter;
-  mate::Dictionary global(args->isolate(),
-                          args->isolate()->GetCurrentContext()->Global());
-  v8::Local<v8::Value> sandboxed;
-  if (global.GetHidden("sandboxed", &sandboxed) && sandboxed->IsTrue()) {
+  if (!NodeBindings::IsInitialized()) {
     v8_converter.SetDisableNode(true);
   }
   return v8_converter.ToV8Value(&result, args->isolate()->GetCurrentContext());
