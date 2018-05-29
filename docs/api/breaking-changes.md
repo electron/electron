@@ -218,6 +218,7 @@ menu.popup(browserWindow, 100, 200, 2)
 menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
 ```
 
+## `nativeImage`
 
 ```js
 // Deprecated
