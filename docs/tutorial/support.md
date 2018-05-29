@@ -91,4 +91,4 @@ are also verified to be able to run the prebuilt binaries of Electron:
 * Fedora 21
 * Debian 8
 
-[arm-breaking-change]: https://github.com/electron/electron/blob/master/docs/tutorial/planned-breaking-changes.md#duplicate-arm-assets
+[arm-breaking-change]: https://github.com/electron/electron/blob/master/docs/api/breaking-changes.md#duplicate-arm-assets
