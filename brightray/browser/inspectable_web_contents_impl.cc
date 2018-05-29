@@ -617,6 +617,11 @@ void InspectableWebContentsImpl::RegisterExtensionsAPI(
 
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
     const std::string& message) {
+  // TODO(alexeykuzmin): Should we expect it to exist?
+  if (!embedder_message_dispatcher_) {
+    return;
+  }
+
   std::string method;
   base::ListValue empty_params;
   base::ListValue* params = &empty_params;
