@@ -51,7 +51,7 @@ New features added to Electron should primarily be native APIs. If a feature can
 
 Below are milestones in Electron's history.
 
-| :calendar: | :tada: |
+| 📅 | 🎉 |
 | --- | --- |
 | **April 2013**| [Atom Shell is started](https://github.com/electron/electron/commit/6ef8875b1e93787fa9759f602e7880f28e8e6b45).|
 | **May 2014** | [Atom Shell is open sourced](https://blog.atom.io/2014/05/06/atom-is-now-open-source.html). |
