@@ -1296,7 +1296,6 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
     state = "detach";
   }
   if (args && args->Length() == 1) {
-    bool detach = false;
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
