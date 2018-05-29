@@ -589,7 +589,7 @@ describe('session module', () => {
 
     describe('deprecated function signature', () => {
       it('supports accepting the request', (done) => {
-        session.defaultSession.setCertificateVerifyProc((hostname, certificate, callback) => {
+        session.defaultSession.setCertificateVerifyProc(({hostname, certificate}, callback) => {
           assert.equal(hostname, '127.0.0.1')
           callback(true)
         })
@@ -602,7 +602,7 @@ describe('session module', () => {
       })
 
       it('supports rejecting the request', (done) => {
-        session.defaultSession.setCertificateVerifyProc((hostname, certificate, callback) => {
+        session.defaultSession.setCertificateVerifyProc(({hostname, certificate}, callback) => {
           assert.equal(hostname, '127.0.0.1')
           callback(false)
         })
