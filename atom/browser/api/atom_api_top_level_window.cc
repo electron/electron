@@ -84,7 +84,7 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   mate::Dictionary web_preferences;
   bool offscreen;
   if (options.Get(options::kWebPreferences, &web_preferences) &&
-      web_preferences.Get("offscreen", &offscreen) && offscreen) {
+      web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
     const_cast<mate::Dictionary&>(options).Set(options::kFrame, false);
   }
 #endif

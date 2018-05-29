@@ -68,7 +68,13 @@ extern const char kBlinkFeatures[];
 extern const char kDisableBlinkFeatures[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
+extern const char kNativeWindowOpen[];
 extern const char kCustomArgs[];
+extern const char kPlugins[];
+extern const char kSandbox[];
+extern const char kWebSecurity[];
+extern const char kAllowRunningInsecureContent[];
+extern const char kOffscreen[];
 
 }  // namespace options
 

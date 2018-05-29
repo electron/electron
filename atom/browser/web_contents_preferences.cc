@@ -51,32 +51,33 @@ WebContentsPreferences::WebContentsPreferences(
   instances_.push_back(this);
 
   // Set WebPreferences defaults onto the JS object
-  SetDefaultBoolIfUndefined("plugins", false);
+  SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
   SetDefaultBoolIfUndefined(options::kExperimentalCanvasFeatures, false);
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
-  SetDefaultBoolIfUndefined("sandbox", false);
-  SetDefaultBoolIfUndefined("nativeWindowOpen", false);
+  SetDefaultBoolIfUndefined(options::kSandbox, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, false);
   SetDefaultBoolIfUndefined("javascript", true);
   SetDefaultBoolIfUndefined("images", true);
   SetDefaultBoolIfUndefined("textAreasAreResizable", true);
   SetDefaultBoolIfUndefined("webgl", true);
   bool webSecurity = true;
-  SetDefaultBoolIfUndefined("webSecurity", webSecurity);
+  SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
   // If webSecurity was explicity set to false, let's inherit that into
   // insecureContent
-  if (web_preferences.Get("webSecurity", &webSecurity) && !webSecurity) {
-    SetDefaultBoolIfUndefined("allowRunningInsecureContent", true);
+  if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
+      !webSecurity) {
+    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, true);
   } else {
-    SetDefaultBoolIfUndefined("allowRunningInsecureContent", false);
+    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
 #if defined(OS_MACOSX)
   SetDefaultBoolIfUndefined(options::kScrollBounce, false);
 #endif
-  SetDefaultBoolIfUndefined("offscreen", false);
+  SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
   last_dict_ = std::move(*dict_.CreateDeepCopy());
 }
@@ -131,7 +132,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line) {
   bool b;
   // Check if plugins are enabled.
-  if (dict_.GetBoolean("plugins", &b) && b)
+  if (dict_.GetBoolean(options::kPlugins, &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // Experimental flags.
@@ -161,11 +162,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (dict_.GetBoolean("sandbox", &b) && b)
+  if (dict_.GetBoolean(options::kSandbox, &b) && b)
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
     command_line->AppendSwitch(::switches::kNoSandbox);
-  if (dict_.GetBoolean("nativeWindowOpen", &b) && b)
+  if (dict_.GetBoolean(options::kNativeWindowOpen, &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
@@ -278,11 +279,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
-  if (dict_.GetBoolean("webSecurity", &b)) {
+  if (dict_.GetBoolean(options::kWebSecurity, &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (dict_.GetBoolean("allowRunningInsecureContent", &b))
+  if (dict_.GetBoolean(options::kAllowRunningInsecureContent, &b))
     prefs->allow_running_insecure_content = b;
   if (dict_.GetBoolean("navigateOnDragDrop", &b))
     prefs->navigate_on_drag_drop = b;

@@ -80,7 +80,7 @@ void OnPdfResourceIntercepted(
     return;
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  if (!web_preferences || !web_preferences->IsEnabled("plugins")) {
+  if (!web_preferences || !web_preferences->IsEnabled(options::kPlugins)) {
     auto* browser_context = web_contents->GetBrowserContext();
     auto* download_manager =
         content::BrowserContext::GetDownloadManager(browser_context);

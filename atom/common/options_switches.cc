@@ -139,7 +139,19 @@ const char kNodeIntegrationInWorker[] = "nodeIntegrationInWorker";
 // Enable the web view tag.
 const char kWebviewTag[] = "webviewTag";
 
+const char kNativeWindowOpen[] = "nativeWindowOpen";
+
 const char kCustomArgs[] = "additionalArguments";
+
+const char kPlugins[] = "plugins";
+
+const char kSandbox[] = "sandbox";
+
+const char kWebSecurity[] = "webSecurity";
+
+const char kAllowRunningInsecureContent[] = "allowRunningInsecureContent";
+
+const char kOffscreen[] = "offscreen";
 
 }  // namespace options
 
