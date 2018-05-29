@@ -654,8 +654,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-opened event', () => {
+  describe('devtools-opened event', () => {
     it('should fire when webview.openDevTools() is called', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/base-page.html`
@@ -669,8 +668,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-closed event', () => {
+  describe('devtools-closed event', () => {
     it('should fire when webview.closeDevTools() is called', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/base-page.html`
@@ -685,8 +683,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('devtools-focused event', () => {
+  describe('devtools-focused event', () => {
     it('should fire when webview.openDevTools() is called', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/base-page.html`
@@ -1155,10 +1152,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the test.
-  // The app crashes if this test and "devtools-opened event" tests
-  // are run at the same time.
-  xit('loads devtools extensions registered on the parent window', (done) => {
+  it('loads devtools extensions registered on the parent window', (done) => {
     w = new BrowserWindow({ show: false })
     BrowserWindow.removeDevToolsExtension('foo')
 
