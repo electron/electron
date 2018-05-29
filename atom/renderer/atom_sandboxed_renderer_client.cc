@@ -7,7 +7,6 @@
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
@@ -99,10 +98,7 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
   AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
                                    AtomSandboxedRendererClient* renderer_client)
       : AtomRenderFrameObserver(render_frame, renderer_client),
-        v8_converter_(new atom::V8ValueConverter),
-        renderer_client_(renderer_client) {
-    v8_converter_->SetDisableNode(true);
-  }
+        renderer_client_(renderer_client) {}
 
  protected:
   void EmitIPCEvent(blink::WebLocalFrame* frame,
@@ -116,14 +112,13 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
     auto context = frame->MainWorldScriptContext();
     v8::Context::Scope context_scope(context);
     v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, channel),
-                                   v8_converter_->ToV8Value(&args, context)};
+                                   mate::ConvertToV8(isolate, args)};
     renderer_client_->InvokeIpcCallback(
         context, "onMessage",
-        std::vector<v8::Local<v8::Value>>(argv, argv + 2));
+        std::vector<v8::Local<v8::Value>>(argv, argv + node::arraysize(argv)));
   }
 
  private:
-  std::unique_ptr<atom::V8ValueConverter> v8_converter_;
   AtomSandboxedRendererClient* renderer_client_;
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
 };

@@ -5,7 +5,6 @@
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/common/api/api_messages.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
@@ -42,14 +41,14 @@ void Send(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message");
 }
 
-v8::Local<v8::Value> SendSync(mate::Arguments* args,
-                              const base::string16& channel,
-                              const base::ListValue& arguments) {
+base::ListValue SendSync(mate::Arguments* args,
+                         const base::string16& channel,
+                         const base::ListValue& arguments) {
   base::ListValue result;
 
   RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame == nullptr)
-    return v8::Null(args->isolate());
+    return result;
 
   IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
       render_frame->GetRoutingID(), channel, arguments, &result);
@@ -58,11 +57,7 @@ v8::Local<v8::Value> SendSync(mate::Arguments* args,
   if (!success)
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_Sync");
 
-  atom::V8ValueConverter v8_converter;
-  if (!NodeBindings::IsInitialized()) {
-    v8_converter.SetDisableNode(true);
-  }
-  return v8_converter.ToV8Value(&result, args->isolate()->GetCurrentContext());
+  return result;
 }
 
 void Initialize(v8::Local<v8::Object> exports,
