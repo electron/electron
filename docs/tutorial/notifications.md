@@ -61,7 +61,7 @@ the notification away.
 ## macOS
 
 Notifications are straight-forward on macOS, but you should be aware of
-[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/library/mac/documentation/UserExperience/Conceptual/OSXHIGuidelines/NotificationCenter.html).
+[Apple's Human Interface guidelines regarding notifications](https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/).
 
 Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.
