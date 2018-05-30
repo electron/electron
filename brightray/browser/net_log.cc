@@ -69,16 +69,22 @@ void NetLog::StartDynamicLogging(const base::FilePath& log_path) {
   if (dynamic_file_net_log_observer_ || log_path.empty())
     return;
 
+  dynamic_file_net_log_path_ = log_path;
+
   std::unique_ptr<base::Value> constants(GetConstants());  // Net constants
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::Default();
 
-  dynamic_file_net_log_observer_ =
-      net::FileNetLogObserver::CreateUnbounded(log_path, std::move(constants));
+  dynamic_file_net_log_observer_ = net::FileNetLogObserver::CreateUnbounded(
+      dynamic_file_net_log_path_, std::move(constants));
   dynamic_file_net_log_observer_->StartObserving(this, capture_mode);
 }
 
 bool NetLog::IsDynamicLogging() {
   return !!dynamic_file_net_log_observer_;
+}
+
+base::FilePath NetLog::GetDynamicLoggingPath() {
+  return dynamic_file_net_log_path_;
 }
 
 void NetLog::StopDynamicLogging(base::OnceClosure callback) {
@@ -90,6 +96,8 @@ void NetLog::StopDynamicLogging(base::OnceClosure callback) {
 
   dynamic_file_net_log_observer_->StopObserving(nullptr, std::move(callback));
   dynamic_file_net_log_observer_.reset();
+
+  dynamic_file_net_log_path_ = base::FilePath();
 }
 
 }  // namespace brightray

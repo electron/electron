@@ -53,9 +53,20 @@ describe('netLog module', () => {
   })
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', (done) => {
+    assert(!netLog.currentlyLogging)
+    assert.equal(netLog.currentlyLoggingPath, '')
+
     netLog.startLogging(dumpFileDynamic)
+
+    assert(netLog.currentlyLogging)
+    assert.equal(netLog.currentlyLoggingPath, dumpFileDynamic)
+
     netLog.stopLogging(() => {
+      assert(!netLog.currentlyLogging)
+      assert.equal(netLog.currentlyLoggingPath, '')
+
       assert(fs.existsSync(dumpFileDynamic))
+
       done()
     })
   })

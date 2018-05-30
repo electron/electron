@@ -30,23 +30,16 @@ v8::Local<v8::Value> NetLog::Create(v8::Isolate* isolate) {
   return mate::CreateHandle(isolate, new NetLog(isolate)).ToV8();
 }
 
-void NetLog::StartLogging(mate::Arguments* args) {
-  if (args->Length() >= 1) {
-    base::FilePath path;
-    if (!args->GetNext(&path)) {
-      args->ThrowError("Invalid file path");
-      return;
-    }
-
-    net_log_->StartDynamicLogging(path);
-    return;
-  }
-
-  args->ThrowError("File path required");
+void NetLog::StartLogging(base::FilePath path) {
+  net_log_->StartDynamicLogging(path);
 }
 
-bool NetLog::IsLogging() {
+bool NetLog::IsCurrentlyLogging() {
   return net_log_->IsDynamicLogging();
+}
+
+std::string NetLog::GetCurrentlyLoggingPath() {
+  return net_log_->GetDynamicLoggingPath().value();
 }
 
 void NetLog::StopLogging(mate::Arguments* args) {
@@ -61,7 +54,8 @@ void NetLog::BuildPrototype(v8::Isolate* isolate,
                             v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "NetLog"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetProperty("currentlyLogging", &NetLog::IsLogging)
+      .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
+      .SetProperty("currentlyLoggingPath", &NetLog::GetCurrentlyLoggingPath)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }

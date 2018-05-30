@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_NET_LOG_H_
 #define ATOM_BROWSER_API_ATOM_API_NET_LOG_H_
 
+#include <string>
 #include "brightray/browser/net_log.h"
 #include "native_mate/wrappable.h"
 
@@ -19,8 +20,9 @@ class NetLog : public mate::Wrappable<NetLog> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  void StartLogging(mate::Arguments* args);
-  bool IsLogging();
+  void StartLogging(base::FilePath path);
+  bool IsCurrentlyLogging();
+  std::string GetCurrentlyLoggingPath();
   void StopLogging(mate::Arguments* args);
 
  protected:
