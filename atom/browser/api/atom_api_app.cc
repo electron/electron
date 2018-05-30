@@ -1219,6 +1219,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getName", base::Bind(&Browser::GetName, browser))
       .SetMethod("setName", base::Bind(&Browser::SetName, browser))
       .SetMethod("isReady", base::Bind(&Browser::is_ready, browser))
+      .SetProperty("whenReady", base::Bind(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
                  base::Bind(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
