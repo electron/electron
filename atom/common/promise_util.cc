@@ -8,19 +8,6 @@ namespace atom {
 
 namespace util {
 
-// Promise::Promise()
-//     : isolate_(NULL) {
-// }
-
-// Promise::Promise(v8::Isolate* isolate)
-//     : isolate_(isolate) {
-//   resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
-// }
-
-// Promise::~Promise() {
-//   resolver_.Reset();
-// }
-
 Promise* Promise::RejectWithErrorMessage(const std::string& string) {
   v8::Local<v8::String> error_message =
       v8::String::NewFromUtf8(isolate(), string.c_str());
