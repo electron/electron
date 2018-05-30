@@ -28,6 +28,11 @@ class Promise {
     return this;
   }
 
+  Promise* Reject() {
+    GetInner()->Reject(v8::Undefined(isolate()));
+    return this;
+  }
+
   template <typename T>
   Promise* Resolve(T* value) {
     GetInner()->Resolve(mate::ConvertToV8(isolate(), value));
