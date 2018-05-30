@@ -6,11 +6,12 @@
 #include "atom/browser/atom_browser_client.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/callback.h"
 #include "content/public/common/content_switches.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -78,10 +79,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("netLog", NetLog::Create(isolate));
-  dict.Set("NetLog", NetLog::GetConstructor(isolate)->GetFunction());
+  mate::Dictionary(isolate, exports).Set("netLog", NetLog::Create(isolate));
 }
 
 }  // namespace

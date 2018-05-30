@@ -5,7 +5,6 @@
 #include "atom/browser/api/atom_api_net.h"
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/common/node_includes.h"
-#include "base/callback.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {

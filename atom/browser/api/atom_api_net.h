@@ -6,7 +6,6 @@
 #define ATOM_BROWSER_API_ATOM_API_NET_H_
 
 #include "atom/browser/api/event_emitter.h"
-#include "brightray/browser/net_log.h"
 
 namespace atom {
 

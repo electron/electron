@@ -21,7 +21,7 @@ class NetLog : public net::NetLog {
   ~NetLog() override;
 
   void StartLogging();
-  void StopLogging(base::OnceClosure callback = base::OnceClosure());
+  void StopLogging();
 
   void StartDynamicLogging(const base::FilePath& path);
   bool IsDynamicLogging();

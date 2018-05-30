@@ -57,14 +57,11 @@ void NetLog::StartLogging() {
   file_net_log_observer_->StartObserving(this, capture_mode);
 }
 
-void NetLog::StopLogging(base::OnceClosure callback) {
-  if (!file_net_log_observer_) {
-    if (callback)
-      std::move(callback).Run();
+void NetLog::StopLogging() {
+  if (!file_net_log_observer_)
     return;
-  }
 
-  file_net_log_observer_->StopObserving(nullptr, std::move(callback));
+  file_net_log_observer_->StopObserving(nullptr, base::OnceClosure());
   file_net_log_observer_.reset();
 }
 
