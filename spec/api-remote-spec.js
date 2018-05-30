@@ -237,6 +237,16 @@ describe('remote module', () => {
     const print = path.join(fixtures, 'module', 'print_name.js')
     const printName = remote.require(print)
 
+    it('converts NaN to undefined', () => {
+      assert.strictEqual(printName.getNaN(), undefined)
+      assert.strictEqual(printName.echo(NaN), undefined)
+    })
+
+    it('converts Infinity to undefined', () => {
+      assert.strictEqual(printName.getInfinity(), undefined)
+      assert.strictEqual(printName.echo(Infinity), undefined)
+    })
+
     it('keeps its constructor name for objects', () => {
       const buf = Buffer.from('test')
       assert.equal(printName.print(buf), 'Buffer')

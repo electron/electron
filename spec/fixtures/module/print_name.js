@@ -26,3 +26,11 @@ exports.typedArray = function (type, values) {
   }
   return array
 }
+
+exports.getNaN = function () {
+  return NaN
+}
+
+exports.getInfinity = function () {
+  return Infinity
+}
