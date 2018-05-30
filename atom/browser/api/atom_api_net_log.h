@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_NETLOG_H_
-#define ATOM_BROWSER_API_ATOM_API_NETLOG_H_
+#ifndef ATOM_BROWSER_API_ATOM_API_NET_LOG_H_
+#define ATOM_BROWSER_API_ATOM_API_NET_LOG_H_
 
 #include "brightray/browser/net_log.h"
 #include "native_mate/wrappable.h"
@@ -37,4 +37,4 @@ class NetLog : public mate::Wrappable<NetLog> {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_NETLOG_H_
+#endif  // ATOM_BROWSER_API_ATOM_API_NET_LOG_H_
