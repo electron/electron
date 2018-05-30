@@ -147,7 +147,7 @@ describe('webFrame module', function () {
 
   it('calls a spellcheck provider', async () => {
     w = new BrowserWindow({show: false})
-    w.loadURL(`file://${fixtures}/pages/webframe-spell-check.html`)
+    w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'))
     await emittedOnce(w.webContents, 'did-finish-load')
 
     const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')

@@ -66,7 +66,7 @@ describe('<webview> tag', function () {
 
   it('works without script tag in page', async () => {
     const w = await openTheWindow({show: false})
-    w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
     await emittedOnce(ipcMain, 'pong')
   })
 
@@ -79,7 +79,7 @@ describe('<webview> tag', function () {
       }
     })
 
-    w.loadURL(`file://${fixtures}/pages/webview-no-script.html`)
+    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
     const [, type] = await emittedOnce(ipcMain, 'webview')
 
     expect(type).to.equal('undefined', 'WebView still exists')
@@ -95,7 +95,7 @@ describe('<webview> tag', function () {
       }
     })
 
-    w.loadURL(`file://${fixtures}/pages/webview-no-script.html`)
+    w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'))
     const [, type] = await emittedOnce(ipcMain, 'webview')
 
     expect(type).to.not.equal('undefined', 'WebView is not created')
@@ -1144,7 +1144,7 @@ describe('<webview> tag', function () {
       const w = await openTheWindow({ show: false })
       const readyToShowSignal = emittedOnce(w, 'ready-to-show')
       const pongSignal1 = emittedOnce(ipcMain, 'pong')
-      w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'))
       await pongSignal1
       const pongSignal2 = emittedOnce(ipcMain, 'pong')
       await readyToShowSignal
@@ -1157,8 +1157,7 @@ describe('<webview> tag', function () {
 
     it('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = await openTheWindow({ show: false })
-      w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
-
+      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'))
       let [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
       assert.equal(visibilityState, 'hidden')
       assert.equal(hidden, true)
@@ -1229,7 +1228,7 @@ describe('<webview> tag', function () {
   describe('did-attach-webview event', () => {
     it('is emitted when a webview has been attached', async () => {
       const w = await openTheWindow({ show: false })
-      w.loadURL(`file://${fixtures}/pages/webview-did-attach-event.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'))
 
       const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
       const [, id] = await emittedOnce(ipcMain, 'webview-dom-ready')
@@ -1244,7 +1243,7 @@ describe('<webview> tag', function () {
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
     BrowserWindow.addDevToolsExtension(extensionPath)
 
-    w.loadURL(`file://${fixtures}/pages/webview-devtools.html`)
+    w.loadFile(path.join(fixtures, 'pages', 'webview-devtools.html'))
 
     const [, {runtimeId, tabId}] = await emittedOnce(ipcMain, 'answer')
     expect(runtimeId).to.equal('foo')
@@ -1332,7 +1331,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       })
-      w.loadURL(`file://${fixtures}/pages/webview-zoom-factor.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
 
       const [, zoomFactor, zoomLevel] = await emittedOnce(ipcMain, 'webview-parent-zoom-level')
       expect(zoomFactor).to.equal(1.2)
@@ -1362,7 +1361,7 @@ describe('<webview> tag', function () {
           })
         })
 
-        w.loadURL(`file://${fixtures}/pages/webview-custom-zoom-level.html`)
+        w.loadFile(path.join(fixtures, 'pages', 'webview-custom-zoom-level.html'))
 
         return promise
       })
@@ -1386,7 +1385,7 @@ describe('<webview> tag', function () {
           })
         })
 
-        w.loadURL(`file://${fixtures}/pages/webview-in-page-navigate.html`)
+        w.loadFile(path.join(fixtures, 'pages', 'webview-in-page-navigate.html'))
 
         return promise
       })
@@ -1399,7 +1398,7 @@ describe('<webview> tag', function () {
           zoomFactor: 1.2
         }
       })
-      w.loadURL(`file://${fixtures}/pages/webview-origin-zoom-level.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'))
 
       const [, zoomLevel] = await emittedOnce(ipcMain, 'webview-origin-zoom-level')
       expect(zoomLevel).to.equal(2.0)

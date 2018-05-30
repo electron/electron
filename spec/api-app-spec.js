@@ -42,7 +42,7 @@ describe('electron module', () => {
 
     it('always returns the internal electron module', (done) => {
       ipcMain.once('answer', () => done())
-      window.loadURL(`file://${path.join(__dirname, 'fixtures', 'api', 'electron-module-app', 'index.html')}`)
+      window.loadFile(path.join(__dirname, 'fixtures', 'api', 'electron-module-app', 'index.html'))
     })
   })
 })
