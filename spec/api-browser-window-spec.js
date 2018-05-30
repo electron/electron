@@ -1381,24 +1381,25 @@ describe('BrowserWindow module', () => {
         })
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?verify-ipc-sender')
         const pageUrl = 'file://' + htmlPath
-        w.loadURL(pageUrl)
+        let childWc
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          let parentWc = w.webContents
-          let childWc = options.webContents
-          assert.notEqual(parentWc, childWc)
-          ipcMain.once('parent-ready', function (event) {
-            assert.equal(parentWc, event.sender)
-            parentWc.send('verified')
-          })
-          ipcMain.once('child-ready', function (event) {
-            assert.equal(childWc, event.sender)
-            childWc.send('verified')
-          })
-          waitForEvents(ipcMain, [
-            'parent-answer',
-            'child-answer'
-          ], done)
+          childWc = options.webContents
+          assert.notEqual(w.webContents, childWc)
         })
+        ipcMain.once('parent-ready', function (event) {
+          assert.equal(w.webContents, event.sender)
+          event.sender.send('verified')
+        })
+        ipcMain.once('child-ready', function (event) {
+          assert(childWc)
+          assert.equal(childWc, event.sender)
+          event.sender.send('verified')
+        })
+        waitForEvents(ipcMain, [
+          'parent-answer',
+          'child-answer'
+        ], done)
+        w.loadURL(pageUrl)
       })
 
       describe('event handling', () => {
