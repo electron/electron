@@ -963,11 +963,17 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(alexeykuzmin): Enable the tests.
-  xdescribe('media-started-playing media-paused events', () => {
+  describe('media-started-playing media-paused events', () => {
     it('emits when audio starts and stops playing', async () => {
-      loadWebView(webview, {src: `file://${fixtures}/pages/audio.html`})
+      await loadWebView(webview, {src: `file://${fixtures}/pages/audio.html`})
+
+      // XXX(alexeykuzmin): Starting from Ch66 playing an audio requires
+      // a user interaction. See https://goo.gl/xX8pDD.
+
+      webview.executeJavaScript('document.querySelector("audio").play()', true)
       await waitForEvent(webview, 'media-started-playing')
+
+      webview.executeJavaScript('document.querySelector("audio").pause()', true)
       await waitForEvent(webview, 'media-paused')
     })
   })
