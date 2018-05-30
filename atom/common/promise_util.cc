@@ -12,12 +12,12 @@ Promise* Promise::RejectWithErrorMessage(const std::string& string) {
   v8::Local<v8::String> error_message =
       v8::String::NewFromUtf8(isolate(), string.c_str());
   v8::Local<v8::Value> error = v8::Exception::Error(error_message);
-  resolver_.Get(isolate())->Reject(mate::ConvertToV8(isolate(), error));
+  GetInner()->Reject(mate::ConvertToV8(isolate(), error));
   return this;
 }
 
 v8::Local<v8::Object> Promise::GetHandle() const {
-  return resolver_.Get(isolate())->GetPromise();
+  return GetInner()->GetPromise();
 }
 
 }  // namespace util

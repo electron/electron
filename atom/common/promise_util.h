@@ -24,19 +24,19 @@ class Promise {
   virtual v8::Local<v8::Object> GetHandle() const;
 
   Promise* Resolve() {
-    resolver_.Get(isolate())->Resolve(v8::Undefined(isolate()));
+    GetInner()->Resolve(v8::Undefined(isolate()));
     return this;
   }
 
   template <typename T>
   Promise* Resolve(T* value) {
-    resolver_.Get(isolate())->Resolve(mate::ConvertToV8(isolate(), value));
+    GetInner()->Resolve(mate::ConvertToV8(isolate(), value));
     return this;
   }
 
   template <typename T>
   Promise* Reject(T* value) {
-    resolver_.Get(isolate())->Reject(mate::ConvertToV8(isolate(), value));
+    GetInner()->Reject(mate::ConvertToV8(isolate(), value));
     return this;
   }
 
@@ -46,6 +46,10 @@ class Promise {
   v8::Isolate* isolate_;
 
  private:
+  v8::Local<v8::Promise::Resolver> GetInner() const {
+    return resolver_.Get(isolate());
+  }
+
   v8::Global<v8::Promise::Resolver> resolver_;
 
   // DISALLOW_COPY_AND_ASSIGN(Promise);
