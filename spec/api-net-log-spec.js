@@ -73,6 +73,20 @@ describe('netLog module', () => {
     })
   })
 
+  it('should silence when .stopLogging() is called without calling .startLogging()', (done) => {
+    assert(!netLog.currentlyLogging)
+    assert.equal(netLog.currentlyLoggingPath, '')
+
+    netLog.stopLogging((path) => {
+      assert(!netLog.currentlyLogging)
+      assert.equal(netLog.currentlyLoggingPath, '')
+
+      assert.equal(path, '')
+
+      done()
+    })
+  })
+
   // The following tests are skipped on Linux CI
 
   it('should begin and end logging automatically when --log-net-log is passed', (done) => {
