@@ -6,7 +6,6 @@
 
 #include "atom/common/api/constructor.h"
 #include "native_mate/dictionary.h"
-#include "ui/views/controls/textfield/textfield.h"
 
 #include "atom/common/node_includes.h"
 
@@ -20,6 +19,14 @@ TextField::TextField() : View(new views::Textfield()) {
 
 TextField::~TextField() {}
 
+void TextField::SetText(const base::string16& new_text) {
+  text_field()->SetText(new_text);
+}
+
+base::string16 TextField::GetText() const {
+  return text_field()->text();
+}
+
 // static
 mate::WrappableBase* TextField::New(mate::Arguments* args) {
   // Constructor call.
@@ -32,6 +39,9 @@ mate::WrappableBase* TextField::New(mate::Arguments* args) {
 void TextField::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "TextField"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("setText", &TextField::SetText)
+      .SetMethod("getText", &TextField::GetText);
 }
 
 }  // namespace api

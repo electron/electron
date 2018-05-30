@@ -7,6 +7,7 @@
 
 #include "atom/browser/api/atom_api_view.h"
 #include "native_mate/handle.h"
+#include "ui/views/controls/textfield/textfield.h"
 
 namespace atom {
 
@@ -19,9 +20,16 @@ class TextField : public View {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  void SetText(const base::string16& new_text);
+  base::string16 GetText() const;
+
  private:
   TextField();
   ~TextField() override;
+
+  views::Textfield* text_field() const {
+    return static_cast<views::Textfield*>(view());
+  }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(TextField);
