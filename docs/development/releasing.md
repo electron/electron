@@ -80,7 +80,7 @@ arguments, e.g.:
 $ ./script/bump-version.py --bump minor --dry-run
 ```
 
-## Wait for builds :hourglass_flowing_sand:
+## Wait for builds ⏳
 The `prepare-release` script will trigger the builds via API calls.
 To monitor the build progress, see the following pages:
 
