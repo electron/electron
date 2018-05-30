@@ -57,7 +57,7 @@ void NetLog::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetProperty("currentlyLoggingPath", &NetLog::GetCurrentlyLoggingPath)
       .SetMethod("startLogging", &NetLog::StartLogging)
-      .SetMethod("stopLogging", &NetLog::StopLogging);
+      .SetMethod("_stopLogging", &NetLog::StopLogging);
 }
 
 }  // namespace api
@@ -73,7 +73,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
-  mate::Dictionary(isolate, exports).Set("netLog", NetLog::Create(isolate));
+
+  mate::Dictionary dict(isolate, exports);
+  dict.Set("netLog", NetLog::Create(isolate));
+  dict.Set("NetLog", NetLog::GetConstructor(isolate)->GetFunction());
 }
 
 }  // namespace

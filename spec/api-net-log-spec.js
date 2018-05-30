@@ -61,9 +61,11 @@ describe('netLog module', () => {
     assert(netLog.currentlyLogging)
     assert.equal(netLog.currentlyLoggingPath, dumpFileDynamic)
 
-    netLog.stopLogging(() => {
+    netLog.stopLogging((path) => {
       assert(!netLog.currentlyLogging)
       assert.equal(netLog.currentlyLoggingPath, '')
+
+      assert.equal(path, dumpFileDynamic)
 
       assert(fs.existsSync(dumpFileDynamic))
 
