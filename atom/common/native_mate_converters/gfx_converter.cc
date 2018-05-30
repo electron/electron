@@ -35,6 +35,28 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+v8::Local<v8::Value> Converter<gfx::PointF>::ToV8(v8::Isolate* isolate,
+                                                 const gfx::PointF& val) {
+  mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
+  dict.Set("x", val.x());
+  dict.Set("y", val.y());
+  return dict.GetHandle();
+}
+
+bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
+                                   v8::Local<v8::Value> val,
+                                   gfx::PointF* out) {
+  mate::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  float x, y;
+  if (!dict.Get("x", &x) || !dict.Get("y", &y))
+    return false;
+  *out = gfx::PointF(x, y);
+  return true;
+}
+
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Size& val) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);

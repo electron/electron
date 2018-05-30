@@ -6,6 +6,7 @@
 #define ATOM_COMMON_NATIVE_MATE_CONVERTERS_GFX_CONVERTER_H_
 
 #include "native_mate/converter.h"
+#include "ui/gfx/geometry/point_f.h"
 
 namespace display {
 class Display;
@@ -25,6 +26,14 @@ struct Converter<gfx::Point> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gfx::Point* out);
+};
+
+template <>
+struct Converter<gfx::PointF> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const gfx::PointF& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gfx::PointF* out);
 };
 
 template <>
