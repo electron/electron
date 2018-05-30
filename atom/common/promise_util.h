@@ -5,6 +5,8 @@
 #ifndef ATOM_COMMON_PROMISE_UTIL_H_
 #define ATOM_COMMON_PROMISE_UTIL_H_
 
+#include <string>
+
 #include "native_mate/converter.h"
 
 namespace atom {
@@ -13,7 +15,7 @@ namespace util {
 
 class Promise {
  public:
-  Promise(v8::Isolate* isolate) {
+  explicit Promise(v8::Isolate* isolate) {
     isolate_ = isolate;
     resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
   }

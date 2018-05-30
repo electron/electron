@@ -4,6 +4,8 @@
 
 #include "atom/common/promise_util.h"
 
+#include <string>
+
 namespace atom {
 
 namespace util {
