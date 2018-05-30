@@ -143,10 +143,6 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);
 
-  if (command_id == APPCOMMAND_MEDIA_PLAY_PAUSE)
-    // FIXME(htk3): Remove media-play_pause in 3.0
-    NotifyWindowExecuteWindowsCommand("media-play_pause");
-
   return false;
 }
 

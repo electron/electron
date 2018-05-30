@@ -206,12 +206,6 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
   web_frame_->SetSpellCheckPanelHostClient(spell_check_client_.get());
 }
 
-void WebFrame::RegisterURLSchemeAsSecure(const std::string& scheme) {
-  // TODO(pfrazee): Remove 2.0
-  blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-      WTF::String::FromUTF8(scheme.data(), scheme.length()));
-}
-
 void WebFrame::RegisterURLSchemeAsBypassingCSP(const std::string& scheme) {
   // Register scheme to bypass pages's Content Security Policy.
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
@@ -243,10 +237,6 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
   // Register scheme to privileged list (https, wss, data, chrome-extension)
   WTF::String privileged_scheme(
       WTF::String::FromUTF8(scheme.data(), scheme.length()));
-  if (secure) {
-    // TODO(pfrazee): Remove 2.0
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(privileged_scheme);
-  }
   if (bypassCSP) {
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
         privileged_scheme);
@@ -442,13 +432,13 @@ v8::Local<v8::Value> WebFrame::FindFrameByName(const std::string& name) const {
 
 v8::Local<v8::Value> WebFrame::FindFrameByRoutingId(int routing_id) const {
   content::RenderFrame* render_frame =
-    content::RenderFrame::FromRoutingID(routing_id);
+      content::RenderFrame::FromRoutingID(routing_id);
   blink::WebLocalFrame* local_frame = nullptr;
   if (render_frame)
     local_frame = render_frame->GetWebFrame();
   if (local_frame)
-    return mate::CreateHandle(isolate(),
-                              new WebFrame(isolate(), local_frame)).ToV8();
+    return mate::CreateHandle(isolate(), new WebFrame(isolate(), local_frame))
+        .ToV8();
   else
     return v8::Null(isolate());
 }
@@ -479,8 +469,6 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("attachGuest", &WebFrame::AttachGuest)
       .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerURLSchemeAsSecure",
-                 &WebFrame::RegisterURLSchemeAsSecure)
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
       .SetMethod("registerURLSchemeAsPrivileged",

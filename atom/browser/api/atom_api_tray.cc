@@ -40,16 +40,6 @@ struct Converter<atom::TrayIcon::HighlightMode> {
         return true;
       }
     }
-
-    bool highlight;
-    if (ConvertFromV8(isolate, val, &highlight)) {
-      if (highlight)
-        *out = atom::TrayIcon::HighlightMode::SELECTION;
-      else
-        *out = atom::TrayIcon::HighlightMode::NEVER;
-      return true;
-    }
-
     return false;
   }
 };

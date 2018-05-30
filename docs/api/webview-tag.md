@@ -214,10 +214,10 @@ A name by itself is given a `true` boolean value.
 A preference can be set to another value by including an `=`, followed by the value.
 Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are interpreted as `false`.
 
-### `blinkfeatures`
+### `enableblinkfeatures`
 
 ```html
-<webview src="https://www.github.com/" blinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
+<webview src="https://www.github.com/" enableblinkfeatures="PreciseMemoryInfo, CSSVariables"></webview>
 ```
 
 A list of strings which specifies the blink features to be enabled separated by `,`.

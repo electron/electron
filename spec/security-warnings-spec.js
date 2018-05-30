@@ -133,16 +133,16 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
-  it('should warn about blinkFeatures', (done) => {
+  it('should warn about enableBlinkFeatures', (done) => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
-        blinkFeatures: ['my-cool-feature'],
+        enableBlinkFeatures: ['my-cool-feature'],
         nodeIntegration: false
       }
     })
     w.webContents.once('console-message', (e, level, message) => {
-      assert(message.includes('blinkFeatures'), message)
+      assert(message.includes('enableBlinkFeatures'), message)
       done()
     })
 

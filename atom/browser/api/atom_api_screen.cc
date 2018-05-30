@@ -146,9 +146,6 @@ void Screen::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("screenToDipRect", &ScreenToDIPRect)
       .SetMethod("dipToScreenRect", &DIPToScreenRect)
 #endif
-#if defined(OS_MACOSX)
-      .SetMethod("getMenuBarHeight", &Screen::getMenuBarHeight)
-#endif
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
 }
 
