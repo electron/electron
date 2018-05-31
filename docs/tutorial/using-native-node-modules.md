@@ -70,7 +70,7 @@ where to download the headers. The `--arch=x64` says the module is built for
 ### Manually building for a custom build of Electron
 
 To compile native Node addons against a custom build of Electron that doesn't
-any public release, instruct `npm` to use the version of Node you have bundled
+match a public release, instruct `npm` to use the version of Node you have bundled
 with your custom build.
 
 ```sh
