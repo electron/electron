@@ -232,7 +232,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 
   // Enable blink features.
-  if (dict_.GetString(options::kBlinkFeatures, &s))
+  if (dict_.GetString(options::kEnableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
 
   // Disable blink features.

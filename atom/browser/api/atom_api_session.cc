@@ -821,7 +821,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setDownloadPath", &Session::SetDownloadPath)
       .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
       .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("_setCertificateVerifyProc", &Session::SetCertVerifyProc)
+      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

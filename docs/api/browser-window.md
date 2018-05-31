@@ -309,7 +309,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       canvas features. Default is `false`.
     * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
       macOS. Default is `false`.
-    * `blinkFeatures` String (optional) - A list of feature strings separated by `,`, like
+    * `enableBlinkFeatures` String (optional) - A list of feature strings separated by `,`, like
       `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
       strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]
       file.

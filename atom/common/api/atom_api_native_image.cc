@@ -517,9 +517,6 @@ mate::Handle<NativeImage> NativeImage::CreateFromBuffer(
     options.Get("width", &width);
     options.Get("height", &height);
     options.Get("scaleFactor", &scale_factor);
-  } else {
-    // TODO(kevinsawicki): Remove in 2.0, deprecate before then with warnings
-    args->GetNext(&scale_factor);
   }
 
   gfx::ImageSkia image_skia;

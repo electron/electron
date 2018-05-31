@@ -13,7 +13,7 @@
     "dugite": "^1.45.0",
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.4",
-    "electron-typescript-definitions": "^1.3.4",
+    "electron-typescript-definitions": "^1.3.5",
     "github": "^9.2.0",
     "husky": "^0.14.3",
     "lint": "^1.1.2",

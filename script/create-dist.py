@@ -14,7 +14,8 @@ if sys.platform == "win32":
 from lib.config import BASE_URL, PLATFORM, enable_verbose_mode, \
                        get_target_arch, get_zip_name, build_env
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
-                     execute, electron_gyp, electron_features
+                     execute, electron_gyp, electron_features, parse_version
+from lib.env_util import get_vs_location
 
 
 ELECTRON_VERSION = get_electron_version()
@@ -146,22 +147,28 @@ def copy_chrome_binary(binary):
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
 
 def copy_vcruntime_binaries():
-  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
-                       r"SOFTWARE\Microsoft\VisualStudio\14.0\Setup\VC", 0,
-                       _winreg.KEY_READ | _winreg.KEY_WOW64_32KEY) as key:
-    crt_dir = _winreg.QueryValueEx(key, "ProductDir")[0]
-
   arch = get_target_arch()
   if arch == "ia32":
     arch = "x86"
+  subkey = r"SOFTWARE\Wow6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\\"
+  with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, subkey + arch, 0,
+                       _winreg.KEY_READ | _winreg.KEY_WOW64_32KEY) as key:
+    runtime_version = _winreg.QueryValueEx(key, "Version")[0][1:]
 
-  crt_dir += r"redist\{0}\Microsoft.VC140.CRT\\".format(arch)
+  version_parts = parse_version(runtime_version)
+  if len(version_parts) > 3:
+    runtime_version = '.'.join(version_parts[0:3])
+
+  vs_location = get_vs_location('[15.0,16.0)')
+
+  crt_dir = os.path.join(vs_location, 'VC', 'Redist', 'MSVC', runtime_version,
+                          arch, 'Microsoft.VC141.CRT')
 
   dlls = ["msvcp140.dll", "vcruntime140.dll"]
 
   # Note: copyfile is used to remove the read-only flag
   for dll in dlls:
-    shutil.copyfile(crt_dir + dll, os.path.join(DIST_DIR, dll))
+    shutil.copyfile(os.path.join(crt_dir, dll), os.path.join(DIST_DIR, dll))
     TARGET_BINARIES_EXT.append(dll)
 
 
