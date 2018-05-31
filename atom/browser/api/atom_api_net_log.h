@@ -20,7 +20,7 @@ class NetLog : public mate::Wrappable<NetLog> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  void StartLogging(base::FilePath path);
+  void StartLogging(mate::Arguments* args);
   bool IsCurrentlyLogging();
   std::string GetCurrentlyLoggingPath();
   void StopLogging(mate::Arguments* args);
