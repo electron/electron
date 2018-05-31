@@ -20,9 +20,26 @@ describe('<webview> tag', function () {
   let webview = null
   let w = null
 
+  const openTheWindow = async (...args) => {
+    await closeTheWindow()
+    w = new BrowserWindow(...args)
+    return w
+  }
+
+  const closeTheWindow = async () => {
+    await closeWindow(w)
+    w = null
+  }
+
   const waitForEvent = (eventTarget, eventName) => {
     return new Promise((resolve) => {
       eventTarget.addEventListener(eventName, resolve, {once: true})
+    })
+  }
+
+  const waitForOnce = (eventTarget, eventName) => {
+    return new Promise((resolve) => {
+      eventTarget.once(eventName, (...args) => resolve(args))
     })
   }
 
@@ -48,35 +65,33 @@ describe('<webview> tag', function () {
       document.body.appendChild(webview)
     }
     webview.remove()
-    return closeWindow(w).then(() => { w = null })
+
+    return closeTheWindow()
   })
 
-  it('works without script tag in page', (done) => {
-    w = new BrowserWindow({show: false})
-    ipcMain.once('pong', () => done())
+  it('works without script tag in page', async () => {
+    const w = await openTheWindow({show: false})
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
+    await waitForOnce(ipcMain, 'pong')
   })
 
-  it('is disabled when nodeIntegration is disabled', (done) => {
-    w = new BrowserWindow({
+  it('is disabled when nodeIntegration is disabled', async () => {
+    const w = await openTheWindow({
       show: false,
       webPreferences: {
         nodeIntegration: false,
         preload: path.join(fixtures, 'module', 'preload-webview.js')
       }
     })
-    ipcMain.once('webview', (event, type) => {
-      if (type === 'undefined') {
-        done()
-      } else {
-        done('WebView still exists')
-      }
-    })
+
     w.loadURL(`file://${fixtures}/pages/webview-no-script.html`)
+    const [, type] = await waitForOnce(ipcMain, 'webview')
+
+    expect(type).to.equal('undefined', 'WebView still exists')
   })
 
-  it('is enabled when the webviewTag option is enabled and the nodeIntegration option is disabled', (done) => {
-    w = new BrowserWindow({
+  it('is enabled when the webviewTag option is enabled and the nodeIntegration option is disabled', async () => {
+    const w = await openTheWindow({
       show: false,
       webPreferences: {
         nodeIntegration: false,
@@ -84,14 +99,11 @@ describe('<webview> tag', function () {
         webviewTag: true
       }
     })
-    ipcMain.once('webview', (event, type) => {
-      if (type !== 'undefined') {
-        done()
-      } else {
-        done('WebView is not created')
-      }
-    })
+
     w.loadURL(`file://${fixtures}/pages/webview-no-script.html`)
+    const [, type] = await waitForOnce(ipcMain, 'webview')
+
+    expect(type).to.not.equal('undefined', 'WebView is not created')
   })
 
   describe('src attribute', () => {
@@ -99,7 +111,7 @@ describe('<webview> tag', function () {
       const {message} = await startLoadingWebViewAndWaitForMessage(webview, {
         src: `file://${fixtures}/pages/a.html`
       })
-      assert.equal(message, 'a')
+      expect(message).to.equal('a')
     })
 
     it('navigates to new page when changed', async () => {
@@ -110,7 +122,7 @@ describe('<webview> tag', function () {
       webview.src = `file://${fixtures}/pages/b.html`
 
       const {message} = await waitForEvent(webview, 'console-message')
-      assert.equal(message, 'b')
+      expect(message).to.equal('b')
     })
 
     it('resolves relative URLs', async () => {
@@ -125,7 +137,7 @@ describe('<webview> tag', function () {
 
       for (const emptyValue of ['', null, undefined]) {
         webview.src = emptyValue
-        assert.equal(webview.src, '')
+        expect(webview.src).to.equal('')
       }
     })
   })
@@ -136,7 +148,13 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/c.html`
       })
 
-      assert.equal(message, '{"require":"undefined","module":"undefined","process":"undefined","global":"undefined"}')
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'undefined',
+        module: 'undefined',
+        process: 'undefined',
+        global: 'undefined'
+      })
     })
 
     it('inserts node symbols when set', async () => {
@@ -145,13 +163,17 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/d.html`
       })
 
-      assert.equal(message, '{"require":"function","module":"object","process":"object"}')
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object'
+      })
     })
 
     it('loads node symbols after POST navigation when set', async function () {
       // FIXME Figure out why this is timing out on AppVeyor
       if (process.env.APPVEYOR === 'True') {
-        // FIXME(alexeykuzmin): Skip the test.
         this.skip()
         return
       }
@@ -161,7 +183,12 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/post.html`
       })
 
-      assert.equal(message, '{"require":"function","module":"object","process":"object"}')
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object'
+      })
     })
 
     it('disables node integration on child windows when it is disabled on the webview', (done) => {
@@ -240,18 +267,17 @@ describe('<webview> tag', function () {
     })
 
     it('receives ipc message in preload script', async () => {
+      await loadWebView(webview, {
+        preload: `${fixtures}/module/preload-ipc.js`,
+        src: `file://${fixtures}/pages/e.html`
+      })
+
       const message = 'boom!'
-
-      webview.setAttribute('preload', `${fixtures}/module/preload-ipc.js`)
-      webview.src = `file://${fixtures}/pages/e.html`
-      document.body.appendChild(webview)
-
-      await waitForEvent(webview, 'did-finish-load')
       webview.send('ping', message)
-      const e = await waitForEvent(webview, 'ipc-message')
 
-      assert.equal(e.channel, 'pong')
-      assert.deepEqual(e.args, [message])
+      const {channel, args} = await waitForEvent(webview, 'ipc-message')
+      assert.equal(channel, 'pong')
+      assert.deepEqual(args, [message])
     })
 
     it('works without script tag in page', async () => {
@@ -319,7 +345,7 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/useragent.html`,
         useragent: referrer
       })
-      assert.equal(message, referrer)
+      expect(message).to.equal(referrer)
     })
   })
 
@@ -345,7 +371,7 @@ describe('<webview> tag', function () {
         disablewebsecurity: '',
         src: `data:text/html;base64,${encoded}`
       })
-      assert.equal(message, 'ok')
+      expect(message).to.equal('ok')
     })
 
     it('does not break node integration', async () => {
@@ -354,7 +380,13 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         src: `file://${fixtures}/pages/d.html`
       })
-      assert.equal(message, '{"require":"function","module":"object","process":"object"}')
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object'
+      })
     })
 
     it('does not break preload script', async () => {
@@ -363,7 +395,14 @@ describe('<webview> tag', function () {
         preload: `${fixtures}/module/preload.js`,
         src: `file://${fixtures}/pages/e.html`
       })
-      assert.equal(message, '{"require":"function","module":"object","process":"object","Buffer":"function"}')
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object',
+        Buffer: 'function'
+      })
     })
   })
 
@@ -373,7 +412,14 @@ describe('<webview> tag', function () {
         partition: 'test1',
         src: `file://${fixtures}/pages/c.html`
       })
-      assert.equal(message, '{"require":"undefined","module":"undefined","process":"undefined","global":"undefined"}')
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'undefined',
+        module: 'undefined',
+        process: 'undefined',
+        global: 'undefined'
+      })
     })
 
     it('inserts node symbols when set', async () => {
@@ -382,7 +428,13 @@ describe('<webview> tag', function () {
         partition: 'test2',
         src: `file://${fixtures}/pages/d.html`
       })
-      assert.equal(message, '{"require":"function","module":"object","process":"object"}')
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object'
+      })
     })
 
     it('isolates storage for different id', async () => {
@@ -421,7 +473,7 @@ describe('<webview> tag', function () {
       const {message} = await startLoadingWebViewAndWaitForMessage(webview, {
         src: `file://${fixtures}/pages/window-open-hide.html`
       })
-      assert.equal(message, 'null')
+      expect(message).to.equal('null')
     })
 
     it('can open new window when set', async () => {
@@ -429,7 +481,7 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         src: `file://${fixtures}/pages/window-open-hide.html`
       })
-      assert.equal(message, 'window')
+      expect(message).to.equal('window')
     })
   })
 
@@ -439,7 +491,13 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/d.html`,
         webpreferences: 'nodeIntegration'
       })
-      assert.equal(message, '{"require":"function","module":"object","process":"object"}')
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'function',
+        module: 'object',
+        process: 'object'
+      })
     })
 
     it('can disables web security and enable nodeintegration', async () => {
@@ -452,39 +510,37 @@ describe('<webview> tag', function () {
         webpreferences: 'webSecurity=no, nodeIntegration=yes'
       })
 
-      assert.equal(message, 'function')
+      expect(message).to.equal('function')
     })
 
-    it('can enable context isolation', (done) => {
-      ipcMain.once('isolated-world', (event, data) => {
-        assert.deepEqual(data, {
-          preloadContext: {
-            preloadProperty: 'number',
-            pageProperty: 'undefined',
-            typeofRequire: 'function',
-            typeofProcess: 'object',
-            typeofArrayPush: 'function',
-            typeofFunctionApply: 'function'
-          },
-          pageContext: {
-            preloadProperty: 'undefined',
-            pageProperty: 'string',
-            typeofRequire: 'undefined',
-            typeofProcess: 'undefined',
-            typeofArrayPush: 'number',
-            typeofFunctionApply: 'boolean',
-            typeofPreloadExecuteJavaScriptProperty: 'number',
-            typeofOpenedWindow: 'object'
-          }
-        })
-        done()
-      })
-
+    it('can enable context isolation', async () => {
       loadWebView(webview, {
         allowpopups: 'yes',
         preload: path.join(fixtures, 'api', 'isolated-preload.js'),
         src: `file://${fixtures}/api/isolated.html`,
         webpreferences: 'contextIsolation=yes'
+      })
+
+      const [, data] = await waitForOnce(ipcMain, 'isolated-world')
+      assert.deepEqual(data, {
+        preloadContext: {
+          preloadProperty: 'number',
+          pageProperty: 'undefined',
+          typeofRequire: 'function',
+          typeofProcess: 'object',
+          typeofArrayPush: 'function',
+          typeofFunctionApply: 'function'
+        },
+        pageContext: {
+          preloadProperty: 'undefined',
+          pageProperty: 'string',
+          typeofRequire: 'undefined',
+          typeofProcess: 'undefined',
+          typeofArrayPush: 'number',
+          typeofFunctionApply: 'boolean',
+          typeofPreloadExecuteJavaScriptProperty: 'number',
+          typeofOpenedWindow: 'object'
+        }
       })
     })
   })
@@ -494,20 +550,20 @@ describe('<webview> tag', function () {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/window-open.html`
       })
-      const event = await waitForEvent(webview, 'new-window')
+      const {url, frameName} = await waitForEvent(webview, 'new-window')
 
-      assert.equal(event.url, 'http://host/')
-      assert.equal(event.frameName, 'host')
+      assert.equal(url, 'http://host/')
+      assert.equal(frameName, 'host')
     })
 
     it('emits when link with target is called', async () => {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/target-name.html`
       })
-      const event = await waitForEvent(webview, 'new-window')
+      const {url, frameName} = await waitForEvent(webview, 'new-window')
 
-      assert.equal(event.url, 'http://host/')
-      assert.equal(event.frameName, 'target')
+      assert.equal(url, 'http://host/')
+      assert.equal(frameName, 'target')
     })
   })
 
@@ -517,10 +573,10 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         src: `file://${fixtures}/pages/ipc-message.html`
       })
-      const event = await waitForEvent(webview, 'ipc-message')
+      const {channel, args} = await waitForEvent(webview, 'ipc-message')
 
-      assert.equal(event.channel, 'channel')
-      assert.deepEqual(event.args, ['arg1', 'arg2'])
+      assert.equal(channel, 'channel')
+      assert.deepEqual(args, ['arg1', 'arg2'])
     })
   })
 
@@ -529,10 +585,10 @@ describe('<webview> tag', function () {
       loadWebView(webview, {
         src: `file://${fixtures}/pages/a.html`
       })
-      const event = await waitForEvent(webview, 'page-title-set')
+      const {title, explicitSet} = await waitForEvent(webview, 'page-title-set')
 
-      assert.equal(event.title, 'test')
-      assert(event.explicitSet)
+      assert.equal(title, 'test')
+      assert(explicitSet)
     })
   })
 
@@ -644,13 +700,14 @@ describe('<webview> tag', function () {
       const devtools = webview2.getWebContents()
       assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
 
-      return new Promise((resolve) => {
+      const name = await new Promise((resolve) => {
         devtools.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
-          document.body.removeChild(webview2)
-          expect(name).to.be.equal('InspectorFrontendHostImpl')
-          resolve()
+          resolve(name)
         })
       })
+      document.body.removeChild(webview2)
+
+      expect(name).to.be.equal('InspectorFrontendHostImpl')
     })
   })
 
@@ -856,12 +913,12 @@ describe('<webview> tag', function () {
       const jsScript = "'4'+2"
       const expectedResult = '42'
 
-      return new Promise((resolve) => {
+      const result = await new Promise((resolve) => {
         webview.executeJavaScript(jsScript, false, (result) => {
-          assert.equal(result, expectedResult)
-          resolve()
+          resolve(result)
         })
       })
+      assert.equal(result, expectedResult)
     })
   })
 
@@ -880,9 +937,9 @@ describe('<webview> tag', function () {
         modifiers: ['shift']
       })
 
-      const event = await waitForIpcMessage
-      assert.equal(event.channel, 'keyup')
-      assert.deepEqual(event.args, ['C', 'KeyC', 67, true, false])
+      const {channel, args} = await waitForIpcMessage
+      assert.equal(channel, 'keyup')
+      assert.deepEqual(args, ['C', 'KeyC', 67, true, false])
     })
 
     it('can send mouse event', async () => {
@@ -900,9 +957,9 @@ describe('<webview> tag', function () {
         y: 20
       })
 
-      const event = await waitForIpcMessage
-      assert.equal(event.channel, 'mouseup')
-      assert.deepEqual(event.args, [10, 20, false, true])
+      const {channel, args} = await waitForIpcMessage
+      assert.equal(channel, 'mouseup')
+      assert.deepEqual(args, [10, 20, false, true])
     })
   })
 
@@ -935,8 +992,7 @@ describe('<webview> tag', function () {
       }
       webview.addEventListener('found-in-page', listener)
       webview.addEventListener('did-finish-load', listener2)
-      webview.src = `file://${fixtures}/pages/content.html`
-      document.body.appendChild(webview)
+      loadWebView(webview, {src: `file://${fixtures}/pages/content.html`})
       // TODO(deepak1556): With https://codereview.chromium.org/2836973002
       // focus of the webContents is required when triggering the api.
       // Remove this workaround after determining the cause for
@@ -1061,7 +1117,7 @@ describe('<webview> tag', function () {
 
       const webviewContents = webview.getWebContents()
       assert(webviewContents)
-      assert.equal(webviewContents.getURL(), src)
+      expect(webviewContents.getURL()).to.equal(src)
     })
   })
 
@@ -1097,37 +1153,35 @@ describe('<webview> tag', function () {
       ipcMain.removeAllListeners('pong')
     })
 
-    it('updates when the window is shown after the ready-to-show event', (done) => {
-      w = new BrowserWindow({ show: false })
-      w.once('ready-to-show', () => {
-        w.show()
-      })
-
-      ipcMain.on('pong', (event, visibilityState, hidden) => {
-        if (!hidden) {
-          assert.equal(visibilityState, 'visible')
-          done()
-        }
-      })
-
+    it('updates when the window is shown after the ready-to-show event', async () => {
+      const w = await openTheWindow({ show: false })
       w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
+
+      await waitForOnce(w, 'ready-to-show')
+      w.show()
+
+      const [, visibilityState, hidden] = await waitForOnce(ipcMain, 'pong')
+      assert(!hidden)
+      assert.equal(visibilityState, 'visible')
     })
 
-    it('inherits the parent window visibility state and receives visibilitychange events', (done) => {
-      w = new BrowserWindow({ show: false })
-
-      ipcMain.once('pong', (event, visibilityState, hidden) => {
-        assert.equal(visibilityState, 'hidden')
-        assert.equal(hidden, true)
-
-        ipcMain.once('pong', function (event, visibilityState, hidden) {
-          assert.equal(visibilityState, 'visible')
-          assert.equal(hidden, false)
-          done()
-        })
-        w.webContents.emit('-window-visibility-change', 'visible')
-      })
+    it('inherits the parent window visibility state and receives visibilitychange events', async () => {
+      const w = await openTheWindow({ show: false })
       w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
+
+      let [, visibilityState, hidden] = await waitForOnce(ipcMain, 'pong')
+      assert.equal(visibilityState, 'hidden')
+      assert.equal(hidden, true)
+
+      // We have to start waiting for the event
+      // before we ask the webContents to resize.
+      let getResponse = waitForOnce(ipcMain, 'pong')
+      w.webContents.emit('-window-visibility-change', 'visible')
+
+      return getResponse.then(([, visibilityState, hidden]) => {
+        assert.equal(visibilityState, 'visible')
+        assert.equal(hidden, false)
+      })
     })
   })
 
@@ -1139,8 +1193,13 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/a.html`
       })
 
-      assert.equal(message,
-          '{"require":"undefined","module":"undefined","process":"undefined","global":"undefined"}')
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: 'undefined',
+        module: 'undefined',
+        process: 'undefined',
+        global: 'undefined'
+      })
     })
 
     it('supports preventing a webview from being created', async () => {
@@ -1166,20 +1225,18 @@ describe('<webview> tag', function () {
   })
 
   describe('did-attach-webview event', () => {
-    it('is emitted when a webview has been attached', (done) => {
-      w = new BrowserWindow({ show: false })
-      w.webContents.on('did-attach-webview', (event, webContents) => {
-        ipcMain.once('webview-dom-ready', (event, id) => {
-          assert.equal(webContents.id, id)
-          done()
-        })
-      })
+    it('is emitted when a webview has been attached', async () => {
+      const w = await openTheWindow({ show: false })
       w.loadURL(`file://${fixtures}/pages/webview-did-attach-event.html`)
+
+      const [, webContents] = await waitForOnce(w.webContents, 'did-attach-webview')
+      const [, id] = await waitForOnce(ipcMain, 'webview-dom-ready')
+      expect(webContents.id).to.equal(id)
     })
   })
 
-  it('loads devtools extensions registered on the parent window', (done) => {
-    w = new BrowserWindow({ show: false })
+  it('loads devtools extensions registered on the parent window', async () => {
+    const w = await openTheWindow({ show: false })
     BrowserWindow.removeDevToolsExtension('foo')
 
     const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
@@ -1187,11 +1244,9 @@ describe('<webview> tag', function () {
 
     w.loadURL(`file://${fixtures}/pages/webview-devtools.html`)
 
-    ipcMain.once('answer', (event, message) => {
-      assert.equal(message.runtimeId, 'foo')
-      assert.notEqual(message.tabId, w.webContents.id)
-      done()
-    })
+    const [, {runtimeId, tabId}] = await waitForOnce(ipcMain, 'answer')
+    expect(runtimeId).to.equal('foo')
+    expect(tabId).to.be.not.equal(w.webContents.id)
   })
 
   describe('guestinstance attribute', () => {
@@ -1222,7 +1277,7 @@ describe('<webview> tag', function () {
       webview.removeAttribute('guestinstance')
 
       await waitForDestroy
-      assert.equal(getGuestWebContents(instance), null)
+      expect(getGuestWebContents(instance)).to.equal(undefined)
     })
 
     it('setting the attribute on a new webview moves the contents', (done) => {
@@ -1309,7 +1364,9 @@ describe('<webview> tag', function () {
     })
 
     it('moving a guest back to its original webview should work', (done) => {
-      const loadListener = () => {
+      loadWebView(webview, {
+        src: `file://${fixtures}/api/blank.html`
+      }).then(() => {
         const webContents = webview.getWebContents()
         const instance = webview.getAttribute('guestinstance')
 
@@ -1336,18 +1393,16 @@ describe('<webview> tag', function () {
         webview.addEventListener('destroyed', destroy1Listener, {once: true})
 
         const webview2 = new WebView()
-        webview2.setAttribute('guestinstance', instance)
-        document.body.appendChild(webview2)
-      }
-
-      webview.addEventListener('did-finish-load', loadListener, {once: true})
-      loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
+        loadWebView(webview2, {guestinstance: instance})
       })
     })
 
+    // FIXME(alexeykuzmin): This test only passes if the previous test ^
+    // is run alongside.
     it('setting the attribute on a webview in a different window moves the contents', (done) => {
-      const loadListener = () => {
+      loadWebView(webview, {
+        src: `file://${fixtures}/api/blank.html`
+      }).then(() => {
         const instance = webview.getAttribute('guestinstance')
 
         w = new BrowserWindow({ show: false })
@@ -1360,10 +1415,7 @@ describe('<webview> tag', function () {
           w.webContents.send('guestinstance', instance)
         })
         w.loadURL(`file://${fixtures}/pages/webview-move-to-window.html`)
-      }
-      webview.addEventListener('did-finish-load', loadListener, {once: true})
-      webview.src = `file://${fixtures}/api/blank.html`
-      document.body.appendChild(webview)
+      })
     })
 
     it('does not delete the guestinstance attribute when moving the webview to another parent node', (done) => {
@@ -1384,7 +1436,7 @@ describe('<webview> tag', function () {
     })
 
     it('does not destroy the webContents when hiding/showing the webview (regression)', (done) => {
-      webview.addEventListener('dom-ready', function domReadyListener () {
+      webview.addEventListener('dom-ready', function () {
         const instance = webview.getAttribute('guestinstance')
         assert(instance != null)
 
@@ -1398,13 +1450,12 @@ describe('<webview> tag', function () {
         webview.style.display = 'none'
         webview.offsetHeight // eslint-disable-line
         webview.style.display = 'block'
-      })
-      webview.src = `file://${fixtures}/pages/a.html`
-      document.body.appendChild(webview)
+      }, {once: true})
+      loadWebView(webview, {src: `file://${fixtures}/pages/a.html`})
     })
 
     it('does not reload the webContents when hiding/showing the webview (regression)', (done) => {
-      webview.addEventListener('dom-ready', function domReadyListener () {
+      webview.addEventListener('dom-ready', function () {
         webview.addEventListener('did-start-loading', () => {
           done(new Error('webview started loading unexpectedly'))
         })
@@ -1417,9 +1468,8 @@ describe('<webview> tag', function () {
         webview.style.display = 'none'
         webview.offsetHeight  // eslint-disable-line
         webview.style.display = 'block'
-      })
-      webview.src = `file://${fixtures}/pages/a.html`
-      document.body.appendChild(webview)
+      }, {once: true})
+      loadWebView(webview, {src: `file://${fixtures}/pages/a.html`})
     })
   })
 
@@ -1468,114 +1518,109 @@ describe('<webview> tag', function () {
 
   describe('disableguestresize attribute', () => {
     it('does not have attribute by default', () => {
-      document.body.appendChild(webview)
+      loadWebView(webview)
       assert(!webview.hasAttribute('disableguestresize'))
     })
 
-    it('resizes guest when attribute is not present', (done) => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
+    it('resizes guest when attribute is not present', async () => {
+      const INITIAL_SIZE = 200
+      const w = await openTheWindow(
+          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
       w.loadURL(`file://${fixtures}/pages/webview-guest-resize.html`)
+      await waitForOnce(ipcMain, 'webview-loaded')
 
-      w.webContents.once('did-finish-load', () => {
-        const CONTENT_SIZE = 300
-
-        const elementResizePromise = new Promise(resolve => {
-          ipcMain.once('webview-element-resize', (event, width, height) => {
+      const elementResize = waitForOnce(ipcMain, 'webview-element-resize')
+          .then(([, width, height]) => {
             assert.equal(width, CONTENT_SIZE)
             assert.equal(height, CONTENT_SIZE)
-            resolve()
           })
-        })
 
-        const guestResizePromise = new Promise(resolve => {
-          ipcMain.once('webview-guest-resize', (event, width, height) => {
+      const guestResize = waitForOnce(ipcMain, 'webview-guest-resize')
+          .then(([, width, height]) => {
             assert.equal(width, CONTENT_SIZE)
             assert.equal(height, CONTENT_SIZE)
-            resolve()
           })
-        })
 
-        Promise.all([elementResizePromise, guestResizePromise]).then(() => done())
+      const CONTENT_SIZE = 300
+      assert(CONTENT_SIZE !== INITIAL_SIZE)
+      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
 
-        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-      })
+      return Promise.all([elementResize, guestResize])
     })
 
-    it('does not resize guest when attribute is present', done => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
+    it('does not resize guest when attribute is present', async () => {
+      const INITIAL_SIZE = 200
+      const w = await openTheWindow(
+          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
       w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
+      await waitForOnce(ipcMain, 'webview-loaded')
 
-      w.webContents.once('did-finish-load', () => {
-        const CONTENT_SIZE = 300
-
-        const elementResizePromise = new Promise(resolve => {
-          ipcMain.once('webview-element-resize', (event, width, height) => {
-            assert.equal(width, CONTENT_SIZE)
-            assert.equal(height, CONTENT_SIZE)
-            resolve()
-          })
-        })
-
-        const noGuestResizePromise = new Promise(resolve => {
-          const onGuestResize = (event, width, height) => {
-            done(new Error('Unexpected guest resize message'))
-          }
-          ipcMain.once('webview-guest-resize', onGuestResize)
-
-          setTimeout(() => {
-            ipcMain.removeListener('webview-guest-resize', onGuestResize)
-            resolve()
-          }, 500)
-        })
-
-        Promise.all([elementResizePromise, noGuestResizePromise]).then(() => done())
-
-        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-      })
-    })
-
-    it('dispatches element resize event even when attribute is present', done => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-
-      w.webContents.once('did-finish-load', () => {
-        const CONTENT_SIZE = 300
-
-        ipcMain.once('webview-element-resize', (event, width, height) => {
-          assert.equal(width, CONTENT_SIZE)
-          done()
-        })
-
-        w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-      })
-    })
-
-    it('can be manually resized with setSize even when attribute is present', function (done) {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-
-      w.webContents.once('did-finish-load', () => {
-        const GUEST_WIDTH = 10
-        const GUEST_HEIGHT = 20
-
-        ipcMain.once('webview-guest-resize', (event, width, height) => {
-          assert.equal(width, GUEST_WIDTH)
-          assert.equal(height, GUEST_HEIGHT)
-          done()
-        })
-
-        for (const wc of webContents.getAllWebContents()) {
-          if (wc.hostWebContents &&
-              wc.hostWebContents.id === w.webContents.id) {
-            wc.setSize({
-              normal: {
-                width: GUEST_WIDTH,
-                height: GUEST_HEIGHT
-              }
-            })
-          }
+      const noGuestResizePromise = Promise.race([
+        waitForOnce(ipcMain, 'webview-guest-resize'),
+        new Promise(resolve => setTimeout(() => resolve(), 500))
+      ]).then((eventData = null) => {
+        if (eventData !== null) {
+          // Means we got the 'webview-guest-resize' event before the time out.
+          return Promise.reject(new Error('Unexpected guest resize message'))
         }
       })
+
+      const CONTENT_SIZE = 300
+      assert(CONTENT_SIZE !== INITIAL_SIZE)
+      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+
+      return noGuestResizePromise
+    })
+
+    it('dispatches element resize event even when attribute is present', async () => {
+      const INITIAL_SIZE = 200
+      const w = await openTheWindow(
+          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
+      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
+      await waitForOnce(ipcMain, 'webview-loaded')
+
+      const elementResizePromise = waitForOnce(ipcMain, 'webview-element-resize')
+          .then(([, width, height]) => {
+            expect(width).to.equal(CONTENT_SIZE)
+            expect(height).to.equal(CONTENT_SIZE)
+          })
+
+      const CONTENT_SIZE = 300
+      assert(CONTENT_SIZE !== INITIAL_SIZE)
+      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+
+      return elementResizePromise
+    })
+
+    it('can be manually resized with setSize even when attribute is present', async () => {
+      const INITIAL_SIZE = 200
+      const w = await openTheWindow(
+          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
+      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
+      await waitForOnce(ipcMain, 'webview-loaded')
+
+      const GUEST_WIDTH = 10
+      const GUEST_HEIGHT = 20
+
+      const guestResizePromise = waitForOnce(ipcMain, 'webview-guest-resize')
+          .then(([, width, height]) => {
+            expect(width).to.be.equal(GUEST_WIDTH)
+            expect(height).to.be.equal(GUEST_HEIGHT)
+          })
+
+      const wc = webContents.getAllWebContents().find((wc) => {
+        return wc.hostWebContents &&
+            wc.hostWebContents.id === w.webContents.id
+      })
+      assert(wc)
+      wc.setSize({
+        normal: {
+          width: GUEST_WIDTH,
+          height: GUEST_HEIGHT
+        }
+      })
+
+      return guestResizePromise
     })
   })
 
@@ -1595,68 +1640,84 @@ describe('<webview> tag', function () {
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
-    it('inherits the zoomFactor of the parent window', (done) => {
-      w = new BrowserWindow({
+    it('inherits the zoomFactor of the parent window', async () => {
+      const w = await openTheWindow({
         show: false,
         webPreferences: {
           zoomFactor: 1.2
         }
-      })
-      ipcMain.once('webview-parent-zoom-level', (event, zoomFactor, zoomLevel) => {
-        assert.equal(zoomFactor, 1.2)
-        assert.equal(zoomLevel, 1)
-        done()
       })
       w.loadURL(`file://${fixtures}/pages/webview-zoom-factor.html`)
+
+      const [, zoomFactor, zoomLevel] = await waitForOnce(ipcMain, 'webview-parent-zoom-level')
+      expect(zoomFactor).to.equal(1.2)
+      expect(zoomLevel).to.equal(1)
     })
 
-    it('maintains zoom level on navigation', (done) => {
-      w = new BrowserWindow({
+    it('maintains zoom level on navigation', async () => {
+      return openTheWindow({
         show: false,
         webPreferences: {
           zoomFactor: 1.2
         }
+      }).then((w) => {
+        const promise = new Promise((resolve) => {
+          ipcMain.on('webview-zoom-level', (event, zoomLevel, zoomFactor, newHost, final) => {
+            if (!newHost) {
+              expect(zoomFactor).to.equal(1.44)
+              expect(zoomLevel).to.equal(2.0)
+            } else {
+              expect(zoomFactor).to.equal(1.2)
+              expect(zoomLevel).to.equal(1)
+            }
+
+            if (final) {
+              resolve()
+            }
+          })
+        })
+
+        w.loadURL(`file://${fixtures}/pages/webview-custom-zoom-level.html`)
+
+        return promise
       })
-      ipcMain.on('webview-zoom-level', (event, zoomLevel, zoomFactor, newHost, final) => {
-        if (!newHost) {
-          assert.equal(zoomFactor, 1.44)
-          assert.equal(zoomLevel, 2.0)
-        } else {
-          assert.equal(zoomFactor, 1.2)
-          assert.equal(zoomLevel, 1)
-        }
-        if (final) done()
-      })
-      w.loadURL(`file://${fixtures}/pages/webview-custom-zoom-level.html`)
     })
 
-    it('maintains zoom level when navigating within same page', (done) => {
-      w = new BrowserWindow({
+    it('maintains zoom level when navigating within same page', async () => {
+      return openTheWindow({
         show: false,
         webPreferences: {
           zoomFactor: 1.2
         }
+      }).then((w) => {
+        const promise = new Promise((resolve) => {
+          ipcMain.on('webview-zoom-in-page', (event, zoomLevel, zoomFactor, final) => {
+            expect(zoomFactor).to.equal(1.44)
+            expect(zoomLevel).to.equal(2.0)
+
+            if (final) {
+              resolve()
+            }
+          })
+        })
+
+        w.loadURL(`file://${fixtures}/pages/webview-in-page-navigate.html`)
+
+        return promise
       })
-      ipcMain.on('webview-zoom-in-page', (event, zoomLevel, zoomFactor, final) => {
-        assert.equal(zoomFactor, 1.44)
-        assert.equal(zoomLevel, 2.0)
-        if (final) done()
-      })
-      w.loadURL(`file://${fixtures}/pages/webview-in-page-navigate.html`)
     })
 
-    it('inherits zoom level for the origin when available', (done) => {
-      w = new BrowserWindow({
+    it('inherits zoom level for the origin when available', async () => {
+      const w = await openTheWindow({
         show: false,
         webPreferences: {
           zoomFactor: 1.2
         }
-      })
-      ipcMain.once('webview-origin-zoom-level', (event, zoomLevel) => {
-        assert.equal(zoomLevel, 2.0)
-        done()
       })
       w.loadURL(`file://${fixtures}/pages/webview-origin-zoom-level.html`)
+
+      const [, zoomLevel] = await waitForOnce(ipcMain, 'webview-origin-zoom-level')
+      expect(zoomLevel).to.equal(2.0)
     })
   })
 
@@ -1667,61 +1728,69 @@ describe('<webview> tag', function () {
       webview.setAttribute('webpreferences', 'nativeWindowOpen=1')
     })
 
-    it('opens window of about:blank with cross-scripting enabled', (done) => {
-      ipcMain.once('answer', (event, content) => {
-        assert.equal(content, 'Hello')
-        done()
-      })
+    it('opens window of about:blank with cross-scripting enabled', async () => {
+      // Don't wait for loading to finish.
       loadWebView(webview, {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
       })
+
+      const [, content] = await waitForOnce(ipcMain, 'answer')
+      expect(content).to.equal('Hello')
     })
 
-    it('opens window of same domain with cross-scripting enabled', (done) => {
-      ipcMain.once('answer', (event, content) => {
-        assert.equal(content, 'Hello')
-        done()
-      })
+    it('opens window of same domain with cross-scripting enabled', async () => {
+      // Don't wait for loading to finish.
       loadWebView(webview, {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
       })
+
+      const [, content] = await waitForOnce(ipcMain, 'answer')
+      expect(content).to.equal('Hello')
     })
 
-    it('returns null from window.open when allowpopups is not set', (done) => {
+    it('returns null from window.open when allowpopups is not set', async () => {
       webview.removeAttribute('allowpopups')
-      ipcMain.once('answer', (event, {windowOpenReturnedNull}) => {
-        assert.equal(windowOpenReturnedNull, true)
-        done()
-      })
+
+      // Don't wait for loading to finish.
       loadWebView(webview, {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
       })
+
+      const [, {windowOpenReturnedNull}] = await waitForOnce(ipcMain, 'answer')
+      expect(windowOpenReturnedNull).to.equal(true)
     })
 
-    it('blocks accessing cross-origin frames', (done) => {
-      ipcMain.once('answer', (event, content) => {
-        assert.equal(content, 'Blocked a frame with origin "file://" from accessing a cross-origin frame.')
-        done()
-      })
+    it('blocks accessing cross-origin frames', async () => {
+      // Don't wait for loading to finish.
       loadWebView(webview, {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
       })
+
+      const [, content] = await waitForOnce(ipcMain, 'answer')
+      const expectedContent =
+          'Blocked a frame with origin "file://" from accessing a cross-origin frame.'
+
+      expect(content).to.equal(expectedContent)
     })
 
     it('emits a new-window event', async () => {
+      // Don't wait for loading to finish.
       loadWebView(webview, {
         src: `file://${fixtures}/pages/window-open.html`
       })
-      const event = await waitForEvent(webview, 'new-window')
+      const {url, frameName} = await waitForEvent(webview, 'new-window')
 
-      assert.equal(event.url, 'http://host/')
-      assert.equal(event.frameName, 'host')
+      expect(url).to.equal('http://host/')
+      expect(frameName).to.equal('host')
     })
 
-    it('emits a browser-window-created event', (done) => {
-      app.once('browser-window-created', () => done())
-      webview.src = `file://${fixtures}/pages/window-open.html`
-      document.body.appendChild(webview)
+    it('emits a browser-window-created event', async () => {
+      // Don't wait for loading to finish.
+      loadWebView(webview, {
+        src: `file://${fixtures}/pages/window-open.html`
+      })
+
+      await waitForOnce(app, 'browser-window-created')
     })
 
     it('emits a web-contents-created event', (done) => {
