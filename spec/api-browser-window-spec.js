@@ -753,6 +753,68 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setWindowControlsVisibility()', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('does not throw', () => {
+      assert.doesNotThrow(() => {
+        w.setWindowControlsVisibility(true)
+      })
+    })
+
+    // Checks that window controls visibility behaviour remains the same in simple fullscreen mode
+    // if user did not specified it explicitly.
+    describe('when fullscreen titlebar on', () => {
+      beforeEach(() => {
+        w.destroy()
+        w = new BrowserWindow({ fullscreenWindowTitle: true })
+      })
+
+      it('hides controls when enters simple fullscreen mode', () => {
+        // BUG in SimpleFullScreen implementation? It does not trigger enter/leave-full-screen events
+        w.setSimpleFullScreen(true)
+        assert.equal(w.isWindowControlsVisible(), false)
+      })
+
+      it('shows controls after leaving simple fullscreen mode', () => {
+        w.setSimpleFullScreen(true)
+        w.setSimpleFullScreen(false)
+
+        assert.equal(w.isWindowControlsVisible(), true)
+      })
+    })
+
+    describe('hidden window control buttons', () => {
+      beforeEach(() => {
+        w.setWindowControlsVisibility(false)
+      })
+
+      it('remain hidden when window enters and leaves fullscreen mode', (done) => {
+        w.once('enter-full-screen', () => {
+          assert.equal(w.isWindowControlsVisible(), false)
+          w.setFullScreen(false)
+        })
+
+        w.once('leave-full-screen', () => {
+          assert.equal(w.isWindowControlsVisible(), false)
+          done()
+        })
+
+        w.setFullScreen(true)
+      })
+
+      it('remain hidden after window enters and leaves simple-fullscreen mode', () => {
+        w.setSimpleFullScreen(true)
+        w.setSimpleFullScreen(false)
+        assert.equal(w.isWindowControlsVisible(), false)
+      })
+    })
+  })
+
   describe('BrowserWindow.addTabbedWindow()', () => {
     before(function () {
       if (process.platform !== 'darwin') {

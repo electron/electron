@@ -193,6 +193,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenuBarVisibility(bool visible);
   virtual bool IsMenuBarVisible();
 
+  // Toggle the window controls visibility
+  virtual void SetWindowControlsVisibility(bool visible);
+  virtual bool IsWindowControlsVisible();
+
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();
   gfx::Size GetAspectRatioExtraSize();

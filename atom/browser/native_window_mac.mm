@@ -913,8 +913,9 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       // Resize the window to accomodate the _entire_ screen size
       fullscreenFrame.size.height -=
           [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
-    } else {
-      // No need to hide the title, but we should still hide the window buttons
+    } else if (!was_window_controls_visibility_specified_) {
+      // Lets keep previous behaviour - hide window controls in titled
+      // fullscreen mode when not specified otherwise.
       [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
       [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
       [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
@@ -933,12 +934,15 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     if (!fullscreen_window_title()) {
       // Restore the titlebar
       SetStyleMask(true, NSTitledWindowMask);
-    } else {
-      // Show the window buttons
-      [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
-      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
-      [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
     }
+
+    // Restore window controls visibility state
+    [[window standardWindowButton:NSWindowZoomButton]
+        setHidden:!window_controls_visibility_];
+    [[window standardWindowButton:NSWindowMiniaturizeButton]
+        setHidden:!window_controls_visibility_];
+    [[window standardWindowButton:NSWindowCloseButton]
+        setHidden:!window_controls_visibility_];
 
     [window setFrame:original_frame_ display:YES animate:YES];
 
@@ -1175,6 +1179,22 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
       [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
   return true;
+}
+
+void NativeWindowMac::SetWindowControlsVisibility(bool visible) {
+  was_window_controls_visibility_specified_ = true;
+  window_controls_visibility_ = visible;
+
+  [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!visible];
+  [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!visible];
+  [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
+}
+
+bool NativeWindowMac::IsWindowControlsVisible() {
+  return !(
+      [[window_ standardWindowButton:NSWindowCloseButton] isHidden] &&
+      [[window_ standardWindowButton:NSWindowMiniaturizeButton] isHidden] &&
+      [[window_ standardWindowButton:NSWindowZoomButton] isHidden]);
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
