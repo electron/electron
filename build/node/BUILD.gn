@@ -2,9 +2,12 @@ action("configure_node") {
   script = "//third_party/electron_node/configure"
   args = [
     "--enable-static",
-    "--openssl-no-asm",
     "--release-urlbase=https://atom.io/download/electron",
     "--shared",
+    "--shared-openssl",
+    "--shared-openssl-includes=" + rebase_path("//third_party/boringssl/src/include"),
+    "--shared-openssl-libname=boringssl",
+    "--shared-openssl-libpath=" + rebase_path(root_out_dir),
     "--without-npm",
     "--without-bundled-v8",
     "--without-dtrace",
@@ -57,6 +60,7 @@ action("gyp_node") {
 
 action("build_node") {
   deps = [
+    "//third_party/boringssl",
     "//third_party/icu",
     "//v8",
     "//v8:v8_libbase",
