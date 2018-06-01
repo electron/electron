@@ -33,7 +33,6 @@
   V(atom_browser_browser_view)               \
   V(atom_browser_content_tracing)            \
   V(atom_browser_debugger)                   \
-  V(atom_browser_desktop_capturer)           \
   V(atom_browser_dialog)                     \
   V(atom_browser_download_item)              \
   V(atom_browser_global_shortcut)            \
@@ -69,6 +68,8 @@
   V(atom_browser_box_layout)     \
   V(atom_browser_layout_manager)
 
+#define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -78,6 +79,9 @@
 ELECTRON_BUILTIN_MODULES(V)
 #if defined(ENABLE_VIEW_API)
 ELECTRON_VIEW_MODULES(V)
+#endif
+#if defined(ENABLE_DESKTOP_CAPTURER)
+ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
 
@@ -174,6 +178,9 @@ void NodeBindings::RegisterBuiltinModules() {
   ELECTRON_BUILTIN_MODULES(V)
 #if defined(ENABLE_VIEW_API)
   ELECTRON_VIEW_MODULES(V)
+#endif
+#if defined(ENABLE_DESKTOP_CAPTURER)
+  ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
 }

@@ -24,6 +24,7 @@ declare_args() {
   electron_company_abbr = "github"
   electron_version = "0.0.0-dev"
 
+  enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = true
 }
@@ -47,6 +48,9 @@ config("branding") {
 
 config("features") {
   defines = []
+  if (enable_desktop_capturer) {
+    defines += [ "ENABLE_DESKTOP_CAPTURER=1" ]
+  }
   if (enable_run_as_node) {
     defines += [ "ENABLE_RUN_AS_NODE=1" ]
   }
