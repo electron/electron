@@ -87,6 +87,8 @@ class URLRequestAsarJob : public net::URLRequestJob {
     bool is_directory = false;
     // Path to the file.
     base::FilePath file_path;
+
+    FileMetaInfo();
   };
 
   // Fetches file info on a background thread.
