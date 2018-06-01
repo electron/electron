@@ -7,6 +7,14 @@
 
 namespace {
 
+bool IsDesktopCapturerEnabled() {
+#if defined(ENABLE_DESKTOP_CAPTURER)
+  return true;
+#else
+  return false;
+#endif
+}
+
 bool IsOffscreenRenderingEnabled() {
 #if defined(ENABLE_OSR)
   return true;
@@ -28,6 +36,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
+  dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
 }

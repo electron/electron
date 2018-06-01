@@ -42,7 +42,6 @@
       'lib/browser/api/web-contents.js',
       'lib/browser/api/web-contents-view.js',
       'lib/browser/chrome-extension.js',
-      'lib/browser/desktop-capturer.js',
       'lib/browser/guest-view-manager.js',
       'lib/browser/guest-window-manager.js',
       'lib/browser/init.js',
@@ -75,7 +74,6 @@
       'lib/renderer/web-view/web-view.js',
       'lib/renderer/web-view/web-view-attributes.js',
       'lib/renderer/web-view/web-view-constants.js',
-      'lib/renderer/api/desktop-capturer.js',
       'lib/renderer/api/exports/electron.js',
       'lib/renderer/api/ipc-renderer.js',
       'lib/renderer/api/module-list.js',
@@ -121,8 +119,6 @@
       'atom/browser/api/atom_api_cookies.h',
       'atom/browser/api/atom_api_debugger.cc',
       'atom/browser/api/atom_api_debugger.h',
-      'atom/browser/api/atom_api_desktop_capturer.cc',
-      'atom/browser/api/atom_api_desktop_capturer.h',
       'atom/browser/api/atom_api_dialog.cc',
       'atom/browser/api/atom_api_download_item.cc',
       'atom/browser/api/atom_api_download_item.h',
@@ -742,6 +738,16 @@
           '<(libchromiumcontent_src_dir)/ui/resources/cursors/zoom_out.cur',
         ],
       }],  # OS=="win"
+      ['enable_desktop_capturer==1', {
+        'js_sources': [
+          'lib/browser/desktop-capturer.js',
+          'lib/renderer/api/desktop-capturer.js',
+        ],
+        'lib_sources': [
+          'atom/browser/api/atom_api_desktop_capturer.cc',
+          'atom/browser/api/atom_api_desktop_capturer.h',
+        ],
+      }],  # enable_desktop_capturer
       ['enable_osr==1', {
         'lib_sources': [
           'atom/browser/api/atom_api_web_contents_osr.cc',
