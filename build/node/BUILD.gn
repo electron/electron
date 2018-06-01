@@ -1,10 +1,35 @@
+action("configure_node") {
+  script = "//third_party/electron_node/configure"
+  args = [
+    "--enable-static",
+    "--openssl-no-asm",
+    "--release-urlbase=https://atom.io/download/electron",
+    "--shared",
+    "--without-npm",
+    "--without-bundled-v8",
+    "--without-dtrace",
+    "--without-etw",
+    "--without-perfctr",
+    "--without-v8-platform",
+    "--without-intl",
+    "--prefix=",
+    "--config-out-dir=" + rebase_path(target_gen_dir),
+    "--no-run-gyp",
+  ]
+  outputs = [
+    "$target_gen_dir/config.gypi",
+  ]
+}
+
 action("gyp_node") {
   script = "//tools/gyp/gyp_main.py"
+  deps = [ ":configure_node" ]
   inputs = [
     "//third_party/electron_node/common.gypi",
     "//third_party/electron_node/node.gyp",
     "//third_party/electron_node/node.gypi",
-    "node.gypi",
+    "$target_gen_dir/config.gypi",
+    "node_override.gypi",
   ]
   outputs = [
     "$target_out_dir/Release/build.ninja",
@@ -17,19 +42,13 @@ action("gyp_node") {
     shlib_suffix = "so"
   }
   args = [
-    "-I", rebase_path("toolchain.gypi", root_build_dir),
-    "-I", rebase_path("node.gypi", root_build_dir),
+    "-I", rebase_path("$target_gen_dir/config.gypi", root_build_dir),
+    "-I", rebase_path("node_override.gypi", root_build_dir),
     "-I", rebase_path("//third_party/electron_node/common.gypi", root_build_dir),
-    # TODO(jeremy): make these paths relative instead of absolute, to help
-    # caches.
-    "-D", "chromium_root_out_dir=" + rebase_path(root_out_dir),
-    "-D", "chromium_src_dir=" + rebase_path("//"),
     "-D", "component=shared_library",
-    "-D", "buildtype=Custom",
-    "-D", "target_arch=x64",
-    "-D", "host_arch=x64",
-    "-D", "shlib_suffix=$shlib_suffix",
-    "-D", "is_component_build=$is_component_build",
+    "-D", "target_arch=$target_cpu",
+    "-D", "host_arch=$host_cpu",
+    "-D", "config_gypi=" + rebase_path("$target_gen_dir/config.gypi"),
     "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
     "-fninja",
     rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
