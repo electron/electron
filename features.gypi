@@ -2,7 +2,7 @@
   # If it looks stupid but it works it ain't stupid.
   'variables': {
     'variables': {
-      'enable_desktop_capturer%': 1,
+      'enable_desktop_capturer%': 0,  # FIXME
       'enable_osr%': 1,  # FIXME(alexeykuzmin)
       'enable_pdf_viewer%': 0,  # FIXME(deepak1556)
       'enable_run_as_node%': 1,
