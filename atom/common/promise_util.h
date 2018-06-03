@@ -25,29 +25,29 @@ class Promise {
 
   virtual v8::Local<v8::Object> GetHandle() const;
 
-  Promise* Resolve() {
-    GetInner()->Resolve(v8::Undefined(isolate()));
-    return this;
+  v8::Maybe<bool> Resolve() {
+    return GetInner()->Resolve(isolate()->GetCurrentContext(),
+                               v8::Undefined(isolate()));
   }
 
-  Promise* Reject() {
-    GetInner()->Reject(v8::Undefined(isolate()));
-    return this;
-  }
-
-  template <typename T>
-  Promise* Resolve(T* value) {
-    GetInner()->Resolve(mate::ConvertToV8(isolate(), value));
-    return this;
+  v8::Maybe<bool> Reject() {
+    return GetInner()->Reject(isolate()->GetCurrentContext(),
+                              v8::Undefined(isolate()));
   }
 
   template <typename T>
-  Promise* Reject(T* value) {
-    GetInner()->Reject(mate::ConvertToV8(isolate(), value));
-    return this;
+  v8::Maybe<bool> Resolve(T* value) {
+    return GetInner()->Resolve(isolate()->GetCurrentContext(),
+                               mate::ConvertToV8(isolate(), value));
   }
 
-  Promise* RejectWithErrorMessage(const std::string& error);
+  template <typename T>
+  v8::Maybe<bool> Reject(T* value) {
+    return GetInner()->Reject(isolate()->GetCurrentContext(),
+                              mate::ConvertToV8(isolate(), value));
+  }
+
+  v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
 
  protected:
   v8::Isolate* isolate_;

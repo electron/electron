@@ -10,12 +10,12 @@ namespace atom {
 
 namespace util {
 
-Promise* Promise::RejectWithErrorMessage(const std::string& string) {
+v8::Maybe<bool> Promise::RejectWithErrorMessage(const std::string& string) {
   v8::Local<v8::String> error_message =
       v8::String::NewFromUtf8(isolate(), string.c_str());
   v8::Local<v8::Value> error = v8::Exception::Error(error_message);
-  GetInner()->Reject(mate::ConvertToV8(isolate(), error));
-  return this;
+  return GetInner()->Reject(isolate()->GetCurrentContext(),
+                            mate::ConvertToV8(isolate(), error));
 }
 
 v8::Local<v8::Object> Promise::GetHandle() const {
