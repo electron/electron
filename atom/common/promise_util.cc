@@ -29,7 +29,7 @@ v8::Local<v8::Object> Promise::GetHandle() const {
 namespace mate {
 
 v8::Local<v8::Value> mate::Converter<atom::util::Promise*>::ToV8(
-    v8::Isolate* unused,
+    v8::Isolate*,
     atom::util::Promise* val) {
   return val->GetHandle();
 }
