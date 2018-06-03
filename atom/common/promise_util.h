@@ -19,7 +19,7 @@ class Promise {
     isolate_ = isolate;
     resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
   }
-  ~Promise() { resolver_.Reset(); }
+  ~Promise() {}
 
   v8::Isolate* isolate() const { return isolate_; }
 
@@ -59,7 +59,7 @@ class Promise {
 
   v8::Global<v8::Promise::Resolver> resolver_;
 
-  // DISALLOW_COPY_AND_ASSIGN(Promise);
+  DISALLOW_COPY_AND_ASSIGN(Promise);
 };
 
 }  // namespace util
