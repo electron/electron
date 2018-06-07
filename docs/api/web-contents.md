@@ -568,11 +568,14 @@ first available device will be selected. `callback` should be called with
 cancel the request.
 
 ```javascript
-const {app, webContents} = require('electron')
+const {app, webContents, BrowserWindow} = require('electron')
+
+let win = null
 app.commandLine.appendSwitch('enable-web-bluetooth')
 
 app.on('ready', () => {
-  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  win = new BrowserWindow({width: 800, height: 600})
+  win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
     let result = deviceList.find((device) => {
       return device.deviceName === 'test'
