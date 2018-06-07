@@ -106,6 +106,22 @@ Returns [`CPUUsage`](structures/cpu-usage.md)
 
 Returns [`IOCounters`](structures/io-counters.md)
 
+### `process.getHeapStatistics()`
+
+Returns `Object`:
+
+* `totalHeapSize` Integer
+* `totalHeapSizeExecutable` Integer
+* `totalPhysicalSize` Integer
+* `totalAvailableSize` Integer
+* `usedHeapSize` Integer
+* `heapSizeLimit` Integer
+* `mallocedMemory` Integer
+* `peakMallocedMemory` Integer
+* `doesZapGarbage` Boolean
+
+Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
+
 ### `process.getProcessMemoryInfo()`
 
 Returns `Object`:

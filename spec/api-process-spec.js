@@ -26,4 +26,19 @@ describe('process module', () => {
       assert.equal(typeof ioCounters.otherTransferCount, 'number')
     })
   })
+
+  describe('process.getHeapStatistics()', () => {
+    it('returns heap statistics object', () => {
+      const heapStats = process.getHeapStatistics()
+      assert.equal(typeof heapStats.totalHeapSize, 'number')
+      assert.equal(typeof heapStats.totalHeapSizeExecutable, 'number')
+      assert.equal(typeof heapStats.totalPhysicalSize, 'number')
+      assert.equal(typeof heapStats.totalAvailableSize, 'number')
+      assert.equal(typeof heapStats.usedHeapSize, 'number')
+      assert.equal(typeof heapStats.heapSizeLimit, 'number')
+      assert.equal(typeof heapStats.mallocedMemory, 'number')
+      assert.equal(typeof heapStats.peakMallocedMemory, 'number')
+      assert.equal(typeof heapStats.doesZapGarbage, 'boolean')
+    })
+  })
 })
