@@ -24,6 +24,7 @@ class AutofillPopup : public views::ViewObserver {
   ~AutofillPopup() override;
 
   void CreateView(content::RenderFrameHost* render_frame,
+                  content::RenderFrameHost* embedder_frame,
                   bool offscreen,
                   views::View* parent,
                   const gfx::RectF& bounds);

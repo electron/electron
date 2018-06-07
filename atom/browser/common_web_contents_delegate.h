@@ -92,8 +92,9 @@ class CommonWebContentsDelegate
 
   // Autofill related events.
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
-  void ShowAutofillPopup(bool offscreen,
-                         content::RenderFrameHost* frame_host,
+  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                         content::RenderFrameHost* embedder_frame_host,
+                         bool offscreen,
                          const gfx::RectF& bounds,
                          const std::vector<base::string16>& values,
                          const std::vector<base::string16>& labels);
