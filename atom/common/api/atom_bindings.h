@@ -35,6 +35,7 @@ class AtomBindings {
   static void Log(const base::string16& message);
   static void Crash();
   static void Hang();
+  static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   mate::Arguments* args);
