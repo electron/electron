@@ -754,11 +754,15 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.setWindowControlsVisibility()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
+    /**
+     * FIXME: Skip the tests instead of using the `return` here.
+     * - `.skip()` called in the 'before' hook doesn't affect
+     *     nested `describe`s.
+     * - Bad support of async test cases
+     */
+    if (process.platform !== 'darwin') {
+      return
+    }
 
     it('does not throw', () => {
       assert.doesNotThrow(() => {
