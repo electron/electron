@@ -4,7 +4,7 @@ const features = process.atomBinding('features')
 
 const isCI = remote.getGlobal('isCi')
 
-// FIXME(alexeykuzmin): Crashes the app.
+// FIXME(alexeykuzmin): [Ch66] Crashes the app.
 // Fix the crash and enable the tests.
 xdescribe('desktopCapturer', () => {
   before(function () {

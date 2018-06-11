@@ -134,7 +134,7 @@ describe('debugger module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): Times out. Fix it and enable back.
+    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable back.
     xit('handles valid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
@@ -164,7 +164,7 @@ describe('debugger module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): Times out. Fix it and enable back.
+    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable back.
     xit('does not crash for invalid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
