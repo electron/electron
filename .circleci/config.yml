@@ -2,6 +2,13 @@ build-steps: &build-steps
   steps:
     - checkout
     - run:
+        name: Update MacOS node to 10
+        command: |
+          if [ "$UPDATE_MACOS_NODE" == "true" ]; then
+            echo 'Update to node 10 for MacOS'
+            brew upgrade node@10
+          fi
+    - run:
         name: Check for release
         command: |
           if [ -n "${RUN_RELEASE_BUILD}" ]; then
@@ -237,16 +244,18 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_TESTS: true
+      UPDATE_MACOS_NODE: true
     macos:
-      xcode: "9.4.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-osx-x64-release-nightly:
     environment:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
+      UPDATE_MACOS_NODE: true
     macos:
-      xcode: "9.4.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-mas-x64:
@@ -254,8 +263,9 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_TESTS: true
+      UPDATE_MACOS_NODE: true
     macos:
-      xcode: "9.4.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-mas-x64-release-nightly:
@@ -263,8 +273,9 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
+      UPDATE_MACOS_NODE: true
     macos:
-      xcode: "9.4.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
 
