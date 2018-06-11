@@ -90,7 +90,7 @@ describe('session module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): Fails. Fix it and enable back.
+    // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.
     xit('calls back with an error when setting a cookie with missing required fields', (done) => {
       session.defaultSession.cookies.set({
         url: '',
