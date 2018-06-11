@@ -26,7 +26,7 @@ def check_tls(verbose):
     sys.exit(1)
   else:
     if verbose:
-      print "Your Python is using " + tls + ", which is sufficient for" \
+      print "Your Python is using " + tls + ", which is sufficient for " \
         + "building Electron."
 
 if __name__ == '__main__':
