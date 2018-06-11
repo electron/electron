@@ -2,12 +2,12 @@ build-steps: &build-steps
   steps:
     - checkout
     - run:
-        name: Update MacOS node to 10
+        name: Install Node.js 10 on MacOS
         command: |
-          if [ "$UPDATE_MACOS_NODE" == "true" ]; then
-            echo 'Update to node 10 for MacOS'
+          if [ "$INSTALL_MACOS_NODE" == "true" ]; then
+            echo 'Installing Node.js 10 for MacOS'
             brew update
-            brew upgrade node@10
+            brew install node@10
           fi
     - run:
         name: Check for release
@@ -245,7 +245,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_TESTS: true
-      UPDATE_MACOS_NODE: true
+      INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -254,7 +254,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
-      UPDATE_MACOS_NODE: true
+      INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -264,7 +264,7 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_TESTS: true
-      UPDATE_MACOS_NODE: true
+      INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -274,7 +274,7 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
-      UPDATE_MACOS_NODE: true
+      INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
