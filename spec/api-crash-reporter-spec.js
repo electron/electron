@@ -14,6 +14,8 @@ const {app, BrowserWindow, crashReporter} = remote.require('electron')
 describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
 
+  if (process.platform === 'linux') return
+
   let originalTempDirectory = null
   let tempDirectory = null
 
