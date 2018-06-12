@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -99,7 +100,8 @@ WebContentsPreferences::WebContentsPreferences(
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
-  bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
+  bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true,
+                                        DeprecationStatus::Deprecated);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
@@ -135,14 +137,29 @@ WebContentsPreferences::~WebContentsPreferences() {
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
     const base::StringPiece& key,
     bool val) {
+  return SetDefaultBoolIfUndefined(key, val, DeprecationStatus::Stable);
+}
+
+bool WebContentsPreferences::SetDefaultBoolIfUndefined(
+    const base::StringPiece& key,
+    bool val,
+    DeprecationStatus status) {
   auto* current_value =
       preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
   if (current_value) {
     return current_value->GetBool();
   } else {
     preference_.SetKey(key, base::Value(val));
-    return val;
+
+    if (status == DeprecationStatus::Deprecated && web_contents_) {
+      auto internal_contents = atom::api::WebContents::CreateFrom(
+          v8::Isolate::GetCurrent(), web_contents_);
+      internal_contents->Emit("-deprecated-default",
+                              std::string("webPreferences.") + key.data(), val,
+                              !val);
+    }
   }
+  return val;
 }
 
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
