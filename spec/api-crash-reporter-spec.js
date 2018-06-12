@@ -257,6 +257,9 @@ describe('crashReporter module', () => {
     })
   })
 
+  // TODO(alexeykuzmin): This suite should explicitly
+  // generate several crash reports instead of hoping
+  // that there will be enough of them already.
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
       const reports = crashReporter.getUploadedReports()
