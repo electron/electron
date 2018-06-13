@@ -6,7 +6,7 @@ const {closeWindow} = require('./window-helpers')
 const {remote} = require('electron')
 const {BrowserView, BrowserWindow} = remote
 
-describe.only('BrowserView module', () => {
+describe('BrowserView module', () => {
   let w = null
   let view = null
 
