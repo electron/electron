@@ -1,6 +1,7 @@
 const assert = require('assert')
 const request = require('request')
 const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
+const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
 const circleCIJobs = [
   'electron-linux-arm',
@@ -8,6 +9,11 @@ const circleCIJobs = [
   'electron-linux-ia32',
 //  'electron-linux-mips64el',
   'electron-linux-x64'
+]
+
+const vstsJobs = [
+  'electron-release-mas-x64',
+  'electron-release-osx-x64'
 ]
 
 async function makeRequest (requestOptions, parseResponse) {
@@ -62,7 +68,7 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
   }, true).catch(err => {
     console.log('Error calling CircleCI:', err)
   })
-  console.log(`Check ${circleResponse.build_url} for status. (${job})`)
+  console.log(`CircleCI release build request for ${job} successful.  Check ${circleResponse.build_url} for status.`)
 }
 
 async function buildAppVeyor (targetBranch, options) {
@@ -113,6 +119,70 @@ function buildCircleCI (targetBranch, options) {
   }
 }
 
+async function buildVSTS (targetBranch, options) {
+  if (options.job) {
+    assert(vstsJobs.includes(options.job), `Unknown CI job name: ${options.job}.`)
+  }
+  console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
+  assert(process.env.VSTS_TOKEN, 'VSTS_TOKEN not found in environment')
+  let environmentVariables = {}
+
+  if (!options.ghRelease) {
+    environmentVariables.UPLOAD_TO_S3 = 1
+  }
+
+  if (options.automaticRelease) {
+    environmentVariables.AUTO_RELEASE = 'true'
+  }
+
+  let requestOpts = {
+    url: `${vstsURL}/definitions?api-version=4.1`,
+    auth: {
+      user: '',
+      password: process.env.VSTS_TOKEN
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+  let vstsResponse = await makeRequest(requestOpts, true).catch(err => {
+    console.log('Error calling VSTS to get build definitions:', err)
+  })
+  let buildsToRun = []
+  if (options.job) {
+    buildsToRun = vstsResponse.value.filter(build => build.name === options.job)
+  } else {
+    buildsToRun = vstsResponse.value.filter(build => vstsJobs.includes(build.name))
+  }
+  buildsToRun.forEach((build) => callVSTSBuild(build, targetBranch, environmentVariables))
+}
+
+async function callVSTSBuild (build, targetBranch, environmentVariables) {
+  let buildBody = {
+    definition: build,
+    sourceBranch: targetBranch
+  }
+  if (Object.keys(environmentVariables).length !== 0) {
+    buildBody.parameters = JSON.stringify(environmentVariables)
+  }
+  let requestOpts = {
+    url: `${vstsURL}/builds?api-version=4.1`,
+    auth: {
+      user: '',
+      password: process.env.VSTS_TOKEN
+    },
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(buildBody),
+    method: 'POST'
+  }
+  let vstsResponse = await makeRequest(requestOpts, true).catch(err => {
+    console.log(`Error calling VSTS for job ${build.name}`, err)
+  })
+  console.log(`VSTS release build request for ${build.name} successful. Check ${vstsResponse._links.web.href} for status.`)
+}
+
 function runRelease (targetBranch, options) {
   if (options.ci) {
     switch (options.ci) {
@@ -124,10 +194,19 @@ function runRelease (targetBranch, options) {
         buildAppVeyor(targetBranch, options)
         break
       }
+      case 'VSTS': {
+        buildVSTS(targetBranch, options)
+        break
+      }
+      default: {
+        console.log(`Error! Unknown CI: ${options.ci}.`)
+        process.exit(1)
+      }
     }
   } else {
     buildCircleCI(targetBranch, options)
     buildAppVeyor(targetBranch, options)
+    buildVSTS(targetBranch, options)
   }
 }
 
@@ -140,7 +219,7 @@ if (require.main === module) {
   const targetBranch = args._[0]
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor] [--ghRelease] [--automaticRelease] TARGET_BRANCH
+    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor|VSTS] [--ghRelease] [--automaticRelease] TARGET_BRANCH
     `)
     process.exit(0)
   }
