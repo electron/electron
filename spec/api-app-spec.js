@@ -804,7 +804,7 @@ describe('app module', () => {
         expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
         expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
         expect(pid).to.be.above(0, 'pid is not > 0')
-        expect(type.length).to.be.above(0, 'process type is null')
+        expect(type).to.not.equal(null, 'process type is null')
 
         types.push(type)
         expect(cpu).to.have.own.property('percentCPUUsage').that.is.a('number')
