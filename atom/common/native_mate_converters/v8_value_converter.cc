@@ -13,6 +13,7 @@
 #include "base/values.h"
 #include "native_mate/dictionary.h"
 
+#include "atom/common/node_bindings.h"
 #include "atom/common/node_includes.h"
 
 namespace atom {
@@ -136,10 +137,6 @@ void V8ValueConverter::SetStripNullFromObjects(bool val) {
   strip_null_from_objects_ = val;
 }
 
-void V8ValueConverter::SetDisableNode(bool val) {
-  disable_node_ = val;
-}
-
 v8::Local<v8::Value> V8ValueConverter::ToV8Value(
     const base::Value* value,
     v8::Local<v8::Context> context) const {
@@ -253,7 +250,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   const char* data = value->GetBlob().data();
   size_t length = value->GetBlob().size();
 
-  if (!disable_node_) {
+  if (NodeBindings::IsInitialized()) {
     return node::Buffer::Copy(isolate, data, length).ToLocalChecked();
   }
 

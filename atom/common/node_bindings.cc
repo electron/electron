@@ -104,6 +104,8 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
   uv_loop_close(loop);
 }
 
+bool g_is_initialized = false;
+
 }  // namespace
 
 namespace atom {
@@ -178,6 +180,10 @@ void NodeBindings::RegisterBuiltinModules() {
 #undef V
 }
 
+bool NodeBindings::IsInitialized() {
+  return g_is_initialized;
+}
+
 void NodeBindings::Initialize() {
   // Open node's error reporting system for browser process.
   node::g_standalone_mode = browser_env_ == BROWSER;
@@ -203,6 +209,8 @@ void NodeBindings::Initialize() {
   if (browser_env_ == BROWSER || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
+
+  g_is_initialized = true;
 }
 
 node::Environment* NodeBindings::CreateEnvironment(

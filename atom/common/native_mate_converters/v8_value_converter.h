@@ -24,7 +24,6 @@ class V8ValueConverter {
   void SetRegExpAllowed(bool val);
   void SetFunctionAllowed(bool val);
   void SetStripNullFromObjects(bool val);
-  void SetDisableNode(bool val);
   v8::Local<v8::Value> ToV8Value(const base::Value* value,
                                  v8::Local<v8::Context> context) const;
   base::Value* FromV8Value(v8::Local<v8::Value> value,
@@ -62,13 +61,6 @@ class V8ValueConverter {
 
   // If true, we will convert Function JavaScript objects to dictionaries.
   bool function_allowed_ = false;
-
-  // If true, will not use node::Buffer::Copy to deserialize byte arrays.
-  // node::Buffer::Copy depends on a working node.js environment, and this is
-  // not desirable in sandboxed renderers. That means Buffer instances sent from
-  // browser process will be deserialized as browserify-based Buffer(which are
-  // wrappers around Uint8Array).
-  bool disable_node_ = false;
 
   // If true, undefined and null values are ignored when converting v8 objects
   // into Values.

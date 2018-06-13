@@ -29,8 +29,8 @@ class Event : public Wrappable<Event>, public content::WebContentsObserver {
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
-  // event.sendReply(json), used for replying synchronous message.
-  bool SendReply(const base::string16& json);
+  // event.sendReply(array), used for replying synchronous message.
+  bool SendReply(const base::ListValue& result);
 
  protected:
   explicit Event(v8::Isolate* isolate);
