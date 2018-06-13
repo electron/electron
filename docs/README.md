@@ -36,14 +36,13 @@ an issue:
 * [Application Architecture](tutorial/application-architecture.md)
   * [Main and Renderer Processes](tutorial/application-architecture.md#main-and-renderer-processes)
   * [Using Electron's APIs](tutorial/application-architecture.md#using-electron-apis)
-  * [Using Node.js APIs](tutorial/application-architecture.md#using-node.js-apis)
+  * [Using Node.js APIs](tutorial/application-architecture.md#using-nodejs-apis)
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
-  * [Inter-Process Communication](tutorial/application-architecture.md#)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
-  * [Recent Documents](tutorial/desktop-environment-integration.md#recent-documents-windows-mac-os)
+  * [Recent Documents](tutorial/desktop-environment-integration.md#recent-documents)
   * [Application Progress](tutorial/progress-bar.md)
-  * [Custom Dock Menu](tutorial/desktop-environment-integration.md#custom-dock-menu-mac-os)
+  * [Custom Dock Menu](tutorial/macos-dock.md)
   * [Custom Windows Taskbar](tutorial/windows-taskbar.md)
   * [Custom Linux Desktop Actions](tutorial/linux-desktop-actions.md)
   * [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
@@ -82,7 +81,6 @@ an issue:
 These individual tutorials expand on topics discussed in the guide above.
 
 * [In Detail: Installing Electron](tutorial/installation.md)
-  * [Global versus Local Installation](tutorial/installation.md#global-versus-local-installation)
   * [Proxies](tutorial/installation.md#proxies)
   * [Custom Mirrors and Caches](tutorial/installation.md#custom-mirrors-and-caches)
   * [Troubleshooting](tutorial/installation.md#troubleshooting)

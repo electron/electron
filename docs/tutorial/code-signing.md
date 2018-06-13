@@ -1,6 +1,6 @@
 # Code Signing
 
-Code signing is a security technology that you use to certify that an app was 
+Code signing is a security technology that you use to certify that an app was
 created by you.
 
 On macOS the system can detect any change to the  app, whether the change is
@@ -11,23 +11,23 @@ if you don't have, or if your trust level is low will cause security dialogs to
 appear when users start using your application.  Trust level builds over time
 so it's better to start code signing as early as possible.
 
-While it is possible to distribute unsigned apps, it is not recommended. 
+While it is possible to distribute unsigned apps, it is not recommended.
 For example, here's what macOS users see when attempting to start an unsigned app:
 
 ![unsigned app warning on macOS](https://user-images.githubusercontent.com/2289/39488937-bdc854ba-4d38-11e8-88f8-7b3c125baefc.png)
 
 > App can't be opened because it is from an unidentified developer
 
-If you are building an Electron app that you intend to package and distribute, 
-it should be code signed. The Mac and Windows app stores do not allow unsigned 
+If you are building an Electron app that you intend to package and distribute,
+it should be code signed. The Mac and Windows app stores do not allow unsigned
 apps.
 
 # Signing macOS builds
 
 Before signing macOS builds, you must do the following:
 
-1. Enroll in the [Apple Developer Program](Apple Developer Program) (requires an annual fee)
-2. Download and install Xcode
+1. Enroll in the [Apple Developer Program] (requires an annual fee)
+2. Download and install [Xcode]
 3. Generate, download, and install [signing certificates]
 
 There are a number of tools for signing your packaged app:

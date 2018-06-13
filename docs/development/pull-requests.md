@@ -1,6 +1,5 @@
 # Pull Requests
 
-* [Dependencies](#dependencies)
 * [Setting up your local environment](#setting-up-your-local-environment)
   * [Step 1: Fork](#step-1-fork)
   * [Step 2: Build](#step-2-build)
@@ -84,19 +83,19 @@ Note that multiple commits often get squashed when they are landed.
 #### Commit message guidelines
 
 A good commit message should describe what changed and why. The Electron project
-uses [semantic commit messages](https://conventionalcommits.org/) to streamline 
+uses [semantic commit messages](https://conventionalcommits.org/) to streamline
 the release process.
 
-Before a pull request can be merged, it should include at least one semantic 
-commit message, though it's not necessary for all commits in the pull request 
-to be semantic. Alternatively, you can **update your pull request title**  to 
+Before a pull request can be merged, it should include at least one semantic
+commit message, though it's not necessary for all commits in the pull request
+to be semantic. Alternatively, you can **update your pull request title**  to
 start with a semantic prefix.
 
 Examples of commit messages with semantic prefixes:
 
 - `fix: don't overwrite prevent_default if default wasn't prevented`
 - `feat: add app.isPackaged() method`
-- `docs: app.isDefaultProtocolClient is now available on Linux` 
+- `docs: app.isDefaultProtocolClient is now available on Linux`
 
 Common prefixes:
 
@@ -122,10 +121,10 @@ Other things to keep in mind when writing a commit message:
 
 #### Breaking Changes
 
-A commit that has the text `BREAKING CHANGE:` at the beginning of its optional 
-body or footer section introduces a breaking API change (correlating with Major 
-in semantic versioning). A breaking change can be part of commits of any type. 
-e.g., a `fix:`, `feat:` & `chore:` types would all be valid, in addition to any 
+A commit that has the text `BREAKING CHANGE:` at the beginning of its optional
+body or footer section introduces a breaking API change (correlating with Major
+in semantic versioning). A breaking change can be part of commits of any type.
+e.g., a `fix:`, `feat:` & `chore:` types would all be valid, in addition to any
 other type.
 
 See [conventionalcommits.org](https://conventionalcommits.org) for more details.
