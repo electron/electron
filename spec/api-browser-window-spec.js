@@ -24,8 +24,21 @@ describe('BrowserWindow module', () => {
   let server
   let postData
 
-  const closeTheWindow = function () {
-    return closeWindow(w).then(() => { w = null })
+  const openTheWindow = async (...args) => {
+    await closeTheWindow()
+    w = new BrowserWindow(...args)
+    return w
+  }
+
+  const closeTheWindow = async () => {
+    await closeWindow(w)
+    w = null
+  }
+
+  const waitForOnce = (eventTarget, eventName) => {
+    return new Promise((resolve) => {
+      eventTarget.once(eventName, (...args) => resolve(args))
+    })
   }
 
   before((done) => {
@@ -78,8 +91,8 @@ describe('BrowserWindow module', () => {
     server = null
   })
 
-  beforeEach(() => {
-    w = new BrowserWindow({
+  beforeEach(async () => {
+    w = await openTheWindow({
       show: false,
       width: 400,
       height: 400,
@@ -92,10 +105,8 @@ describe('BrowserWindow module', () => {
   afterEach(closeTheWindow)
 
   describe('BrowserWindow constructor', () => {
-    it('allows passing void 0 as the webContents', () => {
-      w.close()
-      w = null
-      w = new BrowserWindow({
+    it('allows passing void 0 as the webContents', async () => {
+      await openTheWindow({
         webContents: void 0
       })
     })
@@ -399,14 +410,15 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.getFocusedWindow()', (done) => {
-    it('returns the opener window when dev tools window is focused', (done) => {
+  describe('BrowserWindow.getFocusedWindow()', () => {
+    it('returns the opener window when dev tools window is focused', async () => {
       w.show()
-      w.webContents.once('devtools-focused', () => {
-        assert.deepEqual(BrowserWindow.getFocusedWindow(), w)
-        done()
-      })
+
+      const devToolsFocused = waitForOnce(w.webContents, 'devtools-focused')
       w.webContents.openDevTools({mode: 'undocked'})
+      await devToolsFocused
+
+      assert.deepEqual(BrowserWindow.getFocusedWindow(), w)
     })
   })
 
