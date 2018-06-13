@@ -1,10 +1,10 @@
 'use strict'
 
-const assert = require('assert')
+const {expect} = require('chai')
 const path = require('path')
 
-const { remote } = require('electron')
-const { ipcMain, BrowserWindow } = remote
+const {remote} = require('electron')
+const {ipcMain, BrowserWindow} = remote
 const {closeWindow} = require('./window-helpers')
 
 describe('BrowserWindow with affinity module', () => {
@@ -21,16 +21,14 @@ describe('BrowserWindow with affinity module', () => {
         height: 400,
         webPreferences: webPrefs || {}
       })
-      w.webContents.on('did-finish-load', () => {
-        resolve(w)
-      })
+      w.webContents.on('did-finish-load', () => { resolve(w) })
       w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'))
     })
   }
 
   describe(`BrowserWindow with an affinity '${myAffinityName}'`, () => {
     let mAffinityWindow
-    before((done) => {
+    before(done => {
       createWindowWithWebPrefs({ affinity: myAffinityName })
       .then((w) => {
         mAffinityWindow = w
@@ -38,50 +36,54 @@ describe('BrowserWindow with affinity module', () => {
       })
     })
 
-    after((done) => {
+    after(done => {
       closeWindow(mAffinityWindow, {assertSingleWindow: false}).then(() => {
         mAffinityWindow = null
         done()
       })
     })
 
-    it('should have a different process id than a default window', (done) => {
+    it('should have a different process id than a default window', done => {
       createWindowWithWebPrefs({})
-      .then((w) => {
-        assert.notEqual(mAffinityWindow.webContents.getOSProcessId(), w.webContents.getOSProcessId(), 'Should have the different OS process Id/s')
-        closeWindow(w, {assertSingleWindow: false}).then(() => {
-          done()
-        })
+      .then(w => {
+        const affinityID = mAffinityWindow.webContents.getOSProcessId()
+        const wcID = w.webContents.getOSProcessId()
+
+        expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
       })
     })
 
-    it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, (done) => {
+    it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, done => {
       createWindowWithWebPrefs({ affinity: anotherAffinityName })
-      .then((w) => {
-        assert.notEqual(mAffinityWindow.webContents.getOSProcessId(), w.webContents.getOSProcessId(), 'Should have the different OS process Id/s')
-        closeWindow(w, {assertSingleWindow: false}).then(() => {
-          done()
-        })
+      .then(w => {
+        const affinityID = mAffinityWindow.webContents.getOSProcessId()
+        const wcID = w.webContents.getOSProcessId()
+
+        expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
       })
     })
 
-    it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, (done) => {
+    it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, done => {
       createWindowWithWebPrefs({ affinity: myAffinityName })
-      .then((w) => {
-        assert.equal(mAffinityWindow.webContents.getOSProcessId(), w.webContents.getOSProcessId(), 'Should have the same OS process Id')
-        closeWindow(w, {assertSingleWindow: false}).then(() => {
-          done()
-        })
+      .then(w => {
+        const affinityID = mAffinityWindow.webContents.getOSProcessId()
+        const wcID = w.webContents.getOSProcessId()
+
+        expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
       })
     })
 
-    it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, (done) => {
+    it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, done => {
       createWindowWithWebPrefs({ affinity: myAffinityNameUpper })
-      .then((w) => {
-        assert.equal(mAffinityWindow.webContents.getOSProcessId(), w.webContents.getOSProcessId(), 'Should have the same OS process Id')
-        closeWindow(w, {assertSingleWindow: false}).then(() => {
-          done()
-        })
+      .then(w => {
+        const affinityID = mAffinityWindow.webContents.getOSProcessId()
+        const wcID = w.webContents.getOSProcessId()
+
+        expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
       })
     })
   })
@@ -95,59 +97,94 @@ describe('BrowserWindow with affinity module', () => {
       return new Promise((resolve, reject) => {
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           if (present) {
-            assert.notEqual(typeofProcess, 'undefined')
-            assert.notEqual(typeofBuffer, 'undefined')
+            expect(typeofProcess).to.not.equal('undefined')
+            expect(typeofBuffer).to.not.equal('undefined')
           } else {
-            assert.equal(typeofProcess, 'undefined')
-            assert.equal(typeofBuffer, 'undefined')
+            expect(typeofProcess).to.equal('undefined')
+            expect(typeofBuffer).to.equal('undefined')
           }
           resolve()
         })
       })
     }
 
-    it('disables node integration when specified to false', (done) => {
-      Promise.all([testNodeIntegration(false), createWindowWithWebPrefs({ affinity: affinityWithNodeTrue, preload: preload, nodeIntegration: false })])
-      .then((args) => {
-        closeWindow(args[1], {assertSingleWindow: false}).then(() => {
-          done()
+    it('disables node integration when specified to false', done => {
+      Promise.all([
+        testNodeIntegration(false),
+        createWindowWithWebPrefs({
+          affinity: affinityWithNodeTrue,
+          preload,
+          nodeIntegration: false
         })
+      ]).then(args => {
+        closeWindow(args[1], {assertSingleWindow: false}).then(() => { done() })
       })
     })
-    it('disables node integration when first window is false', (done) => {
-      Promise.all([testNodeIntegration(false), createWindowWithWebPrefs({ affinity: affinityWithNodeTrue, preload: preload, nodeIntegration: false })])
-      .then((args) => {
+    it('disables node integration when first window is false', done => {
+      Promise.all([
+        testNodeIntegration(false),
+        createWindowWithWebPrefs({
+          affinity: affinityWithNodeTrue,
+          preload,
+          nodeIntegration: false
+        })
+      ]).then(args => {
         let w1 = args[1]
-        return Promise.all([testNodeIntegration(false), w1, createWindowWithWebPrefs({ affinity: affinityWithNodeTrue, preload: preload, nodeIntegration: true })])
-      })
-      .then((ws) => {
-        return Promise.all([closeWindow(ws[1], {assertSingleWindow: false}), closeWindow(ws[2], {assertSingleWindow: false})])
-      })
-      .then(() => {
-        done()
+        return Promise.all([
+          testNodeIntegration(false),
+          w1,
+          createWindowWithWebPrefs({
+            affinity: affinityWithNodeTrue,
+            preload,
+            nodeIntegration: true
+          })
+        ])
+      }).then(ws => {
+        return Promise.all([
+          closeWindow(ws[1], {assertSingleWindow: false}),
+          closeWindow(ws[2], {assertSingleWindow: false})
+        ])
+      }).then(() => { done() })
+    })
+
+    it('enables node integration when specified to true', done => {
+      Promise.all([
+        testNodeIntegration(true),
+        createWindowWithWebPrefs({
+          affinity: affinityWithNodeFalse,
+          preload,
+          nodeIntegration: true
+        })
+      ]).then(args => {
+        closeWindow(args[1], {assertSingleWindow: false}).then(() => { done() })
       })
     })
 
-    it('enables node integration when specified to true', (done) => {
-      Promise.all([testNodeIntegration(true), createWindowWithWebPrefs({ affinity: affinityWithNodeFalse, preload: preload, nodeIntegration: true })])
-      .then((args) => {
-        closeWindow(args[1], {assertSingleWindow: false}).then(() => {
-          done()
+    it('enables node integration when first window is true', done => {
+      Promise.all([
+        testNodeIntegration(true),
+        createWindowWithWebPrefs({
+          affinity: affinityWithNodeFalse,
+          preload,
+          nodeIntegration: true
         })
-      })
-    })
-    it('enables node integration when first window is true', (done) => {
-      Promise.all([testNodeIntegration(true), createWindowWithWebPrefs({ affinity: affinityWithNodeFalse, preload: preload, nodeIntegration: true })])
-      .then((args) => {
+      ]).then(args => {
         let w1 = args[1]
-        return Promise.all([testNodeIntegration(true), w1, createWindowWithWebPrefs({ affinity: affinityWithNodeFalse, preload: preload, nodeIntegration: false })])
-      })
-      .then((ws) => {
-        return Promise.all([closeWindow(ws[1], {assertSingleWindow: false}), closeWindow(ws[2], {assertSingleWindow: false})])
-      })
-      .then(() => {
-        done()
-      })
+        return Promise.all([
+          testNodeIntegration(true),
+          w1,
+          createWindowWithWebPrefs({
+            affinity: affinityWithNodeFalse,
+            preload,
+            nodeIntegration: false
+          })
+        ])
+      }).then(ws => {
+        return Promise.all([
+          closeWindow(ws[1], {assertSingleWindow: false}),
+          closeWindow(ws[2], {assertSingleWindow: false})
+        ])
+      }).then(() => { done() })
     })
   })
 })
