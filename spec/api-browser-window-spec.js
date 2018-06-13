@@ -17,15 +17,28 @@ const features = process.atomBinding('features')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
-describe('BrowserWindow module', () => {
+describe.only('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
   let ws = null
   let server
   let postData
 
-  const closeTheWindow = function () {
-    return closeWindow(w).then(() => { w = null })
+  const openTheWindow = async (...args) => {
+    await closeTheWindow()
+    w = new BrowserWindow(...args)
+    return w
+  }
+
+  const closeTheWindow = async () => {
+    await closeWindow(w)
+    w = null
+  }
+
+  const waitForOnce = (eventTarget, eventName) => {
+    return new Promise((resolve) => {
+      eventTarget.once(eventName, (...args) => resolve(args))
+    })
   }
 
   before((done) => {
@@ -78,8 +91,8 @@ describe('BrowserWindow module', () => {
     server = null
   })
 
-  beforeEach(() => {
-    w = new BrowserWindow({
+  beforeEach(async () => {
+    w = await openTheWindow({
       show: false,
       width: 400,
       height: 400,
@@ -92,10 +105,8 @@ describe('BrowserWindow module', () => {
   afterEach(closeTheWindow)
 
   describe('BrowserWindow constructor', () => {
-    it('allows passing void 0 as the webContents', () => {
-      w.close()
-      w = null
-      w = new BrowserWindow({
+    it('allows passing void 0 as the webContents', async () => {
+      await openTheWindow({
         webContents: void 0
       })
     })
@@ -399,14 +410,15 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.getFocusedWindow()', (done) => {
-    it('returns the opener window when dev tools window is focused', (done) => {
+  describe.only('BrowserWindow.getFocusedWindow()', () => {
+    it('returns the opener window when dev tools window is focused', async () => {
       w.show()
-      w.webContents.once('devtools-focused', () => {
-        assert.deepEqual(BrowserWindow.getFocusedWindow(), w)
-        done()
-      })
+
+      const devToolsFocused = waitForOnce(w.webContents, 'devtools-focused')
       w.webContents.openDevTools({mode: 'undocked'})
+      await devToolsFocused
+
+      assert.deepEqual(BrowserWindow.getFocusedWindow(), w)
     })
   })
 
@@ -610,7 +622,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
+  describe.only('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
     before(function () {
       if (process.platform !== 'darwin') {
         this.skip()
@@ -1811,7 +1823,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is hidden', (done) => {
+    it.only('visibilityState changes when window is hidden', (done) => {
       w = new BrowserWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
@@ -1829,7 +1841,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is shown', (done) => {
+    it.only('visibilityState changes when window is shown', (done) => {
       w = new BrowserWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
@@ -1846,7 +1858,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is shown inactive', function (done) {
+    it.only('visibilityState changes when window is shown inactive', function (done) {
       if (isCI && process.platform === 'win32') {
         // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
         // afterEach hook won't be run if a test is skipped dynamically.
@@ -1872,7 +1884,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is minimized', function (done) {
+    it.only('visibilityState changes when window is minimized', function (done) {
       if (isCI && process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
         // afterEach hook won't be run if a test is skipped dynamically.
@@ -1899,7 +1911,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
+    it.only('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
       w = new BrowserWindow({
         show: false,
         width: 100,
