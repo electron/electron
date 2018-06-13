@@ -17,7 +17,7 @@ const features = process.atomBinding('features')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
-describe('BrowserWindow module', () => {
+describe.only('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
   let ws = null
@@ -410,7 +410,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.getFocusedWindow()', () => {
+  describe.only('BrowserWindow.getFocusedWindow()', () => {
     it('returns the opener window when dev tools window is focused', async () => {
       w.show()
 
@@ -622,7 +622,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
+  describe.only('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
     before(function () {
       if (process.platform !== 'darwin') {
         this.skip()
@@ -1823,7 +1823,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is hidden', (done) => {
+    it.only('visibilityState changes when window is hidden', (done) => {
       w = new BrowserWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
@@ -1841,7 +1841,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is shown', (done) => {
+    it.only('visibilityState changes when window is shown', (done) => {
       w = new BrowserWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
@@ -1858,7 +1858,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is shown inactive', function (done) {
+    it.only('visibilityState changes when window is shown inactive', function (done) {
       if (isCI && process.platform === 'win32') {
         // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
         // afterEach hook won't be run if a test is skipped dynamically.
@@ -1884,7 +1884,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState changes when window is minimized', function (done) {
+    it.only('visibilityState changes when window is minimized', function (done) {
       if (isCI && process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
         // afterEach hook won't be run if a test is skipped dynamically.
@@ -1911,7 +1911,7 @@ describe('BrowserWindow module', () => {
 
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
-    it('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
+    it.only('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
       w = new BrowserWindow({
         show: false,
         width: 100,
