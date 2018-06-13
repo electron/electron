@@ -1,10 +1,17 @@
 const assert = require('assert')
 const {desktopCapturer, remote, screen} = require('electron')
+const features = process.atomBinding('features')
 
 const isCI = remote.getGlobal('isCi')
 
 describe('desktopCapturer', () => {
   before(function () {
+    if (!features.isDesktopCapturerEnabled()) {
+      // It's been disabled during build time.
+      this.skip()
+      return
+    }
+
     if (isCI && process.platform === 'win32') {
       this.skip()
     }

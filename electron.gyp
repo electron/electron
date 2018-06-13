@@ -23,6 +23,11 @@
           '<(source_root)/external_binaries',
         ],
       }],
+      ['enable_desktop_capturer==1', {
+        'defines': [
+          'ENABLE_DESKTOP_CAPTURER',
+        ],
+      }],  # enable_desktop_capturer==1
       ['enable_osr==1', {
         'defines': [
           'ENABLE_OSR',
