@@ -16,7 +16,7 @@ const isCI = remote.getGlobal('isCi')
 
 chai.use(chaiAsPromised)
 
-describe('electron module', () => {
+describe.only('electron module', () => {
   it('does not expose internal modules to require', () => {
     expect(() => {
       require('clipboard')
@@ -168,7 +168,7 @@ describe.only('app module', () => {
 
       appProcess = ChildProcess.spawn(electronPath, [appPath])
       appProcess.on('close', code => {
-        expect(code).to.equal(code, 123)
+        expect(code).to.equal(123)
         done()
       })
     })
@@ -319,10 +319,12 @@ describe.only('app module', () => {
       ipcRenderer.once('select-client-certificate', (event, webContentsId, list) => {
         expect(webContentsId).to.equal(w.webContents.id)
         expect(list.length).to.equal(1)
+
         expect(list[0].issuerName).to.equal('Intermediate CA')
         expect(list[0].subjectName).to.equal('Client Cert')
         expect(list[0].issuer.commonName).to.equal('Intermediate CA')
         expect(list[0].subject.commonName).to.equal('Client Cert')
+
         event.sender.send('client-certificate-response', list[0])
       })
 
@@ -493,14 +495,14 @@ describe.only('app module', () => {
 
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
-      expect(app.getLoginItemSettings().openAtLogin).to.be.false
-      expect(app.getLoginItemSettings({path: updateExe, args: processStartArgs}).openAtLogin).to.be.true
+      expect(app.getLoginItemSettings().openAtLogin).to.equal(false)
+      expect(app.getLoginItemSettings({path: updateExe, args: processStartArgs}).openAtLogin).to.equal(true)
     })
   })
 
   describe('isAccessibilitySupportEnabled API', () => {
     it('returns whether the Chrome has accessibility APIs enabled', () => {
-      expect(typeof app.isAccessibilitySupportEnabled()).to.equal('boolean')
+      expect(app.isAccessibilitySupportEnabled()).to.be.a('boolean')
     })
   })
 
@@ -610,9 +612,9 @@ describe.only('app module', () => {
     })
 
     it('sets the app as the default protocol client', () => {
-      expect(app.isDefaultProtocolClient(protocol)).to.be.false
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false)
       app.setAsDefaultProtocolClient(protocol)
-      expect(app.isDefaultProtocolClient(protocol)).to.be.true
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(true)
     })
 
     it('allows a custom path and args to be specified', () => {
@@ -630,7 +632,7 @@ describe.only('app module', () => {
         if (error) throw error
 
         const exists = !!keys.find(key => key.key.includes(protocol))
-        expect(exists).to.be.true
+        expect(exists).to.equal(true)
 
         done()
       })
@@ -644,7 +646,7 @@ describe.only('app module', () => {
         if (error) throw error
 
         const exists = !!keys.find(key => key.key.includes(protocol))
-        expect(exists).to.be.false
+        expect(exists).to.equal(false)
 
         done()
       })
@@ -665,7 +667,7 @@ describe.only('app module', () => {
           if (error) throw error
 
           const exists = !!keys.find(key => key.key.includes(protocol))
-          expect(exists).toBe(true)
+          expect(exists).to.equal(true)
 
           done()
         })
@@ -730,8 +732,8 @@ describe.only('app module', () => {
 
     it('fetches a non-empty icon', done => {
       app.getFileIcon(iconPath, (err, icon) => {
-        expect(err).to.be.null
-        expect(icon.isEmpty()).to.be.false
+        expect(err).to.equal(null)
+        expect(icon.isEmpty()).to.equal(false)
         done()
       })
     })
@@ -739,7 +741,8 @@ describe.only('app module', () => {
     it('fetches normal icon size by default', done => {
       app.getFileIcon(iconPath, (err, icon) => {
         const size = icon.getSize()
-        expect(err).to.be.null
+
+        expect(err).to.equal(null)
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
         done()
@@ -750,7 +753,7 @@ describe.only('app module', () => {
       it('fetches a small icon', (done) => {
         app.getFileIcon(iconPath, { size: 'small' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.be.null
+          expect(err).to.equal(null)
           expect(size.height).to.equal(sizes.small)
           expect(size.width).to.equal(sizes.small)
           done()
@@ -760,7 +763,7 @@ describe.only('app module', () => {
       it('fetches a normal icon', (done) => {
         app.getFileIcon(iconPath, { size: 'normal' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.be.null
+          expect(err).to.equal(null)
           expect(size.height).to.equal(sizes.normal)
           expect(size.width).to.equal(sizes.normal)
           done()
@@ -777,7 +780,7 @@ describe.only('app module', () => {
 
         app.getFileIcon(iconPath, { size: 'large' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.be.null
+          expect(err).to.equal(null)
           expect(size.height).to.equal(sizes.large)
           expect(size.width).to.equal(sizes.large)
           done()
@@ -789,34 +792,35 @@ describe.only('app module', () => {
   describe('getAppMetrics() API', () => {
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics()
-      expect(appMetrics.length > 0, 'App memory info object is not > 0').to.be.true
+      expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
+
       const types = []
       for (const {memory, pid, type, cpu} of appMetrics) {
-        expect(memory.workingSetSize > 0, 'working set size is not > 0').to.be.true
-        expect(memory.privateBytes > 0, 'private bytes is not > 0').to.be.true
-        expect(memory.sharedBytes > 0, 'shared bytes is not > 0').to.be.true
-        expect(pid > 0, 'pid is not > 0').to.be.true
-        expect(type.length > 0, 'process type is null').to.be.true
+        expect(memory.workingSetSize).to.be.above(0, 'working set size is not > 0')
+        expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
+        expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
+        expect(pid).to.be.above(0, 'pid is not > 0')
+        expect(type.length).to.be.above(0, 'process type is null')
 
         types.push(type)
-        expect(typeof cpu.percentCPUUsage).to.equal('number')
-        expect(typeof cpu.idleWakeupsPerSecond).to.equal('number')
+        expect(cpu).to.have.own.property('percentCPUUsage').that.is.a('number')
+        expect(cpu).to.have.own.property('idleWakeupsPerSecond').that.is.a('number')
       }
 
       if (process.platform === 'darwin') {
-        expect(types.includes('GPU')).to.be.true
+        expect(types).to.include('GPU')
       }
 
-      expect(types.includes('Browser')).to.be.true
-      expect(types.includes('Tab')).to.be.true
+      expect(types).to.include('Browser')
+      expect(types).to.include('Tab')
     })
   })
 
   describe('getGPUFeatureStatus() API', () => {
     it('returns the graphic features statuses', () => {
       const features = app.getGPUFeatureStatus()
-      expect(typeof features.webgl).to.equal('string')
-      expect(typeof features.gpu_compositing).to.equal('string')
+      expect(features).to.have.own.property('webgl').that.is.a('string')
+      expect(features).to.have.own.property('gpu_compositing').that.is.a('string')
     })
   })
 
@@ -862,11 +866,11 @@ describe.only('app module', () => {
         server.on('connection', client => {
           client.once('data', data => {
             const argv = JSON.parse(data)
-            expect(argv.sandbox.includes('--enable-sandbox')).to.equal(true)
-            expect(argv.sandbox.includes('--no-sandbox')).to.equal(false)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
 
-            expect(argv.noSandbox.includes('--enable-sandbox')).to.equal(false)
-            expect(argv.noSandbox.includes('--no-sandbox')).to.equal(true)
+            expect(argv.noSandbox).to.not.include('--enable-sandbox')
+            expect(argv.noSandbox).to.include('--no-sandbox')
 
             done()
           })
@@ -884,11 +888,11 @@ describe.only('app module', () => {
         server.on('connection', client => {
           client.once('data', data => {
             const argv = JSON.parse(data)
-            expect(argv.sandbox.includes('--enable-sandbox')).to.equal(true)
-            expect(argv.sandbox.includes('--no-sandbox')).to.equal(false)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
 
-            expect(argv.noSandbox.includes('--enable-sandbox')).to.equal(false)
-            expect(argv.noSandbox.includes('--no-sandbox')).to.equal(true)
+            expect(argv.noSandbox).to.not.include('--enable-sandbox')
+            expect(argv.noSandbox).to.include('--no-sandbox')
 
             expect(argv.noSandboxDevtools).to.equal(true)
             expect(argv.sandboxDevtools).to.equal(true)
@@ -924,7 +928,7 @@ describe.only('app module', () => {
 
   describe('whenReady', () => {
     it('returns a Promise', () => {
-      expect(app.whenReady()).to.be.an.instanceof(Promise)
+      expect(app.whenReady()).to.be.a('promise')
     })
 
     it('becomes fulfilled if the app is already ready', () => {
