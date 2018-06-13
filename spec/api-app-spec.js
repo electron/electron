@@ -1,4 +1,3 @@
-const assert = require('assert')
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
 const ChildProcess = require('child_process')
@@ -16,7 +15,7 @@ const isCI = remote.getGlobal('isCi')
 
 chai.use(chaiAsPromised)
 
-describe.only('electron module', () => {
+describe('electron module', () => {
   it('does not expose internal modules to require', () => {
     expect(() => {
       require('clipboard')
@@ -45,7 +44,7 @@ describe.only('electron module', () => {
   })
 })
 
-describe.only('app module', () => {
+describe('app module', () => {
   let server, secureUrl
   const certPath = path.join(__dirname, 'fixtures', 'certificates')
 
@@ -155,7 +154,7 @@ describe.only('app module', () => {
 
       appProcess.on('close', code => {
         if (process.platform !== 'win32') {
-          expect(output.indexOf('Exit event with code: 123')).to.not.equal(-1)
+          expect(output).to.include('Exit event with code: 123')
         }
         expect(code).to.equal(123)
         done()
@@ -318,12 +317,14 @@ describe.only('app module', () => {
 
       ipcRenderer.once('select-client-certificate', (event, webContentsId, list) => {
         expect(webContentsId).to.equal(w.webContents.id)
-        expect(list.length).to.equal(1)
+        expect(list).to.have.lengthOf(1)
 
-        expect(list[0].issuerName).to.equal('Intermediate CA')
-        expect(list[0].subjectName).to.equal('Client Cert')
-        expect(list[0].issuer.commonName).to.equal('Intermediate CA')
-        expect(list[0].subject.commonName).to.equal('Client Cert')
+        expect(list[0]).to.deep.equal({
+          issuerName: 'Intermediate CA',
+          subjectName: 'Client Cert',
+          issuer: { commonName: 'Intermediate CA' },
+          subject: { commonName: 'Client Cert' }
+        })
 
         event.sender.send('client-certificate-response', list[0])
       })
@@ -496,7 +497,10 @@ describe.only('app module', () => {
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false)
-      expect(app.getLoginItemSettings({path: updateExe, args: processStartArgs}).openAtLogin).to.equal(true)
+      expect(app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      }).openAtLogin).to.equal(true)
     })
   })
 
@@ -622,7 +626,7 @@ describe.only('app module', () => {
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
 
       expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.equal(true)
-      assert.equal(app.isDefaultProtocolClient(protocol), false)
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false)
     })
 
     it('creates a registry entry for the protocol class', (done) => {
@@ -932,7 +936,7 @@ describe.only('app module', () => {
     })
 
     it('becomes fulfilled if the app is already ready', () => {
-      assert(app.isReady())
+      expect(app.isReady()).to.equal(true)
       return expect(app.whenReady()).to.be.eventually.fulfilled
     })
   })
