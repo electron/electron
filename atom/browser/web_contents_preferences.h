@@ -75,10 +75,10 @@ class WebContentsPreferences
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
-  bool SetDefaultBoolIfUndefined(const base::StringPiece& key,
-                                 bool val,
-                                 DeprecationStatus status);
+  bool SetDefaultBoolIfUndefined(
+      const base::StringPiece& key,
+      bool val,
+      DeprecationStatus status = DeprecationStatus::Stable);
 
   static std::vector<WebContentsPreferences*> instances_;
 

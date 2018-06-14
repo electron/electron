@@ -136,12 +136,6 @@ WebContentsPreferences::~WebContentsPreferences() {
 
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
     const base::StringPiece& key,
-    bool val) {
-  return SetDefaultBoolIfUndefined(key, val, DeprecationStatus::Stable);
-}
-
-bool WebContentsPreferences::SetDefaultBoolIfUndefined(
-    const base::StringPiece& key,
     bool val,
     DeprecationStatus status) {
   auto* current_value =
