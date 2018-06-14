@@ -80,4 +80,12 @@ steps:
     searchFolder: junit
   condition: and(always(), ne(variables['ELECTRON_RELEASE'], '1'))
 
+- task: kasunkodagoda.slack-notification.slack-notification-task.SlackNotification@3
+  displayName: Post Slack Notification
+  inputs:
+    SlackApiToken: '$(slack_token)'
+    Channel: '#bot-nightly-releases'
+    Message: '$(Build.DefinitionName)-$(Build.BuildNumber) finished with a $(Agent.JobStatus) status.'
+  condition: and(always(), eq(variables['Build.Reason'], 'Schedule'))
+
 - task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3

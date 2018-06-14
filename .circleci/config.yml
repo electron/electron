@@ -315,3 +315,12 @@ workflows:
       - electron-linux-arm64-release-nightly
       - electron-linux-ia32-release-nightly
       - electron-linux-x64-release-nightly
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
+        - 2-0-x
+        - 1-8-x
+        - 1-7-x
