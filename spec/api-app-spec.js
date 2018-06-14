@@ -1,6 +1,6 @@
-const assert = require('assert')
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
+const dirtyChai = require('dirty-chai')
 const ChildProcess = require('child_process')
 const https = require('https')
 const net = require('net')
@@ -15,12 +15,13 @@ const {app, BrowserWindow, Menu, ipcMain} = remote
 const isCI = remote.getGlobal('isCi')
 
 chai.use(chaiAsPromised)
+chai.use(dirtyChai)
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
-    assert.throws(() => {
+    expect(() => {
       require('clipboard')
-    }, /Cannot find module 'clipboard'/)
+    }).to.throw(/Cannot find module 'clipboard'/)
   })
 
   describe('require("electron")', () => {
@@ -78,49 +79,51 @@ describe('app module', () => {
     })
   })
 
-  after((done) => {
+  after(done => {
     server.close(() => done())
   })
 
   describe('app.getVersion()', () => {
     it('returns the version field of package.json', () => {
-      assert.equal(app.getVersion(), '0.1.0')
+      expect(app.getVersion()).to.equal('0.1.0')
     })
   })
 
   describe('app.setVersion(version)', () => {
     it('overrides the version', () => {
-      assert.equal(app.getVersion(), '0.1.0')
+      expect(app.getVersion()).to.equal('0.1.0')
       app.setVersion('test-version')
-      assert.equal(app.getVersion(), 'test-version')
+
+      expect(app.getVersion()).to.equal('test-version')
       app.setVersion('0.1.0')
     })
   })
 
   describe('app.getName()', () => {
     it('returns the name field of package.json', () => {
-      assert.equal(app.getName(), 'Electron Test')
+      expect(app.getName()).to.equal('Electron Test')
     })
   })
 
   describe('app.setName(name)', () => {
     it('overrides the name', () => {
-      assert.equal(app.getName(), 'Electron Test')
+      expect(app.getName()).to.equal('Electron Test')
       app.setName('test-name')
-      assert.equal(app.getName(), 'test-name')
+
+      expect(app.getName()).to.equal('test-name')
       app.setName('Electron Test')
     })
   })
 
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
-      assert.notEqual(app.getLocale(), '')
+      expect(app.getLocale()).to.not.be.empty()
     })
   })
 
   describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
-      assert.equal(app.isPackaged, false)
+      expect(app.isPackaged).to.be.false()
     })
   })
 
@@ -132,7 +135,7 @@ describe('app module', () => {
     })
 
     it('should be false during tests', () => {
-      assert.equal(app.isInApplicationsFolder(), false)
+      expect(app.isInApplicationsFolder()).to.be.false()
     })
   })
 
@@ -143,29 +146,30 @@ describe('app module', () => {
       if (appProcess != null) appProcess.kill()
     })
 
-    it('emits a process exit event with the code', (done) => {
+    it('emits a process exit event with the code', done => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       const electronPath = remote.getGlobal('process').execPath
       let output = ''
+
       appProcess = ChildProcess.spawn(electronPath, [appPath])
-      appProcess.stdout.on('data', (data) => {
-        output += data
-      })
-      appProcess.on('close', (code) => {
+      appProcess.stdout.on('data', data => { output += data })
+
+      appProcess.on('close', code => {
         if (process.platform !== 'win32') {
-          assert.notEqual(output.indexOf('Exit event with code: 123'), -1)
+          expect(output).to.include('Exit event with code: 123')
         }
-        assert.equal(code, 123)
+        expect(code).to.equal(123)
         done()
       })
     })
 
-    it('closes all windows', (done) => {
-      var appPath = path.join(__dirname, 'fixtures', 'api', 'exit-closes-all-windows-app')
-      var electronPath = remote.getGlobal('process').execPath
+    it('closes all windows', done => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'exit-closes-all-windows-app')
+      const electronPath = remote.getGlobal('process').execPath
+
       appProcess = ChildProcess.spawn(electronPath, [appPath])
-      appProcess.on('close', function (code) {
-        assert.equal(code, 123)
+      appProcess.on('close', code => {
+        expect(code).to.equal(123)
         done()
       })
     })
@@ -181,11 +185,11 @@ describe('app module', () => {
 
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
-      appProcess.stdout.on('data', (data) => appProcess.kill())
+      appProcess.stdout.on('data', data => appProcess.kill())
       appProcess.on('exit', (code, sig) => {
-        let message = ['code:', code, 'sig:', sig].join('\n')
-        assert.equal(code, 0, message)
-        assert.equal(sig, null, message)
+        const message = `code:\n${code}\nsig:\n${sig}`
+        expect(code).to.equal(0, message)
+        expect(sig).to.be.null(message)
         done()
       })
     })
@@ -198,15 +202,15 @@ describe('app module', () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton-old')
       // First launch should exit with 0.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath])
-      first.once('exit', (code) => {
-        assert.equal(code, 0)
+      first.once('exit', code => {
+        expect(code).to.equal(0)
       })
       // Start second app when received output.
       first.stdout.once('data', () => {
         // Second launch should exit with 1.
         const second = ChildProcess.spawn(remote.process.execPath, [appPath])
-        second.once('exit', (code) => {
-          assert.equal(code, 1)
+        second.once('exit', code => {
+          expect(code).to.equal(1)
           done()
         })
       })
@@ -217,17 +221,15 @@ describe('app module', () => {
     it('prevents the second launch of app', function (done) {
       this.timeout(120000)
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
-      // First launch should exit with 0.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath])
-      first.once('exit', (code) => {
-        assert.equal(code, 0)
+      first.once('exit', code => {
+        expect(code).to.equal(0)
       })
       // Start second app when received output.
       first.stdout.once('data', () => {
-        // Second launch should exit with 1.
         const second = ChildProcess.spawn(remote.process.execPath, [appPath])
-        second.once('exit', (code) => {
-          assert.equal(code, 1)
+        second.once('exit', code => {
+          expect(code).to.equal(1)
           done()
         })
       })
@@ -238,7 +240,7 @@ describe('app module', () => {
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch'
 
-    beforeEach((done) => {
+    beforeEach(done => {
       fs.unlink(socketPath, () => {
         server = net.createServer()
         server.listen(socketPath)
@@ -260,9 +262,9 @@ describe('app module', () => {
       this.timeout(120000)
 
       let state = 'none'
-      server.once('error', (error) => done(error))
-      server.on('connection', (client) => {
-        client.once('data', (data) => {
+      server.once('error', error => done(error))
+      server.on('connection', client => {
+        client.once('data', data => {
           if (String(data) === 'false' && state === 'none') {
             state = 'first-launch'
           } else if (String(data) === 'true' && state === 'first-launch') {
@@ -287,12 +289,12 @@ describe('app module', () => {
 
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', {testData: '123'})
-      assert.equal(app.getCurrentActivityType(), 'com.electron.testActivity')
+      expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity')
     })
   })
 
   xdescribe('app.importCertificate', () => {
-    var w = null
+    let w = null
 
     before(function () {
       if (process.platform !== 'linux') {
@@ -302,8 +304,8 @@ describe('app module', () => {
 
     afterEach(() => closeWindow(w).then(() => { w = null }))
 
-    it('can import certificate into platform cert store', (done) => {
-      let options = {
+    it('can import certificate into platform cert store', done => {
+      const options = {
         certificate: path.join(certPath, 'client.p12'),
         password: 'electron'
       }
@@ -311,22 +313,26 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
 
       w.webContents.on('did-finish-load', () => {
-        assert.equal(w.webContents.getTitle(), 'authorized')
+        expect(w.webContents.getTitle()).to.equal('authorized')
         done()
       })
 
       ipcRenderer.once('select-client-certificate', (event, webContentsId, list) => {
-        assert.equal(webContentsId, w.webContents.id)
-        assert.equal(list.length, 1)
-        assert.equal(list[0].issuerName, 'Intermediate CA')
-        assert.equal(list[0].subjectName, 'Client Cert')
-        assert.equal(list[0].issuer.commonName, 'Intermediate CA')
-        assert.equal(list[0].subject.commonName, 'Client Cert')
+        expect(webContentsId).to.equal(w.webContents.id)
+        expect(list).to.have.lengthOf(1)
+
+        expect(list[0]).to.deep.equal({
+          issuerName: 'Intermediate CA',
+          subjectName: 'Client Cert',
+          issuer: { commonName: 'Intermediate CA' },
+          subject: { commonName: 'Client Cert' }
+        })
+
         event.sender.send('client-certificate-response', list[0])
       })
 
-      app.importCertificate(options, (result) => {
-        assert(!result)
+      app.importCertificate(options, result => {
+        expect(result).toNotExist()
         ipcRenderer.sendSync('set-client-certificate-option', false)
         w.loadURL(secureUrl)
       })
@@ -340,7 +346,7 @@ describe('app module', () => {
 
     it('should emit browser-window-focus event when window is focused', (done) => {
       app.once('browser-window-focus', (e, window) => {
-        assert.equal(w.id, window.id)
+        expect(w.id).to.equal(window.id)
         done()
       })
       w = new BrowserWindow({ show: false })
@@ -349,7 +355,7 @@ describe('app module', () => {
 
     it('should emit browser-window-blur event when window is blured', (done) => {
       app.once('browser-window-blur', (e, window) => {
-        assert.equal(w.id, window.id)
+        expect(w.id).to.equal(window.id)
         done()
       })
       w = new BrowserWindow({ show: false })
@@ -359,7 +365,7 @@ describe('app module', () => {
     it('should emit browser-window-created event when window is created', (done) => {
       app.once('browser-window-created', (e, window) => {
         setImmediate(() => {
-          assert.equal(w.id, window.id)
+          expect(w.id).to.equal(window.id)
           done()
         })
       })
@@ -369,7 +375,7 @@ describe('app module', () => {
     it('should emit web-contents-created event when a webContents is created', (done) => {
       app.once('web-contents-created', (e, webContents) => {
         setImmediate(() => {
-          assert.equal(w.webContents.id, webContents.id)
+          expect(w.webContents.id).to.equal(webContents.id)
           done()
         })
       })
@@ -386,9 +392,7 @@ describe('app module', () => {
     const expectedBadgeCount = 42
     let returnValue = null
 
-    beforeEach(() => {
-      returnValue = app.setBadgeCount(expectedBadgeCount)
-    })
+    beforeEach(() => { returnValue = app.setBadgeCount(expectedBadgeCount) })
 
     after(() => {
       // Remove the badge.
@@ -403,11 +407,11 @@ describe('app module', () => {
       })
 
       it('returns true', () => {
-        assert.equal(returnValue, true)
+        expect(returnValue).to.be.true()
       })
 
       it('sets a badge count', () => {
-        assert.equal(app.getBadgeCount(), expectedBadgeCount)
+        expect(app.getBadgeCount()).to.equal(expectedBadgeCount)
       })
     })
 
@@ -419,11 +423,11 @@ describe('app module', () => {
       })
 
       it('returns false', () => {
-        assert.equal(returnValue, false)
+        expect(returnValue).to.be.false()
       })
 
       it('does not set a badge count', () => {
-        assert.equal(app.getBadgeCount(), 0)
+        expect(app.getBadgeCount()).to.equal(0)
       })
     })
   })
@@ -451,9 +455,9 @@ describe('app module', () => {
       app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
-    it('returns the login item status of the app', (done) => {
+    it('returns the login item status of the app', done => {
       app.setLoginItemSettings({openAtLogin: true})
-      assert.deepEqual(app.getLoginItemSettings(), {
+      expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: false,
         wasOpenedAtLogin: false,
@@ -462,7 +466,7 @@ describe('app module', () => {
       })
 
       app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
-      assert.deepEqual(app.getLoginItemSettings(), {
+      expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
         wasOpenedAtLogin: false,
@@ -474,7 +478,7 @@ describe('app module', () => {
       // Wait because login item settings are not applied immediately in MAS build
       const delay = process.mas ? 100 : 0
       setTimeout(() => {
-        assert.deepEqual(app.getLoginItemSettings(), {
+        expect(app.getLoginItemSettings()).to.deep.equal({
           openAtLogin: false,
           openAsHidden: false,
           wasOpenedAtLogin: false,
@@ -494,33 +498,39 @@ describe('app module', () => {
 
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
-      assert.equal(app.getLoginItemSettings().openAtLogin, false)
-      assert.equal(app.getLoginItemSettings({path: updateExe, args: processStartArgs}).openAtLogin, true)
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+      expect(app.getLoginItemSettings({
+        path: updateExe,
+        args: processStartArgs
+      }).openAtLogin).to.be.true()
     })
   })
 
   describe('isAccessibilitySupportEnabled API', () => {
     it('returns whether the Chrome has accessibility APIs enabled', () => {
-      assert.equal(typeof app.isAccessibilitySupportEnabled(), 'boolean')
+      expect(app.isAccessibilitySupportEnabled()).to.be.a('boolean')
     })
   })
 
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
-      assert.equal(fs.existsSync(app.getPath('exe')), true)
-      assert.equal(fs.existsSync(app.getPath('home')), true)
-      assert.equal(fs.existsSync(app.getPath('temp')), true)
+      const paths = [
+        fs.existsSync(app.getPath('exe')),
+        fs.existsSync(app.getPath('home')),
+        fs.existsSync(app.getPath('temp'))
+      ]
+      expect(paths).to.deep.equal([true, true, true])
     })
 
     it('throws an error when the name is invalid', () => {
-      assert.throws(() => {
+      expect(() => {
         app.getPath('does-not-exist')
-      }, /Failed to get 'does-not-exist' path/)
+      }).to.throw(/Failed to get 'does-not-exist' path/)
     })
 
     it('returns the overridden path', () => {
       app.setPath('music', __dirname)
-      assert.equal(app.getPath('music'), __dirname)
+      expect(app.getPath('music')).to.equal(__dirname)
     })
   })
 
@@ -544,9 +554,9 @@ describe('app module', () => {
 
     afterEach(() => closeWindow(w).then(() => { w = null }))
 
-    it('can respond with empty certificate list', (done) => {
+    it('can respond with empty certificate list', done => {
       w.webContents.on('did-finish-load', () => {
-        assert.equal(w.webContents.getTitle(), 'denied')
+        expect(w.webContents.getTitle()).to.equal('denied')
         done()
       })
 
@@ -601,34 +611,34 @@ describe('app module', () => {
 
     afterEach(() => {
       app.removeAsDefaultProtocolClient(protocol)
-      assert.equal(app.isDefaultProtocolClient(protocol), false)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
+
       app.removeAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
-      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), false)
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.false()
     })
 
     it('sets the app as the default protocol client', () => {
-      assert.equal(app.isDefaultProtocolClient(protocol), false)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
       app.setAsDefaultProtocolClient(protocol)
-      assert.equal(app.isDefaultProtocolClient(protocol), true)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.true()
     })
 
     it('allows a custom path and args to be specified', () => {
-      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), false)
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.false()
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
-      assert.equal(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs), true)
-      assert.equal(app.isDefaultProtocolClient(protocol), false)
+
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.true()
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
     })
 
     it('creates a registry entry for the protocol class', (done) => {
       app.setAsDefaultProtocolClient(protocol)
 
       classesKey.keys((error, keys) => {
-        if (error) {
-          throw error
-        }
+        if (error) throw error
 
-        const exists = !!keys.find((key) => key.key.includes(protocol))
-        assert.equal(exists, true)
+        const exists = !!keys.find(key => key.key.includes(protocol))
+        expect(exists).to.be.true()
 
         done()
       })
@@ -639,12 +649,10 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol)
 
       classesKey.keys((error, keys) => {
-        if (error) {
-          throw error
-        }
+        if (error) throw error
 
-        const exists = !!keys.find((key) => key.key.includes(protocol))
-        assert.equal(exists, false)
+        const exists = !!keys.find(key => key.key.includes(protocol))
+        expect(exists).to.be.false()
 
         done()
       })
@@ -662,12 +670,10 @@ describe('app module', () => {
         app.removeAsDefaultProtocolClient(protocol)
 
         classesKey.keys((error, keys) => {
-          if (error) {
-            throw error
-          }
+          if (error) throw error
 
-          const exists = !!keys.find((key) => key.key.includes(protocol))
-          assert.equal(exists, true)
+          const exists = !!keys.find(key => key.key.includes(protocol))
+          expect(exists).to.be.true()
 
           done()
         })
@@ -682,32 +688,32 @@ describe('app module', () => {
       }
     })
 
-    it('does not launch for argument following a URL', function (done) {
+    it('does not launch for argument following a URL', done => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with non 123 code.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'electron-test:?', 'abc'])
-      first.once('exit', (code) => {
-        assert.notEqual(code, 123)
+      first.once('exit', code => {
+        expect(code).to.not.equal(123)
         done()
       })
     })
 
-    it('launches successfully for argument following a file path', function (done) {
+    it('launches successfully for argument following a file path', done => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with code 123.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath, 'e:\\abc', 'abc'])
-      first.once('exit', (code) => {
-        assert.equal(code, 123)
+      first.once('exit', code => {
+        expect(code).to.equal(123)
         done()
       })
     })
 
-    it('launches successfully for multiple URIs following --', function (done) {
+    it('launches successfully for multiple URIs following --', done => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with code 123.
       const first = ChildProcess.spawn(remote.process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata'])
-      first.once('exit', (code) => {
-        assert.equal(code, 123)
+      first.once('exit', code => {
+        expect(code).to.equal(123)
         done()
       })
     })
@@ -730,20 +736,21 @@ describe('app module', () => {
       }
     })
 
-    it('fetches a non-empty icon', (done) => {
+    it('fetches a non-empty icon', done => {
       app.getFileIcon(iconPath, (err, icon) => {
-        assert.equal(err, null)
-        assert.equal(icon.isEmpty(), false)
+        expect(err).to.be.null()
+        expect(icon.isEmpty()).to.be.false()
         done()
       })
     })
 
-    it('fetches normal icon size by default', (done) => {
+    it('fetches normal icon size by default', done => {
       app.getFileIcon(iconPath, (err, icon) => {
         const size = icon.getSize()
-        assert.equal(err, null)
-        assert.equal(size.height, sizes.normal)
-        assert.equal(size.width, sizes.normal)
+
+        expect(err).to.be.null()
+        expect(size.height).to.equal(sizes.normal)
+        expect(size.width).to.equal(sizes.normal)
         done()
       })
     })
@@ -752,19 +759,19 @@ describe('app module', () => {
       it('fetches a small icon', (done) => {
         app.getFileIcon(iconPath, { size: 'small' }, (err, icon) => {
           const size = icon.getSize()
-          assert.equal(err, null)
-          assert.equal(size.height, sizes.small)
-          assert.equal(size.width, sizes.small)
+          expect(err).to.be.null()
+          expect(size.height).to.equal(sizes.small)
+          expect(size.width).to.equal(sizes.small)
           done()
         })
       })
 
       it('fetches a normal icon', (done) => {
-        app.getFileIcon(iconPath, { size: 'normal' }, function (err, icon) {
+        app.getFileIcon(iconPath, { size: 'normal' }, (err, icon) => {
           const size = icon.getSize()
-          assert.equal(err, null)
-          assert.equal(size.height, sizes.normal)
-          assert.equal(size.width, sizes.normal)
+          expect(err).to.be.null()
+          expect(size.height).to.equal(sizes.normal)
+          expect(size.width).to.equal(sizes.normal)
           done()
         })
       })
@@ -777,11 +784,11 @@ describe('app module', () => {
           return done()
         }
 
-        app.getFileIcon(iconPath, { size: 'large' }, function (err, icon) {
+        app.getFileIcon(iconPath, { size: 'large' }, (err, icon) => {
           const size = icon.getSize()
-          assert.equal(err, null)
-          assert.equal(size.height, sizes.large)
-          assert.equal(size.width, sizes.large)
+          expect(err).to.be.null()
+          expect(size.height).to.equal(sizes.large)
+          expect(size.width).to.equal(sizes.large)
           done()
         })
       })
@@ -791,33 +798,35 @@ describe('app module', () => {
   describe('getAppMetrics() API', () => {
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics()
-      assert.ok(appMetrics.length > 0, 'App memory info object is not > 0')
+      expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
+
       const types = []
       for (const {memory, pid, type, cpu} of appMetrics) {
-        assert.ok(memory.workingSetSize > 0, 'working set size is not > 0')
-        assert.ok(memory.privateBytes > 0, 'private bytes is not > 0')
-        assert.ok(memory.sharedBytes > 0, 'shared bytes is not > 0')
-        assert.ok(pid > 0, 'pid is not > 0')
-        assert.ok(type.length > 0, 'process type is null')
+        expect(memory.workingSetSize).to.be.above(0, 'working set size is not > 0')
+        expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
+        expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
+        expect(pid).to.be.above(0, 'pid is not > 0')
+        expect(type).to.be.a('string').that.is.not.empty()
+
         types.push(type)
-        assert.equal(typeof cpu.percentCPUUsage, 'number')
-        assert.equal(typeof cpu.idleWakeupsPerSecond, 'number')
+        expect(cpu).to.have.own.property('percentCPUUsage').that.is.a('number')
+        expect(cpu).to.have.own.property('idleWakeupsPerSecond').that.is.a('number')
       }
 
       if (process.platform === 'darwin') {
-        assert.ok(types.includes('GPU'))
+        expect(types).to.include('GPU')
       }
 
-      assert.ok(types.includes('Browser'))
-      assert.ok(types.includes('Tab'))
+      expect(types).to.include('Browser')
+      expect(types).to.include('Tab')
     })
   })
 
   describe('getGPUFeatureStatus() API', () => {
     it('returns the graphic features statuses', () => {
       const features = app.getGPUFeatureStatus()
-      assert.equal(typeof features.webgl, 'string')
-      assert.equal(typeof features.gpu_compositing, 'string')
+      expect(features).to.have.own.property('webgl').that.is.a('string')
+      expect(features).to.have.own.property('gpu_compositing').that.is.a('string')
     })
   })
 
@@ -841,7 +850,7 @@ describe('app module', () => {
       })
     })
 
-    afterEach((done) => {
+    afterEach(done => {
       if (appProcess != null) appProcess.kill()
 
       server.close(() => {
@@ -854,22 +863,20 @@ describe('app module', () => {
     })
 
     describe('when app.enableMixedSandbox() is called', () => {
-      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
         appProcess = ChildProcess.spawn(remote.process.execPath, [appPath])
 
-        server.once('error', (error) => {
-          done(error)
-        })
+        server.once('error', error => { done(error) })
 
-        server.on('connection', (client) => {
-          client.once('data', function (data) {
+        server.on('connection', client => {
+          client.once('data', data => {
             const argv = JSON.parse(data)
-            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
-            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
 
-            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
-            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+            expect(argv.noSandbox).to.not.include('--enable-sandbox')
+            expect(argv.noSandbox).to.include('--no-sandbox')
 
             done()
           })
@@ -878,25 +885,23 @@ describe('app module', () => {
     })
 
     describe('when the app is launched with --enable-mixed-sandbox', () => {
-      it('adds --enable-sandbox to render processes created with sandbox: true', (done) => {
+      it('adds --enable-sandbox to render processes created with sandbox: true', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
         appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'])
 
-        server.once('error', (error) => {
-          done(error)
-        })
+        server.once('error', error => { done(error) })
 
-        server.on('connection', (client) => {
-          client.once('data', function (data) {
+        server.on('connection', client => {
+          client.once('data', data => {
             const argv = JSON.parse(data)
-            assert.equal(argv.sandbox.includes('--enable-sandbox'), true)
-            assert.equal(argv.sandbox.includes('--no-sandbox'), false)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
 
-            assert.equal(argv.noSandbox.includes('--enable-sandbox'), false)
-            assert.equal(argv.noSandbox.includes('--no-sandbox'), true)
+            expect(argv.noSandbox).to.not.include('--enable-sandbox')
+            expect(argv.noSandbox).to.include('--no-sandbox')
 
-            assert.equal(argv.noSandboxDevtools, true)
-            assert.equal(argv.sandboxDevtools, true)
+            expect(argv.noSandboxDevtools).to.be.true()
+            expect(argv.sandboxDevtools).to.be.true()
 
             done()
           })
@@ -907,9 +912,9 @@ describe('app module', () => {
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {
-      assert.throws(() => {
+      expect(() => {
         app.disableDomainBlockingFor3DAPIs()
-      }, /before app is ready/)
+      }).to.throw(/before app is ready/)
     })
   })
 
@@ -929,11 +934,11 @@ describe('app module', () => {
 
   describe('whenReady', () => {
     it('returns a Promise', () => {
-      expect(app.whenReady()).to.be.an.instanceOf(Promise)
+      expect(app.whenReady()).to.be.a('promise')
     })
 
     it('becomes fulfilled if the app is already ready', () => {
-      assert(app.isReady())
+      expect(app.isReady()).to.be.true()
       return expect(app.whenReady()).to.be.eventually.fulfilled
     })
   })
