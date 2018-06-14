@@ -31,7 +31,7 @@ describe('autoUpdater module', function () {
 
   describe('getFeedURL', () => {
     it('returns a falsey value by default', () => {
-      expect(!autoUpdater.getFeedURL()).to.equal(true)
+      expect(autoUpdater.getFeedURL()).to.equal('')
     })
 
     it('correctly fetches the previously set FeedURL', function (done) {
@@ -61,8 +61,9 @@ describe('autoUpdater module', function () {
       })
 
       it('sets url successfully using old (url, headers) syntax', () => {
-        noThrow(() => autoUpdater.setFeedURL('http://electronjs.org', { header: 'val' }))
-        expect(autoUpdater.getFeedURL()).to.equal('http://electronjs.org')
+        const url = 'http://electronjs.org'
+        noThrow(() => autoUpdater.setFeedURL(url, { header: 'val' }))
+        expect(autoUpdater.getFeedURL()).to.equal(url)
       })
 
       it('throws if no url is provided when using the old style', () => {
@@ -72,8 +73,9 @@ describe('autoUpdater module', function () {
       })
 
       it('sets url successfully using new ({ url }) syntax', () => {
-        noThrow(() => autoUpdater.setFeedURL({ url: 'http://mymagicurl.local' }))
-        expect(autoUpdater.getFeedURL()).to.equal('http://mymagicurl.local')
+        const url = 'http://mymagicurl.local'
+        noThrow(() => autoUpdater.setFeedURL({ url }))
+        expect(autoUpdater.getFeedURL()).to.equal(url)
       })
 
       it('throws if no url is provided when using the new style', () => {
