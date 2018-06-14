@@ -1,5 +1,6 @@
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
+const dirtyChai = require("dirty-chai")
 const ChildProcess = require('child_process')
 const https = require('https')
 const net = require('net')
@@ -14,6 +15,7 @@ const {app, BrowserWindow, Menu, ipcMain} = remote
 const isCI = remote.getGlobal('isCi')
 
 chai.use(chaiAsPromised)
+chai.use(dirtyChai)
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
@@ -115,13 +117,13 @@ describe('app module', () => {
 
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
-      expect(app.getLocale()).to.not.equal('')
+      expect(app.getLocale()).to.not.be.empty()
     })
   })
 
   describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
-      expect(app.isPackaged).to.equal(false)
+      expect(app.isPackaged).to.be.false()
     })
   })
 
@@ -133,7 +135,7 @@ describe('app module', () => {
     })
 
     it('should be false during tests', () => {
-      expect(app.isInApplicationsFolder()).to.equal(false)
+      expect(app.isInApplicationsFolder()).to.be.false()
     })
   })
 
@@ -187,7 +189,7 @@ describe('app module', () => {
       appProcess.on('exit', (code, sig) => {
         const message = `code:\n${code}\nsig:\n${sig}`
         expect(code).to.equal(0, message)
-        expect(sig).to.equal(null, message)
+        expect(sig).to.be.null(message)
         done()
       })
     })
@@ -405,7 +407,7 @@ describe('app module', () => {
       })
 
       it('returns true', () => {
-        expect(returnValue).to.equal(true)
+        expect(returnValue).to.be.true()
       })
 
       it('sets a badge count', () => {
@@ -421,7 +423,7 @@ describe('app module', () => {
       })
 
       it('returns false', () => {
-        expect(returnValue).to.equal(false)
+        expect(returnValue).to.be.false()
       })
 
       it('does not set a badge count', () => {
@@ -496,11 +498,11 @@ describe('app module', () => {
 
       app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
 
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(false)
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
       expect(app.getLoginItemSettings({
         path: updateExe,
         args: processStartArgs
-      }).openAtLogin).to.equal(true)
+      }).openAtLogin).to.be.true()
     })
   })
 
@@ -609,24 +611,24 @@ describe('app module', () => {
 
     afterEach(() => {
       app.removeAsDefaultProtocolClient(protocol)
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(false)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
 
       app.removeAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
-      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.equal(false)
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.false()
     })
 
     it('sets the app as the default protocol client', () => {
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(false)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
       app.setAsDefaultProtocolClient(protocol)
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(true)
+      expect(app.isDefaultProtocolClient(protocol)).to.be.true()
     })
 
     it('allows a custom path and args to be specified', () => {
-      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.equal(false)
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.false()
       app.setAsDefaultProtocolClient(protocol, updateExe, processStartArgs)
 
-      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.equal(true)
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(false)
+      expect(app.isDefaultProtocolClient(protocol, updateExe, processStartArgs)).to.be.true()
+      expect(app.isDefaultProtocolClient(protocol)).to.be.false()
     })
 
     it('creates a registry entry for the protocol class', (done) => {
@@ -636,7 +638,7 @@ describe('app module', () => {
         if (error) throw error
 
         const exists = !!keys.find(key => key.key.includes(protocol))
-        expect(exists).to.equal(true)
+        expect(exists).to.be.true()
 
         done()
       })
@@ -650,7 +652,7 @@ describe('app module', () => {
         if (error) throw error
 
         const exists = !!keys.find(key => key.key.includes(protocol))
-        expect(exists).to.equal(false)
+        expect(exists).to.be.false()
 
         done()
       })
@@ -671,7 +673,7 @@ describe('app module', () => {
           if (error) throw error
 
           const exists = !!keys.find(key => key.key.includes(protocol))
-          expect(exists).to.equal(true)
+          expect(exists).to.be.true()
 
           done()
         })
@@ -736,8 +738,8 @@ describe('app module', () => {
 
     it('fetches a non-empty icon', done => {
       app.getFileIcon(iconPath, (err, icon) => {
-        expect(err).to.equal(null)
-        expect(icon.isEmpty()).to.equal(false)
+        expect(err).to.be.null()
+        expect(icon.isEmpty()).to.be.false()
         done()
       })
     })
@@ -746,7 +748,7 @@ describe('app module', () => {
       app.getFileIcon(iconPath, (err, icon) => {
         const size = icon.getSize()
 
-        expect(err).to.equal(null)
+        expect(err).to.be.null()
         expect(size.height).to.equal(sizes.normal)
         expect(size.width).to.equal(sizes.normal)
         done()
@@ -757,7 +759,7 @@ describe('app module', () => {
       it('fetches a small icon', (done) => {
         app.getFileIcon(iconPath, { size: 'small' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.equal(null)
+          expect(err).to.be.null()
           expect(size.height).to.equal(sizes.small)
           expect(size.width).to.equal(sizes.small)
           done()
@@ -767,7 +769,7 @@ describe('app module', () => {
       it('fetches a normal icon', (done) => {
         app.getFileIcon(iconPath, { size: 'normal' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.equal(null)
+          expect(err).to.be.null()
           expect(size.height).to.equal(sizes.normal)
           expect(size.width).to.equal(sizes.normal)
           done()
@@ -784,7 +786,7 @@ describe('app module', () => {
 
         app.getFileIcon(iconPath, { size: 'large' }, (err, icon) => {
           const size = icon.getSize()
-          expect(err).to.equal(null)
+          expect(err).to.be.null()
           expect(size.height).to.equal(sizes.large)
           expect(size.width).to.equal(sizes.large)
           done()
@@ -804,7 +806,7 @@ describe('app module', () => {
         expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
         expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
         expect(pid).to.be.above(0, 'pid is not > 0')
-        expect(type).to.not.equal(null, 'process type is null')
+        expect(type).to.be.a('string').that.is.not.empty()
 
         types.push(type)
         expect(cpu).to.have.own.property('percentCPUUsage').that.is.a('number')
@@ -898,8 +900,8 @@ describe('app module', () => {
             expect(argv.noSandbox).to.not.include('--enable-sandbox')
             expect(argv.noSandbox).to.include('--no-sandbox')
 
-            expect(argv.noSandboxDevtools).to.equal(true)
-            expect(argv.sandboxDevtools).to.equal(true)
+            expect(argv.noSandboxDevtools).to.be.true()
+            expect(argv.sandboxDevtools).to.be.true()
 
             done()
           })
@@ -936,7 +938,7 @@ describe('app module', () => {
     })
 
     it('becomes fulfilled if the app is already ready', () => {
-      expect(app.isReady()).to.equal(true)
+      expect(app.isReady()).to.be.true()
       return expect(app.whenReady()).to.be.eventually.fulfilled
     })
   })
