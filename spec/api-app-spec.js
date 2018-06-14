@@ -1,6 +1,6 @@
 const chai = require('chai')
 const chaiAsPromised = require('chai-as-promised')
-const dirtyChai = require("dirty-chai")
+const dirtyChai = require('dirty-chai')
 const ChildProcess = require('child_process')
 const https = require('https')
 const net = require('net')
