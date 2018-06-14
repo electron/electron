@@ -1,12 +1,16 @@
 'use strict'
 
-const {expect} = require('chai')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
 const {BrowserView, BrowserWindow} = remote
 
-describe('BrowserView module', () => {
+const {expect} = chai
+chai.use(dirtyChai)
+
+describe.only('BrowserView module', () => {
   let w = null
   let view = null
 
@@ -40,9 +44,9 @@ describe('BrowserView module', () => {
   describe('BrowserView.isDestroyed()', () => {
     it('returns correct value', () => {
       view = new BrowserView()
-      expect(!view.isDestroyed()).to.equal(true)
+      expect(!view.isDestroyed()).to.be.true()
       view.destroy()
-      expect(view.isDestroyed()).to.equal(true)
+      expect(view.isDestroyed()).to.be.true()
     })
   })
 
@@ -110,7 +114,7 @@ describe('BrowserView module', () => {
     it('returns the set view', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      expect(view.id).to.not.equal(null)
+      expect(view.id).to.not.be.null()
 
       let view2 = w.getBrowserView()
       expect(view2.webContents.id).to.equal(view.webContents.id)
@@ -118,20 +122,20 @@ describe('BrowserView module', () => {
 
     it('returns null if none is set', () => {
       let view = w.getBrowserView()
-      expect(view).to.equal(null)
+      expect(view).to.be.null()
     })
   })
 
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView()
-      expect(!view.webContents.getOwnerBrowserWindow()).to.equal(true)
+      expect(!view.webContents.getOwnerBrowserWindow()).to.be.true()
 
       w.setBrowserView(view)
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w)
 
       w.setBrowserView(null)
-      expect(!view.webContents.getOwnerBrowserWindow()).to.equal(true)
+      expect(!view.webContents.getOwnerBrowserWindow()).to.be.true()
     })
   })
 
@@ -139,7 +143,7 @@ describe('BrowserView module', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      expect(view.id).to.not.equal(null)
+      expect(view.id).to.not.be.null()
 
       let view2 = BrowserView.fromId(view.id)
       expect(view2.webContents.id).to.equal(view.webContents.id)
@@ -150,7 +154,7 @@ describe('BrowserView module', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      expect(view.id).to.not.equal(null)
+      expect(view.id).to.not.be.null()
 
       let view2 = BrowserView.fromWebContents(view.webContents)
       expect(view2.webContents.id).to.equal(view.webContents.id)
@@ -161,7 +165,7 @@ describe('BrowserView module', () => {
     it('returns all views', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      expect(view.id).to.not.equal(null)
+      expect(view.id).to.not.be.null()
 
       const views = BrowserView.getAllViews()
       expect(views.length).to.equal(1)
