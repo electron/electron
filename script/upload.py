@@ -212,6 +212,7 @@ def create_release_draft(github, tag):
 
 
 def upload_electron(github, release, file_path, args):
+  filename = os.path.basename(file_path)
 
   # if upload_to_s3 is set, skip github upload.
   if args.upload_to_s3:
@@ -221,10 +222,11 @@ def upload_electron(github, release, file_path, args):
     s3put(bucket, access_key, secret_key, os.path.dirname(file_path),
           key_prefix, [file_path])
     upload_sha256_checksum(release['tag_name'], file_path, key_prefix)
+    s3url = 'https://gh-contractor-zcbenz.s3.amazonaws.com'
+    print '{0} uploaded to {1}/{2}/{0}'.format(filename, s3url, key_prefix)
     return
 
   # Delete the original file before uploading in CI.
-  filename = os.path.basename(file_path)
   if os.environ.has_key('CI'):
     try:
       for asset in release['assets']:

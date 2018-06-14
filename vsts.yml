@@ -33,7 +33,7 @@ steps:
   condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
 - bash: |
-    if [ "$TRIGGERED_BY_API" != "1" ]; then
+    if [ "$UPLOAD_TO_S3" != "1" ]; then
       echo 'Uploading Electron release distribution to github releases'
       ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py
     else
@@ -48,9 +48,18 @@ steps:
     mkdir junit
     export MOCHA_FILE="junit/test-results.xml"
     export MOCHA_REPORTER="mocha-junit-reporter"
-    script/test.py --ci
+    script/test.py --ci --rebuild_native_modules
   name: Test
   condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+- bash: |
+    echo 'Testing Electron release build'
+    mkdir junit
+    export MOCHA_FILE="junit/test-results.xml"
+    export MOCHA_REPORTER="mocha-junit-reporter"
+    script/test.py --ci --rebuild_native_modules -c R
+  name: Test
+  condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
 - bash: |
     echo 'Verifying ffmpeg on debug build'
@@ -58,11 +67,25 @@ steps:
   name: Verify_FFmpeg
   condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
+- bash: |
+    echo 'Verifying ffmpeg on release build'
+    script/verify-ffmpeg.py -R
+  name: Verify_FFmpeg
+  condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
 - task: PublishTestResults@2
   displayName: Publish Test Results
   inputs:
     testResultsFiles: 'test-results.xml'
     searchFolder: junit
   condition: and(always(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+- task: kasunkodagoda.slack-notification.slack-notification-task.SlackNotification@3
+  displayName: Post Slack Notification
+  inputs:
+    SlackApiToken: '$(slack_token)'
+    Channel: '#bot-nightly-releases'
+    Message: '$(Build.DefinitionName)-$(Build.BuildNumber) finished with a $(Agent.JobStatus) status.'
+  condition: and(always(), eq(variables['Build.Reason'], 'Schedule'))
 
 - task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3

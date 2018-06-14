@@ -6,7 +6,7 @@ build-steps: &build-steps
         command: |
           if [ -n "${RUN_RELEASE_BUILD}" ]; then
             echo 'release build triggered from api'
-            echo 'export ELECTRON_RELEASE=1 TRIGGERED_BY_API=1' >> $BASH_ENV
+            echo 'export ELECTRON_RELEASE=1 UPLOAD_TO_S3=1' >> $BASH_ENV
           fi
     - run:
        name: Bootstrap
@@ -43,10 +43,10 @@ build-steps: &build-steps
     - run:
         name: Upload distribution
         command: |
-          if [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" != "1" ]; then
+          if [ "$ELECTRON_RELEASE" == "1" ] && [ "$UPLOAD_TO_S3" != "1" ]; then
             echo 'Uploading Electron release distribution to github releases'
             script/upload.py
-          elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$TRIGGERED_BY_API" == "1" ]; then
+          elif [ "$ELECTRON_RELEASE" == "1" ] && [ "$UPLOAD_TO_S3" == "1" ]; then
             echo 'Uploading Electron release distribution to s3'
             script/upload.py --upload_to_s3
           else
@@ -55,7 +55,7 @@ build-steps: &build-steps
     - run:
         name: Setup for headless testing
         command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_HEADLESS_TESTS" == "true" ]; then
+          if [ "$RUN_HEADLESS_TESTS" == "true" ]; then
             echo 'Setup for headless testing'
             sh -e /etc/init.d/xvfb start
           else
@@ -67,30 +67,34 @@ build-steps: &build-steps
           MOCHA_FILE: junit/test-results.xml
           MOCHA_REPORTER: mocha-junit-reporter
         command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
-            echo 'Testing Electron debug build'
-            mkdir junit
-            script/test.py --ci
-          else
-            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              echo 'Skipping testing on release build'
+          if [ "$RUN_TESTS" == "true" ]; then
+            if [ "$ELECTRON_RELEASE" != "1" ]; then
+              echo 'Testing Electron debug build'
+              mkdir junit
+              script/test.py --ci --rebuild_native_modules
             else
-              echo 'Skipping tests due to configuration'
+              echo 'Testing Electron release build'
+              mkdir junit
+              script/test.py --ci --rebuild_native_modules -c R
             fi
+          else
+           echo 'Skipping tests due to configuration'
           fi
     - run:
         name: Verify FFmpeg
         command: |
-          if [ "$ELECTRON_RELEASE" != "1" ] && [ "$RUN_TESTS" == "true" ]; then
-            echo 'Verifying ffmpeg on debug build'
-            script/verify-ffmpeg.py
-          else
-            if [ "$ELECTRON_RELEASE" == "1" ]; then
-              echo 'Skipping verify ffmpeg on release build'
+          if [ "$RUN_TESTS" == "true" ]; then
+            if [ "$ELECTRON_RELEASE" != "1" ]; then
+              echo 'Verifying ffmpeg on debug build'
+              script/verify-ffmpeg.py
             else
-              echo 'Skipping tests due to configuration'
+              echo 'Verifying ffmpeg on release build'
+              script/verify-ffmpeg.py -R
             fi
+          else
+            echo 'Skipping tests due to configuration'
           fi
+
     - run:
         name: Generate Typescript Definitions
         command: |
@@ -311,3 +315,12 @@ workflows:
       - electron-linux-arm64-release-nightly
       - electron-linux-ia32-release-nightly
       - electron-linux-x64-release-nightly
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
+        - 2-0-x
+        - 1-8-x
+        - 1-7-x
