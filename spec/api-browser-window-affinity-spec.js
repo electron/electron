@@ -22,7 +22,7 @@ describe('BrowserWindow with affinity module', () => {
         webPreferences: webPrefs || {}
       })
       w.webContents.on('did-finish-load', () => { resolve(w) })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'blank.html'))
+      w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)
     })
   }
 
