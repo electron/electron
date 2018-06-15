@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+# Creates a list of all authors in the alphabetical order respecting .mailmap.
+
+git log --format="%aN <%aE>" | sort -u > AUTHORS 
