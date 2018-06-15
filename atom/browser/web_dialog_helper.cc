@@ -215,6 +215,7 @@ void WebDialogHelper::RunFileChooser(
         flags |= file_dialog::FILE_DIALOG_MULTI_SELECTIONS;
       case content::FileChooserParams::Open:
         flags |= file_dialog::FILE_DIALOG_OPEN_FILE;
+        flags |= file_dialog::FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
         break;
       case content::FileChooserParams::UploadFolder:
         flags |= file_dialog::FILE_DIALOG_OPEN_DIRECTORY;
