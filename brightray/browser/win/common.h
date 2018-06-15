@@ -6,24 +6,21 @@ namespace brightray {
 
 namespace {
 
-bool isRunningInDesktopBridge() {
-  UINT32 length = 0;
-  LONG rc = GetPackageFamilyName(GetCurrentProcess(), &length, NULL);
+bool hasCheckedIsRunningInDesktopBridge = false;
+bool isRunningInDesktopBridge = false;
 
-  if (rc != ERROR_INSUFFICIENT_BUFFER) {
-    if (rc == APPMODEL_ERROR_NO_PACKAGE) {
-      // Process has no package identity, the expected
-      // win32 case
-      return false;
-    } else {
-      // A failure is also a *very* strong indicator
-      // that we're not in the desktop bridge
-      return false;
-    }
+bool IsRunningInDesktopBridge() {
+  if (hasCheckedIsRunningInDesktopBridge) {
+    return isRunningInDesktopBridge;
   }
 
-  // We have an identity!
-  return true;
+  UINT32 length;
+  wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+  LONG result = GetPackageFamilyName(GetCurrentProcess(), &length, packageFamilyName);
+  isRunningInDesktopBridge = result == ERROR_SUCCESS;
+  hasCheckedIsRunningInDesktopBridge = true;
+
+  return isRunningInDesktopBridge;
 }
 
 }
