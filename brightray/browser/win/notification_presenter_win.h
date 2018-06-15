@@ -25,7 +25,7 @@
 
 #include "base/files/scoped_temp_dir.h"
 #include "base/strings/string16.h"
-#include "brightray/browser/win/package.h"
+#include "brightray/browser/win/common.h"
 #include "brightray/browser/notification_presenter.h"
 
 class GURL;

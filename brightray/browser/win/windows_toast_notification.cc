@@ -58,12 +58,19 @@ bool WindowsToastNotification::Initialize() {
                                                        &toast_manager_)))
     return false;
 
-  ScopedHString app_id;
-  if (!GetAppUserModelID(&app_id))
-    return false;
+  if (IsRunningInDesktopBridge()) {
+    // Ironically, the Desktop Bridge / UWP environment
+    // does not require us to give Windows an appUserModelId.
+    return SUCCEEDED(
+      toast_manager_->CreateToastNotifier(&toast_notifier_));
+  } else {
+    ScopedHString app_id;
+    if (!GetAppUserModelID(&app_id))
+      return false;
 
-  return SUCCEEDED(
+    return SUCCEEDED(
       toast_manager_->CreateToastNotifierWithId(app_id, &toast_notifier_));
+  }
 }
 
 WindowsToastNotification::WindowsToastNotification(
