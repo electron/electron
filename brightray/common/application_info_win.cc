@@ -2,6 +2,7 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include <appmodel.h>
 #include <shlobj.h>
 
 #include <memory>
@@ -20,6 +21,8 @@ base::string16 g_app_user_model_id;
 }
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
+bool hasCheckedIsRunningInDesktopBridge = false;
+bool isRunningInDesktopBridge = false;
 
 std::string GetApplicationName() {
   auto* module = GetModuleHandle(nullptr);
@@ -60,6 +63,22 @@ PCWSTR GetRawAppUserModelID() {
 bool GetAppUserModelID(ScopedHString* app_id) {
   app_id->Reset(GetRawAppUserModelID());
   return app_id->success();
+}
+
+bool IsRunningInDesktopBridge() {
+  if (hasCheckedIsRunningInDesktopBridge) {
+    return isRunningInDesktopBridge;
+  }
+
+  UINT32 length;
+  wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+  HANDLE proc = GetCurrentProcess();
+  LONG result = GetPackageFamilyName(proc, &length, packageFamilyName);
+
+  isRunningInDesktopBridge = result == ERROR_SUCCESS;
+  hasCheckedIsRunningInDesktopBridge = true;
+
+  return isRunningInDesktopBridge;
 }
 
 }  // namespace brightray
