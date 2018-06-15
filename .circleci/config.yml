@@ -2,6 +2,14 @@ build-steps: &build-steps
   steps:
     - checkout
     - run:
+        name: Install Node.js 10 on MacOS
+        command: |
+          if [ "$INSTALL_MACOS_NODE" == "true" ]; then
+            echo 'Installing Node.js 10 for MacOS'
+            brew update
+            brew install node@10
+          fi
+    - run:
         name: Check for release
         command: |
           if [ -n "${RUN_RELEASE_BUILD}" ]; then
@@ -117,7 +125,7 @@ build-steps: &build-steps
 
 build-defaults: &build-defaults
   docker:
-    - image: electronbuilds/electron:0.0.7
+    - image: electronbuilds/electron:0.0.8
   <<: *build-steps
 
 version: 2
@@ -241,16 +249,18 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_TESTS: true
+      INSTALL_MACOS_NODE: true
     macos:
-      xcode: "9.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-osx-x64-release-nightly:
     environment:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
+      INSTALL_MACOS_NODE: true
     macos:
-      xcode: "9.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-mas-x64:
@@ -258,8 +268,9 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_TESTS: true
+      INSTALL_MACOS_NODE: true
     macos:
-      xcode: "9.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
   electron-mas-x64-release-nightly:
@@ -267,8 +278,9 @@ jobs:
       TARGET_ARCH: x64
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
+      INSTALL_MACOS_NODE: true
     macos:
-      xcode: "9.0"
+      xcode: "8.3.3"
     <<: *build-steps
 
 
