@@ -6,7 +6,7 @@ chai.use(dirtyChai)
 
 const {CallbacksRegistry} = require('electron')
 
-describe.only('CallbacksRegistry module', () => {
+describe('CallbacksRegistry module', () => {
   let registry = null
 
   beforeEach(() => {
