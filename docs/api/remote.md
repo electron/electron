@@ -177,6 +177,11 @@ const foo = require('electron').remote.require('./foo') // bar
 Returns [`BrowserWindow`](browser-window.md) - The window to which this web page
 belongs.
 
+**Note:** Do not use `removeAllListeners` on [`BrowserWindow`](browser-window.md).
+Use of this can remove all [`blur`](https://developer.mozilla.org/en-US/docs/Web/Events/blur)
+listeners, disable click events on touch bar buttons, and other unintended
+consequences.  
+
 ### `remote.getCurrentWebContents()`
 
 Returns [`WebContents`](web-contents.md) - The web contents of this web page.
