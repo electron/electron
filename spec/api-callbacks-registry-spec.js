@@ -1,7 +1,12 @@
-const {assert} = require('chai')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+
+const {expect} = chai
+chai.use(dirtyChai)
+
 const {CallbacksRegistry} = require('electron')
 
-describe('CallbacksRegistry module', () => {
+describe.only('CallbacksRegistry module', () => {
   let registry = null
 
   beforeEach(() => {
@@ -12,7 +17,7 @@ describe('CallbacksRegistry module', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
 
-    assert.exists(key)
+    expect(key).to.exist()
   })
 
   it('returns a specified callback if it is in the registry', () => {
@@ -20,29 +25,29 @@ describe('CallbacksRegistry module', () => {
     const key = registry.add(cb)
     const callback = registry.get(key)
 
-    assert.equal(callback.toString(), cb.toString())
+    expect(callback.toString()).equal(cb.toString())
   })
 
   it('returns an empty function if the cb doesnt exist', () => {
     const callback = registry.get(1)
 
-    assert.isFunction(callback)
+    expect(callback).to.be.a('function')
   })
 
   it('removes a callback to the registry', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
 
-    assert.exists(key)
+    expect(key).to.exist()
 
     const beforeCB = registry.get(key)
 
-    assert.equal(beforeCB.toString(), cb.toString())
+    expect(beforeCB.toString()).to.equal(cb.toString())
 
     registry.remove(key)
     const afterCB = registry.get(key)
 
-    assert.isFunction(afterCB)
-    assert.notEqual(afterCB.toString(), cb.toString())
+    expect(afterCB).to.be.a('function')
+    expect(afterCB.toString()).to.not.equal(cb.toString())
   })
 })
