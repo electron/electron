@@ -38,12 +38,6 @@ describe('CallbacksRegistry module', () => {
     const cb = () => [1, 2, 3, 4, 5]
     const key = registry.add(cb)
 
-    expect(key).to.exist()
-
-    const beforeCB = registry.get(key)
-
-    expect(beforeCB.toString()).to.equal(cb.toString())
-
     registry.remove(key)
     const afterCB = registry.get(key)
 
