@@ -10,7 +10,7 @@ const {BrowserView, BrowserWindow} = remote
 const {expect} = chai
 chai.use(dirtyChai)
 
-describe.only('BrowserView module', () => {
+describe('BrowserView module', () => {
   let w = null
   let view = null
 
