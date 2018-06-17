@@ -1,5 +1,4 @@
 const chai = require('chai')
-const assert = require('assert')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
