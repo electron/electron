@@ -44,7 +44,7 @@ describe('BrowserView module', () => {
   describe('BrowserView.isDestroyed()', () => {
     it('returns correct value', () => {
       view = new BrowserView()
-      expect(!view.isDestroyed()).to.be.true()
+      expect(view.isDestroyed()).to.be.false()
       view.destroy()
       expect(view.isDestroyed()).to.be.true()
     })
@@ -129,13 +129,13 @@ describe('BrowserView module', () => {
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView()
-      expect(!view.webContents.getOwnerBrowserWindow()).to.be.true()
+      expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
 
       w.setBrowserView(view)
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w)
 
       w.setBrowserView(null)
-      expect(!view.webContents.getOwnerBrowserWindow()).to.be.true()
+      expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
     })
   })
 
@@ -168,7 +168,7 @@ describe('BrowserView module', () => {
       expect(view.id).to.not.be.null()
 
       const views = BrowserView.getAllViews()
-      expect(views.length).to.equal(1)
+      expect(views).to.be.an('array').that.has.lengthOf(1)
       expect(views[0].webContents.id).to.equal(view.webContents.id)
     })
   })
