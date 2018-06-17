@@ -1,10 +1,14 @@
 'use strict'
 
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
 const {BrowserView, BrowserWindow} = remote
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 describe('BrowserView module', () => {
   let w = null
@@ -40,9 +44,9 @@ describe('BrowserView module', () => {
   describe('BrowserView.isDestroyed()', () => {
     it('returns correct value', () => {
       view = new BrowserView()
-      assert.ok(!view.isDestroyed())
+      expect(view.isDestroyed()).to.be.false()
       view.destroy()
-      assert.ok(view.isDestroyed())
+      expect(view.isDestroyed()).to.be.true()
     })
   })
 
@@ -54,9 +58,9 @@ describe('BrowserView module', () => {
 
     it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(() => {
+      expect(() => {
         view.setBackgroundColor(null)
-      }, /conversion failure/)
+      }).to.throw(/conversion failure/)
     })
   })
 
@@ -69,9 +73,9 @@ describe('BrowserView module', () => {
 
     it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(() => {
+      expect(() => {
         view.setAutoResize(null)
-      }, /conversion failure/)
+      }).to.throw(/conversion failure/)
     })
   })
 
@@ -83,12 +87,12 @@ describe('BrowserView module', () => {
 
     it('throws for invalid args', () => {
       view = new BrowserView()
-      assert.throws(() => {
+      expect(() => {
         view.setBounds(null)
-      }, /conversion failure/)
-      assert.throws(() => {
+      }).to.throw(/conversion failure/)
+      expect(() => {
         view.setBounds({})
-      }, /conversion failure/)
+      }).to.throw(/conversion failure/)
     })
   })
 
@@ -110,25 +114,28 @@ describe('BrowserView module', () => {
     it('returns the set view', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      assert.notEqual(view.id, null)
+      expect(view.id).to.not.be.null()
+
       let view2 = w.getBrowserView()
-      assert.equal(view2.webContents.id, view.webContents.id)
+      expect(view2.webContents.id).to.equal(view.webContents.id)
     })
 
     it('returns null if none is set', () => {
       let view = w.getBrowserView()
-      assert.equal(null, view)
+      expect(view).to.be.null()
     })
   })
 
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
       view = new BrowserView()
-      assert.ok(!view.webContents.getOwnerBrowserWindow())
+      expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
+
       w.setBrowserView(view)
-      assert.equal(view.webContents.getOwnerBrowserWindow(), w)
+      expect(view.webContents.getOwnerBrowserWindow()).to.equal(w)
+
       w.setBrowserView(null)
-      assert.ok(!view.webContents.getOwnerBrowserWindow())
+      expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
     })
   })
 
@@ -136,9 +143,10 @@ describe('BrowserView module', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      assert.notEqual(view.id, null)
+      expect(view.id).to.not.be.null()
+
       let view2 = BrowserView.fromId(view.id)
-      assert.equal(view2.webContents.id, view.webContents.id)
+      expect(view2.webContents.id).to.equal(view.webContents.id)
     })
   })
 
@@ -146,9 +154,10 @@ describe('BrowserView module', () => {
     it('returns the view with given id', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      assert.notEqual(view.id, null)
+      expect(view.id).to.not.be.null()
+
       let view2 = BrowserView.fromWebContents(view.webContents)
-      assert.equal(view2.webContents.id, view.webContents.id)
+      expect(view2.webContents.id).to.equal(view.webContents.id)
     })
   })
 
@@ -156,11 +165,11 @@ describe('BrowserView module', () => {
     it('returns all views', () => {
       view = new BrowserView()
       w.setBrowserView(view)
-      assert.notEqual(view.id, null)
+      expect(view.id).to.not.be.null()
 
       const views = BrowserView.getAllViews()
-      assert.equal(views.length, 1)
-      assert.equal(views[0].webContents.id, view.webContents.id)
+      expect(views).to.be.an('array').that.has.lengthOf(1)
+      expect(views[0].webContents.id).to.equal(view.webContents.id)
     })
   })
 })
