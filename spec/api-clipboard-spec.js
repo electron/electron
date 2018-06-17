@@ -1,4 +1,4 @@
-const assert = require('assert')
+const {expect} = require('chai')
 const path = require('path')
 const {Buffer} = require('buffer')
 
@@ -12,7 +12,7 @@ describe('clipboard module', () => {
       const p = path.join(fixtures, 'assets', 'logo.png')
       const i = nativeImage.createFromPath(p)
       clipboard.writeImage(p)
-      assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
+      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL())
     })
   })
 
@@ -20,7 +20,7 @@ describe('clipboard module', () => {
     it('returns unicode string correctly', () => {
       const text = '千江有水千江月，万里无云万里天'
       clipboard.writeText(text)
-      assert.equal(clipboard.readText(), text)
+      expect(clipboard.readText()).to.equal(text)
     })
   })
 
@@ -29,7 +29,7 @@ describe('clipboard module', () => {
       const text = '<string>Hi</string>'
       const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>'
       clipboard.writeHTML(text)
-      assert.equal(clipboard.readHTML(), markup)
+      expect(clipboard.readHTML()).to.equal(markup)
     })
   })
 
@@ -37,7 +37,7 @@ describe('clipboard module', () => {
     it('returns rtf text correctly', () => {
       const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}'
       clipboard.writeRTF(rtf)
-      assert.equal(clipboard.readRTF(), rtf)
+      expect(clipboard.readRTF()).to.equal(rtf)
     })
   })
 
@@ -50,13 +50,13 @@ describe('clipboard module', () => {
 
     it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org')
-      assert.deepEqual(clipboard.readBookmark(), {
+      expect(clipboard.readBookmark()).to.deep.equal({
         title: 'a title',
         url: 'https://electronjs.org'
       })
 
       clipboard.writeText('no bookmark')
-      assert.deepEqual(clipboard.readBookmark(), {
+      expect(clipboard.readBookmark()).to.deep.equal({
         title: '',
         url: ''
       })
@@ -78,13 +78,14 @@ describe('clipboard module', () => {
         bookmark: 'a title',
         image: p
       })
-      assert.equal(clipboard.readText(), text)
-      assert.equal(clipboard.readHTML(), markup)
-      assert.equal(clipboard.readRTF(), rtf)
-      assert.equal(clipboard.readImage().toDataURL(), i.toDataURL())
+
+      expect(clipboard.readText()).to.equal(text)
+      expect(clipboard.readHTML()).to.equal(markup)
+      expect(clipboard.readRTF()).to.equal(rtf)
+      expect(clipboard.readImage().toDataURL()).to.equal(i.toDataURL())
 
       if (process.platform !== 'linux') {
-        assert.deepEqual(clipboard.readBookmark(), bookmark)
+        expect(clipboard.readBookmark()).to.deep.equal(bookmark)
       }
     })
   })
@@ -98,7 +99,7 @@ describe('clipboard module', () => {
 
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this')
-      assert.equal(clipboard.readFindText(), 'find this')
+      expect(clipboard.readFindText()).to.equal('find this')
     })
   })
 
@@ -112,13 +113,13 @@ describe('clipboard module', () => {
 
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
-      assert.equal(clipboard.readText(), 'writeBuffer')
+      expect(clipboard.readText()).to.equal('writeBuffer')
     })
 
     it('throws an error when a non-Buffer is specified', () => {
-      assert.throws(() => {
+      expect(() => {
         clipboard.writeBuffer('public.utf8-plain-text', 'hello')
-      }, /buffer must be a node Buffer/)
+      }).to.throw(/buffer must be a node Buffer/)
     })
   })
 
@@ -132,7 +133,7 @@ describe('clipboard module', () => {
     it('returns a Buffer of the content for the specified format', () => {
       const buffer = Buffer.from('this is binary', 'utf8')
       clipboard.writeText(buffer.toString())
-      assert(buffer.equals(clipboard.readBuffer('public.utf8-plain-text')))
+      expect(buffer.equals(clipboard.readBuffer('public.utf8-plain-text'))).to.equal(true)
     })
   })
 })
