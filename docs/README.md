@@ -107,6 +107,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [Process Object](api/process.md)
 * [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
 * [Environment Variables](api/environment-variables.md)
+* [Breaking API Changes](api/breaking-changes.md)
 
 ### Custom DOM Elements:
 
