@@ -54,10 +54,10 @@ def main():
     libcc_shared_library_path = os.path.join(dist_dir, 'shared_library')
     libcc_static_library_path = os.path.join(dist_dir, 'static_library')
 
-  if PLATFORM != 'win32':
-    if not args.disable_clang and args.clang_dir == '':
-      # Download prebuilt clang binaries.
-      update_clang()
+  if (not args.disable_clang and args.clang_dir == '' 
+      and not (sys.platform=='win32' and not args.use_clang_cl_on_windows)):
+    # Download prebuilt clang binaries.
+    update_clang()
 
   setup_python_libs()
   update_node_modules('.')
@@ -95,6 +95,9 @@ def parse_args():
   parser.add_argument('--target_arch', default=get_target_arch(),
                       help='Manually specify the arch to build for')
   parser.add_argument('--clang_dir', default='', help='Path to clang binaries')
+  parser.add_argument('--use_clang_cl_on_windows', action='store_true', 
+                      default=False, help='Download clang-cl on Windows and' \
+                      ' use it as a compiler')
   parser.add_argument('--disable_clang', action='store_true',
                       help='Use compilers other than clang for building')
   build_libcc = parser.add_mutually_exclusive_group()
@@ -129,6 +132,14 @@ def args_to_defines(args):
     defines += ' clang_use_chrome_plugins=0'
   if args.cc_wrapper is not None:
     defines += ' cc_wrapper=' + args.cc_wrapper
+  if args.use_clang_cl_on_windows:
+    defines += ' clang_cl_windows=1'
+    if not args.clang_dir:
+      thisDir = os.path.abspath(os.path.dirname(__file__))
+      llvmPath = os.path.join(thisDir, '..', 'vendor', 'llvm-build')
+      llvmBuildDir = os.path.realpath(llvmPath)
+      defines += ' make_clang_dir=' + llvmBuildDir
+    
   return defines
 
 
@@ -195,8 +206,11 @@ def build_libchromiumcontent(verbose, target_arch, debug,
 
 
 def update_clang():
-  execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
-
+  if sys.platform == 'win32':
+    updateClangPath = os.path.join(SOURCE_ROOT, 'script', 'update-clang.py')
+    execute_stdout([sys.executable, updateClangPath])
+  else:
+    execute_stdout([os.path.join(SOURCE_ROOT, 'script', 'update-clang.sh')])
 
 def download_sysroot(target_arch):
   if target_arch == 'ia32':
