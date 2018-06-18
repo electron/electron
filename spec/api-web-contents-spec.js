@@ -92,7 +92,7 @@ describe('webContents module', () => {
     })
   })
 
-  describe('setDevToolsWebCotnents() API', () => {
+  describe('setDevToolsWebContents() API', () => {
     it('sets arbitry webContents as devtools', (done) => {
       let devtools = new BrowserWindow({show: false})
       devtools.webContents.once('dom-ready', () => {
@@ -706,6 +706,25 @@ describe('webContents module', () => {
         }
       })
       w.loadURL(`file://${fixtures}/pages/a.html`)
+    })
+  })
+
+  describe('webframe messages in sandboxed contents', () => {
+    it('responds to executeJavaScript', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.executeJavaScript('37 + 5', (result) => {
+          assert.equal(result, 42)
+          done()
+        })
+      })
+      w.loadURL('about:blank')
     })
   })
 })
