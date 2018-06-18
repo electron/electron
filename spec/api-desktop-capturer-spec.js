@@ -4,9 +4,7 @@ const features = process.atomBinding('features')
 
 const isCI = remote.getGlobal('isCi')
 
-// FIXME(alexeykuzmin): [Ch66] Crashes the app.
-// Fix the crash and enable the tests.
-xdescribe('desktopCapturer', () => {
+describe('desktopCapturer', () => {
   before(function () {
     if (!features.isDesktopCapturerEnabled()) {
       // It's been disabled during build time.
