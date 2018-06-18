@@ -4,6 +4,7 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include "atom/browser/api/atom_api_web_contents_view.h"
 #include "atom/browser/native_window_views.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -28,8 +29,9 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
 }
 
 void CommonWebContentsDelegate::ShowAutofillPopup(
-    bool offscreen,
     content::RenderFrameHost* frame_host,
+    content::RenderFrameHost* embedder_frame_host,
+    bool offscreen,
     const gfx::RectF& bounds,
     const std::vector<base::string16>& values,
     const std::vector<base::string16>& labels) {
@@ -37,8 +39,8 @@ void CommonWebContentsDelegate::ShowAutofillPopup(
     return;
 
   auto* window = static_cast<NativeWindowViews*>(owner_window());
-  autofill_popup_->CreateView(frame_host, offscreen, window->content_view(),
-                              bounds);
+  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
+                              window->content_view(), bounds);
   autofill_popup_->SetItems(values, labels);
 }
 
