@@ -1,6 +1,10 @@
 'use strict'
 
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 const {remote} = require('electron')
 
@@ -12,38 +16,45 @@ describe('inAppPurchase module', function () {
   const {inAppPurchase} = remote
 
   it('canMakePayments() does not throw', () => {
-    inAppPurchase.canMakePayments()
+    expect(() => {
+      inAppPurchase.canMakePayments()
+    }).to.not.throw()
   })
 
   it('finishAllTransactions() does not throw', () => {
-    inAppPurchase.finishAllTransactions()
+    expect(() => {
+      inAppPurchase.finishAllTransactions()
+    }).to.not.throw()
   })
 
   it('finishTransactionByDate() does not throw', () => {
-    inAppPurchase.finishTransactionByDate(new Date().toISOString())
+    expect(() => {
+      inAppPurchase.finishTransactionByDate(new Date().toISOString())
+    }).to.not.throw()
   })
 
   it('getReceiptURL() returns receipt URL', () => {
-    assert.ok(inAppPurchase.getReceiptURL().endsWith('_MASReceipt/receipt'))
+    const correctUrlEnd = inAppPurchase.getReceiptURL().endsWith('_MASReceipt/receipt')
+    expect(correctUrlEnd).to.be.true()
   })
 
-  it('purchaseProduct() fails when buying invalid product', (done) => {
-    inAppPurchase.purchaseProduct('non-exist', 1, (success) => {
-      assert.ok(!success)
+  it('purchaseProduct() fails when buying invalid product', done => {
+    inAppPurchase.purchaseProduct('non-exist', 1, success => {
+      expect(success).to.be.false()
       done()
     })
   })
 
-  it('purchaseProduct() accepts optional arguments', (done) => {
+  it('purchaseProduct() accepts optional arguments', done => {
     inAppPurchase.purchaseProduct('non-exist', () => {
       inAppPurchase.purchaseProduct('non-exist', 1)
       done()
     })
   })
 
-  it('getProducts() returns an empty list when getting invalid product', (done) => {
-    inAppPurchase.getProducts(['non-exist'], (products) => {
-      assert.ok(products.length === 0)
+  it('getProducts() returns an empty list when getting invalid product', done => {
+    inAppPurchase.getProducts(['non-exist'], products => {
+      expect(products.length).to.equal(0)
       done()
     })
   })
