@@ -12,8 +12,7 @@ const Promise = require('bluebird')
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
-// TODO(alexeykuzmin): [Ch66] Crashes on Linux. Fix it and enable back.
-xdescribe('powerMonitor', () => {
+describe('powerMonitor', () => {
   let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
 
   if (!skip) {
