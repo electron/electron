@@ -766,8 +766,7 @@ describe('asar package', function () {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fix the tests.
-    xdescribe('process.env.ELECTRON_NO_ASAR', function () {
+    describe('process.env.ELECTRON_NO_ASAR', function () {
       it('disables asar support in forked processes', function (done) {
         const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
           env: {
@@ -939,8 +938,7 @@ describe('asar package', function () {
       assert(stats.isFile())
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fix the test.
-    xit('is available in forked scripts', function (done) {
+    it('is available in forked scripts', function (done) {
       var child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'))
       child.on('message', function (msg) {
         assert.equal(msg, 'object')

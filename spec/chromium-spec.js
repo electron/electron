@@ -296,8 +296,7 @@ describe('chromium feature', () => {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
-    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable back.
-    xit('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
+    it('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
       let b
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
