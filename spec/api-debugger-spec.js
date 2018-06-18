@@ -92,7 +92,7 @@ describe('debugger module', () => {
       }
 
       const callback = (err, res) => {
-        expect(err.message).to.not.exist()
+        expect(err.message).to.be.undefined()
         expect(res.wasThrown).to.be.undefined()
         expect(res.result.value).to.equal(6)
 
