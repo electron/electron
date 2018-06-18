@@ -66,6 +66,7 @@ class BrowserWindow : public TopLevelWindow,
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowResize() override;
+  void OnWindowLeaveFullScreen() override;
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;

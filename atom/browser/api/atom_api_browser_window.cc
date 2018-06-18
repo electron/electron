@@ -270,6 +270,14 @@ void BrowserWindow::OnWindowResize() {
   TopLevelWindow::OnWindowResize();
 }
 
+void BrowserWindow::OnWindowLeaveFullScreen() {
+  TopLevelWindow::OnWindowLeaveFullScreen();
+#if defined(OS_MACOSX)
+  if (web_contents()->IsFullscreenForCurrentTab())
+    web_contents()->ExitFullscreen(true);
+#endif
+}
+
 void BrowserWindow::Focus() {
   if (api_web_contents_->IsOffScreen())
     FocusOnWebView();
