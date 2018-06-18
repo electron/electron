@@ -33,7 +33,7 @@ v8::Local<v8::Value> NetLog::Create(v8::Isolate* isolate) {
 void NetLog::StartLogging(mate::Arguments* args) {
   base::FilePath log_path;
   if (!args->GetNext(&log_path) || log_path.empty()) {
-    args->ThrowError("Valid path is required");
+    args->ThrowError("The first parameter must be a valid string");
     return;
   }
 
