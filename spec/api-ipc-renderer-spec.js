@@ -44,7 +44,7 @@ describe('ipc renderer module', () => {
     it('can send instances of Buffer', done => {
       const buffer = Buffer.from('hello')
       ipcRenderer.once('message', (event, message) => {
-        expect(buffer).to.equal(message)
+        expect(buffer.equals(message)).to.be.true()
         done()
       })
       ipcRenderer.send('message', buffer)
