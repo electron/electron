@@ -231,7 +231,15 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
   auto completion_callback = base::BindOnce(OnSetCookie, callback);
-  if (!canonical_cookie) {
+  if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    std::move(completion_callback).Run(false);
+    return;
+  }
+  if (url.empty()) {
+    std::move(completion_callback).Run(false);
+    return;
+  }
+  if (name.empty()) {
     std::move(completion_callback).Run(false);
     return;
   }

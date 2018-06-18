@@ -90,13 +90,13 @@ describe('session module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.
-    xit('calls back with an error when setting a cookie with missing required fields', (done) => {
+    it('calls back with an error when setting a cookie with missing required fields', (done) => {
       session.defaultSession.cookies.set({
         url: '',
         name: '1',
         value: '1'
       }, (error) => {
+        assert(error, 'Should have an error')
         assert.equal(error.message, 'Setting cookie failed')
         done()
       })
