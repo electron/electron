@@ -62,19 +62,18 @@ describe('deprecations', () => {
 
     let value = 0
     let o = { [newPropertyName]: value }
-    expect(o[oldPropertyName]).to.be.undefined()
-    expect(o[newPropertyName]).to.be.a('number')
+    expect(o).to.not.have.a.property(oldPropertyName)
+    expect(o).to.have.a.property(newPropertyName).that.is.a('number')
 
     deprecate.property(o, oldPropertyName, newPropertyName)
-    expect(msg).to.not.be.a('string')
     o[oldPropertyName] = ++value
 
     expect(msg).to.be.a('string')
     expect(msg).to.include(oldPropertyName)
     expect(msg).to.include(newPropertyName)
 
-    expect(o[newPropertyName]).to.equal(value)
-    expect(o[oldPropertyName]).to.equal(value)
+    expect(o).to.have.a.property(newPropertyName).that.is.equal(value)
+    expect(o).to.have.a.property(oldPropertyName).that.is.equal(value)
   })
 
   it('warns if deprecated property is already set', () => {
