@@ -282,8 +282,7 @@ describe('node feature', () => {
       }
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fix the test.
-    xit('emit error when connect to a socket path without listeners', (done) => {
+    it('emit error when connect to a socket path without listeners', (done) => {
       const socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock')
       const script = path.join(fixtures, 'module', 'create_socket.js')
       const child = ChildProcess.fork(script, [socketPath])
