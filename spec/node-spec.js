@@ -203,8 +203,7 @@ describe('node feature', () => {
     })
   })
 
-  // TODO(alexeykuzmin): [Ch66] Time out. Fix them and enable back.
-  xdescribe('inspector', () => {
+  describe('inspector', () => {
     let child
 
     afterEach(() => {
@@ -240,7 +239,7 @@ describe('node feature', () => {
       child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
         if (cmd === 'assert') {
           assert.equal(debuggerEnabled, true)
-          assert.equal(secondSessionOpened, false)
+          assert.equal(secondSessionOpened, true)
           assert.equal(success, true)
           done()
         }
