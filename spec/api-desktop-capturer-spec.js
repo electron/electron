@@ -26,7 +26,7 @@ describe('desktopCapturer', () => {
       types: ['window', 'screen']
     }, (error, sources) => {
       expect(error).to.be.null()
-      expect(sources.length).to.not.equal(0)
+      expect(sources).to.be.an('array').that.is.not.empty()
       done()
     })
   })
@@ -43,7 +43,7 @@ describe('desktopCapturer', () => {
     const callback = (error, sources) => {
       callCount++
       expect(error).to.be.null()
-      expect(sources.length).to.not.equal(0)
+      expect(sources).to.be.an('array').that.is.not.empty()
       if (callCount === 2) done()
     }
 
@@ -71,10 +71,10 @@ describe('desktopCapturer', () => {
 
     desktopCapturer.getSources({types: ['window']}, (error, sources) => {
       expect(error).to.be.null()
-      expect(sources.length).to.not.equal(0)
-      sources.forEach((source) => {
-        expect(source.display_id.length).to.equal(0)
-      })
+      expect(sources).to.be.an('array').that.is.not.empty()
+      for (const {display_id: displayId} of sources) {
+        expect(displayId).to.be.a('string').and.be.empty()
+      }
       done()
     })
   })
@@ -87,8 +87,7 @@ describe('desktopCapturer', () => {
     const displays = screen.getAllDisplays()
     desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
       expect(error).to.be.null()
-      expect(sources.length).to.not.equal(0)
-      expect(sources.length).to.equal(displays.length)
+      expect(sources).to.be.an('array').of.length(displays.length)
 
       for (let i = 0; i < sources.length; i++) {
         expect(sources[i].display_id).to.equal(displays[i].id.toString())
