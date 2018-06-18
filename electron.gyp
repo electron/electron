@@ -638,8 +638,12 @@
           'mac_bundle': 1,
           'mac_bundle_resources': [
             'atom/common/resources/mac/MainMenu.xib',
-            '<(libchromiumcontent_dir)/content_shell.pak',
             '<(libchromiumcontent_dir)/icudtl.dat',
+            '<(libchromiumcontent_dir)/blink_image_resources_200_percent.pak',
+            '<(libchromiumcontent_dir)/content_resources_200_percent.pak',
+            '<(libchromiumcontent_dir)/content_shell.pak',
+            '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
+            '<(libchromiumcontent_dir)/views_resources_200_percent.pak',
             '<(libchromiumcontent_dir)/natives_blob.bin',
             '<(libchromiumcontent_dir)/snapshot_blob.bin',
           ],

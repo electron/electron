@@ -784,13 +784,22 @@
       ['enable_view_api==1', {
         'js_sources': [
           'lib/browser/api/box-layout.js',
+          'lib/browser/api/button.js',
+          'lib/browser/api/label-button.js',
           'lib/browser/api/layout-manager.js',
+          'lib/browser/api/text-field.js',
         ],
         'lib_sources': [
           'atom/browser/api/atom_api_box_layout.cc',
           'atom/browser/api/atom_api_box_layout.h',
+          'atom/browser/api/atom_api_button.cc',
+          'atom/browser/api/atom_api_button.h',
+          'atom/browser/api/atom_api_label_button.cc',
+          'atom/browser/api/atom_api_label_button.h',
           'atom/browser/api/atom_api_layout_manager.cc',
           'atom/browser/api/atom_api_layout_manager.h',
+          'atom/browser/api/atom_api_text_field.cc',
+          'atom/browser/api/atom_api_text_field.h',
         ],
       }],  # enable_view_api
       ['mas_build==1', {
