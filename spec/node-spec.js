@@ -11,7 +11,6 @@ describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('child_process', () => {
-    // TODO(alexeykuzmin): [Ch66] Time out. Fix them and enable.
     describe('child_process.fork', () => {
       it('works in current process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
