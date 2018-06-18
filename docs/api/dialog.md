@@ -23,10 +23,10 @@ console.log(dialog)
 
 The `dialog` module has the following methods:
 
-### `dialog.showOpenDialog([browserWindow, ]options[, callback])`
+### `dialog.showOpenDialog(options)`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `browserWindow` [BrowserWindow](browser-window.md) (optional)
   * `title` String (optional)
   * `defaultPath` String (optional)
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
@@ -51,9 +51,9 @@ The `dialog` module has the following methods:
   * `message` String (optional) _macOS_ - Message to display above input
     boxes.
   * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create [security scoped bookmarks](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store.
-* `callback` Function (optional)
-  * `filePaths` String[] - An array of file paths chosen by the user
-  * `bookmarks` String[] _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
+  * `callback` Function (optional)
+    * `filePaths` String[] - An array of file paths chosen by the user
+    * `bookmarks` String[] _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated.
 
 Returns `String[]`, an array of file paths chosen by the user,
 if the callback is provided it returns `undefined`.
@@ -86,10 +86,10 @@ and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.
 
-### `dialog.showSaveDialog([browserWindow, ]options[, callback])`
+### `dialog.showSaveDialog(options)`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `browserWindow` [BrowserWindow](browser-window.md) (optional)
   * `title` String (optional)
   * `defaultPath` String (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
@@ -102,9 +102,9 @@ shown.
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
   * `securityScopedBookmarks` Boolean (optional) _masOS_ _mas_ - Create a [security scoped bookmark](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) when packaged for the Mac App Store. If this option is enabled and the file doesn't already exist a blank file will be created at the chosen path.
-* `callback` Function (optional)
-  * `filename` String
-  * `bookmark` String _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
+  * `callback` Function (optional)
+    * `filename` String
+    * `bookmark` String _macOS_ _mas_ - Base64 encoded string which contains the security scoped bookmark data for the saved file. `securityScopedBookmarks` must be enabled for this to be present.
 
 Returns `String`, the path of the file chosen by the user,
 if a callback is provided it returns `undefined`.
@@ -117,10 +117,10 @@ The `filters` specifies an array of file types that can be displayed, see
 If a `callback` is passed, the API call will be asynchronous and the result
 will be passed via `callback(filename)`.
 
-### `dialog.showMessageBox([browserWindow, ]options[, callback])`
+### `dialog.showMessageBox(options)`
 
-* `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
+  * `browserWindow` [BrowserWindow](browser-window.md) (optional)
   * `type` String (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
@@ -155,10 +155,10 @@ will be passed via `callback(filename)`.
     untouched on Windows. For example, a button label of `Vie&w` will be
     converted to `Vie_w` on Linux and `View` on macOS and can be selected
     via `Alt-W` on Windows and Linux.
-* `callback` Function (optional)
-  * `response` Number - The index of the button that was clicked.
-  * `checkboxChecked` Boolean - The checked state of the checkbox if
-    `checkboxLabel` was set. Otherwise `false`.
+  * `callback` Function (optional)
+    * `response` Number - The index of the button that was clicked.
+    * `checkboxChecked` Boolean - The checked state of the checkbox if
+      `checkboxLabel` was set. Otherwise `false`.
 
 Returns `Integer`, the index of the clicked button, if a callback is provided
 it returns undefined.
