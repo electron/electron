@@ -10,7 +10,6 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 - [ ] PR description included and stakeholders cc'd
 - [ ] `npm test` passes
-- [ ] `npm run lint` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/master/docs/development/testing.md)
 - [ ] relevant documentation is changed or added
-- [ ] commit message follows semantic [commit guidelines](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md#commit-message-guidelines)
+- [ ] commit messages or PR title follow semantic [commit guidelines](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md#commit-message-guidelines)
