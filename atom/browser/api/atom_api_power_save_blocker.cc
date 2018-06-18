@@ -72,12 +72,11 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   }
 
   if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
-    std::unique_ptr<device::PowerSaveBlocker> new_blocker(
-        new device::PowerSaveBlocker(
-            new_blocker_type, device::PowerSaveBlocker::kReasonOther,
-            ATOM_PRODUCT_NAME,
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
+    auto new_blocker = std::make_unique<device::PowerSaveBlocker>(
+        new_blocker_type, device::PowerSaveBlocker::kReasonOther,
+        ATOM_PRODUCT_NAME,
+        BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
+        BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE));
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }

@@ -23,7 +23,7 @@ class Archive : public mate::Wrappable<Archive> {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate,
                                      const base::FilePath& path) {
-    std::unique_ptr<asar::Archive> archive(new asar::Archive(path));
+    auto archive = std::make_unique<asar::Archive>(path);
     if (!archive->Init())
       return v8::False(isolate);
     return (new Archive(isolate, std::move(archive)))->GetWrapper();

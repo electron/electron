@@ -157,8 +157,7 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateCurrentProcessMetrics());
+  auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("workingSetSize",
@@ -224,8 +223,7 @@ v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateCurrentProcessMetrics());
+  auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
   base::IoCounters io_counters;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 

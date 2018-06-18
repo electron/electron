@@ -85,7 +85,7 @@ bool AddImageSkiaRep(gfx::ImageSkia* image,
                      int width,
                      int height,
                      double scale_factor) {
-  std::unique_ptr<SkBitmap> decoded(new SkBitmap());
+  auto decoded = std::make_unique<SkBitmap>();
 
   // Try PNG first.
   if (!gfx::PNGCodec::Decode(data, size, decoded.get())) {

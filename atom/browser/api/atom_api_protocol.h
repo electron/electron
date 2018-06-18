@@ -117,9 +117,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
         request_context_getter->job_factory());
     if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
-    std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
-        new CustomProtocolHandler<RequestJob>(
-            isolate, request_context_getter.get(), handler));
+    auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
+        isolate, request_context_getter.get(), handler);
     if (job_factory->SetProtocolHandler(scheme, std::move(protocol_handler)))
       return PROTOCOL_OK;
     else
@@ -166,9 +165,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     // It is possible a protocol is handled but can not be intercepted.
     if (!job_factory->HasProtocolHandler(scheme))
       return PROTOCOL_FAIL;
-    std::unique_ptr<CustomProtocolHandler<RequestJob>> protocol_handler(
-        new CustomProtocolHandler<RequestJob>(
-            isolate, request_context_getter.get(), handler));
+    auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
+        isolate, request_context_getter.get(), handler);
     if (!job_factory->InterceptProtocol(scheme, std::move(protocol_handler)))
       return PROTOCOL_INTERCEPTED;
     return PROTOCOL_OK;

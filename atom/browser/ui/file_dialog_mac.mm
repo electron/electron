@@ -85,13 +85,9 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
     NSMutableSet* file_type_set = [NSMutableSet set];
-    base::ScopedCFTypeRef<CFStringRef> name_cf(
-        base::SysUTF8ToCFStringRef(filter.first));
-    [filter_names addObject:base::mac::CFToNSCast(name_cf.get())];
+    [filter_names addObject:@(filter.first.c_str())];
     for (const std::string& ext : filter.second) {
-      base::ScopedCFTypeRef<CFStringRef> ext_cf(
-          base::SysUTF8ToCFStringRef(ext));
-      [file_type_set addObject:base::mac::CFToNSCast(ext_cf.get())];
+      [file_type_set addObject:@(ext.c_str())];
     }
     [file_types_list addObject:[file_type_set allObjects]];
   }
