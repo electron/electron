@@ -76,8 +76,7 @@ describe('crashReporter module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): [Ch66] Enable the test.
-      xit('should send minidump when node processes crash', function (done) {
+      it('should send minidump when node processes crash', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
