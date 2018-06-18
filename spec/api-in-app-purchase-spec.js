@@ -54,7 +54,7 @@ describe('inAppPurchase module', function () {
 
   it('getProducts() returns an empty list when getting invalid product', done => {
     inAppPurchase.getProducts(['non-exist'], products => {
-      expect(products.length).to.equal(0)
+      expect(products).to.be.an('array').of.length(0)
       done()
     })
   })

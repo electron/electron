@@ -23,7 +23,7 @@ describe('globalShortcut module', () => {
 
     expect(globalShortcut.isRegistered(accelerator)).to.be.false()
     globalShortcut.register(accelerator, () => {})
-    expect(globalShortcut.isRegistered(accelerator), true)
+    expect(globalShortcut.isRegistered(accelerator)).to.be.true()
     globalShortcut.unregister(accelerator)
     expect(globalShortcut.isRegistered(accelerator)).to.be.false()
 
