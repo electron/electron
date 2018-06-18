@@ -103,8 +103,7 @@ describe('node feature', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fix the test.
-    xdescribe('child_process.spawn', () => {
+    describe('child_process.spawn', () => {
       let child
 
       afterEach(() => {
