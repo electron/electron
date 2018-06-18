@@ -613,9 +613,7 @@ describe('asar package', function () {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Fail on timeout.
-    // Fix them and enable.
-    xdescribe('child_process.fork', function () {
+    describe('child_process.fork', function () {
       it('opens a normal js file', function (done) {
         var child = ChildProcess.fork(path.join(fixtures, 'asar', 'a.asar', 'ping.js'))
         child.on('message', function (msg) {
