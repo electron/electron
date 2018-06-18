@@ -1471,31 +1471,27 @@ describe('<webview> tag', function () {
       if (div != null) div.remove()
     })
 
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('emits resize events', (done) => {
-      webview.addEventListener('dom-ready', () => {
-        div.style.width = '1234px'
-        div.style.height = '789px'
-      })
-
-      webview.addEventListener('resize', function onResize (event) {
-        webview.removeEventListener('resize', onResize)
-        assert.equal(event.newWidth, 100)
-        assert.equal(event.newHeight, 10)
-        assert.equal(event.target, webview)
-        webview.addEventListener('resize', function onResizeAgain (event) {
-          // This will be triggered after setting the new div width and height.
-          webview.removeEventListener('resize', onResizeAgain)
-          assert.equal(event.newWidth, 1234)
-          assert.equal(event.newHeight, 789)
-          assert.equal(event.target, webview)
-          done()
-        })
-      })
-
+    it('emits resize events', async () => {
       webview.src = `file://${fixtures}/pages/a.html`
       div.appendChild(webview)
       document.body.appendChild(div)
+
+      const firstResizeEvent = await waitForEvent(webview, 'resize')
+      expect(firstResizeEvent.target).to.equal(webview)
+      expect(firstResizeEvent.newWidth).to.equal(100)
+      expect(firstResizeEvent.newHeight).to.equal(10)
+
+      await waitForEvent(webview, 'dom-ready')
+
+      const newWidth = 1234
+      const newHeight = 789
+      div.style.width = `${newWidth}px`
+      div.style.height = `${newHeight}px`
+
+      const secondResizeEvent = await waitForEvent(webview, 'resize')
+      expect(secondResizeEvent.target).to.equal(webview)
+      expect(secondResizeEvent.newWidth).to.equal(newWidth)
+      expect(secondResizeEvent.newHeight).to.equal(newHeight)
     })
   })
 
