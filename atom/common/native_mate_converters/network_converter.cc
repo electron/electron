@@ -20,14 +20,13 @@ Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
     const scoped_refptr<network::ResourceRequestBody>& val) {
   if (!val)
     return v8::Null(isolate);
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  auto list = std::make_unique<base::ListValue>();
   for (const auto& element : *(val->elements())) {
-    std::unique_ptr<base::DictionaryValue> post_data_dict(
-        new base::DictionaryValue);
+    auto post_data_dict = std::make_unique<base::DictionaryValue>();
     auto type = element.type();
     if (type == network::DataElement::TYPE_BYTES) {
-      std::unique_ptr<base::Value> bytes(base::Value::CreateWithCopiedBuffer(
-          element.bytes(), static_cast<size_t>(element.length())));
+      auto bytes = base::Value::CreateWithCopiedBuffer(
+          element.bytes(), static_cast<size_t>(element.length()));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
     } else if (type == network::DataElement::TYPE_FILE) {
@@ -52,7 +51,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     scoped_refptr<network::ResourceRequestBody>* out) {
-  std::unique_ptr<base::ListValue> list(new base::ListValue);
+  auto list = std::make_unique<base::ListValue>();
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
   *out = new network::ResourceRequestBody();

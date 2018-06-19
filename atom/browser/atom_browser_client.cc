@@ -484,12 +484,12 @@ void AtomBrowserClient::SiteInstanceDeleting(
 std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
     content::ResourceContext* resource_context) {
 #if defined(USE_NSS_CERTS)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
-      net::ClientCertStoreNSS::PasswordDelegateFactory()));
+  return std::make_unique<net::ClientCertStoreNSS>(
+      net::ClientCertStoreNSS::PasswordDelegateFactory());
 #elif defined(OS_WIN)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
+  return std::make_unique<net::ClientCertStoreWin>();
 #elif defined(OS_MACOSX)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
+  return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
 #endif
