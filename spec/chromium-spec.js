@@ -955,8 +955,8 @@ describe('chromium feature', () => {
         const port = server.address().port
         wss = new WebSocketServer({ server: server })
         wss.on('error', done)
-        wss.on('connection', (ws) => {
-          if (ws.upgradeReq.headers['user-agent']) {
+        wss.on('connection', (ws, upgradeReq) => {
+          if (upgradeReq.headers['user-agent']) {
             done()
           } else {
             done('user agent is empty')
