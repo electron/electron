@@ -669,7 +669,7 @@ gfx::Rect NativeWindowMac::GetBounds() {
 }
 
 gfx::Rect NativeWindowMac::GetNormalBounds() {
-  return widget()->getRestoredBounds();
+  return widget()->GetRestoredBounds();
 }
 
 void NativeWindowMac::SetContentSizeConstraints(
