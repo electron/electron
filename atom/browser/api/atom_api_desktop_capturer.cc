@@ -91,7 +91,7 @@ void OnRefreshFinishedTask(atom::api::DesktopCapturer* cap) {
   // to provide an association between it and desktopCapturer/getUserMedia.
   // This is only required when using the DirectX capturer, otherwise the IDs
   // across the APIs already match.
-  if (using_directx_capturer_) {
+  if (cap->using_directx_capturer_) {
     std::vector<std::string> device_names;
     // Crucially, this list of device names will be in the same order as
     // |media_list_sources|.
