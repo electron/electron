@@ -378,6 +378,8 @@
                   '<(libchromiumcontent_dir)/fx_lcms2.lib',
                   '<(libchromiumcontent_dir)/fx_libopenjpeg.lib',
                   '<(libchromiumcontent_dir)/fx_zlib.lib',
+                  '<(libchromiumcontent_dir)/desktop_capture_generic.lib',
+                  '<(libchromiumcontent_dir)/desktop_capture.lib',
                 ],
               },
             }, {
