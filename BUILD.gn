@@ -339,6 +339,13 @@ static_library("electron_lib") {
     ]
   }
 
+  if (enable_desktop_capturer) {
+    sources += [
+      "atom/browser/api/atom_api_desktop_capturer.cc",
+      "atom/browser/api/atom_api_desktop_capturer.h",
+    ]
+  }
+
   if (is_mac) {
     libs = [
       "Squirrel.framework",
