@@ -13,6 +13,8 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/skbitmap_operations.h"
 
+#include "atom/common/node_includes.h"
+
 namespace atom {
 
 namespace api {
@@ -70,17 +72,26 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
     return;
 
+  v8::Locker locker(isolate_);
+  v8::HandleScope handle_scope(isolate_);
+
   const_cast<SkBitmap&>(frame).setAlphaType(kPremul_SkAlphaType);
+  const SkBitmap& bitmap = only_dirty_ ? SkBitmapOperations::CreateTiledBitmap(
+                                             frame, damage.x(), damage.y(),
+                                             damage.width(), damage.height())
+                                       : frame;
+
+  size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
+  auto source = static_cast<const char*>(bitmap.getPixels());
+
+  v8::MaybeLocal<v8::Object> buffer =
+      node::Buffer::Copy(isolate_, source, rgb_row_size * bitmap.height());
+  auto local_buffer = buffer.ToLocalChecked();
+
   v8::Local<v8::Value> damage_rect =
       mate::Converter<gfx::Rect>::ToV8(isolate_, damage);
 
-  if (only_dirty_) {
-    const SkBitmap& damageFrame = SkBitmapOperations::CreateTiledBitmap(
-        frame, damage.x(), damage.y(), damage.width(), damage.height());
-    callback_.Run(gfx::Image::CreateFrom1xBitmap(damageFrame), damage_rect);
-  } else {
-    callback_.Run(gfx::Image::CreateFrom1xBitmap(frame), damage_rect);
-  }
+  callback_.Run(local_buffer, damage_rect);
 }
 
 }  // namespace api

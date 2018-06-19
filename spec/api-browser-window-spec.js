@@ -2058,9 +2058,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): [Ch66] Crashes the app.
-  // Fix and enable the test.
-  xdescribe('beginFrameSubscription method', () => {
+  describe('beginFrameSubscription method', () => {
     before(function () {
       // This test is too slow, only test it on CI.
       if (!isCI) {
