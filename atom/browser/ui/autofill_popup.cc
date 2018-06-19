@@ -125,7 +125,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   element_bounds_ = gfx::ToEnclosedRect(r);
 
   gfx::Vector2d height_offset(0, element_bounds_.height());
-  popup_bounds_in_view_ = element_bounds_ + height_offset;
   gfx::Point menu_position(element_bounds_.origin() + height_offset);
   views::View::ConvertPointToScreen(parent, &menu_position);
   popup_bounds_ = gfx::Rect(menu_position, element_bounds_.size());
