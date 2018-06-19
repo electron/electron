@@ -287,7 +287,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       between the web pages even when you specified different values for them,
       including but not limited to `preload`, `sandbox` and `nodeIntegration`.
       So it is suggested to use exact same `webPreferences` for web pages with
-      the same `affinity`.
+      the same `affinity`. _This property is experimental_
     * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
       `300%`. Default is `1.0`.
     * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
