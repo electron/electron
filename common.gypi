@@ -155,6 +155,7 @@
           'BUILDING_V8_SHARED',
           'BUILDING_V8_PLATFORM_SHARED',
           'BUILDING_V8_BASE_SHARED',
+          'NODE_WITHOUT_NODE_OPTIONS',
         ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
