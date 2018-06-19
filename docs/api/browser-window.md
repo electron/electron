@@ -828,6 +828,9 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
 
+Calling this function with a value of `0` will remove any previously set aspect
+ratios.
+
 #### `win.previewFile(path[, displayName])` _macOS_
 
 * `path` String - The absolute path to the file to preview with QuickLook. This
