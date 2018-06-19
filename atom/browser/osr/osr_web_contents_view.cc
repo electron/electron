@@ -14,8 +14,11 @@ namespace atom {
 
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
+    float scale_factor,
     const OnPaintCallback& callback)
-    : transparent_(transparent), callback_(callback) {
+    : transparent_(transparent),
+      scale_factor_(scale_factor),
+      callback_(callback) {
 #if defined(OS_MACOSX)
   PlatformCreate();
 #endif
@@ -100,16 +103,16 @@ OffScreenWebContentsView::CreateViewForWidget(
         render_widget_host->GetView());
   }
 
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
+  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
-      transparent_, painting_, GetFrameRate(), callback_, render_widget_host,
-      nullptr, relay->window.get());
+      transparent_, painting_, GetFrameRate(), GetScaleFactor(), callback_,
+      render_widget_host, nullptr, relay->window.get());
 }
 
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
+  auto relay = NativeWindowRelay::FromWebContents(web_contents_);
 
   content::WebContentsImpl* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
@@ -122,8 +125,8 @@ OffScreenWebContentsView::CreateViewForPopupWidget(
               : web_contents_impl->GetRenderWidgetHostView());
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, true, view->GetFrameRate(), callback_, render_widget_host,
-      view, relay->window.get());
+      transparent_, true, view->GetFrameRate(), GetScaleFactor(), callback_,
+      render_widget_host, view, relay->window.get());
 }
 
 void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}
@@ -148,7 +151,7 @@ void OffScreenWebContentsView::GetScreenInfo(
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = 1.0;
+  screen_info->device_scale_factor = scale_factor_;
   screen_info->orientation_type =
       content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
 
@@ -161,6 +164,17 @@ void OffScreenWebContentsView::GetScreenInfo(
     screen_info->rect = display.bounds();
     screen_info->available_rect = display.work_area();
   }
+}
+
+void OffScreenWebContentsView::SetScaleFactor(float factor) {
+  scale_factor_ = factor;
+  if (GetView()) {
+    GetView()->SetScaleFactor(scale_factor_);
+  }
+}
+
+float OffScreenWebContentsView::GetScaleFactor() {
+  return scale_factor_;
 }
 
 #if defined(OS_MACOSX)

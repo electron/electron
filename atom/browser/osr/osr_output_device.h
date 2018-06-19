@@ -12,11 +12,11 @@
 
 namespace atom {
 
-typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
+class OffScreenRenderWidgetHostView;
 
 class OffScreenOutputDevice : public viz::SoftwareOutputDevice {
  public:
-  OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
+  OffScreenOutputDevice(OffScreenRenderWidgetHostView* view, bool transparent);
   ~OffScreenOutputDevice() override;
 
   // viz::SoftwareOutputDevice:
@@ -28,8 +28,8 @@ class OffScreenOutputDevice : public viz::SoftwareOutputDevice {
   void OnPaint(const gfx::Rect& damage_rect);
 
  private:
+  OffScreenRenderWidgetHostView* view_;
   const bool transparent_;
-  OnPaintCallback callback_;
 
   bool active_ = false;
 

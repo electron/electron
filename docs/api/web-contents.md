@@ -1455,11 +1455,21 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 * `fps` Integer
 
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
 Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
+
+#### `contents.setScaleFactor(scaleFactor)`
+
+* `scaleFactor` Number
+
+If *offscreen rendering* is enabled sets the scale factor to the specified number.
+
+#### `contents.getScaleFactor()`
+
+Returns `Number` - If *offscreen rendering* is enabled returns the current scale factor.
 
 #### `contents.invalidate()`
 

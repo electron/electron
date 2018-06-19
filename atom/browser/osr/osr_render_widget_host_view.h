@@ -61,6 +61,8 @@ namespace atom {
 class AtomCopyFrameGenerator;
 class AtomBeginFrameTimer;
 
+typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
+
 #if defined(OS_MACOSX)
 class MacHelper;
 #endif
@@ -78,6 +80,7 @@ class OffScreenRenderWidgetHostView
   OffScreenRenderWidgetHostView(bool transparent,
                                 bool painting,
                                 int frame_rate,
+                                float scale_factor,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 OffScreenRenderWidgetHostView* parent_host_view,
@@ -220,6 +223,8 @@ class OffScreenRenderWidgetHostView
   void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
+  gfx::Rect GetBoundsRect() const;
+
   void RegisterGuestViewFrameSwappedCallback(
       content::RenderWidgetHostViewGuest* guest_host_view);
   void OnGuestViewFrameSwapped(
@@ -231,9 +236,8 @@ class OffScreenRenderWidgetHostView
 
   bool IsPopupWidget() const { return popup_type_ != blink::kWebPopupTypeNone; }
 
-  void HoldResize();
-  void ReleaseResize();
   void WasResized();
+  void SignalResize(bool invalidate);
 
   void ProcessKeyboardEvent(const content::NativeWebKeyboardEvent& event,
                             const ui::LatencyInfo& latency) override;
@@ -253,7 +257,7 @@ class OffScreenRenderWidgetHostView
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
 
   void Invalidate();
-  void InvalidateBounds(const gfx::Rect&);
+  void InvalidateOutputDeviceRect(const gfx::Rect& bounds);
 
   content::RenderWidgetHostImpl* render_widget_host() const {
     return render_widget_host_;
@@ -264,6 +268,7 @@ class OffScreenRenderWidgetHostView
 
   void set_popup_host_view(OffScreenRenderWidgetHostView* popup_view) {
     popup_host_view_ = popup_view;
+    InvalidateOutputDeviceRect(gfx::Rect(size_));
   }
 
   void set_child_host_view(OffScreenRenderWidgetHostView* child_view) {
@@ -272,8 +277,12 @@ class OffScreenRenderWidgetHostView
 
   viz::LocalSurfaceId local_surface_id() const { return local_surface_id_; }
 
+  void SetScaleFactor(float factor);
+
  private:
   void SetupFrameRate(bool force);
+  gfx::Size GetCompensatedSize() const;
+  void SetDeviceScaleFactor();
   void ResizeRootLayer();
 
   viz::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
@@ -312,9 +321,6 @@ class OffScreenRenderWidgetHostView
   bool is_showing_ = false;
   bool is_destroyed_ = false;
   gfx::Rect popup_position_;
-
-  bool hold_resize_ = false;
-  bool pending_resize_ = false;
 
   bool paint_callback_running_ = false;
 

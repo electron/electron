@@ -4,6 +4,7 @@
 
 #include "atom/browser/osr/osr_output_device.h"
 
+#include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkRect.h"
 #include "third_party/skia/src/core/SkDevice.h"
@@ -11,11 +12,10 @@
 
 namespace atom {
 
-OffScreenOutputDevice::OffScreenOutputDevice(bool transparent,
-                                             const OnPaintCallback& callback)
-    : transparent_(transparent), callback_(callback) {
-  DCHECK(!callback_.is_null());
-}
+OffScreenOutputDevice::OffScreenOutputDevice(
+    OffScreenRenderWidgetHostView* view,
+    bool transparent)
+    : view_(view), transparent_(transparent) {}
 
 OffScreenOutputDevice::~OffScreenOutputDevice() {}
 
@@ -95,7 +95,7 @@ void OffScreenOutputDevice::OnPaint(const gfx::Rect& damage_rect) {
   if (rect.IsEmpty())
     return;
 
-  callback_.Run(rect, *bitmap_);
+  view_->OnPaint(rect, *bitmap_);
 }
 
 }  // namespace atom
