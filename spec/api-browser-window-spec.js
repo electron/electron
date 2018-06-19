@@ -568,6 +568,10 @@ describe('BrowserWindow module', () => {
       w.setPosition(pos[0], pos[1])
     })
     it('checks normal bounds when maximized', (done) => {
+      if (isCI) {
+        return done()
+      }
+
       const bounds = w.getBounds()
       w.once('maximize', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
@@ -580,6 +584,10 @@ describe('BrowserWindow module', () => {
       w.maximize()
     })
     it('checks normal bounds when minimized', (done) => {
+      if (isCI) {
+        return done()
+      }
+
       const bounds = w.getBounds()
       w.once('minimize', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
@@ -592,6 +600,10 @@ describe('BrowserWindow module', () => {
       w.minimize()
     })
     it('checks normal bounds when full-screen', (done) => {
+      if (isCI) {
+        return done()
+      }
+
       const bounds = w.getBounds()
       w.once('enter-full-screen', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
