@@ -32,6 +32,8 @@
 
 namespace asar {
 
+URLRequestAsarJob::FileMetaInfo::FileMetaInfo() = default;
+
 URLRequestAsarJob::URLRequestAsarJob(net::URLRequest* request,
                                      net::NetworkDelegate* network_delegate)
     : net::URLRequestJob(request, network_delegate), weak_ptr_factory_(this) {}
