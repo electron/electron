@@ -65,4 +65,13 @@
   return YES;
 }
 
+// This undocumented method notifies us if a user closes "Alert" notifications
+// https://chromium.googlesource.com/chromium/src/+/lkgr/chrome/browser/notifications/notification_platform_bridge_mac.mm
+- (void)userNotificationCenter:(NSUserNotificationCenter*)center
+               didDismissAlert:(NSUserNotification*)notif {
+  auto* notification = presenter_->GetNotification(notif);
+  if (notification)
+    notification->NotificationDismissed();
+}
+
 @end
