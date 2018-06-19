@@ -682,21 +682,21 @@ describe('asar package', function () {
       })
     })
 
-    describe('internalModuleReadFile', function () {
-      var internalModuleReadFile = process.binding('fs').internalModuleReadFile
+    describe('internalModuleReadJSON', function () {
+      var internalModuleReadJSON = process.binding('fs').internalModuleReadJSON
 
       it('read a normal file', function () {
         var file1 = path.join(fixtures, 'asar', 'a.asar', 'file1')
-        assert.equal(internalModuleReadFile(file1).toString().trim(), 'file1')
+        assert.equal(internalModuleReadJSON(file1).toString().trim(), 'file1')
         var file2 = path.join(fixtures, 'asar', 'a.asar', 'file2')
-        assert.equal(internalModuleReadFile(file2).toString().trim(), 'file2')
+        assert.equal(internalModuleReadJSON(file2).toString().trim(), 'file2')
         var file3 = path.join(fixtures, 'asar', 'a.asar', 'file3')
-        assert.equal(internalModuleReadFile(file3).toString().trim(), 'file3')
+        assert.equal(internalModuleReadJSON(file3).toString().trim(), 'file3')
       })
 
       it('reads a normal file with unpacked files', function () {
         var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
-        assert.equal(internalModuleReadFile(p).toString().trim(), 'a')
+        assert.equal(internalModuleReadJSON(p).toString().trim(), 'a')
       })
     })
 
