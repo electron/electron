@@ -232,7 +232,8 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       observer_(NULL),
       weak_factory_(this) {
   capture_task_runner_ = base::CreateSequencedTaskRunnerWithTraits(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
+      {base::WithBaseSyncPrimitives(), base::MayBlock(),
+       base::TaskPriority::USER_VISIBLE});
 }
 
 NativeDesktopMediaList::~NativeDesktopMediaList() {
