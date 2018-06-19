@@ -44,8 +44,8 @@ void NetLog::StartLogging() {
   if (!command_line->HasSwitch(network::switches::kLogNetLog))
     return;
 
-  base::FilePath log_path = 
-      command_line->GetSwitchValuePath(switches::kLogNetLog);
+  base::FilePath log_path =
+      command_line->GetSwitchValuePath(network::switches::kLogNetLog);
   if (log_path.empty())
     return;
 
