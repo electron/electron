@@ -668,6 +668,10 @@ gfx::Rect NativeWindowMac::GetBounds() {
   return bounds;
 }
 
+gfx::Rect NativeWindowMac::GetNormalBounds() {
+  return widget()->getRestoredBounds();
+}
+
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {
