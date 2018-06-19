@@ -22,7 +22,7 @@
     "walkdir": "0.0.12",
     "winreg": "^1.2.4",
     "ws": "^5.2.0",
-    "yargs": "^6.0.0"
+    "yargs": "^11.0.0"
   },
   "optionalDependencies": {
     "runas": "3.x"
