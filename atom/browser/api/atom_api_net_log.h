@@ -22,7 +22,7 @@ class NetLog : public mate::Wrappable<NetLog> {
 
   void StartLogging(mate::Arguments* args);
   bool IsCurrentlyLogging();
-  std::string GetCurrentlyLoggingPath();
+  base::FilePath::StringType GetCurrentlyLoggingPath();
   void StopLogging(mate::Arguments* args);
 
  protected:

@@ -44,7 +44,7 @@ bool NetLog::IsCurrentlyLogging() {
   return net_log_->IsDynamicLogging();
 }
 
-std::string NetLog::GetCurrentlyLoggingPath() {
+base::FilePath::StringType NetLog::GetCurrentlyLoggingPath() {
   return net_log_->GetDynamicLoggingPath().value();
 }
 
