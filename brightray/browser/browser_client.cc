@@ -58,7 +58,6 @@ BrowserClient::BrowserClient() : browser_main_parts_(nullptr) {
 
 BrowserClient::~BrowserClient() {}
 
-
 void BrowserClient::WebNotificationAllowed(
     int render_process_id,
     const base::Callback<void(bool, bool)>& callback) {
@@ -107,7 +106,7 @@ void BrowserClient::GetAdditionalWebUISchemes(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
-net::NetLog* BrowserClient::GetNetLog() {
+NetLog* BrowserClient::GetNetLog() {
   return &net_log_;
 }
 

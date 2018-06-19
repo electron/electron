@@ -45,7 +45,7 @@ class BrowserClient : public content::ContentBrowserClient {
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  net::NetLog* GetNetLog() override;
+  NetLog* GetNetLog() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   std::string GetApplicationLocale() override;
