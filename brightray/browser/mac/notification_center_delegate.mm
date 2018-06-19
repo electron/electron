@@ -74,4 +74,15 @@
     notification->NotificationDismissed();
 }
 
+// This undocumented method notifies us if a user closes "Banner" notifications
+// https://github.com/mozilla/gecko-dev/blob/master/widget/cocoa/OSXNotificationCenter.mm
+- (void)userNotificationCenter:(NSUserNotificationCenter*)center
+    didRemoveDeliveredNotifications:(NSArray*)notifications {
+  for (NSUserNotification* notif in notifications) {
+    auto* notification = presenter_->GetNotification(notif);
+    if (notification)
+      notification->NotificationDismissed();
+  }
+}
+
 @end
