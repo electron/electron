@@ -115,6 +115,7 @@ AutofillPopup::~AutofillPopup() {
 }
 
 void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
+                               content::RenderFrameHost* embedder_frame_host,
                                bool offscreen,
                                views::View* parent,
                                const gfx::RectF& r) {
@@ -122,6 +123,11 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
 
   frame_host_ = frame_host;
   element_bounds_ = gfx::ToEnclosedRect(r);
+
+  gfx::Vector2d height_offset(0, element_bounds_.height());
+  gfx::Point menu_position(element_bounds_.origin() + height_offset);
+  views::View::ConvertPointToScreen(parent, &menu_position);
+  popup_bounds_ = gfx::Rect(menu_position, element_bounds_.size());
 
   parent_ = parent;
   parent_->AddObserver(this);
@@ -131,8 +137,12 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
 
 #if defined(ENABLE_OSR)
   if (offscreen) {
-    auto* osr_rwhv =
-        static_cast<OffScreenRenderWidgetHostView*>(frame_host_->GetView());
+    auto* rwhv = frame_host->GetView();
+    if (embedder_frame_host != nullptr) {
+      rwhv = embedder_frame_host->GetView();
+    }
+
+    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(rwhv);
     view_->view_proxy_.reset(new OffscreenViewProxy(view_));
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
@@ -198,9 +208,13 @@ void AutofillPopup::UpdatePopupBounds() {
   popup_bounds_ =
       gfx::Rect(popup_x_and_width.first, popup_y_and_height.first,
                 popup_x_and_width.second, popup_y_and_height.second);
-  popup_bounds_in_view_ =
-      gfx::Rect(popup_bounds_in_view_.origin(),
-                gfx::Size(popup_x_and_width.second, popup_y_and_height.second));
+}
+
+gfx::Rect AutofillPopup::popup_bounds_in_view() {
+  gfx::Point origin(popup_bounds_.origin());
+  views::View::ConvertPointFromScreen(parent_, &origin);
+
+  return gfx::Rect(origin, popup_bounds_.size());
 }
 
 void AutofillPopup::OnViewBoundsChanged(views::View* view) {

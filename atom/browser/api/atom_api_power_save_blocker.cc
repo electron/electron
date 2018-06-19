@@ -6,28 +6,26 @@
 
 #include <string>
 
-#include "content/public/browser/browser_thread.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
 
-using content::BrowserThread;
-
 namespace mate {
 
 template <>
-struct Converter<device::PowerSaveBlocker::PowerSaveBlockerType> {
+struct Converter<device::mojom::WakeLockType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     device::PowerSaveBlocker::PowerSaveBlockerType* out) {
-    using device::PowerSaveBlocker;
+                     device::mojom::WakeLockType* out) {
     std::string type;
     if (!ConvertFromV8(isolate, val, &type))
       return false;
     if (type == "prevent-app-suspension")
-      *out = PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
+      *out = device::mojom::WakeLockType::kPreventAppSuspension;
     else if (type == "prevent-display-sleep")
-      *out = PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
+      *out = device::mojom::WakeLockType::kPreventDisplaySleep;
     else
       return false;
     return true;
@@ -42,7 +40,7 @@ namespace api {
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_blocker_type_(
-          device::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension) {
+          device::mojom::WakeLockType::kPreventAppSuspension) {
   Init(isolate);
 }
 
@@ -54,37 +52,39 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
     return;
   }
 
-  // |kPowerSaveBlockPreventAppSuspension| keeps system active, but allows
+  // |WakeLockType::kPreventAppSuspension| keeps system active, but allows
   // screen to be turned off.
-  // |kPowerSaveBlockPreventDisplaySleep| keeps system and screen active, has a
-  // higher precedence level than |kPowerSaveBlockPreventAppSuspension|.
+  // |WakeLockType::kPreventDisplaySleep| keeps system and screen active, has a
+  // higher precedence level than |WakeLockType::kPreventAppSuspension|.
   //
   // Only the highest-precedence blocker type takes effect.
-  device::PowerSaveBlocker::PowerSaveBlockerType new_blocker_type =
-      device::PowerSaveBlocker::kPowerSaveBlockPreventAppSuspension;
+  device::mojom::WakeLockType new_blocker_type =
+      device::mojom::WakeLockType::kPreventAppSuspension;
   for (const auto& element : power_save_blocker_types_) {
     if (element.second ==
-        device::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep) {
+        device::mojom::WakeLockType::kPreventDisplaySleep) {
       new_blocker_type =
-          device::PowerSaveBlocker::kPowerSaveBlockPreventDisplaySleep;
+          device::mojom::WakeLockType::kPreventDisplaySleep;
       break;
     }
   }
 
   if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
-    std::unique_ptr<device::PowerSaveBlocker> new_blocker(
-        new device::PowerSaveBlocker(
-            new_blocker_type, device::PowerSaveBlocker::kReasonOther,
-            ATOM_PRODUCT_NAME,
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::UI),
-            BrowserThread::GetTaskRunnerForThread(BrowserThread::FILE)));
+    auto new_blocker = std::make_unique<device::PowerSaveBlocker>(
+        new_blocker_type, device::mojom::WakeLockReason::kOther,
+        ATOM_PRODUCT_NAME, base::ThreadTaskRunnerHandle::Get(),
+        // This task runner may be used by some device service
+        // implementation bits to interface with dbus client code, which in
+        // turn imposes some subtle thread affinity on the clients. We
+        // therefore require a single-thread runner.
+        base::CreateSingleThreadTaskRunnerWithTraits(
+            {base::MayBlock(), base::TaskPriority::BACKGROUND}));
     power_save_blocker_.swap(new_blocker);
     current_blocker_type_ = new_blocker_type;
   }
 }
 
-int PowerSaveBlocker::Start(
-    device::PowerSaveBlocker::PowerSaveBlockerType type) {
+int PowerSaveBlocker::Start(device::mojom::WakeLockType type) {
   static int count = 0;
   power_save_blocker_types_[count] = type;
   UpdatePowerSaveBlocker();

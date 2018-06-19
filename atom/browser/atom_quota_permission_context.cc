@@ -4,8 +4,6 @@
 
 #include "atom/browser/atom_quota_permission_context.h"
 
-#include "storage/common/quota/quota_types.h"
-
 namespace atom {
 
 AtomQuotaPermissionContext::AtomQuotaPermissionContext() {}

@@ -80,19 +80,24 @@ void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
       new_size = GetDefaultSize();
     }
 
+    bool changed_due_to_auto_resize = false;
     if (auto_size_enabled_) {
       // Autosize was previously enabled.
       rvh->DisableAutoResize(new_size);
-      GuestSizeChangedDueToAutoSize(guest_size_, new_size);
+      changed_due_to_auto_resize = true;
     } else {
       // Autosize was already disabled.
       guest_host_->SizeContents(new_size);
     }
 
-    guest_size_ = new_size;
+    UpdateGuestSize(new_size, changed_due_to_auto_resize);
   }
 
   auto_size_enabled_ = enable_auto_size;
+}
+
+void WebViewGuestDelegate::ResizeDueToAutoResize(const gfx::Size& new_size) {
+  UpdateGuestSize(new_size, auto_size_enabled_);
 }
 
 void WebViewGuestDelegate::DidFinishNavigation(
@@ -126,13 +131,6 @@ content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
   return embedder_web_contents_;
 }
 
-void WebViewGuestDelegate::GuestSizeChanged(const gfx::Size& new_size) {
-  if (!auto_size_enabled_)
-    return;
-  GuestSizeChangedDueToAutoSize(guest_size_, new_size);
-  guest_size_ = new_size;
-}
-
 void WebViewGuestDelegate::SetGuestHost(content::GuestHost* guest_host) {
   guest_host_ = guest_host;
 }
@@ -163,11 +161,13 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
   }
 }
 
-void WebViewGuestDelegate::GuestSizeChangedDueToAutoSize(
-    const gfx::Size& old_size,
-    const gfx::Size& new_size) {
-  api_web_contents_->Emit("size-changed", old_size.width(), old_size.height(),
-                          new_size.width(), new_size.height());
+void WebViewGuestDelegate::UpdateGuestSize(const gfx::Size& new_size,
+                                           bool due_to_auto_resize) {
+  if (due_to_auto_resize)
+    api_web_contents_->Emit("size-changed", guest_size_.width(),
+                            guest_size_.height(), new_size.width(),
+                            new_size.height());
+  guest_size_ = new_size;
 }
 
 gfx::Size WebViewGuestDelegate::GetDefaultSize() const {

@@ -195,8 +195,8 @@ void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
     return;
   }
 
-  std::unique_ptr<SpellCheckClient> client(new SpellCheckClient(
-      language, auto_spell_correct_turned_on, args->isolate(), provider));
+  auto client = std::make_unique<SpellCheckClient>(
+      language, auto_spell_correct_turned_on, args->isolate(), provider);
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
   FrameSpellChecker spell_checker(

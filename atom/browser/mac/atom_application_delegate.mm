@@ -8,7 +8,7 @@
 #import "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "base/allocator/allocator_shim.h"
-#include "base/allocator/features.h"
+#include "base/allocator/buildflags.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_objc_class_swizzler.h"
 #include "base/strings/sys_string_conversions.h"
@@ -62,9 +62,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
         atom::NSDictionaryToDictionaryValue(user_notification.userInfo);
     atom::Browser::Get()->DidFinishLaunching(*launch_info);
   } else {
-    std::unique_ptr<base::DictionaryValue> empty_info(
-        new base::DictionaryValue);
-    atom::Browser::Get()->DidFinishLaunching(*empty_info);
+    atom::Browser::Get()->DidFinishLaunching(base::DictionaryValue());
   }
 
 #if BUILDFLAG(USE_ALLOCATOR_SHIM)

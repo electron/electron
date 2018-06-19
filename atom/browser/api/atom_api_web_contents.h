@@ -31,14 +31,14 @@ namespace brightray {
 class InspectableWebContents;
 }
 
-namespace content {
-class ResourceRequestBody;
-}
-
 namespace mate {
 class Arguments;
 class Dictionary;
 }  // namespace mate
+
+namespace network {
+class ResourceRequestBody;
+}
 
 namespace atom {
 
@@ -47,9 +47,11 @@ class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
+class FrameSubscriber;
 
 #if defined(ENABLE_OSR)
 class OffScreenWebContentsView;
+class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -228,7 +230,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const std::string& frame_name,
                       WindowOpenDisposition disposition,
                       const std::vector<std::string>& features,
-                      const scoped_refptr<content::ResourceRequestBody>& body);
+                      const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
@@ -310,8 +312,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
-      const content::WebContentsUnresponsiveState& unresponsive_state) override;
-  void RendererResponsive(content::WebContents* source) override;
+      content::RenderWidgetHost* render_widget_host) override;
+  void RendererResponsive(
+      content::WebContents* source,
+      content::RenderWidgetHost* render_widget_host) override;
   bool HandleContextMenu(const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
@@ -335,6 +339,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::BluetoothChooser::EventHandler& handler) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
+  void ResizeDueToAutoResize(content::WebContents* web_contents,
+                             const gfx::Size& new_size) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -351,10 +357,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
                    const base::string16& error_description) override;
   void DidStartLoading() override;
   void DidStopLoading() override;
-  void DidGetResourceResponseStart(
-      const content::ResourceRequestDetails& details) override;
-  void DidGetRedirectForResourceRequest(
-      const content::ResourceRedirectDetails& details) override;
   void DidStartNavigation(
       content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
@@ -372,8 +374,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
                      base::ProcessId plugin_pid) override;
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const MediaPlayerId& id) override;
-  void MediaStoppedPlaying(const MediaPlayerInfo& video_type,
-                           const MediaPlayerId& id) override;
+  void MediaStoppedPlaying(
+      const MediaPlayerInfo& video_type,
+      const MediaPlayerId& id,
+      content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
   // brightray::InspectableWebContentsDelegate:
@@ -399,6 +403,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 #if defined(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
   // Called when we receive a CursorChange message from chromium.
@@ -435,6 +440,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
+
+  std::unique_ptr<FrameSubscriber> frame_subscriber_;
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_ = nullptr;

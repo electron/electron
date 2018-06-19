@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
+#include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
@@ -46,7 +47,7 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
-  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
   dict.SetMethod("crash", &AtomBindings::Crash);
@@ -157,8 +158,7 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateCurrentProcessMetrics());
+  auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.Set("workingSetSize",
@@ -224,8 +224,7 @@ v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
-  std::unique_ptr<base::ProcessMetrics> metrics(
-      base::ProcessMetrics::CreateCurrentProcessMetrics());
+  auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
   base::IoCounters io_counters;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
 

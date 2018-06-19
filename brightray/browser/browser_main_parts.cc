@@ -29,8 +29,9 @@
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/result_codes.h"
 #include "media/base/localized_strings.h"
-#include "net/proxy/proxy_resolver_v8.h"
+#include "net/proxy_resolution/proxy_resolver_v8.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/material_design/material_design_controller.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -177,10 +178,13 @@ void OverrideAppLogsPath() {
 }
 #endif
 
-void BrowserMainParts::PreEarlyInitialization() {
+int BrowserMainParts::PreEarlyInitialization() {
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
   // TODO(deepak1556): Disable guest webcontents based on OOPIF feature.
-  feature_list->InitializeFromCommandLine("", "GuestViewCrossProcessFrames");
+  // Disable surface synchronization and async wheel events to make OSR work.
+  feature_list->InitializeFromCommandLine(
+      "",
+      "GuestViewCrossProcessFrames,SurfaceSynchronization,AsyncWheelEvents");
   base::FeatureList::SetInstance(std::move(feature_list));
   OverrideAppLogsPath();
 #if defined(USE_X11)
@@ -192,6 +196,8 @@ void BrowserMainParts::PreEarlyInitialization() {
   // we can't shutdown properly while creating and initializing services.
   ui::SetX11ErrorHandlers(nullptr, nullptr);
 #endif
+
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void BrowserMainParts::ToolkitInitialized() {

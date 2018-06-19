@@ -29,7 +29,8 @@ MenuBar::MenuBar(views::View* window)
     : background_color_(kDefaultColor), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
-  SetLayoutManager(new views::BoxLayout(views::BoxLayout::kHorizontal));
+  SetLayoutManager(std::make_unique<views::BoxLayout>(
+      views::BoxLayout::kHorizontal));
   window_->GetFocusManager()->AddFocusChangeListener(this);
 }
 

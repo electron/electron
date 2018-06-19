@@ -7,6 +7,7 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
+#include "third_party/widevine/cdm/widevine_cdm_common.h"
 
 extern const char kWidevineCdmPluginExtension[];
 

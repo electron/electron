@@ -257,8 +257,8 @@ void ShowMessageBox(NativeWindow* parent,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  std::unique_ptr<base::Thread> thread(
-      new base::Thread(ATOM_PRODUCT_NAME "MessageBoxThread"));
+  auto thread =
+      std::make_unique<base::Thread>(ATOM_PRODUCT_NAME "MessageBoxThread");
   thread->init_com_with_mta(false);
   if (!thread->Start()) {
     callback.Run(cancel_id, checkbox_checked);

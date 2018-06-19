@@ -34,4 +34,8 @@ bool SpecialStoragePolicy::HasSessionOnlyOrigins() {
   return false;
 }
 
+bool SpecialStoragePolicy::ShouldDeleteCookieOnExit(const GURL& origin) {
+  return false;
+}
+
 }  // namespace brightray

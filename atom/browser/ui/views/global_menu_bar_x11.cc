@@ -4,16 +4,6 @@
 
 #include "atom/browser/ui/views/global_menu_bar_x11.h"
 
-#include <X11/Xlib.h>
-
-// This conflicts with mate::Converter,
-#undef True
-#undef False
-// and V8,
-#undef None
-// and url_request_status.h,
-#undef Status
-
 #include <dlfcn.h>
 #include <glib-object.h>
 
@@ -27,6 +17,7 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
+#include "ui/gfx/x/x11.h"
 
 // libdbusmenu-glib types
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;

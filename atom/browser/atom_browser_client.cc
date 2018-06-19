@@ -17,6 +17,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/login_handler.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -32,7 +33,6 @@
 #include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
-#include "chrome/browser/renderer_host/pepper/widevine_cdm_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -44,13 +44,23 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/resource_request_body.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
+#include "services/network/public/cpp/resource_request_body.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
+
+#if defined(USE_NSS_CERTS)
+#include "net/ssl/client_cert_store_nss.h"
+#elif defined(OS_WIN)
+#include "net/ssl/client_cert_store_win.h"
+#elif defined(OS_MACOSX)
+#include "net/ssl/client_cert_store_mac.h"
+#elif defined(USE_OPENSSL)
+#include "net/ssl/client_cert_store.h"
+#endif
 
 using content::BrowserThread;
 
@@ -166,7 +176,8 @@ bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
-    content::RenderProcessHost* host) {
+    content::RenderProcessHost* host,
+    service_manager::mojom::ServiceRequest* service_request) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
   if (IsProcessObserved(process_id))
@@ -174,8 +185,6 @@ void AtomBrowserClient::RenderProcessWillLaunch(
 
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
   host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
-  host->AddFilter(
-      new WidevineCdmMessageFilter(process_id, host->GetBrowserContext()));
 
   ProcessPreferences prefs;
   auto* web_preferences =
@@ -415,7 +424,7 @@ bool AtomBrowserClient::CanCreateWindow(
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
     const std::vector<std::string>& additional_features,
-    const scoped_refptr<content::ResourceRequestBody>& body,
+    const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
@@ -470,6 +479,33 @@ void AtomBrowserClient::SiteInstanceDeleting(
       break;
     }
   }
+}
+
+std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
+    content::ResourceContext* resource_context) {
+#if defined(USE_NSS_CERTS)
+  return std::make_unique<net::ClientCertStoreNSS>(
+      net::ClientCertStoreNSS::PasswordDelegateFactory());
+#elif defined(OS_WIN)
+  return std::make_unique<net::ClientCertStoreWin>();
+#elif defined(OS_MACOSX)
+  return std::make_unique<net::ClientCertStoreMac>();
+#elif defined(USE_OPENSSL)
+  return std::unique_ptr<net::ClientCertStore>();
+#endif
+}
+
+content::ResourceDispatcherHostLoginDelegate*
+AtomBrowserClient::CreateLoginDelegate(
+    net::AuthChallengeInfo* auth_info,
+    content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+    bool is_main_frame,
+    const GURL& url,
+    bool first_auth_attempt,
+    const base::Callback<void(const base::Optional<net::AuthCredentials>&)>&
+        auth_required_callback) {
+  return new LoginHandler(auth_info, web_contents_getter, url,
+                          auth_required_callback);
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(

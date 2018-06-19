@@ -48,7 +48,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
  protected:
   // content::ContentBrowserClient:
-  void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
+  void RenderProcessWillLaunch(
+      content::RenderProcessHost* host,
+      service_manager::mojom::ServiceRequest* service_request) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
@@ -95,13 +97,23 @@ class AtomBrowserClient : public brightray::BrowserClient,
                        WindowOpenDisposition disposition,
                        const blink::mojom::WindowFeatures& features,
                        const std::vector<std::string>& additional_features,
-                       const scoped_refptr<content::ResourceRequestBody>& body,
+                       const scoped_refptr<network::ResourceRequestBody>& body,
                        bool user_gesture,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
+  std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
+      content::ResourceContext* resource_context) override;
+  content::ResourceDispatcherHostLoginDelegate* CreateLoginDelegate(
+      net::AuthChallengeInfo* auth_info,
+      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+      bool is_main_frame,
+      const GURL& url,
+      bool first_auth_attempt,
+      const base::Callback<void(const base::Optional<net::AuthCredentials>&)>&
+          auth_required_callback) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

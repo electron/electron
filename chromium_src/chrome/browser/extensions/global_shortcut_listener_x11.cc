@@ -11,6 +11,7 @@
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/platform/platform_event_source.h"
+#include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_error_tracker.h"
 #include "ui/gfx/x/x11_types.h"
 
@@ -111,7 +112,7 @@ bool GlobalShortcutListenerX11::RegisterAcceleratorImpl(
   // Caps lock, Scroll lock. See comment about |kModifiersMasks|.
   for (size_t i = 0; i < arraysize(kModifiersMasks); ++i) {
     XGrabKey(x_display_, keycode, modifiers | kModifiersMasks[i],
-             x_root_window_, False, GrabModeAsync, GrabModeAsync);
+             x_root_window_, x11::False, GrabModeAsync, GrabModeAsync);
   }
 
   if (err_tracker.FoundNewError()) {

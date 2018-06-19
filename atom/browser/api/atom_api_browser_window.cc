@@ -155,7 +155,7 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
   window_unresponsive_closure_.Cancel();
 }
 
-void BrowserWindow::OnRendererUnresponsive(content::RenderWidgetHost*) {
+void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
   // Schedule the unresponsive shortly later, since we may receive the
   // responsive event soon. This could happen after the whole application had
   // blocked for a while.
@@ -270,6 +270,14 @@ void BrowserWindow::OnWindowResize() {
   TopLevelWindow::OnWindowResize();
 }
 
+void BrowserWindow::OnWindowLeaveFullScreen() {
+  TopLevelWindow::OnWindowLeaveFullScreen();
+#if defined(OS_MACOSX)
+  if (web_contents()->IsFullscreenForCurrentTab())
+    web_contents()->ExitFullscreen(true);
+#endif
+}
+
 void BrowserWindow::Focus() {
   if (api_web_contents_->IsOffScreen())
     FocusOnWebView();
@@ -336,7 +344,7 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 // Convert draggable regions in raw format to SkRegion format.
 std::unique_ptr<SkRegion> BrowserWindow::DraggableRegionsToSkRegion(
     const std::vector<DraggableRegion>& regions) {
-  std::unique_ptr<SkRegion> sk_region(new SkRegion);
+  auto sk_region = std::make_unique<SkRegion>();
   for (const DraggableRegion& region : regions) {
     sk_region->op(
         region.bounds.x(), region.bounds.y(), region.bounds.right(),

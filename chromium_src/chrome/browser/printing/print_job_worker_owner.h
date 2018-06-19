@@ -48,7 +48,7 @@ class PrintJobWorkerOwner
   bool RunsTasksInCurrentSequence() const;
 
   // Posts the given task to be run.
-  bool PostTask(const base::Location& from_here, const base::Closure& task);
+  bool PostTask(const base::Location& from_here, base::OnceClosure task);
 
  protected:
   friend class base::RefCountedThreadSafe<PrintJobWorkerOwner>;

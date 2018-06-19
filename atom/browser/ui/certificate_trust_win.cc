@@ -4,8 +4,9 @@
 
 #include "atom/browser/ui/certificate_trust.h"
 
+#include <windows.h>  // windows.h must be included first
+
 #include <wincrypt.h>
-#include <windows.h>
 
 #include "base/callback.h"
 #include "net/cert/cert_database.h"

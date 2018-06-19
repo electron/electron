@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "base/command_line.h"
+#include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/common/content_client.h"
@@ -53,12 +54,13 @@ void LoadResourceBundle(const std::string& locale) {
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.ReloadLocaleResources(locale);
 
-// Load other resource files.
-#if defined(OS_MACOSX)
-  LoadCommonResources();
-#else
+  // Load other resource files.
   base::FilePath pak_dir;
+#if defined(OS_MACOSX)
+  pak_dir = base::mac::FrameworkBundlePath().Append("Resources");
+#else
   PathService::Get(base::DIR_MODULE, &pak_dir);
+#endif
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak")),
       ui::GetSupportedScaleFactors()[0]);
@@ -79,7 +81,6 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("views_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
-#endif
 }
 
 MainDelegate::MainDelegate() {}

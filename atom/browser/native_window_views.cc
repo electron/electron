@@ -6,6 +6,7 @@
 
 #if defined(OS_WIN)
 #include <objbase.h>
+#include <wrl/client.h>
 #endif
 
 #include <vector>
@@ -192,8 +193,8 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
   if (options.Get(options::kDarkTheme, &use_dark_theme) && use_dark_theme) {
     XDisplay* xdisplay = gfx::GetXDisplay();
     XChangeProperty(xdisplay, GetAcceleratedWidget(),
-                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", False),
-                    XInternAtom(xdisplay, "UTF8_STRING", False), 8,
+                    XInternAtom(xdisplay, "_GTK_THEME_VARIANT", x11::False),
+                    XInternAtom(xdisplay, "UTF8_STRING", x11::False), 8,
                     PropModeReplace,
                     reinterpret_cast<const unsigned char*>("dark"), 4);
   }
@@ -741,7 +742,7 @@ void NativeWindowViews::FlashFrame(bool flash) {
 
 void NativeWindowViews::SetSkipTaskbar(bool skip) {
 #if defined(OS_WIN)
-  base::win::ScopedComPtr<ITaskbarList> taskbar;
+  Microsoft::WRL::ComPtr<ITaskbarList> taskbar;
   if (FAILED(::CoCreateInstance(CLSID_TaskbarList, nullptr,
                                 CLSCTX_INPROC_SERVER,
                                 IID_PPV_ARGS(&taskbar))) ||
@@ -791,14 +792,14 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
-  wm::SetShadowElevation(GetNativeWindow(), has_shadow
-                                                ? wm::ShadowElevation::MEDIUM
-                                                : wm::ShadowElevation::NONE);
+  wm::SetShadowElevation(GetNativeWindow(),
+                         has_shadow ? wm::kShadowElevationInactiveWindow
+                                    : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() {
   return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
-         wm::ShadowElevation::NONE;
+         wm::kShadowElevationNone;
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
@@ -843,7 +844,7 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
                             ShapeInput, 0, 0, &r, 1, ShapeSet, YXBanded);
   } else {
     XShapeCombineMask(gfx::GetXDisplay(), GetAcceleratedWidget(), ShapeInput, 0,
-                      0, None, ShapeSet);
+                      0, x11::None, ShapeSet);
   }
 #endif
 }
@@ -1184,10 +1185,6 @@ bool NativeWindowViews::CanMinimize() const {
 
 base::string16 NativeWindowViews::GetWindowTitle() const {
   return base::UTF8ToUTF16(title_);
-}
-
-bool NativeWindowViews::ShouldHandleSystemCommands() const {
-  return true;
 }
 
 views::View* NativeWindowViews::GetContentsView() {

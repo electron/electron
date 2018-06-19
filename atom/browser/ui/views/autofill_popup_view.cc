@@ -19,7 +19,7 @@
 namespace atom {
 
 void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ui::AX_ROLE_MENU_ITEM;
+  node_data->role = ax::mojom::Role::kMenuItem;
   node_data->SetName(suggestion_);
 }
 
@@ -98,7 +98,7 @@ void AutofillPopupView::Show() {
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
-  NotifyAccessibilityEvent(ui::AX_EVENT_MENU_START, true);
+  NotifyAccessibilityEvent(ax::mojom::Event::kMenuStart, true);
 }
 
 void AutofillPopupView::Hide() {
@@ -109,7 +109,7 @@ void AutofillPopupView::Hide() {
   }
 
   RemoveObserver();
-  NotifyAccessibilityEvent(ui::AX_EVENT_MENU_END, true);
+  NotifyAccessibilityEvent(ax::mojom::Event::kMenuEnd, true);
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -152,7 +152,8 @@ void AutofillPopupView::OnSelectedRowChanged(
     int selected = current_row_selection.value_or(-1);
     if (selected == -1 || selected >= child_count())
       return;
-    child_at(selected)->NotifyAccessibilityEvent(ui::AX_EVENT_SELECTION, true);
+    child_at(selected)->NotifyAccessibilityEvent(ax::mojom::Event::kSelection,
+                                                 true);
   }
 }
 
@@ -222,6 +223,11 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
     return;
 
   GetWidget()->SetBounds(popup_->popup_bounds_);
+#if defined(ENABLE_OSR)
+  if (view_proxy_.get()) {
+    view_proxy_->SetBounds(popup_->popup_bounds_in_view());
+  }
+#endif
   SchedulePaint();
 }
 
@@ -234,8 +240,8 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
 #if defined(ENABLE_OSR)
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
-    bitmap.allocN32Pixels(popup_->popup_bounds_in_view_.width(),
-                          popup_->popup_bounds_in_view_.height(), true);
+    bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
+                          popup_->popup_bounds_in_view().height(), true);
     paint_canvas.reset(new cc::SkiaPaintCanvas(bitmap));
     draw_canvas = new gfx::Canvas(paint_canvas.get(), 1.0);
   }
@@ -253,14 +259,14 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
 
 #if defined(ENABLE_OSR)
   if (view_proxy_.get()) {
-    view_proxy_->SetBounds(popup_->popup_bounds_in_view_);
+    view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
   }
 #endif
 }
 
 void AutofillPopupView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ui::AX_ROLE_MENU;
+  node_data->role = ax::mojom::Role::kMenu;
   node_data->SetName("Autofill Menu");
 }
 

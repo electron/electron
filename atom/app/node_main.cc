@@ -38,11 +38,12 @@ int NodeMain(int argc, char* argv[]) {
     base::ThreadTaskRunnerHandle handle(uv_task_runner);
 
     // Initialize feature list.
-    std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
+    auto feature_list = std::make_unique<base::FeatureList>();
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    gin::V8Initializer::LoadV8Snapshot();
+    gin::V8Initializer::LoadV8Snapshot(
+        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
     gin::V8Initializer::LoadV8Natives();
 
     // V8 requires a task scheduler apparently

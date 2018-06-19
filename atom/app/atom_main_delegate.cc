@@ -22,6 +22,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
 #include "ipc/ipc_features.h"
+#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
@@ -83,7 +84,7 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
 #endif  // !defined(OS_WIN)
 
   // Only enable logging when --enable-logging is specified.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   if (!command_line->HasSwitch(::switches::kEnableLogging) &&
       !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
     settings.logging_dest = logging::LOG_NONE;
@@ -141,7 +142,8 @@ void AtomMainDelegate::PreSandboxStartup() {
     if (command_line->HasSwitch(switches::kEnableSandbox)) {
       // Disable setuid sandbox since it is not longer required on
       // linux(namespace sandbox is available on most distros).
-      command_line->AppendSwitch(::switches::kDisableSetuidSandbox);
+      command_line->AppendSwitch(
+          service_manager::switches::kDisableSetuidSandbox);
     } else {
       // Disable renderer sandbox for most of node's functions.
       command_line->AppendSwitch(::switches::kNoSandbox);
@@ -203,7 +205,7 @@ bool AtomMainDelegate::DelaySandboxInitialization(
 
 std::unique_ptr<brightray::ContentClient>
 AtomMainDelegate::CreateContentClient() {
-  return std::unique_ptr<brightray::ContentClient>(new AtomContentClient);
+  return std::make_unique<AtomContentClient>();
 }
 
 }  // namespace atom

@@ -11,7 +11,7 @@
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/content_browser_client.h"
-#include "net/cookies/cookie_store.h"
+#include "net/cookies/cookie_change_dispatcher.h"
 #include "net/http/http_cache.h"
 #include "net/http/transport_security_state.h"
 #include "net/http/url_security_manager.h"
@@ -60,7 +60,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     virtual std::vector<std::string> GetCookieableSchemes();
     virtual void NotifyCookieChange(const net::CanonicalCookie& cookie,
                                     bool removed,
-                                    net::CookieStore::ChangeCause cause) {}
+                                    net::CookieChangeCause cause) {}
   };
 
   URLRequestContextGetter(
@@ -72,9 +72,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
 
-  // net::CookieStore::CookieChangedCallback implementation.
+  // net::CookieChangeDispatcher::CookieChangedCallback implementation.
   void OnCookieChanged(const net::CanonicalCookie& cookie,
-                       net::CookieStore::ChangeCause cause);
+                       net::CookieChangeCause cause);
 
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
@@ -109,8 +109,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HostMappingRules> host_mapping_rules_;
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
-  std::unique_ptr<net::CookieStore::CookieChangedSubscription>
-      cookie_change_sub_;
+  std::unique_ptr<net::CookieChangeSubscription> cookie_change_sub_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
 

@@ -67,7 +67,7 @@ The output should look roughly like this:
 ├── resources
 │   ├── app
 │   └── atom.asar
-├── snapshot_blob.bin
+├── v8_context_snapshot.bin
 ├── squirrel.exe
 └── ui_resources_200_percent.pak
 ```

@@ -156,7 +156,7 @@ bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
 
   if (!chrome_pdf::RenderPDFPageToDC(
           &pdf_data_.front(), pdf_data_.size(), page_number, metafile.context(),
-          pdf_rendering_settings_.dpi,
+          pdf_rendering_settings_.dpi.width(), pdf_rendering_settings_.dpi.height(),
           pdf_rendering_settings_.area.x() - offset_x,
           pdf_rendering_settings_.area.y() - offset_y,
           pdf_rendering_settings_.area.width(),

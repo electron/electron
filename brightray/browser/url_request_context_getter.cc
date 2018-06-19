@@ -20,7 +20,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
-#include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cert/ct_known_logs.h"
@@ -28,17 +27,18 @@
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
+#include "net/cookies/cookie_store.h"
 #include "net/dns/mapped_host_resolver.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_server_properties_impl.h"
 #include "net/log/net_log.h"
-#include "net/proxy/dhcp_proxy_script_fetcher_factory.h"
-#include "net/proxy/proxy_config.h"
-#include "net/proxy/proxy_config_service.h"
-#include "net/proxy/proxy_script_fetcher_impl.h"
-#include "net/proxy/proxy_service.h"
+#include "net/proxy_resolution/dhcp_pac_file_fetcher_factory.h"
+#include "net/proxy_resolution/pac_file_fetcher_impl.h"
+#include "net/proxy_resolution/proxy_config.h"
+#include "net/proxy_resolution/proxy_config_service.h"
+#include "net/proxy_resolution/proxy_service.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
@@ -50,6 +50,7 @@
 #include "net/url_request/url_request_context_storage.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "storage/browser/quota/special_storage_policy.h"
 #include "url/url_constants.h"
 
@@ -148,7 +149,8 @@ URLRequestContextGetter::URLRequestContextGetter(
   // must synchronously run on the glib message loop. This will be passed to
   // the URLRequestContextStorage on the IO thread in GetURLRequestContext().
   proxy_config_service_ =
-      net::ProxyService::CreateSystemProxyConfigService(io_task_runner_);
+      net::ProxyResolutionService::CreateSystemProxyConfigService(
+          io_task_runner_);
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {}
@@ -167,7 +169,7 @@ void URLRequestContextGetter::NotifyContextShutdownOnIO() {
 
 void URLRequestContextGetter::OnCookieChanged(
     const net::CanonicalCookie& cookie,
-    net::CookieStore::ChangeCause cause) {
+    net::CookieChangeCause cause) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
 
   if (!delegate_ || context_shutting_down_)
@@ -175,9 +177,9 @@ void URLRequestContextGetter::OnCookieChanged(
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(
-          &Delegate::NotifyCookieChange, base::Unretained(delegate_), cookie,
-          !(cause == net::CookieStore::ChangeCause::INSERTED), cause));
+      base::BindOnce(&Delegate::NotifyCookieChange, base::Unretained(delegate_),
+                     cookie, !(cause == net::CookieChangeCause::INSERTED),
+                     cause));
 }
 
 net::HostResolver* URLRequestContextGetter::host_resolver() {
@@ -211,8 +213,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                            : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
     std::unique_ptr<net::CookieStore> cookie_store =
         content::CreateCookieStore(content::CookieStoreConfig(
-            cookie_path, content::CookieStoreConfig::EPHEMERAL_SESSION_COOKIES,
-            nullptr));
+            cookie_path, false, false, nullptr));
     storage_->set_cookie_store(std::move(cookie_store));
 
     // Set custom schemes that can accept cookies.
@@ -222,8 +223,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     // Cookie store will outlive notifier by order of declaration
     // in the header.
     cookie_change_sub_ =
-        url_request_context_->cookie_store()->AddCallbackForAllChanges(
-            base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
+        url_request_context_->cookie_store()
+            ->GetChangeDispatcher()
+            .AddCallbackForAllChanges(
+                base::Bind(&URLRequestContextGetter::OnCookieChanged, this));
 
     storage_->set_channel_id_service(std::make_unique<net::ChannelIDService>(
         new net::DefaultChannelIDStore(nullptr)));
@@ -238,32 +241,35 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         net::HostResolver::CreateDefaultResolver(nullptr));
 
     // --host-resolver-rules
-    if (command_line.HasSwitch(::switches::kHostResolverRules)) {
+    if (command_line.HasSwitch(network::switches::kHostResolverRules)) {
       std::unique_ptr<net::MappedHostResolver> remapped_resolver(
           new net::MappedHostResolver(std::move(host_resolver)));
-      remapped_resolver->SetRulesFromString(
-          command_line.GetSwitchValueASCII(::switches::kHostResolverRules));
+      remapped_resolver->SetRulesFromString(command_line.GetSwitchValueASCII(
+          network::switches::kHostResolverRules));
       host_resolver = std::move(remapped_resolver);
     }
 
     // --proxy-server
     if (command_line.HasSwitch(switches::kNoProxyServer)) {
-      storage_->set_proxy_service(net::ProxyService::CreateDirect());
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateDirect());
     } else if (command_line.HasSwitch(switches::kProxyServer)) {
       net::ProxyConfig proxy_config;
       proxy_config.proxy_rules().ParseFromString(
           command_line.GetSwitchValueASCII(switches::kProxyServer));
       proxy_config.proxy_rules().bypass_rules.ParseFromString(
           command_line.GetSwitchValueASCII(switches::kProxyBypassList));
-      storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateFixed(proxy_config));
     } else if (command_line.HasSwitch(switches::kProxyPacUrl)) {
       auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
           GURL(command_line.GetSwitchValueASCII(switches::kProxyPacUrl)));
       proxy_config.set_pac_mandatory(true);
-      storage_->set_proxy_service(net::ProxyService::CreateFixed(proxy_config));
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateFixed(proxy_config));
     } else {
-      storage_->set_proxy_service(
-          net::ProxyService::CreateUsingSystemProxyResolver(
+      storage_->set_proxy_resolution_service(
+          net::ProxyResolutionService::CreateUsingSystemProxyResolver(
               std::move(proxy_config_service_), net_log_));
     }
 
@@ -281,13 +287,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // --auth-server-whitelist
     if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
-      http_auth_preferences_->set_server_whitelist(
+      http_auth_preferences_->SetServerWhitelist(
           command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
     }
 
     // --auth-negotiate-delegate-whitelist
     if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
-      http_auth_preferences_->set_delegate_whitelist(
+      http_auth_preferences_->SetDelegateWhitelist(
           command_line.GetSwitchValueASCII(
               switches::kAuthNegotiateDelegateWhitelist));
     }

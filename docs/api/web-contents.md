@@ -93,39 +93,6 @@ Corresponds to the points in time when the spinner of the tab started spinning.
 
 Corresponds to the points in time when the spinner of the tab stopped spinning.
 
-#### Event: 'did-get-response-details' *(Deprecated)*
-
-Returns:
-
-* `event` Event
-* `status` Boolean
-* `newURL` String
-* `originalURL` String
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-* `resourceType` String
-
-Emitted when details regarding a requested resource are available.
-`status` indicates the socket connection to download the resource.
-
-**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
-#### Event: 'did-get-redirect-request' *(Deprecated)*
-
-Returns:
-
-* `event` Event
-* `oldURL` String
-* `newURL` String
-* `isMainFrame` Boolean
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-
-Emitted when a redirect is received while requesting a resource.
-**Deprecated**: This event has been deprecated. Use the [`webRequest`](web-request.md) module which provides similar navigation details on a subscription basis.
 #### Event: 'dom-ready'
 
 Returns:
@@ -568,11 +535,14 @@ first available device will be selected. `callback` should be called with
 cancel the request.
 
 ```javascript
-const {app, webContents} = require('electron')
-app.commandLine.appendSwitch('enable-web-bluetooth')
+const {app, BrowserWindow} = require('electron')
+
+let win = null
+app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 app.on('ready', () => {
-  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  win = new BrowserWindow({width: 800, height: 600})
+  win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
     let result = deviceList.find((device) => {
       return device.deviceName === 'test'
@@ -664,7 +634,7 @@ for windows with *offscreen rendering* enabled.
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
@@ -1352,23 +1322,20 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 * `onlyDirty` Boolean (optional) - Defaults to `false`.
 * `callback` Function
-  * `frameBuffer` Buffer
+  * `image` [NativeImage](native-image.md)
   * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 Begin subscribing for presentation events and captured frames, the `callback`
-will be called with `callback(frameBuffer, dirtyRect)` when there is a
-presentation event.
+will be called with `callback(image, dirtyRect)` when there is a presentation
+event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
-the pixel data is effectively stored in 32bit BGRA format, but the actual
-representation depends on the endianness of the processor (most modern
-processors are little-endian, on machines with big-endian processors the data
-is in 32bit ARGB format).
+The `image` is an instance of [NativeImage](native-image.md) that stores the
+captured frame.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
-`true`, `frameBuffer` will only contain the repainted area. `onlyDirty`
-defaults to `false`.
+`true`, `image` will only contain the repainted area. `onlyDirty` defaults to
+`false`.
 
 #### `contents.endFrameSubscription()`
 

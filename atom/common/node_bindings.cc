@@ -39,6 +39,7 @@
   V(atom_browser_in_app_purchase)            \
   V(atom_browser_menu)                       \
   V(atom_browser_net)                        \
+  V(atom_browser_net_log)                    \
   V(atom_browser_power_monitor)              \
   V(atom_browser_power_save_blocker)         \
   V(atom_browser_protocol)                   \
@@ -66,7 +67,10 @@
 
 #define ELECTRON_VIEW_MODULES(V) \
   V(atom_browser_box_layout)     \
-  V(atom_browser_layout_manager)
+  V(atom_browser_button)         \
+  V(atom_browser_label_button)   \
+  V(atom_browser_layout_manager) \
+  V(atom_browser_text_field)
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
 

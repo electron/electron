@@ -264,7 +264,7 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
   if (agent_host_.get())
-    agent_host_->InspectElement(this, x, y);
+    agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
 }
 
 void InspectableWebContentsImpl::SetDelegate(
@@ -617,6 +617,11 @@ void InspectableWebContentsImpl::RegisterExtensionsAPI(
 
 void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(
     const std::string& message) {
+  // TODO(alexeykuzmin): Should we expect it to exist?
+  if (!embedder_message_dispatcher_) {
+    return;
+  }
+
   std::string method;
   base::ListValue empty_params;
   base::ListValue* params = &empty_params;
@@ -660,8 +665,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
 }
 
 void InspectableWebContentsImpl::AgentHostClosed(
-    content::DevToolsAgentHost* agent_host,
-    bool replaced) {}
+    content::DevToolsAgentHost* agent_host) {}
 
 void InspectableWebContentsImpl::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
@@ -732,7 +736,7 @@ void InspectableWebContentsImpl::CloseContents(content::WebContents* source) {
 content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
     content::WebContents* source,
     SkColor color,
-    const std::vector<content::ColorSuggestion>& suggestions) {
+    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
     return delegate->OpenColorChooser(source, color, suggestions);

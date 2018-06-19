@@ -10,13 +10,13 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
-#include "content/common/devtools/devtools_network_transaction.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "net/url_request/url_request.h"
+#include "services/network/throttling/throttling_network_transaction.h"
 
 using content::BrowserThread;
-using content::DevToolsNetworkTransaction;
+using network::ThrottlingNetworkTransaction;
 
 namespace atom {
 
@@ -105,7 +105,7 @@ void ToDictionary(base::DictionaryValue* details, net::URLRequest* request) {
 
 void ToDictionary(base::DictionaryValue* details,
                   const net::HttpRequestHeaders& headers) {
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  auto dict = std::make_unique<base::DictionaryValue>();
   net::HttpRequestHeaders::Iterator it(headers);
   while (it.GetNext())
     dict->SetKey(it.name(), base::Value(it.value()));
@@ -117,7 +117,7 @@ void ToDictionary(base::DictionaryValue* details,
   if (!headers)
     return;
 
-  std::unique_ptr<base::DictionaryValue> dict(new base::DictionaryValue);
+  auto dict = std::make_unique<base::DictionaryValue>();
   size_t iter = 0;
   std::string key;
   std::string value;
@@ -127,7 +127,7 @@ void ToDictionary(base::DictionaryValue* details,
       if (dict->GetList(key, &values))
         values->AppendString(value);
     } else {
-      std::unique_ptr<base::ListValue> values(new base::ListValue);
+      auto values = std::make_unique<base::ListValue>();
       values->AppendString(value);
       dict->Set(key, std::move(values));
     }
@@ -274,7 +274,7 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
   if (!client_id_.empty())
-    headers->SetHeader(content::DevToolsNetworkTransaction::
+    headers->SetHeader(network::ThrottlingNetworkTransaction::
                            kDevToolsEmulateNetworkConditionsClientId,
                        client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
@@ -323,9 +323,10 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request) {
+void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
+                                            int net_error) {
   if (!base::ContainsKey(simple_listeners_, kOnResponseStarted)) {
-    brightray::NetworkDelegate::OnResponseStarted(request);
+    brightray::NetworkDelegate::OnResponseStarted(request, net_error);
     return;
   }
 
@@ -388,7 +389,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
   if (!MatchesFilterCondition(request, info.url_patterns))
     return net::OK;
 
-  std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+  auto details = std::make_unique<base::DictionaryValue>();
   FillDetailsObject(details.get(), request, args...);
 
   int render_process_id, render_frame_id;
@@ -416,7 +417,7 @@ void AtomNetworkDelegate::HandleSimpleEvent(SimpleEvent type,
   if (!MatchesFilterCondition(request, info.url_patterns))
     return;
 
-  std::unique_ptr<base::DictionaryValue> details(new base::DictionaryValue);
+  auto details = std::make_unique<base::DictionaryValue>();
   FillDetailsObject(details.get(), request, args...);
 
   int render_process_id, render_frame_id;

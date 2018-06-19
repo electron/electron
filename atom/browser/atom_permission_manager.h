@@ -73,7 +73,6 @@ class AtomPermissionManager : public content::PermissionManager {
                             blink::mojom::PermissionStatus status);
 
   // content::PermissionManager:
-  void CancelPermissionRequest(int request_id) override;
   void ResetPermission(content::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;

@@ -68,8 +68,7 @@ class JsAsker : public RequestJob {
  private:
   // RequestJob:
   void Start() override {
-    std::unique_ptr<base::DictionaryValue> request_details(
-        new base::DictionaryValue);
+    auto request_details = std::make_unique<base::DictionaryValue>();
     request_start_time_ = base::TimeTicks::Now();
     FillRequestDetails(request_details.get(), RequestJob::request());
     content::BrowserThread::PostTask(

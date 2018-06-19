@@ -4,9 +4,8 @@
 
 #include "atom/browser/ui/x/window_state_watcher.h"
 
-#include <X11/Xlib.h>
-
 #include "ui/events/platform/platform_event_source.h"
+#include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
 namespace atom {
