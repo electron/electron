@@ -98,8 +98,7 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 - (BOOL)application:(NSApplication*)sender
     continueUserActivity:(NSUserActivity*)userActivity
       restorationHandler:
-          (void (^)(NSArray* restorableObjects))restorationHandler
-    API_AVAILABLE(macosx(10.10)) {
+          (void (^)(NSArray* restorableObjects))restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
   std::unique_ptr<base::DictionaryValue> user_info =
       atom::NSDictionaryToDictionaryValue(userActivity.userInfo);
