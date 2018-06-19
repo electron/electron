@@ -96,6 +96,7 @@ describe('session module', () => {
         name: '1',
         value: '1'
       }, (error) => {
+        assert(error, 'Should have an error')
         assert.equal(error.message, 'Setting cookie failed')
         done()
       })

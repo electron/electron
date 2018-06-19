@@ -6,7 +6,6 @@
 
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/trackable_object.h"
-#include "atom/browser/atom_access_token_store.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/bridge_task_runner.h"
@@ -20,11 +19,12 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "device/geolocation/geolocation_delegate.h"
-#include "device/geolocation/geolocation_provider.h"
+#include "content/public/common/result_codes.h"
+#include "content/public/common/service_manager_connection.h"
+#include "services/device/public/mojom/constants.mojom.h"
+#include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
-#include "v8/include/v8-debug.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
@@ -47,22 +47,6 @@
 namespace atom {
 
 namespace {
-
-// A provider of Geolocation services to override AccessTokenStore.
-class AtomGeolocationDelegate : public device::GeolocationDelegate {
- public:
-  AtomGeolocationDelegate() {
-    device::GeolocationProvider::GetInstance()
-        ->UserDidOptIntoLocationServices();
-  }
-
-  scoped_refptr<device::AccessTokenStore> CreateAccessTokenStore() final {
-    return new AtomAccessTokenStore();
-  }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AtomGeolocationDelegate);
-};
 
 template <typename T>
 void Erase(T* container, typename T::iterator iter) {
@@ -126,11 +110,16 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destructors_.insert(destructors_.begin(), std::move(callback));
 }
 
-void AtomBrowserMainParts::PreEarlyInitialization() {
-  brightray::BrowserMainParts::PreEarlyInitialization();
+int AtomBrowserMainParts::PreEarlyInitialization() {
+  const int result = brightray::BrowserMainParts::PreEarlyInitialization();
+  if (result != content::RESULT_CODE_NORMAL_EXIT)
+    return result;
+
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
+
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
@@ -240,8 +229,9 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
-  device::GeolocationProvider::SetGeolocationDelegate(
-      new AtomGeolocationDelegate());
+  // TODO(deepak1556): Enable this optionally based on response
+  // from AtomPermissionManager.
+  GetGeolocationControl()->UserDidOptIntoLocationServices();
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
@@ -264,6 +254,21 @@ void AtomBrowserMainParts::PostMainMessageLoopRun() {
       std::move(callback).Run();
     ++iter;
   }
+}
+
+device::mojom::GeolocationControl*
+AtomBrowserMainParts::GetGeolocationControl() {
+  if (geolocation_control_)
+    return geolocation_control_.get();
+
+  auto request = mojo::MakeRequest(&geolocation_control_);
+  if (!content::ServiceManagerConnection::GetForProcess())
+    return geolocation_control_.get();
+
+  service_manager::Connector* connector =
+      content::ServiceManagerConnection::GetForProcess()->GetConnector();
+  connector->BindInterface(device::mojom::kServiceName, std::move(request));
+  return geolocation_control_.get();
 }
 
 }  // namespace atom

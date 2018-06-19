@@ -203,7 +203,6 @@ class PrintWebViewHelper
   void RenderPage(const PrintMsg_Print_Params& params,
                   int page_number,
                   blink::WebLocalFrame* frame,
-                  bool is_preview,
                   PdfMetafileSkia* metafile,
                   gfx::Size* page_size,
                   gfx::Rect* content_rect);

@@ -84,7 +84,7 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
-      CreateSocketFactory(), std::string(), base::FilePath(), base::FilePath());
+      CreateSocketFactory(), base::FilePath(), base::FilePath());
 }
 
 DevToolsManagerDelegate::DevToolsManagerDelegate() {}
@@ -95,7 +95,7 @@ void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 
 bool DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
-    int session_id,
+    content::DevToolsAgentHostClient* client,
     base::DictionaryValue* command) {
   return false;
 }
@@ -106,14 +106,13 @@ DevToolsManagerDelegate::CreateNewTarget(const GURL& url) {
 }
 
 std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
-  return ResourceBundle::GetSharedInstance()
+  return ui::ResourceBundle::GetSharedInstance()
       .GetRawDataResource(IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE)
       .as_string();
 }
 
-std::string DevToolsManagerDelegate::GetFrontendResource(
-    const std::string& path) {
-  return content::DevToolsFrontendHost::GetFrontendResource(path).as_string();
+bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+  return true;
 }
 
 }  // namespace brightray

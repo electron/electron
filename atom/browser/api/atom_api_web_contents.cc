@@ -51,6 +51,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
@@ -71,6 +72,7 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/common/view_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
@@ -82,7 +84,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/resource_request_details.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
@@ -96,7 +97,6 @@
 #include "third_party/WebKit/public/web/WebFindOptions.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-#include "ui/latency/latency_info.h"
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -302,8 +302,7 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 
 // Called when CapturePage is done.
 void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
-                       const SkBitmap& bitmap,
-                       content::ReadbackResponse response) {
+                       const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
@@ -550,7 +549,7 @@ void WebContents::OnCreateWindow(
     const std::string& frame_name,
     WindowOpenDisposition disposition,
     const std::vector<std::string>& features,
-    const scoped_refptr<content::ResourceRequestBody>& body) {
+    const scoped_refptr<network::ResourceRequestBody>& body) {
   if (type_ == BROWSER_WINDOW || type_ == OFF_SCREEN)
     Emit("-new-window", target_url, frame_name, disposition, features, body,
          referrer);
@@ -699,11 +698,13 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(
     content::WebContents* source,
-    const content::WebContentsUnresponsiveState& unresponsive_state) {
+    content::RenderWidgetHost* render_widget_host) {
   Emit("unresponsive");
 }
 
-void WebContents::RendererResponsive(content::WebContents* source) {
+void WebContents::RendererResponsive(
+    content::WebContents* source,
+    content::RenderWidgetHost* render_widget_host) {
   Emit("responsive");
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnRendererResponsive();
@@ -783,6 +784,13 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
+void WebContents::ResizeDueToAutoResize(content::WebContents* web_contents,
+                                        const gfx::Size& new_size) {
+  if (IsGuest()) {
+    guest_delegate_->ResizeDueToAutoResize(new_size);
+  }
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -817,8 +825,10 @@ void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
   Emit("media-started-playing");
 }
 
-void WebContents::MediaStoppedPlaying(const MediaPlayerInfo& video_type,
-                                      const MediaPlayerId& id) {
+void WebContents::MediaStoppedPlaying(
+    const MediaPlayerInfo& video_type,
+    const MediaPlayerId& id,
+    content::WebContentsObserver::MediaStoppedReason reason) {
   Emit("media-paused");
 }
 
@@ -865,30 +875,6 @@ void WebContents::DidStartLoading() {
 
 void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
-}
-
-void WebContents::DidGetResourceResponseStart(
-    const content::ResourceRequestDetails& details) {
-  // Plznavigate is using blob URLs to deliver the body
-  // of the main resource to the renderer process. This
-  // gets better in the future with kNavigationMojoResponse
-  // feature, which replaces this mechanism with Mojo Datapipe.
-  if (details.url.SchemeIsBlob() &&
-      (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME ||
-       details.resource_type == content::RESOURCE_TYPE_SUB_FRAME))
-    return;
-  Emit("-did-get-response-details", details.socket_address.IsEmpty(),
-       details.url, details.original_url, details.http_response_code,
-       details.method, details.referrer, details.headers.get(),
-       ResourceTypeToString(details.resource_type));
-}
-
-void WebContents::DidGetRedirectForResourceRequest(
-    const content::ResourceRedirectDetails& details) {
-  Emit("-did-get-redirect-request", details.url, details.new_url,
-       (details.resource_type == content::RESOURCE_TYPE_MAIN_FRAME),
-       details.http_response_code, details.method, details.referrer,
-       details.headers.get());
 }
 
 void WebContents::DidStartNavigation(
@@ -1175,7 +1161,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (options.Get("extraHeaders", &extra_headers))
     params.extra_headers = extra_headers;
 
-  scoped_refptr<content::ResourceRequestBody> body;
+  scoped_refptr<network::ResourceRequestBody> body;
   if (options.Get("postData", &body)) {
     params.post_data = body;
     params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
@@ -1212,10 +1198,10 @@ void WebContents::DownloadURL(const GURL& url) {
   auto* browser_context = web_contents()->GetBrowserContext();
   auto* download_manager =
       content::BrowserContext::GetDownloadManager(browser_context);
-
-  download_manager->DownloadUrl(
-      content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+  std::unique_ptr<download::DownloadUrlParameters> download_params(
+      content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, NO_TRAFFIC_ANNOTATION_YET));
+  download_manager->DownloadUrl(std::move(download_params));
 }
 
 GURL WebContents::GetURL() const {
@@ -1615,17 +1601,24 @@ bool WebContents::SendIPCMessage(bool all_frames,
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,
                                  v8::Local<v8::Value> input_event) {
-  auto* const view = static_cast<content::RenderWidgetHostViewBase*>(
-      web_contents()->GetRenderWidgetHostView());
+  content::RenderWidgetHostView* view =
+      web_contents()->GetRenderWidgetHostView();
   if (!view)
     return;
 
+  content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
   blink::WebInputEvent::Type type =
       mate::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      view->ProcessMouseEvent(mouse_event, ui::LatencyInfo());
+      if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
+        GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
+#endif
+      } else {
+        rwh->ForwardMouseEvent(mouse_event);
+      }
       return;
     }
   } else if (blink::WebInputEvent::IsKeyboardEventType(type)) {
@@ -1633,13 +1626,20 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
         blink::WebKeyboardEvent::kRawKeyDown,
         blink::WebInputEvent::kNoModifiers, ui::EventTimeForNow());
     if (mate::ConvertFromV8(isolate, input_event, &keyboard_event)) {
-      view->ProcessKeyboardEvent(keyboard_event, ui::LatencyInfo());
+      rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
   } else if (type == blink::WebInputEvent::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      view->ProcessMouseWheelEvent(mouse_wheel_event, ui::LatencyInfo());
+      if (IsOffScreen()) {
+#if defined(ENABLE_OSR)
+        GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
+            mouse_wheel_event);
+#endif
+      } else {
+        rwh->ForwardWheelEvent(mouse_wheel_event);
+      }
       return;
     }
   }
@@ -1658,18 +1658,12 @@ void WebContents::BeginFrameSubscription(mate::Arguments* args) {
     return;
   }
 
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  if (view) {
-    std::unique_ptr<FrameSubscriber> frame_subscriber(
-        new FrameSubscriber(isolate(), view, callback, only_dirty));
-    view->BeginFrameSubscription(std::move(frame_subscriber));
-  }
+  frame_subscriber_.reset(
+      new FrameSubscriber(isolate(), web_contents(), callback, only_dirty));
 }
 
 void WebContents::EndFrameSubscription() {
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  if (view)
-    view->EndFrameSubscription();
+  frame_subscriber_.reset();
 }
 
 void WebContents::StartDrag(const mate::Dictionary& item,
@@ -1742,8 +1736,7 @@ void WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::Bind(&OnCapturePageDone, callback),
-                        kBGRA_8888_SkColorType);
+                        base::BindOnce(&OnCapturePageDone, callback));
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -1842,8 +1835,7 @@ int WebContents::GetFrameRate() const {
 void WebContents::Invalidate() {
   if (IsOffScreen()) {
 #if defined(ENABLE_OSR)
-    auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(
-        web_contents()->GetRenderWidgetHostView());
+    auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
     if (osr_rwhv)
       osr_rwhv->Invalidate();
 #endif
@@ -1986,7 +1978,8 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
 
 void WebContents::GrantOriginAccess(const GURL& url) {
   content::ChildProcessSecurityPolicy::GetInstance()->GrantOrigin(
-      web_contents()->GetMainFrame()->GetProcess()->GetID(), url::Origin(url));
+      web_contents()->GetMainFrame()->GetProcess()->GetID(),
+      url::Origin::Create(url));
 }
 
 // static

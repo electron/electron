@@ -186,15 +186,6 @@ void AtomPermissionManager::OnPermissionResponse(
   }
 }
 
-void AtomPermissionManager::CancelPermissionRequest(int request_id) {
-  auto* pending_request = pending_requests_.Lookup(request_id);
-  if (!pending_request)
-    return;
-
-  if (!WebContentsDestroyed(pending_request->render_process_id()))
-    pending_request->RunCallback();
-  pending_requests_.Remove(request_id);
-}
 
 void AtomPermissionManager::ResetPermission(content::PermissionType permission,
                                             const GURL& requesting_origin,

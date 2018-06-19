@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
+#include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
@@ -46,7 +47,7 @@ AtomBindings::~AtomBindings() {
 }
 
 void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
-  v8::V8::SetFatalErrorHandler(FatalErrorCallback);
+  isolate->SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
   dict.SetMethod("crash", &AtomBindings::Crash);

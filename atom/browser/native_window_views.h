@@ -154,7 +154,6 @@ class NativeWindowViews : public NativeWindow,
   bool CanMaximize() const override;
   bool CanMinimize() const override;
   base::string16 GetWindowTitle() const override;
-  bool ShouldHandleSystemCommands() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,

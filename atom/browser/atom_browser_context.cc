@@ -28,7 +28,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/task_scheduler/post_task.h"
-#include "base/threading/sequenced_worker_pool.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -203,10 +202,9 @@ std::vector<std::string> AtomBrowserContext::GetCookieableSchemes() {
   return default_schemes;
 }
 
-void AtomBrowserContext::NotifyCookieChange(
-    const net::CanonicalCookie& cookie,
-    bool removed,
-    net::CookieStore::ChangeCause cause) {
+void AtomBrowserContext::NotifyCookieChange(const net::CanonicalCookie& cookie,
+                                            bool removed,
+                                            net::CookieChangeCause cause) {
   CookieDetails cookie_details(&cookie, removed, cause);
   cookie_change_sub_list_.Notify(&cookie_details);
 }
@@ -225,10 +223,7 @@ AtomBlobReader* AtomBrowserContext::GetBlobReader() {
   if (!blob_reader_.get()) {
     content::ChromeBlobStorageContext* blob_context =
         content::ChromeBlobStorageContext::GetFor(this);
-    storage::FileSystemContext* file_system_context =
-        content::BrowserContext::GetStoragePartition(this, nullptr)
-            ->GetFileSystemContext();
-    blob_reader_.reset(new AtomBlobReader(blob_context, file_system_context));
+    blob_reader_.reset(new AtomBlobReader(blob_context));
   }
   return blob_reader_.get();
 }

@@ -100,7 +100,7 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
 }
 
 bool IsSameOrigin(const GURL& l, const GURL& r) {
-  return url::Origin(l).IsSameOriginWith(url::Origin(r));
+  return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
 }
 
 void Initialize(v8::Local<v8::Object> exports,

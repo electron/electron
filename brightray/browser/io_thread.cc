@@ -5,7 +5,7 @@
 #include "brightray/browser/io_thread.h"
 
 #include "content/public/browser/browser_thread.h"
-#include "net/proxy/proxy_service.h"
+#include "net/proxy_resolution/proxy_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -28,7 +28,8 @@ IOThread::~IOThread() {
 
 void IOThread::Init() {
   net::URLRequestContextBuilder builder;
-  builder.set_proxy_service(net::ProxyService::CreateDirect());
+  builder.set_proxy_resolution_service(
+      net::ProxyResolutionService::CreateDirect());
   url_request_context_ = builder.Build();
   url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
       url_request_context_.get(), base::ThreadTaskRunnerHandle::Get());

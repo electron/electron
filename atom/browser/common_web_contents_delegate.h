@@ -21,6 +21,10 @@
 
 using brightray::DevToolsFileSystemIndexer;
 
+namespace base {
+class SequencedTaskRunner;
+}
+
 namespace atom {
 
 class AtomBrowserContext;
@@ -72,7 +76,8 @@ class CommonWebContentsDelegate
   content::ColorChooser* OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
-      const std::vector<content::ColorSuggestion>& suggestions) override;
+      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
+      override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
@@ -131,12 +136,6 @@ class CommonWebContentsDelegate
   void ResetManagedWebContents(bool async);
 
  private:
-  // Callback for when DevToolsSaveToFile has completed.
-  void OnDevToolsSaveToFile(const std::string& url);
-
-  // Callback for when DevToolsAppendToFile has completed.
-  void OnDevToolsAppendToFile(const std::string& url);
-
   // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
                                         const std::string& file_system_path,
@@ -191,6 +190,8 @@ class CommonWebContentsDelegate
       map<int, scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>>
           DevToolsIndexingJobsMap;
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
+
+  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

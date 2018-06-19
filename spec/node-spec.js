@@ -237,7 +237,7 @@ describe('node feature', () => {
       child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
         if (cmd === 'assert') {
           assert.equal(debuggerEnabled, true)
-          assert.equal(secondSessionOpened, false)
+          assert.equal(secondSessionOpened, true)
           assert.equal(success, true)
           done()
         }

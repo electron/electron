@@ -209,7 +209,7 @@
                 '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/views_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
-                '<(libchromiumcontent_dir)/snapshot_blob.bin',
+                '<(libchromiumcontent_dir)/v8_context_snapshot.bin',
                 'external_binaries/d3dcompiler_47.dll',
               ],
             },
@@ -249,7 +249,7 @@
                 '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/views_resources_200_percent.pak',
                 '<(libchromiumcontent_dir)/natives_blob.bin',
-                '<(libchromiumcontent_dir)/snapshot_blob.bin',
+                '<(libchromiumcontent_dir)/v8_context_snapshot.bin',
               ],
             },
           ],
@@ -355,6 +355,7 @@
               '-lwinmm.lib',
               '-lcrypt32.lib',
               '-luiautomationcore.lib',
+              '-lPropsys.lib'
             ],
           },
           'dependencies': [
@@ -645,7 +646,7 @@
             '<(libchromiumcontent_dir)/ui_resources_200_percent.pak',
             '<(libchromiumcontent_dir)/views_resources_200_percent.pak',
             '<(libchromiumcontent_dir)/natives_blob.bin',
-            '<(libchromiumcontent_dir)/snapshot_blob.bin',
+            '<(libchromiumcontent_dir)/v8_context_snapshot.bin',
           ],
           'xcode_settings': {
             'ATOM_BUNDLE_ID': 'com.<(company_abbr).<(project_name).framework',

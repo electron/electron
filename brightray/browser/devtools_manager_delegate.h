@@ -23,12 +23,12 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   // DevToolsManagerDelegate implementation.
   void Inspect(content::DevToolsAgentHost* agent_host) override;
   bool HandleCommand(content::DevToolsAgentHost* agent_host,
-                     int session_id,
+                     content::DevToolsAgentHostClient* client,
                      base::DictionaryValue* command) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url) override;
   std::string GetDiscoveryPageHTML() override;
-  std::string GetFrontendResource(const std::string& path) override;
+  bool HasBundledFrontendResources() override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);

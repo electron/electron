@@ -20,6 +20,7 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
@@ -47,6 +48,7 @@
 #include "native_mate/object_template_builder.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
@@ -695,7 +697,7 @@ bool App::CanCreateWindow(
     WindowOpenDisposition disposition,
     const blink::mojom::WindowFeatures& features,
     const std::vector<std::string>& additional_features,
-    const scoped_refptr<content::ResourceRequestBody>& body,
+    const scoped_refptr<network::ResourceRequestBody>& body,
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
@@ -1304,7 +1306,7 @@ void AppendSwitch(const std::string& switch_string, mate::Arguments* args) {
 
   if (base::EndsWith(switch_string, "-path",
                      base::CompareCase::INSENSITIVE_ASCII) ||
-      switch_string == switches::kLogNetLog) {
+      switch_string == network::switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
     command_line->AppendSwitchPath(switch_string, path);

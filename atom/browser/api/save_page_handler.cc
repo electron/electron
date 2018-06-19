@@ -22,7 +22,7 @@ SavePageHandler::SavePageHandler(content::WebContents* web_contents,
 SavePageHandler::~SavePageHandler() {}
 
 void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
-                                        content::DownloadItem* item) {
+                                        download::DownloadItem* item) {
   // OnDownloadCreated is invoked during WebContents::SavePage, so the |item|
   // here is the one stated by WebContents::SavePage.
   item->AddObserver(this);
@@ -48,12 +48,12 @@ bool SavePageHandler::Handle(const base::FilePath& full_path,
   return result;
 }
 
-void SavePageHandler::OnDownloadUpdated(content::DownloadItem* item) {
+void SavePageHandler::OnDownloadUpdated(download::DownloadItem* item) {
   if (item->IsDone()) {
     v8::Isolate* isolate = v8::Isolate::GetCurrent();
     v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
-    if (item->GetState() == content::DownloadItem::COMPLETE) {
+    if (item->GetState() == download::DownloadItem::COMPLETE) {
       callback_.Run(v8::Null(isolate));
     } else {
       v8::Local<v8::String> error_message =
@@ -64,7 +64,7 @@ void SavePageHandler::OnDownloadUpdated(content::DownloadItem* item) {
   }
 }
 
-void SavePageHandler::Destroy(content::DownloadItem* item) {
+void SavePageHandler::Destroy(download::DownloadItem* item) {
   item->RemoveObserver(this);
   delete this;
 }

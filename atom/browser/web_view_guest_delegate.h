@@ -47,6 +47,9 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // and normal sizes.
   void SetSize(const SetSizeParams& params);
 
+  // Invoked when the contents auto-resized and the container should match it.
+  void ResizeDueToAutoResize(const gfx::Size& new_size);
+
   // Return true if attached.
   bool IsAttached() const { return attached_; }
 
@@ -59,7 +62,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void DidAttach(int guest_proxy_routing_id) final;
   void DidDetach() final;
   content::WebContents* GetOwnerWebContents() const final;
-  void GuestSizeChanged(const gfx::Size& new_size) final;
   void SetGuestHost(content::GuestHost* guest_host) final;
   void WillAttach(content::WebContents* embedder_web_contents,
                   int element_instance_id,
@@ -82,8 +84,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   //
   // This gives the derived class an opportunity to inform its container element
   // or perform other actions.
-  void GuestSizeChangedDueToAutoSize(const gfx::Size& old_size,
-                                     const gfx::Size& new_size);
+  void UpdateGuestSize(const gfx::Size& new_size, bool due_to_auto_resize);
 
   // Returns the default size of the guestview.
   gfx::Size GetDefaultSize() const;

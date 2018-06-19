@@ -12,7 +12,10 @@ using base::PlatformThreadRef;
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task_scheduler/post_task.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/media/desktop_media_list.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
 #include "native_mate/dictionary.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
@@ -45,54 +48,42 @@ struct Converter<atom::api::DesktopCapturer::Source> {
 
 }  // namespace mate
 
-namespace atom {
+namespace {
 
-namespace api {
-
-DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
-  Init(isolate);
+void EmitFinished(
+    const std::vector<atom::api::DesktopCapturer::Source>& sources,
+    atom::api::DesktopCapturer* cap) {
+  cap->Emit("finished", sources);
 }
 
-DesktopCapturer::~DesktopCapturer() {}
-
-void DesktopCapturer::StartHandling(bool capture_window,
-                                    bool capture_screen,
-                                    const gfx::Size& thumbnail_size) {
-  webrtc::DesktopCaptureOptions options =
-      content::CreateDesktopCaptureOptions();
+void StartHandlingTask(bool capture_window,
+                       bool capture_screen,
+                       const gfx::Size& thumbnail_size,
+                       atom::api::DesktopCapturer* cap) {
 #if defined(OS_WIN)
-  using_directx_capturer_ = options.allow_directx_capturer();
+  cap->using_directx_capturer_ =
+      content::desktop_capture::CreateDesktopCaptureOptions()
+          .allow_directx_capturer();
 #endif  // defined(OS_WIN)
-
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
-      capture_screen ? webrtc::DesktopCapturer::CreateScreenCapturer(options)
+      capture_screen ? content::desktop_capture::CreateScreenCapturer()
                      : nullptr);
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer(
-      capture_window ? webrtc::DesktopCapturer::CreateWindowCapturer(options)
+      capture_window ? content::desktop_capture::CreateScreenCapturer()
                      : nullptr);
-  media_list_.reset(new NativeDesktopMediaList(std::move(screen_capturer),
-                                               std::move(window_capturer)));
+  cap->media_list_.reset(new NativeDesktopMediaList(
+      std::move(screen_capturer), std::move(window_capturer)));
 
-  media_list_->SetThumbnailSize(thumbnail_size);
-  media_list_->StartUpdating(this);
+  cap->media_list_->SetThumbnailSize(thumbnail_size);
+  cap->media_list_->StartUpdating(cap);
 }
 
-void DesktopCapturer::OnSourceAdded(int index) {}
-
-void DesktopCapturer::OnSourceRemoved(int index) {}
-
-void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {}
-
-void DesktopCapturer::OnSourceNameChanged(int index) {}
-
-void DesktopCapturer::OnSourceThumbnailChanged(int index) {}
-
-bool DesktopCapturer::OnRefreshFinished() {
-  const auto media_list_sources = media_list_->GetSources();
-  std::vector<DesktopCapturer::Source> sources;
+void OnRefreshFinishedTask(atom::api::DesktopCapturer* cap) {
+  const auto media_list_sources = cap->media_list_->GetSources();
+  std::vector<atom::api::DesktopCapturer::Source> sources;
   for (const auto& media_list_source : media_list_sources) {
     sources.emplace_back(
-        DesktopCapturer::Source{media_list_source, std::string()});
+        atom::api::DesktopCapturer::Source{media_list_source, std::string()});
   }
 
 #if defined(OS_WIN)
@@ -100,7 +91,7 @@ bool DesktopCapturer::OnRefreshFinished() {
   // to provide an association between it and desktopCapturer/getUserMedia.
   // This is only required when using the DirectX capturer, otherwise the IDs
   // across the APIs already match.
-  if (using_directx_capturer_) {
+  if (cap->using_directx_capturer_) {
     std::vector<std::string> device_names;
     // Crucially, this list of device names will be in the same order as
     // |media_list_sources|.
@@ -133,7 +124,46 @@ bool DesktopCapturer::OnRefreshFinished() {
   // supports capturing the entire desktop on Linux. Revisit this if individual
   // screen support is added.
 
-  Emit("finished", sources);
+  content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
+                                   base::Bind(EmitFinished, sources, cap));
+}
+
+}  // namespace
+
+namespace atom {
+
+namespace api {
+
+DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {
+  Init(isolate);
+  capture_thread_ = base::CreateSequencedTaskRunnerWithTraits(
+      {base::WithBaseSyncPrimitives(), base::MayBlock(),
+       base::TaskPriority::USER_VISIBLE});
+}
+
+DesktopCapturer::~DesktopCapturer() {}
+
+void DesktopCapturer::StartHandling(bool capture_window,
+                                    bool capture_screen,
+                                    const gfx::Size& thumbnail_size) {
+  capture_thread_->PostTask(
+      FROM_HERE, base::BindOnce(StartHandlingTask, capture_window,
+                                capture_screen, thumbnail_size, this));
+}
+
+void DesktopCapturer::OnSourceAdded(int index) {}
+
+void DesktopCapturer::OnSourceRemoved(int index) {}
+
+void DesktopCapturer::OnSourceMoved(int old_index, int new_index) {}
+
+void DesktopCapturer::OnSourceNameChanged(int index) {}
+
+void DesktopCapturer::OnSourceThumbnailChanged(int index) {}
+
+bool DesktopCapturer::OnRefreshFinished() {
+  capture_thread_->PostTask(FROM_HERE,
+                            base::BindOnce(OnRefreshFinishedTask, this));
   return false;
 }
 

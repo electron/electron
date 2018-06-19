@@ -32,7 +32,7 @@
       'GCC_ENABLE_CPP_RTTI': 'NO',
       'GCC_TREAT_WARNINGS_AS_ERRORS': 'YES',
       'CLANG_CXX_LANGUAGE_STANDARD': 'c++14',
-      'MACOSX_DEPLOYMENT_TARGET': '10.9',
+      'MACOSX_DEPLOYMENT_TARGET': '10.10',
       'RUN_CLANG_STATIC_ANALYZER': 'YES',
       'USE_HEADER_MAP': 'NO',
     },
@@ -136,6 +136,7 @@
             ],
             'cflags_cc': [
               '-D__STRICT_ANSI__',
+              '-fno-exceptions',
               '-fno-rtti',
             ],
             'ldflags': [
@@ -250,7 +251,7 @@
             # perform FPO regardless, so we must explicitly disable.
             # We still want the false setting above to avoid having
             # "/Oy /Oy-" and warnings about overriding.
-            'AdditionalOptions': ['/Oy-', '/d2guard4'],
+            'AdditionalOptions': ['/Oy-', '/guard:cf'],
           },
           'VCLibrarianTool': {
             'LinkTimeCodeGeneration': 'true',  # /LTCG

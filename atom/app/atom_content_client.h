@@ -26,6 +26,9 @@ class AtomContentClient : public brightray::ContentClient {
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPepperPlugins(
       std::vector<content::PepperPluginInfo>* plugins) override;
+  void AddContentDecryptionModules(
+      std::vector<content::CdmInfo>* cdms,
+      std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomContentClient);

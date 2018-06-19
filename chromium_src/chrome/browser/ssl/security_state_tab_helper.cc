@@ -59,8 +59,8 @@ void SecurityStateTabHelper::VisibleSecurityStateChanged() {
 
   security_state::SecurityInfo security_info;
   GetSecurityInfo(&security_info);
-  if (!security_info.displayed_password_field_on_http &&
-      !security_info.displayed_credit_card_field_on_http) {
+  if (!security_info.insecure_input_events.password_field_shown &&
+      !security_info.insecure_input_events.credit_card_field_edited) {
     return;
   }
 
@@ -92,12 +92,12 @@ void SecurityStateTabHelper::VisibleSecurityStateChanged() {
   web_contents()->GetMainFrame()->AddMessageToConsole(
       content::CONSOLE_MESSAGE_LEVEL_WARNING, warning);
 
-  if (security_info.displayed_credit_card_field_on_http) {
+  if (security_info.insecure_input_events.credit_card_field_edited) {
     UMA_HISTOGRAM_BOOLEAN(
         "Security.HTTPBad.UserWarnedAboutSensitiveInput.CreditCard",
         warning_is_user_visible);
   }
-  if (security_info.displayed_password_field_on_http) {
+  if (security_info.insecure_input_events.password_field_shown) {
     UMA_HISTOGRAM_BOOLEAN(
         "Security.HTTPBad.UserWarnedAboutSensitiveInput.Password",
         warning_is_user_visible);
