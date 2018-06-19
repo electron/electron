@@ -4,7 +4,7 @@
   "main": "static/main.js",
   "version": "0.1.0",
   "devDependencies": {
-    "basic-auth": "^1.0.4",
+    "basic-auth": "^2.0.0",
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
