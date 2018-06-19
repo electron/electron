@@ -571,6 +571,10 @@ describe('BrowserWindow module', () => {
       const bounds = w.getBounds()
       w.once('maximize', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.unmaximize()
+      })
+      w.once('unmaximize', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
         done()
       })
       w.maximize()
@@ -579,6 +583,10 @@ describe('BrowserWindow module', () => {
       const bounds = w.getBounds()
       w.once('minimize', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.restore()
+      })
+      w.once('restore', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
         done()
       })
       w.minimize()
@@ -586,6 +594,10 @@ describe('BrowserWindow module', () => {
     it('checks normal bounds when full-screen', (done) => {
       const bounds = w.getBounds()
       w.once('enter-full-screen', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.setFullScreen(false)
+      })
+      w.once('leave-full-screen', () => {
         assertBoundsEqual(w.getNormalBounds(), bounds)
         done()
       })
