@@ -550,6 +550,54 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.getNormalBounds()', () => {
+    it('checks normal bounds after resize', (done) => {
+      const size = [300, 400]
+      w.once('resize', () => {
+        assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+        done()
+      })
+      w.setSize(size[0], size[1])
+    })
+    it('checks normal bounds after move', (done) => {
+      const pos = [10, 10]
+      w.once('move', () => {
+        assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+        done()
+      })
+      w.setPosition(pos[0], pos[1])
+    })
+    it('checks normal bounds when maximized', (done) => {
+      const bounds = w.getBounds()
+      w.once('maximize', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.unmaximize()
+        done()
+      })
+      w.maximize()
+    })
+    it('checks normal bounds when minimized', (done) => {
+      const bounds = w.getBounds()
+      w.once('minimize', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.restore()
+        done()
+      })
+      w.minimize()
+    })
+    it('checks normal bounds when full-screen', (done) => {
+      const bounds = w.getBounds()
+      w.once('enter-full-screen', () => {
+        assertBoundsEqual(w.getNormalBounds(), bounds)
+        w.once('leave-full-screen', () => {
+          done()
+        })
+        w.setFullScreen(false)
+      })
+      w.setFullScreen(true)
+    })
+  })
+
   describe('BrowserWindow.setProgressBar(progress)', () => {
     it('sets the progress', () => {
       assert.doesNotThrow(() => {

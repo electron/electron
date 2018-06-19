@@ -562,6 +562,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
   return content_view() ? content_view()->size() : gfx::Size();
 }
 
+gfx::Rect NativeWindowViews::GetNormalBounds() {
+  return widget()->GetRestoredBounds();
+}
+
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
