@@ -357,7 +357,7 @@ bool NativeWindow::IsMenuBarVisible() {
 
 void NativeWindow::SetWindowControlsVisibility(bool visible) {}
 
-bool NativeWindow::IsWindowControlsVisible() {
+bool NativeWindow::AreWindowControlsVisible() {
   return true;
 }
 

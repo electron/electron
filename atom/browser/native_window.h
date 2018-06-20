@@ -195,7 +195,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Toggle the window controls visibility
   virtual void SetWindowControlsVisibility(bool visible);
-  virtual bool IsWindowControlsVisible();
+  virtual bool AreWindowControlsVisible();
 
   // Set the aspect ratio when resizing window.
   double GetAspectRatio();

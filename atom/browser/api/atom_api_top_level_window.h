@@ -182,7 +182,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void CloseFilePreview();
 
   void SetWindowControlsVisibility(bool visible);
-  bool IsWindowControlsVisible();
+  bool AreWindowControlsVisible();
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;

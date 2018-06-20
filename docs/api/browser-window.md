@@ -1477,7 +1477,7 @@ will remove the vibrancy effect on the window.
 
 Sets whether the window controls buttons should be visible.
 
-#### `win.isWindowControlsVisible()` _macOS_
+#### `win.AreWindowControlsVisible()` _macOS_
 
 Returns `Boolean` - Whether window controls are visible.
 

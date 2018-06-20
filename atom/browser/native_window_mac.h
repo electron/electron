@@ -120,7 +120,7 @@ class NativeWindowMac : public NativeWindow {
   bool AddTabbedWindow(NativeWindow* window) override;
 
   void SetWindowControlsVisibility(bool visible) override;
-  bool IsWindowControlsVisible() override;
+  bool AreWindowControlsVisible() override;
 
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(

@@ -784,8 +784,8 @@ void TopLevelWindow::SetWindowControlsVisibility(bool visible) {
   window_->SetWindowControlsVisibility(visible);
 }
 
-bool TopLevelWindow::IsWindowControlsVisible() {
-  return window_->IsWindowControlsVisible();
+bool TopLevelWindow::AreWindowControlsVisible() {
+  return window_->AreWindowControlsVisible();
 }
 
 v8::Local<v8::Value> TopLevelWindow::GetParentWindow() const {
@@ -1041,8 +1041,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
 
       .SetMethod("setWindowControlsVisibility",
                  &TopLevelWindow::SetWindowControlsVisibility)
-      .SetMethod("isWindowControlsVisible",
-                 &TopLevelWindow::IsWindowControlsVisible)
+      .SetMethod("AreWindowControlsVisible",
+                 &TopLevelWindow::AreWindowControlsVisible)
 #endif
       .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)

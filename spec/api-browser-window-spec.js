@@ -781,14 +781,14 @@ describe('BrowserWindow module', () => {
       it('hides controls when enters simple fullscreen mode', () => {
         // BUG in SimpleFullScreen implementation? It does not trigger enter/leave-full-screen events
         w.setSimpleFullScreen(true)
-        assert.equal(w.isWindowControlsVisible(), false)
+        assert.equal(w.AreWindowControlsVisible(), false)
       })
 
       it('shows controls after leaving simple fullscreen mode', () => {
         w.setSimpleFullScreen(true)
         w.setSimpleFullScreen(false)
 
-        assert.equal(w.isWindowControlsVisible(), true)
+        assert.equal(w.AreWindowControlsVisible(), true)
       })
     })
 
@@ -799,12 +799,12 @@ describe('BrowserWindow module', () => {
 
       it('remain hidden when window enters and leaves fullscreen mode', (done) => {
         w.once('enter-full-screen', () => {
-          assert.equal(w.isWindowControlsVisible(), false)
+          assert.equal(w.AreWindowControlsVisible(), false)
           w.setFullScreen(false)
         })
 
         w.once('leave-full-screen', () => {
-          assert.equal(w.isWindowControlsVisible(), false)
+          assert.equal(w.AreWindowControlsVisible(), false)
           done()
         })
 
@@ -814,7 +814,7 @@ describe('BrowserWindow module', () => {
       it('remain hidden after window enters and leaves simple-fullscreen mode', () => {
         w.setSimpleFullScreen(true)
         w.setSimpleFullScreen(false)
-        assert.equal(w.isWindowControlsVisible(), false)
+        assert.equal(w.AreWindowControlsVisible(), false)
       })
     })
   })

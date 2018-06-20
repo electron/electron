@@ -1190,7 +1190,7 @@ void NativeWindowMac::SetWindowControlsVisibility(bool visible) {
   [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
 }
 
-bool NativeWindowMac::IsWindowControlsVisible() {
+bool NativeWindowMac::AreWindowControlsVisible() {
   return !(
       [[window_ standardWindowButton:NSWindowCloseButton] isHidden] &&
       [[window_ standardWindowButton:NSWindowMiniaturizeButton] isHidden] &&
