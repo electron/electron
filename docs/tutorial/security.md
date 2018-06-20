@@ -363,7 +363,7 @@ handler:
 const {session} = require('electron')
 
 session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-  callback({responseHeaders: `default-src 'self'`})
+  callback({responseHeaders: `default-src 'none'`})
 })
 ```
 
@@ -373,7 +373,7 @@ CSP's preferred delivery mechanism is an HTTP header. It can be useful, however,
 to set a policy on a page directly in the markup using a `<meta>` tag:
 
 ```html
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'">
 ```
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
