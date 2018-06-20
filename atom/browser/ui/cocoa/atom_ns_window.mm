@@ -173,12 +173,12 @@ bool ScopedDisableResize::disable_resize_ = false;
       buttonFrame.origin.x += NSWidth(
           [[self standardWindowButton:NSWindowMiniaturizeButton] frame]);
       buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      // fallthrough
+      FALLTHROUGH;
     case NSWindowMiniaturizeButton:
       buttonFrame.origin.x +=
           NSWidth([[self standardWindowButton:NSWindowCloseButton] frame]);
       buttonFrame.origin.x += windowButtonsInterButtonSpacing_;
-      // fallthrough
+      FALLTHROUGH;
     default:
       break;
   }
