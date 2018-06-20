@@ -66,7 +66,7 @@ There are a number of tools for signing your packaged app:
 See the [Windows Store Guide].
 
 [Apple Developer Program]: https://developer.apple.com/programs/
-[`electron-builder`]: https://github.com/electron/electron-builder
+[`electron-builder`]: https://github.com/electron-userland/electron-builder
 [`electron-forge`]: https://github.com/electron-userland/electron-forge
 [`electron-osx-sign`]: https://github.com/electron-userland/electron-osx-sign
 [`electron-packager`]: https://github.com/electron-userland/electron-packager
