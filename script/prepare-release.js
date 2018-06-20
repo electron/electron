@@ -75,7 +75,7 @@ async function getReleaseNotes (currentBranch) {
   let githubOpts = {
     owner: 'electron',
     repo: 'electron',
-    base: `v${pkg.version}`,
+    base: `2a97e48465a3af9e5448a8d06c1d65d16c516e8f`,
     head: currentBranch
   }
   let releaseNotes
