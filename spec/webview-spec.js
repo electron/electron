@@ -248,6 +248,37 @@ describe('<webview> tag', function () {
       })
     })
 
+    it('runs in the correct context', async () => {
+      const message = await startLoadingWebViewAndWaitForMessage(webview, {
+        preload: `${fixtures}/module/preload-context.js`,
+        src: `file://${fixtures}/api/blank.html`
+      })
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: "function", //arguments passed to it should be availale
+        electron: "undefined", //objects from the scope it is called from should not be available
+        window: "object", //the window object should be available
+        localVar: "undefined", //but local variables should not be exposed to the window
+      })
+    })
+
+    it('runs in the correct context when sandboxed', async () => {
+      const message = await startLoadingWebViewAndWaitForMessage(webview, {
+        preload: `${fixtures}/module/preload-context.js`,
+        src: `file://${fixtures}/api/blank.html`,
+        webpreferences: "sandbox=yes",
+      })
+
+      const types = JSON.parse(message)
+      expect(types).to.include({
+        require: "function", //arguments passed to it should be availale
+        electron: "undefined", //objects from the scope it is called from should not be available
+        window: "object", //the window object should be available
+        localVar: "undefined", //but local variables should not be exposed to the window
+      })
+    })
+
     it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload-node-off-wrapper.js`,
