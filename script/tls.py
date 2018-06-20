@@ -1,12 +1,31 @@
 #!/usr/bin/env python
 
 import json
-import urllib2
+import os
+import ssl
+import subprocess
 import sys
+import urllib2
+
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
 
 def check_tls(verbose):
-  response = json.load(urllib2.urlopen('https://www.howsmyssl.com/a/check'))
-  tls = response['tls_version']
+  process = subprocess.Popen(
+    'node tls.js',
+    cwd=os.path.dirname(os.path.realpath(__file__)),
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.STDOUT
+  )
+
+  port = process.stdout.readline()
+  localhost_url = 'https://localhost:' + port
+
+  response = json.load(urllib2.urlopen(localhost_url, context=ctx))
+  tls = response['protocol']
+  process.wait()
 
   if sys.platform == "linux" or sys.platform == "linux2":
     tutorial = "./docs/development/build-instructions-linux.md"
@@ -18,7 +37,7 @@ def check_tls(verbose):
     tutorial = "build instructions for your operating system" \
       + "in ./docs/development/"
 
-  if tls == "TLS 1.0":
+  if tls == "TLSv1" or tls == "TLSv1.1":
     print "Your system/python combination is using an outdated security" \
       + "protocol and will not be able to compile Electron. Please see " \
       + tutorial + "." \
