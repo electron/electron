@@ -15,14 +15,15 @@ build_script:
       Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
 
       $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
-
+      if($env:APPVEYOR_SCHEDULED_BUILD -eq 'True')  {
+        $env:RUN_RELEASE_BUILD = "1"
+      }
       $Message = (git log --format=%B -n 1 HEAD) | Out-String
 
       if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
         $env:ELECTRON_RELEASE = '1'
         Write-Output "release build triggered from api"
       }
-
       if ((Test-Path Env:\ELECTRON_RELEASE)) {
         Write-Output "Running release build"
         python script\bootstrap.py --target_arch=$env:TARGET_ARCH
@@ -43,10 +44,22 @@ build_script:
 test_script:
 - ps: >-
     if (Test-Path Env:\ELECTRON_RELEASE) {
-      Write-Output "Skipping tests for release build"
+      Write-Output "Running tests for release build"
+      python script\test.py --ci --rebuild_native_modules -c R
+      if ($LASTEXITCODE -ne '0') {
+        throw "Tests failed with exit code $LASTEXITCODE"
+      } else {
+        Write-Output "Tests succeeded."
+      }
+      python script\verify-ffmpeg.py -R
+      if ($LASTEXITCODE -ne '0') {
+        throw "Verify ffmpeg failed with exit code $LASTEXITCODE"
+      } else {
+        "Verify ffmpeg succeeded."
+      }
     } else {
       Write-Output "Running tests for debug build"
-      python script\test.py --ci
+      python script\test.py --ci --rebuild_native_modules
       if ($LASTEXITCODE -ne '0') {
         throw "Tests failed with exit code $LASTEXITCODE"
       } else {
@@ -61,5 +74,33 @@ test_script:
       }
     }
 artifacts:
-- path: out
-  name: out
+- path: test-results.xml
+  name: test-results.xml
+deploy_script:
+- ps: >-
+    if (Test-Path Env:\ELECTRON_RELEASE) {
+      if (Test-Path Env:\RUN_RELEASE_BUILD) {
+        Write-Output "Uploading Electron release distribution to s3"
+        & python script\upload.py --upload_to_s3
+      } else {
+        Write-Output "Uploading Electron release distribution to github releases"
+        & python script\upload.py
+        if (Test-Path Env:\AUTO_RELEASE) {
+          node script\release.js --validateRelease --automaticRelease
+          if ($? -eq 'True') {
+            echo 'Release is ready to go; now running release'
+            node script\release.js --automaticRelease
+            if ($? -eq 'True') {
+              echo 'Release successful, now publishing to npm'
+              $npmfile = "$HOME\.npmrc"
+              "//registry.npmjs.org/:_authToken=$env:ELECTRON_NPM_TOKEN" > $npmfile
+              npm run publish-to-npm
+            }
+          } else {
+            echo 'Release is not complete, skipping publish for now.'
+          }
+        }
+      }
+    } else {
+      Write-Output "Skipping upload distribution because build is not for release"
+    }
