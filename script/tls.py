@@ -21,8 +21,9 @@ def check_tls(verbose):
   )
 
   port = process.stdout.readline()
+  localhost_url = 'https://localhost:' + port
 
-  response = json.load(urllib2.urlopen('https://localhost:' + port, context=ctx))
+  response = json.load(urllib2.urlopen(localhost_url, context=ctx))
   tls = response['protocol']
   process.wait()
 
