@@ -61,7 +61,7 @@ Following platforms are supported by Electron:
 ### macOS
 
 Only 64bit binaries are provided for macOS, and the minimum macOS version
-supported is OS X Yosemite (version 10.10).
+supported is macOS 10.9.
 
 ### Windows
 
@@ -79,7 +79,7 @@ Ubuntu 12.04, the `armv7l` binary is built against ARM v7 with hard-float ABI an
 NEON for Debian Wheezy.
 
 [Until the release of Electron 2.0][arm-breaking-change], Electron will also
-continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries
+continue to release the `armv7l` binary with a simple `arm` suffix. Both binaries 
 are identical.
 
 Whether the prebuilt binary can run on a distribution depends on whether the

@@ -29,16 +29,19 @@ class ScopedDisableResize {
 @interface AtomNSWindow : NativeWidgetMacNSWindow {
  @private
   atom::NativeWindowMac* shell_;
+  CGFloat windowButtonsInterButtonSpacing_;
 }
 @property BOOL acceptsFirstMouse;
 @property BOOL enableLargerThanScreen;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
+@property NSPoint windowButtonsOffset;
 @property(nonatomic, retain) NSView* vibrantView;
 - (id)initWithShell:(atom::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
 - (atom::NativeWindowMac*)shell;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
+- (void)enableWindowButtonsOffset;
 - (void)toggleFullScreenMode:(id)sender;
 @end
 
