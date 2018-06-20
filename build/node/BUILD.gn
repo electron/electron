@@ -38,12 +38,6 @@ action("gyp_node") {
     "$target_out_dir/Release/build.ninja",
   ]
 
-  # TODO(jeremy): should shlib_suffix be set inside node.gypi?
-  if (is_mac) {
-    shlib_suffix = "dylib"
-  } else if (is_linux) {
-    shlib_suffix = "so"
-  }
   args = [
     "-I", rebase_path("$target_gen_dir/config.gypi", root_build_dir),
     "-I", rebase_path("node_override.gypi", root_build_dir),

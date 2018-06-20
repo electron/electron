@@ -1,5 +1,6 @@
 import("//build/config/locales.gni")
 import("//tools/grit/repack.gni")
+import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("build/asar.gni")
 import("build/npm.gni")
 
@@ -26,7 +27,7 @@ declare_args() {
 
   enable_desktop_capturer = true
   enable_run_as_node = true
-  enable_osr = true
+  enable_osr = false
 }
 
 filenames_gypi = exec_script(
@@ -176,6 +177,12 @@ action("atom_js2c") {
 
 asar("js2asar") {
   sources = filenames_gypi.js_sources
+  if (enable_desktop_capturer) {
+    sources += [
+      "lib/browser/desktop-capturer.js",
+      "lib/renderer/api/desktop-capturer.js",
+    ]
+  }
   outputs = [ "$root_out_dir/resources/electron.asar" ]
   root = "lib"
 }
@@ -205,6 +212,7 @@ static_library("electron_lib") {
     "//components/prefs",
     "//components/printing/common",
     "//components/security_state/content",
+    "//components/viz/service",
     "//content/public/browser",
     "//device/geolocation",
     "//gin",
@@ -220,9 +228,8 @@ static_library("electron_lib") {
     "//third_party/crashpad/crashpad/client",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
-    "//third_party/webrtc/modules/desktop_capture",
-    "//third_party/webrtc/modules/desktop_capture:primitives",
     "//ui/events:dom_keycode_converter",
+    "//ui/gl",
     "//ui/views",
     "//v8",
     ":atom_js2c",
@@ -233,7 +240,6 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//ui/accelerated_widget_mac",
-      "//base/allocator:features",
     ]
   }
   if (is_linux) {
@@ -389,11 +395,14 @@ if (is_mac) {
       public_deps += [ "//third_party/icu:icudata" ]
     }
     if (v8_use_external_startup_data) {
-      sources += [
-        "$root_out_dir/natives_blob.bin",
-        "$root_out_dir/snapshot_blob.bin",
-      ]
+      sources += [ "$root_out_dir/natives_blob.bin" ]
       public_deps += [ "//v8" ]
+      if (use_v8_context_snapshot) {
+        sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+        public_deps += [ "//tools/v8_context_snapshot" ]
+      } else {
+        sources += [ "$root_out_dir/snapshot_blob.bin" ]
+      }
     }
     outputs = [
       "{{bundle_resources_dir}}/{{source_file_part}}",
