@@ -13,6 +13,13 @@ vars = {
 
   'electron_git':
     'https://github.com/electron',
+
+  'checkout_nacl':
+    False,
+  'checkout_libaom':
+    True,
+  'checkout_oculus_sdk':
+    False,
 }
 
 deps = {
@@ -71,3 +78,10 @@ recursedeps = [
   'src',
   'src/libchromiumcontent',
 ]
+
+gclient_gn_args = [
+  'checkout_libaom',
+  'checkout_nacl',
+  'checkout_oculus_sdk'
+]
+gclient_gn_args_file =  'src/build/config/gclient_args.gni'

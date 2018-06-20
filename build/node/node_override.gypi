@@ -27,13 +27,9 @@
           '../../../../../../libicuuc.dylib',
         ],
         'defines': [
-          # These will no longer be necessary once
-          # https://github.com/google/boringssl/commit/a02ed04d527e1b57b4efaa0b4f9bdbc1ed5975b2
-          # is in the past for Electron
-          'EVP_CIPH_CCM_MODE=0',
-          'EVP_CIPH_WRAP_MODE=0',
-          'EVP_CIPHER_CTX_FLAG_WRAP_ALLOW=0',
-          'EVP_CIPHER_CTX_set_flags(...)',
+          'EVP_CTRL_AEAD_SET_IVLEN=EVP_CTRL_GCM_SET_IVLEN',
+          'EVP_CTRL_CCM_SET_TAG=EVP_CTRL_GCM_SET_TAG',
+          'EVP_CTRL_AEAD_GET_TAG=EVP_CTRL_GCM_GET_TAG',
         ],
       }],
     ],
