@@ -28,7 +28,7 @@ class FrameSubscriber : public content::WebContentsObserver {
                   content::WebContents* web_contents,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
-  ~FrameSubscriber();
+  ~FrameSubscriber() override;
 
  private:
   gfx::Rect GetDamageRect();

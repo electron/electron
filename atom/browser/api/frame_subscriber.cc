@@ -82,7 +82,7 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
                                        : frame;
 
   size_t rgb_row_size = bitmap.width() * bitmap.bytesPerPixel();
-  auto source = static_cast<const char*>(bitmap.getPixels());
+  auto* source = static_cast<const char*>(bitmap.getPixels());
 
   v8::MaybeLocal<v8::Object> buffer =
       node::Buffer::Copy(isolate_, source, rgb_row_size * bitmap.height());
