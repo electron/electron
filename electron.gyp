@@ -399,6 +399,13 @@
             'atom/common/crash_reporter/crash_reporter_mac.h',
             'atom/common/crash_reporter/crash_reporter_mac.mm',
           ],
+          'dependencies': [
+            # Somehow we have code from Chromium using crashpad, very likely
+            # from components/crash.
+            # Since we do not actually invoke code from components/crash, this
+            # dependency should be eventually optimized out by linker.
+            'vendor/crashpad/client/client.gyp:crashpad_client',
+          ],
         }],  # OS=="mac" and mas_build==1
         ['OS=="linux"', {
           'sources': [
