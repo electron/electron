@@ -7,7 +7,6 @@
 #include <VersionHelpers.h>
 
 #include <memory>
-#include <mutex>
 
 #include "base/file_version_info.h"
 #include "base/strings/string_util.h"
@@ -23,8 +22,6 @@ base::string16 g_app_user_model_id;
 }
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
-bool hasCheckedIsRunningInDesktopBridge = false;
-bool isRunningInDesktopBridge = false;
 
 std::string GetApplicationName() {
   auto* module = GetModuleHandle(nullptr);
@@ -67,23 +64,22 @@ bool GetAppUserModelID(ScopedHString* app_id) {
   return app_id->success();
 }
 
+bool IsRunningInDesktopBridgeImpl() {
+  // GetPackageFamilyName is not available on Windows 7
+  if (IsWindows8OrGreater()) {
+    UINT32 length;
+    wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+    HANDLE proc = GetCurrentProcess();
+    LONG result = GetPackageFamilyName(proc, &length, packageFamilyName);
+    return result == ERROR_SUCCESS;
+  } else {
+    return false;
+  }
+}
 
 bool IsRunningInDesktopBridge() {
-  static std::once_flag once;
-  static bool bridge = false;
-
-  std::call_once(once, []{
-    // GetPackageFamilyName is not available on Windows 7
-    if (IsWindows8OrGreater()) {
-      UINT32 length;
-      wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
-      HANDLE proc = GetCurrentProcess();
-      LONG result = GetPackageFamilyName(proc, &length, packageFamilyName);
-      bridge = result == ERROR_SUCCESS;
-    }
-  });
-
-  return bridge;
+  static bool result = IsRunningInDesktopBridgeImpl();
+  return result;
 }
 
 }  // namespace brightray
