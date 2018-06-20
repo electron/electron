@@ -77,6 +77,11 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     }
   }
 
+  // No other app was found set it to none instead of setting it back to itself.
+  if ([identifier isEqualToString:(__bridge NSString*)other]) {
+    other = base::mac::NSToCFCast(@"None");
+  }
+
   OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, other);
   return return_code == noErr;
 }
