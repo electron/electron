@@ -1,4 +1,4 @@
-var test = 'test'
+var test = 'test' // eslint-disable-line
 
 const types = {
   require: typeof require,
