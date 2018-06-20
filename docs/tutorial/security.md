@@ -339,12 +339,7 @@ CSP allows the server serving content to restrict and control the resources
 Electron can load for that given web page. `https://your-page.com` should
 be allowed to load scripts from the origins you defined while scripts from
 `https://evil.attacker.com` should not be allowed to run. Defining a CSP is an
-easy way to improve your applications security.
-
-### How?
-
-Electron respects [the `Content-Security-Policy` HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
-and the respective `<meta>` tag.
+easy way to improve your application's security.
 
 The following CSP will allow Electron to execute scripts from the current
 website and from `apis.mydomain.com`.
@@ -356,6 +351,32 @@ Content-Security-Policy: '*'
 // Good
 Content-Security-Policy: script-src 'self' https://apis.mydomain.com
 ```
+
+### CSP HTTP Header
+
+Electron respects the [`Content-Security-Policy` HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
+which can be set using Electron's 
+[`webRequest.onHeadersReceived`](../api/web-request.md#webrequestonheadersreceivedfilter-listener)
+handler:
+
+```javascript
+const {session} = require('electron')
+
+session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+  callback({responseHeaders: `default-src 'none'`})
+})
+```
+
+### CSP Meta Tag
+
+CSP's preferred delivery mechanism is an HTTP header. It can be useful, however, 
+to set a policy on a page directly in the markup using a `<meta>` tag:
+
+```html
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'">
+```
+
+#### `webRequest.onHeadersReceived([filter, ]listener)`
 
 
 ## 7) Override and Disable `eval`
