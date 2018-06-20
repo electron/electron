@@ -48,9 +48,12 @@
                NSUserNotificationActivationTypeReplied) {
       notification->NotificationReplied([notif.response.string UTF8String]);
     } else {
-      if (notif.activationType ==
-          NSUserNotificationActivationTypeAdditionalActionClicked) {
-        notification->NotificationActivated([notif additionalActivationAction]);
+      if (@available(macOS 10.10, *)) {
+        if (notif.activationType ==
+            NSUserNotificationActivationTypeAdditionalActionClicked) {
+          notification->NotificationActivated(
+              [notif additionalActivationAction]);
+        }
       }
     }
   }

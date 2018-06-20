@@ -29,7 +29,8 @@ class CocoaNotification : public Notification {
   void NotificationDisplayed();
   void NotificationReplied(const std::string& reply);
   void NotificationActivated();
-  void NotificationActivated(NSUserNotificationAction* action);
+  void NotificationActivated(NSUserNotificationAction* action)
+    API_AVAILABLE(macosx(10.10));
 
   NSUserNotification* notification() const { return notification_; }
 
