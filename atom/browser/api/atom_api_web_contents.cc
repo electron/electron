@@ -113,7 +113,7 @@ struct Converter<atom::SetSizeParams> {
       return false;
     bool autosize;
     if (params.Get("enableAutoSize", &autosize))
-      out->enable_auto_size.reset(new bool(true));
+      out->enable_auto_size.reset(new bool(autosize));
     gfx::Size size;
     if (params.Get("min", &size))
       out->min_size.reset(new gfx::Size(size));
