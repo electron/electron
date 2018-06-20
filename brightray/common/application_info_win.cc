@@ -72,7 +72,7 @@ bool IsRunningInDesktopBridge() {
   static std::once_flag once;
   static bool bridge = false;
 
-  std::call_once(&once, [&bridge]{
+  std::call_once(once, []{
     // GetPackageFamilyName is not available on Windows 7
     if (IsWindows8OrGreater()) {
       UINT32 length;
@@ -84,6 +84,6 @@ bool IsRunningInDesktopBridge() {
   });
 
   return bridge;
-}￼
+}
 
 }  // namespace brightray
