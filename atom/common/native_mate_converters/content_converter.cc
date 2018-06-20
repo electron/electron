@@ -43,10 +43,12 @@ v8::Local<v8::Value> MenuItemToV8(
     case content::MenuItem::CHECKABLE_OPTION:
     case content::MenuItem::GROUP:
       v8_item.Set("checked", item.checked);
+      FALLTHROUGH;
     case content::MenuItem::OPTION:
     case content::MenuItem::SUBMENU:
       v8_item.Set("label", item.label);
       v8_item.Set("enabled", item.enabled);
+      FALLTHROUGH;
     default:
       v8_item.Set("type", item.type);
   }

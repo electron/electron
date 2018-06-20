@@ -220,6 +220,7 @@ void WebDialogHelper::RunFileChooser(
     switch (params.mode) {
       case content::FileChooserParams::OpenMultiple:
         flags |= file_dialog::FILE_DIALOG_MULTI_SELECTIONS;
+        FALLTHROUGH;
       case content::FileChooserParams::Open:
         flags |= file_dialog::FILE_DIALOG_OPEN_FILE;
         flags |= file_dialog::FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY;
