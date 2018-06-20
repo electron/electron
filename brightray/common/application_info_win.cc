@@ -4,8 +4,10 @@
 
 #include <appmodel.h>
 #include <shlobj.h>
+#include <VersionHelpers.h>
 
 #include <memory>
+#include <mutex>
 
 #include "base/file_version_info.h"
 #include "base/strings/string_util.h"
@@ -65,20 +67,23 @@ bool GetAppUserModelID(ScopedHString* app_id) {
   return app_id->success();
 }
 
+
 bool IsRunningInDesktopBridge() {
-  if (hasCheckedIsRunningInDesktopBridge) {
-    return isRunningInDesktopBridge;
-  }
+  static std::once_flag once;
+  static bool bridge = false;
 
-  UINT32 length;
-  wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
-  HANDLE proc = GetCurrentProcess();
-  LONG result = GetPackageFamilyName(proc, &length, packageFamilyName);
+  std::call_once(&once, [&bridge]{
+    // GetPackageFamilyName is not available on Windows 7
+    if (IsWindows8OrGreater()) {
+      UINT32 length;
+      wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+      HANDLE proc = GetCurrentProcess();
+      LONG result = GetPackageFamilyName(proc, &length, packageFamilyName);
+      bridge = result == ERROR_SUCCESS;
+    }
+  });
 
-  isRunningInDesktopBridge = result == ERROR_SUCCESS;
-  hasCheckedIsRunningInDesktopBridge = true;
-
-  return isRunningInDesktopBridge;
-}
+  return bridge;
+}￼
 
 }  // namespace brightray
