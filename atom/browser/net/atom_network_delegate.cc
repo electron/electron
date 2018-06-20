@@ -122,7 +122,7 @@ void ToDictionary(base::DictionaryValue* details,
   std::string key;
   std::string value;
   while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-    if (dict->HasKey(key)) {
+    if (dict->FindKey(key)) {
       base::ListValue* values = nullptr;
       if (dict->GetList(key, &values))
         values->AppendString(value);
