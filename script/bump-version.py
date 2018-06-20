@@ -192,7 +192,8 @@ def update_package_json(version, suffix):
 
 
 def tag_version(version, suffix):
-  execute(['git', 'commit', '-a', '--no-verify', '-m', 'Bump v{0}'.format(version + suffix)])
+  commit_message = 'Bump v{0}'.format(version + suffix)
+  execute(['git', 'commit', '-a', '--no-verify', '-m', commit_message])
 
 
 if __name__ == '__main__':
