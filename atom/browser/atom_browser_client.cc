@@ -32,7 +32,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
-#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -61,6 +60,10 @@
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
+
+#if defined(ENABLE_PEPPER_FLASH)
+#include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
+#endif  // defined(ENABLE_PEPPER_FLASH)
 
 using content::BrowserThread;
 
@@ -349,8 +352,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
+#if defined(ENABLE_PEPPER_FLASH)
   host->GetPpapiHost()->AddHostFactoryFilter(
-      base::WrapUnique(new chrome::ChromeBrowserPepperHostFactory(host)));
+      base::WrapUnique(new ChromeBrowserPepperHostFactory(host)));
+#endif
 }
 
 void AtomBrowserClient::GetGeolocationRequestContext(

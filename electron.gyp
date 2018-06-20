@@ -48,6 +48,11 @@
           'ENABLE_VIEW_API',
         ],
       }],  # enable_view_api
+      ['enable_pepper_flash==1', {
+        'defines': [
+          'ENABLE_PEPPER_FLASH',
+        ],
+      }],  # enable_pepper_flash
     ],
   },
   'targets': [
@@ -336,6 +341,25 @@
             'vendor/pdf_viewer/pdf_viewer.gyp:pdf_viewer',
           ],
         }],  # enable_pdf_viewer
+        ['enable_pepper_flash==1', {
+          'include_dirs': [
+            '<(libchromiumcontent_src_dir)/chrome/browser/renderer_host/pepper',
+            '<(libchromiumcontent_src_dir)/chrome/renderer/pepper',
+          ],
+          'link_settings': {
+            'conditions': [
+              ['OS=="win"', {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/pepper_flash.lib',
+                ]
+              }, {
+                'libraries': [
+                  '<(libchromiumcontent_dir)/libpepper_flash.a',
+                ]
+              }],
+            ],
+          },
+        }],  # enable_pepper_flash
         ['libchromiumcontent_component', {
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
