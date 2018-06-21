@@ -8,7 +8,7 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-exports.load = (appUrl) => {
+exports.load = (appUrl, callback) => {
   app.on('ready', () => {
     const options = {
       width: 900,
@@ -27,5 +27,6 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+    if (callback) callback()
   })
 }

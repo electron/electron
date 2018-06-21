@@ -52,10 +52,9 @@ app.on('window-all-closed', () => {
   }
 })
 
-// Create default menu.
-app.once('ready', () => {
+// Create menu
+function createMenu () {
   if (Menu.getApplicationMenu()) return
-
   const template = [
     {
       label: 'Edit',
@@ -164,7 +163,6 @@ app.once('ready', () => {
       ]
     }
   ]
-
   if (process.platform === 'darwin') {
     template.unshift({
       label: 'Electron',
@@ -237,11 +235,9 @@ app.once('ready', () => {
       }]
     })
   }
-
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
-})
-
+}
 if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
@@ -271,6 +267,12 @@ function loadApplicationPackage (packagePath) {
       } else if (packageJson.name) {
         app.setName(packageJson.name)
       }
+      // Only create the menu if the customMenu variable wasn't defined as was faulty
+      if (!packageJson.customMenu || packageJson.customMenu !== true) {
+        app.once('ready', () => {
+          createMenu()
+        })
+      }
       app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
       app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
       app.setAppPath(packagePath)
@@ -299,7 +301,7 @@ function showErrorMessage (message) {
 }
 
 function loadApplicationByUrl (appUrl) {
-  require('./default_app').load(appUrl)
+  require('./default_app').load(appUrl, createMenu)
 }
 
 function startRepl () {
