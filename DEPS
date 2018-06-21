@@ -49,17 +49,6 @@ hooks = [
     'action': [
       'bash',
       '-c',
-      # NOTE(nornagon): this ridiculous {{}} stuff is because these strings get
-      # variable-substituted twice by gclient.
-      'echo -e "#\\n{{{{\'variables\':{{{{}}}}}}}}" > src/third_party/electron_node/config.gypi',
-    ],
-    'pattern': 'src/third_party/electron_node',
-    'name': 'touch_node_config_gypi'
-  },
-  {
-    'action': [
-      'bash',
-      '-c',
       'cd src/electron; npm install',
     ],
     'pattern': 'src/electron/package.json',
