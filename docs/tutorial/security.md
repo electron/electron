@@ -52,7 +52,7 @@ native code on the user's machine.
 > :warning: Under no circumstances should you load and execute remote code with
 Node.js integration enabled. Instead, use only local files (packaged together
 with your application) to execute Node.js code. To display remote content, use
-the [`webview`][web-view] tag and make sure to disable the `nodeIntegration`.
+the [`<webview>`][webview-tag] tag and make sure to disable the `nodeIntegration`.
 
 ## Electron Security Warnings
 
@@ -79,8 +79,8 @@ improve the security of your application.
 8. [Do not set `allowRunningInsecureContent` to `true`](#8-do-not-set-allowrunninginsecurecontent-to-true)
 9. [Do not enable experimental features](#9-do-not-enable-experimental-features)
 10. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
-11. [WebViews: Do not use `allowpopups`](#11-do-not-use-allowpopups)
-12. [WebViews: Verify the options and params of all `<webview>` tags](#12-verify-webview-options-before-creation)
+11. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups)
+12. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
 
 
 ## 1) Only Load Secure Content
@@ -127,7 +127,7 @@ browserWindow.loadURL('https://my-website.com')
 
 It is paramount that you disable Node.js integration in any renderer
 ([`BrowserWindow`][browser-window], [`BrowserView`][browser-view], or
-[`WebView`][web-view]) that loads remote content. The goal is to limit the
+[`<webview>`][webview-tag]) that loads remote content. The goal is to limit the
 powers you grant to remote content, thus making it dramatically more difficult
 for an attacker to harm your users should they gain the ability to execute
 JavaScript on your website.
@@ -292,7 +292,7 @@ _Recommendation is Electron's default_
 
 You may have already guessed that disabling the `webSecurity` property on a
 renderer process ([`BrowserWindow`][browser-window],
-[`BrowserView`][browser-view], or [`WebView`][web-view]) disables crucial
+[`BrowserView`][browser-view], or [`<webview>`][webview-tag]) disables crucial
 security features.
 
 Do not disable `webSecurity` in production applications.
@@ -488,10 +488,10 @@ const mainWindow = new BrowserWindow()
 
 _Recommendation is Electron's default_
 
-If you are using [`WebViews`][web-view], you might need the pages and scripts
+If you are using [`<webview>`][webview-tag], you might need the pages and scripts
 loaded in your `<webview>` tag to open new windows. The `allowpopups` attribute
 enables them to create new [`BrowserWindows`][browser-window] using the
-`window.open()` method. `WebViews` are otherwise not allowed to create new
+`window.open()` method. `<webview>` tags are otherwise not allowed to create new
 windows.
 
 ### Why?
@@ -518,25 +518,25 @@ A WebView created in a renderer process that does not have Node.js integration
 enabled will not be able to enable integration itself. However, a WebView will
 always create an independent renderer process with its own `webPreferences`.
 
-It is a good idea to control the creation of new [`WebViews`][web-view] from
-the main process and to verify that their webPreferences do not disable
+It is a good idea to control the creation of new [`<webview>`][webview-tag] tags
+from the main process and to verify that their webPreferences do not disable
 security features.
 
 ### Why?
 
-Since WebViews live in the DOM, they can be created by a script running on your
+Since `<webview>` live in the DOM, they can be created by a script running on your
 website even if Node.js integration is otherwise disabled.
 
 Electron enables developers to disable various security features that control
 a renderer process. In most cases, developers do not need to disable any of
 those features - and you should therefore not allow different configurations
-for newly created [`<WebView>`][web-view] tags.
+for newly created [`<webview>`][webview-tag] tags.
 
 ### How?
 
-Before a [`<WebView>`][web-view] tag is attached, Electron will fire the
+Before a [`<webview>`][webview-tag] tag is attached, Electron will fire the
 `will-attach-webview` event on the hosting `webContents`. Use the event to
-prevent the creation of WebViews with possibly insecure options.
+prevent the creation of webviews with possibly insecure options.
 
 ```js
 app.on('web-contents-created', (event, contents) => {
@@ -561,4 +561,4 @@ is to display a website, a browser will be a more secure option.
 
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
-[web-view]: ../api/web-view.md
+[webview-tag]: ../api/webview-tag.md
