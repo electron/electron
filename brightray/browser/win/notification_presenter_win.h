@@ -35,7 +35,7 @@ namespace brightray {
 class NotificationPresenterWin : public NotificationPresenter {
  public:
   NotificationPresenterWin();
-  ~NotificationPresenterWin();
+  ~NotificationPresenterWin() override;
 
   bool Init();
 

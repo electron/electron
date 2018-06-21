@@ -88,8 +88,10 @@ class DesktopNotificationController {
 
 class DesktopNotificationController::Notification {
  public:
-  Notification() = default;
+  Notification();
   explicit Notification(const std::shared_ptr<NotificationData>& data);
+  Notification(const Notification&);
+  ~Notification();
 
   bool operator==(const Notification& other) const;
 

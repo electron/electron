@@ -47,7 +47,7 @@ class WindowsToastNotification : public Notification {
 
   WindowsToastNotification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter);
-  ~WindowsToastNotification();
+  ~WindowsToastNotification() override;
 
  protected:
   // Notification:
@@ -108,7 +108,7 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
                                               DesktopToastFailedEventHandler> {
  public:
   explicit ToastEventHandler(Notification* notification);
-  ~ToastEventHandler();
+  ~ToastEventHandler() override;
 
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,

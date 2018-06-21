@@ -80,7 +80,7 @@ WindowsToastNotification::~WindowsToastNotification() {
 }
 
 void WindowsToastNotification::Show(const NotificationOptions& options) {
-  auto presenter_win = static_cast<NotificationPresenterWin*>(presenter());
+  auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
   std::wstring icon_path =
       presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
 
