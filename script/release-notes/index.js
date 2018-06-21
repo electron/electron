@@ -1,5 +1,5 @@
 const { GitProcess } = require('dugite')
-const Entities = require('html-entities').AllHtmlEntities;
+const Entities = require('html-entities').AllHtmlEntities
 const fetch = require('node-fetch')
 const fs = require('fs')
 const GitHub = require('github')
@@ -9,13 +9,16 @@ const semver = require('semver')
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 // Fill this with tags to ignore if you are generating release notes for older
 // versions
-const EXCLUDE_TAGS = ['v3.0.0-beta.1']
+//
+// E.g. ['v3.0.0-beta.1'] to generate the release notes for 3.0.0-beta.1 :) from
+//      the current 3-0-x branch
+const EXCLUDE_TAGS = []
 
 const entities = new Entities()
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
-let currentBranch;
+let currentBranch
 
 const semanticMap = new Map()
 for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-map.csv'), 'utf8').split('\n')) {
@@ -80,7 +83,7 @@ const getBranches = async () => {
   if (branchDetails.exitCode === 0) {
     return branchDetails.stdout.trim().split('\n').map(b => b.trim()).filter(branch => branch !== 'origin/HEAD -> origin/master')
   }
-  throw GitProcess.parseError(tagDetails.stderr)
+  throw GitProcess.parseError(branchDetails.stderr)
 }
 
 const semverify = (v) => v.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.')
@@ -110,17 +113,8 @@ const commitBeforeTag = async (commit, tag) => {
   throw GitProcess.parseError(tagDetails.stderr)
 }
 
-// const getBranchOffBeforeBranchOffPoint = async (branchOffPoint) => {
-//   const releaseBranch
-// }
-
-/**
- * This method will get all commits that have landed in the current
- * branch since the given "point", the point must be a commit hash or other
- * git identifier
- */
 const getCommitsMergedIntoCurrentBranchSincePoint = async (point) => {
-  return await getCommitsBetween(point, 'HEAD')
+  return getCommitsBetween(point, 'HEAD')
 }
 
 const getCommitsBetween = async (point1, point2) => {
@@ -139,17 +133,17 @@ const getCommitDetails = async (commitHash) => {
   const bits = commitInfo.split('</a>)')[0].split('>')
   const prIdent = bits[bits.length - 1].trim()
   if (!prIdent || commitInfo.indexOf('href="/electron/electron/pull') === -1) {
-    console.warn(`WARNING: Could not track commit "${commitHash}" to a pull request, it may have been committed directly to the branch`);
+    console.warn(`WARNING: Could not track commit "${commitHash}" to a pull request, it may have been committed directly to the branch`)
     return null
   }
-  const title = commitInfo.split('title="')[1].split('"')[0];
+  const title = commitInfo.split('title="')[1].split('"')[0]
   if (!title.startsWith(TITLE_PREFIX)) {
     console.warn(`WARNING: Unknown PR title for commit "${commitHash}" in PR "${prIdent}"`)
     return null
   }
   return {
     mergedFrom: prIdent,
-    prTitle: entities.decode(title.substr(TITLE_PREFIX.length)),
+    prTitle: entities.decode(title.substr(TITLE_PREFIX.length))
   }
 }
 
@@ -187,7 +181,7 @@ const NoteType = {
 }
 
 class Note {
-  constructor(trueTitle, prNumber, ignoreIfInVersion) {
+  constructor (trueTitle, prNumber, ignoreIfInVersion) {
     // Self bindings
     this.guessType = this.guessType.bind(this)
     this.fetchPrInfo = this.fetchPrInfo.bind(this)
@@ -208,12 +202,12 @@ class Note {
     this.title = trueTitle
     this.prNumber = prNumber
     this.stripColon = true
-    if (this.guessType() !== NoteType.UNKNOWN && this.stripColon)  {
+    if (this.guessType() !== NoteType.UNKNOWN && this.stripColon) {
       this.title = trueTitle.split(':').slice(1).join(':').trim()
     }
   }
 
-  guessType() {
+  guessType () {
     if (this.originalTitle.startsWith('fix:') ||
         this.originalTitle.startsWith('Fix:')) return NoteType.FIX
     if (this.originalTitle.startsWith('feat:')) return NoteType.FEATURE
@@ -261,7 +255,7 @@ class Note {
     return NoteType.UNKNOWN
   }
 
-  async _getPr(n) {
+  async _getPr (n) {
     const cachePath = path.resolve(CACHE_DIR, n)
     if (fs.existsSync(cachePath)) {
       return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
@@ -281,7 +275,7 @@ class Note {
     }
   }
 
-  async fetchPrInfo() {
+  async fetchPrInfo () {
     if (this.pr) return
     const n = this.prNumber.replace('#', '')
     this.pr = await this._getPr(n)
@@ -328,7 +322,7 @@ class Note {
 Note.findByTrueTitle = (trueTitle) => notes.get(trueTitle)
 
 class ReleaseNotes {
-  constructor(ignoreIfInVersion) {
+  constructor (ignoreIfInVersion) {
     this._ignoreIfInVersion = ignoreIfInVersion
     this._handledPrs = new Set()
     this._revertedPrs = new Set()
@@ -340,14 +334,14 @@ class ReleaseNotes {
     this.unknown = []
   }
 
-  async parseCommits(commitHashes) {
+  async parseCommits (commitHashes) {
     await doWork(commitHashes, async (commit) => {
       const info = await getCommitDetails(commit)
       if (!info) return
       // Only handle each PR once
       if (this._handledPrs.has(info.mergedFrom)) return
       this._handledPrs.add(info.mergedFrom)
-      
+
       // Strip the trop backport prefix
       const trueTitle = info.prTitle.replace(/^Backport \([0-9]+-[0-9]+-x\) - /, '')
       if (this._revertedPrs.has(trueTitle)) return
@@ -395,7 +389,7 @@ class ReleaseNotes {
     }, 20)
   }
 
-  list(notes) {
+  list (notes) {
     if (notes.length === 0) {
       return '_There are no items in this section this release_'
     }
@@ -405,7 +399,7 @@ class ReleaseNotes {
       .map((note) => `* ${note.title.trim()} ${note.prNumber}`).join('\n')
   }
 
-  render() {
+  render () {
     return `
 # Release Notes
 
@@ -440,7 +434,7 @@ ${this.list(this.unknown)}
   }
 }
 
-async function main() {
+async function main () {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR)
   }
@@ -451,9 +445,7 @@ async function main() {
   const currentBranchOff = await getBranchOffPoint(await getCurrentBranch())
 
   const commits = await getCommitsMergedIntoCurrentBranchSincePoint(
-    lastKnownReleaseInCurrentStream
-    ? lastKnownReleaseInCurrentStream
-    : currentBranchOff
+    lastKnownReleaseInCurrentStream || currentBranchOff
   )
 
   if (!lastKnownReleaseInCurrentStream) {
