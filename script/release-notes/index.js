@@ -218,7 +218,10 @@ class Note {
         this.originalTitle.startsWith('deps:') ||
         this.originalTitle.startsWith('refactor:') ||
         this.originalTitle.startsWith('tools:') ||
-        this.originalTitle.startsWith('vendor:')) return NoteType.OTHER
+        this.originalTitle.startsWith('vendor:') ||
+        this.originalTitle.startsWith('perf:') ||
+        this.originalTitle.startsWith('style:') ||
+        this.originalTitle.startsWith('ci')) return NoteType.OTHER
     if (this.originalTitle.startsWith('doc:') ||
         this.originalTitle.startsWith('docs:')) return NoteType.DOCUMENTATION
 
