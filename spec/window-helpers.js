@@ -1,22 +1,19 @@
-const assert = require('assert')
+const {expect} = require('chai')
 const {BrowserWindow} = require('electron').remote
 
-exports.closeWindow = (window, {assertSingleWindow} = {assertSingleWindow: true}) => {
-  if (window == null || window.isDestroyed()) {
-    if (assertSingleWindow) {
-      assert.equal(BrowserWindow.getAllWindows().length, 1)
-    }
-    return Promise.resolve()
-  } else {
-    return new Promise((resolve, reject) => {
-      window.once('closed', () => {
-        if (assertSingleWindow) {
-          assert.equal(BrowserWindow.getAllWindows().length, 1)
-        }
-        resolve()
-      })
-      window.setClosable(true)
-      window.close()
-    })
+const {emittedOnce} = require('./events-helpers')
+
+exports.closeWindow = async (window = null,
+    {assertSingleWindow} = {assertSingleWindow: true}) => {
+  const windowExists = (window !== null) && !window.isDestroyed()
+  if (windowExists) {
+    const isClosed = emittedOnce(window, 'closed')
+    window.setClosable(true)
+    window.close()
+    await isClosed
+  }
+
+  if (assertSingleWindow) {
+    expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1)
   }
 }
