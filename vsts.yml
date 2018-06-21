@@ -1,0 +1,82 @@
+resources:
+- repo: self
+steps:
+- bash: |
+    if [ "$ELECTRON_RELEASE" == "1" ]; then
+      echo 'Bootstrapping Electron for release build'
+      script/bootstrap.py --target_arch=$TARGET_ARCH
+    else
+      echo 'Bootstrapping Electron for debug build'
+      script/bootstrap.py --target_arch=$TARGET_ARCH --dev
+    fi
+  name: Bootstrap
+
+- bash: |
+    npm run lint
+  name: Lint
+  condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+- bash: |
+    if [ "$ELECTRON_RELEASE" == "1" ]; then
+      echo 'Building Electron for release'
+      script/build.py -c R
+    else
+      echo 'Building Electron for debug'
+      script/build.py -c D
+    fi
+  name: Build
+
+- bash: |
+    echo 'Creating Electron release distribution'
+    script/create-dist.py
+  name: Create_distribution
+  condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
+- bash: |
+    if [ "$UPLOAD_TO_S3" != "1" ]; then
+      echo 'Uploading Electron release distribution to github releases'
+      ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py
+    else
+      echo 'Uploading Electron release distribution to s3'
+      ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py --upload_to_s3
+    fi
+  name: Upload_distribution
+  condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
+- bash: |
+    echo 'Testing Electron build'
+    mkdir junit
+    export MOCHA_FILE="junit/test-results.xml"
+    export MOCHA_REPORTER="mocha-junit-reporter"
+    if [ "$ELECTRON_RELEASE" == "1" ]; then
+      script/test.py --ci --rebuild_native_modules -c R
+    else
+      script/test.py --ci --rebuild_native_modules
+    fi
+  name: Test
+
+- bash: |
+    echo 'Verifying ffmpeg on build'
+    if [ "$ELECTRON_RELEASE" == "1" ]; then
+      script/verify-ffmpeg.py -R
+    else
+      script/verify-ffmpeg.py
+    fi
+  name: Verify_FFmpeg
+
+- task: PublishTestResults@2
+  displayName: Publish Test Results
+  inputs:
+    testResultsFiles: 'test-results.xml'
+    searchFolder: junit
+  condition: and(always(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+- task: kasunkodagoda.slack-notification.slack-notification-task.SlackNotification@3
+  displayName: Post Slack Notification
+  inputs:
+    SlackApiToken: '$(slack_token)'
+    Channel: '#bot-nightly-releases'
+    Message: '$(Build.DefinitionName)-$(Build.BuildNumber) finished with a $(Agent.JobStatus) status.'
+  condition: and(always(), eq(variables['Build.Reason'], 'Schedule'))
+
+- task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3
