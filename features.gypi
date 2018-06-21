@@ -7,7 +7,7 @@
       'enable_pdf_viewer%': 0,  # FIXME(deepak1556)
       'enable_run_as_node%': 1,
       'enable_view_api%': 0,
-      'enable_pepper_flash%': 1,
+      'enable_pepper_flash%': 0,
     },
     'enable_desktop_capturer%': '<(enable_desktop_capturer)',
     'enable_osr%': '<(enable_osr)',
