@@ -11,7 +11,7 @@
 namespace brightray {
 
 void Win32Notification::Show(const NotificationOptions& options) {
-  auto presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
+  auto* presenter = static_cast<NotificationPresenterWin7*>(this->presenter());
   if (!presenter)
     return;
 

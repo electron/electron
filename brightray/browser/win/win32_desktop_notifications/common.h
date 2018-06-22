@@ -36,7 +36,7 @@ struct ScreenMetrics {
         GetProcAddress(GetModuleHandle(TEXT("shcore")), "GetDpiForMonitor"));
 
     if (GetDpiForMonitor) {
-      auto monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
+      auto* monitor = MonitorFromPoint({}, MONITOR_DEFAULTTOPRIMARY);
       if (GetDpiForMonitor(monitor, 0, &dpi_x, &dpi_y) == S_OK)
         return;
     }
