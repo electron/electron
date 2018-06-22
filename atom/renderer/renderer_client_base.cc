@@ -19,7 +19,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
-#include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
@@ -45,6 +44,10 @@
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
+
+#if defined(ENABLE_PEPPER_FLASH)
+#include "chrome/renderer/pepper/pepper_helper.h"
+#endif  // defined(ENABLE_PEPPER_FLASH)
 
 namespace atom {
 
@@ -148,7 +151,9 @@ void RendererClientBase::RenderFrameCreated(
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
 #endif
+#if defined(ENABLE_PEPPER_FLASH)
   new PepperHelper(render_frame);
+#endif
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
