@@ -10,12 +10,10 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "atom/common/atom_version.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
-#include "base/strings/utf_string_conversions.h"
-#include "atom/common/native_mate_converters/string16_converter.h"
-#include "base/strings/utf_string_conversions.h"
 #include "brightray/common/application_info.h"
 
 #if defined(USE_X11)
@@ -117,7 +115,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 base::string16 Browser::GetDefaultProtocolClient(const std::string& protocol) {
-  return base::UTF8ToUTF16("");
+  return base::string16();
 }
 
 bool Browser::SetBadgeCount(int count) {

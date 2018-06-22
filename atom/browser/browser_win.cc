@@ -25,6 +25,7 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "brightray/common/application_info.h"
+#include "url/gurl.h"
 
 namespace atom {
 
@@ -255,11 +256,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
-  base::string16 currentClient = GetDefaultProtocolClient(protocol);
-  if (currentClient == L"") {
-    return false;
-  }
-  return currentClient == exe;
+  return GetDefaultProtocolClient(protocol) == exe;
 }
 
 base::string16 Browser::GetDefaultProtocolClient(const std::string& protocol) {
@@ -345,6 +342,23 @@ std::string Browser::GetExecutableFileVersion() const {
 
 std::string Browser::GetExecutableFileProductName() const {
   return brightray::GetApplicationName();
+}
+
+void Browser::CheckArgvForURL(const base::CommandLine::StringVector& cmd) {
+  for (auto arg : cmd) {
+    GURL url = GURL(arg);
+    // const parsedURL = url.parse(arg)
+    // // The URL needs a protocol and the "//" after the protocol
+    // if (!parsedURL.protocol || !parsedURL.slashes) return
+    // // The node URL module returns the protocol as "foo-bar:",
+    // we need to strip that colon
+    // protocol = parsedURL.protocol.substr(0, parsedURL.protocol.length - 1)
+    // if (app.getDefaultProtocolClient(protocol).split(/ /g)[0]
+    //      .replace(/^"(.+)"$/g, '$1') === process.execPath) {
+    //   app._onOpenURL(arg)
+    // }
+    OpenURL(arg);
+  }
 }
 
 }  // namespace atom

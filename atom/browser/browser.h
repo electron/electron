@@ -245,6 +245,10 @@ class Browser : public WindowListObserver {
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
 
+#if defined(OS_WIN)
+  void CheckArgvForURL(const base::CommandLine::StringVector& cmd);
+#endif
+
  protected:
   // Returns the version of application bundle or executable file.
   std::string GetExecutableFileVersion() const;

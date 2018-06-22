@@ -127,7 +127,8 @@ set `NSPrincipalClass` to `AtomApplication`.
 
 You should call `event.preventDefault()` if you want to handle this event.
 
-**NOTE:** This is only emitted on windows if `app.makeSingleInstance` has been called
+**NOTE:** This is only emitted on Windows if `app.requestSingleInstanceLock` has
+been called
 
 ### Event: 'activate' _macOS_
 

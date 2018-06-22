@@ -9,14 +9,13 @@
 #include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/platform_util.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
+#include "atom/common/platform_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/strings/utf_string_conversions.h"
 #include "brightray/common/application_info.h"
 #include "net/base/mac/url_conversions.h"
 #include "ui/gfx/image/image.h"
@@ -129,7 +128,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 }
 
 base::string16 Browser::GetDefaultProtocolClient(const std::string& protocol) {
-  return base::UTF8ToUTF16("");
+  return base::string16();
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {}
