@@ -1,0 +1,26 @@
+{
+  'variables': {
+    'native_mate_files': [
+      'mate/arguments.cc',
+      'mate/arguments.h',
+      'mate/constructor.h',
+      'mate/converter.cc',
+      'mate/converter.h',
+      'mate/dictionary.cc',
+      'mate/dictionary.h',
+      'mate/function_template.cc',
+      'mate/function_template.h',
+      'mate/handle.h',
+      'mate/object_template_builder.cc',
+      'mate/object_template_builder.h',
+      'mate/persistent_dictionary.cc',
+      'mate/persistent_dictionary.h',
+      'mate/scoped_persistent.h',
+      'mate/wrappable.cc',
+      'mate/wrappable.h',
+      'mate/wrappable_base.h',
+      'mate/promise.h',
+      'mate/promise.cc',
+    ],
+  },
+}
