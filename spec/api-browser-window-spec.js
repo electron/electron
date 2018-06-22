@@ -550,70 +550,108 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.getNormalBounds()', () => {
-    it('checks normal bounds after resize', (done) => {
-      const size = [300, 400]
-      w.once('resize', () => {
-        assertBoundsEqual(w.getNormalBounds(), w.getBounds())
-        done()
+  describe(`BrowserWindow.getNormalBounds()`, () => {
+    describe(`Normal state`, () => {
+      it(`checks normal bounds after resize`, (done) => {
+        const size = [300, 400]
+        w.once('resize', () => {
+          assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+          done()
+        })
+        w.setSize(size[0], size[1])
       })
-      w.setSize(size[0], size[1])
+      it(`checks normal bounds after move`, (done) => {
+        const pos = [10, 10]
+        w.once('move', () => {
+          assertBoundsEqual(w.getNormalBounds(), w.getBounds())
+          done()
+        })
+        w.setPosition(pos[0], pos[1])
+      })
     })
-    it('checks normal bounds after move', (done) => {
-      const pos = [10, 10]
-      w.once('move', () => {
-        assertBoundsEqual(w.getNormalBounds(), w.getBounds())
-        done()
+    describe(`Maximized state`, () => {
+      before(function () {
+        if (isCI) {
+          this.skip()
+        }
       })
-      w.setPosition(pos[0], pos[1])
+      it(`checks normal bounds when maximized`, (done) => {
+        const bounds = w.getBounds()
+        w.once('maximize', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.maximize()
+      })
+      it(`checks normal bounds when unmaximized`, (done) => {
+        const bounds = w.getBounds()
+        w.once('maximize', () => {
+          w.unmaximize()
+        })
+        w.once('unmaximize', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.maximize()
+      })
     })
-    it('checks normal bounds when maximized', (done) => {
-      if (isCI) {
-        return done()
-      }
-
-      const bounds = w.getBounds()
-      w.once('maximize', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        w.unmaximize()
+    describe(`Minimized state`, () => {
+      before(function () {
+        if (isCI) {
+          this.skip()
+        }
       })
-      w.once('unmaximize', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        done()
+      it(`checks normal bounds when minimized`, (done) => {
+        const bounds = w.getBounds()
+        w.once('minimize', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.minimize()
       })
-      w.maximize()
+      it(`checks normal bounds when restored`, (done) => {
+        const bounds = w.getBounds()
+        w.once('minimize', () => {
+          w.restore()
+        })
+        w.once('restore', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.minimize()
+      })
     })
-    it('checks normal bounds when minimized', (done) => {
-      if (isCI) {
-        return done()
-      }
-
-      const bounds = w.getBounds()
-      w.once('minimize', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        w.restore()
+    describe(`Fullscreen state`, () => {
+      before(function () {
+        if (isCI) {
+          this.skip()
+        }
       })
-      w.once('restore', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        done()
+      it(`checks normal bounds when fullscreen'ed`, (done) => {
+        const bounds = w.getBounds()
+        w.once('enter-full-screen', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.setFullScreen(true)
       })
-      w.minimize()
-    })
-    it('checks normal bounds when full-screen', (done) => {
-      if (isCI) {
-        return done()
-      }
-
-      const bounds = w.getBounds()
-      w.once('enter-full-screen', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        w.setFullScreen(false)
+      it(`checks normal bounds when unfullscreen'ed`, (done) => {
+        const bounds = w.getBounds()
+        w.once('enter-full-screen', () => {
+          w.setFullScreen(false)
+        })
+        w.once('leave-full-screen', () => {
+          assertBoundsEqual(w.getNormalBounds(), bounds)
+          done()
+        })
+        w.show()
+        w.setFullScreen(true)
       })
-      w.once('leave-full-screen', () => {
-        assertBoundsEqual(w.getNormalBounds(), bounds)
-        done()
-      })
-      w.setFullScreen(true)
     })
   })
 
