@@ -223,15 +223,15 @@ def SubString(lines, start, end):
   return ''.join(result_lines)
 
 
-def StripMetaComments(str):
+def StripMetaComments(_str):
   """Strip meta comments from each line in the given string."""
 
   # First, completely remove lines containing nothing but a meta
   # comment, including the trailing \n.
-  str = re.sub(r'^\s*\$\$.*\n', '', str)
+  _str = re.sub(r'^\s*\$\$.*\n', '', _str)
 
   # Then, remove meta comments from contentful lines.
-  return re.sub(r'\s*\$\$.*', '', str)
+  return re.sub(r'\s*\$\$.*', '', _str)
 
 
 def MakeToken(lines, start, end, token_type):
@@ -476,16 +476,16 @@ def ParseElseNode(tokens):
   def Pop(token_type=None):
     return PopToken(tokens, token_type)
 
-  next = PeekToken(tokens)
+  _next = PeekToken(tokens)
   if not next:
     return None
-  if next.token_type == '$else':
+  if _next.token_type == '$else':
     Pop('$else')
     Pop('[[')
     code_node = ParseCodeNode(tokens)
     Pop(']]')
     return code_node
-  elif next.token_type == '$elif':
+  elif _next.token_type == '$elif':
     Pop('$elif')
     exp = Pop('code')
     Pop('[[')
@@ -493,7 +493,7 @@ def ParseElseNode(tokens):
     Pop(']]')
     inner_else_node = ParseElseNode(tokens)
     return CodeNode([IfNode(ParseExpNode(exp), code_node, inner_else_node)])
-  elif not next.value.strip():
+  elif not _next.value.strip():
     Pop('code')
     return ParseElseNode(tokens)
   else:
@@ -511,8 +511,8 @@ def ParseAtomicCodeNode(tokens):
   elif t == '$var':
     id_token = Pop('id')
     Pop('=')
-    next = PeekToken(tokens)
-    if next.token_type == 'exp':
+    _next = PeekToken(tokens)
+    if _next.token_type == 'exp':
       exp_token = Pop()
       return VarNode(id_token, ParseExpNode(exp_token))
     Pop('[[')
