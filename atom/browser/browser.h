@@ -278,7 +278,7 @@ class Browser : public WindowListObserver {
 
   int badge_count_ = 0;
 
-  util::Promise* ready_promise_;
+  util::Promise* ready_promise_ = nullptr;
 
 #if defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

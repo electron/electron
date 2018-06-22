@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/converter.h"
 
 namespace atom {
@@ -16,6 +17,7 @@ namespace util {
 class Promise {
  public:
   explicit Promise(v8::Isolate* isolate) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     isolate_ = isolate;
     resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
   }
@@ -54,6 +56,7 @@ class Promise {
 
  private:
   v8::Local<v8::Promise::Resolver> GetInner() const {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     return resolver_.Get(isolate());
   }
 
