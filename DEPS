@@ -36,6 +36,7 @@ deps = {
 hooks = [
   {
     'action': [
+      'python',
       'src/libchromiumcontent/script/apply-patches'
     ],
     'pattern':
@@ -45,6 +46,7 @@ hooks = [
   },
   {
     'action': [
+      'python',
       'src/electron/script/update-external-binaries.py'
     ],
     'pattern':
@@ -54,9 +56,9 @@ hooks = [
   },
   {
     'action': [
-      'bash',
+      'python',
       '-c',
-      'cd src/electron; npm install',
+      'import os; os.chdir("src"); os.chdir("electron"); os.system("npm install")',
     ],
     'pattern': 'src/electron/package.json',
     'name': 'electron_npm_deps'
