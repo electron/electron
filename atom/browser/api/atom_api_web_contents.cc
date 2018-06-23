@@ -1119,7 +1119,7 @@ int WebContents::GetProcessID() const {
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  auto process_handle =
+  auto* process_handle =
       web_contents()->GetMainFrame()->GetProcess()->GetHandle();
   return base::GetProcId(process_handle);
 }

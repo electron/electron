@@ -40,7 +40,7 @@ class CrashReporterWin : public CrashReporter {
   friend struct base::DefaultSingletonTraits<CrashReporterWin>;
 
   CrashReporterWin();
-  virtual ~CrashReporterWin();
+  ~CrashReporterWin() override;
 
   static bool FilterCallback(void* context,
                              EXCEPTION_POINTERS* exinfo,

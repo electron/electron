@@ -32,7 +32,7 @@ class NotifyIcon : public TrayIcon {
  public:
   // Constructor which provides this icon's unique ID and messaging window.
   NotifyIcon(NotifyIconHost* host, UINT id, HWND window, UINT message);
-  virtual ~NotifyIcon();
+  ~NotifyIcon() override;
 
   // Handles a click event from the user - if |left_button_click| is true and
   // there is a registered observer, passes the click event to the observer,

@@ -128,6 +128,8 @@ int ShowTaskDialogUTF16(NativeWindow* parent,
       case MESSAGE_BOX_TYPE_ERROR:
         config.pszMainIcon = TD_ERROR_ICON;
         break;
+      case MESSAGE_BOX_TYPE_NONE:
+        break;
     }
   }
 

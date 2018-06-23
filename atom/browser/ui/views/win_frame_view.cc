@@ -10,11 +10,7 @@
 
 namespace atom {
 
-namespace {
-
-const char kViewClassName[] = "WinFrameView";
-
-}  // namespace
+const char WinFrameView::kViewClassName[] = "WinFrameView";
 
 WinFrameView::WinFrameView() {}
 

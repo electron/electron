@@ -13,7 +13,7 @@ namespace atom {
 class NodeBindingsWin : public NodeBindings {
  public:
   explicit NodeBindingsWin(BrowserEnvironment browser_env);
-  virtual ~NodeBindingsWin();
+  ~NodeBindingsWin() override;
 
  private:
   void PollEvents() override;

@@ -144,9 +144,18 @@ void ConvertRemovedJumpListItems(IObjectArray* in,
 
 namespace atom {
 
+JumpListItem::JumpListItem() = default;
+JumpListItem::JumpListItem(const JumpListItem&) = default;
+JumpListItem::~JumpListItem() = default;
+JumpListCategory::JumpListCategory() = default;
+JumpListCategory::JumpListCategory(const JumpListCategory&) = default;
+JumpListCategory::~JumpListCategory() = default;
+
 JumpList::JumpList(const base::string16& app_id) : app_id_(app_id) {
   destinations_.CoCreateInstance(CLSID_DestinationList);
 }
+
+JumpList::~JumpList() = default;
 
 bool JumpList::Begin(int* min_items, std::vector<JumpListItem>* removed_items) {
   DCHECK(destinations_);

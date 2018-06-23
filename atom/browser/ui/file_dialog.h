@@ -66,6 +66,7 @@ struct DialogSettings {
   bool security_scoped_bookmarks = false;
 
   DialogSettings();
+  DialogSettings(const DialogSettings&);
   ~DialogSettings();
 };
 
