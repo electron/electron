@@ -1,4 +1,6 @@
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include "brightray/browser/win/win32_desktop_notifications/toast.h"
 #include <uxtheme.h>
 #include <windowsx.h>
