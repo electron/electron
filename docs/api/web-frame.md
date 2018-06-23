@@ -4,7 +4,7 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
-`webFrame` export of the electron module is an instance of the `WebFrame`
+`webFrame` export of the Electron module is an instance of the `WebFrame`
 class representing the top frame of the current `BrowserWindow`. Sub-frames can
 be retrieved by certain properties and methods (e.g. `webFrame.firstChild`).
 
@@ -231,8 +231,8 @@ renderer process.
    current renderer process. Routing IDs can be retrieved from `WebFrame`
    instances (`webFrame.routingId`) and are also passed by frame
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
-  
-Returns `WebFrame` - that has the supplied `routingId`, `null` if not found. 
+
+Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
 
 ## Properties
 

@@ -141,7 +141,7 @@ we appreciate your help.
 2. Create a new S3 bucket and create the following empty directory structure:
 
     ```sh
-    - atom-shell/
+    - electron/
       - symbols/
       - dist/
     ```
@@ -150,7 +150,7 @@ we appreciate your help.
 
   * `ELECTRON_GITHUB_TOKEN` - a token that can create releases on GitHub
   * `ELECTRON_S3_ACCESS_KEY`, `ELECTRON_S3_BUCKET`, `ELECTRON_S3_SECRET_KEY` -
-    the place where you'll upload node.js headers as well as symbols
+    the place where you'll upload Node.js headers as well as symbols
   * `ELECTRON_RELEASE` - Set to `true` and the upload part will run, leave unset
     and `surf-build` will do CI-type checks, appropriate to run for every
     pull request.

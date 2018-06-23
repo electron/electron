@@ -49,7 +49,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | Chromium version updates        |                                    | fix-related chromium patches  |
 
 
-Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
+Note that most Chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
 # Stabilization Branches
 
