@@ -1547,25 +1547,21 @@ describe('<webview> tag', function () {
       return noGuestResizePromise
     })
 
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('dispatches element resize event even when attribute is present', async () => {
+    it('dispatches element resize event even when attribute is present', async () => {
       const INITIAL_SIZE = 200
       const w = await openTheWindow(
           {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
       w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
       await emittedOnce(ipcMain, 'webview-loaded')
 
-      const elementResizePromise = emittedOnce(ipcMain, 'webview-element-resize')
-          .then(([, width, height]) => {
-            expect(width).to.equal(CONTENT_SIZE)
-            expect(height).to.equal(CONTENT_SIZE)
-          })
-
+      const whenElementResized = emittedOnce(ipcMain, 'webview-element-resize')
       const CONTENT_SIZE = 300
       assert(CONTENT_SIZE !== INITIAL_SIZE)
       w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
+      const [, width, height] = await whenElementResized
 
-      return elementResizePromise
+      expect(width).to.equal(CONTENT_SIZE)
+      expect(height).to.equal(CONTENT_SIZE)
     })
 
     // TODO(alexeykuzmin): [Ch66] Enable the test.
