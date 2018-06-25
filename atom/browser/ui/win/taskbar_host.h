@@ -26,6 +26,10 @@ class TaskbarHost {
     gfx::Image icon;
     std::vector<std::string> flags;
     base::Closure clicked_callback;
+
+    ThumbarButton();
+    ThumbarButton(const ThumbarButton&);
+    ~ThumbarButton();
   };
 
   TaskbarHost();

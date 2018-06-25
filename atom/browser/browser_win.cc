@@ -84,6 +84,10 @@ bool FormatCommandLineString(base::string16* exe,
 
 }  // namespace
 
+Browser::UserTask::UserTask() = default;
+Browser::UserTask::UserTask(const UserTask&) = default;
+Browser::UserTask::~UserTask() = default;
+
 void Browser::Focus() {
   // On Windows we just focus on the first window found for this process.
   DWORD pid = GetCurrentProcessId();

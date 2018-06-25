@@ -53,45 +53,55 @@ bool ValidateShellCommandForScheme(const std::string& scheme) {
 class DeleteFileProgressSink : public IFileOperationProgressSink {
  public:
   DeleteFileProgressSink();
+  virtual ~DeleteFileProgressSink() = default;
 
  private:
-  ULONG STDMETHODCALLTYPE AddRef(void);
-  ULONG STDMETHODCALLTYPE Release(void);
-  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID* ppvObj);
-  HRESULT STDMETHODCALLTYPE StartOperations(void);
-  HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT);
-  HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem*, LPCWSTR);
+  ULONG STDMETHODCALLTYPE AddRef(void) override;
+  ULONG STDMETHODCALLTYPE Release(void) override;
+  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid,
+                                           LPVOID* ppvObj) override;
+  HRESULT STDMETHODCALLTYPE StartOperations(void) override;
+  HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT) override;
+  HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem*, LPCWSTR) override;
   HRESULT STDMETHODCALLTYPE
-  PostRenameItem(DWORD, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
+  PostRenameItem(DWORD, IShellItem*, LPCWSTR, HRESULT, IShellItem*) override;
   HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD,
                                         IShellItem*,
                                         IShellItem*,
-                                        LPCWSTR);
-  HRESULT STDMETHODCALLTYPE
-  PostMoveItem(DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
+                                        LPCWSTR) override;
+  HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD,
+                                         IShellItem*,
+                                         IShellItem*,
+                                         LPCWSTR,
+                                         HRESULT,
+                                         IShellItem*) override;
   HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD,
                                         IShellItem*,
                                         IShellItem*,
-                                        LPCWSTR);
-  HRESULT STDMETHODCALLTYPE
-  PostCopyItem(DWORD, IShellItem*, IShellItem*, LPCWSTR, HRESULT, IShellItem*);
-  HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD, IShellItem*);
+                                        LPCWSTR) override;
+  HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD,
+                                         IShellItem*,
+                                         IShellItem*,
+                                         LPCWSTR,
+                                         HRESULT,
+                                         IShellItem*) override;
+  HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD, IShellItem*) override;
   HRESULT STDMETHODCALLTYPE PostDeleteItem(DWORD,
                                            IShellItem*,
                                            HRESULT,
-                                           IShellItem*);
-  HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem*, LPCWSTR);
+                                           IShellItem*) override;
+  HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem*, LPCWSTR) override;
   HRESULT STDMETHODCALLTYPE PostNewItem(DWORD,
                                         IShellItem*,
                                         LPCWSTR,
                                         LPCWSTR,
                                         DWORD,
                                         HRESULT,
-                                        IShellItem*);
-  HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT);
-  HRESULT STDMETHODCALLTYPE ResetTimer(void);
-  HRESULT STDMETHODCALLTYPE PauseTimer(void);
-  HRESULT STDMETHODCALLTYPE ResumeTimer(void);
+                                        IShellItem*) override;
+  HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT) override;
+  HRESULT STDMETHODCALLTYPE ResetTimer(void) override;
+  HRESULT STDMETHODCALLTYPE PauseTimer(void) override;
+  HRESULT STDMETHODCALLTYPE ResumeTimer(void) override;
 
   ULONG m_cRef;
 };
@@ -308,9 +318,8 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
     return ui::win::OpenFolderViaShell(dir);
   } else {
     LPTSTR message = NULL;
-    DWORD message_length = FormatMessage(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 0, hr, 0,
-        reinterpret_cast<LPTSTR>(&message), 0, NULL);
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+                  0, hr, 0, reinterpret_cast<LPTSTR>(&message), 0, NULL);
     LOG(WARNING) << " " << __FUNCTION__ << "(): Can't open full_path = \""
                  << full_path.value() << "\""
                  << " hr = " << hr << " " << reinterpret_cast<LPTSTR>(&message);

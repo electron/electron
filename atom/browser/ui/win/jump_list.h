@@ -51,6 +51,10 @@ struct JumpListItem {
   base::string16 description;
   base::FilePath icon_path;
   int icon_index = 0;
+
+  JumpListItem();
+  JumpListItem(const JumpListItem&);
+  ~JumpListItem();
 };
 
 struct JumpListCategory {
@@ -70,6 +74,10 @@ struct JumpListCategory {
   Type type = Type::TASKS;
   base::string16 name;
   std::vector<JumpListItem> items;
+
+  JumpListCategory();
+  JumpListCategory(const JumpListCategory&);
+  ~JumpListCategory();
 };
 
 // Creates or removes a custom Jump List for an app.
@@ -80,6 +88,7 @@ class JumpList {
   // custom Jump List should be created/removed, it's usually obtained by
   // calling GetCurrentProcessExplicitAppUserModelID().
   explicit JumpList(const base::string16& app_id);
+  ~JumpList();
 
   // Starts a new transaction, must be called before appending any categories,
   // aborting or committing. After the method returns |min_items| will indicate

@@ -810,7 +810,7 @@ bool TopLevelWindow::SetThumbarButtons(mate::Arguments* args) {
     args->ThrowError();
     return false;
   }
-  auto window = static_cast<NativeWindowViews*>(window_.get());
+  auto* window = static_cast<NativeWindowViews*>(window_.get());
   return window->taskbar_host().SetThumbarButtons(
       window_->GetAcceleratedWidget(), buttons);
 #else

@@ -29,8 +29,8 @@ MenuBar::MenuBar(views::View* window)
     : background_color_(kDefaultColor), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
-  SetLayoutManager(std::make_unique<views::BoxLayout>(
-      views::BoxLayout::kHorizontal));
+  SetLayoutManager(
+      std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
   window_->GetFocusManager()->AddFocusChangeListener(this);
 }
 
@@ -178,7 +178,7 @@ void MenuBar::UpdateViewColors() {
   }
 #elif defined(OS_WIN)
   for (auto* child : GetChildrenInZOrder()) {
-    auto button = static_cast<SubmenuButton*>(child);
+    auto* button = static_cast<SubmenuButton*>(child);
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
