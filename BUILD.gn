@@ -256,6 +256,12 @@ static_library("electron_lib") {
     ]
     configs += [ ":gio_unix" ]
   }
+  if (is_win) {
+    deps += [
+      "//third_party/wtl",
+      "//third_party/breakpad:client",
+    ]
+  }
   defines = [
     # This is defined in skia/skia_common.gypi.
     "SK_SUPPORT_LEGACY_GETTOPDEVICE",
@@ -282,7 +288,7 @@ static_library("electron_lib") {
     # the #includes can be agnostic about where crashpad is vendored.
     "//third_party/crashpad",
   ]
-  if (is_linux) {
+  if (is_linux || is_win) {
     include_dirs += [
       "//third_party/breakpad",
     ]
@@ -296,6 +302,7 @@ static_library("electron_lib") {
       "*_x11.cc",
       "*_gtk.h",
       "*_gtk.cc",
+      "*\blibrary_loaders/*",
     ]
   }
   if (!is_win) {

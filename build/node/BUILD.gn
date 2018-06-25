@@ -1,12 +1,16 @@
 action("configure_node") {
   script = "//third_party/electron_node/configure"
+  ssl_libname_suffix = ""
+  if (is_win) {
+    ssl_libname_suffix = ".dll"
+  }
   args = [
     "--enable-static",
     "--release-urlbase=https://atom.io/download/electron",
     "--shared",
     "--shared-openssl",
     "--shared-openssl-includes=" + rebase_path("//third_party/boringssl/src/include"),
-    "--shared-openssl-libname=boringssl",
+    "--shared-openssl-libname=boringssl" + ssl_libname_suffix,
     "--shared-openssl-libpath=" + rebase_path(root_out_dir),
     "--without-npm",
     "--without-bundled-v8",
@@ -71,6 +75,9 @@ action("build_node") {
   }
   if (is_linux) {
     outputs = [ "$target_out_dir/Release/lib/libnode.so" ]
+  }
+  if (is_win) {
+    outputs = [ "$target_out_dir/Release/node.dll" ]
   }
 }
 
