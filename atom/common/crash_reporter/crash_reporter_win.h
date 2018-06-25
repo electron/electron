@@ -11,7 +11,7 @@
 
 #include "atom/common/crash_reporter/crash_reporter.h"
 #include "base/compiler_specific.h"
-#include "vendor/breakpad/src/client/windows/handler/exception_handler.h"
+#include "breakpad/src/client/windows/handler/exception_handler.h"
 
 namespace base {
 template <typename T>
