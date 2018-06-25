@@ -183,9 +183,10 @@ void ReadFromResponseObject(const base::DictionaryValue& response,
     headers->Clear();
     for (base::DictionaryValue::Iterator it(*dict); !it.IsAtEnd();
          it.Advance()) {
-      std::string value;
-      if (it.value().GetAsString(&value))
+      if (it.value().is_string()) {
+        std::string value = it.value().GetString();
         headers->SetHeader(it.key(), value);
+      }
     }
   }
 }

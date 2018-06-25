@@ -22,7 +22,7 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
     static_cast<base::DictionaryValue*>(options.get())
         ->GetString("path", &file_path);
   } else if (options->is_string()) {
-    options->GetAsString(&file_path);
+    file_path = options->GetString();
   }
 
   if (file_path.empty()) {

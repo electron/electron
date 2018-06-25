@@ -162,26 +162,22 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
       return v8::Null(isolate);
 
     case base::Value::Type::BOOLEAN: {
-      bool val = false;
-      value->GetAsBoolean(&val);
+      bool val = value->GetBool();
       return v8::Boolean::New(isolate, val);
     }
 
     case base::Value::Type::INTEGER: {
-      int val = 0;
-      value->GetAsInteger(&val);
+      int val = value->GetInt();
       return v8::Integer::New(isolate, val);
     }
 
     case base::Value::Type::DOUBLE: {
-      double val = 0.0;
-      value->GetAsDouble(&val);
+      double val = value->GetDouble();
       return v8::Number::New(isolate, val);
     }
 
     case base::Value::Type::STRING: {
-      std::string val;
-      value->GetAsString(&val);
+      std::string val = value->GetString();
       return v8::String::NewFromUtf8(isolate, val.c_str(),
                                      v8::String::kNormalString, val.length());
     }
@@ -345,8 +341,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   if (val->IsRegExp()) {
     if (!reg_exp_allowed_)
       // JSON.stringify converts to an object.
-      return FromV8Object(val->ToObject(context).ToLocalChecked(),
-          state, isolate);
+      return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                          isolate);
     return new base::Value(
         *v8::String::Utf8Value(val->ToString(context).ToLocalChecked()));
   }
@@ -359,8 +355,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
     if (!function_allowed_)
       // JSON.stringify refuses to convert function(){}.
       return nullptr;
-    return FromV8Object(val->ToObject(context).ToLocalChecked(),
-        state, isolate);
+    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                        isolate);
   }
 
   if (node::Buffer::HasInstance(val)) {
@@ -368,8 +364,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   }
 
   if (val->IsObject()) {
-    return FromV8Object(val->ToObject(context).ToLocalChecked(),
-        state, isolate);
+    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                        isolate);
   }
 
   LOG(ERROR) << "Unexpected v8 value type encountered.";
