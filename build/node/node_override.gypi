@@ -20,17 +20,42 @@
           '../../../third_party/icu/source/common',
           '../../../third_party/icu/source/i18n',
         ],
-        'libraries': [
-          '../../../../../../libv8.dylib',
-          '../../../../../../libv8_libbase.dylib',
-          '../../../../../../libv8_libplatform.dylib',
-          '../../../../../../libicuuc.dylib',
-        ],
         'defines': [
           'EVP_CTRL_AEAD_SET_IVLEN=EVP_CTRL_GCM_SET_IVLEN',
           'EVP_CTRL_CCM_SET_TAG=EVP_CTRL_GCM_SET_TAG',
           'EVP_CTRL_AEAD_GET_TAG=EVP_CTRL_GCM_GET_TAG',
         ],
+        'conditions': [
+          ['OS=="win"', {
+            'libraries': [
+              '-lv8.dll',
+              '-lv8_libbase.dll',
+              '-lv8_libplatform.dll',
+              '-licuuc.dll',
+              '-ldbghelp',
+            ],
+            'msvs_settings': {
+              # Change location of some hard-coded paths.
+              'VCLinkerTool': {
+                'AdditionalOptions!': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libuv<(STATIC_LIB_SUFFIX)',
+                ],
+                'AdditionalOptions': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\zlib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\uv\\libuv<(STATIC_LIB_SUFFIX)',
+                ],
+              },
+            },
+          }, {
+            'libraries': [
+              '-lv8',
+              '-lv8_libbase',
+              '-lv8_libplatform',
+              '-licuuc',
+            ]
+          }]
+        ]
       }],
     ],
   },
