@@ -31,22 +31,6 @@
 
 namespace {
 
-// Old ShellExecute crashes the process when the command for a given scheme
-// is empty. This function tells if it is.
-bool ValidateShellCommandForScheme(const std::string& scheme) {
-  base::win::RegKey key;
-  base::string16 registry_path =
-      base::ASCIIToUTF16(scheme) + L"\\shell\\open\\command";
-  key.Open(HKEY_CLASSES_ROOT, registry_path.c_str(), KEY_READ);
-  if (!key.Valid())
-    return false;
-  DWORD size = 0;
-  key.ReadValue(NULL, NULL, &size, NULL);
-  if (size <= 2)
-    return false;
-  return true;
-}
-
 // Required COM implementation of IFileOperationProgressSink so we can
 // precheck files before deletion to make sure they can be move to the
 // Recycle Bin.
