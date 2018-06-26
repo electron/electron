@@ -35,7 +35,7 @@ app.releaseSingleInstanceLock()
 ```
 
 
-# Planned Breaking API Changes (3.0)
+# Breaking API Changes (3.0)
 
 The following list includes the breaking API changes planned for Electron 3.0.
 
@@ -46,6 +46,11 @@ The following list includes the breaking API changes planned for Electron 3.0.
 app.getAppMemoryInfo()
 // Replace with
 app.getAppMetrics()
+
+// Deprecated
+const metrics = app.getAppMetrics()
+const privateBytes = metrics['privateBytes'] // deprecated property
+const sharedBytes = metrics['sharedBytes'] // deprecated property
 ```
 
 ## `BrowserWindow`
