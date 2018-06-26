@@ -1123,12 +1123,14 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
         static_cast<double>(
             process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
 
-    size_t private_bytes, shared_bytes;
-    if (process_metric.second->metrics->GetMemoryBytes(&private_bytes,
-                                                       &shared_bytes)) {
-      memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
-      memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
-    }
+    size_t private_bytes = 0;
+    size_t shared_bytes = 0;
+
+    // If GetMemoryBytes fails it will not change values of parameters
+    process_metric.second->metrics->GetMemoryBytes(&private_bytes,
+                                                   &shared_bytes);
+    memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+    memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
 
     pid_dict.Set("memory", memory_dict);
     cpu_dict.Set(

@@ -795,8 +795,7 @@ describe('app module', () => {
     })
   })
 
-  // TODO(marshallofsound): [Ch66] Failed on Windows x64 + ia32 on CI, passes locally
-  xdescribe('getAppMetrics() API', () => {
+  describe('getAppMetrics() API', () => {
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics()
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')

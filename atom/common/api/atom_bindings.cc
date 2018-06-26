@@ -166,11 +166,13 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
   dict.Set("peakWorkingSetSize",
            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
 
-  size_t private_bytes, shared_bytes;
-  if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
-    dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
-    dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
-  }
+  size_t private_bytes = 0;
+  size_t shared_bytes = 0;
+
+  // If GetMemoryBytes fails it will not change values of parameters
+  metrics->GetMemoryBytes(&private_bytes, &shared_bytes);
+  dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+  dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
 
   return dict.GetHandle();
 }
