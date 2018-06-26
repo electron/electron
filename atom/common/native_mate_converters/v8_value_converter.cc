@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/logging.h"
 #include "base/values.h"
@@ -345,8 +346,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   if (val->IsRegExp()) {
     if (!reg_exp_allowed_)
       // JSON.stringify converts to an object.
-      return FromV8Object(val->ToObject(context).ToLocalChecked(),
-          state, isolate);
+      return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                          isolate);
     return new base::Value(
         *v8::String::Utf8Value(val->ToString(context).ToLocalChecked()));
   }
@@ -359,8 +360,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
     if (!function_allowed_)
       // JSON.stringify refuses to convert function(){}.
       return nullptr;
-    return FromV8Object(val->ToObject(context).ToLocalChecked(),
-        state, isolate);
+    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                        isolate);
   }
 
   if (node::Buffer::HasInstance(val)) {
@@ -368,8 +369,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   }
 
   if (val->IsObject()) {
-    return FromV8Object(val->ToObject(context).ToLocalChecked(),
-        state, isolate);
+    return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
+                        isolate);
   }
 
   LOG(ERROR) << "Unexpected v8 value type encountered.";
@@ -418,9 +419,10 @@ base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
 base::Value* V8ValueConverter::FromNodeBuffer(v8::Local<v8::Value> value,
                                               FromV8ValueState* state,
                                               v8::Isolate* isolate) const {
-  return base::Value::CreateWithCopiedBuffer(node::Buffer::Data(value),
-                                             node::Buffer::Length(value))
-      .release();
+  auto vec = std::vector<char>(
+      node::Buffer::Data(value),
+      node::Buffer::Data(value) + node::Buffer::Length(value));
+  return std::make_unique<base::Value>(vec).release();
 }
 
 base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,

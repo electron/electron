@@ -6,6 +6,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "native_mate/dictionary.h"
@@ -25,8 +26,10 @@ Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
     auto post_data_dict = std::make_unique<base::DictionaryValue>();
     auto type = element.type();
     if (type == network::DataElement::TYPE_BYTES) {
-      auto bytes = base::Value::CreateWithCopiedBuffer(
-          element.bytes(), static_cast<size_t>(element.length()));
+      auto vec = std::vector<char>(
+          element.bytes(),
+          element.bytes() + static_cast<size_t>(element.length()));
+      auto bytes = std::make_unique<base::Value>(vec);
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
     } else if (type == network::DataElement::TYPE_FILE) {
