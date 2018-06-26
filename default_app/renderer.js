@@ -22,7 +22,7 @@ document.querySelector('.node-version').innerText = `Node v${process.versions.no
 document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
 document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
 
-function getOcticonSvg(name) {
+function getOcticonSvg (name) {
   const octiconPath = path.resolve(__dirname, 'node_modules', 'octicons', 'build', 'svg', `${name}.svg`)
   if (fs.existsSync(octiconPath)) {
     const content = fs.readFileSync(octiconPath, 'utf8')
@@ -33,7 +33,7 @@ function getOcticonSvg(name) {
   return null
 }
 
-function loadSVG(element) {
+function loadSVG (element) {
   for (const cssClass of element.classList) {
     if (cssClass.startsWith('octicon-')) {
       const icon = getOcticonSvg(cssClass.substr(8))
