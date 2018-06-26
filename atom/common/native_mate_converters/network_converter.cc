@@ -6,6 +6,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "native_mate/dictionary.h"
