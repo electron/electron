@@ -239,10 +239,9 @@ void GetUploadData(base::ListValue* upload_data_list,
     if (reader->AsBytesReader()) {
       const net::UploadBytesElementReader* bytes_reader =
           reader->AsBytesReader();
-      auto vec =
+      auto bytes = std::make_unique<base::Value>(
           std::vector<char>(bytes_reader->bytes(),
-                            bytes_reader->bytes() + bytes_reader->length());
-      auto bytes = std::make_unique<base::Value>(vec);
+                            bytes_reader->bytes() + bytes_reader->length()));
       upload_data_dict->Set("bytes", std::move(bytes));
     } else if (reader->AsFileReader()) {
       const net::UploadFileElementReader* file_reader = reader->AsFileReader();
