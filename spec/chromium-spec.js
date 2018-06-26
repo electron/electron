@@ -70,6 +70,15 @@ describe('chromium feature', () => {
     })
   })
 
+  describe('accessing key names also used as Node.js module names', () => {
+    it('does not crash', (done) => {
+      w = new BrowserWindow({show: false})
+      w.webContents.once('did-finish-load', () => { done() })
+      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
+      w.loadURL(`file://${fixtures}/pages/external-string.html`)
+    })
+  })
+
   describe('navigator.webkitGetUserMedia', () => {
     it('calls its callbacks', (done) => {
       navigator.webkitGetUserMedia({
