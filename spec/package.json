@@ -8,7 +8,6 @@
     "bluebird": "^3.5.1",
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
-    "coffee-script": "1.12.7",
     "dbus-native": "^0.2.5",
     "dirty-chai": "^2.0.1",
     "graceful-fs": "^4.1.11",
