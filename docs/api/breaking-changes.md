@@ -49,8 +49,9 @@ app.getAppMetrics()
 
 // Deprecated
 const metrics = app.getAppMetrics()
-const privateBytes = metrics.privateBytes // deprecated property
-const sharedBytes = metrics.sharedBytes // deprecated property
+const {memory} = metrics[0]
+memory.privateBytes  // Deprecated property
+memory.sharedBytes  // Deprecated property
 ```
 
 ## `BrowserWindow`
