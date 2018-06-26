@@ -17,9 +17,9 @@
 #include "base/strings/string_util.h"
 #include "base/time/time.h"
 #include "base/win/windows_version.h"
-#include "vendor/breakpad/src/client/windows/crash_generation/client_info.h"
-#include "vendor/breakpad/src/client/windows/crash_generation/crash_generation_server.h"
-#include "vendor/breakpad/src/client/windows/sender/crash_report_sender.h"
+#include "breakpad/src/client/windows/crash_generation/client_info.h"
+#include "breakpad/src/client/windows/crash_generation/crash_generation_server.h"
+#include "breakpad/src/client/windows/sender/crash_report_sender.h"
 
 namespace breakpad {
 
