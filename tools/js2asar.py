@@ -24,6 +24,10 @@ def main():
 def copy_files(source_files, output_dir):
   for source_file in source_files:
     output_path = os.path.join(output_dir, source_file)
+    # Files that aren't in the default_app folder need to be put inside
+    # the temp one we are making so they end up in the ASAR
+    if source_file[:12] != "default_app/":
+      output_path = os.path.join(output_dir, "default_app", source_file)
     safe_mkdir(os.path.dirname(output_path))
     shutil.copy2(source_file, output_path)
 
