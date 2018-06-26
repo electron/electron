@@ -78,13 +78,10 @@ describe('deprecations', () => {
 
   it('deprecates a property of an object', () => {
     let msg
-    deprecations.setHandler((m) => { msg = m })
+    deprecations.setHandler(m => { msg = m })
 
     const propertyName = 'itMustGo'
-    let value = 0
-
-    let o = { [propertyName]: value }
-    expect(o).to.have.a.property(propertyName).that.is.a('number')
+    const o = { [propertyName]: 0 }
 
     deprecate.removeProperty(o, propertyName)
 
