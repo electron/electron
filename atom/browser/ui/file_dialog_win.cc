@@ -6,7 +6,10 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>
+#include <atlbase.h>  // atlbase.h must be included before atlapp.h
+
+#include <atlapp.h>
+#include <atldlgs.h>
 #include <commdlg.h>
 #include <shlobj.h>
 
@@ -20,8 +23,9 @@
 #include "base/threading/thread.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
-#include "third_party/wtl/include/atlapp.h"
-#include "third_party/wtl/include/atldlgs.h"
+
+using WTL::CShellFileOpenDialog;
+using WTL::CShellFileSaveDialog;
 
 namespace file_dialog {
 
