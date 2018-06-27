@@ -22,9 +22,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/win/registry.h"
 
-// Used to be linked  by WTL
-#pragma comment(lib, "gdi32.lib")
-
 namespace file_dialog {
 
 DialogSettings::DialogSettings() = default;
@@ -129,7 +126,7 @@ static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
   return hRet;
 }
 
-static void SetDefaultFolder(IFileDialog* pDialog,
+static void SetDefaultFolder(IFileDialog* dialog,
                              const base::FilePath file_path) {
   std::wstring directory =
       IsDirectory(file_path) ? file_path.value() : file_path.DirName().value();
@@ -138,10 +135,10 @@ static void SetDefaultFolder(IFileDialog* pDialog,
   HRESULT hr = SHCreateItemFromParsingName(directory.c_str(), NULL,
                                            IID_PPV_ARGS(&folder_item));
   if (SUCCEEDED(hr))
-    pDialog->SetFolder(folder_item);
+    dialog->SetFolder(folder_item);
 }
 
-static HRESULT ShowFileDialog(IFileDialog* pDialog,
+static HRESULT ShowFileDialog(IFileDialog* dialog,
                               const DialogSettings& settings) {
   atom::UnresponsiveSuppressor suppressor;
   HWND parent_window =
@@ -150,30 +147,30 @@ static HRESULT ShowFileDialog(IFileDialog* pDialog,
                 ->GetAcceleratedWidget()
           : NULL;
 
-  return pDialog->Show(parent_window);
+  return dialog->Show(parent_window);
 }
 
-static void ApplySettings(IFileDialog* pDialog,
+static void ApplySettings(IFileDialog* dialog,
                           const DialogSettings& settings) {
   std::wstring file_part;
 
   if (!IsDirectory(settings.default_path))
     file_part = settings.default_path.BaseName().value();
 
-  pDialog->SetFileName(file_part.c_str());
+  dialog->SetFileName(file_part.c_str());
 
   if (!settings.title.empty())
-    pDialog->SetTitle(base::UTF8ToUTF16(settings.title).c_str());
+    dialog->SetTitle(base::UTF8ToUTF16(settings.title).c_str());
 
   if (!settings.button_label.empty())
-    pDialog->SetOkButtonLabel(base::UTF8ToUTF16(settings.button_label).c_str());
+    dialog->SetOkButtonLabel(base::UTF8ToUTF16(settings.button_label).c_str());
 
   std::vector<std::wstring> buffer;
   std::vector<COMDLG_FILTERSPEC> filterspec;
   ConvertFilters(settings.filters, &buffer, &filterspec);
 
   if (!filterspec.empty()) {
-    pDialog->SetFileTypes(filterspec.size(), filterspec.data());
+    dialog->SetFileTypes(filterspec.size(), filterspec.data());
   }
 
   // By default, *.* will be added to the file name if file type is "*.*". In
@@ -190,21 +187,21 @@ static void ApplySettings(IFileDialog* pDialog,
   for (size_t i = 0; i < filterspec.size(); ++i) {
     if (std::wstring(filterspec[i].pszSpec) != L"*.*") {
       // SetFileTypeIndex is regarded as one-based index.
-      pDialog->SetFileTypeIndex(i + 1);
-      pDialog->SetDefaultExtension(filterspec[i].pszSpec);
+      dialog->SetFileTypeIndex(i + 1);
+      dialog->SetDefaultExtension(filterspec[i].pszSpec);
       break;
     }
   }
 
   if (settings.default_path.IsAbsolute()) {
-    SetDefaultFolder(pDialog, settings.default_path);
+    SetDefaultFolder(dialog, settings.default_path);
   }
 }
 
 bool ShowOpenDialog(const DialogSettings& settings,
                     std::vector<base::FilePath>* paths) {
-  ATL::CComPtr<IFileOpenDialog> pFileOpen;
-  HRESULT hr = pFileOpen.CoCreateInstance(CLSID_FileOpenDialog);
+  ATL::CComPtr<IFileOpenDialog> file_open_dialog;
+  HRESULT hr = file_open_dialog.CoCreateInstance(CLSID_FileOpenDialog);
 
   if (FAILED(hr))
     return false;
@@ -218,15 +215,15 @@ bool ShowOpenDialog(const DialogSettings& settings,
     options |= FOS_FORCESHOWHIDDEN;
   if (settings.properties & FILE_DIALOG_PROMPT_TO_CREATE)
     options |= FOS_CREATEPROMPT;
-  pFileOpen->SetOptions(options);
+  file_open_dialog->SetOptions(options);
 
-  ApplySettings(pFileOpen, settings);
-  hr = ShowFileDialog(pFileOpen, settings);
+  ApplySettings(file_open_dialog, settings);
+  hr = ShowFileDialog(file_open_dialog, settings);
   if (FAILED(hr))
     return false;
 
   ATL::CComPtr<IShellItemArray> items;
-  hr = pFileOpen->GetResults(&items);
+  hr = file_open_dialog->GetResults(&items);
   if (FAILED(hr))
     return false;
 
@@ -268,21 +265,21 @@ void ShowOpenDialog(const DialogSettings& settings,
 }
 
 bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
-  ATL::CComPtr<IFileSaveDialog> pFileSave;
-  HRESULT hr = pFileSave.CoCreateInstance(CLSID_FileSaveDialog);
+  ATL::CComPtr<IFileSaveDialog> file_save_dialog;
+  HRESULT hr = file_save_dialog.CoCreateInstance(CLSID_FileSaveDialog);
   if (FAILED(hr))
     return false;
 
-  pFileSave->SetOptions(FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST |
+  file_save_dialog->SetOptions(FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST |
                         FOS_OVERWRITEPROMPT);
-  ApplySettings(pFileSave, settings);
-  hr = ShowFileDialog(pFileSave, settings);
+  ApplySettings(file_save_dialog, settings);
+  hr = ShowFileDialog(file_save_dialog, settings);
 
   if (FAILED(hr))
     return false;
 
   CComPtr<IShellItem> pItem;
-  hr = pFileSave->GetResult(&pItem);
+  hr = file_save_dialog->GetResult(&pItem);
   if (FAILED(hr))
     return false;
 

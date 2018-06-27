@@ -372,6 +372,7 @@
           'link_settings': {
             'libraries': [
               '-limm32.lib',
+              '-lgdi32.lib',
               '-loleacc.lib',
               '-lcomctl32.lib',
               '-lcomdlg32.lib',
