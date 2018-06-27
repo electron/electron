@@ -35,9 +35,9 @@ app.releaseSingleInstanceLock()
 ```
 
 
-# Planned Breaking API Changes (3.0)
+# Breaking API Changes (3.0)
 
-The following list includes the breaking API changes planned for Electron 3.0.
+The following list includes the breaking API changes in Electron 3.0.
 
 ## `app`
 
@@ -46,6 +46,12 @@ The following list includes the breaking API changes planned for Electron 3.0.
 app.getAppMemoryInfo()
 // Replace with
 app.getAppMetrics()
+
+// Deprecated
+const metrics = app.getAppMetrics()
+const {memory} = metrics[0]
+memory.privateBytes  // Deprecated property
+memory.sharedBytes  // Deprecated property
 ```
 
 ## `BrowserWindow`
@@ -122,6 +128,15 @@ nativeImage.createFromBuffer(buffer, 1.0)
 nativeImage.createFromBuffer(buffer, {
   scaleFactor: 1.0
 })
+```
+
+## `process`
+
+```js
+// Deprecated
+const info = process.getProcessMemoryInfo()
+const privateBytes = info.privateBytes // deprecated property
+const sharedBytes = info.sharedBytes // deprecated property
 ```
 
 ## `screen`
