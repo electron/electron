@@ -109,7 +109,7 @@ void RunSaveDialogInNewThread(const RunState& run_state,
 static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
                                         SIGDN type,
                                         LPWSTR lpstr,
-                                        int cchLength) {
+                                        size_t cchLength) {
   assert(pShellItem != NULL);
 
   LPWSTR lpstrName = NULL;
@@ -119,7 +119,7 @@ static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
     if (wcslen(lpstrName) < cchLength) {
       wcscpy_s(lpstr, cchLength, lpstrName);
     } else {
-      assert(FALSE);
+      NOTREACHED();
       hRet = DISP_E_BUFFERTOOSMALL;
     }
 
