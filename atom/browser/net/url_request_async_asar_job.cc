@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/common/atom_constants.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
 
 namespace atom {
