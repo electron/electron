@@ -64,7 +64,8 @@ describe('<webview> tag', function () {
     return closeTheWindow()
   })
 
-  it('works without script tag in page', async () => {
+  // TODO(codebytere): re-enable this test
+  xit('works without script tag in page', async () => {
     const w = await openTheWindow({show: false})
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
     await emittedOnce(ipcMain, 'pong')
