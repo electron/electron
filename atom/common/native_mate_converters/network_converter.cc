@@ -27,8 +27,7 @@ Converter<scoped_refptr<network::ResourceRequestBody>>::ToV8(
     auto type = element.type();
     if (type == network::DataElement::TYPE_BYTES) {
       auto bytes = std::make_unique<base::Value>(std::vector<char>(
-          element.bytes(),
-          element.bytes() + static_cast<size_t>(element.length())));
+          element.bytes(), element.bytes() + (element.length())));
       post_data_dict->SetString("type", "rawData");
       post_data_dict->Set("bytes", std::move(bytes));
     } else if (type == network::DataElement::TYPE_FILE) {
