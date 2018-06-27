@@ -7,6 +7,8 @@ debugging. However, using Visual Studio, GitHub's hosted Electron Symbol Server,
 and the Electron source code, you can enable step-through debugging
 with breakpoints inside Electron's source code.
 
+**See also**: There's a wealth of information on debugging Chromium, much of which also applies to Electron, on the Chromium developers site: [Debugging Chromium on Windows](https://www.chromium.org/developers/how-tos/debugging-on-windows).
+
 ## Requirements
 
 * **A debug build of Electron**: The easiest way is usually building it
