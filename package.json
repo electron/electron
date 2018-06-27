@@ -27,7 +27,7 @@
     "standard-markdown": "^4.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3",
-	"cross-var": "^1.1.0"
+    "cross-var": "^1.1.0"
   },
   "standard": {
     "ignore": [
