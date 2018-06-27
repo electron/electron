@@ -14,7 +14,8 @@ Electron
 ├── atom/ - C++ source code.
 |   ├── app/ - System entry code.
 |   ├── browser/ - The frontend including the main window, UI, and all of the
-|   |   main process things. This talks to the renderer to manage web pages.
+|   |   |          main process things. This talks to the renderer to manage web
+|   |   |          pages.
 |   |   ├── ui/ - Implementation of UI stuff for different platforms.
 |   |   |   ├── cocoa/ - Cocoa specific source code.
 |   |   |   ├── win/ - Windows GUI specific source code.
@@ -26,14 +27,14 @@ Electron
 |   ├── renderer/ - Code that runs in renderer process.
 |   |   └── api/ - The implementation of renderer process APIs.
 |   └── common/ - Code that used by both the main and renderer processes,
-|       including some utility functions and code to integrate node's message
-|       loop into Chromium's message loop.
+|       |         including some utility functions and code to integrate node's
+|       |         message loop into Chromium's message loop.
 |       └── api/ - The implementation of common APIs, and foundations of
-|           Electron's built-in modules.
+|                  Electron's built-in modules.
 ├── brightray/ - Thin shim over libcc that makes it easier to use.
 ├── chromium_src/ - Source code copied from Chromium. See below.
 ├── default_app/ - The default page to show when Electron is started without
-|   providing an app.
+|                  providing an app.
 ├── docs/ - Documentations.
 ├── lib/ - JavaScript source code.
 |   ├── browser/ - Javascript main process initialization code.
@@ -42,10 +43,12 @@ Electron
 |   |   └── api/ - Javascript API implementation.
 |   └── renderer/ - Javascript renderer process initialization code.
 |       └── api/ - Javascript API implementation.
+├── native_mate/ - A fork of Chromium's gin library that makes it easier to marshal
+|                  types between C++ and JavaScript.
 ├── spec/ - Automatic tests.
 ├── electron.gyp - Building rules of Electron.
 └── common.gypi - Compiler specific settings and building rules for other
-    components like `node` and `breakpad`.
+                  components like `node` and `breakpad`.
 ```
 
 ## `/chromium_src`
