@@ -258,7 +258,6 @@ static_library("electron_lib") {
   }
   if (is_win) {
     deps += [
-      "//third_party/wtl",
       "//third_party/breakpad:client",
     ]
   }
