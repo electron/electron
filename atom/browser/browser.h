@@ -10,6 +10,7 @@
 
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+#include "atom/common/promise_util.h"
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
@@ -245,6 +246,7 @@ class Browser : public WindowListObserver {
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
+  util::Promise* WhenReady(v8::Isolate* isolate);
 
  protected:
   // Returns the version of application bundle or executable file.
@@ -279,6 +281,8 @@ class Browser : public WindowListObserver {
   bool is_shutdown_ = false;
 
   int badge_count_ = 0;
+
+  util::Promise* ready_promise_ = nullptr;
 
 #if defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

@@ -154,8 +154,21 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;
+  if (ready_promise_) {
+    ready_promise_->Resolve();
+  }
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info);
+}
+
+util::Promise* Browser::WhenReady(v8::Isolate* isolate) {
+  if (!ready_promise_) {
+    ready_promise_ = new util::Promise(isolate);
+    if (is_ready()) {
+      ready_promise_->Resolve();
+    }
+  }
+  return ready_promise_;
 }
 
 void Browser::OnAccessibilitySupportChanged() {

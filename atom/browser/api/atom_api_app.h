@@ -15,6 +15,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/promise_util.h"
 #include "base/process/process_iterator.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "chrome/browser/icon_manager.h"
