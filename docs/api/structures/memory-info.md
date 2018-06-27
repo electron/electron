@@ -5,9 +5,9 @@
 * `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
   to actual physical RAM. On macOS its value will always be 0.
 * `privateBytes` Integer - The amount of memory not shared by other processes, such as
-  JS heap or HTML content. Value 0 means the value cannot be obtained in the moment.
+  JS heap or HTML content. Value 0 means the value cannot be obtained at the moment.
 * `sharedBytes` Integer - The amount of memory shared between processes, typically
   memory consumed by the Electron code itself. Value 0 means the value cannot 
-  be obtained in the moment.
+  be obtained at the moment.
 
 Note that all statistics are reported in Kilobytes.
