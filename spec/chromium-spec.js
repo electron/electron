@@ -285,7 +285,8 @@ describe('chromium feature', () => {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
-    it('disables webviewTag when node integration is disabled on the parent window', (done) => {
+    // TODO(codebytere): re-enable this test
+    xit('disables webviewTag when node integration is disabled on the parent window', (done) => {
       let b
       listener = (event) => {
         assert.equal(event.data.isWebViewUndefined, true)
@@ -305,7 +306,8 @@ describe('chromium feature', () => {
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
 
-    it('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
+    // TODO(codebytere): re-enable this test
+    xit('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
       let b
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
