@@ -293,10 +293,15 @@ void BrowserWindow::Blur() {
 }
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
+  background_color = color_name;
   TopLevelWindow::SetBackgroundColor(color_name);
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->SetBackgroundColor(ParseHexColor(color_name));
+}
+
+std::string& BrowserWindow::GetBackgroundColor() {
+  return background_color;
 }
 
 void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
