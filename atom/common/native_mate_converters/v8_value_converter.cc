@@ -163,26 +163,22 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
       return v8::Null(isolate);
 
     case base::Value::Type::BOOLEAN: {
-      bool val = false;
-      value->GetAsBoolean(&val);
+      bool val = value->GetBool();
       return v8::Boolean::New(isolate, val);
     }
 
     case base::Value::Type::INTEGER: {
-      int val = 0;
-      value->GetAsInteger(&val);
+      int val = value->GetInt();
       return v8::Integer::New(isolate, val);
     }
 
     case base::Value::Type::DOUBLE: {
-      double val = 0.0;
-      value->GetAsDouble(&val);
+      double val = value->GetDouble();
       return v8::Number::New(isolate, val);
     }
 
     case base::Value::Type::STRING: {
-      std::string val;
-      value->GetAsString(&val);
+      std::string val = value->GetString();
       return v8::String::NewFromUtf8(isolate, val.c_str(),
                                      v8::String::kNormalString, val.length());
     }

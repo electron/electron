@@ -25,7 +25,7 @@ void URLRequestStringJob::StartAsync(std::unique_ptr<base::Value> options) {
     dict->GetString("charset", &charset_);
     dict->GetString("data", &data_);
   } else if (options->is_string()) {
-    options->GetAsString(&data_);
+    data_ = options->GetString();
   }
   net::URLRequestSimpleJob::Start();
 }

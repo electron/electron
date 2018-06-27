@@ -7,6 +7,7 @@
 #include <string>
 
 #include "atom/common/atom_constants.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
 
 namespace atom {
@@ -17,12 +18,13 @@ URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
     : JsAsker<asar::URLRequestAsarJob>(request, network_delegate) {}
 
 void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
-  base::FilePath::StringType file_path;
+  std::string file_path;
   if (options->is_dict()) {
-    static_cast<base::DictionaryValue*>(options.get())
-        ->GetString("path", &file_path);
+    auto path_value = options->FindKeyOfType("path", base::Value::Type::STRING);
+    if (path_value)
+      file_path = path_value->GetString();
   } else if (options->is_string()) {
-    options->GetAsString(&file_path);
+    file_path = options->GetString();
   }
 
   if (file_path.empty()) {
@@ -33,7 +35,11 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
         base::CreateSequencedTaskRunnerWithTraits(
             {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
              base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN}),
+#if defined(OS_WIN)
+        base::FilePath(base::UTF8ToWide(file_path)));
+#else
         base::FilePath(file_path));
+#endif
     asar::URLRequestAsarJob::Start();
   }
 }

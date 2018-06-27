@@ -62,8 +62,8 @@ bool IsErrorOptions(base::Value* value, int* error) {
     if (dict->GetInteger("error", error))
       return true;
   } else if (value->is_int()) {
-    if (value->GetAsInteger(error))
-      return true;
+    *error = value->GetInt();
+    return true;
   }
   return false;
 }
