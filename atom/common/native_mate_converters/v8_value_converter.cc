@@ -419,10 +419,9 @@ base::Value* V8ValueConverter::FromV8Array(v8::Local<v8::Array> val,
 base::Value* V8ValueConverter::FromNodeBuffer(v8::Local<v8::Value> value,
                                               FromV8ValueState* state,
                                               v8::Isolate* isolate) const {
-  auto vec = std::vector<char>(
+  return new base::Value(std::vector<char>(
       node::Buffer::Data(value),
-      node::Buffer::Data(value) + node::Buffer::Length(value));
-  return std::make_unique<base::Value>(vec).release();
+      node::Buffer::Data(value) + node::Buffer::Length(value)));
 }
 
 base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
