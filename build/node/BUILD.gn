@@ -66,18 +66,23 @@ action("build_node") {
     ":gyp_node",
   ]
   script = "//electron/build/run-ninja.py"
+  if (is_debug) {
+    configuration = "Debug"
+  } else {
+    configuration = "Release"
+  }
   args = [
-    "-C", rebase_path(target_out_dir, root_build_dir) + "/Release",
+    "-C", rebase_path(target_out_dir, root_build_dir) + "/$configuration",
     "node_lib"
   ]
   if (is_mac) {
-    outputs = [ "$target_out_dir/Release/libnode.dylib" ]
+    outputs = [ "$target_out_dir/$configuration/libnode.dylib" ]
   }
   if (is_linux) {
-    outputs = [ "$target_out_dir/Release/lib/libnode.so" ]
+    outputs = [ "$target_out_dir/$configuration/lib/libnode.so" ]
   }
   if (is_win) {
-    outputs = [ "$target_out_dir/Release/node.dll.lib", "$target_out_dir/Release/node.dll" ]
+    outputs = [ "$target_out_dir/$configuration/node.dll.lib", "$target_out_dir/$configuration/node.dll" ]
   }
 }
 
