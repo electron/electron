@@ -64,7 +64,7 @@ class DesktopNotificationController::Toast {
   float AnimateStackCollapse();
 
  private:
-  static constexpr const TCHAR class_name_[] = TEXT("DesktopNotificationToast");
+  static const TCHAR class_name_[];
 
   const HWND hwnd_;
   HDC hdc_;

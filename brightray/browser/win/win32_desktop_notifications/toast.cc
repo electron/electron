@@ -183,6 +183,9 @@ static HBITMAP StretchBitmap(HBITMAP bitmap, unsigned width, unsigned height) {
   return result_bitmap;
 }
 
+const TCHAR DesktopNotificationController::Toast::class_name_[] =
+    TEXT("DesktopNotificationToast");
+
 DesktopNotificationController::Toast::Toast(HWND hwnd,
                                             shared_ptr<NotificationData>* data)
     : hwnd_(hwnd), data_(*data) {

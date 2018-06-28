@@ -76,8 +76,7 @@ class DesktopNotificationController {
   void DestroyToast(ToastInstance& inst);
 
  private:
-  static constexpr const TCHAR class_name_[] =
-      TEXT("DesktopNotificationController");
+  static const TCHAR class_name_[];
 
   HWND hwnd_controller_ = NULL;
   HFONT caption_font_ = NULL, body_font_ = NULL;
