@@ -272,8 +272,6 @@
         'NODE_SHARED_MODE',
         'HAVE_OPENSSL=1',
         'HAVE_INSPECTOR=1',
-        # This is defined in skia/skia_common.gypi.
-        'SK_SUPPORT_LEGACY_GETTOPDEVICE',
         # Disable warnings for g_settings_list_schemas.
         'GLIB_DISABLE_DEPRECATION_WARNINGS',
         # Defined in Chromium but not exposed in its gyp file.
@@ -287,9 +285,6 @@
         # See Chromium src/third_party/protobuf/BUILD.gn
         'GOOGLE_PROTOBUF_NO_RTTI',
         'GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER',
-
-        # Enables SkBitmap size 64 operations
-        'SK_SUPPORT_LEGACY_SAFESIZE64',
       ],
       'sources': [
         '<@(lib_sources)',
