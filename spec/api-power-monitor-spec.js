@@ -6,9 +6,13 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
@@ -27,9 +31,7 @@ xdescribe('powerMonitor', () => {
       reset = Promise.promisify(logindMock.Reset, {context: logindMock})
     })
 
-    after(async () => {
-      await reset()
-    })
+    after(async () => { await reset() })
   }
 
   (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
@@ -41,7 +43,7 @@ xdescribe('powerMonitor', () => {
       return cb
     }
 
-    before((done) => {
+    before(done => {
       logindMock.on('MethodCalled', onceMethodCalled(done))
       // lazy load powerMonitor after we listen to MethodCalled mock signal
       dbusMockPowerMonitor = require('electron').remote.powerMonitor
@@ -49,8 +51,8 @@ xdescribe('powerMonitor', () => {
 
     it('should call Inhibit to delay suspend', async () => {
       const calls = await getCalls()
-      assert.equal(calls.length, 1)
-      assert.deepEqual(calls[0].slice(1), [
+      expect(calls.length).to.equal(1)
+      expect(calls[0].slice(1)).to.deep.equal([
         'Inhibit', [
           [[{type: 's', child: []}], ['sleep']],
           [[{type: 's', child: []}], ['electron']],
@@ -68,7 +70,7 @@ xdescribe('powerMonitor', () => {
       })
 
       describe('when PrepareForSleep(false) signal is sent by logind', () => {
-        it('should emit "resume" event', (done) => {
+        it('should emit "resume" event', done => {
           dbusMockPowerMonitor.once('resume', () => done())
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
             'b', [['b', false]])
@@ -76,8 +78,8 @@ xdescribe('powerMonitor', () => {
 
         it('should have called Inhibit again', async () => {
           const calls = await getCalls()
-          assert.equal(calls.length, 2)
-          assert.deepEqual(calls[1].slice(1), [
+          expect(calls.length).to.equal(2)
+          expect(calls[1].slice(1)).to.deep.equal([
             'Inhibit', [
               [[{type: 's', child: []}], ['sleep']],
               [[{type: 's', child: []}], ['electron']],
@@ -92,14 +94,14 @@ xdescribe('powerMonitor', () => {
     describe('when a listener is added to shutdown event', () => {
       before(async () => {
         const calls = await getCalls()
-        assert.equal(calls.length, 2)
+        expect(calls.length).to.equal(2)
         dbusMockPowerMonitor.once('shutdown', () => { })
       })
 
       it('should call Inhibit to delay shutdown', async () => {
         const calls = await getCalls()
-        assert.equal(calls.length, 3)
-        assert.deepEqual(calls[2].slice(1), [
+        expect(calls.length).to.equal(3)
+        expect(calls[2].slice(1)).to.deep.equal([
           'Inhibit', [
             [[{type: 's', child: []}], ['shutdown']],
             [[{type: 's', child: []}], ['electron']],
@@ -110,7 +112,7 @@ xdescribe('powerMonitor', () => {
       })
 
       describe('when PrepareForShutdown(true) signal is sent by logind', () => {
-        it('should emit "shutdown" event', (done) => {
+        it('should emit "shutdown" event', done => {
           dbusMockPowerMonitor.once('shutdown', () => { done() })
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown',
             'b', [['b', true]])
@@ -126,35 +128,32 @@ xdescribe('powerMonitor', () => {
     })
 
     describe('powerMonitor.querySystemIdleState', () => {
-      it('notify current system idle state', (done) => {
-        powerMonitor.querySystemIdleState(1, (idleState) => {
-          assert.ok(idleState)
+      it('notify current system idle state', done => {
+        powerMonitor.querySystemIdleState(1, idleState => {
+          expect(idleState).to.be.true()
           done()
         })
       })
 
       it('does not accept non positive integer threshold', () => {
-        assert.throws(() => {
-          powerMonitor.querySystemIdleState(-1, (idleState) => {
-          })
-        })
+        expect(() => {
+          powerMonitor.querySystemIdleState(-1, (idleState) => {})
+        }).to.throw()
 
-        assert.throws(() => {
-          powerMonitor.querySystemIdleState(NaN, (idleState) => {
-          })
-        })
+        expect(() => {
+          powerMonitor.querySystemIdleState(NaN, (idleState) => {})
+        }).to.throw()
 
-        assert.throws(() => {
-          powerMonitor.querySystemIdleState('a', (idleState) => {
-          })
-        })
+        expect(() => {
+          powerMonitor.querySystemIdleState('a', (idleState) => {})
+        }).to.throw()
       })
     })
 
     describe('powerMonitor.querySystemIdleTime', () => {
-      it('notify current system idle time', (done) => {
-        powerMonitor.querySystemIdleTime((idleTime) => {
-          assert.ok(idleTime >= 0)
+      it('notify current system idle time', done => {
+        powerMonitor.querySystemIdleTime(idleTime => {
+          expect(idleTime).to.be.at.least(0)
           done()
         })
       })
