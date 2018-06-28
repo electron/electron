@@ -16,12 +16,8 @@ namespace util {
 
 class Promise {
  public:
-  explicit Promise(v8::Isolate* isolate) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    isolate_ = isolate;
-    resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
-  }
-  ~Promise() {}
+  explicit Promise(v8::Isolate* isolate);
+  ~Promise();
 
   v8::Isolate* isolate() const { return isolate_; }
 

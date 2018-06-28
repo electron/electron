@@ -71,7 +71,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
-  static const auto kCI = "ELECTRON_CI";
+  static const char* kCI = "ELECTRON_CI";
   bool is_ci = IsEnvSet(kCI);
   if (!is_ci) {
     for (int i = 0; i < arguments.argc; ++i) {
