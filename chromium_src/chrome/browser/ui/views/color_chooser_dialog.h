@@ -23,13 +23,15 @@ class ColorChooserDialog
   ColorChooserDialog(views::ColorChooserListener* listener,
                      SkColor initial_color,
                      gfx::NativeWindow owning_window);
-  virtual ~ColorChooserDialog();
 
   // BaseShellDialog:
-  virtual bool IsRunning(gfx::NativeWindow owning_window) const override;
-  virtual void ListenerDestroyed() override;
+  bool IsRunning(gfx::NativeWindow owning_window) const override;
+  void ListenerDestroyed() override;
 
  private:
+  ~ColorChooserDialog() override;
+  friend class base::RefCountedThreadSafe<ColorChooserDialog>;
+
   struct ExecuteOpenParams {
     ExecuteOpenParams(SkColor color, RunState run_state, HWND owner);
     SkColor color;

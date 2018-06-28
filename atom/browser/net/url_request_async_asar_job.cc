@@ -20,7 +20,8 @@ URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
 void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
   std::string file_path;
   if (options->is_dict()) {
-    auto path_value = options->FindKeyOfType("path", base::Value::Type::STRING);
+    auto* path_value =
+        options->FindKeyOfType("path", base::Value::Type::STRING);
     if (path_value)
       file_path = path_value->GetString();
   } else if (options->is_string()) {
