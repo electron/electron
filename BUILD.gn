@@ -30,6 +30,12 @@ declare_args() {
   enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = false
+
+  is_mas_build = false
+}
+
+if (is_mas_build) {
+  assert(is_mac, "It doesn't make sense to build a MAS build on a non-mac platform")
 }
 
 filenames_gypi = exec_script(
@@ -354,7 +360,12 @@ static_library("electron_lib") {
     ]
   }
 
-  if (is_mac) {
+
+  if (is_mas_build) {
+    deps -= [ "//third_party/crashpad/crashpad/client" ]
+  }
+
+  if (is_mac && !is_mas_build) {
     libs = [
       "Squirrel.framework",
       "ReactiveCocoa.framework",
@@ -363,10 +374,8 @@ static_library("electron_lib") {
     cflags_objcc = [
       "-F", rebase_path("external_binaries", root_build_dir)
     ]
-    if (true) { # !is_mas_build
-      # ReactiveCocoa which is used by Squirrel requires using __weak.
-      cflags_objcc += [ "-fobjc-weak" ]
-    }
+    # ReactiveCocoa which is used by Squirrel requires using __weak.
+    cflags_objcc += [ "-fobjc-weak" ]
   }
   if (is_linux) {
     sources += filenames_gypi.lib_sources_linux
@@ -375,11 +384,21 @@ static_library("electron_lib") {
   if (is_win) {
     sources += filenames_gypi.lib_sources_win
   }
+  if (is_mas_build) {
+    sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
+    sources -= [
+      "atom/browser/auto_updater_mac.mm",
+      "atom/common/crash_reporter/crash_reporter_mac.h",
+      "atom/common/crash_reporter/crash_reporter_mac.mm",
+    ]
+    defines += [ "MAS_BUILD" ]
+  }
 }
 
 if (is_mac) {
   electron_framework_name = electron_product_name + " Framework"
   electron_helper_name = electron_product_name + " Helper"
+  electron_login_helper_name = electron_product_name + " Login Helper"
   electron_framework_version = "A"
   electron_mac_bundle_id = "com.$electron_company_abbr.$electron_project_name"
 
@@ -424,7 +443,7 @@ if (is_mac) {
     ]
   }
 
-  bundle_data("electron_framework_helpers") {
+  bundle_data("electron_crashpad_helper") {
     sources = [
       "$root_out_dir/crashpad_handler",
     ]
@@ -446,11 +465,13 @@ if (is_mac) {
     deps = [
       "//base",
       "//base:i18n",
-      ":electron_framework_helpers",
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_xibs",
     ]
+    if (!is_mas_build) {
+      deps += [ ":electron_crashpad_helper" ]
+    }
     info_plist = "atom/common/resources/mac/Info.plist"
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
@@ -503,10 +524,14 @@ if (is_mac) {
     sources = [
       "$root_out_dir/$electron_framework_name.framework",
       "$root_out_dir/$electron_helper_name.app",
-      "external_binaries/Squirrel.framework",
-      "external_binaries/ReactiveCocoa.framework",
-      "external_binaries/Mantle.framework",
     ]
+    if (!is_mas_build) {
+      sources += [
+        "external_binaries/Squirrel.framework",
+        "external_binaries/ReactiveCocoa.framework",
+        "external_binaries/Mantle.framework",
+      ]
+    }
     outputs = [
       "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}",
     ]
@@ -514,6 +539,23 @@ if (is_mac) {
       ":electron_framework+link",
       ":electron_helper_app",
     ]
+  }
+
+  mac_app_bundle("electron_login_helper") {
+    output_name = electron_login_helper_name
+    sources = filenames_gypi.login_helper_sources
+    include_dirs = [ "." ]
+    libs = [ "AppKit.framework" ]
+    info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
+    extra_substitutions = [
+      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper"
+    ]
+  }
+
+  bundle_data("electron_login_helper_app") {
+    public_deps = [ ":electron_login_helper" ]
+    sources = [ "$root_out_dir/$electron_login_helper_name.app" ]
+    outputs = [ "{{bundle_contents_dir}}/Library/LoginItems" ]
   }
 
   bundle_data("electron_app_resources") {
@@ -562,6 +604,9 @@ if (is_mac) {
       ":electron_app_framework_bundle_data",
       ":electron_app_resources",
     ]
+    if (is_mas_build) {
+      deps += [ ":electron_login_helper_app" ]
+    }
     info_plist = "atom/browser/resources/mac/Info.plist"
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id",
