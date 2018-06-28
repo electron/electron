@@ -31,7 +31,7 @@ class BrowserWindow : public TopLevelWindow,
                                    NativeWindow* native_window);
 
   void SetBackgroundColor(const std::string& color_name) override;
-  std::string& GetBackgroundColor();
+  std::string GetBackgroundColor();
 
   base::WeakPtr<BrowserWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -105,7 +105,7 @@ class BrowserWindow : public TopLevelWindow,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
 
-  std::string& background_color;
+  std::string background_color;
 
 #if defined(OS_MACOSX)
   std::vector<DraggableRegion> draggable_regions_;
