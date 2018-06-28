@@ -79,6 +79,20 @@ describe('chromium feature', () => {
     })
   })
 
+  describe('loading jquery', () => {
+    it('does not crash', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: false
+        }
+      })
+      w.webContents.once('did-finish-load', () => { done() })
+      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
+      w.loadURL(`file://${fixtures}/pages/jquery.html`)
+    })
+  })
+
   describe('navigator.webkitGetUserMedia', () => {
     it('calls its callbacks', (done) => {
       navigator.webkitGetUserMedia({
