@@ -1,9 +1,13 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 
 const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, Menu, MenuItem} = remote
 const {sortMenuItems} = require('../lib/browser/api/menu-utils')
 const {closeWindow} = require('./window-helpers')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 describe('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
@@ -14,17 +18,17 @@ describe('Menu module', () => {
           extra: 'field'
         }
       ])
-      assert.equal(menu.items[0].extra, 'field')
+      expect(menu.items[0].extra).to.equal('field')
     })
 
     it('does not modify the specified template', () => {
       const template = [{label: 'text', submenu: [{label: 'sub'}]}]
       const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
-      assert.deepStrictEqual(result, template)
+      expect(result).to.deep.equal(template)
     })
 
     it('does not throw exceptions for undefined/null values', () => {
-      assert.doesNotThrow(() => {
+      expect(() => {
         Menu.buildFromTemplate([
           {
             label: 'text',
@@ -35,7 +39,7 @@ describe('Menu module', () => {
             accelerator: null
           }
         ])
-      })
+      }).to.not.throw()
     })
 
     describe('Menu sorting and building', () => {
@@ -66,7 +70,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('resolves cycles by ignoring things that conflict', () => {
@@ -98,7 +102,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('ignores references to commands that do not exist', () => {
@@ -128,7 +132,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
@@ -178,7 +182,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
       })
 
@@ -220,7 +224,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it("moves all items in the moving item's group", () => {
@@ -268,7 +272,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it("ignores positions relative to commands that don't exist", () => {
@@ -318,7 +322,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('can handle recursive group merging', () => {
@@ -356,7 +360,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('can merge multiple groups when given a list of before/after commands', () => {
@@ -394,7 +398,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
 
         it('can merge multiple groups based on both before/after commands', () => {
@@ -434,7 +438,7 @@ describe('Menu module', () => {
             }
           ]
 
-          assert.deepEqual(sortMenuItems(items), expected)
+          expect(sortMenuItems(items)).to.deep.equal(expected)
         })
       })
 
@@ -453,9 +457,9 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menu.items[0].label, 'one')
-        assert.equal(menu.items[1].label, 'two')
-        assert.equal(menu.items[2].label, 'three')
+        expect(menu.items[0].label).to.equal('one')
+        expect(menu.items[1].label).to.equal('two')
+        expect(menu.items[2].label).to.equal('three')
       })
 
       it('should position after existing item', () => {
@@ -474,9 +478,9 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menu.items[0].label, 'one')
-        assert.equal(menu.items[1].label, 'two')
-        assert.equal(menu.items[2].label, 'three')
+        expect(menu.items[0].label).to.equal('one')
+        expect(menu.items[1].label).to.equal('two')
+        expect(menu.items[2].label).to.equal('three')
       })
 
       it('should filter excess menu separators', () => {
@@ -494,10 +498,10 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menuOne.items.length, 3)
-        assert.equal(menuOne.items[0].label, 'a')
-        assert.equal(menuOne.items[1].label, 'b')
-        assert.equal(menuOne.items[2].label, 'c')
+        expect(menuOne.items).to.have.length(3)
+        expect(menuOne.items[0].label).to.equal('a')
+        expect(menuOne.items[1].label).to.equal('b')
+        expect(menuOne.items[2].label).to.equal('c')
 
         const menuTwo = Menu.buildFromTemplate([
           {
@@ -517,10 +521,10 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menuTwo.items.length, 3)
-        assert.equal(menuTwo.items[0].label, 'a')
-        assert.equal(menuTwo.items[1].label, 'b')
-        assert.equal(menuTwo.items[2].label, 'c')
+        expect(menuTwo.items).to.have.length(3)
+        expect(menuTwo.items[0].label).to.equal('a')
+        expect(menuTwo.items[1].label).to.equal('b')
+        expect(menuTwo.items[2].label).to.equal('c')
       })
 
       it('should continue inserting items at next index when no specifier is present', () => {
@@ -544,11 +548,11 @@ describe('Menu module', () => {
           }
         ])
 
-        assert.equal(menu.items[0].label, 'one')
-        assert.equal(menu.items[1].label, 'two')
-        assert.equal(menu.items[2].label, 'three')
-        assert.equal(menu.items[3].label, 'four')
-        assert.equal(menu.items[4].label, 'five')
+        expect(menu.items[0].label).to.equal('one')
+        expect(menu.items[1].label).to.equal('two')
+        expect(menu.items[2].label).to.equal('three')
+        expect(menu.items[3].label).to.equal('four')
+        expect(menu.items[4].label).to.equal('five')
       })
     })
   })
@@ -568,7 +572,7 @@ describe('Menu module', () => {
         }
       ])
       const fsc = menu.getMenuItemById('fullScreen')
-      assert.equal(menu.items[0].submenu.items[0], fsc)
+      expect(menu.items[0].submenu.items[0]).to.equal(fsc)
     })
   })
 
@@ -583,10 +587,10 @@ describe('Menu module', () => {
       const item = new MenuItem({ label: 'inserted' })
 
       menu.insert(1, item)
-      assert.equal(menu.items[0].label, '1')
-      assert.equal(menu.items[1].label, 'inserted')
-      assert.equal(menu.items[2].label, '2')
-      assert.equal(menu.items[3].label, '3')
+      expect(menu.items[0].label).to.equal('1')
+      expect(menu.items[1].label).to.equal('inserted')
+      expect(menu.items[2].label).to.equal('2')
+      expect(menu.items[3].label).to.equal('3')
     })
   })
 
@@ -601,10 +605,10 @@ describe('Menu module', () => {
       const item = new MenuItem({ label: 'inserted' })
       menu.append(item)
 
-      assert.equal(menu.items[0].label, '1')
-      assert.equal(menu.items[1].label, '2')
-      assert.equal(menu.items[2].label, '3')
-      assert.equal(menu.items[3].label, 'inserted')
+      expect(menu.items[0].label).to.equal('1')
+      expect(menu.items[1].label).to.equal('2')
+      expect(menu.items[2].label).to.equal('3')
+      expect(menu.items[3].label).to.equal('inserted')
     })
   })
 
@@ -628,9 +632,9 @@ describe('Menu module', () => {
     })
 
     it('throws an error if options is not an object', () => {
-      assert.throws(() => {
+      expect(() => {
         menu.popup()
-      }, /Options must be an object/)
+      }).to.throw(/Options must be an object/)
     })
 
     it('should emit menu-will-show event', (done) => {
@@ -647,17 +651,17 @@ describe('Menu module', () => {
     it('returns immediately', () => {
       const input = {window: w, x: 100, y: 101}
       const output = menu.popup(input)
-      assert.equal(output.x, input.x)
-      assert.equal(output.y, input.y)
-      assert.equal(output.browserWindow, input.window)
+      expect(output.x).to.equal(input.x)
+      expect(output.y).to.equal(input.y)
+      expect(output.browserWindow).to.equal(input.window)
     })
 
     it('works without a given BrowserWindow and options', () => {
       const {browserWindow, x, y} = menu.popup({x: 100, y: 101})
 
-      assert.equal(browserWindow.constructor.name, 'BrowserWindow')
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      expect(browserWindow.constructor.name).to.equal('BrowserWindow')
+      expect(x).to.equal(100)
+      expect(y).to.equal(101)
     })
 
     it('works with a given BrowserWindow, options and callback', (done) => {
@@ -668,8 +672,8 @@ describe('Menu module', () => {
         callback: () => done()
       })
 
-      assert.equal(x, 100)
-      assert.equal(y, 101)
+      expect(x).to.equal(100)
+      expect(y).to.equal(101)
       menu.closePopup()
     })
 
@@ -687,12 +691,12 @@ describe('Menu module', () => {
       ])
 
       Menu.setApplicationMenu(menu)
-      assert.notEqual(Menu.getApplicationMenu(), null)
+      expect(Menu.getApplicationMenu()).to.not.be.null()
     })
 
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null)
-      assert.equal(Menu.getApplicationMenu(), null)
+      expect(Menu.getApplicationMenu()).to.be.null()
     })
   })
 })
