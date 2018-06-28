@@ -39,6 +39,9 @@ HBITMAP CopyBitmap(HBITMAP bitmap) {
   return ret;
 }
 
+const TCHAR DesktopNotificationController::class_name_[] =
+      TEXT("DesktopNotificationController");
+
 HINSTANCE DesktopNotificationController::RegisterWndClasses() {
   // We keep a static `module` variable which serves a dual purpose:
   // 1. Stores the HINSTANCE where the window classes are registered,
