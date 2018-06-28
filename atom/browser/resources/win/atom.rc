@@ -1,6 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "grit\\ui_unscaled_resources.h"
+#include "ui\\resources\\grit\\ui_unscaled_resources.h"
 #include "resource.h"
 #include <winresrc.h>
 #ifdef IDC_STATIC

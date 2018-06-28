@@ -163,9 +163,6 @@
           ],
         }],  # OS!="mac"
         ['OS=="win"', {
-          'include_dirs': [
-            '<(libchromiumcontent_dir)/gen/ui/resources',
-          ],
           'msvs_settings': {
             'VCManifestTool': {
               'EmbedManifest': 'true',
