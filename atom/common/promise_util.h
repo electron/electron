@@ -34,13 +34,13 @@ class Promise {
   }
 
   template <typename T>
-  v8::Maybe<bool> Resolve(T* value) {
+  v8::Maybe<bool> Resolve(const T& value) {
     return GetInner()->Resolve(isolate()->GetCurrentContext(),
                                mate::ConvertToV8(isolate(), value));
   }
 
   template <typename T>
-  v8::Maybe<bool> Reject(T* value) {
+  v8::Maybe<bool> Reject(const T& value) {
     return GetInner()->Reject(isolate()->GetCurrentContext(),
                               mate::ConvertToV8(isolate(), value));
   }

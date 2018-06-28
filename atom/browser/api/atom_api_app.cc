@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/gpuinfo_manager.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/login_handler.h"
@@ -548,6 +549,7 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
+
   base::ProcessId pid = base::GetCurrentProcId();
   auto process_metric = std::make_unique<atom::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, pid,
@@ -1148,6 +1150,25 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
+util::Promise* App::GetGPUInfo(v8::Isolate* isolate,
+                               const std::string& info_type) {
+  const auto gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
+  const auto& promise = new util::Promise(isolate);
+  if ((info_type != "basic" && info_type != "complete") ||
+      !gpu_data_manager->GpuAccessAllowed(nullptr)) {
+    promise->Reject();
+    return promise;
+  }
+
+  const auto& info_mgr = GPUInfoManager::GetInstance();
+  if (info_type == "complete") {
+    info_mgr->FetchCompleteInfo(promise);
+  } else /* (info_type == "basic") */ {
+    info_mgr->FetchBasicInfo(promise);
+  }
+  return promise;
+}
+
 void App::EnableMixedSandbox(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
     args->ThrowError(
@@ -1270,6 +1291,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
+      .SetMethod("getGPUInfo", &App::GetGPUInfo)
 // TODO(juturu): Remove in 2.0, deprecate before then with warnings
 #if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)

@@ -804,6 +804,37 @@ describe('app module', () => {
     })
   })
 
+  describe('getGPUInfo() API', () => {
+    it('succeeds with basic GPUInfo', (done) => {
+      app.getGPUInfo('basic').then((gpuInfo) => {
+        // Devices information is always present in the available info
+        const activeDevice = gpuInfo.gpuDevice.find((device) => {
+          return device.active === true
+        })
+        expect(activeDevice).to.be.an('object')
+        expect(activeDevice)
+      .to.have.property('deviceId')
+      .that.is.a('number')
+      .not.lessThan(0)
+        done()
+      })
+    })
+
+    it('succeeds with complete GPUInfo', (done) => {
+      app.getGPUInfo('complete').then((completeInfo) => {
+        // Driver version is present in the complete info
+        expect(completeInfo.auxAttributes.driverVersion).to.be.a('string').that.has.length.greaterThan(0)
+        done()
+      })
+    })
+
+    it('fails for invalid info_type', (done) => {
+      app.getGPUInfo('invalid').catch(() => {
+        done()
+      })
+    })
+  })
+
   describe('mixed sandbox option', () => {
     let appProcess = null
     let server = null
