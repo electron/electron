@@ -3,6 +3,8 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("build/asar.gni")
 import("build/npm.gni")
+import("//pdf/features.gni")
+import("//build/config/win/manifest.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -237,6 +239,12 @@ static_library("electron_lib") {
     "brightray",
     "build/node",
   ]
+  if (enable_desktop_capturer) {
+    deps += [ "//third_party/webrtc/modules/desktop_capture" ]
+  }
+  if (enable_pdf) {
+    deps += [ "//pdf" ]
+  }
   if (is_mac) {
     deps += [
       "//ui/accelerated_widget_mac",
@@ -376,6 +384,9 @@ static_library("electron_lib") {
   if (is_linux) {
     sources += filenames_gypi.lib_sources_linux
     sources += filenames_gypi.lib_sources_nss
+  }
+  if (is_win) {
+    sources += filenames_gypi.lib_sources_win
   }
 }
 
@@ -573,15 +584,22 @@ if (is_mac) {
       "@executable_path/../Frameworks",
     ]
   }
-}
+} else {
+  windows_manifest("electron_app_manifest") {
+    sources = [
+      as_invoker_manifest,
+      common_controls_manifest,
+      default_compatibility_manifest,
+    ]
+  }
 
-if (is_linux) {
   executable("electron_app") {
     output_name = electron_project_name
     sources = filenames_gypi.app_sources
     include_dirs = [ "." ]
     deps = [
       ":app2asar",
+      ":electron_app_manifest",
       ":electron_lib",
       ":js2asar",
       "//build/config:exe_and_shlib_deps",
@@ -590,6 +608,45 @@ if (is_linux) {
       "//content/shell:pak",
       "//third_party/WebKit/public:image_resources",
       "//ui/strings",
+      "//content:sandbox_helper_win",
     ]
+
+    public_deps = [
+      "//tools/v8_context_snapshot:v8_context_snapshot",
+    ]
+
+    if (is_win) {
+      sources += [
+        # TODO: we should be generating our .rc files more like how chrome does
+        "atom/browser/resources/win/resources.h",
+        "atom/browser/resources/win/atom.ico",
+        "atom/browser/resources/win/atom.rc",
+      ]
+
+      deps += [
+        # TODO: move non-windows specific deps into the non-windows-specific list
+        "//third_party/breakpad:breakpad_handler",
+        "//third_party/breakpad:breakpad_sender",
+        "//third_party/webrtc/system_wrappers:metrics_default",
+        "//ui/native_theme:native_theme_browser",
+        "//ui/shell_dialogs",
+        "//ui/views/controls/webview",
+        "//ui/wm",
+        "//ui/wm/public",
+      ]
+
+      libs = [
+        "wtsapi32.lib",
+        "uiautomationcore.lib",
+      ]
+
+      configs += [ "//build/config/win:windowed" ]
+
+      ldflags = [
+        # TODO: these are for win7 compatibility, are there other things we need to do for that?
+        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-L1-1-0.DLL",
+        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL",
+      ]
+    }
   }
 }
