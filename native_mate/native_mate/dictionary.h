@@ -35,11 +35,12 @@ class Dictionary {
  public:
   Dictionary();
   Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
+  Dictionary(const Dictionary& other);
   virtual ~Dictionary();
 
   static Dictionary CreateEmpty(v8::Isolate* isolate);
 
-  template<typename T>
+  template <typename T>
   bool Get(const base::StringPiece& key, T* out) const {
     // Check for existence before getting, otherwise this method will always
     // returns true when T == v8::Local<v8::Value>.
@@ -54,33 +55,30 @@ class Dictionary {
     return ConvertFromV8(isolate_, val, out);
   }
 
-  template<typename T>
+  template <typename T>
   bool GetHidden(const base::StringPiece& key, T* out) const {
     v8::Local<v8::Context> context = isolate_->GetCurrentContext();
     v8::Local<v8::Private> privateKey =
         v8::Private::ForApi(isolate_, StringToV8(isolate_, key));
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result =
-        GetHandle()->HasPrivate(context, privateKey);
+    v8::Maybe<bool> result = GetHandle()->HasPrivate(context, privateKey);
     if (internal::IsTrue(result) &&
         GetHandle()->GetPrivate(context, privateKey).ToLocal(&value))
       return ConvertFromV8(isolate_, value, out);
     return false;
   }
 
-  template<typename T>
+  template <typename T>
   bool Set(const base::StringPiece& key, const T& val) {
     v8::Local<v8::Value> v8_value;
     if (!TryConvertToV8(isolate_, val, &v8_value))
       return false;
-    v8::Maybe<bool> result =
-        GetHandle()->Set(isolate_->GetCurrentContext(),
-                         StringToV8(isolate_, key),
-                         v8_value);
+    v8::Maybe<bool> result = GetHandle()->Set(
+        isolate_->GetCurrentContext(), StringToV8(isolate_, key), v8_value);
     return !result.IsNothing() && result.FromJust();
   }
 
-  template<typename T>
+  template <typename T>
   bool SetHidden(const base::StringPiece& key, T val) {
     v8::Local<v8::Value> v8_value;
     if (!TryConvertToV8(isolate_, val, &v8_value))
@@ -93,20 +91,18 @@ class Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
-  template<typename T>
+  template <typename T>
   bool SetReadOnly(const base::StringPiece& key, T val) {
     v8::Local<v8::Value> v8_value;
     if (!TryConvertToV8(isolate_, val, &v8_value))
       return false;
-    v8::Maybe<bool> result =
-        GetHandle()->DefineOwnProperty(isolate_->GetCurrentContext(),
-                                       StringToV8(isolate_, key),
-                                       v8_value,
-                                       v8::ReadOnly);
+    v8::Maybe<bool> result = GetHandle()->DefineOwnProperty(
+        isolate_->GetCurrentContext(), StringToV8(isolate_, key), v8_value,
+        v8::ReadOnly);
     return !result.IsNothing() && result.FromJust();
   }
 
-  template<typename T>
+  template <typename T>
   bool SetMethod(const base::StringPiece& key, const T& callback) {
     return GetHandle()->Set(
         StringToV8(isolate_, key),
@@ -132,10 +128,9 @@ class Dictionary {
   v8::Local<v8::Object> object_;
 };
 
-template<>
+template <>
 struct Converter<Dictionary> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    Dictionary val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, Dictionary val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      Dictionary* out);

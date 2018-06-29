@@ -6,9 +6,9 @@
 #define NATIVE_MATE_WRAPPABLE_H_
 
 #include "base/bind.h"
-#include "native_mate/converter.h"
-#include "native_mate/constructor.h"
 #include "gin/per_isolate_data.h"
+#include "native_mate/constructor.h"
+#include "native_mate/converter.h"
 
 namespace mate {
 
@@ -18,25 +18,25 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
 
 }  // namespace internal
 
-template<typename T>
+template <typename T>
 class Wrappable : public WrappableBase {
  public:
   Wrappable() {}
 
-  template<typename Sig>
+  template <typename Sig>
   static void SetConstructor(v8::Isolate* isolate,
                              const base::Callback<Sig>& constructor) {
     v8::Local<v8::FunctionTemplate> templ = CreateFunctionTemplate(
         isolate, base::Bind(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
-    gin::PerIsolateData::From(isolate)->SetFunctionTemplate(
-        &kWrapperInfo, templ);
+    gin::PerIsolateData::From(isolate)->SetFunctionTemplate(&kWrapperInfo,
+                                                            templ);
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
-    auto data = gin::PerIsolateData::From(isolate);
+    auto* data = gin::PerIsolateData::From(isolate);
     auto templ = data->GetFunctionTemplate(&kWrapperInfo);
     if (templ.IsEmpty()) {
       templ = v8::FunctionTemplate::New(isolate);
@@ -55,8 +55,9 @@ class Wrappable : public WrappableBase {
     // |wrapper| may be empty in some extreme cases, e.g., when
     // Object.prototype.constructor is overwritten.
     v8::Local<v8::Object> wrapper;
-    if (!templ->InstanceTemplate()->NewInstance(
-            isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+    if (!templ->InstanceTemplate()
+             ->NewInstance(isolate->GetCurrentContext())
+             .ToLocal(&wrapper)) {
       // The current wrappable object will be no longer managed by V8. Delete
       // this now.
       delete this;
@@ -72,8 +73,8 @@ class Wrappable : public WrappableBase {
 };
 
 // static
-template<typename T>
-gin::WrapperInfo Wrappable<T>::kWrapperInfo = { gin::kEmbedderNativeGin };
+template <typename T>
+gin::WrapperInfo Wrappable<T>::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 // This converter handles any subclass of Wrappable.
 template <typename T>
@@ -88,8 +89,8 @@ struct Converter<T*,
   }
 
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
-    *out = static_cast<T*>(static_cast<WrappableBase*>(
-        internal::FromV8Impl(isolate, val)));
+    *out = static_cast<T*>(
+        static_cast<WrappableBase*>(internal::FromV8Impl(isolate, val)));
     return *out != nullptr;
   }
 };

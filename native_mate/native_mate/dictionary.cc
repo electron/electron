@@ -6,18 +6,14 @@
 
 namespace mate {
 
-Dictionary::Dictionary()
-    : isolate_(NULL) {
-}
+Dictionary::Dictionary() : isolate_(NULL) {}
 
-Dictionary::Dictionary(v8::Isolate* isolate,
-                       v8::Local<v8::Object> object)
-    : isolate_(isolate),
-      object_(object) {
-}
+Dictionary::Dictionary(v8::Isolate* isolate, v8::Local<v8::Object> object)
+    : isolate_(isolate), object_(object) {}
 
-Dictionary::~Dictionary() {
-}
+Dictionary::Dictionary(const Dictionary& other) = default;
+
+Dictionary::~Dictionary() = default;
 
 Dictionary Dictionary::CreateEmpty(v8::Isolate* isolate) {
   return Dictionary(isolate, v8::Object::New(isolate));
@@ -28,7 +24,7 @@ v8::Local<v8::Object> Dictionary::GetHandle() const {
 }
 
 v8::Local<v8::Value> Converter<Dictionary>::ToV8(v8::Isolate* isolate,
-                                                  Dictionary val) {
+                                                 Dictionary val) {
   return val.GetHandle();
 }
 
