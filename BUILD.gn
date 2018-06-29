@@ -63,12 +63,8 @@ config("features") {
 }
 
 config("native_mate_config") {
-  include_dirs = [
-    "//third_party/native_mate",
-  ]
-  cflags_cc = [
-    "-Wno-deprecated-declarations",
-  ]
+  include_dirs = [ "native_mate" ]
+  cflags_cc = [ "-Wno-deprecated-declarations" ]
   cflags_objcc = cflags_cc
 }
 
@@ -81,25 +77,25 @@ source_set("native_mate") {
   ]
   public_configs = [ ":native_mate_config" ]
   sources = [
-    "//third_party/native_mate/native_mate/arguments.cc",
-    "//third_party/native_mate/native_mate/arguments.h",
-    "//third_party/native_mate/native_mate/compat.h",
-    "//third_party/native_mate/native_mate/constructor.h",
-    "//third_party/native_mate/native_mate/converter.cc",
-    "//third_party/native_mate/native_mate/converter.h",
-    "//third_party/native_mate/native_mate/dictionary.cc",
-    "//third_party/native_mate/native_mate/dictionary.h",
-    "//third_party/native_mate/native_mate/function_template.cc",
-    "//third_party/native_mate/native_mate/function_template.h",
-    "//third_party/native_mate/native_mate/handle.h",
-    "//third_party/native_mate/native_mate/object_template_builder.cc",
-    "//third_party/native_mate/native_mate/object_template_builder.h",
-    "//third_party/native_mate/native_mate/persistent_dictionary.cc",
-    "//third_party/native_mate/native_mate/persistent_dictionary.h",
-    "//third_party/native_mate/native_mate/scoped_persistent.h",
-    "//third_party/native_mate/native_mate/wrappable.cc",
-    "//third_party/native_mate/native_mate/wrappable.h",
-    "//third_party/native_mate/native_mate/wrappable_base.h",
+    "native_mate/native_mate/arguments.cc",
+    "native_mate/native_mate/arguments.h",
+    "native_mate/native_mate/compat.h",
+    "native_mate/native_mate/constructor.h",
+    "native_mate/native_mate/converter.cc",
+    "native_mate/native_mate/converter.h",
+    "native_mate/native_mate/dictionary.cc",
+    "native_mate/native_mate/dictionary.h",
+    "native_mate/native_mate/function_template.cc",
+    "native_mate/native_mate/function_template.h",
+    "native_mate/native_mate/handle.h",
+    "native_mate/native_mate/object_template_builder.cc",
+    "native_mate/native_mate/object_template_builder.h",
+    "native_mate/native_mate/persistent_dictionary.cc",
+    "native_mate/native_mate/persistent_dictionary.h",
+    "native_mate/native_mate/scoped_persistent.h",
+    "native_mate/native_mate/wrappable.cc",
+    "native_mate/native_mate/wrappable.h",
+    "native_mate/native_mate/wrappable_base.h",
   ]
 }
 

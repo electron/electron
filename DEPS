@@ -5,8 +5,6 @@ vars = {
     '0628cd925e513bfd873524621a91834b366899f1',
   'node_version':
     'v10.2.0-35-g4879332def',
-  'native_mate_revision':
-    '875706f66008e03a0c7a699de16d7e2bde0efb90',
 
   'chromium_git':
     'https://chromium.googlesource.com',
@@ -29,8 +27,6 @@ deps = {
     (Var("electron_git")) + '/libchromiumcontent.git@' + (Var("libchromiumcontent_revision")),
   'src/third_party/electron_node':
     (Var("electron_git")) + '/node.git@' + (Var("node_version")),
-  'src/third_party/native_mate':
-    (Var("electron_git")) + '/native-mate.git@' + (Var("native_mate_revision")),
 }
 
 hooks = [
