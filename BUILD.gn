@@ -254,7 +254,7 @@ static_library("electron_lib") {
   }
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk3",
+      "//build/config/linux/gtk",
       "//chrome/browser/ui/libgtkui",
       "//device/bluetooth",
       "//ui/events/devices/x11",
