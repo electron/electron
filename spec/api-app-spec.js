@@ -802,7 +802,6 @@ describe('app module', () => {
 
       const types = []
       for (const {memory, pid, type, cpu} of appMetrics) {
-        
         expect(memory).to.have.own.property('workingSetSize').that.is.a('number').to.be.above(0, 'working set size is not > 0')
         expect(memory).to.have.own.property('privateBytes').that.is.a('number').to.be.gte(0, 'private bytes is not >= 0')
         expect(memory).to.have.own.property('sharedBytes').that.is.a('number').to.be.gte(0, 'shared bytes is not >= 0')
