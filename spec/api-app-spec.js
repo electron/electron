@@ -803,8 +803,8 @@ describe('app module', () => {
       const types = []
       for (const {memory, pid, type, cpu} of appMetrics) {
         expect(memory.workingSetSize).to.be.above(0, 'working set size is not > 0')
-        expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
-        expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
+        expect(memory.privateBytes).to.be.gte(0, 'private bytes is not >= 0')
+        expect(memory.sharedBytes).to.be.gte(0, 'shared bytes is not >= 0')
         expect(pid).to.be.above(0, 'pid is not > 0')
         expect(type).to.be.a('string').that.is.not.empty()
 
