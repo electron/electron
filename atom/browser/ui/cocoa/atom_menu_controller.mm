@@ -123,7 +123,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [menu_ cancelTracking];
     isMenuOpen_ = NO;
     model_->MenuWillClose();
-    closeCallback.Run();
+    if (!closeCallback.is_null()) {
+      BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, closeCallback);
+    }
   }
 }
 
