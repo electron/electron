@@ -16,15 +16,16 @@ class PersistentDictionary : public Dictionary {
  public:
   PersistentDictionary();
   PersistentDictionary(v8::Isolate* isolate, v8::Local<v8::Object> object);
-  virtual ~PersistentDictionary();
+  PersistentDictionary(const PersistentDictionary& other);
+  ~PersistentDictionary() override;
 
   v8::Local<v8::Object> GetHandle() const override;
 
  private:
-  scoped_refptr<RefCountedPersistent<v8::Object> > handle_;
+  scoped_refptr<RefCountedPersistent<v8::Object>> handle_;
 };
 
-template<>
+template <>
 struct Converter<PersistentDictionary> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,

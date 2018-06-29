@@ -6,8 +6,7 @@
 
 namespace mate {
 
-PersistentDictionary::PersistentDictionary() {
-}
+PersistentDictionary::PersistentDictionary() {}
 
 PersistentDictionary::PersistentDictionary(v8::Isolate* isolate,
                                            v8::Local<v8::Object> object)
@@ -15,8 +14,10 @@ PersistentDictionary::PersistentDictionary(v8::Isolate* isolate,
   isolate_ = isolate;
 }
 
-PersistentDictionary::~PersistentDictionary() {
-}
+PersistentDictionary::PersistentDictionary(const PersistentDictionary& other) =
+    default;
+
+PersistentDictionary::~PersistentDictionary() {}
 
 v8::Local<v8::Object> PersistentDictionary::GetHandle() const {
   return handle_->NewHandle();
