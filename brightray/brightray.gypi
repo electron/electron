@@ -155,10 +155,7 @@
               'WEBRTC_MAC',
              ],
           }],  # OS=="mac"
-          ['OS=="win"', {
-            'include_dirs': [
-              '<(libchromiumcontent_src_dir)/third_party/wtl/include',
-            ],
+          ['OS=="win"', {            
             'defines': [
               '_WIN32_WINNT=0x0602',
               'WINVER=0x0602',
