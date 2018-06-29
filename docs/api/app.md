@@ -573,7 +573,7 @@ Returns the type of the currently running activity.
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
-### `app.importCertificate(options, callback)` _LINUX_
+### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
   * `certificate` String - Path for the pkcs12 file.
