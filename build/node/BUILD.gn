@@ -72,6 +72,9 @@ action("gyp_node") {
     # This has _gn suffixed otherwise it gets overridden by a shlib_suffix
     # that's set in node's gyp files. Don't ask me 🤷
     "-D", "shlib_suffix_gn=" + shlib_suffix,
+    "-D", "llvm_dir=" + rebase_path("//third_party/llvm-build/Release+Asserts"),
+    "-D", "libcxx_dir=" + rebase_path("//buildtools/third_party/libc++"),
+    "-D", "libcxxabi_dir=" + rebase_path("//buildtools/third_party/libc++abi"),
     "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
     "-fninja",
     rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
