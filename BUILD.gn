@@ -271,8 +271,6 @@ static_library("electron_lib") {
     ]
   }
   defines = [
-    # This is defined in skia/skia_common.gypi.
-    "SK_SUPPORT_LEGACY_GETTOPDEVICE",
     # Disable warnings for g_settings_list_schemas.
     "GLIB_DISABLE_DEPRECATION_WARNINGS",
 
@@ -280,9 +278,6 @@ static_library("electron_lib") {
     "USING_V8_SHARED",
     "USING_V8_PLATFORM_SHARED",
     "USING_V8_BASE_SHARED",
-
-    # Enables SkBitmap size 64 operations
-    #"SK_SUPPORT_LEGACY_SAFESIZE64", # doesn't seem to be needed to build?
   ]
   include_dirs = [
     "chromium_src",
