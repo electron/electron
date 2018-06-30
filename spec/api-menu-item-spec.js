@@ -1,18 +1,22 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 
 const {remote} = require('electron')
 const {BrowserWindow, app, Menu, MenuItem} = remote
 const roles = require('../lib/browser/api/menu-item-roles')
 const {closeWindow} = require('./window-helpers')
 
+const {expect} = chai
+chai.use(dirtyChai)
+
 describe('MenuItems', () => {
   describe('MenuItem.click', () => {
-    it('should be called with the item object passed', (done) => {
+    it('should be called with the item object passed', done => {
       const menu = Menu.buildFromTemplate([{
         label: 'text',
         click: (item) => {
-          assert.equal(item.constructor.name, 'MenuItem')
-          assert.equal(item.label, 'text')
+          expect(item.constructor.name).to.equal('MenuItem')
+          expect(item.label).to.equal('text')
           done()
         }
       }])
@@ -27,9 +31,9 @@ describe('MenuItems', () => {
         type: 'checkbox'
       }])
 
-      assert.equal(menu.items[0].checked, false)
+      expect(menu.items[0].checked).to.be.false()
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      assert.equal(menu.items[0].checked, true)
+      expect(menu.items[0].checked).to.be.true()
     })
 
     it('clicking an radio item should always make checked property true', () => {
@@ -39,9 +43,9 @@ describe('MenuItems', () => {
       }])
 
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      assert.equal(menu.items[0].checked, true)
+      expect(menu.items[0].checked).to.be.true()
       menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      assert.equal(menu.items[0].checked, true)
+      expect(menu.items[0].checked).to.be.true()
     })
 
     describe('MenuItem group properties', () => {
@@ -96,7 +100,7 @@ describe('MenuItems', () => {
         const groups = findRadioGroups(template)
 
         groups.forEach(g => {
-          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.begin])
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
         })
       })
 
@@ -109,12 +113,12 @@ describe('MenuItems', () => {
           const groupId = menu.items[g.begin].groupId
 
           // groupId should be previously unused
-          assert(!usedGroupIds.has(groupId))
+          expect(usedGroupIds.has(groupId)).to.be.false()
           usedGroupIds.add(groupId)
 
           // everything in the group should have the same id
           for (let i = g.begin; i < g.end; ++i) {
-            assert.equal(menu.items[i].groupId, groupId)
+            expect(menu.items[i].groupId).to.equal(groupId)
           }
         })
       })
@@ -124,13 +128,13 @@ describe('MenuItems', () => {
 
         const groups = findRadioGroups(template)
         groups.forEach(g => {
-          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [])
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([])
 
           menu.items[g.begin].checked = true
-          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.begin])
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
 
           menu.items[g.end - 1].checked = true
-          assert.deepEqual(findChecked(menu.items, g.begin, g.end), [g.end - 1])
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.end - 1])
         })
       })
     })
@@ -142,7 +146,7 @@ describe('MenuItems', () => {
       let item = new MenuItem({role: 'asdfghjkl'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)
-      assert.equal(false, canExecute)
+      expect(canExecute).to.be.false()
 
       closeWindow(win).then(() => { win = null })
     })
@@ -152,7 +156,7 @@ describe('MenuItems', () => {
       let item = new MenuItem({role: 'reload'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)
-      assert.equal(true, canExecute)
+      expect(canExecute).to.be.true()
 
       closeWindow(win).then(() => { win = null })
     })
@@ -162,7 +166,7 @@ describe('MenuItems', () => {
       let item = new MenuItem({role: 'resetzoom'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)
-      assert.equal(true, canExecute)
+      expect(canExecute).to.be.true()
 
       closeWindow(win).then(() => { win = null })
     })
@@ -173,31 +177,31 @@ describe('MenuItems', () => {
       const item = new MenuItem({label: 'item'})
 
       const commandId = item.commandId
-      assert(commandId)
+      expect(commandId).to.not.be.undefined()
       item.commandId = `${commandId}-modified`
-      assert.equal(item.commandId, commandId)
+      expect(item.commandId).to.equal(commandId)
     })
   })
 
   describe('MenuItem with invalid type', () => {
     it('throws an exception', () => {
-      assert.throws(() => {
+      expect(() => {
         Menu.buildFromTemplate([{
           label: 'text',
           type: 'not-a-type'
         }])
-      }, /Unknown menu item type: not-a-type/)
+      }).to.throw(/Unknown menu item type: not-a-type/)
     })
   })
 
   describe('MenuItem with submenu type and missing submenu', () => {
     it('throws an exception', () => {
-      assert.throws(() => {
+      expect(() => {
         Menu.buildFromTemplate([{
           label: 'text',
           type: 'submenu'
         }])
-      }, /Invalid submenu/)
+      }).to.throw(/Invalid submenu/)
     })
   })
 
@@ -227,7 +231,7 @@ describe('MenuItems', () => {
 
       for (let role in roleList) {
         const item = new MenuItem({role})
-        assert.equal(item.getDefaultRoleAccelerator(), undefined)
+        expect(item.getDefaultRoleAccelerator()).to.be.undefined()
       }
     })
 
@@ -256,7 +260,7 @@ describe('MenuItems', () => {
 
       for (let role in roleList) {
         const item = new MenuItem({role})
-        assert.equal(item.label, roleList[role])
+        expect(item.label).to.equal(roleList[role])
       }
     })
 
@@ -285,7 +289,7 @@ describe('MenuItems', () => {
 
       for (let role in roleList) {
         const item = new MenuItem({role})
-        assert.equal(item.getDefaultRoleAccelerator(), roleList[role])
+        expect(item.getDefaultRoleAccelerator()).to.equal(roleList[role])
       }
     })
 
@@ -296,9 +300,9 @@ describe('MenuItems', () => {
         accelerator: 'D'
       })
 
-      assert.equal(item.label, 'Custom Close!')
-      assert.equal(item.accelerator, 'D')
-      assert.equal(item.getDefaultRoleAccelerator(), 'CommandOrControl+W')
+      expect(item.label).to.equal('Custom Close!')
+      expect(item.accelerator).to.equal('D')
+      expect(item.getDefaultRoleAccelerator()).to.equal('CommandOrControl+W')
     })
   })
 
@@ -306,24 +310,24 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({role: 'editMenu'})
 
-      assert.equal(item.label, 'Edit')
-      assert.equal(item.submenu.items[0].role, 'undo')
-      assert.equal(item.submenu.items[1].role, 'redo')
-      assert.equal(item.submenu.items[2].type, 'separator')
-      assert.equal(item.submenu.items[3].role, 'cut')
-      assert.equal(item.submenu.items[4].role, 'copy')
-      assert.equal(item.submenu.items[5].role, 'paste')
+      expect(item.label).to.equal('Edit')
+      expect(item.submenu.items[0].role).to.equal('undo')
+      expect(item.submenu.items[1].role).to.equal('redo')
+      expect(item.submenu.items[2].type).to.equal('separator')
+      expect(item.submenu.items[3].role).to.equal('cut')
+      expect(item.submenu.items[4].role).to.equal('copy')
+      expect(item.submenu.items[5].role).to.equal('paste')
 
       if (process.platform === 'darwin') {
-        assert.equal(item.submenu.items[6].role, 'pasteandmatchstyle')
-        assert.equal(item.submenu.items[7].role, 'delete')
-        assert.equal(item.submenu.items[8].role, 'selectall')
+        expect(item.submenu.items[6].role).to.equal('pasteandmatchstyle')
+        expect(item.submenu.items[7].role).to.equal('delete')
+        expect(item.submenu.items[8].role).to.equal('selectall')
       }
 
       if (process.platform === 'win32') {
-        assert.equal(item.submenu.items[6].role, 'delete')
-        assert.equal(item.submenu.items[7].type, 'separator')
-        assert.equal(item.submenu.items[8].role, 'selectall')
+        expect(item.submenu.items[6].role).to.equal('delete')
+        expect(item.submenu.items[7].type).to.equal('separator')
+        expect(item.submenu.items[8].role).to.equal('selectall')
       }
     })
 
@@ -334,8 +338,8 @@ describe('MenuItems', () => {
           role: 'close'
         }]
       })
-      assert.equal(item.label, 'Edit')
-      assert.equal(item.submenu.items[0].role, 'close')
+      expect(item.label).to.equal('Edit')
+      expect(item.submenu.items[0].role).to.equal('close')
     })
   })
 
@@ -343,13 +347,13 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({role: 'windowMenu'})
 
-      assert.equal(item.label, 'Window')
-      assert.equal(item.submenu.items[0].role, 'minimize')
-      assert.equal(item.submenu.items[1].role, 'close')
+      expect(item.label).to.equal('Window')
+      expect(item.submenu.items[0].role).to.equal('minimize')
+      expect(item.submenu.items[1].role).to.equal('close')
 
       if (process.platform === 'darwin') {
-        assert.equal(item.submenu.items[2].type, 'separator')
-        assert.equal(item.submenu.items[3].role, 'front')
+        expect(item.submenu.items[2].type).to.equal('separator')
+        expect(item.submenu.items[3].role).to.equal('front')
       }
     })
 
@@ -359,8 +363,8 @@ describe('MenuItems', () => {
         submenu: [{role: 'copy'}]
       })
 
-      assert.equal(item.label, 'Window')
-      assert.equal(item.submenu.items[0].role, 'copy')
+      expect(item.label).to.equal('Window')
+      expect(item.submenu.items[0].role).to.equal('copy')
     })
   })
 
@@ -379,10 +383,10 @@ describe('MenuItems', () => {
         overrideProperty: 'oops not allowed'
       }))
 
-      assert.equal(menu.items[0].customProp, 'foo')
-      assert.equal(menu.items[0].submenu.items[0].label, 'item 1')
-      assert.equal(menu.items[0].submenu.items[0].customProp, 'bar')
-      assert.equal(typeof menu.items[0].submenu.items[0].overrideProperty, 'function')
+      expect(menu.items[0].customProp).to.equal('foo')
+      expect(menu.items[0].submenu.items[0].label).to.equal('item 1')
+      expect(menu.items[0].submenu.items[0].customProp).to.equal('bar')
+      expect(menu.items[0].submenu.items[0].overrideProperty).to.be.a('function')
     })
   })
 })
