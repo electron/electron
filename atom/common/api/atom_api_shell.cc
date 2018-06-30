@@ -10,6 +10,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "atom/common/platform_util.h"
+#include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
 
 #if defined(OS_WIN)
@@ -43,64 +44,47 @@ struct Converter<base::win::ShortcutOperation> {
 
 namespace {
 
-typedef v8::CopyablePersistentTraits<v8::Promise::Resolver>::CopyablePersistent
-  PromiseResolverPersistent;
-
 class MoveItemToTrashRequest {
  public:
   static MoveItemToTrashRequest* Create(v8::Isolate* isolate,
-                                        mate::Arguments* args,
                                         const base::FilePath& file_path) {
-    return new MoveItemToTrashRequest(isolate, args, file_path);
+    return new MoveItemToTrashRequest(isolate, file_path);
   }
 
-  MoveItemToTrashRequest(v8::Isolate* isolate,
-                         mate::Arguments* args,
-                         const base::FilePath& file_path)
-    : isolate_(isolate), args_(args), file_path_(file_path) {}
+  MoveItemToTrashRequest(v8::Isolate* isolate, const base::FilePath& file_path)
+      : isolate_(isolate), file_path_(file_path) {}
 
   ~MoveItemToTrashRequest() = default;
 
   void Start() {
-    v8::Locker locker(isolate_);
-    v8::Isolate::Scope isolate_scope(isolate_);
-    v8::HandleScope handle_scope(isolate_);
+    promise_ = new atom::util::Promise(isolate_);
 
-    resolver_handle_.Reset(isolate_, v8::Promise::Resolver::New(isolate_));
-
-    args_->Return(resolver_handle_.Get(isolate_)->GetPromise().As<v8::Value>());
-
-    auto callback = base::BindOnce(
-      &MoveItemToTrashRequest::OnMoveItemToTrashFinished,
-      base::Unretained(this));
+    auto callback =
+        base::BindOnce(&MoveItemToTrashRequest::OnMoveItemToTrashFinished,
+                       base::Unretained(this));
     platform_util::MoveItemToTrash(file_path_, std::move(callback));
   }
 
   void OnMoveItemToTrashFinished(bool result) {
-    v8::Locker locker(isolate_);
-    v8::Isolate::Scope isolate_scope(isolate_);
-    v8::HandleScope handle_scope(isolate_);
-
     if (result) {
-      resolver_handle_.Get(isolate_)->Resolve(v8::Undefined(isolate_));
+      promise_->Resolve();
     } else {
       auto message = "Underlying command returned error message code";
-      auto error = v8::Exception::Error(mate::StringToV8(isolate_, message));
-      resolver_handle_.Get(isolate_)->Reject(error);
+      promise_->RejectWithErrorMessage(message);
     }
 
     delete this;
   }
 
+  atom::util::Promise* Promise() { return promise_; }
+
  private:
   v8::Isolate* isolate_;
-  mate::Arguments* args_;
-  PromiseResolverPersistent resolver_handle_;
+  atom::util::Promise* promise_ = nullptr;
   base::FilePath file_path_;
 
   DISALLOW_COPY_AND_ASSIGN(MoveItemToTrashRequest);
 };
-
 
 void OnOpenExternalFinished(
     v8::Isolate* isolate,
@@ -142,8 +126,9 @@ bool OpenExternal(
 
 void MoveItemToTrash(const base::FilePath& url, mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  auto request = MoveItemToTrashRequest::Create(isolate, args, url);
+  auto request = MoveItemToTrashRequest::Create(isolate, url);
   request->Start();
+  args->Return(request->Promise());
 }
 
 #if defined(OS_WIN)
