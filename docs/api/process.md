@@ -98,6 +98,11 @@ The `process` object has the following methods:
 
 Causes the main thread of the current process crash.
 
+### `process.getCreationTime()`
+
+Returns [`number`]
+Indicates the creation time of the electron application.
+
 ### `process.getCPUUsage()`
 
 Returns [`CPUUsage`](structures/cpu-usage.md)

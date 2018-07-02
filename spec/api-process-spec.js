@@ -1,6 +1,13 @@
 const assert = require('assert')
 
 describe('process module', () => {
+  describe('process.getCreationTime()', () => {
+    it('returns a creation time', () => {
+      const creationTime = process.getCreationTime()
+      assert.equal(typeof creationTime, 'number')
+    })
+  })
+
   describe('process.getCPUUsage()', () => {
     it('returns a cpu usage object', () => {
       const cpuUsage = process.getCPUUsage()
