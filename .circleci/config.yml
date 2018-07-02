@@ -544,7 +544,6 @@ jobs:
       TARGET_ARCH: x64
     macos:
         xcode: "9.0"
-    resource_class: xlarge
     steps:
       - checkout
       - run:
@@ -643,7 +642,6 @@ jobs:
       MAS_BUILD: 1
     macos:
         xcode: "9.0"
-    resource_class: xlarge
     steps:
       - checkout
       - run:
