@@ -291,7 +291,7 @@ describe('session module', () => {
     })
 
     const isPathEqual = (path1, path2) => {
-      return path.relative(path1, path2) === '';
+      return path.relative(path1, path2) === ''
     }
     const assertDownload = (event, state, url, mimeType,
                                    receivedBytes, totalBytes, disposition,
