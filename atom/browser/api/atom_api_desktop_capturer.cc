@@ -61,9 +61,13 @@ void StartHandlingTask(bool capture_window,
                        const gfx::Size& thumbnail_size,
                        atom::api::DesktopCapturer* cap) {
 #if defined(OS_WIN)
-  cap->using_directx_capturer_ =
-      content::desktop_capture::CreateDesktopCaptureOptions()
-          .allow_directx_capturer();
+  if (content::desktop_capture::CreateDesktopCaptureOptions()
+      .allow_directx_capturer()) {
+    // DxgiDuplicatorController should be alive in this scope according to
+    // screen_capturer_win.cc.
+    auto duplicator = DxgiDuplicatorController::Instance();
+    cap->using_directx_capturer_ = ScreenCapturerWinDirectx::IsSupported();
+  }
 #endif  // defined(OS_WIN)
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
       capture_screen ? content::desktop_capture::CreateScreenCapturer()
