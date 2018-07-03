@@ -757,6 +757,33 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setWindowButtonVisibility()', () => {
+    before(function () {
+      if (process.platform !== 'darwin') {
+        this.skip()
+      }
+    })
+
+    it('does not throw', () => {
+      assert.doesNotThrow(() => {
+        w.setWindowButtonVisibility(true)
+        w.setWindowButtonVisibility(false)
+      })
+    })
+
+    it('throws with custom title bar buttons', () => {
+      assert.throws(() => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          titleBarStyle: 'customButtonsOnHover',
+          frame: false
+        })
+        w.setWindowButtonVisibility(true)
+      }, /Not supported for this window/)
+    })
+  })
+
   describe('BrowserWindow.setVibrancy(type)', () => {
     it('allows setting, changing, and removing the vibrancy', () => {
       assert.doesNotThrow(() => {

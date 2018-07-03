@@ -884,8 +884,9 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       // Resize the window to accomodate the _entire_ screen size
       fullscreenFrame.size.height -=
           [[[NSApplication sharedApplication] mainMenu] menuBarHeight];
-    } else {
-      // No need to hide the title, but we should still hide the window buttons
+    } else if (!window_button_visibility_.has_value()) {
+      // Lets keep previous behaviour - hide window controls in titled
+      // fullscreen mode when not specified otherwise.
       [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
       [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
       [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
@@ -904,12 +905,16 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     if (!fullscreen_window_title()) {
       // Restore the titlebar
       SetStyleMask(true, NSTitledWindowMask);
-    } else {
-      // Show the window buttons
-      [[window standardWindowButton:NSWindowZoomButton] setHidden:NO];
-      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:NO];
-      [[window standardWindowButton:NSWindowCloseButton] setHidden:NO];
     }
+
+    // Restore window controls visibility state
+    const bool window_button_hidden = !window_button_visibility_.value_or(true);
+    [[window standardWindowButton:NSWindowZoomButton]
+        setHidden:window_button_hidden];
+    [[window standardWindowButton:NSWindowMiniaturizeButton]
+        setHidden:window_button_hidden];
+    [[window standardWindowButton:NSWindowCloseButton]
+        setHidden:window_button_hidden];
 
     [window setFrame:original_frame_ display:YES animate:YES];
 
@@ -1145,6 +1150,19 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
     if (@available(macOS 10.12, *))
       [window_ addTabbedWindow:window->GetNativeWindow() ordered:NSWindowAbove];
   }
+  return true;
+}
+
+bool NativeWindowMac::SetWindowButtonVisibility(bool visible) {
+  if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
+    return false;
+  }
+
+  window_button_visibility_ = visible;
+
+  [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!visible];
+  [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!visible];
+  [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
   return true;
 }
 
