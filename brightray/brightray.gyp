@@ -268,6 +268,20 @@
                 ],
               },
             }],
+            # In the OSX 10.10 SDK, CoreBluetooth became a top level framework.
+            # Previously, it was nested in IOBluetooth. In order for Chrome to run on
+            # OSes older than OSX 10.10, the top level CoreBluetooth framework must be
+            # weakly linked.
+            ['mac_sdk=="10.10" and libchromiumcontent_component==0', {
+              'direct_dependent_settings': {
+                'xcode_settings': {
+                  'OTHER_LDFLAGS': [
+                    '-weak_framework',
+                    'CoreBluetooth',
+                  ],
+                },
+              },
+            }],
           ]
         }],  # OS=="mac"
         ['OS=="win"', {
