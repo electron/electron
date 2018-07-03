@@ -1342,6 +1342,13 @@ Same as `webContents.showDefinitionForSelection()`.
 
 Changes window icon.
 
+#### `win.setWindowButtonVisibility(visible)` _macOS_
+
+* `visible` Boolean
+
+Sets whether the window traffic light buttons should be visible. This has no
+effect when `titleBarStyle` is set to `customButtonsOnHover`.
+
 #### `win.setAutoHideMenuBar(hide)`
 
 * `hide` Boolean

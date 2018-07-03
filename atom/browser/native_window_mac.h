@@ -119,6 +119,8 @@ class NativeWindowMac : public NativeWindow {
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
 
+  bool SetWindowButtonVisibility(bool visible) override;
+
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items) override;
@@ -192,6 +194,10 @@ class NativeWindowMac : public NativeWindow {
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = NORMAL;
+
+  // The visibility mode of window button controls when explicitly set through
+  // setWindowButtonVisibility().
+  base::Optional<bool> window_button_visibility_;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;
