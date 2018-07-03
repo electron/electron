@@ -1474,6 +1474,16 @@ Adds a window as a tab on this window, after the tab for the window instance.
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
+#### `win.setWindowControlsVisibility(visible)` _macOS_
+
+* `visible` Boolean
+
+Sets whether the window controls buttons should be visible.
+
+#### `win.AreWindowControlsVisible()` _macOS_
+
+Returns `Boolean` - Whether window controls are visible.
+
 #### `win.setTouchBar(touchBar)` _macOS_ _Experimental_
 
 * `touchBar` TouchBar
