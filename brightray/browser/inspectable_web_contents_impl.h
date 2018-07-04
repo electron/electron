@@ -83,6 +83,7 @@ class InspectableWebContentsImpl
                            int stream_id) override;
   void SetIsDocked(const DispatchCallback& callback, bool is_docked) override;
   void OpenInNewTab(const std::string& url) override;
+  void ShowItemInFolder(const std::string& file_system_path) override;
   void SaveToFile(const std::string& url,
                   const std::string& content,
                   bool save_as) override;
