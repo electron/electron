@@ -301,7 +301,7 @@ describe('session module', () => {
                                    filename, port, savePath, isCustom) => {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
-      assert.equal(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf')), true)
+      assert.ok(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf')))
       if (isCustom) {
         assert.equal(url, `${protocolName}://item`)
       } else {
