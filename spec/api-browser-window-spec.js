@@ -1588,7 +1588,7 @@ describe('BrowserWindow module', () => {
 
         const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
         const [, id] = await emittedOnce(ipcMain, 'webview-dom-ready')
-        expect(webContents.id).to.equal(id)
+        assert.equal(webContents.id, id)
       })
     })
 
