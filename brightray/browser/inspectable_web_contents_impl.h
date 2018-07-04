@@ -101,10 +101,23 @@ class InspectableWebContentsImpl
                     const std::string& file_system_path,
                     const std::string& query) override;
   void SetWhitelistedShortcuts(const std::string& message) override;
+  void SetEyeDropperActive(bool active) override;
+  void ShowCertificateViewer(const std::string& cert_chain) override;
   void ZoomIn() override;
   void ZoomOut() override;
   void ResetZoom() override;
+  void SetDevicesDiscoveryConfig(
+      bool discover_usb_devices,
+      bool port_forwarding_enabled,
+      const std::string& port_forwarding_config,
+      bool network_discovery_enabled,
+      const std::string& network_discovery_config) override;
   void SetDevicesUpdatesEnabled(bool enabled) override;
+  void PerformActionOnRemotePage(const std::string& page_id,
+                                 const std::string& action) override;
+  void OpenRemotePage(const std::string& browser_id,
+                      const std::string& url) override;
+  void OpenNodeFrontend() override;
   void DispatchProtocolMessageFromDevToolsFrontend(
       const std::string& message) override;
   void SendJsonRequest(const DispatchCallback& callback,
@@ -115,6 +128,7 @@ class InspectableWebContentsImpl
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;
   void ClearPreferences() override;
+  void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
 
