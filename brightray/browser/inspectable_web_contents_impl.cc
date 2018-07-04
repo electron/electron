@@ -7,6 +7,7 @@
 
 #include "brightray/browser/inspectable_web_contents_impl.h"
 
+#include "atom/common/platform_util.h"
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -484,6 +485,14 @@ void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
 }
 
 void InspectableWebContentsImpl::OpenInNewTab(const std::string& url) {}
+
+void InspectableWebContentsImpl::ShowItemInFolder(
+    const std::string& file_system_path) {
+  if (file_system_path.empty())
+    return;
+  base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
+  platform_util::ShowItemInFolder(path);
+}
 
 void InspectableWebContentsImpl::SaveToFile(const std::string& url,
                                             const std::string& content,

@@ -168,6 +168,7 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandlerWithCallback("setIsDocked", &Delegate::SetIsDocked,
                                  delegate);
   d->RegisterHandler("openInNewTab", &Delegate::OpenInNewTab, delegate);
+  d->RegisterHandler("showItemInFolder", &Delegate::ShowItemInFolder, delegate);
   d->RegisterHandler("save", &Delegate::SaveToFile, delegate);
   d->RegisterHandler("append", &Delegate::AppendToFile, delegate);
   d->RegisterHandler("requestFileSystems", &Delegate::RequestFileSystems,
