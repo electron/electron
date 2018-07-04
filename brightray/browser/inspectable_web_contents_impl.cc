@@ -552,6 +552,10 @@ void InspectableWebContentsImpl::SearchInPath(
 void InspectableWebContentsImpl::SetWhitelistedShortcuts(
     const std::string& message) {}
 
+void InspectableWebContentsImpl::SetEyeDropperActive(bool active) {}
+void InspectableWebContentsImpl::ShowCertificateViewer(
+    const std::string& cert_chain) {}
+
 void InspectableWebContentsImpl::ZoomIn() {
   double new_level = GetNextZoomLevel(GetDevToolsZoomLevel(), false);
   SetZoomLevelForWebContents(GetDevToolsWebContents(), new_level);
@@ -569,7 +573,23 @@ void InspectableWebContentsImpl::ResetZoom() {
   UpdateDevToolsZoomLevel(0.);
 }
 
+void InspectableWebContentsImpl::SetDevicesDiscoveryConfig(
+    bool discover_usb_devices,
+    bool port_forwarding_enabled,
+    const std::string& port_forwarding_config,
+    bool network_discovery_enabled,
+    const std::string& network_discovery_config) {}
+
 void InspectableWebContentsImpl::SetDevicesUpdatesEnabled(bool enabled) {}
+
+void InspectableWebContentsImpl::PerformActionOnRemotePage(
+    const std::string& page_id,
+    const std::string& action) {}
+
+void InspectableWebContentsImpl::OpenRemotePage(const std::string& browser_id,
+                                                const std::string& url) {}
+
+void InspectableWebContentsImpl::OpenNodeFrontend() {}
 
 void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     const std::string& message) {
@@ -617,6 +637,8 @@ void InspectableWebContentsImpl::ClearPreferences() {
   DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
   update.Get()->Clear();
 }
+
+void InspectableWebContentsImpl::ConnectionReady() {}
 
 void InspectableWebContentsImpl::RegisterExtensionsAPI(
     const std::string& origin,
