@@ -46,7 +46,7 @@ test_script:
       Write-Output "Skipping tests for release build"
     } else {
       Write-Output "Running tests for debug build"
-      python script\test.py --ci
+      python script\test.py --ci --rebuild_native_modules
       if ($LASTEXITCODE -ne '0') {
         throw "Tests failed with exit code $LASTEXITCODE"
       } else {
