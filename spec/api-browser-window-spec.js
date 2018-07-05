@@ -2761,8 +2761,7 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): [Ch66] Enable the tests.
-      xdescribe('for a valid extension', () => {
+      describe('for a valid extension', () => {
         const extensionName = 'foo'
 
         const removeExtension = () => {
@@ -2849,8 +2848,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable.
-    xit('works when used with partitions', (done) => {
+    it('works when used with partitions', (done) => {
       if (w != null) {
         w.destroy()
       }
