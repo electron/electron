@@ -2778,8 +2778,7 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      // TODO(alexeykuzmin): [Ch66] Enable the tests.
-      xdescribe('for a valid extension', () => {
+      describe('for a valid extension', () => {
         const extensionName = 'foo'
 
         const removeExtension = () => {
@@ -2820,7 +2819,8 @@ describe('BrowserWindow module', () => {
               expect(this.message).to.have.own.property('tabId')
               expect(this.message.tabId).to.equal(w.webContents.id)
             })
-            it('has "i18nString" with proper contents', function () {
+            // TODO(zcbena): [Ch66] Enable the tests.
+            xit('has "i18nString" with proper contents', function () {
               expect(this.message).to.have.own.property('i18nString')
               expect(this.message.i18nString).to.equal('foo - bar (baz)')
             })
@@ -2866,8 +2866,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable.
-    xit('works when used with partitions', (done) => {
+    it('works when used with partitions', (done) => {
       if (w != null) {
         w.destroy()
       }

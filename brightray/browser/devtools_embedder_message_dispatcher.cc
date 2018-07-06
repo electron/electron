@@ -168,6 +168,7 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandlerWithCallback("setIsDocked", &Delegate::SetIsDocked,
                                  delegate);
   d->RegisterHandler("openInNewTab", &Delegate::OpenInNewTab, delegate);
+  d->RegisterHandler("showItemInFolder", &Delegate::ShowItemInFolder, delegate);
   d->RegisterHandler("save", &Delegate::SaveToFile, delegate);
   d->RegisterHandler("append", &Delegate::AppendToFile, delegate);
   d->RegisterHandler("requestFileSystems", &Delegate::RequestFileSystems,
@@ -183,11 +184,21 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("searchInPath", &Delegate::SearchInPath, delegate);
   d->RegisterHandler("setWhitelistedShortcuts",
                      &Delegate::SetWhitelistedShortcuts, delegate);
+  d->RegisterHandler("setEyeDropperActive", &Delegate::SetEyeDropperActive,
+                     delegate);
+  d->RegisterHandler("showCertificateViewer", &Delegate::ShowCertificateViewer,
+                     delegate);
   d->RegisterHandler("zoomIn", &Delegate::ZoomIn, delegate);
   d->RegisterHandler("zoomOut", &Delegate::ZoomOut, delegate);
   d->RegisterHandler("resetZoom", &Delegate::ResetZoom, delegate);
+  d->RegisterHandler("setDevicesDiscoveryConfig",
+                     &Delegate::SetDevicesDiscoveryConfig, delegate);
   d->RegisterHandler("setDevicesUpdatesEnabled",
                      &Delegate::SetDevicesUpdatesEnabled, delegate);
+  d->RegisterHandler("performActionOnRemotePage",
+                     &Delegate::PerformActionOnRemotePage, delegate);
+  d->RegisterHandler("openRemotePage", &Delegate::OpenRemotePage, delegate);
+  d->RegisterHandler("openNodeFrontend", &Delegate::OpenNodeFrontend, delegate);
   d->RegisterHandler("dispatchProtocolMessage",
                      &Delegate::DispatchProtocolMessageFromDevToolsFrontend,
                      delegate);
@@ -198,6 +209,7 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("setPreference", &Delegate::SetPreference, delegate);
   d->RegisterHandler("removePreference", &Delegate::RemovePreference, delegate);
   d->RegisterHandler("clearPreferences", &Delegate::ClearPreferences, delegate);
+  d->RegisterHandler("connectionReady", &Delegate::ConnectionReady, delegate);
   d->RegisterHandler("registerExtensionsAPI", &Delegate::RegisterExtensionsAPI,
                      delegate);
   return d;
