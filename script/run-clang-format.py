@@ -317,7 +317,7 @@ def main():
                     for line in outs:
                         patch_file.write(line)
                     patch_file.write('\n')
-                    print("To apply this patch, run:\n\n  $ git apply {}".format(patch_file.name))
+                    print("\nTo apply this patch, run:\n$ git apply {}\n".format(patch_file.name))
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
     return retcode
