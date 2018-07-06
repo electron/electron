@@ -13,6 +13,8 @@
 #include "atom/common/promise_util.h"
 #include "native_mate/dictionary.h"
 
+#include "content/public/browser/browser_thread.h"
+
 #if defined(OS_WIN)
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
@@ -47,41 +49,58 @@ namespace {
 class MoveItemToTrashRequest {
  public:
   static MoveItemToTrashRequest* Create(v8::Isolate* isolate,
+                                        atom::util::Promise* promise,
                                         const base::FilePath& file_path) {
-    return new MoveItemToTrashRequest(isolate, file_path);
+    return new MoveItemToTrashRequest(isolate, promise, file_path);
   }
 
-  MoveItemToTrashRequest(v8::Isolate* isolate, const base::FilePath& file_path)
-      : isolate_(isolate), file_path_(file_path) {}
+  MoveItemToTrashRequest(v8::Isolate* isolate,
+                         atom::util::Promise* promise,
+                         const base::FilePath& file_path)
+      : isolate_(isolate), promise_(promise), file_path_(file_path) {}
 
   ~MoveItemToTrashRequest() = default;
 
   void Start() {
-    promise_ = new atom::util::Promise(isolate_);
-
-    auto callback =
-        base::BindOnce(&MoveItemToTrashRequest::OnMoveItemToTrashFinished,
-                       base::Unretained(this));
-    platform_util::MoveItemToTrash(file_path_, std::move(callback));
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::BindOnce(&MoveItemToTrashRequest::StartOnUIThread,
+                       base::Unretained(this)));
   }
 
   void OnMoveItemToTrashFinished(bool result) {
-    if (result) {
+    result_ = result;
+
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::BindOnce(&MoveItemToTrashRequest::ResolveOnUIThread,
+                       base::Unretained(this)));
+  }
+
+ private:
+  void ResolveOnUIThread() {
+    if (result_) {
       promise_->Resolve();
     } else {
       auto message = "Underlying command returned error message code";
       promise_->RejectWithErrorMessage(message);
     }
 
-    delete this;
+    // delete this;
   }
 
-  atom::util::Promise* Promise() { return promise_; }
+  void StartOnUIThread() {
+    auto callback =
+        base::BindOnce(&MoveItemToTrashRequest::OnMoveItemToTrashFinished,
+                       base::Unretained(this));
+    platform_util::MoveItemToTrash(file_path_, std::move(callback));
+  }
 
- private:
   v8::Isolate* isolate_;
-  atom::util::Promise* promise_ = nullptr;
+  mate::Arguments* args_;
+  atom::util::Promise* promise_;
   base::FilePath file_path_;
+  bool result_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MoveItemToTrashRequest);
 };
@@ -124,11 +143,13 @@ bool OpenExternal(
   return platform_util::OpenExternal(url, activate);
 }
 
-void MoveItemToTrash(const base::FilePath& url, mate::Arguments* args) {
+atom::util::Promise* MoveItemToTrash(const base::FilePath& url,
+                                     mate::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  auto request = MoveItemToTrashRequest::Create(isolate, url);
+  auto promise = new atom::util::Promise(isolate);
+  auto request = MoveItemToTrashRequest::Create(isolate, promise, url);
   request->Start();
-  args->Return(request->Promise());
+  return promise;
 }
 
 #if defined(OS_WIN)
