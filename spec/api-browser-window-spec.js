@@ -2819,8 +2819,7 @@ describe('BrowserWindow module', () => {
               expect(this.message).to.have.own.property('tabId')
               expect(this.message.tabId).to.equal(w.webContents.id)
             })
-            // TODO(zcbena): [Ch66] Enable the tests.
-            xit('has "i18nString" with proper contents', function () {
+            it('has "i18nString" with proper contents', function () {
               expect(this.message).to.have.own.property('i18nString')
               expect(this.message.i18nString).to.equal('foo - bar (baz)')
             })
