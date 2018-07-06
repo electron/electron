@@ -67,16 +67,29 @@ steps:
 - task: PublishTestResults@2
   displayName: Publish Test Results
   inputs:
-    testResultsFiles: 'test-results.xml'
-    searchFolder: junit
-  condition: and(always(), ne(variables['ELECTRON_RELEASE'], '1'))
+    testResultsFiles: '**/test-*.xml'
+  condition: and(always(), eq(variables['MOCHA_FILE'], 'test-results.xml'))
 
 - task: kasunkodagoda.slack-notification.slack-notification-task.SlackNotification@3
-  displayName: Post Slack Notification
+  displayName: Post Slack Notification on Failure
   inputs:
     SlackApiToken: '$(slack_token)'
     Channel: '#bot-nightly-releases'
-    Message: '$(Build.DefinitionName)-$(Build.BuildNumber) finished with a $(Agent.JobStatus) status.'
-  condition: and(always(), eq(variables['Build.Reason'], 'Schedule'))
+    Message: 'Build failed for *<$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)|$(Build.DefinitionName)>* nightly build.'
+    Title: '$(Build.DefinitionName) nightly build results'
+    TitleLink: '$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)'
+    Color: '#FC5C3C'
+  condition: and(failed(), eq(variables['Build.Reason'], 'Schedule'))
+
+- task: kasunkodagoda.slack-notification.slack-notification-task.SlackNotification@3
+  displayName: Post Slack Notification on Success
+  inputs:
+    SlackApiToken: '$(slack_token)'
+    Channel: '#bot-nightly-releases'
+    Message: 'Build succeeded for *<$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)|$(Build.DefinitionName)>* nightly build.'
+    Title: '$(Build.DefinitionName) nightly build results'
+    TitleLink: '$(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)'
+    Color: 'good'
+  condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
 
 - task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3

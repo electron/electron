@@ -1,3 +1,24 @@
+notify-slack-failure: &notify-slack-failure
+  run:
+    name: Send a slack notification on failure
+    command: |
+      if [ "$NIGHTLY_BUILD" == "true" ]; then
+        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        curl -g -H "Content-Type: application/json" -X POST \
+        -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
+      fi
+    when: on_fail
+notify-slack-success: &notify-slack-success
+  run:
+    name: Send a slack notification on success
+    command: |
+      if [ "$NIGHTLY_BUILD" == "true" ]; then
+        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        curl -g -H "Content-Type: application/json" -X POST \
+        -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
+      fi
+    when: on_success
+
 build-steps: &build-steps
   steps:
     - checkout
@@ -109,6 +130,8 @@ build-steps: &build-steps
           if [ "$CREATE_TYPESCRIPT_DEFS" == "true" ]; then
             npm run create-typescript-definitions
           fi
+    - <<: *notify-slack-failure
+    - <<: *notify-slack-success
     - persist_to_workspace:
         root: out
         paths:
@@ -165,6 +188,7 @@ jobs:
     environment:
       TARGET_ARCH: arm
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: 2xlarge
 
@@ -203,6 +227,7 @@ jobs:
     environment:
       TARGET_ARCH: arm64
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: 2xlarge
 
@@ -219,6 +244,7 @@ jobs:
     environment:
       TARGET_ARCH: ia32
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: xlarge
 
@@ -242,6 +268,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: xlarge
 
@@ -259,6 +286,7 @@ jobs:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+      NIGHTLY_BUILD: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -279,6 +307,7 @@ jobs:
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+      NIGHTLY_BUILD: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -327,12 +356,3 @@ workflows:
       - electron-linux-arm64-release-nightly
       - electron-linux-ia32-release-nightly
       - electron-linux-x64-release-nightly
-
-experimental:
-  notify:
-    branches:
-      only:
-        - master
-        - 2-0-x
-        - 1-8-x
-        - 1-7-x
