@@ -101,7 +101,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true,
-                                        DeprecationStatus::Deprecated);
+                                        Status::Deprecated);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
@@ -137,7 +137,7 @@ WebContentsPreferences::~WebContentsPreferences() {
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
     const base::StringPiece& key,
     bool val,
-    DeprecationStatus status) {
+    Status status) {
   auto* current_value =
       preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
   if (current_value) {
@@ -145,7 +145,7 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
   } else {
     preference_.SetKey(key, base::Value(val));
 
-    if (status == DeprecationStatus::Deprecated && web_contents_) {
+    if (status == Status::Deprecated && web_contents_) {
       auto internal_contents = atom::api::WebContents::CreateFrom(
           v8::Isolate::GetCurrent(), web_contents_);
       internal_contents->Emit("-deprecated-default",

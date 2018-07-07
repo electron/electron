@@ -29,10 +29,7 @@ namespace atom {
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
-  enum DeprecationStatus {
-    Deprecated,
-    Stable,
-  };
+  enum class Status { Deprecated, Stable };
 
   // Get self from WebContents.
   static WebContentsPreferences* From(content::WebContents* web_contents);
@@ -75,10 +72,9 @@ class WebContentsPreferences
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(
-      const base::StringPiece& key,
-      bool val,
-      DeprecationStatus status = DeprecationStatus::Stable);
+  bool SetDefaultBoolIfUndefined(const base::StringPiece& key,
+                                 bool val,
+                                 Status status = Status::Stable);
 
   static std::vector<WebContentsPreferences*> instances_;
 
