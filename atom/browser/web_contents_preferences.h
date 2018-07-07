@@ -29,9 +29,9 @@ namespace atom {
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
-  enum DeprecationStatus {
+  enum class Status {
     Deprecated,
-    Stable,
+    Stable
   };
 
   // Get self from WebContents.
@@ -69,7 +69,7 @@ class WebContentsPreferences
   bool SetDefaultBoolIfUndefined(
       const base::StringPiece& key,
       bool val,
-      DeprecationStatus status = DeprecationStatus::Stable);
+      Status status = Status::Stable);
 
   // Get preferences value as integer possibly coercing it from a string
   bool GetInteger(const base::StringPiece& attribute_name, int* val);

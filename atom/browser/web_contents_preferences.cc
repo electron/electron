@@ -56,7 +56,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
   SetDefaultBoolIfUndefined(options::kExperimentalCanvasFeatures, false);
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true,
-                                        DeprecationStatus::Deprecated);
+                                        Status::Deprecated);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
@@ -92,11 +92,11 @@ WebContentsPreferences::~WebContentsPreferences() {
 bool WebContentsPreferences::SetDefaultBoolIfUndefined(
     const base::StringPiece& key,
     bool val,
-    DeprecationStatus status) {
+    Status status) {
   bool existing;
   if (!dict_.GetBoolean(key, &existing)) {
     dict_.SetBoolean(key, val);
-    if (status == DeprecationStatus::Deprecated && web_contents_) {
+    if (status == Status::Deprecated && web_contents_) {
       auto internal_contents = atom::api::WebContents::CreateFrom(
           v8::Isolate::GetCurrent(), web_contents_);
       internal_contents->Emit("-deprecated-default",
