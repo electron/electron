@@ -274,6 +274,14 @@ describe('BrowserWindow module', () => {
     })
 
     describe('POST navigations', () => {
+      beforeEach(() => {
+        // FIXME: App::CanCreateWindow does not inherit webPreferences
+        //        so it uses deprecated defaults
+        remote.getGlobal('process').throwDeprecation = false
+      })
+      afterEach(() => {
+        remote.getGlobal('process').throwDeprecation = true
+      })
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
       it('supports specifying POST data', (done) => {
