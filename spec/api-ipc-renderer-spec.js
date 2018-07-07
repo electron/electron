@@ -132,7 +132,11 @@ describe('ipc renderer module', () => {
   describe('ipcRenderer.sendTo', () => {
     let contents = null
 
-    beforeEach(() => { contents = webContents.create({}) })
+    beforeEach(() => {
+      contents = webContents.create({
+        nodeIntegration: true
+      })
+    })
 
     afterEach(() => {
       ipcRenderer.removeAllListeners('pong')
@@ -158,7 +162,12 @@ describe('ipc renderer module', () => {
 
   describe('remote listeners', () => {
     it('detaches listeners subscribed to destroyed renderers, and shows a warning', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       w.webContents.once('did-finish-load', () => {
         w.webContents.once('did-finish-load', () => {

@@ -19,7 +19,9 @@ describe('BrowserWindow with affinity module', () => {
         show: false,
         width: 400,
         height: 400,
-        webPreferences: webPrefs || {}
+        webPreferences: Object.assign({
+          nodeIntegration: true
+        }, webPrefs || {})
       })
       w.webContents.on('did-finish-load', () => { resolve(w) })
       w.loadURL(`file://${path.join(fixtures, 'api', 'blank.html')}`)

@@ -37,7 +37,11 @@ describe('TouchBar module', () => {
     let window
 
     beforeEach(() => {
-      window = new BrowserWindow()
+      window = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
     })
 
     afterEach(() => {

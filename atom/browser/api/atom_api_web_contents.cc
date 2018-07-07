@@ -334,9 +334,9 @@ struct WebContents::FrameDispatchHelper {
 
 WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents,
-                         Type type)
+                         Type type,
+                         const mate::Dictionary& options)
     : content::WebContentsObserver(web_contents), type_(type) {
-  const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   if (type == REMOTE) {
     web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
     Init(isolate);
@@ -565,7 +565,13 @@ void WebContents::WebContentsCreated(content::WebContents* source_contents,
                                      content::WebContents* new_contents) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW);
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate());
+  // Merge in parent webcontents options BEFORE we constuct an API web contents
+  // and therefore before we construct a WebPreferences object.  This solves
+  // both a security and deprecation race condition
+  mate::ConvertFromV8(isolate(), GetLastWebPreferences(isolate()), &options);
+  auto api_web_contents = CreateFrom(isolate(), new_contents, BROWSER_WINDOW,
+                                     options);
   Emit("-web-contents-created", api_web_contents, target_url, frame_name);
 }
 
@@ -2107,6 +2113,23 @@ void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
 mate::Handle<WebContents> WebContents::CreateFrom(
     v8::Isolate* isolate,
     content::WebContents* web_contents) {
+  return CreateFrom(isolate, web_contents, REMOTE);
+}
+
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate,
+    content::WebContents* web_contents,
+    Type type) {
+  const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
+
+  return CreateFrom(isolate, web_contents, type, options);
+}
+
+mate::Handle<WebContents> WebContents::CreateFrom(
+    v8::Isolate* isolate,
+    content::WebContents* web_contents,
+    Type type,
+    const mate::Dictionary& options) {
   // We have an existing WebContents object in JS.
   auto* existing = TrackableObject::FromWrappedClass(isolate, web_contents);
   if (existing)
@@ -2114,16 +2137,8 @@ mate::Handle<WebContents> WebContents::CreateFrom(
 
   // Otherwise create a new WebContents wrapper object.
   return mate::CreateHandle(isolate,
-                            new WebContents(isolate, web_contents, REMOTE));
-}
-
-mate::Handle<WebContents> WebContents::CreateFrom(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents,
-    Type type) {
-  // Otherwise create a new WebContents wrapper object.
-  return mate::CreateHandle(isolate,
-                            new WebContents(isolate, web_contents, type));
+                            new WebContents(isolate, web_contents, type,
+                                            options));
 }
 
 // static

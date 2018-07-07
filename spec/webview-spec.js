@@ -25,9 +25,15 @@ describe('<webview> tag', function () {
   let webview = null
   let w = null
 
-  const openTheWindow = async (...args) => {
+  const openTheWindow = async (opts, ...args) => {
     await closeTheWindow()
-    w = new BrowserWindow(...args)
+    w = new BrowserWindow({
+      ...opts,
+      webPreferences: {
+        nodeIntegration: true,
+        ...(opts.webPreferences || {})
+      }
+    }, ...args)
     return w
   }
 
@@ -1383,7 +1389,12 @@ describe('<webview> tag', function () {
       }).then(() => {
         const instance = webview.getAttribute('guestinstance')
 
-        w = new BrowserWindow({ show: false })
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
         w.webContents.once('did-finish-load', () => {
           ipcMain.once('pong', () => {
             assert(!webview.hasAttribute('guestinstance'))

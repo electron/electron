@@ -23,7 +23,8 @@ describe('webContents module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        nodeIntegration: true
       }
     })
   })
@@ -94,7 +95,12 @@ describe('webContents module', () => {
 
   describe('setDevToolsWebContents() API', () => {
     it('sets arbitry webContents as devtools', (done) => {
-      let devtools = new BrowserWindow({show: false})
+      let devtools = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       devtools.webContents.once('dom-ready', () => {
         assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
         devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
@@ -435,7 +441,10 @@ describe('webContents module', () => {
 
     it('can propagate zoom level across same session', (done) => {
       const w2 = new BrowserWindow({
-        show: false
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
       w2.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel1) => {
@@ -459,6 +468,7 @@ describe('webContents module', () => {
       const w2 = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'temp'
         }
       })
@@ -519,7 +529,10 @@ describe('webContents module', () => {
     it('cannot propagate when used with webframe', (done) => {
       let finalZoomLevel = 0
       const w2 = new BrowserWindow({
-        show: false
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
       w2.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel1) => {
@@ -760,6 +773,7 @@ describe('webContents module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: false,
           sandbox: true
         }
       })

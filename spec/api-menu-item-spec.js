@@ -9,6 +9,16 @@ const {closeWindow} = require('./window-helpers')
 const {expect} = chai
 chai.use(dirtyChai)
 
+const createWindow = () =>
+  new BrowserWindow({
+    show: false,
+    width: 200,
+    height: 200,
+    webPreferences: {
+      nodeIntegration: false
+    }
+  })
+
 describe('MenuItems', () => {
   describe('MenuItem.click', () => {
     it('should be called with the item object passed', done => {
@@ -142,7 +152,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem role execution', () => {
     it('does not try to execute roles without a valid role property', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
+      let win = createWindow()
       let item = new MenuItem({role: 'asdfghjkl'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)
@@ -152,7 +162,7 @@ describe('MenuItems', () => {
     })
 
     it('executes roles with native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
+      let win = createWindow()
       let item = new MenuItem({role: 'reload'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)
@@ -162,7 +172,7 @@ describe('MenuItems', () => {
     })
 
     it('execute roles with non-native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
+      let win = createWindow()
       let item = new MenuItem({role: 'resetzoom'})
 
       const canExecute = roles.execute(item.role, win, win.webContents)

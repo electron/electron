@@ -617,7 +617,14 @@ describe('Menu module', () => {
     let menu
 
     beforeEach(() => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w = new BrowserWindow({
+        show: false,
+        width: 200,
+        height: 200,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       menu = Menu.buildFromTemplate([
         {label: '1'},
         {label: '2'},

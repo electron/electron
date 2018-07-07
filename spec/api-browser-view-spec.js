@@ -10,6 +10,13 @@ const {BrowserView, BrowserWindow} = remote
 const {expect} = chai
 chai.use(dirtyChai)
 
+const createBrowserView = () =>
+  new BrowserView({
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+
 describe('BrowserView module', () => {
   let w = null
   let view = null
@@ -20,7 +27,8 @@ describe('BrowserView module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        nodeIntegration: true
       }
     })
   })
@@ -36,14 +44,14 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.destroy()', () => {
     it('does not throw', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       view.destroy()
     })
   })
 
   describe('BrowserView.isDestroyed()', () => {
     it('returns correct value', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       expect(view.isDestroyed()).to.be.false()
       view.destroy()
       expect(view.isDestroyed()).to.be.true()
@@ -52,12 +60,12 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.setBackgroundColor()', () => {
     it('does not throw for valid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       view.setBackgroundColor('#000')
     })
 
     it('throws for invalid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       expect(() => {
         view.setBackgroundColor(null)
       }).to.throw(/conversion failure/)
@@ -66,13 +74,13 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.setAutoResize()', () => {
     it('does not throw for valid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       view.setAutoResize({})
       view.setAutoResize({ width: true, height: false })
     })
 
     it('throws for invalid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       expect(() => {
         view.setAutoResize(null)
       }).to.throw(/conversion failure/)
@@ -81,12 +89,12 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.setBounds()', () => {
     it('does not throw for valid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       view.setBounds({ x: 0, y: 0, width: 1, height: 1 })
     })
 
     it('throws for invalid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       expect(() => {
         view.setBounds(null)
       }).to.throw(/conversion failure/)
@@ -98,12 +106,12 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.setBrowserView()', () => {
     it('does not throw for valid args', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
     })
 
     it('does not throw if called multiple times with same view', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
       w.setBrowserView(view)
       w.setBrowserView(view)
@@ -112,7 +120,7 @@ describe('BrowserView module', () => {
 
   describe('BrowserWindow.getBrowserView()', () => {
     it('returns the set view', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
@@ -128,7 +136,7 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
     it('points to owning window', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null()
 
       w.setBrowserView(view)
@@ -141,7 +149,7 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.fromId()', () => {
     it('returns the view with given id', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
@@ -152,7 +160,7 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.fromWebContents()', () => {
     it('returns the view with given id', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
@@ -163,7 +171,7 @@ describe('BrowserView module', () => {
 
   describe('BrowserView.getAllViews()', () => {
     it('returns all views', () => {
-      view = new BrowserView()
+      view = createBrowserView()
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 

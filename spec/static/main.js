@@ -129,7 +129,8 @@ app.on('ready', function () {
     width: 800,
     height: 600,
     webPreferences: {
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      nodeIntegration: true
     }
   })
   window.loadURL(url.format({
@@ -272,7 +273,13 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
     }
   }
   foo.baz2 = foo.baz
-  const window = new BrowserWindow({show: false, foo: foo})
+  const window = new BrowserWindow({
+    show: false,
+    foo: foo,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
   event.returnValue = window.id
 })
 
@@ -364,7 +371,9 @@ ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
     contents = w.webContents
     destroy = () => w.close()
   } else {
-    contents = webContents.create()
+    contents = webContents.create({
+      nodeIntegration: true
+    })
     destroy = () => contents.destroy()
   }
 

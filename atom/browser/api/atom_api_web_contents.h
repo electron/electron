@@ -90,6 +90,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
       v8::Isolate* isolate,
       content::WebContents* web_contents,
       Type type);
+  static mate::Handle<WebContents> CreateFrom(
+      v8::Isolate* isolate,
+      content::WebContents* web_contents,
+      Type type,
+      const mate::Dictionary& options);
 
   // Create a new WebContents.
   static mate::Handle<WebContents> Create(v8::Isolate* isolate,
@@ -262,7 +267,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
  protected:
   WebContents(v8::Isolate* isolate,
               content::WebContents* web_contents,
-              Type type);
+              Type type,
+              const mate::Dictionary& options);
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents() override;
 

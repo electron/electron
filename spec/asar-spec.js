@@ -10,6 +10,16 @@ const remote = require('electron').remote
 const ipcMain = remote.require('electron').ipcMain
 const BrowserWindow = remote.require('electron').BrowserWindow
 
+const createWindow = () =>
+  new BrowserWindow({
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
+
 describe('asar package', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
@@ -858,11 +868,7 @@ describe('asar package', function () {
         ipcMain.removeAllListeners('dirname')
       })
 
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400
-      })
+      w = createWindow()
       var p = path.resolve(fixtures, 'asar', 'web.asar', 'index.html')
       var u = url.format({
         protocol: 'file',
@@ -881,11 +887,7 @@ describe('asar package', function () {
         ipcMain.removeAllListeners('ping')
       })
 
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400
-      })
+      w = createWindow()
       var p = path.resolve(fixtures, 'asar', 'script.asar', 'index.html')
       var u = url.format({
         protocol: 'file',
@@ -906,11 +908,7 @@ describe('asar package', function () {
         ipcMain.removeAllListeners('asar-video')
       })
 
-      w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400
-      })
+      w = createWindow()
       var p = path.resolve(fixtures, 'asar', 'video.asar', 'index.html')
       var u = url.format({
         protocol: 'file',
