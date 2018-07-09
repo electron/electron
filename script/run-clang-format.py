@@ -19,6 +19,7 @@ import signal
 import subprocess
 import sys
 import traceback
+import tempfile
 
 from functools import partial
 
@@ -68,8 +69,8 @@ def make_diff(diff_file, original, reformatted):
         difflib.unified_diff(
             original,
             reformatted,
-            fromfile='{}\t(original)'.format(diff_file),
-            tofile='{}\t(reformatted)'.format(diff_file),
+            fromfile='a/{}'.format(diff_file),
+            tofile='b/{}'.format(diff_file),
             n=3))
 
 
@@ -312,6 +313,12 @@ def main():
                 continue
             if not args.quiet:
                 print_diff(outs, use_color=colored_stdout)
+                with tempfile.NamedTemporaryFile(delete=False) as patch_file:
+                    for line in outs:
+                        patch_file.write(line)
+                    patch_file.write('\n')
+                    print("\nTo apply this patch, run:\n$ git apply {}\n"
+                          .format(patch_file.name))
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
     return retcode
