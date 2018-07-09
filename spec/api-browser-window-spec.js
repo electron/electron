@@ -571,9 +571,9 @@ describe('BrowserWindow module', () => {
     })
     describe(`Maximized state`, () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
+//        if (isCI) {
+//          this.skip()
+//        }
       })
       it(`checks normal bounds when maximized`, (done) => {
         const bounds = w.getBounds()
@@ -599,9 +599,9 @@ describe('BrowserWindow module', () => {
     })
     describe(`Minimized state`, () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
+//        if (isCI) {
+//          this.skip()
+//        }
       })
       it(`checks normal bounds when minimized`, (done) => {
         const bounds = w.getBounds()
@@ -627,9 +627,9 @@ describe('BrowserWindow module', () => {
     })
     describe(`Fullscreen state`, () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
+//        if (isCI) {
+//          this.skip()
+//        }
       })
       it(`checks normal bounds when fullscreen'ed`, (done) => {
         const bounds = w.getBounds()
