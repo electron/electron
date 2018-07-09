@@ -5,6 +5,7 @@
 #include <uxtheme.h>
 #include <windowsx.h>
 #include <algorithm>
+#include "base/logging.h"
 #include "brightray/browser/win/win32_desktop_notifications/common.h"
 
 #pragma comment(lib, "msimg32.lib")
@@ -566,7 +567,7 @@ void DesktopNotificationController::Toast::UpdateBufferSize() {
             auto b1 = UpdateLayeredWindowIndirect(hwnd_, &ulw);
             ulw.prcDirty = &dirty2;
             auto b2 = UpdateLayeredWindowIndirect(hwnd_, &ulw);
-            _ASSERT(b1 && b2);
+            DCHECK(b1 && b2);
           }
 
           return;
@@ -745,14 +746,14 @@ HDWP DesktopNotificationController::Toast::Animate(HDWP hdwp,
 }
 
 void DesktopNotificationController::Toast::StartEaseIn() {
-  _ASSERT(!ease_in_active_);
+  DCHECK(!ease_in_active_);
   ease_in_start_ = GetTickCount();
   ease_in_active_ = true;
   data_->controller->StartAnimation();
 }
 
 void DesktopNotificationController::Toast::StartEaseOut() {
-  _ASSERT(!ease_out_active_);
+  DCHECK(!ease_out_active_);
   ease_out_start_ = GetTickCount();
   ease_out_active_ = true;
   data_->controller->StartAnimation();
