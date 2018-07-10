@@ -116,6 +116,23 @@ describe('webContents module', () => {
     })
   })
 
+  describe('isCurrentlyAudible() API', () => {
+    it('returns whether audio is playing', (done) => {
+      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'api', 'is-currently-audible.html')}`)
+      w.show()
+      w.webContents.once('did-finish-load', () => {
+        assert.equal(w.webContents.isCurrentlyAudible(), false)
+
+        ipcMain.once('playing', () => {
+          assert.equal(w.webContents.isCurrentlyAudible(), true)
+          done()
+        })
+
+        w.webContents.send('play')
+      })
+    })
+  })
+
   describe('getWebPreferences() API', () => {
     it('should not crash when called for devTools webContents', (done) => {
       w.webContents.openDevTools()
