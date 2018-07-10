@@ -80,6 +80,10 @@ class BrowserWindow : public TopLevelWindow,
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
+#if defined(OS_MACOSX)
+  void OverrideNSWindowContentView();
+#endif
+
   // Helpers.
 
   // Called when the window needs to update its draggable region.

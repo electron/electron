@@ -128,6 +128,9 @@ class NativeWindowMac : public NativeWindow {
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
+  // Use a custom content view instead of Chromium's BridgedContentView.
+  void OverrideNSWindowContentView();
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
@@ -152,6 +155,9 @@ class NativeWindowMac : public NativeWindow {
   views::View* GetContentsView() override;
 
  private:
+  // Add custom layers to the content view.
+  void AddContentViewLayers();
+
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
