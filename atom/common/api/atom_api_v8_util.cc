@@ -12,9 +12,19 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/hash.h"
+#include "base/process/process_handle.h"
+#include "base/strings/stringprintf.h"
 #include "native_mate/dictionary.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
+
+// This is defined in later versions of Chromium, remove this if you see
+// compiler complaining duplicate defines.
+#if defined(OS_WIN) || defined(OS_FUCHSIA)
+#define CrPRIdPid "ld"
+#else
+#define CrPRIdPid "d"
+#endif
 
 namespace std {
 
@@ -90,6 +100,16 @@ int32_t GetObjectHash(v8::Local<v8::Object> object) {
   return object->GetIdentityHash();
 }
 
+std::string GetContextID(v8::Isolate* isolate) {
+  // When a page is reloaded, V8 and blink may have optimizations that do not
+  // free blink::WebLocalFrame and v8::Context and reuse them for the new page,
+  // while we always recreate node::Environment when a page is loaded.
+  // So the only reliable way to return an identity for a page, is to return the
+  // address of the node::Environment instance.
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  return base::StringPrintf("%" CrPRIdPid "-%p", base::GetCurrentProcId(), env);
+}
+
 void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
@@ -112,6 +132,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
   dict.SetMethod("deleteHiddenValue", &DeleteHiddenValue);
   dict.SetMethod("getObjectHash", &GetObjectHash);
+  dict.SetMethod("getContextId", &GetContextID);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
