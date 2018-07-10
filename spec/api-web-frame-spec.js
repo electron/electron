@@ -1,8 +1,14 @@
 const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 const {remote, webFrame} = require('electron')
 const {BrowserWindow, protocol, ipcMain} = remote
+const {emittedOnce} = require('./events-helpers')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -137,5 +143,19 @@ describe('webFrame module', function () {
       webFrame.setVisualZoomLevelLimits(1, 50)
       webFrame.setLayoutZoomLevelLimits(0, 25)
     })
+  })
+
+  it('calls a spellcheck provider', async () => {
+    w = new BrowserWindow({show: false})
+    w.loadURL(`file://${fixtures}/pages/webframe-spell-check.html`)
+    await emittedOnce(w.webContents, 'did-finish-load')
+
+    const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')
+    const misspelledWord = 'spleling'
+    for (const keyCode of [...misspelledWord, ' ']) {
+      w.webContents.sendInputEvent({type: 'char', keyCode})
+    }
+    const [, text] = await spellCheckerFeedback
+    expect(text).to.equal(misspelledWord)
   })
 })

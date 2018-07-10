@@ -1,0 +1,13 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer, webFrame} = require('electron')
+  webFrame.setSpellCheckProvider('en-US', true, {
+    spellCheck: text => {
+      ipcRenderer.send('spec-spell-check', text)
+    }
+  })
+</script>
+<input autofocus />
+</body>
+</html>
