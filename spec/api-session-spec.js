@@ -289,12 +289,17 @@ describe('session module', () => {
       res.end(mockPDF)
       downloadServer.close()
     })
+
+    const isPathEqual = (path1, path2) => {
+      return path.relative(path1, path2) === ''
+    }
     const assertDownload = (event, state, url, mimeType,
                                    receivedBytes, totalBytes, disposition,
                                    filename, port, savePath, isCustom) => {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
-      assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
+      assert.ok(path.isAbsolute(savePath))
+      assert.ok(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf')))
       if (isCustom) {
         assert.equal(url, `${protocolName}://item`)
       } else {
