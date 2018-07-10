@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+import os
+import subprocess
+import sys
+
+from lib.config import PLATFORM
+from lib.util import execute, rm_rf, scoped_env
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+
+LINUX_DEPS = [
+  'libdbus-1-dev',
+  'libgconf2-dev',
+  'libgnome-keyring-dev',
+  'libgtk-3-dev',
+  'libnotify-dev',
+  'libnss3-dev',
+  'libxtst-dev',
+]
+
+LINUX_DEPS_NO_ARM = [
+  'gcc-multilib',
+  'g++-multilib',
+]
+
+LINUX_DEPS_ARM = [
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-armhf-cross',
+   'linux-libc-dev-armhf-cross',
+   'g++-arm-linux-gnueabihf',
+   'g++-4.8-multilib-arm-linux-gnueabihf',
+   'gcc-4.8-multilib-arm-linux-gnueabihf',
+]
+
+LINUX_DEPS_ARM64 = [
+   'binutils-aarch64-linux-gnu',
+   'libc6-dev-arm64-cross',
+   'linux-libc-dev-arm64-cross',
+   'g++-4.8-aarch64-linux-gnu',
+   'gcc-4.8-aarch64-linux-gnu',
+   'gcc-aarch64-linux-gnu',
+]
+
+def main():
+  os.environ['CI'] = '1'
+
+  # Ignore the CXX and CC env in CI.
+  try:
+    del os.environ['CC']
+    del os.environ['CXX']
+  except KeyError:
+    pass
+
+  target_arch = 'x64'
+  if os.environ.has_key('TARGET_ARCH'):
+    target_arch = os.environ['TARGET_ARCH']
+
+  if PLATFORM == 'linux' and target_arch == 'x64':
+    os.environ['DISPLAY'] = ':99.0'
+    execute(['sh', '-e', '/etc/init.d/xvfb', 'start'])
+
+  # CI's npm is not reliable.
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  execute([npm, 'install', 'npm@2.12.1'])
+
+  log_versions()
+  # Add "./node_modules/.bin" to the beginning of $PATH, which will ensure
+  # future "npm" invocations use the right version.
+  node_bin_dir = os.path.join(SOURCE_ROOT, 'node_modules', '.bin')
+  os.environ['PATH'] = os.path.pathsep.join([node_bin_dir,
+                                             os.environ.get('PATH', '')])
+
+  is_release = os.environ.get('ELECTRON_RELEASE', '') == '1'
+  args = ['--target_arch=' + target_arch]
+  if not is_release:
+    args += ['--dev']
+  run_script('bootstrap.py', args)
+
+  if PLATFORM != 'win32':
+    sys.stderr.write('\nRunning `npm run lint`\n')
+    sys.stderr.flush()
+    execute([npm, 'run', 'lint'])
+
+  if is_release:
+    run_script('build.py', ['-c', 'R'])
+    run_script('create-dist.py')
+    run_script('upload.py')
+  else:
+    run_script('build.py', ['-c', 'D'])
+    if PLATFORM == 'win32' or target_arch == 'x64':
+      run_script('test.py', ['--ci', '--rebuild_native_modules'])
+      run_script('verify-ffmpeg.py')
+
+
+def run_script(script, args=[]):
+  sys.stderr.write('\nRunning ' + script +'\n')
+  sys.stderr.flush()
+  script = os.path.join(SOURCE_ROOT, 'script', script)
+  subprocess.check_call([sys.executable, script] + args)
+
+
+def log_versions():
+  sys.stderr.write('\nnode --version\n')
+  sys.stderr.flush()
+  subprocess.call(['node', '--version'])
+
+  sys.stderr.write('\nnpm --version\n')
+  sys.stderr.flush()
+  npm = 'npm.cmd' if PLATFORM == 'win32' else 'npm'
+  subprocess.call([npm, '--version'])
+
+
+if __name__ == '__main__':
+  sys.exit(main())

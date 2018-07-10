@@ -1,0 +1,13 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  window.addEventListener('message', function (e) {
+    window.opener.postMessage(JSON.stringify({
+      origin: e.origin,
+      data: e.data,
+      sourceEqualsOpener: e.source === window.opener
+    }), '*');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+<script>
+  try {
+    window.openDatabase('test', '1.0', 'test database', 65536)
+  } catch (e) {
+    const {ipcRenderer} = require('electron')
+    ipcRenderer.send('web-sql-response', e.message)
+  }
+</script>

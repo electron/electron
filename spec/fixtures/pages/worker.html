@@ -1,0 +1,12 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+  let worker = new Worker(`../workers/worker_node.js`)
+  worker.onmessage = function (event) {
+    ipcRenderer.sendToHost(event.data)
+    worker.terminate()
+  }
+</script>
+</body>
+</html>

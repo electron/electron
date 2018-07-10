@@ -1,0 +1,50 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+
+const {port} = require('url').parse(window.location.href, true).query
+const {crashReporter, ipcRenderer} = require('electron')
+
+crashReporter.start({
+  productName: 'Zombies',
+  companyName: 'Umbrella Corporation',
+  submitURL: 'http://127.0.0.1:' + port,
+  uploadToServer: true,
+  ignoreSystemCrashHandler: true,
+  extra: {
+    extra1: 'extra1',
+    extra2: 'initial',
+    extra3: 'extra3'
+  }
+})
+
+if (process.platform === 'win32') {
+  ipcRenderer.sendSync('crash-service-pid', crashReporter._crashServiceProcess.pid)
+}
+
+setImmediate(() => {
+  if (process.platform === 'darwin') {
+    crashReporter.addExtraParameter('extra2', 'extra2')
+    crashReporter.removeExtraParameter('extra3')
+  } else {
+    crashReporter.start({
+      productName: 'Zombies',
+      companyName: 'Umbrella Corporation',
+      submitURL: 'http://127.0.0.1:' + port,
+      uploadToServer: true,
+      ignoreSystemCrashHandler: true,
+      extra: {
+        extra1: 'extra1',
+        extra2: 'extra2'
+      }
+    })
+  }
+
+  setImmediate(() => {
+    process.crash()
+  })
+})
+
+</script>
+</body>
+</html>

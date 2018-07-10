@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Isolated World</title>
+    <script>
+      window.hello = 'world'
+      Array.prototype.push = 3
+      Function.prototype.apply = true
+
+      const opened = window.open()
+      opened.close()
+
+      window.postMessage({
+        preloadProperty: typeof window.foo,
+        pageProperty: typeof window.hello,
+        typeofRequire: typeof require,
+        typeofProcess: typeof process,
+        typeofArrayPush: typeof Array.prototype.push,
+        typeofFunctionApply: typeof Function.prototype.apply,
+        typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty,
+        typeofOpenedWindow: typeof opened
+      }, '*')
+    </script>
+  </head>
+  <body>
+
+  </body>
+</html>

@@ -1,0 +1,114 @@
+<html>
+<head>
+  <meta name="referrer" content="always">
+  <link href="../node_modules/mocha/mocha.css" rel="stylesheet">
+  <script src="jquery-2.0.3.min.js"></script>
+</head>
+<body>
+
+<div id="mocha"></div>
+
+<script type="text/javascript" charset="utf-8">
+(function() {
+  // Disable use of deprecated functions.
+  process.throwDeprecation = true
+
+  const path = require('path')
+  const electron = require('electron')
+  const { remote, ipcRenderer } = electron
+
+  // Check if we are running in CI.
+  const isCi = remote.getGlobal('isCi')
+
+  if (!isCi) {
+    const win = remote.getCurrentWindow()
+    win.show()
+    win.focus()
+  }
+
+  // Show DevTools.
+  document.oncontextmenu = (e) => {
+    remote.getCurrentWindow().inspectElement(e.clientX, e.clientY)
+  }
+
+  // Rediret all output to browser.
+  if (isCi) {
+    global.__defineGetter__('console', function () {
+      return {
+        log: (...args) => ipcRenderer.send('console.log', args),
+        error: (...args) => ipcRenderer.send('console.error', args)
+      }
+    })
+  }
+
+  const { Coverage } = require('electabul')
+  const Mocha = require('mocha')
+
+  const mocha = new Mocha(process.env.MOCHA_REPORTER
+    ? { reporter: process.env.MOCHA_REPORTER }
+    : undefined)
+
+  if (!process.env.MOCHA_REPORTER) {
+    mocha.ui('bdd').reporter(isCi ? 'tap' : 'html')
+  }
+  mocha.timeout(isCi ? 30000 : 10000)
+
+  const query = Mocha.utils.parseQuery(window.location.search || '')
+  if (query.grep) mocha.grep(query.grep)
+  if (query.invert) mocha.invert()
+
+  // Read all test files.
+  const walker = require('walkdir').walk(path.dirname(__dirname), {
+    no_recurse: true
+  })
+
+  const crashSpec = 'api-crash-reporter-spec.js'
+
+  // This allows you to run specific modules only:
+  // npm run test -match=menu
+  const moduleMatch = process.env.npm_config_match
+    ? new RegExp(process.env.npm_config_match, 'g')
+    : null
+
+  walker.on('file', (file) => {
+    if (/-spec\.js$/.test(file) && !file.includes(crashSpec) &&
+        (!moduleMatch || moduleMatch.test(file))) {
+      mocha.addFile(file)
+    }
+  })
+
+  walker.on('end', () => {
+    if (!process.env.npm_config_match || new RegExp(process.env.npm_config_match, 'g').test(crashSpec)) {
+      mocha.addFile(path.resolve(__dirname, '..', crashSpec))
+    }
+
+    const runner = mocha.run(() => {
+      if (isCi && runner.hasOnly) {
+        try {
+          throw new Error('A spec contains a call to it.only or describe.only and should be reverted.')
+        } catch (error) {
+          console.error(error.stack || error)
+        }
+        ipcRenderer.send('process.exit', 1)
+        return
+      }
+
+      Mocha.utils.highlightTags('code')
+
+      const coverage = new Coverage({
+        libPath: path.join(__dirname, '..', '..', 'lib'),
+        outputPath: path.join(__dirname, '..', '..', 'out', 'coverage'),
+        formats: ['text', 'lcov']
+      })
+      coverage.addCoverage(ipcRenderer.sendSync('get-main-process-coverage'))
+      coverage.generateReport()
+
+      if (isCi) {
+        ipcRenderer.send('process.exit', runner.failures)
+      }
+    })
+  })
+})()
+</script>
+</body>
+</html>

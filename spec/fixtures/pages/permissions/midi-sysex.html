@@ -1,0 +1,5 @@
+<script>
+navigator.requestMIDIAccess({sysex: true}).then(() => {}, (err) => {
+  require('electron').ipcRenderer.sendToHost('message', err.name);
+});
+</script>

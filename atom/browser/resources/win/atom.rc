@@ -1,0 +1,139 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "ui\\resources\\grit\\ui_unscaled_resources.h"
+#include "resource.h"
+#include <winresrc.h>
+#ifdef IDC_STATIC
+#undef IDC_STATIC
+#endif
+#define IDC_STATIC (-1)
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "windows.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (United States) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE
+BEGIN
+    "#include ""windows.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,0,0,0
+ PRODUCTVERSION 0,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "GitHub, Inc."
+            VALUE "FileDescription", "Electron"
+            VALUE "FileVersion", "0.0.0"
+            VALUE "InternalName", "electron.exe"
+            VALUE "LegalCopyright", "Copyright (C) 2015 GitHub, Inc. All rights reserved."
+            VALUE "OriginalFilename", "electron.exe"
+            VALUE "ProductName", "Electron"
+            VALUE "ProductVersion", "0.0.0"
+            VALUE "SquirrelAwareVersion", "1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // English (United States) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+IDR_MAINFRAME           ICON                    "atom.ico"
+/////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Cursors
+//
+IDC_ALIAS          CURSOR             "ui\\resources\\cursors\\aliasb.cur"
+IDC_CELL           CURSOR             "ui\\resources\\cursors\\cell.cur"
+IDC_COLRESIZE      CURSOR             "ui\\resources\\cursors\\col_resize.cur"
+IDC_COPYCUR        CURSOR             "ui\\resources\\cursors\\copy.cur"
+IDC_CURSOR_NONE    CURSOR             "ui\\resources\\cursors\\none.cur"
+IDC_HAND_GRAB      CURSOR             "ui\\resources\\cursors\\hand_grab.cur"
+IDC_HAND_GRABBING  CURSOR             "ui\\resources\\cursors\\hand_grabbing.cur"
+IDC_PAN_EAST       CURSOR             "ui\\resources\\cursors\\pan_east.cur"
+IDC_PAN_MIDDLE     CURSOR             "ui\\resources\\cursors\\pan_middle.cur"
+IDC_PAN_NORTH      CURSOR             "ui\\resources\\cursors\\pan_north.cur"
+IDC_PAN_NORTH_EAST CURSOR             "ui\\resources\\cursors\\pan_north_east.cur"
+IDC_PAN_NORTH_WEST CURSOR             "ui\\resources\\cursors\\pan_north_west.cur"
+IDC_PAN_SOUTH      CURSOR             "ui\\resources\\cursors\\pan_south.cur"
+IDC_PAN_SOUTH_EAST CURSOR             "ui\\resources\\cursors\\pan_south_east.cur"
+IDC_PAN_SOUTH_WEST CURSOR             "ui\\resources\\cursors\\pan_south_west.cur"
+IDC_PAN_WEST       CURSOR             "ui\\resources\\cursors\\pan_west.cur"
+IDC_ROWRESIZE      CURSOR             "ui\\resources\\cursors\\row_resize.cur"
+IDC_VERTICALTEXT   CURSOR             "ui\\resources\\cursors\\vertical_text.cur"
+IDC_ZOOMIN         CURSOR             "ui\\resources\\cursors\\zoom_in.cur"
+IDC_ZOOMOUT        CURSOR             "ui\\resources\\cursors\\zoom_out.cur"
+/////////////////////////////////////////////////////////////////////////////

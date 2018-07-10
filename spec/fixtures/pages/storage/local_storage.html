@@ -1,0 +1,8 @@
+<script>
+  try {
+    window.localStorage
+  } catch (e) {
+    const {ipcRenderer} = require('electron')
+    ipcRenderer.send('local-storage-response', e.message)
+  }
+</script>

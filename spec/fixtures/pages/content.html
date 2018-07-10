@@ -1,0 +1,16 @@
+<p>
+  Virtual member functions are key to the object-oriented paradigm,
+  such as making it easy for old code to call new code.
+  A virtual function allows derived classes to replace the implementation
+  provided by the base class. The compiler makes sure the replacement is
+  always called whenever the object in question is actually of the derived class,
+  even if the object is accessed by a base pointer rather than a derived pointer.
+  This allows algorithms in the base class to be replaced in the derived class,
+  even if users dont know about the derived class.
+  <code>
+    class A {
+     public:
+      virtual void foo() {}
+    }
+  </code>
+</p>

@@ -1,0 +1,5 @@
+{
+  "name": "electron",
+  "productName": "Electron",
+  "main": "main.js"
+}

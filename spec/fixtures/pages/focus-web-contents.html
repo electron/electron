@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <script>
+      const {ipcRenderer, remote} = require('electron')
+
+      remote.getCurrentWindow().focus()
+
+      const child = new remote.BrowserWindow({show: false})
+      child.loadURL('about:blank')
+      child.webContents.focus()
+
+      const currentFocused = remote.getCurrentWindow().isFocused()
+      const childFocused = child.isFocused()
+      child.close()
+      ipcRenderer.send('answer', currentFocused, childFocused)
+    </script>
+  </head>
+  <body>
+
+  </body>
+</html>

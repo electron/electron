@@ -1,0 +1,32 @@
+<html>
+<body>
+<webview nodeintegration src="zoom://host1" id="view" partition="webview-temp"/>
+</body>
+<script>
+  const {ipcRenderer, webFrame} = require('electron')
+  const view = document.getElementById('view')
+  let finalNavigation = false
+  function SendZoomLevel() {
+    return new Promise((resolve, reject) => {
+      view.getZoomLevel((zoomLevel) => {
+        view.getZoomFactor((zoomFactor) => {
+          ipcRenderer.send('webview-zoom-in-page', zoomLevel, zoomFactor, finalNavigation)
+          resolve()
+        })
+      })
+    })
+  }
+  view.addEventListener('dom-ready', () => {
+    view.setZoomLevel(2.0)
+    SendZoomLevel().then(() => {
+      if (!finalNavigation) {
+        finalNavigation = true
+        view.executeJavaScript('window.location.hash=123', () => {})
+      }
+    })
+  })
+  view.addEventListener('did-navigate-in-page', () => {
+    SendZoomLevel()
+  })
+</script>
+</html>

@@ -1,0 +1,17 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  var ipcRenderer = require('electron').ipcRenderer
+
+  ipcRenderer.on('guestinstance', function(event, instance) {
+    var webview = new WebView()
+    webview.setAttribute('guestinstance', instance)
+    document.body.appendChild(webview)
+
+    webview.addEventListener('did-attach', function (){
+      ipcRenderer.send('pong')
+    })
+  })
+</script>
+</body>
+</html>

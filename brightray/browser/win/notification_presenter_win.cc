@@ -1,0 +1,100 @@
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright (c) 2015 Felix Rieseberg <feriese@microsoft.com> and
+// Jason Poon <jason.poon@microsoft.com>. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
+
+#include "brightray/browser/win/notification_presenter_win.h"
+
+#include <string>
+#include <vector>
+
+#include "base/environment.h"
+#include "base/files/file_util.h"
+#include "base/md5.h"
+#include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
+#include "base/time/time.h"
+#include "base/win/windows_version.h"
+#include "brightray/browser/win/notification_presenter_win7.h"
+#include "brightray/browser/win/windows_toast_notification.h"
+#include "content/public/common/platform_notification_data.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/gfx/codec/png_codec.h"
+
+#pragma comment(lib, "runtimeobject.lib")
+
+namespace brightray {
+
+namespace {
+
+bool IsDebuggingNotifications() {
+  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
+}
+
+bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
+  std::vector<unsigned char> png_data;
+  if (!gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, &png_data))
+    return false;
+
+  char* data = reinterpret_cast<char*>(&png_data[0]);
+  int size = static_cast<int>(png_data.size());
+  return base::WriteFile(path, data, size) == size;
+}
+
+}  // namespace
+
+// static
+NotificationPresenter* NotificationPresenter::Create() {
+  auto version = base::win::GetVersion();
+  if (version < base::win::VERSION_WIN8)
+    return new NotificationPresenterWin7;
+  if (!WindowsToastNotification::Initialize())
+    return nullptr;
+  std::unique_ptr<NotificationPresenterWin> presenter(
+      new NotificationPresenterWin);
+  if (!presenter->Init())
+    return nullptr;
+
+  if (IsDebuggingNotifications())
+    LOG(INFO) << "Successfully created Windows notifications presenter";
+
+  return presenter.release();
+}
+
+NotificationPresenterWin::NotificationPresenterWin() {}
+
+NotificationPresenterWin::~NotificationPresenterWin() {}
+
+bool NotificationPresenterWin::Init() {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  return temp_dir_.CreateUniqueTempDir();
+}
+
+base::string16 NotificationPresenterWin::SaveIconToFilesystem(
+    const SkBitmap& icon,
+    const GURL& origin) {
+  std::string filename;
+
+  if (origin.is_valid()) {
+    filename = base::MD5String(origin.spec()) + ".png";
+  } else {
+    base::TimeTicks now = base::TimeTicks::Now();
+    filename = std::to_string(now.ToInternalValue()) + ".png";
+  }
+
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
+  if (base::PathExists(path))
+    return path.value();
+  if (SaveIconToPath(icon, path))
+    return path.value();
+  return base::UTF8ToUTF16(origin.spec());
+}
+
+Notification* NotificationPresenterWin::CreateNotificationObject(
+    NotificationDelegate* delegate) {
+  return new WindowsToastNotification(delegate, this);
+}
+
+}  // namespace brightray

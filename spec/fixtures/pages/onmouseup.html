@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+document.onmouseup = function(e) {
+  require('electron').ipcRenderer.sendToHost('mouseup', e.x, e.y, e.shiftKey, e.ctrlKey);
+}
+</script>
+</body>
+</html>

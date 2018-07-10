@@ -1,0 +1,6 @@
+{
+  "plugins": [
+    ["remark-lint-code-block-style", "fenced"],
+    ["remark-lint-fenced-code-flag"]
+  ]
+}

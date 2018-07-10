@@ -1,0 +1,11 @@
+<html>
+<body>
+  <div style="width: 10px; height: 10px;" id="dirty"></div>
+</body>
+<script type="text/javascript" charset="utf-8">
+  setInterval(function(){
+    document.getElementById('dirty').style.backgroundColor =
+      '#'+(Math.random()*0xFFFFFF<<0).toString(16)
+  }, 100)
+</script>
+</html>

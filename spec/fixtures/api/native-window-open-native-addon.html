@@ -1,0 +1,22 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const {ipcRenderer} = require('electron')
+
+  let runas
+  let requireError
+
+  try {
+    runas = require('runas')
+  } catch (error) {
+    requireError = error
+  }
+
+  if (requireError != null) {
+    ipcRenderer.send('answer', `Require runas failed: ${requireError.message}`)
+  } else {
+    ipcRenderer.send('answer', typeof runas)
+  }
+</script>
+</body>
+</html>

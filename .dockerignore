@@ -1,0 +1,3 @@
+*
+!tools/xvfb-init.sh
+!tools/run-electron.sh

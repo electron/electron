@@ -1,0 +1,18 @@
+<script>
+  const ipcRenderer = require('electron').ipcRenderer;
+  navigator.serviceWorker.register('service-worker.js', {scope: './'}).then(function() {
+    if (navigator.serviceWorker.controller) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'http://dummy/echo');
+      xhr.setRequestHeader('X-Mock-Response', 'yes');
+      xhr.addEventListener('load', function() {
+        ipcRenderer.send('response', xhr.responseText);
+      });
+      xhr.send();
+    } else {
+      ipcRenderer.send('reload');
+    }
+  }).catch(function(error) {
+    ipcRenderer.send('error', `${error.message}\n${error.stack}`);
+  })
+</script>

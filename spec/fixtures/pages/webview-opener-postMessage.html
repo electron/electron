@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script>
+      var windowUrl = decodeURIComponent(window.location.search.substring(3))
+      var opened = window.open(windowUrl, '', 'show=no')
+      window.addEventListener('message', function (event) {
+        try {
+          opened.close()
+        } finally {
+          console.log(event.data)
+        }
+      })
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

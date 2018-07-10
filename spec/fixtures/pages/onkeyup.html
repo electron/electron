@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+document.onkeyup = function(e) {
+  require('electron').ipcRenderer.sendToHost('keyup', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey);
+}
+</script>
+</body>
+</html>

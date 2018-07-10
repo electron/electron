@@ -1,0 +1,9 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  var ipcRenderer = require('electron').ipcRenderer;
+  ipcRenderer.sendSync('send-sync-message', 'message');
+</script>
+</body>
+</html>
+

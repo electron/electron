@@ -1,0 +1,10 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const popup = window.open()
+  popup.document.write('<h1>Hello</h1>')
+  const content = popup.document.querySelector('h1').innerText
+  window.postMessage(content, '*')
+</script>
+</body>
+</html>
