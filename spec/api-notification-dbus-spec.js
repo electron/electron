@@ -100,10 +100,12 @@ const skip = process.platform !== 'linux' ||
 
     it(`should call ${serviceName} to show notifications`, async () => {
       const calls = await getCalls()
-      expect(calls.length).to.be.at.least(1)
+      expect(calls).to.be.an('array').of.lengthOf.at.least(1)
+
       let lastCall = calls[calls.length - 1]
       let methodName = lastCall[1]
       expect(methodName).to.equal('Notify')
+
       let args = unmarshalDBusNotifyArgs(lastCall[2])
       expect(args).to.deep.equal({
         app_name: appName,
