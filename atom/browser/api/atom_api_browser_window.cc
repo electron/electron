@@ -85,6 +85,11 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 
   InitWith(isolate, wrapper);
 
+#if defined(OS_MACOSX)
+  if (!window()->has_frame())
+    OverrideNSWindowContentView();
+#endif
+
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }
