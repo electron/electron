@@ -15,7 +15,7 @@
 #include "base/posix/eintr_wrapper.h"
 #include "breakpad/src/client/linux/minidump_writer/directory_reader.h"
 #include "breakpad/src/common/linux/linux_libc_support.h"
-#include "breakpad/src/common/memory.h"
+#include "breakpad/src/common/memory_allocator.h"
 
 #include "third_party/lss/linux_syscall_support.h"
 
