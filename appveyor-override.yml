@@ -1,0 +1,58 @@
+build_cloud: electron-16
+image: electron-16-vs2015
+build_script:
+- ps: >-
+    if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+      Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+    } else {
+      Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
+      $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
+      if($env:APPVEYOR_SCHEDULED_BUILD -eq 'True')  {
+        $env:RUN_RELEASE_BUILD = "1"
+      }
+      $Message = (git log --format=%B -n 1 HEAD) | Out-String
+      if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
+        $env:ELECTRON_RELEASE = '1'
+        Write-Output "release build triggered from api"
+      }
+      if ((Test-Path Env:\ELECTRON_RELEASE)) {
+        Write-Output "Running release build"
+        python script\bootstrap.py --target_arch=$env:TARGET_ARCH
+        python script\build.py -c R
+        python script\create-dist.py
+      } else {
+        Write-Output "Running debug build"
+        python script\bootstrap.py --target_arch=$env:TARGET_ARCH --dev
+        python script\build.py -c D
+      }
+      if ($? -ne 'True') {
+        throw "Build failed with exit code $?"
+      } else {
+        "Build succeeded."
+      }
+      Push-AppveyorArtifact out
+    }
+test_script:
+- ps: >-
+    if (Test-Path Env:\ELECTRON_RELEASE) {
+      Write-Output "Skipping tests for release build"
+    } else {
+      Write-Output "Running tests for debug build"
+      python script\test.py --ci --rebuild_native_modules
+      if ($LASTEXITCODE -ne '0') {
+        throw "Tests failed with exit code $LASTEXITCODE"
+      } else {
+        Write-Output "Tests succeeded."
+      }
+      python script\verify-ffmpeg.py
+      if ($LASTEXITCODE -ne '0') {
+        throw "Verify ffmpeg failed with exit code $LASTEXITCODE"
+      } else {
+        "Verify ffmpeg succeeded."
+      }
+    }
+artifacts:
+- path: test-results.xml
+  name: test-results.xml
+deploy_script:
+- ps: "if (Test-Path Env:\\ELECTRON_RELEASE) {\n  if (Test-Path Env:\\RUN_RELEASE_BUILD) {\n    Write-Output \"Uploading Electron release distribution to s3\"\n    & python script\\upload.py --upload_to_s3\n  } else {\n    Write-Output \"Uploading Electron release distribution to github releases\"\n    & python script\\upload.py\n    if (Test-Path Env:\\AUTO_RELEASE) {\n      node script\\release.js --validateRelease --automaticRelease\n      if ($? -eq 'True') {\n        echo 'Release is ready to go; now running release'\n        node script\\release.js --automaticRelease\n        if ($? -eq 'True') {      \n          echo 'Release successful, now publishing to npm'      \n          $npmfile = \"$HOME\\.npmrc\"\n          \"//registry.npmjs.org/:_authToken=$env:ELECTRON_NPM_TOKEN\" > $npmfile\n          npm run publish-to-npm\n        }\n      } else {\n        echo 'Release is not complete, skipping publish for now.'\n      }\n    }\n  }\n} else {\n  Write-Output \"Skipping upload distribution because build is not for release\"\n}"
