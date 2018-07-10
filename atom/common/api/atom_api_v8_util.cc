@@ -32,7 +32,7 @@ namespace std {
 template <typename Type1, typename Type2>
 struct hash<std::pair<Type1, Type2>> {
   std::size_t operator()(std::pair<Type1, Type2> value) const {
-    return base::HashInts<Type1, Type2>(value.first, value.second);
+    return base::HashInts(base::Hash(value.first), value.second);
   }
 };
 
@@ -137,8 +137,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("setRemoteCallbackFreer", &atom::RemoteCallbackFreer::BindTo);
   dict.SetMethod("setRemoteObjectFreer", &atom::RemoteObjectFreer::BindTo);
   dict.SetMethod("createIDWeakMap", &atom::api::KeyWeakMap<int32_t>::Create);
-  dict.SetMethod("createDoubleIDWeakMap",
-                 &atom::api::KeyWeakMap<std::pair<int64_t, int32_t>>::Create);
+  dict.SetMethod(
+      "createDoubleIDWeakMap",
+      &atom::api::KeyWeakMap<std::pair<std::string, int32_t>>::Create);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
