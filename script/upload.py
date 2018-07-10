@@ -4,6 +4,7 @@ import argparse
 import datetime
 import errno
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -14,7 +15,6 @@ from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import electron_gyp, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put
-from lib.github import GitHub
 
 
 ELECTRON_REPO = 'electron/electron'
@@ -50,58 +50,40 @@ def main():
     sys.stderr.flush()
     return 1
 
-  github = GitHub(auth_token())
-  releases = github.repos(ELECTRON_REPO).releases.get()
   tag_exists = False
-  release = None
-  for r in releases:
-    if not r['draft'] and r['tag_name'] == args.version:
-      release = r
-      tag_exists = True
-      break
+  release = get_release(args.version)
+  if not release['draft']:
+    tag_exists = True
 
   if not args.upload_to_s3:
+    assert release['exists'], 'Release does not exist; cannot upload to GitHub!'
     assert tag_exists == args.overwrite, \
           'You have to pass --overwrite to overwrite a published release'
-    if not args.overwrite:
-      release = create_or_get_release_draft(github, releases, args.version,
-                                            tag_exists)
-  elif release is None:
-      release = dict(tag_name=args.version)
 
-
-  # Upload Electron with GitHub Releases API.
-  upload_electron(github, release, os.path.join(DIST_DIR, DIST_NAME), args)
+  # Upload Electron files.
+  upload_electron(release, os.path.join(DIST_DIR, DIST_NAME), args)
   if get_target_arch() != 'mips64el':
-    upload_electron(github, release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
+    upload_electron(release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
   if PLATFORM == 'darwin':
-    upload_electron(github, release, os.path.join(DIST_DIR,
-                    'electron-api.json'), args)
-    upload_electron(github, release, os.path.join(DIST_DIR, 'electron.d.ts'),
-                    args)
-    upload_electron(github, release, os.path.join(DIST_DIR, DSYM_NAME),
-                    args)
+    upload_electron(release, os.path.join(DIST_DIR, 'electron-api.json'), args)
+    upload_electron(release, os.path.join(DIST_DIR, 'electron.d.ts'), args)
+    upload_electron(release, os.path.join(DIST_DIR, DSYM_NAME), args)
   elif PLATFORM == 'win32':
-    upload_electron(github, release, os.path.join(DIST_DIR, PDB_NAME),
-                    args)
+    upload_electron(release, os.path.join(DIST_DIR, PDB_NAME), args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
-  upload_electron(github, release, os.path.join(DIST_DIR, ffmpeg),
-                  args)
+  upload_electron(release, os.path.join(DIST_DIR, ffmpeg), args)
 
   chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
-  upload_electron(github, release, os.path.join(DIST_DIR, chromedriver),
-                  args)
+  upload_electron(release, os.path.join(DIST_DIR, chromedriver), args)
   mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
-  upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
-                args)
+  upload_electron(release, os.path.join(DIST_DIR, mksnapshot), args)
 
   if get_target_arch().startswith('arm'):
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
-    upload_electron(github, release, os.path.join(DIST_DIR, mksnapshot),
-                    args)
+    upload_electron(release, os.path.join(DIST_DIR, mksnapshot), args)
 
   if not tag_exists and not args.upload_to_s3:
     # Upload symbols to symbol server.
@@ -167,79 +149,26 @@ def dist_newer_than_head():
   return dist_time > int(head_time)
 
 
-def get_text_with_editor(name):
-  editor = os.environ.get('EDITOR', 'nano')
-  initial_message = '\n# Please enter the body of your release note for %s.' \
-                    % name
-
-  t = tempfile.NamedTemporaryFile(suffix='.tmp', delete=False)
-  t.write(initial_message)
-  t.close()
-  subprocess.call([editor, t.name])
-
-  text = ''
-  for line in open(t.name, 'r'):
-    if len(line) == 0 or line[0] != '#':
-      text += line
-
-  os.unlink(t.name)
-  return text
-
-def create_or_get_release_draft(github, releases, tag, tag_exists):
-  # Search for existing draft.
-  for release in releases:
-    if release['draft'] and release['tag_name'] == tag:
-      return release
-
-  if tag_exists:
-    tag = 'do-not-publish-me'
-  return create_release_draft(github, tag)
-
-
-def create_release_draft(github, tag):
-  name = '{0} {1} beta'.format(PROJECT_NAME, tag)
-  if os.environ.has_key('CI'):
-    body = '(placeholder)'
-  else:
-    body = get_text_with_editor(name)
-  if body == '':
-    sys.stderr.write('Quit due to empty release note.\n')
-    sys.exit(0)
-
-  data = dict(tag_name=tag, name=name, body=body, draft=True, prerelease=True)
-  r = github.repos(ELECTRON_REPO).releases.post(data=data)
-  return r
-
-
-def upload_electron(github, release, file_path, args):
+def upload_electron(release, file_path, args):
   filename = os.path.basename(file_path)
 
   # if upload_to_s3 is set, skip github upload.
   if args.upload_to_s3:
     bucket, access_key, secret_key = s3_config()
-    key_prefix = 'electron-artifacts/{0}_{1}'.format(release['tag_name'],
+    key_prefix = 'electron-artifacts/{0}_{1}'.format(args.version,
                                                      args.upload_timestamp)
     s3put(bucket, access_key, secret_key, os.path.dirname(file_path),
           key_prefix, [file_path])
-    upload_sha256_checksum(release['tag_name'], file_path, key_prefix)
+    upload_sha256_checksum(args.version, file_path, key_prefix)
     s3url = 'https://gh-contractor-zcbenz.s3.amazonaws.com'
     print '{0} uploaded to {1}/{2}/{0}'.format(filename, s3url, key_prefix)
     return
-
-  # Delete the original file before uploading in CI.
-  if os.environ.has_key('CI'):
-    try:
-      for asset in release['assets']:
-        if asset['name'] == filename:
-          github.repos(ELECTRON_REPO).releases.assets(asset['id']).delete()
-    except Exception:
-      pass
 
   # Upload the file.
   upload_io_to_github(release, filename, file_path)
 
   # Upload the checksum file.
-  upload_sha256_checksum(release['tag_name'], file_path)
+  upload_sha256_checksum(args.version, file_path)
 
 
 def upload_io_to_github(release, filename, filepath):
@@ -272,6 +201,12 @@ def auth_token():
   assert token, message
   return token
 
+
+def get_release(version):
+  script_path = os.path.join(SOURCE_ROOT, 'script', 'find-release.js')
+  release_info = execute(['node', script_path, version])
+  release = json.loads(release_info)
+  return release
 
 if __name__ == '__main__':
   import sys
