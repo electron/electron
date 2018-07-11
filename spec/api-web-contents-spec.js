@@ -4,6 +4,7 @@ const assert = require('assert')
 const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
+const {emittedOnce} = require('./events-helpers')
 
 const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, webContents, ipcMain, session} = remote
@@ -117,19 +118,17 @@ describe('webContents module', () => {
   })
 
   describe('isCurrentlyAudible() API', () => {
-    it('returns whether audio is playing', (done) => {
+    it('returns whether audio is playing', async () => {
       w.loadURL(`file://${path.join(__dirname, 'fixtures', 'api', 'is-currently-audible.html')}`)
       w.show()
-      w.webContents.once('did-finish-load', () => {
-        assert.equal(w.webContents.isCurrentlyAudible(), false)
+      await emittedOnce(w.webContents, 'did-finish-load')
 
-        ipcMain.once('playing', () => {
-          assert.equal(w.webContents.isCurrentlyAudible(), true)
-          done()
-        })
+      expect(w.webContents.isCurrentlyAudible()).to.be.false()
 
-        w.webContents.send('play')
-      })
+      w.webContents.send('play')
+      await emittedOnce(ipcMain, 'playing')
+
+      expect(w.webContents.isCurrentlyAudible()).to.be.true()
     })
   })
 
