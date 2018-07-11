@@ -274,11 +274,6 @@ static_library("electron_lib") {
   defines = [
     # Disable warnings for g_settings_list_schemas.
     "GLIB_DISABLE_DEPRECATION_WARNINGS",
-
-    # Import V8 symbols from shared library (node.dll / libnode.so)
-    "USING_V8_SHARED",
-    "USING_V8_PLATFORM_SHARED",
-    "USING_V8_BASE_SHARED",
   ]
   include_dirs = [
     "chromium_src",
@@ -288,6 +283,14 @@ static_library("electron_lib") {
     # API of blink, then delete this include dir.
     "//third_party/WebKit/Source",
   ]
+  if (is_component_build) {
+    defines += [
+      # Import V8 symbols from shared library (node.dll / libnode.so)
+      "USING_V8_SHARED",
+      "USING_V8_PLATFORM_SHARED",
+      "USING_V8_BASE_SHARED",
+    ]
+  }
   if (is_linux || is_win) {
     deps += [ "//third_party/breakpad:client" ]
     include_dirs += [
