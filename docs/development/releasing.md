@@ -2,6 +2,26 @@
 
 This document describes the process for releasing a new version of Electron.
 
+## Set your tokens and environment variables
+You'll need Electron S3 credentials in order to create and
+upload an Electron release. Contact a team member for more
+information.
+
+There are a handful of `*_TOKEN` environment variables needed by the release
+scripts:
+
+* `ELECTRON_GITHUB_TOKEN`:
+Create this by visiting https://github.com/settings/tokens/new?scopes=repo
+* `APPVEYOR_TOKEN`:
+Create a token from https://windows-ci.electronjs.org/api-token
+If you don't have an account, ask a team member to add you.
+* `CIRCLE_TOKEN`:
+Create a token from "Personal API Tokens" at https://circleci.com/account/api
+
+Once you've generated these tokens, put them in a `.env` file in the root directory
+of the project. This file is gitignored, and will be loaded into the 
+environment by the release scripts.
+
 ## Determine which branch to release from
 
 - **If releasing beta,** run the scripts below from `master`.
@@ -18,23 +38,6 @@ patch, or beta version change. Read the
 `git checkout 1-8-x` rather than `git checkout -b remotes/origin/1-8-x`.
 The scripts need `git rev-parse --abbrev-ref HEAD` to return a short name,
 e.g. no `remotes/origin/`
-
-## Set your tokens and environment variables
-You'll need Electron S3 credentials in order to create and
-upload an Electron release. Contact a team member for more
-information.
-
-There are a handful of `*_TOKEN` environment variables needed by the release
-scripts. Once you've generated these per-user tokens, you may want to keep
-them in a local file that you can `source` when starting a release.
-* `ELECTRON_GITHUB_TOKEN`:
-Create as described at https://github.com/settings/tokens/new,
-giving the token repo access scope.
-* `APPVEYOR_TOKEN`:
-Create a token from https://windows-ci.electronjs.org/api-token
-If you don't have an account, ask a team member to add you.
-* `CIRCLE_TOKEN`:
-Create a token from "Personal API Tokens" at https://circleci.com/account/api
 
 ## Run the prepare-release script
 The prepare release script will do the following:
