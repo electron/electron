@@ -630,6 +630,9 @@ describe('BrowserWindow module', () => {
         if (isCI) {
           this.skip()
         }
+        if (process.platform === 'darwin') {
+          this.skip()
+        }
       })
       it(`checks normal bounds when fullscreen'ed`, (done) => {
         const bounds = w.getBounds()
