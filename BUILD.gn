@@ -436,14 +436,16 @@ if (is_mac) {
     ]
   }
 
-  bundle_data("electron_framework_libraries") {
-    public_deps = [ "build/node" ]
-    sources = [
-      "$root_out_dir/libnode.dylib"
-    ]
-    outputs = [
-      "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
-    ]
+  if (is_component_build) {
+    bundle_data("electron_framework_libraries") {
+      public_deps = [ "build/node" ]
+      sources = [
+        "$root_out_dir/libnode.dylib"
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
+      ]
+    }
   }
 
   bundle_data("electron_crashpad_helper") {
@@ -468,12 +470,14 @@ if (is_mac) {
     deps = [
       "//base",
       "//base:i18n",
-      ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
+    }
+    if (is_component_build) {
+      deps += [ ":electron_framework_libraries" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
     extra_substitutions = [
