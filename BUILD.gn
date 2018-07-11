@@ -223,7 +223,6 @@ static_library("electron_lib") {
     "//skia",
     "//third_party/WebKit/public:blink",
     "//third_party/boringssl",
-    "//third_party/crashpad/crashpad/client",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
     "//ui/events:dom_keycode_converter",
@@ -244,14 +243,20 @@ static_library("electron_lib") {
   if (is_mac) {
     deps += [
       "//ui/accelerated_widget_mac",
+      "//third_party/crashpad/crashpad/client",
+    ]
+    include_dirs += [
+      # NOTE(nornagon): other chromium files use the full path to include
+      # crashpad; this is just here for compatibility between GN and GYP, so that
+      # the #includes can be agnostic about where crashpad is vendored.
+      "//third_party/crashpad",
     ]
   }
   if (is_linux) {
     deps += [
-      "//build/config/linux/gtk3",
+      "//build/config/linux/gtk",
       "//chrome/browser/ui/libgtkui",
       "//device/bluetooth",
-      "//third_party/breakpad:client",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/native_theme",
@@ -259,11 +264,6 @@ static_library("electron_lib") {
       "//ui/wm",
     ]
     configs += [ ":gio_unix" ]
-  }
-  if (is_win) {
-    deps += [
-      "//third_party/breakpad:client",
-    ]
   }
   defines = [
     # Disable warnings for g_settings_list_schemas.
@@ -281,12 +281,9 @@ static_library("electron_lib") {
     # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
     # API of blink, then delete this include dir.
     "//third_party/WebKit/Source",
-    # NOTE(nornagon): other chromium files use the full path to include
-    # crashpad; this is just here for compatibility between GN and GYP, so that
-    # the #includes can be agnostic about where crashpad is vendored.
-    "//third_party/crashpad",
   ]
   if (is_linux || is_win) {
+    deps += [ "//third_party/breakpad:client" ]
     include_dirs += [
       "//third_party/breakpad",
     ]

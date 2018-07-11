@@ -1,3 +1,9 @@
+if (is_debug) {
+  node_configuration = "Debug"
+} else {
+  node_configuration = "Release"
+}
+
 action("configure_node") {
   script = "//third_party/electron_node/configure"
   ssl_libname_suffix = ""
@@ -39,8 +45,21 @@ action("gyp_node") {
     "node_override.gypi",
   ]
   outputs = [
-    "$target_out_dir/Release/build.ninja",
+    "$target_out_dir/$node_configuration/build.ninja",
   ]
+
+  # By default, node will build a dylib called something like
+  # libnode.$node_module_version.dylib, which is inconvenient for our
+  # purposes (since it makes the library's name unpredictable). This forces
+  # it to drop the module_version from the filename and just produce
+  # `libnode.dylib`.
+  if (is_mac) {
+    shlib_suffix = "dylib"
+  } else if (is_win) {
+    shlib_suffix = "dll"
+  } else if (is_linux) {
+    shlib_suffix = "so"
+  }
 
   args = [
     "-I", rebase_path("$target_gen_dir/config.gypi", root_build_dir),
@@ -50,6 +69,12 @@ action("gyp_node") {
     "-D", "target_arch=$target_cpu",
     "-D", "host_arch=$host_cpu",
     "-D", "config_gypi=" + rebase_path("$target_gen_dir/config.gypi"),
+    # This has _gn suffixed otherwise it gets overridden by a shlib_suffix
+    # that's set in node's gyp files. Don't ask me 🤷
+    "-D", "shlib_suffix_gn=" + shlib_suffix,
+    "-D", "llvm_dir=" + rebase_path("//third_party/llvm-build/Release+Asserts"),
+    "-D", "libcxx_dir=" + rebase_path("//buildtools/third_party/libc++"),
+    "-D", "libcxxabi_dir=" + rebase_path("//buildtools/third_party/libc++abi"),
     "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
     "-fninja",
     rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
@@ -66,23 +91,18 @@ action("build_node") {
     ":gyp_node",
   ]
   script = "//electron/build/run-ninja.py"
-  if (is_debug) {
-    configuration = "Debug"
-  } else {
-    configuration = "Release"
-  }
   args = [
-    "-C", rebase_path(target_out_dir, root_build_dir) + "/$configuration",
+    "-C", rebase_path(target_out_dir, root_build_dir) + "/$node_configuration",
     "node_lib"
   ]
   if (is_mac) {
-    outputs = [ "$target_out_dir/$configuration/libnode.dylib" ]
+    outputs = [ "$target_out_dir/$node_configuration/libnode.dylib" ]
   }
   if (is_linux) {
-    outputs = [ "$target_out_dir/$configuration/lib/libnode.so" ]
+    outputs = [ "$target_out_dir/$node_configuration/lib/libnode.so" ]
   }
   if (is_win) {
-    outputs = [ "$target_out_dir/$configuration/node.dll.lib", "$target_out_dir/$configuration/node.dll" ]
+    outputs = [ "$target_out_dir/$node_configuration/node.dll.lib", "$target_out_dir/$node_configuration/node.dll" ]
   }
 }
 

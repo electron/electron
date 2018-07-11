@@ -4,13 +4,36 @@
     # that we're building v8 with icu, so force it on.
     'v8_enable_inspector': 1,
 
-    # By default, node will build a dylib called something like
-    # libnode.$node_module_version.dylib, which is inconvenient for our
-    # purposes (since it makes the library's name unpredictable). This forces
-    # it to drop the module_version from the filename and just produce
-    # `libnode.dylib`.
-    'shlib_suffix': 'dylib',
+    'shlib_suffix': '<(shlib_suffix_gn)',
   },
+  'conditions': [
+    ['OS=="linux"', {
+      'make_global_settings': [
+        ['CC', '<(llvm_dir)/bin/clang'],
+        ['CXX', '<(llvm_dir)/bin/clang++'],
+        ['CC.host', '$(CC)'],
+        ['CXX.host', '$(CXX)'],
+      ],
+      'target_defaults': {
+        'target_conditions': [
+          ['_toolset=="target"', {
+            'cflags_cc': [
+              '-std=gnu++14',
+              '-nostdinc++',
+              '-isystem<(libcxx_dir)/trunk/include',
+              '-isystem<(libcxxabi_dir)/trunk/include',
+            ],
+            'ldflags': [
+              '-nostdlib++',
+            ],
+            'libraries': [
+              '../../../../../../libc++.so',
+            ],
+          }]
+        ]
+      }
+    }]
+  ],
   'target_defaults': {
     'target_conditions': [
       ['_target_name=="node_lib"', {
