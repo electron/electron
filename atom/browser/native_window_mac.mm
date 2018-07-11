@@ -640,6 +640,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
+  // Take note of the current window size
+  original_frame_ = [window_ frame];
   [window_ toggleFullScreenMode:nil];
 }
 
@@ -675,9 +677,13 @@ gfx::Rect NativeWindowMac::GetBounds() {
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
 }
+    
+bool NativeWindowMac::IsNormal() {
+    return NativeWindow::IsNormal() && !IsSimpleFullScreen();
+}
 
 gfx::Rect NativeWindowMac::GetNormalBounds() {
-  if (!IsMinimized() && !IsMaximized() && !IsFullscreen()) {
+  if (IsNormal()) {
     return GetBounds();
   }
   NSRect frame = original_frame_;
