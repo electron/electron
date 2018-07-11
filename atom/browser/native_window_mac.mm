@@ -595,7 +595,8 @@ void NativeWindowMac::Maximize() {
     return;
 
   // Take note of the current window size
-  original_frame_ = [window_ frame];
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ zoom:nil];
 }
 
@@ -624,7 +625,8 @@ void NativeWindowMac::Minimize() {
      return;
 
   // Take note of the current window size
-  original_frame_ = [window_ frame];
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ miniaturize:nil];
 }
 
@@ -641,7 +643,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
     return;
 
   // Take note of the current window size
-  original_frame_ = [window_ frame];
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ toggleFullScreenMode:nil];
 }
 
@@ -887,7 +890,8 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     is_simple_fullscreen_ = true;
 
     // Take note of the current window size
-    original_frame_ = [window frame];
+    if (IsNormal())
+      original_frame_ = [window_ frame];
 
     simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
     simple_fullscreen_mask_ = [window styleMask];

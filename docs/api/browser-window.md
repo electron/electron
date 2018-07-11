@@ -807,6 +807,10 @@ Simple fullscreen mode emulates the native fullscreen behavior found in versions
 
 Returns `Boolean` - Whether the window is in simple (pre-Lion) fullscreen mode.
 
+#### `win.isNormal()`
+
+Returns `Boolean` - Whether the window is in normal state (not maximized, not minimized, not in fullscreen mode).
+
 #### `win.setAspectRatio(aspectRatio[, extraSize])` _macOS_
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the

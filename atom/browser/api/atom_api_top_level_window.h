@@ -108,6 +108,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::vector<int> GetContentSize();
   void SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args);
   gfx::Rect GetContentBounds();
+  bool IsNormal();
   gfx::Rect GetNormalBounds();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
