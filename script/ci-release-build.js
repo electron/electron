@@ -120,7 +120,7 @@ async function callAppVeyor (targetBranch, job, options) {
   let appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling AppVeyor:', err)
   })
-  const buildUrl = `https://windows-ci.electronjs.org/project/AppVeyor/electron/build/${appVeyorResponse.version}`
+  const buildUrl = `https://windows-ci.electronjs.org/project/AppVeyor/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`
   console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`)
 }
 
