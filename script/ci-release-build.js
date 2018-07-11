@@ -1,3 +1,5 @@
+require('dotenv-safe').load()
+
 const assert = require('assert')
 const request = require('request')
 const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'

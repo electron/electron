@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
