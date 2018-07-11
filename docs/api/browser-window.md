@@ -869,7 +869,7 @@ the supplied bounds.
 
 Returns [`Rectangle`](structures/rectangle.md)
 
-#### `win.getBormalBounds()`
+#### `win.getNormalBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of the normal state
 
