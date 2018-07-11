@@ -240,6 +240,14 @@ static_library("electron_lib") {
     "brightray",
     "build/node",
   ]
+  include_dirs = [
+    "chromium_src",
+    ".",
+    "$target_gen_dir",
+    # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
+    # API of blink, then delete this include dir.
+    "//third_party/WebKit/Source",
+  ]
   if (enable_desktop_capturer) {
     deps += [ "//third_party/webrtc/modules/desktop_capture" ]
   }
@@ -274,14 +282,6 @@ static_library("electron_lib") {
   defines = [
     # Disable warnings for g_settings_list_schemas.
     "GLIB_DISABLE_DEPRECATION_WARNINGS",
-  ]
-  include_dirs = [
-    "chromium_src",
-    ".",
-    "$target_gen_dir",
-    # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
-    # API of blink, then delete this include dir.
-    "//third_party/WebKit/Source",
   ]
   if (is_component_build) {
     defines += [
