@@ -154,6 +154,24 @@ class Browser : public WindowListObserver {
   bool UpdateUserActivityState(const std::string& type,
                                const base::DictionaryValue& user_info);
 
+  // Register with APNs
+  void RegisterForRemoteNotifications();
+
+  void UnregisterForRemoteNotifications();
+
+  // Indicates that APNs registration succeeded, the token can be used to send
+  // notifications.
+  void DidRegisterForRemoteNotificationsWithDeviceToken(
+      const std::string& token);
+
+  // Indicates a failure to register for APNs
+  void DidFailToRegisterForRemoteNotificationsWithError(
+      const std::string& error);
+
+  // Indicates that a new remote notification has been received while the app is
+  // running.
+  void DidReceiveRemoteNotification(const base::DictionaryValue& user_info);
+
   // Bounce the dock icon.
   enum BounceType {
     BOUNCE_CRITICAL = 0,

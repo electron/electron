@@ -78,6 +78,13 @@ class BrowserObserver {
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) {}
+  // The browser failed to register for APNS. (macOS only)
+  virtual void OnDidRegisterForRemoteNotificationsWithDeviceToken(
+      const std::string& token) {}
+  virtual void OnDidFailToRegisterForRemoteNotificationsWithError(
+      const std::string& error) {}
+  virtual void OnDidReceiveRemoteNotification(
+      const base::DictionaryValue& user_info) {}
   // User clicked the native macOS new tab button. (macOS only)
   virtual void OnNewWindowForTab() {}
 #endif

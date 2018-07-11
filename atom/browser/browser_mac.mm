@@ -134,6 +134,17 @@ bool Browser::SetBadgeCount(int count) {
   return true;
 }
 
+void Browser::RegisterForRemoteNotifications() {
+  [[AtomApplication sharedApplication]
+      registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
+                                         NSRemoteNotificationTypeAlert |
+                                         NSRemoteNotificationTypeSound];
+}
+
+void Browser::UnregisterForRemoteNotifications() {
+  [[AtomApplication sharedApplication] unregisterForRemoteNotifications];
+}
+
 void Browser::SetUserActivity(const std::string& type,
                               const base::DictionaryValue& user_info,
                               mate::Arguments* args) {
@@ -200,6 +211,24 @@ bool Browser::UpdateUserActivityState(const std::string& type,
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
   return prevent_default;
+}
+
+void Browser::DidRegisterForRemoteNotificationsWithDeviceToken(
+    const std::string& token) {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidRegisterForRemoteNotificationsWithDeviceToken(token);
+}
+
+void Browser::DidFailToRegisterForRemoteNotificationsWithError(
+    const std::string& error) {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidFailToRegisterForRemoteNotificationsWithError(error);
+}
+
+void Browser::DidReceiveRemoteNotification(
+    const base::DictionaryValue& user_info) {
+  for (BrowserObserver& observer : observers_)
+    observer.OnDidReceiveRemoteNotification(user_info);
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(

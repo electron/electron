@@ -118,6 +118,12 @@ class App : public AtomBrowserClient::Delegate,
       bool* prevent_default,
       const std::string& type,
       const base::DictionaryValue& user_info) override;
+  void OnDidRegisterForRemoteNotificationsWithDeviceToken(
+      const std::string& token) override;
+  void OnDidFailToRegisterForRemoteNotificationsWithError(
+      const std::string& error) override;
+  void OnDidReceiveRemoteNotification(
+      const base::DictionaryValue& user_info) override;
   void OnNewWindowForTab() override;
 #endif
 

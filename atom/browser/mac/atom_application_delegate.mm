@@ -129,6 +129,30 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
   browser->DidFailToContinueUserActivity(activity_type, error_message);
 }
 
+- (void)application:(NSApplication*)application
+    didRegisterForRemoteNotificationsWithDeviceToken:(NSData*)deviceToken {
+  // TODO: Convert data to hex? or pipe it to Electron as binary blob?
+  std::string token(base::SysNSStringToUTF8([deviceToken description]));
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidRegisterForRemoteNotificationsWithDeviceToken(token);
+}
+
+- (void)application:(NSApplication*)application
+    didFailToRegisterForRemoteNotificationsWithError:(NSError*)error {
+  std::string error_message(
+      base::SysNSStringToUTF8([error localizedDescription]));
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidFailToRegisterForRemoteNotificationsWithError(error_message);
+}
+
+- (void)application:(NSApplication*)application
+    didReceiveRemoteNotification:(NSDictionary*)userInfo {
+  std::unique_ptr<base::DictionaryValue> user_info =
+      atom::NSDictionaryToDictionaryValue(userInfo);
+  atom::Browser* browser = atom::Browser::Get();
+  browser->DidReceiveRemoteNotification(*user_info);
+}
+
 - (IBAction)newWindowForTab:(id)sender {
   atom::Browser::Get()->NewWindowForTab();
 }
