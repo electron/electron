@@ -9,7 +9,9 @@
 
 // Include common headers for using node APIs.
 
+#ifdef NODE_SHARED_MODE
 #define BUILDING_NODE_EXTENSION
+#endif
 
 // The following define makes sure that we do not include the macros
 // again. But we still need the tracing functions, so declaring them.

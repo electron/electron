@@ -13,7 +13,6 @@ action("configure_node") {
   args = [
     "--enable-static",
     "--release-urlbase=https://atom.io/download/electron",
-    "--shared",
     "--shared-openssl",
     "--shared-openssl-includes=" + rebase_path("//third_party/boringssl/src/include"),
     "--shared-openssl-libname=boringssl" + ssl_libname_suffix,
@@ -29,6 +28,9 @@ action("configure_node") {
     "--config-out-dir=" + rebase_path(target_gen_dir),
     "--no-run-gyp",
   ]
+  if (is_component_build) {
+    args += [ "--shared" ]
+  }
   outputs = [
     "$target_gen_dir/config.gypi",
   ]
@@ -75,6 +77,7 @@ action("gyp_node") {
     "-D", "llvm_dir=" + rebase_path("//third_party/llvm-build/Release+Asserts"),
     "-D", "libcxx_dir=" + rebase_path("//buildtools/third_party/libc++"),
     "-D", "libcxxabi_dir=" + rebase_path("//buildtools/third_party/libc++abi"),
+    "-D", "is_component_build=$is_component_build",
     "-Goutput_dir=./$target_out_dir", # bizarrely, gyp generates from the build root instead of from cwd
     "-fninja",
     rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
@@ -93,16 +96,48 @@ action("build_node") {
   script = "//electron/build/run-ninja.py"
   args = [
     "-C", rebase_path(target_out_dir, root_build_dir) + "/$node_configuration",
-    "node_lib"
+    "node_lib",
+    "libuv", "nghttp2", "cares", "http_parser", "zlib"
   ]
   if (is_mac) {
-    outputs = [ "$target_out_dir/$node_configuration/libnode.dylib" ]
+    if (is_component_build) {
+      outputs = [ "$target_out_dir/$node_configuration/libnode.dylib" ]
+    } else {
+      outputs = [
+        "$target_out_dir/$node_configuration/libnode.a",
+        "$target_out_dir/$node_configuration/libcares.a",
+        "$target_out_dir/$node_configuration/libhttp_parser.a",
+        "$target_out_dir/$node_configuration/libnghttp2.a",
+        "$target_out_dir/$node_configuration/libuv.a",
+        "$target_out_dir/$node_configuration/libzlib.a",
+      ]
+    }
   }
   if (is_linux) {
-    outputs = [ "$target_out_dir/$node_configuration/lib/libnode.so" ]
+    if (is_component_build) {
+      outputs = [ "$target_out_dir/$node_configuration/lib/libnode.so" ]
+    } else {
+      outputs = [
+        # TODO
+      ]
+    }
   }
   if (is_win) {
-    outputs = [ "$target_out_dir/$node_configuration/node.dll.lib", "$target_out_dir/$node_configuration/node.dll" ]
+    if (is_component_build) {
+      outputs = [
+        "$target_out_dir/$node_configuration/node.dll.lib",
+        "$target_out_dir/$node_configuration/node.dll",
+      ]
+    } else {
+      outputs = [
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/node.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/uv/libuv.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/nghttp2/nghttp2.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/cares/cares.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/http_parser/http_parser.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/zlib/zlib.lib",
+      ]
+    }
   }
 }
 
@@ -120,17 +155,25 @@ config("node_config") {
     "//third_party/electron_node/deps/uv/include",
     "//third_party/electron_node/deps/cares/include",
   ]
-  libs = [ node_libs[0] ]
+  if (is_win && is_component_build) {
+    # Windows builds need both the .dll and the .dll.lib copied, but only the
+    # .dll.lib goes in the `libs` list.
+    libs = [ node_libs[0] ]
+  } else {
+    libs = node_libs
+  }
   cflags_cc = [
     "-Wno-deprecated-declarations",
   ]
   defines = [
     # We need to access internal implementations of Node.
     "NODE_WANT_INTERNALS=1",
-    "NODE_SHARED_MODE",
     "HAVE_OPENSSL=1",
     "HAVE_INSPECTOR=1",
   ]
+  if (is_component_build) {
+    defines += [ "NODE_SHARED_MODE" ]
+  }
 }
 
 group("node") {
