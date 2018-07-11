@@ -311,10 +311,7 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
 #endif
 }
 
-void BrowserWindow::SetVibrancy(mate::Arguments* args) {
-  std::string type;
-  args->GetNext(&type);
-
+void BrowserWindow::SetVibrancy(const std::string& type) {
   auto* render_view_host = web_contents()->GetRenderViewHost();
   if (render_view_host) {
     auto* impl = content::RenderWidgetHostImpl::FromID(
@@ -324,7 +321,7 @@ void BrowserWindow::SetVibrancy(mate::Arguments* args) {
       impl->SetBackgroundOpaque(type.empty() ? !window_->transparent() : false);
   }
 
-  TopLevelWindow::SetVibrancy(args);
+  TopLevelWindow::SetVibrancy(type);
 }
 
 void BrowserWindow::FocusOnWebView() {

@@ -163,7 +163,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
-  virtual void SetVibrancy(mate::Arguments* args);
+  virtual void SetVibrancy(const std::string& type);
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
