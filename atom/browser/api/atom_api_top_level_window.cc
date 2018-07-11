@@ -692,9 +692,7 @@ void TopLevelWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void TopLevelWindow::SetVibrancy(mate::Arguments* args) {
-  std::string type;
-  args->GetNext(&type);
+void TopLevelWindow::SetVibrancy(const std::string& type) {
   window_->SetVibrancy(type);
 }
 
