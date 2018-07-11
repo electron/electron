@@ -3,6 +3,11 @@ const request = require('request')
 const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
 const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
+const appVeyorJobs = {
+  'electron-x64': 'electron',
+  'electron-ia32': 'electron-39ng6'
+}
+
 const circleCIJobs = [
   'electron-linux-arm',
   'electron-linux-arm64',
@@ -71,9 +76,19 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
   console.log(`CircleCI release build request for ${job} successful.  Check ${circleResponse.build_url} for status.`)
 }
 
-async function buildAppVeyor (targetBranch, options) {
-  console.log(`Triggering AppVeyor to run build on branch: ${targetBranch} with release flag.`)
+function buildAppVeyor (targetBranch, options) {
   assert(process.env.APPVEYOR_TOKEN, 'APPVEYOR_TOKEN not found in environment')
+  const validJobs = Object.keys(appVeyorJobs)
+  if (options.job) {
+    assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`)
+    callAppVeyor(targetBranch, options.job, options)
+  } else {
+    validJobs.forEach((job) => callAppVeyor(targetBranch, job, options))
+  }
+}
+
+async function callAppVeyor (targetBranch, job, options) {
+  console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`)
   let environmentVariables = {}
 
   if (options.ghRelease) {
@@ -96,7 +111,7 @@ async function buildAppVeyor (targetBranch, options) {
     },
     body: JSON.stringify({
       accountName: 'AppVeyor',
-      projectSlug: 'electron',
+      projectSlug: appVeyorJobs[job],
       branch: targetBranch,
       environmentVariables
     }),
@@ -106,13 +121,13 @@ async function buildAppVeyor (targetBranch, options) {
     console.log('Error calling AppVeyor:', err)
   })
   const buildUrl = `https://windows-ci.electronjs.org/project/AppVeyor/electron/build/${appVeyorResponse.version}`
-  console.log(`AppVeyor release build request successful.  Check build status at ${buildUrl}`)
+  console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`)
 }
 
 function buildCircleCI (targetBranch, options) {
   const circleBuildUrl = `https://circleci.com/api/v1.1/project/github/electron/electron/tree/${targetBranch}?circle-token=${process.env.CIRCLE_TOKEN}`
   if (options.job) {
-    assert(circleCIJobs.includes(options.job), `Unknown CI job name: ${options.job}.`)
+    assert(circleCIJobs.includes(options.job), `Unknown CircleCI job name: ${options.job}. Valid values are: ${circleCIJobs}.`)
     circleCIcall(circleBuildUrl, targetBranch, options.job, options)
   } else {
     circleCIJobs.forEach((job) => circleCIcall(circleBuildUrl, targetBranch, job, options))
@@ -121,7 +136,7 @@ function buildCircleCI (targetBranch, options) {
 
 async function buildVSTS (targetBranch, options) {
   if (options.job) {
-    assert(vstsJobs.includes(options.job), `Unknown CI job name: ${options.job}.`)
+    assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
   assert(process.env.VSTS_TOKEN, 'VSTS_TOKEN not found in environment')
