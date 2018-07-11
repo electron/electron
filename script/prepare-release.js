@@ -5,7 +5,6 @@ require('colors')
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 })
-const assert = require('assert')
 const ciReleaseBuild = require('./ci-release-build')
 const { execSync } = require('child_process')
 const fail = '\u2717'.red
@@ -20,7 +19,6 @@ const versionType = args._[0]
 // TODO (future) automatically determine version based on conventional commits
 // via conventional-recommended-bump
 
-assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 if (!versionType && !args.notesOnly) {
   console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
      ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
