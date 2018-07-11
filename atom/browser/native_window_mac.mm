@@ -469,9 +469,6 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Default content view.
   SetContentView(new views::View());
   AddContentViewLayers();
-
-  // Take note of the current window size
-  original_frame_ = [window_ frame];
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -680,12 +677,16 @@ gfx::Rect NativeWindowMac::GetBounds() {
 }
 
 gfx::Rect NativeWindowMac::GetNormalBounds() {
-    NSRect frame = original_frame_;
-    gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
-    NSScreen* screen = [[NSScreen screens] firstObject];
-    bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
-    return bounds;
-    //return widget()->GetRestoredBounds();
+  if (!IsMinimized() && !IsMaximized() && !IsFullscreen()) {
+    return GetBounds();
+  }
+  NSRect frame = original_frame_;
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] firstObject];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
+  // Works on OS_WIN !
+  //return widget()->GetRestoredBounds();
 }
 
 void NativeWindowMac::SetContentSizeConstraints(
