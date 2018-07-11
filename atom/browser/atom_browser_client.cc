@@ -448,7 +448,6 @@ void AtomBrowserClient::SiteInstanceDeleting(
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
-  v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
 }
 
