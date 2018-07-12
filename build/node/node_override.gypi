@@ -32,7 +32,13 @@
           }]
         ]
       }
-    }]
+    }],
+    ['OS=="win"', {
+      'make_global_settings': [
+        ['CC', '<(llvm_dir)/bin/clang-cl'],
+        # Also defining CXX doesn't appear to be necessary.
+      ]
+    }],
   ],
   'target_defaults': {
     'target_conditions': [
