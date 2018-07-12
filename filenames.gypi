@@ -274,6 +274,8 @@
       'atom/browser/net/http_protocol_handler.h',
       'atom/browser/net/js_asker.cc',
       'atom/browser/net/js_asker.h',
+      'atom/browser/net/resolve_proxy_helper.cc',
+      'atom/browser/net/resolve_proxy_helper.h',
       'atom/browser/net/url_request_about_job.cc',
       'atom/browser/net/url_request_about_job.h',
       'atom/browser/net/url_request_async_asar_job.cc',

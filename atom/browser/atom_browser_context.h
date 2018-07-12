@@ -18,6 +18,7 @@ class AtomBlobReader;
 class AtomDownloadManagerDelegate;
 class AtomNetworkDelegate;
 class AtomPermissionManager;
+class ResolveProxyHelper;
 class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
@@ -51,6 +52,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
 
+  ResolveProxyHelper* GetResolveProxyHelper();
+
   AtomBlobReader* GetBlobReader();
   AtomCookieDelegate* cookie_delegate() const {
     return cookie_delegate_.get();
@@ -62,6 +65,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   ~AtomBrowserContext() override;
 
  private:
+  scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;

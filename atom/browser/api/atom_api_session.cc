@@ -29,7 +29,6 @@
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "brightray/browser/net/devtools_network_conditions.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
@@ -47,7 +46,6 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/proxy/proxy_config_service_fixed.h"
-#include "net/proxy/proxy_service.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -231,59 +229,6 @@ const char kPersistPrefix[] = "persist:";
 
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
-
-class ResolveProxyHelper {
- public:
-  ResolveProxyHelper(AtomBrowserContext* browser_context,
-                     const GURL& url,
-                     const Session::ResolveProxyCallback& callback)
-      : callback_(callback),
-        original_thread_(base::ThreadTaskRunnerHandle::Get()) {
-    scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->url_request_context_getter();
-    context_getter->GetNetworkTaskRunner()->PostTask(
-        FROM_HERE,
-        base::Bind(&ResolveProxyHelper::ResolveProxy,
-                   base::Unretained(this), context_getter, url));
-  }
-
-  void OnResolveProxyCompleted(int result) {
-    std::string proxy;
-    if (result == net::OK)
-      proxy = proxy_info_.ToPacString();
-    original_thread_->PostTask(FROM_HERE,
-                               base::Bind(callback_, proxy));
-    delete this;
-  }
-
- private:
-  void ResolveProxy(scoped_refptr<net::URLRequestContextGetter> context_getter,
-                    const GURL& url) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
-
-    net::ProxyService* proxy_service =
-        context_getter->GetURLRequestContext()->proxy_service();
-    net::CompletionCallback completion_callback =
-        base::Bind(&ResolveProxyHelper::OnResolveProxyCompleted,
-                   base::Unretained(this));
-
-    // Start the request.
-    int result = proxy_service->ResolveProxy(
-        url, "GET", &proxy_info_, completion_callback, &pac_req_, nullptr,
-        net::NetLogWithSource());
-
-    // Completed synchronously.
-    if (result != net::ERR_IO_PENDING)
-      completion_callback.Run(result);
-  }
-
-  Session::ResolveProxyCallback callback_;
-  net::ProxyInfo proxy_info_;
-  net::ProxyService::PacRequest* pac_req_;
-  scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
-
-  DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
-};
 
 // Runs the callback in UI thread.
 void RunCallbackInUI(const base::Callback<void()>& callback) {
@@ -490,8 +435,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   }
 }
 
-void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
-  new ResolveProxyHelper(browser_context(), url, callback);
+void Session::ResolveProxy(
+    const GURL& url,
+    const ResolveProxyHelper::ResolveProxyCallback& callback) {
+  browser_context_->GetResolveProxyHelper()->ResolveProxy(url, callback);
 }
 
 template<Session::CacheAction action>

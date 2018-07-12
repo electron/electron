@@ -16,6 +16,7 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/net/resolve_proxy_helper.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -224,6 +225,14 @@ AtomBlobReader* AtomBrowserContext::GetBlobReader() {
                                           file_system_context));
   }
   return blob_reader_.get();
+}
+
+ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
+  if (!resolve_proxy_helper_.get()) {
+    resolve_proxy_helper_ =
+        base::MakeRefCounted<ResolveProxyHelper>(url_request_context_getter());
+  }
+  return resolve_proxy_helper_.get();
 }
 
 // static
