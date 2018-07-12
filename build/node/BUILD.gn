@@ -118,7 +118,12 @@ action("build_node") {
       outputs = [ "$target_out_dir/$node_configuration/lib/libnode.so" ]
     } else {
       outputs = [
-        # TODO
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/libnode.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/uv/libuv.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/nghttp2/libnghttp2.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/cares/libcares.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/http_parser/libhttp_parser.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/zlib/libzlib.a",
       ]
     }
   }
