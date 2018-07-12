@@ -351,6 +351,8 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   widget()->Init(params);
   window_ = static_cast<AtomNSWindow*>(widget()->GetNativeWindow());
 
+  original_frame_ = bounds;
+
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[AtomNSWindowDelegate alloc] initWithShell:this]);
