@@ -53,6 +53,7 @@
           'EVP_CTRL_AEAD_SET_IVLEN=EVP_CTRL_GCM_SET_IVLEN',
           'EVP_CTRL_CCM_SET_TAG=EVP_CTRL_GCM_SET_TAG',
           'EVP_CTRL_AEAD_GET_TAG=EVP_CTRL_GCM_GET_TAG',
+          'WIN32_LEAN_AND_MEAN',
         ],
         'conditions': [
           ['OS=="win"', {
