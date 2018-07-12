@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 
 #include <deque>
+#include <string>
 
 #include "base/memory/ref_counted.h"
 #include "net/proxy/proxy_service.h"

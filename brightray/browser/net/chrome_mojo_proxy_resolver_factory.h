@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_NET_CHROME_MOJO_PROXY_RESOLVER_FACTORY_H_
 
 #include <stddef.h>
+#include <string>
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
