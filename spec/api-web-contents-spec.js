@@ -5,11 +5,16 @@ const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
 const {emittedOnce} = require('./events-helpers')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 
 const {ipcRenderer, remote} = require('electron')
 const {BrowserWindow, webContents, ipcMain, session} = remote
+const {expect} = chai
 
 const isCi = remote.getGlobal('isCi')
+
+chai.use(dirtyChai)
 
 /* The whole webContents API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
