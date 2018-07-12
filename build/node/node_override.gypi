@@ -5,6 +5,8 @@
     'v8_enable_inspector': 1,
 
     'shlib_suffix': '<(shlib_suffix_gn)',
+
+    'is_component_build%': 'false',
   },
   'conditions': [
     ['OS=="linux"', {
@@ -57,32 +59,40 @@
         ],
         'conditions': [
           ['OS=="win"', {
-            'libraries': [
-              '-lv8.dll',
-              '-lv8_libbase.dll',
-              '-lv8_libplatform.dll',
-              '-licuuc.dll',
-              '-ldbghelp',
+            'conditions': [
+              ['is_component_build=="true"', {
+                'libraries': [
+                  '-lv8.dll',
+                  '-lv8_libbase.dll',
+                  '-lv8_libplatform.dll',
+                  '-licuuc.dll',
+                  '-ldbghelp',
+                ],
+                'msvs_settings': {
+                  # Change location of some hard-coded paths.
+                  'VCLinkerTool': {
+                    'AdditionalOptions!': [
+                      '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\zlib<(STATIC_LIB_SUFFIX)',
+                      '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libuv<(STATIC_LIB_SUFFIX)',
+                    ],
+                    'AdditionalOptions': [
+                      '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\zlib\\zlib<(STATIC_LIB_SUFFIX)',
+                      '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\uv\\libuv<(STATIC_LIB_SUFFIX)',
+                    ],
+                  },
+                },
+              }]
             ],
-            'msvs_settings': {
-              # Change location of some hard-coded paths.
-              'VCLinkerTool': {
-                'AdditionalOptions!': [
-                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\zlib<(STATIC_LIB_SUFFIX)',
-                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libuv<(STATIC_LIB_SUFFIX)',
-                ],
-                'AdditionalOptions': [
-                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\zlib\\zlib<(STATIC_LIB_SUFFIX)',
-                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\third_party\\electron_node\\deps\\uv\\libuv<(STATIC_LIB_SUFFIX)',
-                ],
-              },
-            },
           }, {
-            'libraries': [
-              '-lv8',
-              '-lv8_libbase',
-              '-lv8_libplatform',
-              '-licuuc',
+            'conditions': [
+              ['is_component_build=="true"', {
+                'libraries': [
+                  '-lv8',
+                  '-lv8_libbase',
+                  '-lv8_libplatform',
+                  '-licuuc',
+                ]
+              }]
             ]
           }]
         ]
