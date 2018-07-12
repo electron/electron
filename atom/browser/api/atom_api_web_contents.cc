@@ -1434,6 +1434,10 @@ bool WebContents::IsAudioMuted() {
   return web_contents()->IsAudioMuted();
 }
 
+bool WebContents::IsCurrentlyAudible() {
+  return web_contents()->IsCurrentlyAudible();
+}
+
 void WebContents::Print(mate::Arguments* args) {
   PrintSettings settings = {false, false, base::string16()};
   if (args->Length() >= 1 && !args->GetNext(&settings)) {
@@ -2018,6 +2022,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
+      .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)

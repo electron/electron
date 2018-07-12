@@ -143,6 +143,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  bool IsCurrentlyAudible();
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
