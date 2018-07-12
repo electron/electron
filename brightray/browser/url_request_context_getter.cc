@@ -13,6 +13,7 @@
 #include "base/threading/sequenced_worker_pool.h"
 #include "base/threading/worker_pool.h"
 #include "brightray/browser/browser_client.h"
+#include "brightray/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "brightray/browser/net/devtools_network_controller_handle.h"
 #include "brightray/browser/net/devtools_network_transaction_factory.h"
 #include "brightray/browser/net/require_ct_delegate.h"
@@ -41,7 +42,7 @@
 #include "net/proxy/proxy_config_service.h"
 #include "net/proxy/proxy_script_fetcher_impl.h"
 #include "net/proxy/proxy_service.h"
-#include "net/proxy/proxy_service_v8.h"
+#include "net/proxy/proxy_service_mojo.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
@@ -229,14 +230,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       storage_->set_proxy_service(net::ProxyService::CreateFixed(
           proxy_config));
     } else {
-      storage_->set_proxy_service(
-          net::CreateProxyServiceUsingV8ProxyResolver(
-              std::move(proxy_config_service_),
-              new net::ProxyScriptFetcherImpl(url_request_context_.get()),
-              dhcp_factory.Create(url_request_context_.get()),
-              host_resolver.get(),
-              nullptr,
-              url_request_context_->network_delegate()));
+      storage_->set_proxy_service(net::CreateProxyServiceUsingMojoFactory(
+          ChromeMojoProxyResolverFactory::GetInstance(),
+          std::move(proxy_config_service_),
+          new net::ProxyScriptFetcherImpl(url_request_context_.get()),
+          dhcp_factory.Create(url_request_context_.get()), host_resolver.get(),
+          nullptr, url_request_context_->network_delegate()));
     }
 
     std::vector<std::string> schemes;

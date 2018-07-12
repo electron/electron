@@ -20,6 +20,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   AtomContentUtilityClient();
   ~AtomContentUtilityClient() override;
 
+  void UtilityThreadStarted() override;
   bool OnMessageReceived(const IPC::Message& message) override;
 
  private:
