@@ -29,14 +29,17 @@ content::RenderFrame* GetCurrentRenderFrame() {
 // static
 void RemoteObjectFreer::BindTo(v8::Isolate* isolate,
                                v8::Local<v8::Object> target,
+                               const std::string& context_id,
                                int object_id) {
-  new RemoteObjectFreer(isolate, target, object_id);
+  new RemoteObjectFreer(isolate, target, context_id, object_id);
 }
 
 RemoteObjectFreer::RemoteObjectFreer(v8::Isolate* isolate,
                                      v8::Local<v8::Object> target,
+                                     const std::string& context_id,
                                      int object_id)
     : ObjectLifeMonitor(isolate, target),
+      context_id_(context_id),
       object_id_(object_id),
       routing_id_(MSG_ROUTING_NONE) {
   content::RenderFrame* render_frame = GetCurrentRenderFrame();
@@ -56,6 +59,7 @@ void RemoteObjectFreer::RunDestructor() {
   base::string16 channel = base::ASCIIToUTF16("ipc-message");
   base::ListValue args;
   args.AppendString("ELECTRON_BROWSER_DEREFERENCE");
+  args.AppendString(context_id_);
   args.AppendInteger(object_id_);
   render_frame->Send(new AtomFrameHostMsg_Message(render_frame->GetRoutingID(),
                                                   channel, args));
