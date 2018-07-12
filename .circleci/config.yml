@@ -102,9 +102,13 @@ build-steps: &build-steps
               mkdir junit
               script/test.py --ci --rebuild_native_modules
             else
-              echo 'Testing Electron release build'
-              mkdir junit
-              script/test.py --ci --rebuild_native_modules -c R
+              if [ "$UPLOAD_TO_S3" == "1" ]; then
+                echo 'Testing Electron release build'
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules -c R
+              else
+                echo 'Skipping tests on GitHub release'
+              fi
             fi
           else
            echo 'Skipping tests due to configuration'
@@ -141,10 +145,7 @@ build-steps: &build-steps
     - store_artifacts:
         path: junit
     - store_artifacts:
-        path: out/electron.d.ts
-    - store_artifacts:
-        path: out/electron-api.json
-
+        path: out
 
 build-defaults: &build-defaults
   docker:

@@ -1,28 +1,26 @@
 version: 1.0.{build}
+branches:
+  except:
+  - /^release$|^release-\d-\d-x$/
 build_cloud: electron-16
 image: electron-16-vs2017
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
-  matrix:
-  - TARGET_ARCH: ia32
-  - TARGET_ARCH: x64
 build_script:
 - ps: >-
     if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
       Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-
     } else {
       Add-Path "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64"
-
       $env:path = "$env:ProgramFiles (x86)\Windows Kits\10\Debuggers\x64;$env:path"
-
+      if($env:APPVEYOR_SCHEDULED_BUILD -eq 'True')  {
+        $env:RUN_RELEASE_BUILD = "1"
+      }
       $Message = (git log --format=%B -n 1 HEAD) | Out-String
-
       if ((Test-Path Env:\RUN_RELEASE_BUILD)) {
         $env:ELECTRON_RELEASE = '1'
         Write-Output "release build triggered from api"
       }
-
       if ((Test-Path Env:\ELECTRON_RELEASE)) {
         Write-Output "Running release build"
         python script\bootstrap.py --target_arch=$env:TARGET_ARCH
@@ -38,8 +36,8 @@ build_script:
       } else {
         "Build succeeded."
       }
+      Push-AppveyorArtifact out
     }
-
 test_script:
 - ps: >-
     if (Test-Path Env:\ELECTRON_RELEASE) {
@@ -53,7 +51,6 @@ test_script:
         Write-Output "Tests succeeded."
       }
       python script\verify-ffmpeg.py
-
       if ($LASTEXITCODE -ne '0') {
         throw "Verify ffmpeg failed with exit code $LASTEXITCODE"
       } else {
@@ -61,5 +58,16 @@ test_script:
       }
     }
 artifacts:
-- path: out
-  name: out
+- path: test-results.xml
+  name: test-results.xml
+deploy_script:
+- ps: >-
+    if (Test-Path Env:\ELECTRON_RELEASE) {
+      if (Test-Path Env:\RUN_RELEASE_BUILD) {
+        Write-Output "Uploading Electron release distribution to s3"
+        & python script\upload.py --upload_to_s3
+      } else {
+        Write-Output "Uploading Electron release distribution to github releases"
+        & python script\upload.py
+      }
+    }
