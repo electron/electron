@@ -623,8 +623,8 @@ bool NativeWindowMac::IsMaximized() {
 }
 
 void NativeWindowMac::Minimize() {
-   if (IsMinimized())
-     return;
+  if (IsMinimized())
+    return;
 
   // Take note of the current window size
   if (IsNormal())
@@ -672,7 +672,6 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   cocoa_bounds.origin.y = NSHeight([screen frame]) - size.height() - bounds.y();
 
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
-    
 }
 
 gfx::Rect NativeWindowMac::GetBounds() {
@@ -682,9 +681,9 @@ gfx::Rect NativeWindowMac::GetBounds() {
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
 }
-    
+
 bool NativeWindowMac::IsNormal() {
-    return NativeWindow::IsNormal() && !IsSimpleFullScreen();
+  return NativeWindow::IsNormal() && !IsSimpleFullScreen();
 }
 
 gfx::Rect NativeWindowMac::GetNormalBounds() {
@@ -697,7 +696,7 @@ gfx::Rect NativeWindowMac::GetNormalBounds() {
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
   // Works on OS_WIN !
-  //return widget()->GetRestoredBounds();
+  // return widget()->GetRestoredBounds();
 }
 
 void NativeWindowMac::SetContentSizeConstraints(
