@@ -363,6 +363,7 @@
           ],
           'link_settings': {
             'libraries': [
+              '-ldwmapi.lib',
               '-limm32.lib',
               '-lgdi32.lib',
               '-loleacc.lib',
