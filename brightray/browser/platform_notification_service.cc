@@ -90,6 +90,7 @@ PlatformNotificationService::CheckPermissionOnIOThread(
     content::ResourceContext* resource_context,
     const GURL& origin,
     int render_process_id) {
+  render_process_id_ = render_process_id;
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
