@@ -217,7 +217,8 @@ static_library("electron_lib") {
     "//components/printing/common",
     "//components/security_state/content",
     "//components/viz/service",
-    "//content/public/browser",
+    "//content/public/app:both",
+    "//content/public/child",
     "//device/geolocation",
     "//gin",
     "//net:net_resources",
@@ -239,6 +240,14 @@ static_library("electron_lib") {
     ":native_mate",
     "brightray",
     "build/node",
+  ]
+  include_dirs = [
+    "chromium_src",
+    ".",
+    "$target_gen_dir",
+    # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
+    # API of blink, then delete this include dir.
+    "//third_party/WebKit/Source",
   ]
   if (enable_desktop_capturer) {
     deps += [ "//third_party/webrtc/modules/desktop_capture" ]
@@ -274,20 +283,15 @@ static_library("electron_lib") {
   defines = [
     # Disable warnings for g_settings_list_schemas.
     "GLIB_DISABLE_DEPRECATION_WARNINGS",
-
-    # Import V8 symbols from shared library (node.dll / libnode.so)
-    "USING_V8_SHARED",
-    "USING_V8_PLATFORM_SHARED",
-    "USING_V8_BASE_SHARED",
   ]
-  include_dirs = [
-    "chromium_src",
-    ".",
-    "$target_gen_dir",
-    # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
-    # API of blink, then delete this include dir.
-    "//third_party/WebKit/Source",
-  ]
+  if (is_component_build) {
+    defines += [
+      # Import V8 symbols from shared library (node.dll / libnode.so)
+      "USING_V8_SHARED",
+      "USING_V8_PLATFORM_SHARED",
+      "USING_V8_BASE_SHARED",
+    ]
+  }
   if (is_linux || is_win) {
     deps += [ "//third_party/breakpad:client" ]
     include_dirs += [
@@ -433,14 +437,16 @@ if (is_mac) {
     ]
   }
 
-  bundle_data("electron_framework_libraries") {
-    public_deps = [ "build/node" ]
-    sources = [
-      "$root_out_dir/libnode.dylib"
-    ]
-    outputs = [
-      "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
-    ]
+  if (is_component_build) {
+    bundle_data("electron_framework_libraries") {
+      public_deps = [ "build/node" ]
+      sources = [
+        "$root_out_dir/libnode.dylib"
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
+      ]
+    }
   }
 
   bundle_data("electron_crashpad_helper") {
@@ -465,12 +471,14 @@ if (is_mac) {
     deps = [
       "//base",
       "//base:i18n",
-      ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
+    }
+    if (is_component_build) {
+      deps += [ ":electron_framework_libraries" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
     extra_substitutions = [

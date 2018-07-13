@@ -50,11 +50,6 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 
-  typedef HRESULT(STDAPICALLTYPE* DwmGetColorizationColor)(DWORD*, BOOL*);
-  DwmGetColorizationColor dwmGetColorizationColor =
-      (DwmGetColorizationColor)GetProcAddress(LoadLibraryW(L"dwmapi.dll"),
-                                              "DwmGetColorizationColor");
-
   std::string GetAccentColor();
   std::string GetColor(const std::string& color, mate::Arguments* args);
 

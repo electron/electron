@@ -6,7 +6,7 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
-const assert = require('assert')
+const {expect} = require('chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
@@ -27,12 +27,12 @@ const skip = process.platform !== 'linux' ||
   before(async () => {
     // init app
     app.setName(appName)
-    app.setDesktopName(appName + '.desktop')
+    app.setDesktopName(`${appName}.desktop`)
     // init dbus
     const path = '/org/freedesktop/Notifications'
     const iface = 'org.freedesktop.DBus.Mock'
     const bus = dbus.sessionBus()
-    console.log('session bus: ' + process.env.DBUS_SESSION_BUS_ADDRESS)
+    console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
     const service = bus.getService(serviceName)
     const getInterface = Promise.promisify(service.getInterface, {context: service})
     mock = await getInterface(path, iface)
@@ -48,10 +48,10 @@ const skip = process.platform !== 'linux' ||
     app.setVersion(realAppVersion)
   })
 
-  describe('Notification module using ' + serviceName, () => {
+  describe(`Notification module using ${serviceName}`, () => {
     function onMethodCalled (done) {
       function cb (name) {
-        console.log('onMethodCalled: ' + name)
+        console.log(`onMethodCalled: ${name}`)
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb)
           console.log('done')
@@ -83,7 +83,7 @@ const skip = process.platform !== 'linux' ||
       }
     }
 
-    before((done) => {
+    before(done => {
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
       Notification = require('electron').remote.Notification
@@ -98,14 +98,16 @@ const skip = process.platform !== 'linux' ||
       n.show()
     })
 
-    it('should call ' + serviceName + ' to show notifications', async () => {
+    it(`should call ${serviceName} to show notifications`, async () => {
       const calls = await getCalls()
-      assert(calls.length >= 1)
+      expect(calls).to.be.an('array').of.lengthOf.at.least(1)
+
       let lastCall = calls[calls.length - 1]
       let methodName = lastCall[1]
-      assert.equal(methodName, 'Notify')
+      expect(methodName).to.equal('Notify')
+
       let args = unmarshalDBusNotifyArgs(lastCall[2])
-      assert.deepEqual(args, {
+      expect(args).to.deep.equal({
         app_name: appName,
         replaces_id: 0,
         app_icon: '',

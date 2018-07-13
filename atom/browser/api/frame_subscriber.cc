@@ -26,7 +26,8 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       isolate_(isolate),
       callback_(callback),
-      only_dirty_(only_dirty) {}
+      only_dirty_(only_dirty),
+      weak_ptr_factory_(this) {}
 
 FrameSubscriber::~FrameSubscriber() = default;
 
@@ -64,7 +65,7 @@ void FrameSubscriber::DidReceiveCompositorFrame() {
 
   view->CopyFromSurface(
       gfx::Rect(), view->GetViewBounds().size(),
-      base::BindOnce(&FrameSubscriber::Done, base::Unretained(this),
+      base::BindOnce(&FrameSubscriber::Done, weak_ptr_factory_.GetWeakPtr(),
                      GetDamageRect()));
 }
 

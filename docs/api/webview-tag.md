@@ -450,6 +450,10 @@ Set guest page muted.
 
 Returns `Boolean` - Whether guest page has been muted.
 
+#### `<webview>.isCurrentlyAudible()`
+
+Returns `Boolean` - Whether audio is currently playing.
+
 ### `<webview>.undo()`
 
 Executes editing command `undo` in page.
