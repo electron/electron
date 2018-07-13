@@ -21,6 +21,10 @@ Create a token from "Personal API Tokens" at https://circleci.com/account/api
 * `VSTS_TOKEN`:
 Create a Personal Access Token at https://github.visualstudio.com/_details/security/tokens
 with the scope of `Build (read and execute)`.
+* `ELECTRON_S3_BUCKET`:
+* `ELECTRON_S3_ACCESS_KEY`:
+* `ELECTRON_S3_SECRET_KEY`:
+If you don't have these, ask a team member to help you.
 
 ## Determine which branch to release from
 
@@ -205,7 +209,7 @@ release notes.
 $ npm run release -- --validateRelease
 ```
 Note, if you need to run `--validateRelease` more than once to check the assets,
-run it as above the first time, then `node ./script/release.js --validateRelase`
+run it as above the first time, then `node ./script/release.js --validateRelease`
 for subsequent calls so that you don't have to rebuild each time you want to
 check the assets.
 
