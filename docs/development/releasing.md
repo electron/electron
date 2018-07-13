@@ -19,7 +19,7 @@ If you don't have an account, ask a team member to add you.
 * `CIRCLE_TOKEN`:
 Create a token from "Personal API Tokens" at https://circleci.com/account/api
 * `VSTS_TOKEN`:
-Create a Personal Access Token at https://github.visualstudio.com/_usersSettings/tokens
+Create a Personal Access Token at https://github.visualstudio.com/_details/security/tokens
 with the scope of `Build (read and execute)`.
 
 ## Determine which branch to release from
