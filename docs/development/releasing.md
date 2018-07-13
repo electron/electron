@@ -255,6 +255,21 @@ electron
 $ npm run publish-to-npm
 ```
 
+After publishing, you can check the `latest` release:
+```sh
+$ npm dist-tag ls electron
+```
+
+If for some reason `npm run publish-to-npm` fails,
+you can tag the release manually:
+```sh
+$ npm dist-tag add electron@<version> <tag>
+```
+e.g.:
+```sh
+$ npm dist-tag add electron@2.0.0 latest
+```
+
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
 [versioning]: /docs/tutorial/electron-versioning.md
