@@ -8,6 +8,7 @@
 #include "content/public/browser/web_contents.h"
 
 #include "base/callback.h"
+#include "base/memory/weak_ptr.h"
 #include "components/viz/common/frame_sinks/copy_output_result.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "ui/gfx/image/image.h"
@@ -38,6 +39,8 @@ class FrameSubscriber : public content::WebContentsObserver {
   v8::Isolate* isolate_;
   FrameCaptureCallback callback_;
   bool only_dirty_;
+
+  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
