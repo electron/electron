@@ -65,7 +65,7 @@ npm run prepare-release -- minor
 ```
 ### Patch version change
 ```sh
-npm run prepare-release -- patch
+npm run prepare-release -- patch --stable
 ```
 ### Beta version change
 ```sh
@@ -204,6 +204,10 @@ release notes.
 ```sh
 $ npm run release -- --validateRelease
 ```
+Note, if you need to run `--validateRelease` more than once to check the assets,
+run it as above the first time, then `node ./script/release.js --validateRelase`
+for subsequent calls so that you don't have to rebuild each time you want to
+check the assets.
 
 ## Publish the release
 
