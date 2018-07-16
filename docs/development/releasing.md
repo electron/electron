@@ -19,7 +19,7 @@ If you don't have an account, ask a team member to add you.
 * `CIRCLE_TOKEN`:
 Create a token from "Personal API Tokens" at https://circleci.com/account/api
 * `VSTS_TOKEN`:
-Create a Personal Access Token at https://github.visualstudio.com/_details/security/tokens
+Create a Personal Access Token at https://github.visualstudio.com/_usersSettings/tokens or https://github.visualstudio.com/_details/security/tokens
 with the scope of `Build (read and execute)`.
 * `ELECTRON_S3_BUCKET`:
 * `ELECTRON_S3_ACCESS_KEY`:
@@ -299,7 +299,7 @@ node script/ci-release-build.js --ci=AppVeyor --ghRelease TARGET_BRANCH
 ```
 
 Additionally you can pass a job name to the script to run an individual job, eg:
-````sh
+```sh
 node script/ci-release-build.js --ci=AppVeyor --ghRelease --job=electron-x64 TARGET_BRANCH
 ```
 
