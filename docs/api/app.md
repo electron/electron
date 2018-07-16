@@ -386,6 +386,7 @@ app.on('session-created', (event, session) => {
 
 Returns:
 
+* `event` Event
 * `argv` String[] - An array of the second instance's command line arguments
 * `workingDirectory` String - The second instance's working directory
 
