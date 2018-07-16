@@ -98,12 +98,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  static int64_t GetIDForContents(content::WebContents* web_contents);
-
   // Notifies to destroy any guest web contents before destroying self.
   void DestroyWebContents(bool async);
 
-  int64_t GetID() const;
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   Type GetType() const;

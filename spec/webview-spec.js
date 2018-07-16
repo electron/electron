@@ -1034,7 +1034,7 @@ describe('<webview> tag', function () {
       assert.ok(webview.partition)
 
       const listener = function (webContents, permission, callback) {
-        if (webContents.getId() === webview.getId()) {
+        if (webContents.id === webview.getWebContents().id) {
           // requestMIDIAccess with sysex requests both midi and midiSysex so
           // grant the first midi one and then reject the midiSysex one
           if (requestedPermission === 'midiSysex' && permission === 'midi') {
@@ -1120,7 +1120,7 @@ describe('<webview> tag', function () {
       webview.partition = 'permissionTest'
       webview.setAttribute('nodeintegration', 'on')
       session.fromPartition(webview.partition).setPermissionRequestHandler((webContents, permission, callback) => {
-        if (webContents.getId() === webview.getId()) {
+        if (webContents.id === webview.getWebContents().id) {
           assert.equal(permission, 'notifications')
           setTimeout(() => { callback(true) }, 10)
         }

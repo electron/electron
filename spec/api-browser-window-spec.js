@@ -207,7 +207,7 @@ describe('BrowserWindow module', () => {
       const contents = w.webContents
       w.destroy()
       assert.throws(() => {
-        contents.getId()
+        contents.getProcessId()
       }, /Object has been destroyed/)
     })
   })
