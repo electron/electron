@@ -169,6 +169,8 @@ def setup_libchromiumcontent(is_dev, target_arch, url,
     mkdir_p(target_dir)
   else:
     mkdir_p(DOWNLOAD_DIR)
+  if is_verbose_mode():
+    args += ['-v']
   if is_dev:
     subprocess.check_call([sys.executable, script] + args)
   else:
