@@ -118,7 +118,6 @@ const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
-const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
 
 // Opener window's ID.
 const char kOpenerID[] = "openerId";
