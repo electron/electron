@@ -839,6 +839,14 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.openDevTools()', () => {
+    it('does not crash for frameless window', () => {
+      w.destroy()
+      w = new BrowserWindow({ show: false })
+      w.openDevTools()
+    })
+  })
+
   describe('BrowserWindow.fromBrowserView(browserView)', () => {
     let bv = null
 
