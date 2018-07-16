@@ -19,8 +19,12 @@ If you don't have an account, ask a team member to add you.
 * `CIRCLE_TOKEN`:
 Create a token from "Personal API Tokens" at https://circleci.com/account/api
 * `VSTS_TOKEN`:
-Create a Personal Access Token at https://github.visualstudio.com/_usersSettings/tokens
+Create a Personal Access Token at https://github.visualstudio.com/_usersSettings/tokens or https://github.visualstudio.com/_details/security/tokens
 with the scope of `Build (read and execute)`.
+* `ELECTRON_S3_BUCKET`:
+* `ELECTRON_S3_ACCESS_KEY`:
+* `ELECTRON_S3_SECRET_KEY`:
+If you don't have these, ask a team member to help you.
 
 ## Determine which branch to release from
 
@@ -65,7 +69,7 @@ npm run prepare-release -- minor
 ```
 ### Patch version change
 ```sh
-npm run prepare-release -- patch
+npm run prepare-release -- patch --stable
 ```
 ### Beta version change
 ```sh
@@ -204,6 +208,10 @@ release notes.
 ```sh
 $ npm run release -- --validateRelease
 ```
+Note, if you need to run `--validateRelease` more than once to check the assets,
+run it as above the first time, then `node ./script/release.js --validateRelease`
+for subsequent calls so that you don't have to rebuild each time you want to
+check the assets.
 
 ## Publish the release
 
@@ -247,6 +255,21 @@ electron
 $ npm run publish-to-npm
 ```
 
+After publishing, you can check the `latest` release:
+```sh
+$ npm dist-tag ls electron
+```
+
+If for some reason `npm run publish-to-npm` fails,
+you can tag the release manually:
+```sh
+$ npm dist-tag add electron@<version> <tag>
+```
+e.g.:
+```sh
+$ npm dist-tag add electron@2.0.0 latest
+```
+
 [the releases page]: https://github.com/electron/electron/releases
 [this bump commit]: https://github.com/electron/electron/commit/78ec1b8f89b3886b856377a1756a51617bc33f5a
 [versioning]: /docs/tutorial/electron-versioning.md
@@ -276,7 +299,7 @@ node script/ci-release-build.js --ci=AppVeyor --ghRelease TARGET_BRANCH
 ```
 
 Additionally you can pass a job name to the script to run an individual job, eg:
-````sh
+```sh
 node script/ci-release-build.js --ci=AppVeyor --ghRelease --job=electron-x64 TARGET_BRANCH
 ```
 
