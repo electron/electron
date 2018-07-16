@@ -305,8 +305,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
     * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
       Default is `false`.
-    * `experimentalCanvasFeatures` Boolean (optional) - Enables Chromium's experimental
-      canvas features. Default is `false`.
     * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
       macOS. Default is `false`.
     * `enableBlinkFeatures` String (optional) - A list of feature strings separated by `,`, like

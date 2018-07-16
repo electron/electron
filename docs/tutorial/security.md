@@ -355,7 +355,7 @@ Content-Security-Policy: script-src 'self' https://apis.mydomain.com
 ### CSP HTTP Header
 
 Electron respects the [`Content-Security-Policy` HTTP header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
-which can be set using Electron's 
+which can be set using Electron's
 [`webRequest.onHeadersReceived`](../api/web-request.md#webrequestonheadersreceivedfilter-listener)
 handler:
 
@@ -369,7 +369,7 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 
 ### CSP Meta Tag
 
-CSP's preferred delivery mechanism is an HTTP header. It can be useful, however, 
+CSP's preferred delivery mechanism is an HTTP header. It can be useful, however,
 to set a policy on a page directly in the markup using a `<meta>` tag:
 
 ```html
@@ -445,7 +445,7 @@ const mainWindow = new BrowserWindow({})
 _Recommendation is Electron's default_
 
 Advanced users of Electron can enable experimental Chromium features using the
-`experimentalFeatures` and `experimentalCanvasFeatures` properties.
+`experimentalFeatures` property.
 
 ### Why?
 

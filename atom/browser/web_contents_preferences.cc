@@ -53,7 +53,6 @@ WebContentsPreferences::WebContentsPreferences(
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
-  SetDefaultBoolIfUndefined(options::kExperimentalCanvasFeatures, false);
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, node);
@@ -139,8 +138,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (dict_.GetBoolean(options::kExperimentalFeatures, &b) && b)
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
-  if (dict_.GetBoolean(options::kExperimentalCanvasFeatures, &b) && b)
-    command_line->AppendSwitch(::switches::kEnableExperimentalCanvasFeatures);
 
   // Check if we have node integration specified.
   bool node_integration = true;
