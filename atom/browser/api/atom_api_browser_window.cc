@@ -87,7 +87,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
 
 #if defined(OS_MACOSX)
   if (!window()->has_frame())
-    OverrideNSWindowContentView();
+    OverrideNSWindowContentView(web_contents->managed_web_contents());
 #endif
 
   // Init window after everything has been setup.
