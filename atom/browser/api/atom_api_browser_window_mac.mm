@@ -10,6 +10,7 @@
 #include "atom/browser/native_window_mac.h"
 #include "atom/common/draggable_region.h"
 #include "base/mac/scoped_nsobject.h"
+#include "brightray/browser/inspectable_web_contents_view.h"
 
 @interface NSView (WebContentsView)
 - (void)setMouseDownCanMoveWindow:(BOOL)can_move;
@@ -54,11 +55,12 @@ std::vector<gfx::Rect> CalculateNonDraggableRegions(
 
 }  // namespace
 
-void BrowserWindow::OverrideNSWindowContentView() {
+void BrowserWindow::OverrideNSWindowContentView(
+    brightray::InspectableWebContents* iwc) {
   // Make NativeWindow use a NSView as content view.
   static_cast<NativeWindowMac*>(window())->OverrideNSWindowContentView();
   // Add webview to contentView.
-  NSView* webView = web_contents()->GetNativeView();
+  NSView* webView = iwc->GetView()->GetNativeView();
   NSView* contentView = [window()->GetNativeWindow() contentView];
   [webView setFrame:[contentView bounds]];
   [contentView addSubview:webView];
