@@ -59,7 +59,10 @@ describe('security warnings', () => {
   })
 
   it('should warn about Node.js integration with remote content', (done) => {
-    w = new BrowserWindow({ show: false })
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: true }
+    })
     w.webContents.once('console-message', (e, level, message) => {
       assert(message.includes('Node.js Integration with Remote Content'), message)
       done()

@@ -109,7 +109,12 @@ describe('webFrame module', function () {
       runNumber++
 
       const url = standardScheme + '://fake-host'
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       after(function (done) {
         protocol.unregisterProtocol(corsScheme, function () {
           protocol.unregisterProtocol(standardScheme, function () {

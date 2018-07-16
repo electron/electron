@@ -17,6 +17,15 @@ const features = process.atomBinding('features')
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
+const createNodeWindow = (opts = {}) =>
+  new BrowserWindow({
+    ...opts,
+    webPreferences: {
+      nodeIntegration: true,
+      ...(opts.webPreferences || {})
+    }
+  })
+
 describe('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
@@ -79,7 +88,7 @@ describe('BrowserWindow module', () => {
   })
 
   beforeEach(() => {
-    w = new BrowserWindow({
+    w = createNodeWindow({
       show: false,
       width: 400,
       height: 400,
@@ -95,7 +104,7 @@ describe('BrowserWindow module', () => {
     it('allows passing void 0 as the webContents', () => {
       w.close()
       w = null
-      w = new BrowserWindow({
+      w = createNodeWindow({
         webContents: void 0
       })
     })
@@ -169,7 +178,7 @@ describe('BrowserWindow module', () => {
       function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
-          let w = new BrowserWindow({show: false})
+          let w = createNodeWindow({show: false})
           eventOptions.id = w.id
           eventOptions.responseEvent = responseEvent
           ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
@@ -265,6 +274,14 @@ describe('BrowserWindow module', () => {
     })
 
     describe('POST navigations', () => {
+      beforeEach(() => {
+        // FIXME: App::CanCreateWindow does not inherit webPreferences
+        //        so it uses deprecated defaults
+        remote.getGlobal('process').throwDeprecation = false
+      })
+      afterEach(() => {
+        remote.getGlobal('process').throwDeprecation = true
+      })
       afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null) })
 
       it('supports specifying POST data', (done) => {
@@ -428,7 +445,7 @@ describe('BrowserWindow module', () => {
       w.close()
       const width = 400
       const height = 400
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: width,
         height: height,
@@ -510,7 +527,7 @@ describe('BrowserWindow module', () => {
     })
     it('works for a frameless window', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         frame: false,
         width: 400,
@@ -535,7 +552,7 @@ describe('BrowserWindow module', () => {
     })
     it('works for a frameless window', (done) => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         frame: false,
         width: 300,
@@ -737,7 +754,7 @@ describe('BrowserWindow module', () => {
     })
 
     it('does not throw', (done) => {
-      const tabbedWindow = new BrowserWindow({})
+      const tabbedWindow = createNodeWindow({})
       assert.doesNotThrow(() => {
         w.addTabbedWindow(tabbedWindow)
       })
@@ -811,7 +828,11 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.fromWebContents(webContents)', () => {
     let contents = null
 
-    beforeEach(() => { contents = webContents.create({}) })
+    beforeEach(() => {
+      contents = webContents.create({
+        nodeIntegration: true
+      })
+    })
 
     afterEach(() => { contents.destroy() })
 
@@ -824,7 +845,11 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
     let contents = null
 
-    beforeEach(() => { contents = webContents.create({}) })
+    beforeEach(() => {
+      contents = webContents.create({
+        nodeIntegration: true
+      })
+    })
 
     afterEach(() => { contents.destroy() })
 
@@ -851,7 +876,11 @@ describe('BrowserWindow module', () => {
     let bv = null
 
     beforeEach(() => {
-      bv = new BrowserView()
+      bv = new BrowserView({
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.setBrowserView(bv)
     })
 
@@ -873,7 +902,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setOpacity(opacity)', () => {
     it('make window with initial opacity', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 400,
         height: 400,
@@ -896,7 +925,7 @@ describe('BrowserWindow module', () => {
   describe('"useContentSize" option', () => {
     it('make window created with content size when used', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 400,
         height: 400,
@@ -913,7 +942,7 @@ describe('BrowserWindow module', () => {
     })
     it('works for a frameless window', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         frame: false,
         width: 400,
@@ -942,7 +971,7 @@ describe('BrowserWindow module', () => {
 
     it('creates browser window with hidden title bar', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 400,
         height: 400,
@@ -953,7 +982,7 @@ describe('BrowserWindow module', () => {
     })
     it('creates browser window with hidden inset title bar', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 400,
         height: 400,
@@ -973,7 +1002,7 @@ describe('BrowserWindow module', () => {
 
     beforeEach(() => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: true,
         width: 400,
         height: 400,
@@ -1005,7 +1034,7 @@ describe('BrowserWindow module', () => {
 
     it('sets the window width to the page width when used', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 500,
         height: 400,
@@ -1019,11 +1048,11 @@ describe('BrowserWindow module', () => {
   describe('"tabbingIdentifier" option', () => {
     it('can be set on a window', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         tabbingIdentifier: 'group1'
       })
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         tabbingIdentifier: 'group2',
         frame: false
       })
@@ -1041,7 +1070,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload
@@ -1056,7 +1085,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload
@@ -1093,7 +1122,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: path.join(fixtures, 'module', 'set-global-preload-3.js')
@@ -1111,7 +1140,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1128,7 +1157,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1148,7 +1177,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1200,7 +1229,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1217,7 +1246,7 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1229,7 +1258,7 @@ describe('BrowserWindow module', () => {
 
       it('exposes "exit" event to preload script', function (done) {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1251,9 +1280,10 @@ describe('BrowserWindow module', () => {
 
       it('should open windows in same domain with cross-scripting enabled', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: false,
             sandbox: true,
             preload: preload
           }
@@ -1280,7 +1310,7 @@ describe('BrowserWindow module', () => {
 
       it('should open windows in another domain with cross-scripting disabled', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1319,7 +1349,7 @@ describe('BrowserWindow module', () => {
 
       it('should inherit the sandbox setting in opened windows', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true
@@ -1337,7 +1367,7 @@ describe('BrowserWindow module', () => {
 
       it('should open windows with the options configured via new-window event listeners', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true
@@ -1356,7 +1386,7 @@ describe('BrowserWindow module', () => {
 
       it('should set ipc event sender correctly', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1420,7 +1450,7 @@ describe('BrowserWindow module', () => {
 
       it('can get printer list', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1437,7 +1467,7 @@ describe('BrowserWindow module', () => {
 
       it('can print to PDF', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1457,7 +1487,7 @@ describe('BrowserWindow module', () => {
 
       it('supports calling preventDefault on new-window events', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true
@@ -1478,7 +1508,7 @@ describe('BrowserWindow module', () => {
 
       it('releases memory after popup is closed', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1501,7 +1531,7 @@ describe('BrowserWindow module', () => {
       // see #9387
       it('properly manages remote object references after page reload', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1534,7 +1564,7 @@ describe('BrowserWindow module', () => {
 
       it('properly manages remote object references after page reload in child window', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             preload: preload,
@@ -1572,7 +1602,7 @@ describe('BrowserWindow module', () => {
         })
         remote.process.env.sandboxmain = 'foo'
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1584,7 +1614,7 @@ describe('BrowserWindow module', () => {
 
       it('webview in sandbox renderer', async () => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             sandbox: true,
@@ -1603,7 +1633,7 @@ describe('BrowserWindow module', () => {
     describe('nativeWindowOpen option', () => {
       beforeEach(() => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             nativeWindowOpen: true
@@ -1654,7 +1684,7 @@ describe('BrowserWindow module', () => {
       })
       it('should inherit the nativeWindowOpen setting in opened windows', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             nativeWindowOpen: true
@@ -1671,7 +1701,7 @@ describe('BrowserWindow module', () => {
       })
       it('should open windows with the options configured via new-window event listeners', (done) => {
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: false,
           webPreferences: {
             nativeWindowOpen: true
@@ -1692,7 +1722,7 @@ describe('BrowserWindow module', () => {
         await serveFileFromProtocol('bar', path.join(fixtures, 'api', 'window-open-location-final.html'))
 
         w.destroy()
-        w = new BrowserWindow({
+        w = createNodeWindow({
           show: true,
           webPreferences: {
             nodeIntegration: false,
@@ -1717,7 +1747,7 @@ describe('BrowserWindow module', () => {
   describe('nativeWindowOpen + contextIsolation options', () => {
     beforeEach(() => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         webPreferences: {
           nativeWindowOpen: true,
@@ -1823,7 +1853,7 @@ describe('BrowserWindow module', () => {
     afterEach(() => { ipcMain.removeAllListeners('pong') })
 
     it('visibilityState is initially visible despite window being hidden', (done) => {
-      w = new BrowserWindow({ show: false, width: 100, height: 100 })
+      w = createNodeWindow({ show: false, width: 100, height: 100 })
 
       let readyToShow = false
       w.once('ready-to-show', () => {
@@ -1841,7 +1871,7 @@ describe('BrowserWindow module', () => {
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
     it('visibilityState changes when window is hidden', (done) => {
-      w = new BrowserWindow({width: 100, height: 100})
+      w = createNodeWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
         assert.equal(visibilityState, 'visible')
@@ -1859,7 +1889,7 @@ describe('BrowserWindow module', () => {
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
     it('visibilityState changes when window is shown', (done) => {
-      w = new BrowserWindow({width: 100, height: 100})
+      w = createNodeWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
@@ -1885,7 +1915,7 @@ describe('BrowserWindow module', () => {
         return done()
       }
 
-      w = new BrowserWindow({width: 100, height: 100})
+      w = createNodeWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
         onVisibilityChange((visibilityState, hidden) => {
@@ -1911,7 +1941,7 @@ describe('BrowserWindow module', () => {
         return done()
       }
 
-      w = new BrowserWindow({width: 100, height: 100})
+      w = createNodeWindow({width: 100, height: 100})
 
       onNextVisibilityChange((visibilityState, hidden) => {
         assert.equal(visibilityState, 'visible')
@@ -1929,7 +1959,7 @@ describe('BrowserWindow module', () => {
       w.loadURL(`file://${path.join(fixtures, 'pages', 'visibilitychange.html')}`)
     })
     it('visibilityState remains visible if backgroundThrottling is disabled', (done) => {
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         width: 100,
         height: 100,
@@ -1981,7 +2011,7 @@ describe('BrowserWindow module', () => {
     })
     it('emits when window.open is called with no webPreferences', (done) => {
       w.destroy()
-      w = new BrowserWindow({ show: false })
+      w = createNodeWindow({ show: false })
       w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
         e.preventDefault()
         assert.equal(url, 'http://host/')
@@ -2052,7 +2082,7 @@ describe('BrowserWindow module', () => {
         sheet.close()
         done()
       })
-      sheet = new BrowserWindow({
+      sheet = createNodeWindow({
         modal: true,
         parent: w
       })
@@ -2074,7 +2104,7 @@ describe('BrowserWindow module', () => {
 
     it('emits when window has closed a sheet', (done) => {
       w.show()
-      sheet = new BrowserWindow({
+      sheet = createNodeWindow({
         modal: true,
         parent: w
       })
@@ -2171,7 +2201,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow options argument is optional', () => {
     it('should create a window with default size (800x600)', () => {
       w.destroy()
-      w = new BrowserWindow()
+      w = createNodeWindow()
       const size = w.getSize()
       assert.equal(size[0], 800)
       assert.equal(size[1], 600)
@@ -2181,7 +2211,7 @@ describe('BrowserWindow module', () => {
   describe('window states', () => {
     it('does not resize frameless windows when states change', () => {
       w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         frame: false,
         width: 300,
         height: 200,
@@ -2212,7 +2242,7 @@ describe('BrowserWindow module', () => {
     describe('resizable state', () => {
       it('can be changed with resizable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, resizable: false})
+        w = createNodeWindow({show: false, resizable: false})
         assert.equal(w.isResizable(), false)
 
         if (process.platform === 'darwin') {
@@ -2230,12 +2260,12 @@ describe('BrowserWindow module', () => {
 
       it('works for a frameless window', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, frame: false})
+        w = createNodeWindow({show: false, frame: false})
         assert.equal(w.isResizable(), true)
 
         if (process.platform === 'win32') {
           w.destroy()
-          w = new BrowserWindow({show: false, thickFrame: false})
+          w = createNodeWindow({show: false, thickFrame: false})
           assert.equal(w.isResizable(), false)
         }
       })
@@ -2243,7 +2273,7 @@ describe('BrowserWindow module', () => {
       if (process.platform === 'win32') {
         it('works for a window smaller than 64x64', () => {
           w.destroy()
-          w = new BrowserWindow({
+          w = createNodeWindow({
             show: false,
             frame: false,
             resizable: false,
@@ -2311,7 +2341,7 @@ describe('BrowserWindow module', () => {
     describe('movable state', () => {
       it('can be changed with movable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, movable: false})
+        w = createNodeWindow({show: false, movable: false})
         assert.equal(w.isMovable(), false)
       })
       it('can be changed with setMovable method', () => {
@@ -2326,7 +2356,7 @@ describe('BrowserWindow module', () => {
     describe('minimizable state', () => {
       it('can be changed with minimizable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, minimizable: false})
+        w = createNodeWindow({show: false, minimizable: false})
         assert.equal(w.isMinimizable(), false)
       })
 
@@ -2342,7 +2372,7 @@ describe('BrowserWindow module', () => {
     describe('maximizable state', () => {
       it('can be changed with maximizable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, maximizable: false})
+        w = createNodeWindow({show: false, maximizable: false})
         assert.equal(w.isMaximizable(), false)
       })
 
@@ -2391,7 +2421,7 @@ describe('BrowserWindow module', () => {
 
       it('can be changed with fullscreenable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, fullscreenable: false})
+        w = createNodeWindow({show: false, fullscreenable: false})
         assert.equal(w.isFullScreenable(), false)
       })
 
@@ -2415,7 +2445,7 @@ describe('BrowserWindow module', () => {
 
       it('can be changed with setKiosk method', (done) => {
         w.destroy()
-        w = new BrowserWindow()
+        w = createNodeWindow()
         w.setKiosk(true)
         assert.equal(w.isKiosk(), true)
 
@@ -2439,7 +2469,7 @@ describe('BrowserWindow module', () => {
 
       it('resizable flag should be set to true and restored', (done) => {
         w.destroy()
-        w = new BrowserWindow({ resizable: false })
+        w = createNodeWindow({ resizable: false })
         w.once('enter-full-screen', () => {
           assert.equal(w.isResizable(), true)
           w.setFullScreen(false)
@@ -2463,7 +2493,7 @@ describe('BrowserWindow module', () => {
 
       it('can be changed with setFullScreen method', (done) => {
         w.destroy()
-        w = new BrowserWindow()
+        w = createNodeWindow()
         w.once('enter-full-screen', () => {
           assert.equal(w.isFullScreen(), true)
           w.setFullScreen(false)
@@ -2477,7 +2507,7 @@ describe('BrowserWindow module', () => {
 
       it('should not be changed by setKiosk method', (done) => {
         w.destroy()
-        w = new BrowserWindow()
+        w = createNodeWindow()
         w.once('enter-full-screen', () => {
           assert.equal(w.isFullScreen(), true)
           w.setKiosk(true)
@@ -2496,7 +2526,7 @@ describe('BrowserWindow module', () => {
     describe('closable state', () => {
       it('can be changed with closable option', () => {
         w.destroy()
-        w = new BrowserWindow({show: false, closable: false})
+        w = createNodeWindow({show: false, closable: false})
         assert.equal(w.isClosable(), false)
       })
 
@@ -2515,7 +2545,7 @@ describe('BrowserWindow module', () => {
       it('can be changed with hasShadow option', () => {
         w.destroy()
         let hasShadow = process.platform !== 'darwin'
-        w = new BrowserWindow({show: false, hasShadow: hasShadow})
+        w = createNodeWindow({show: false, hasShadow: hasShadow})
         assert.equal(w.hasShadow(), hasShadow)
       })
 
@@ -2535,7 +2565,7 @@ describe('BrowserWindow module', () => {
     it('should restore the previous window size', () => {
       if (w != null) w.destroy()
 
-      w = new BrowserWindow({
+      w = createNodeWindow({
         minWidth: 800,
         width: 800
       })
@@ -2550,7 +2580,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.unmaximize()', () => {
     it('should restore the previous window position', () => {
       if (w != null) w.destroy()
-      w = new BrowserWindow()
+      w = createNodeWindow()
 
       const initialPosition = w.getPosition()
       w.maximize()
@@ -2604,7 +2634,7 @@ describe('BrowserWindow module', () => {
     // TODO(alexeykuzmin): [Ch66] Enable the test. Fails on CI bots, passes locally.
     xit('exits HTML fullscreen when window leaves fullscreen', (done) => {
       w.destroy()
-      w = new BrowserWindow()
+      w = createNodeWindow()
       w.webContents.once('did-finish-load', () => {
         w.once('enter-full-screen', () => {
           w.once('leave-html-full-screen', () => {
@@ -2623,7 +2653,7 @@ describe('BrowserWindow module', () => {
 
     beforeEach(() => {
       if (c != null) c.destroy()
-      c = new BrowserWindow({show: false, parent: w})
+      c = createNodeWindow({show: false, parent: w})
     })
 
     afterEach(() => {
@@ -2661,7 +2691,7 @@ describe('BrowserWindow module', () => {
 
       beforeEach(() => {
         if (c != null) c.destroy()
-        c = new BrowserWindow({show: false})
+        c = createNodeWindow({show: false})
       })
 
       it('sets parent window', () => {
@@ -2699,7 +2729,7 @@ describe('BrowserWindow module', () => {
 
       beforeEach(() => {
         if (c != null) c.destroy()
-        c = new BrowserWindow({show: false, parent: w, modal: true})
+        c = createNodeWindow({show: false, parent: w, modal: true})
       })
 
       it('disables parent window', () => {
@@ -2716,7 +2746,7 @@ describe('BrowserWindow module', () => {
         c.close()
       })
       it('disables parent window recursively', () => {
-        let c2 = new BrowserWindow({show: false, parent: w, modal: true})
+        let c2 = createNodeWindow({show: false, parent: w, modal: true})
         c.show()
         assert.equal(w.isEnabled(), false)
         c2.show()
@@ -2877,7 +2907,7 @@ describe('BrowserWindow module', () => {
       if (w != null) {
         w.destroy()
       }
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         webPreferences: {
           partition: 'temp'
@@ -3085,7 +3115,7 @@ describe('BrowserWindow module', () => {
 
     beforeEach(() => {
       if (w != null) w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         show: false,
         webPreferences: {
           contextIsolation: true,
@@ -3093,7 +3123,7 @@ describe('BrowserWindow module', () => {
         }
       })
       if (ws != null) ws.destroy()
-      ws = new BrowserWindow({
+      ws = createNodeWindow({
         show: false,
         webPreferences: {
           sandbox: true,
@@ -3159,7 +3189,7 @@ describe('BrowserWindow module', () => {
       }
 
       if (w != null) w.destroy()
-      w = new BrowserWindow({
+      w = createNodeWindow({
         width: 100,
         height: 100,
         show: false,
@@ -3188,7 +3218,7 @@ describe('BrowserWindow module', () => {
       })
 
       it('is false for regular window', () => {
-        let c = new BrowserWindow({show: false})
+        let c = createNodeWindow({show: false})
         assert.equal(c.webContents.isOffscreen(), false)
         c.destroy()
       })

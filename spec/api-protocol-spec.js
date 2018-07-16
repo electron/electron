@@ -464,7 +464,9 @@ describe('protocol module', () => {
         const handler = (request, callback) => callback({url: redirectURL})
         protocol.registerHttpProtocol(protocolName, handler, (error) => {
           if (error) return done(error)
-          contents = webContents.create({})
+          contents = webContents.create({
+            nodeIntegration: true
+          })
           contents.on('did-finish-load', () => {
             assert.equal(contents.getURL(), url)
             server.close()
@@ -970,7 +972,12 @@ describe('protocol module', () => {
     let success = null
 
     beforeEach(() => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       success = false
     })
 

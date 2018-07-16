@@ -23,7 +23,10 @@ describe('session module', () => {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
+      webPreferences: {
+        nodeIntegration: true
+      }
     })
   })
 
@@ -241,7 +244,10 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
     })
 
@@ -447,6 +453,7 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: partitionName
         }
       })
@@ -507,7 +514,12 @@ describe('session module', () => {
       const url = `${scheme}://host`
       before(() => {
         if (w != null) w.destroy()
-        w = new BrowserWindow({show: false})
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
       })
 
       after((done) => {

@@ -31,7 +31,8 @@ describe('electron module', () => {
       window = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: { nodeIntegration: true }
       })
     })
 
@@ -310,7 +311,10 @@ describe('app module', () => {
         password: 'electron'
       }
 
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true }
+      })
 
       w.webContents.on('did-finish-load', () => {
         expect(w.webContents.getTitle()).to.equal('authorized')
@@ -349,7 +353,10 @@ describe('app module', () => {
         expect(w.id).to.equal(window.id)
         done()
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true }
+      })
       w.emit('focus')
     })
 
@@ -358,7 +365,10 @@ describe('app module', () => {
         expect(w.id).to.equal(window.id)
         done()
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true }
+      })
       w.emit('blur')
     })
 
@@ -369,7 +379,10 @@ describe('app module', () => {
           done()
         })
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true }
+      })
     })
 
     it('should emit web-contents-created event when a webContents is created', (done) => {
@@ -379,7 +392,10 @@ describe('app module', () => {
           done()
         })
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true }
+      })
     })
   })
 
@@ -547,6 +563,7 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'empty-certificate'
         }
       })

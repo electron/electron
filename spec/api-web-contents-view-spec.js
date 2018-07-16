@@ -9,13 +9,17 @@ describe('WebContentsView', () => {
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
   it('can be used as content view', () => {
-    const web = webContents.create({})
+    const web = webContents.create({
+      nodeIntegration: true
+    })
     w = new TopLevelWindow({show: false})
     w.setContentView(new WebContentsView(web))
   })
 
   it('prevents adding same WebContents', () => {
-    const web = webContents.create({})
+    const web = webContents.create({
+      nodeIntegration: true
+    })
     w = new TopLevelWindow({show: false})
     w.setContentView(new WebContentsView(web))
     assert.throws(() => {

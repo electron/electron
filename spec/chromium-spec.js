@@ -72,7 +72,12 @@ describe('chromium feature', () => {
 
   describe('accessing key names also used as Node.js module names', () => {
     it('does not crash', (done) => {
-      w = new BrowserWindow({show: false})
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.webContents.once('did-finish-load', () => { done() })
       w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
       w.loadURL(`file://${fixtures}/pages/external-string.html`)
@@ -128,6 +133,7 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           session: ses
         }
       })
@@ -168,6 +174,7 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'sw-file-scheme-spec'
         }
       })
@@ -205,7 +212,10 @@ describe('chromium feature', () => {
 
       w = new BrowserWindow({
         show: false,
-        webPreferences: { session: customSession }
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession
+        }
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
@@ -261,7 +271,12 @@ describe('chromium feature', () => {
 
     for (const show of [true, false]) {
       it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
-        const w = new BrowserWindow({show})
+        const w = new BrowserWindow({
+          show,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
 
         // toggle visibility
         if (show) {
@@ -517,7 +532,12 @@ describe('chromium feature', () => {
     let url = `file://${fixtures}/pages/window-opener.html`
 
     it('is null for main window', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.webContents.once('ipc-message', (event, args) => {
         assert.deepEqual(args, ['opener', null])
         done()
@@ -907,7 +927,9 @@ describe('chromium feature', () => {
       })
 
       beforeEach(() => {
-        contents = webContents.create({})
+        contents = webContents.create({
+          nodeIntegration: true
+        })
       })
 
       afterEach(() => {
@@ -1077,6 +1099,7 @@ describe('chromium feature', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
+            nodeIntegration: true,
             preload: path.join(fixtures, 'module', preload),
             plugins: plugins
           }
@@ -1197,7 +1220,12 @@ describe('chromium feature', () => {
 
     describe('window.history.pushState', () => {
       it('should push state after calling history.pushState() from the same url', (done) => {
-        w = new BrowserWindow({ show: false })
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true
+          }
+        })
         w.webContents.once('did-finish-load', () => {
           // History should have current page by now.
           assert.equal(w.webContents.length(), 1)

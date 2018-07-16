@@ -17,6 +17,7 @@ app.once('ready', () => {
   sandboxWindow = new BrowserWindow({
     show: false,
     webPreferences: {
+      nodeIntegration: true,
       preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
       sandbox: true
     }
@@ -26,6 +27,7 @@ app.once('ready', () => {
   noSandboxWindow = new BrowserWindow({
     show: false,
     webPreferences: {
+      nodeIntegration: true,
       preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
       sandbox: false
     }

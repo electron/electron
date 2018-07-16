@@ -11,6 +11,13 @@ chai.use(dirtyChai)
 const {remote} = require('electron')
 const {ipcMain, BrowserWindow} = remote
 
+const createWindow = () => new BrowserWindow({
+  show: false,
+  webPreferences: {
+    nodeIntegration: true
+  }
+})
+
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
@@ -22,7 +29,7 @@ describe('ipc main module', () => {
     afterEach(() => { ipcMain.removeAllListeners('send-sync-message') })
 
     it('does not crash when reply is not sent and browser is destroyed', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = createWindow()
       ipcMain.once('send-sync-message', (event) => {
         event.returnValue = null
         done()
@@ -31,7 +38,7 @@ describe('ipc main module', () => {
     })
 
     it('does not crash when reply is sent by multiple listeners', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = createWindow()
       ipcMain.on('send-sync-message', (event) => {
         event.returnValue = null
       })
@@ -45,7 +52,7 @@ describe('ipc main module', () => {
 
   describe('remote listeners', () => {
     it('can be added and removed correctly', () => {
-      w = new BrowserWindow({ show: false })
+      w = createWindow()
       const listener = () => {}
 
       w.on('test', listener)
@@ -69,7 +76,7 @@ describe('ipc main module', () => {
 
   describe('remote objects registry', () => {
     it('does not dereference until the render view is deleted (regression)', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = createWindow()
 
       ipcMain.once('error-message', (event, message) => {
         const correctMsgStart = message.startsWith('Cannot call function \'getURL\' on missing remote object')

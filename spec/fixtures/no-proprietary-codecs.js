@@ -15,7 +15,10 @@ let window
 
 app.once('ready', () => {
   window = new BrowserWindow({
-    show: false
+    show: false,
+    webPreferences: {
+      nodeIntegration: true
+    }
   })
 
   window.loadURL(url.format({

@@ -16,7 +16,8 @@ describe('debugger module', () => {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
+      webPreferences: { nodeIntegration: true }
     })
   })
 
