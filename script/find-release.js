@@ -1,3 +1,5 @@
+require('dotenv-safe').load()
+
 const GitHub = require('github')
 const github = new GitHub()
 

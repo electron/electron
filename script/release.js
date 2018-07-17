@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2))
-const assert = require('assert')
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
@@ -17,8 +17,6 @@ const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
 let failureCount = 0
-
-assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 
 const github = new GitHub({
   followRedirects: false

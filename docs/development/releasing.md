@@ -8,11 +8,10 @@ upload an Electron release. Contact a team member for more
 information.
 
 There are a handful of `*_TOKEN` environment variables needed by the release
-scripts. Once you've generated these per-user tokens, you may want to keep
-them in a local file that you can `source` when starting a release.
+scripts:
+
 * `ELECTRON_GITHUB_TOKEN`:
-Create as described at https://github.com/settings/tokens/new,
-giving the token repo access scope.
+Create this by visiting https://github.com/settings/tokens/new?scopes=repo
 * `APPVEYOR_TOKEN`:
 Create a token from https://windows-ci.electronjs.org/api-token
 If you don't have an account, ask a team member to add you.
@@ -25,6 +24,11 @@ with the scope of `Build (read and execute)`.
 * `ELECTRON_S3_ACCESS_KEY`:
 * `ELECTRON_S3_SECRET_KEY`:
 If you don't have these, ask a team member to help you.
+
+Once you've generated these tokens, put them in a `.env` file in the root directory
+of the project. This file is gitignored, and will be loaded into the 
+environment by the release scripts.
+
 
 ## Determine which branch to release from
 
