@@ -69,7 +69,7 @@ void StartHandlingTask(bool capture_window,
       capture_screen ? content::desktop_capture::CreateScreenCapturer()
                      : nullptr);
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer(
-      capture_window ? content::desktop_capture::CreateScreenCapturer()
+      capture_window ? content::desktop_capture::CreateWindowCapturer()
                      : nullptr);
   cap->media_list_.reset(new NativeDesktopMediaList(
       std::move(screen_capturer), std::move(window_capturer)));
