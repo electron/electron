@@ -48,19 +48,28 @@ void LoadResourceBundle(const std::string& locale) {
   if (initialized)
     ui::ResourceBundle::CleanupSharedInstance();
 
-  ui::ResourceBundle::InitSharedInstanceWithLocale(
-      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
-
-  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
-  bundle.ReloadLocaleResources(locale);
-
   // Load other resource files.
   base::FilePath pak_dir;
 #if defined(OS_MACOSX)
-  pak_dir = base::mac::FrameworkBundlePath().Append("Resources");
+  pak_dir =
+      base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
   PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
+
+#if defined(ELECTRON_GN_BUILD)
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.ReloadLocaleResources(locale);
+  bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
+                             ui::SCALE_FACTOR_NONE);
+#else
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::DO_NOT_LOAD_COMMON_RESOURCES);
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.ReloadLocaleResources(locale);
+
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("content_shell.pak")),
       ui::GetSupportedScaleFactors()[0]);
@@ -81,6 +90,7 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("views_resources_200_percent.pak")),
       ui::SCALE_FACTOR_200P);
+#endif
 }
 
 MainDelegate::MainDelegate() {}
