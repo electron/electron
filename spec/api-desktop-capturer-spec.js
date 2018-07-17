@@ -8,7 +8,7 @@ chai.use(dirtyChai)
 
 const isCI = remote.getGlobal('isCi')
 
-describe('desktopCapturer', () => {
+describe.only('desktopCapturer', () => {
   before(function () {
     if (!features.isDesktopCapturerEnabled()) {
       // It's been disabled during build time.
@@ -69,7 +69,11 @@ describe('desktopCapturer', () => {
       return done()
     }
 
+    const { BrowserWindow } = remote
+    const w = new BrowserWindow({ width: 200, height: 200 })
+
     desktopCapturer.getSources({types: ['window']}, (error, sources) => {
+      w.destroy()
       expect(error).to.be.null()
       expect(sources).to.be.an('array').that.is.not.empty()
       for (const {display_id: displayId} of sources) {
