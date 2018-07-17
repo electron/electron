@@ -46,6 +46,7 @@ void GPUInfoManager::ProcessCompleteInfo() {
   for (const auto& promise : complete_info_promise_set_) {
     promise->Resolve(*result);
   }
+  complete_info_promise_set_.clear();
 }
 
 void GPUInfoManager::OnGpuInfoUpdate() {
