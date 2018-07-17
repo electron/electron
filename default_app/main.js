@@ -320,7 +320,7 @@ if (option.file && !option.webdriver) {
   const file = option.file
   const protocol = url.parse(file).protocol
   const extension = path.extname(file)
-  if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:') {
+  if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     loadApplicationByUrl(file)
   } else if (extension === '.html' || extension === '.htm') {
     loadApplicationByUrl('file://' + path.resolve(file))
