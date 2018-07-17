@@ -98,6 +98,13 @@
       'default_app/main.js',
       'default_app/package.json',
       'default_app/renderer.js',
+      'default_app/styles.css',
+      'node_modules/octicons/build/build.css',
+      'node_modules/octicons/build/svg/gist.svg',
+      'node_modules/octicons/build/svg/mark-github.svg',
+      'node_modules/octicons/build/svg/gear.svg',
+      'node_modules/octicons/build/svg/star.svg',
+      'node_modules/octicons/build/svg/gift.svg',
     ],
     'lib_sources': [
       'atom/app/atom_content_client.cc',
