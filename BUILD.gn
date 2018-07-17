@@ -216,6 +216,7 @@ static_library("electron_lib") {
   ]
 
   defines = []
+  libs = []
 
   extra_source_filters = []
   if (!is_linux) {
@@ -279,7 +280,7 @@ static_library("electron_lib") {
       ]
       defines += [ "MAS_BUILD" ]
     } else {
-      libs = [
+      libs += [
         "Squirrel.framework",
         "ReactiveCocoa.framework",
         "Mantle.framework",
@@ -314,6 +315,7 @@ static_library("electron_lib") {
   }
   if (is_win) {
     sources += filenames_gypi.lib_sources_win
+    libs += [ "dwmapi.lib" ]
   }
   if (is_linux || is_win) {
     deps += [ "//third_party/breakpad:client" ]
