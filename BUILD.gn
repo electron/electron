@@ -5,6 +5,7 @@ import("build/asar.gni")
 import("build/npm.gni")
 import("//pdf/features.gni")
 import("//build/config/win/manifest.gni")
+import("electron_paks.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -399,6 +400,15 @@ static_library("electron_lib") {
   }
 }
 
+electron_paks("packed_resources") {
+  if (is_mac) {
+    output_dir = "$root_gen_dir/electron_repack"
+    copy_data_to_bundle = true
+  } else {
+    output_dir = root_out_dir
+  }
+}
+
 if (is_mac) {
   electron_framework_name = electron_product_name + " Framework"
   electron_helper_name = electron_product_name + " Helper"
@@ -412,12 +422,9 @@ if (is_mac) {
 
   bundle_data("electron_framework_resources") {
     public_deps = [
-      "//content/shell:pak",
-      ":electron_locales",
+      ":packed_resources",
     ]
-    sources = [
-      "$root_out_dir/content_shell.pak",
-    ]
+    sources = []
     if (icu_use_data_file) {
       sources += [ "$root_out_dir/icudtl.dat" ]
       public_deps += [ "//third_party/icu:icudata" ]
@@ -580,30 +587,6 @@ if (is_mac) {
     ]
   }
 
-  repack_locales("electron_locales") {
-    source_patterns = [
-      "${root_gen_dir}/content/app/strings/content_strings_",
-    ]
-    deps = [
-      "//content/app/strings",
-    ]
-
-    input_locales = locales
-
-    if (is_mac) {
-      output_locales = locales_as_mac_outputs
-    } else {
-      output_locales = locales
-    }
-
-    if (is_mac) {
-      output_dir = "$root_gen_dir/repack"
-      copy_data_to_bundle = true
-    } else {
-      output_dir = root_out_dir
-    }
-  }
-
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
     sources = filenames_gypi.app_sources
@@ -643,10 +626,6 @@ if (is_mac) {
       ":electron_lib",
       ":js2asar",
       "//build/config:exe_and_shlib_deps",
-      "//chrome:packed_resources",
-      "//content/shell:copy_shell_resources",
-      "//content/shell:pak",
-      "//third_party/WebKit/public:image_resources",
       "//ui/strings",
       "//content:sandbox_helper_win",
     ]

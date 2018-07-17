@@ -25,6 +25,7 @@ static_library("brightray") {
 
   defines = [
     "DISABLE_NACL=1",
+    "ELECTRON_GN_BUILD",
   ]
 
   if (is_linux) {
