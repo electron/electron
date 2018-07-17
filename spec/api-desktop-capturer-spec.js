@@ -8,7 +8,7 @@ chai.use(dirtyChai)
 
 const isCI = remote.getGlobal('isCi')
 
-describe.only('desktopCapturer', () => {
+describe('desktopCapturer', () => {
   before(function () {
     if (!features.isDesktopCapturerEnabled()) {
       // It's been disabled during build time.
