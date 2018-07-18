@@ -185,3 +185,90 @@ group("node") {
   public_configs = [ ":node_config" ]
   public_deps = [ ":copy_node" ]
 }
+
+node_headers_dir = "$root_gen_dir/node_headers/include/node"
+
+copy("node_headers") {
+  deps = [ ":configure_node" ]
+  sources = [
+    "$target_gen_dir/config.gypi",
+    "//third_party/electron_node/common.gypi",
+    "//third_party/electron_node/src/callback_scope.h",
+    "//third_party/electron_node/src/core.h",
+    "//third_party/electron_node/src/exceptions.h",
+    "//third_party/electron_node/src/node.h",
+    "//third_party/electron_node/src/node_api.h",
+    "//third_party/electron_node/src/node_api_types.h",
+    "//third_party/electron_node/src/node_buffer.h",
+    "//third_party/electron_node/src/node_object_wrap.h",
+    "//third_party/electron_node/src/node_version.h",
+  ]
+  outputs = [ "$node_headers_dir/{{source_file_part}}" ]
+}
+
+copy("v8_headers") {
+  sources = [
+    "//v8/include/v8-inspector-protocol.h",
+    "//v8/include/v8-inspector.h",
+    "//v8/include/v8-platform.h",
+    "//v8/include/v8-profiler.h",
+    "//v8/include/v8-testing.h",
+    "//v8/include/v8-util.h",
+    "//v8/include/v8-value-serializer-version.h",
+    "//v8/include/v8-version-string.h",
+    "//v8/include/v8-version.h",
+    "//v8/include/v8.h",
+    "//v8/include/v8config.h",
+  ]
+  outputs = [ "$node_headers_dir/{{source_file_part}}" ]
+}
+
+copy("v8_platform_headers") {
+  sources = [
+    "//v8/include/libplatform/libplatform-export.h",
+    "//v8/include/libplatform/libplatform.h",
+    "//v8/include/libplatform/v8-tracing.h",
+  ]
+  outputs = [ "$node_headers_dir/libplatform/{{source_file_part}}" ]
+}
+
+copy("uv_headers") {
+  sources = [
+    "//third_party/electron_node/deps/uv/include/android-ifaddrs.h",
+    "//third_party/electron_node/deps/uv/include/pthread-barrier.h",
+    "//third_party/electron_node/deps/uv/include/stdint-msvc2008.h",
+    "//third_party/electron_node/deps/uv/include/tree.h",
+    "//third_party/electron_node/deps/uv/include/uv-aix.h",
+    "//third_party/electron_node/deps/uv/include/uv-bsd.h",
+    "//third_party/electron_node/deps/uv/include/uv-darwin.h",
+    "//third_party/electron_node/deps/uv/include/uv-errno.h",
+    "//third_party/electron_node/deps/uv/include/uv-linux.h",
+    "//third_party/electron_node/deps/uv/include/uv-os390.h",
+    "//third_party/electron_node/deps/uv/include/uv-posix.h",
+    "//third_party/electron_node/deps/uv/include/uv-sunos.h",
+    "//third_party/electron_node/deps/uv/include/uv-threadpool.h",
+    "//third_party/electron_node/deps/uv/include/uv-unix.h",
+    "//third_party/electron_node/deps/uv/include/uv-version.h",
+    "//third_party/electron_node/deps/uv/include/uv-win.h",
+    "//third_party/electron_node/deps/uv/include/uv.h",
+  ]
+  outputs = [ "$node_headers_dir/{{source_file_part}}" ]
+}
+
+copy("zlib_headers") {
+  sources = [
+    "//third_party/electron_node/deps/zlib/zconf.h",
+    "//third_party/electron_node/deps/zlib/zlib.h",
+  ]
+  outputs = [ "$node_headers_dir/{{source_file_part}}" ]
+}
+
+group("headers") {
+  public_deps = [
+    ":node_headers",
+    ":uv_headers",
+    ":v8_headers",
+    ":v8_platform_headers",
+    ":zlib_headers",
+  ]
+}
