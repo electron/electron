@@ -68,43 +68,6 @@ config("features") {
   }
 }
 
-config("native_mate_config") {
-  include_dirs = [ "native_mate" ]
-  cflags_cc = [ "-Wno-deprecated-declarations" ]
-  cflags_objcc = cflags_cc
-}
-
-source_set("native_mate") {
-  deps = [
-    "//base",
-    "//net",
-    "//v8:v8_headers",
-    "build/node",
-  ]
-  public_configs = [ ":native_mate_config" ]
-  sources = [
-    "native_mate/native_mate/arguments.cc",
-    "native_mate/native_mate/arguments.h",
-    "native_mate/native_mate/compat.h",
-    "native_mate/native_mate/constructor.h",
-    "native_mate/native_mate/converter.cc",
-    "native_mate/native_mate/converter.h",
-    "native_mate/native_mate/dictionary.cc",
-    "native_mate/native_mate/dictionary.h",
-    "native_mate/native_mate/function_template.cc",
-    "native_mate/native_mate/function_template.h",
-    "native_mate/native_mate/handle.h",
-    "native_mate/native_mate/object_template_builder.cc",
-    "native_mate/native_mate/object_template_builder.h",
-    "native_mate/native_mate/persistent_dictionary.cc",
-    "native_mate/native_mate/persistent_dictionary.h",
-    "native_mate/native_mate/scoped_persistent.h",
-    "native_mate/native_mate/wrappable.cc",
-    "native_mate/native_mate/wrappable.h",
-    "native_mate/native_mate/wrappable_base.h",
-  ]
-}
-
 npm_action("atom_browserify_sandbox") {
   deps = [ ":atom_js2c_copy" ]
 
@@ -237,9 +200,9 @@ static_library("electron_lib") {
     "//ui/views",
     "//v8",
     ":atom_js2c",
-    ":native_mate",
     "brightray",
     "build/node",
+    "native_mate",
   ]
   include_dirs = [
     "chromium_src",
