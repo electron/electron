@@ -646,24 +646,22 @@ describe('<webview> tag', function () {
   describe('setDevToolsWebCotnents() API', () => {
     it('sets webContents of webview as devtools', (done) => {
       const webview2 = new WebView()
-      webview2.addEventListener('did-attach', () => {
-        webview2.addEventListener('dom-ready', () => {
-          const devtools = webview2.getWebContents()
-          assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
-          devtools.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
-            assert.ok(name, 'InspectorFrontendHostImpl')
-            document.body.removeChild(webview2)
-            done()
-          })
-        })
-        webview.addEventListener('dom-ready', () => {
-          webview.getWebContents().setDevToolsWebContents(webview2.getWebContents())
-          webview.getWebContents().openDevTools()
-        })
-        webview.src = 'about:blank'
-        document.body.appendChild(webview)
-      })
       document.body.appendChild(webview2)
+      webview2.addEventListener('dom-ready', () => {
+        const devtools = webview2.getWebContents()
+        assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
+        devtools.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
+          assert.ok(name, 'InspectorFrontendHostImpl')
+          document.body.removeChild(webview2)
+          done()
+        })
+      })
+      webview.addEventListener('dom-ready', () => {
+        webview.getWebContents().setDevToolsWebContents(webview2.getWebContents())
+        webview.getWebContents().openDevTools()
+      })
+      webview.src = 'about:blank'
+      document.body.appendChild(webview)
     })
   })
 
@@ -1153,6 +1151,16 @@ describe('<webview> tag', function () {
   })
 
   describe('will-attach-webview event', () => {
+    it('does not emit when src is not changed', (done) => {
+      document.body.appendChild(webview)
+      setTimeout(() => {
+        assert.throws(() => {
+          webview.stop()
+        }, 'Cannot call stop because the webContents is unavailable. The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.')
+        done()
+      })
+    })
+
     it('supports changing the web preferences', (done) => {
       ipcRenderer.send('disable-node-on-next-will-attach-webview')
       webview.addEventListener('console-message', (event) => {
@@ -1350,12 +1358,12 @@ describe('<webview> tag', function () {
         const destroy1Listener = () => {
           webview.removeEventListener('destroyed', destroy1Listener, false)
           assert.equal(webContents, webview2.getWebContents())
-          assert.equal(null, webview.getWebContents())
+          assert.notStrictEqual(webContents, webview.getWebContents())
 
           const destroy2Listener = () => {
             webview2.removeEventListener('destroyed', destroy2Listener, false)
             assert.equal(webContents, webview.getWebContents())
-            assert.equal(null, webview2.getWebContents())
+            assert.notStrictEqual(webContents, webview2.getWebContents())
 
             // Make sure that events are hooked up to the right webview now
             webview.addEventListener('console-message', (e) => {
