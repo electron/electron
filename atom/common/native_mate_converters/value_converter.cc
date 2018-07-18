@@ -51,6 +51,20 @@ v8::Local<v8::Value> Converter<base::Value>::ToV8(v8::Isolate* isolate,
   return converter.ToV8Value(&val, isolate->GetCurrentContext());
 }
 
+bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> val,
+                                        base::ListValue* out) {
+  atom::V8ValueConverter converter;
+  std::unique_ptr<base::Value> value(
+      converter.FromV8Value(val, isolate->GetCurrentContext()));
+  if (value->is_list()) {
+    out->Swap(static_cast<base::ListValue*>(value.get()));
+    return true;
+  } else {
+    return false;
+  }
+}
+
 v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
     v8::Isolate* isolate,
     const base::ListValue& val) {
