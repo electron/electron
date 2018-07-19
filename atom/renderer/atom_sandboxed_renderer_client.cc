@@ -97,7 +97,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kGuestInstanceID))
     b.Set(options::kGuestInstanceID,
-        command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
+          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
@@ -153,6 +153,8 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
+
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))

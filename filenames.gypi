@@ -460,6 +460,8 @@
       'atom/common/color_util.h',
       'atom/common/common_message_generator.cc',
       'atom/common/common_message_generator.h',
+      'atom/common/context_counter.cc',
+      'atom/common/context_counter.h',
       'atom/common/crash_reporter/crash_reporter.cc',
       'atom/common/crash_reporter/crash_reporter.h',
       'atom/common/crash_reporter/crash_reporter_linux.cc',
