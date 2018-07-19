@@ -205,6 +205,7 @@
           'SKIA_DLL',
           'USING_V8_SHARED',
           'WEBKIT_DLL',
+          'V8_ENABLE_CHECKS',
         ],
         'msvs_settings': {
           'VCCLCompilerTool': {
