@@ -161,6 +161,8 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
+
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
