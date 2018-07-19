@@ -69,6 +69,21 @@ $ ./out/Default/Electron.app/Contents/MacOS/Electron
 $ ./out/Default/electron
 ```
 
+### Cross-compiling
+
+To compile for a platform that isn't the same as the one you're building on,
+set the `target_cpu` GN argument. For example, to compile a windows x86 target
+from an x64 host, specify `target_cpu = "x86"` in `gn args`.
+
+```sh
+$ gn gen out/Default-x86 --args='... target_cpu = "x86"'
+```
+
+Not all combinations of source and target CPU/OS are supported by Chromium.
+Only cross-compiling Windows 32-bit from Windows 64-bit has been tested in
+Electron. If you test other combinations and find them to work, please update
+this document :)
+
 ## Tests
 
 To run the tests, you'll first need to build the test modules against the

@@ -27,6 +27,7 @@ action("configure_node") {
     "--prefix=",
     "--config-out-dir=" + rebase_path(target_gen_dir),
     "--no-run-gyp",
+    "--dest-cpu=$target_cpu",
   ]
   if (is_component_build) {
     args += [ "--shared" ]
