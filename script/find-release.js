@@ -1,4 +1,4 @@
-require('dotenv-safe').load()
+if (!process.env.CI) require('dotenv-safe').load()
 
 const GitHub = require('github')
 const github = new GitHub()
