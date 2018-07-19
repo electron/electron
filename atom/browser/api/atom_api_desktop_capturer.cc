@@ -22,6 +22,7 @@ using base::PlatformThreadRef;
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 #if defined(OS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
+#include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
 #endif  // defined(OS_WIN)
 
@@ -61,9 +62,14 @@ void StartHandlingTask(bool capture_window,
                        const gfx::Size& thumbnail_size,
                        atom::api::DesktopCapturer* cap) {
 #if defined(OS_WIN)
-  cap->using_directx_capturer_ =
-      content::desktop_capture::CreateDesktopCaptureOptions()
-          .allow_directx_capturer();
+  if (content::desktop_capture::CreateDesktopCaptureOptions()
+      .allow_directx_capturer()) {
+    // DxgiDuplicatorController should be alive in this scope according to
+    // screen_capturer_win.cc.
+    auto duplicator = webrtc::DxgiDuplicatorController::Instance();
+    cap->using_directx_capturer_ =
+        webrtc::ScreenCapturerWinDirectx::IsSupported();
+  }
 #endif  // defined(OS_WIN)
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer(
       capture_screen ? content::desktop_capture::CreateScreenCapturer()
