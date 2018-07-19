@@ -37,7 +37,7 @@ def main():
   args = parse_args()
   if  args.upload_to_s3:
     utcnow = datetime.datetime.utcnow()
-    args.upload_timestamp = utcnow.strftime('%Y-%m-%d_%H:%M:%S')
+    args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
   if not dist_newer_than_head():
     run_python_script('create-dist.py')
