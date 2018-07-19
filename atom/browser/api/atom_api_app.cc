@@ -1150,14 +1150,14 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
-util::Promise* App::GetGPUInfo(v8::Isolate* isolate,
-                               const std::string& info_type) {
+v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
+                                       const std::string& info_type) {
   const auto gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
-  const auto& promise = new util::Promise(isolate);
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
   if ((info_type != "basic" && info_type != "complete") ||
       !gpu_data_manager->GpuAccessAllowed(nullptr)) {
     promise->Reject();
-    return promise;
+    return promise->GetHandle();
   }
 
   const auto& info_mgr = GPUInfoManager::GetInstance();
@@ -1166,7 +1166,7 @@ util::Promise* App::GetGPUInfo(v8::Isolate* isolate,
   } else /* (info_type == "basic") */ {
     info_mgr->FetchBasicInfo(promise);
   }
-  return promise;
+  return promise->GetHandle();
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {

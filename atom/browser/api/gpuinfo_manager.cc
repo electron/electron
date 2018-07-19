@@ -41,7 +41,7 @@ bool GPUInfoManager::NeedsCompleteGpuInfoCollection() {
 // Should be posted to the task runner
 void GPUInfoManager::ProcessCompleteInfo() {
   const auto result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
-  // We have recieved the complete information, resolve all promises that
+  // We have received the complete information, resolve all promises that
   // were waiting for this info.
   for (const auto& promise : complete_info_promise_set_) {
     promise->Resolve(*result);
@@ -59,8 +59,8 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 }
 
 // Should be posted to the task runner
-void GPUInfoManager::CompleteInfoFetcher(util::Promise* promise) {
-  complete_info_promise_set_.insert(promise);
+void GPUInfoManager::CompleteInfoFetcher(scoped_refptr<util::Promise> promise) {
+  complete_info_promise_set_.push_back(promise);
 
   if (NeedsCompleteGpuInfoCollection()) {
     gpu_data_manager_->RequestCompleteGpuInfoIfNeeded();
@@ -69,7 +69,7 @@ void GPUInfoManager::CompleteInfoFetcher(util::Promise* promise) {
   }
 }
 
-void GPUInfoManager::FetchCompleteInfo(util::Promise* promise) {
+void GPUInfoManager::FetchCompleteInfo(scoped_refptr<util::Promise> promise) {
   base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::CompleteInfoFetcher,
                                 base::Unretained(this), promise));
@@ -77,7 +77,7 @@ void GPUInfoManager::FetchCompleteInfo(util::Promise* promise) {
 
 // This fetches the info synchronously, so no need to post to the task queue.
 // There cannot be multiple promises as they are resolved synchronously.
-void GPUInfoManager::FetchBasicInfo(util::Promise* promise) {
+void GPUInfoManager::FetchBasicInfo(scoped_refptr<util::Promise> promise) {
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
   promise->Resolve(*EnumerateGPUInfo(gpu_info));

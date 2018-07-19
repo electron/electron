@@ -6,16 +6,16 @@
 #define NATIVE_MATE_CONVERTER_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 #include "base/strings/string_piece.h"
 #include "v8/include/v8.h"
 
 namespace mate {
 
-template<typename KeyType>
+template <typename KeyType>
 bool SetProperty(v8::Isolate* isolate,
                  v8::Local<v8::Object> object,
                  KeyType key,
@@ -24,188 +24,187 @@ bool SetProperty(v8::Isolate* isolate,
   return !maybe.IsNothing() && maybe.FromJust();
 }
 
-template<typename T>
+template <typename T>
 struct ToV8ReturnsMaybe {
   static const bool value = false;
 };
 
-template<typename T, typename Enable = void>
+template <typename T, typename Enable = void>
 struct Converter {};
 
-template<>
+template <>
 struct Converter<void*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, void* val) {
     return v8::Undefined(isolate);
   }
 };
 
-template<>
+template <>
 struct Converter<std::nullptr_t> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, std::nullptr_t val) {
     return v8::Null(isolate);
   }
 };
 
-template<>
+template <>
 struct Converter<bool> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    bool val);
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     bool* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, bool val);
+  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, bool* out);
 };
 
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
-template<>
+template <>
 struct Converter<unsigned long> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    unsigned long val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, unsigned long val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      unsigned long* out);
 };
 #endif
 
-template<>
+template <>
 struct Converter<int32_t> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    int32_t val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, int32_t val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      int32_t* out);
 };
 
-template<>
+template <>
 struct Converter<uint32_t> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    uint32_t val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, uint32_t val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      uint32_t* out);
 };
 
-template<>
+template <>
 struct Converter<int64_t> {
   // Warning: JavaScript cannot represent 64 integers precisely.
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    int64_t val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, int64_t val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      int64_t* out);
 };
 
-template<>
+template <>
 struct Converter<uint64_t> {
   // Warning: JavaScript cannot represent 64 integers precisely.
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    uint64_t val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, uint64_t val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      uint64_t* out);
 };
 
-template<>
+template <>
 struct Converter<float> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    float val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, float val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      float* out);
 };
 
-template<>
+template <>
 struct Converter<double> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    double val);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, double val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      double* out);
 };
 
-template<>
+template <>
 struct Converter<const char*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const char* val);
 };
 
-template<>
+template <>
 struct Converter<base::StringPiece> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const base::StringPiece& val);
+                                   const base::StringPiece& val);
   // No conversion out is possible because StringPiece does not contain storage.
 };
 
-template<>
+template <>
 struct Converter<std::string> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const std::string& val);
+                                   const std::string& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      std::string* out);
 };
 
 v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
-                                      const base::StringPiece& input);
+                                     const base::StringPiece& input);
 
 std::string V8ToString(v8::Local<v8::Value> value);
 
-template<>
-struct Converter<v8::Local<v8::Function> > {
+template <>
+struct Converter<v8::Local<v8::Function>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::Function> val);
+                                   v8::Local<v8::Function> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::Function>* out);
 };
 
-template<>
-struct Converter<v8::Local<v8::Object> > {
+template <>
+struct Converter<v8::Local<v8::Object>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::Object> val);
+                                   v8::Local<v8::Object> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::Object>* out);
 };
 
-template<>
-struct Converter<v8::Local<v8::String> > {
+template <>
+struct Converter<v8::Local<v8::String>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::String> val);
+                                   v8::Local<v8::String> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::String>* out);
 };
 
-template<>
-struct Converter<v8::Local<v8::External> > {
+template <>
+struct Converter<v8::Local<v8::External>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::External> val);
+                                   v8::Local<v8::External> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::External>* out);
 };
 
-template<>
-struct Converter<v8::Local<v8::Array> > {
+template <>
+struct Converter<v8::Local<v8::Array>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::Array> val);
+                                   v8::Local<v8::Array> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::Array>* out);
 };
 
-template<>
-struct Converter<v8::Local<v8::Value> > {
+template <>
+struct Converter<v8::Local<v8::Value>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    v8::Local<v8::Value> val);
+                                   v8::Local<v8::Value> val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      v8::Local<v8::Value>* out);
 };
 
-template<typename T>
-struct Converter<std::vector<T> > {
+template <>
+struct Converter<v8::Local<v8::Promise>> {
+  static v8::Local<v8::Promise> ToV8(v8::Isolate* isolate,
+                                     v8::Local<v8::Promise> val);
+  // static bool FromV8(v8::Isolate* isolate,
+  //                    v8::Local<v8::Value> val,
+  //                    v8::Local<v8::Value>* out);
+};
+
+template <typename T>
+struct Converter<std::vector<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const std::vector<T>& val) {
+                                   const std::vector<T>& val) {
     v8::Local<v8::Array> result(
         v8::Array::New(isolate, static_cast<int>(val.size())));
     for (size_t i = 0; i < val.size(); ++i) {
@@ -235,10 +234,10 @@ struct Converter<std::vector<T> > {
   }
 };
 
-template<typename T>
-struct Converter<std::set<T> > {
+template <typename T>
+struct Converter<std::set<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const std::set<T>& val) {
+                                   const std::set<T>& val) {
     v8::Local<v8::Array> result(
         v8::Array::New(isolate, static_cast<int>(val.size())));
     typename std::set<T>::const_iterator it;
@@ -269,11 +268,11 @@ struct Converter<std::set<T> > {
   }
 };
 
-template<typename T>
-struct Converter<std::map<std::string, T> > {
+template <typename T>
+struct Converter<std::map<std::string, T>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     std::map<std::string, T> * out) {
+                     std::map<std::string, T>* out) {
     if (!val->IsObject())
       return false;
 
@@ -288,18 +287,18 @@ struct Converter<std::map<std::string, T> > {
     return true;
   }
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                   const std::map<std::string, T>& val) {
+                                   const std::map<std::string, T>& val) {
     v8::Local<v8::Object> result = v8::Object::New(isolate);
     for (auto i = val.begin(); i != val.end(); i++) {
       result->Set(Converter<T>::ToV8(isolate, i->first),
-                 Converter<T>::ToV8(isolate, i->second));
+                  Converter<T>::ToV8(isolate, i->second));
     }
     return result;
   }
 };
 
 // Convenience functions that deduce T.
-template<typename T>
+template <typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, const T& input) {
   return Converter<T>::ToV8(isolate, input);
 }
@@ -309,13 +308,14 @@ inline v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate,
   return Converter<const char*>::ToV8(isolate, input);
 }
 
-template<typename T>
+template <typename T>
 v8::MaybeLocal<v8::Value> ConvertToV8(v8::Local<v8::Context> context,
                                       const T& input) {
   return Converter<T>::ToV8(context, input);
 }
 
-template<typename T, bool = ToV8ReturnsMaybe<T>::value> struct ToV8Traits;
+template <typename T, bool = ToV8ReturnsMaybe<T>::value>
+struct ToV8Traits;
 
 template <typename T>
 struct ToV8Traits<T, true> {
@@ -347,15 +347,15 @@ bool TryConvertToV8(v8::Isolate* isolate,
   return ToV8Traits<T>::TryConvertToV8(isolate, input, output);
 }
 
-template<typename T>
-bool ConvertFromV8(v8::Isolate* isolate, v8::Local<v8::Value> input,
+template <typename T>
+bool ConvertFromV8(v8::Isolate* isolate,
+                   v8::Local<v8::Value> input,
                    T* result) {
   return Converter<T>::FromV8(isolate, input, result);
 }
 
-inline v8::Local<v8::String> StringToV8(
-    v8::Isolate* isolate,
-    const base::StringPiece& input) {
+inline v8::Local<v8::String> StringToV8(v8::Isolate* isolate,
+                                        const base::StringPiece& input) {
   return ConvertToV8(isolate, input).As<v8::String>();
 }
 

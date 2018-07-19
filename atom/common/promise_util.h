@@ -14,14 +14,14 @@ namespace atom {
 
 namespace util {
 
-class Promise {
+class Promise : public base::RefCounted<Promise> {
  public:
   explicit Promise(v8::Isolate* isolate);
-  ~Promise();
+  virtual ~Promise();
 
   v8::Isolate* isolate() const { return isolate_; }
 
-  virtual v8::Local<v8::Object> GetHandle() const;
+  virtual v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
     return GetInner()->Resolve(isolate()->GetCurrentContext(),
@@ -48,6 +48,7 @@ class Promise {
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
 
  protected:
+  friend class base::RefCounted<Promise>;
   v8::Isolate* isolate_;
 
  private:
