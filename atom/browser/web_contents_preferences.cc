@@ -78,7 +78,9 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
-  last_dict_ = std::move(*dict_.CreateDeepCopy());
+  auto copy =
+      base::DictionaryValue::From(base::Value::ToUniquePtrValue(dict_.Clone()));
+  last_dict_.Swap(copy.get());
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -260,7 +262,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
-  last_dict_ = std::move(*dict_.CreateDeepCopy());
+  auto copy =
+      base::DictionaryValue::From(base::Value::ToUniquePtrValue(dict_.Clone()));
+  last_dict_.Swap(copy.get());
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(

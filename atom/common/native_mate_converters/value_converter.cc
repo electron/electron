@@ -37,8 +37,7 @@ bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
   std::unique_ptr<base::Value> value(
       converter.FromV8Value(val, isolate->GetCurrentContext()));
   if (value) {
-    base::Value* t = value.get();
-    std::swap(out, t);
+    *out = value->Clone();
     return true;
   } else {
     return false;

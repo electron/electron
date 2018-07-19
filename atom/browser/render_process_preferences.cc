@@ -21,7 +21,8 @@ RenderProcessPreferences::~RenderProcessPreferences() {}
 
 int RenderProcessPreferences::AddEntry(const base::DictionaryValue& entry) {
   int id = ++next_id_;
-  entries_[id] = entry.CreateDeepCopy();
+  entries_[id] =
+      base::DictionaryValue::From(base::Value::ToUniquePtrValue(entry.Clone()));
   cache_needs_update_ = true;
   return id;
 }
