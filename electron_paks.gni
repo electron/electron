@@ -26,7 +26,7 @@ template("electron_repack_percent") {
     deps = [
       "//components/resources",
       "//content/app/resources",
-      "//third_party/WebKit/public:scaled_resources_${percent}_percent",
+      "//third_party/blink/public:scaled_resources_${percent}_percent",
       "//ui/resources",
     ]
 
@@ -66,7 +66,7 @@ template("electron_extra_paks") {
       "//content/browser/tracing:resources",
       "//mojo/public/js:resources",
       "//net:net_resources",
-      "//third_party/WebKit/public:resources",
+      "//third_party/blink/public:resources",
     ]
     if (defined(invoker.deps)) {
       deps += invoker.deps

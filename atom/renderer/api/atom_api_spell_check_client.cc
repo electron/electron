@@ -13,8 +13,8 @@
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebTextCheckingCompletion.h"
-#include "third_party/WebKit/public/web/WebTextCheckingResult.h"
+#include "third_party/blink/public/web/web_text_checking_completion.h"
+#include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
 
 namespace atom {
