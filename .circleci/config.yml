@@ -313,7 +313,7 @@ jobs:
       xcode: "8.3.3"
     <<: *build-steps
 
-  electron-linux-gn:
+  electron-linux-gn-fyi:
     environment:
       DISPLAY: ':99.0'
     docker:
@@ -336,7 +336,6 @@ jobs:
       - run:
           name: Gclient sync
           command: |
-            echo $PATH
             gclient config \
               --name "src/electron" \
               --unmanaged \
@@ -352,10 +351,12 @@ jobs:
           name: GN gen
           command: |
             cd src
+            echo 'export SCCACHE_WRAPPER="'`pwd`'/libchromiumcontent/script/sccache"' >> $BASH_ENV
             echo 'export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools' >> $BASH_ENV
             source $BASH_ENV
             mkdir out/Default
             cat > out/Default/args.gn <<-EOF
+            cc_wrapper = "$SCCACHE_WRAPPER"
             root_extra_deps = [ "//electron" ]
             is_electron_build = true
             is_component_build = true
@@ -369,6 +370,10 @@ jobs:
           command: |
             cd src
             ninja -C out/Default electron:electron_app
+      - run:
+          name: Check sccache stats after build
+          command: $SCCACHE_WRAPPER -s
+
       - run:
           name: Setup for headless testing
           command: |
@@ -389,8 +394,6 @@ jobs:
           path: src/junit
       - store_artifacts:
           path: src/junit
-      - <<: *notify-slack-failure
-      - <<: *notify-slack-success
 
 workflows:
   version: 2
@@ -420,7 +423,7 @@ workflows:
       - electron-mas-x64
   build-gn-linux:
     jobs:
-      - electron-linux-gn
+      - electron-linux-gn-fyi
 
   nightly-release-test:
     triggers:
