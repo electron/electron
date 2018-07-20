@@ -21,7 +21,7 @@ class RendererClientBase : public content::ContentRendererClient {
   virtual ~RendererClientBase();
 
   virtual void DidCreateScriptContext(
-      v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
+      v8::Handle<v8::Context> context, content::RenderFrame* render_frame);
   virtual void WillReleaseScriptContext(
       v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
@@ -57,6 +57,9 @@ class RendererClientBase : public content::ContentRendererClient {
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
   bool isolated_world_;
+
+  // An increasing ID used for indentifying an V8 context in this process.
+  int next_context_id_ = 0;
 };
 
 }  // namespace atom

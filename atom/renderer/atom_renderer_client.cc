@@ -82,6 +82,8 @@ void AtomRendererClient::RunScriptsAtDocumentEnd(
 
 void AtomRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
+
   // Only allow node integration for the main frame, unless it is a devtools
   // extension page.
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))

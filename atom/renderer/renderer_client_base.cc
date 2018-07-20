@@ -19,7 +19,9 @@
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/memory/ptr_util.h"
+#include "base/process/process_handle.h"
 #include "base/strings/string_split.h"
+#include "base/strings/stringprintf.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
@@ -42,6 +44,14 @@
 
 #if defined(OS_WIN)
 #include <shlobj.h>
+#endif
+
+// This is defined in later versions of Chromium, remove this if you see
+// compiler complaining duplicate defines.
+#if defined(OS_WIN) || defined(OS_FUCHSIA)
+#define CrPRIdPid "ld"
+#else
+#define CrPRIdPid "d"
 #endif
 
 namespace atom {
@@ -76,6 +86,19 @@ RendererClientBase::RendererClientBase() {
 }
 
 RendererClientBase::~RendererClientBase() {
+}
+
+void RendererClientBase::DidCreateScriptContext(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  // global.setHidden("contextId", `${processId}-${++nextContextId}`)
+  std::string context_id = base::StringPrintf(
+      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), ++next_context_id_);
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
+  v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Value> value = mate::ConvertToV8(isolate, context_id);
+  context->Global()->SetPrivate(context, private_key, value);
 }
 
 void RendererClientBase::AddRenderBindings(
