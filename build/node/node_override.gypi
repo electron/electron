@@ -81,6 +81,10 @@
                     ],
                   },
                 },
+              }, {
+                'defines': [
+                  'U_STATIC_IMPLEMENTATION'
+                ]
               }]
             ],
           }, {
