@@ -40,10 +40,12 @@
 #include "net/proxy_resolution/pac_file_fetcher_impl.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
+#include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/default_channel_id_store.h"
 #include "net/ssl/ssl_config_service_defaults.h"
+#include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/file_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
@@ -286,13 +288,17 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       proxy_config.proxy_rules().bypass_rules.ParseFromString(
           command_line.GetSwitchValueASCII(switches::kProxyBypassList));
       storage_->set_proxy_resolution_service(
-          net::ProxyResolutionService::CreateFixed(proxy_config));
+          net::ProxyResolutionService::CreateFixed(
+              net::ProxyConfigWithAnnotation(proxy_config,
+                                             NO_TRAFFIC_ANNOTATION_YET)));
     } else if (command_line.HasSwitch(switches::kProxyPacUrl)) {
       auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
           GURL(command_line.GetSwitchValueASCII(switches::kProxyPacUrl)));
       proxy_config.set_pac_mandatory(true);
       storage_->set_proxy_resolution_service(
-          net::ProxyResolutionService::CreateFixed(proxy_config));
+          net::ProxyResolutionService::CreateFixed(
+              net::ProxyConfigWithAnnotation(proxy_config,
+                                             NO_TRAFFIC_ANNOTATION_YET)));
     } else {
       storage_->set_proxy_resolution_service(
           net::ProxyResolutionService::CreateUsingSystemProxyResolver(
