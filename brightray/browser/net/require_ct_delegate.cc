@@ -23,7 +23,9 @@ void RequireCTDelegate::ClearCTExcludedHostsList() {
 }
 
 RequireCTDelegate::CTRequirementLevel RequireCTDelegate::IsCTRequiredForHost(
-    const std::string& host) {
+    const std::string& host,
+    const net::X509Certificate* chain,
+    const net::HashValueVector& hashes) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   if (!ct_excluded_hosts_.empty() &&
       (ct_excluded_hosts_.find(host) != ct_excluded_hosts_.end()))
