@@ -630,7 +630,6 @@ if (is_mac) {
         # TODO: move non-windows specific deps into the non-windows-specific list
         "//third_party/breakpad:breakpad_handler",
         "//third_party/breakpad:breakpad_sender",
-        "//third_party/webrtc/system_wrappers:metrics_default",
         "//ui/native_theme:native_theme_browser",
         "//ui/shell_dialogs",
         "//ui/views/controls/webview",
