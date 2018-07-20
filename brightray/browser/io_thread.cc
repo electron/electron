@@ -36,14 +36,12 @@ void IOThread::Init() {
   url_request_context_getter_->AddRef();
 
 #if defined(USE_NSS_CERTS)
-  net::SetMessageLoopForNSSHttpIO();
   net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
 #endif
 }
 
 void IOThread::CleanUp() {
 #if defined(USE_NSS_CERTS)
-  net::ShutdownNSSHttpIO();
   net::SetURLRequestContextForNSSHttpIO(nullptr);
 #endif
   // Explicitly release before the IO thread gets destroyed.
