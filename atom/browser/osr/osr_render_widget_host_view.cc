@@ -27,7 +27,7 @@
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/render_process_host.h"
 #include "media/base/video_frame.h"
-#include "third_party/WebKit/public/platform/WebInputEvent.h"
+#include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"

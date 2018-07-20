@@ -12,7 +12,7 @@
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "native_mate/converter.h"
-#include "third_party/WebKit/public/platform/modules/permissions/permission_status.mojom.h"
+#include "third_party/blink/public/platform/modules/permissions/permission_status.mojom.h"
 
 namespace content {
 struct ContextMenuParams;
