@@ -168,11 +168,17 @@ static_library("electron_lib") {
   configs += [
     "//v8:external_startup_data",
   ]
+
   public_configs = [
     ":branding",
     ":features",
   ]
+
   deps = [
+    ":atom_js2c",
+    "brightray",
+    "build/node",
+    "native_mate",
     "//chrome/common:constants",
     "//components/cdm/renderer",
     "//components/network_session_configurator/common",
@@ -189,7 +195,7 @@ static_library("electron_lib") {
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing",
-    "//services/device/wake_lock/power_save_blocker", # TODO: this requires a visibility patch to chromium src
+    "//services/device/wake_lock/power_save_blocker",  # TODO: this requires a visibility patch to chromium src
     "//skia",
     "//third_party/WebKit/public:blink",
     "//third_party/boringssl",
@@ -199,68 +205,19 @@ static_library("electron_lib") {
     "//ui/gl",
     "//ui/views",
     "//v8",
-    ":atom_js2c",
-    "brightray",
-    "build/node",
-    "native_mate",
   ]
+
   include_dirs = [
     "chromium_src",
     ".",
     "$target_gen_dir",
+
     # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
     # API of blink, then delete this include dir.
     "//third_party/WebKit/Source",
   ]
-  if (enable_desktop_capturer) {
-    deps += [ "//third_party/webrtc/modules/desktop_capture" ]
-  }
-  if (enable_pdf) {
-    deps += [ "//pdf" ]
-  }
-  if (is_mac) {
-    deps += [
-      "//ui/accelerated_widget_mac",
-      "//third_party/crashpad/crashpad/client",
-    ]
-    include_dirs += [
-      # NOTE(nornagon): other chromium files use the full path to include
-      # crashpad; this is just here for compatibility between GN and GYP, so that
-      # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad",
-    ]
-  }
-  if (is_linux) {
-    deps += [
-      "//build/config/linux/gtk",
-      "//chrome/browser/ui/libgtkui",
-      "//device/bluetooth",
-      "//ui/events/devices/x11",
-      "//ui/events/platform/x11",
-      "//ui/native_theme",
-      "//ui/views/controls/webview",
-      "//ui/wm",
-    ]
-    configs += [ ":gio_unix" ]
-  }
-  defines = [
-    # Disable warnings for g_settings_list_schemas.
-    "GLIB_DISABLE_DEPRECATION_WARNINGS",
-  ]
-  if (is_component_build) {
-    defines += [
-      # Import V8 symbols from shared library (node.dll / libnode.so)
-      "USING_V8_SHARED",
-      "USING_V8_PLATFORM_SHARED",
-      "USING_V8_BASE_SHARED",
-    ]
-  }
-  if (is_linux || is_win) {
-    deps += [ "//third_party/breakpad:client" ]
-    include_dirs += [
-      "//third_party/breakpad",
-    ]
-  }
+
+  defines = []
 
   extra_source_filters = []
   if (!is_linux) {
@@ -289,9 +246,85 @@ static_library("electron_lib") {
     ]
   }
 
-  set_sources_assignment_filter(sources_assignment_filter + extra_source_filters)
+  set_sources_assignment_filter(
+      sources_assignment_filter + extra_source_filters)
   sources = filenames_gypi.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
+
+  if (is_component_build) {
+    defines += [
+      # Import V8 symbols from shared library (node.dll / libnode.so)
+      "USING_V8_SHARED",
+      "USING_V8_PLATFORM_SHARED",
+      "USING_V8_BASE_SHARED",
+    ]
+  }
+
+  if (is_mac) {
+    deps += [
+      "//third_party/crashpad/crashpad/client",
+      "//ui/accelerated_widget_mac",
+    ]
+    include_dirs += [
+      # NOTE(nornagon): other chromium files use the full path to include
+      # crashpad; this is just here for compatibility between GN and GYP, so that
+      # the #includes can be agnostic about where crashpad is vendored.
+      "//third_party/crashpad",
+    ]
+    if (is_mas_build) {
+      deps -= [ "//third_party/crashpad/crashpad/client" ]
+      sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
+      sources -= [
+        "atom/browser/auto_updater_mac.mm",
+        "atom/common/crash_reporter/crash_reporter_mac.h",
+        "atom/common/crash_reporter/crash_reporter_mac.mm",
+      ]
+      defines += [ "MAS_BUILD" ]
+    } else {
+      libs = [
+        "Squirrel.framework",
+        "ReactiveCocoa.framework",
+        "Mantle.framework",
+      ]
+      cflags_objcc = [
+        "-F",
+        rebase_path("external_binaries", root_build_dir),
+      ]
+
+      # ReactiveCocoa which is used by Squirrel requires using __weak.
+      cflags_objcc += [ "-fobjc-weak" ]
+    }
+  }
+  if (is_linux) {
+    deps += [
+      "//build/config/linux/gtk",
+      "//chrome/browser/ui/libgtkui",
+      "//device/bluetooth",
+      "//ui/events/devices/x11",
+      "//ui/events/platform/x11",
+      "//ui/native_theme",
+      "//ui/views/controls/webview",
+      "//ui/wm",
+    ]
+    configs += [ ":gio_unix" ]
+    defines += [
+      # Disable warnings for g_settings_list_schemas.
+      "GLIB_DISABLE_DEPRECATION_WARNINGS",
+    ]
+    sources += filenames_gypi.lib_sources_linux
+    sources += filenames_gypi.lib_sources_nss
+  }
+  if (is_win) {
+    sources += filenames_gypi.lib_sources_win
+  }
+  if (is_linux || is_win) {
+    deps += [ "//third_party/breakpad:client" ]
+    include_dirs += [ "//third_party/breakpad" ]
+  }
+
+  if (enable_pdf) {
+    deps += [ "//pdf" ]
+  }
 
   if (enable_run_as_node) {
     sources += [
@@ -315,50 +348,17 @@ static_library("electron_lib") {
       "atom/browser/osr/osr_web_contents_view_mac.mm",
     ]
     deps += [
-      "//ui/compositor",
       "//components/viz/service",
+      "//ui/compositor",
     ]
   }
 
   if (enable_desktop_capturer) {
+    deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     sources += [
       "atom/browser/api/atom_api_desktop_capturer.cc",
       "atom/browser/api/atom_api_desktop_capturer.h",
     ]
-  }
-
-
-  if (is_mas_build) {
-    deps -= [ "//third_party/crashpad/crashpad/client" ]
-  }
-
-  if (is_mac && !is_mas_build) {
-    libs = [
-      "Squirrel.framework",
-      "ReactiveCocoa.framework",
-      "Mantle.framework",
-    ]
-    cflags_objcc = [
-      "-F", rebase_path("external_binaries", root_build_dir)
-    ]
-    # ReactiveCocoa which is used by Squirrel requires using __weak.
-    cflags_objcc += [ "-fobjc-weak" ]
-  }
-  if (is_linux) {
-    sources += filenames_gypi.lib_sources_linux
-    sources += filenames_gypi.lib_sources_nss
-  }
-  if (is_win) {
-    sources += filenames_gypi.lib_sources_win
-  }
-  if (is_mas_build) {
-    sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
-    sources -= [
-      "atom/browser/auto_updater_mac.mm",
-      "atom/common/crash_reporter/crash_reporter_mac.h",
-      "atom/common/crash_reporter/crash_reporter_mac.mm",
-    ]
-    defines += [ "MAS_BUILD" ]
   }
 }
 
