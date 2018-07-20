@@ -4,6 +4,9 @@
 
 #include "atom/browser/special_storage_policy.h"
 
+#include "base/bind.h"
+#include "base/callback.h"
+
 namespace atom {
 
 SpecialStoragePolicy::SpecialStoragePolicy() {}
@@ -34,8 +37,9 @@ bool SpecialStoragePolicy::HasSessionOnlyOrigins() {
   return false;
 }
 
-bool SpecialStoragePolicy::ShouldDeleteCookieOnExit(const GURL& origin) {
-  return false;
+storage::SpecialStoragePolicy::DeleteCookiePredicate
+SpecialStoragePolicy::CreateDeleteCookieOnExitPredicate() {
+  return storage::SpecialStoragePolicy::DeleteCookiePredicate();
 }
 
 }  // namespace atom
