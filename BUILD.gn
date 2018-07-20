@@ -232,7 +232,7 @@ static_library("electron_lib") {
     "//ppapi/shared_impl",
     "//printing",
     "//skia",
-    "//third_party/WebKit/public:blink",
+    "//third_party/blink/public:blink",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
     "//third_party/leveldatabase",
@@ -258,7 +258,7 @@ static_library("electron_lib") {
 
     # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
     # API of blink, then remove this from the include_dirs.
-    "//third_party/WebKit/Source",
+    "//third_party/blink/renderer",
   ]
 
   defines = []

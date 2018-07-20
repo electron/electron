@@ -10,7 +10,7 @@
 
 #include "chrome/renderer/media/chrome_key_systems_provider.h"
 #include "content/public/renderer/content_renderer_client.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 
 namespace atom {
 

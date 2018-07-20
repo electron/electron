@@ -8,10 +8,10 @@
 #include "chrome/common/tts_messages.h"
 #include "chrome/common/tts_utterance_request.h"
 #include "content/public/renderer/render_thread.h"
-#include "third_party/WebKit/public/platform/WebSpeechSynthesisUtterance.h"
-#include "third_party/WebKit/public/platform/WebSpeechSynthesisVoice.h"
-#include "third_party/WebKit/public/platform/WebString.h"
-#include "third_party/WebKit/public/platform/WebVector.h"
+#include "third_party/blink/public/platform/web_speech_synthesis_utterance.h"
+#include "third_party/blink/public/platform/web_speech_synthesis_voice.h"
+#include "third_party/blink/public/platform/web_string.h"
+#include "third_party/blink/public/platform/web_vector.h"
 
 using blink::WebSpeechSynthesisUtterance;
 using blink::WebSpeechSynthesisVoice;
