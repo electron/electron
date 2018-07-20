@@ -1,10 +1,10 @@
 vars = {
   'chromium_version':
-    '66.0.3359.181',
+    '67.0.3396.99',
   'libchromiumcontent_revision':
-    'f3a3f588281aba034a0f1f85ca3c65eb5a3f7b66',
+    '5db6529f9663a48ee3e6f4265a6abe7806f1dfbf',
   'node_version':
-    '6d1bdd3ebf860ff878a1b5db4fd26fdda3932e21',
+    '95bb1b1046a648994dfe85340aca21fee0179855',
 
   'chromium_git':
     'https://chromium.googlesource.com',
