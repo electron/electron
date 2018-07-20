@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "atom/common/color_util.h"
-#include "atom/common/context_counter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
@@ -97,9 +96,9 @@ RendererClientBase::~RendererClientBase() {}
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processId}-${GetNextContextId()}`)
+  // global.setHidden("contextId", `${processId}-${++next_context_id_}`)
   std::string context_id = base::StringPrintf(
-      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), GetNextContextId());
+      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
   v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
