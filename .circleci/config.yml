@@ -351,7 +351,7 @@ jobs:
           name: GN gen
           command: |
             cd src
-            echo 'export SCCACHE_WRAPPER="'`pwd`'/libchromiumcontent/script/sccache"' >> $BASH_ENV
+            echo 'export SCCACHE_WRAPPER="'`pwd`'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
             echo 'export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools' >> $BASH_ENV
             source $BASH_ENV
             mkdir out/Default
