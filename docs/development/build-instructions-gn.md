@@ -87,7 +87,7 @@ this document :)
 ## Tests
 
 To run the tests, you'll first need to build the test modules against the
-same version of node.js that was built as part of the build process.
+same version of Node.js that was built as part of the build process.
 
 ```sh
 $ (cd electron/spec && npm i --nodedir=../../third_party/electron_node)
