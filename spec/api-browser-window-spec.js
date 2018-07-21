@@ -1631,7 +1631,8 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
       })
 
-      it('releases memory after popup is closed', (done) => {
+      // TODO(alexeykuzmin): `GetProcessMemoryInfo()` is not available starting Ch67.
+      xit('releases memory after popup is closed', (done) => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
