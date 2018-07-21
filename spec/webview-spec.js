@@ -696,7 +696,6 @@ describe('<webview> tag', function () {
     it('sets webContents of webview as devtools', async () => {
       const webview2 = new WebView()
       loadWebView(webview2)
-      await waitForEvent(webview2, 'did-attach')
 
       // Setup an event handler for further usage.
       const waitForDomReady = waitForEvent(webview2, 'dom-ready')
@@ -1180,6 +1179,18 @@ describe('<webview> tag', function () {
   })
 
   describe('will-attach-webview event', () => {
+    it('does not emit when src is not changed', (done) => {
+      loadWebView(webview)
+      setTimeout(() => {
+        const expectedErrorMessage =
+            'Cannot call stop because the webContents is unavailable. ' +
+            'The WebView must be attached to the DOM ' +
+            'and the dom-ready event emitted before this method can be called.'
+        expect(() => { webview.stop() }).to.throw(expectedErrorMessage)
+        done()
+      })
+    })
+
     it('supports changing the web preferences', async () => {
       ipcRenderer.send('disable-node-on-next-will-attach-webview')
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
@@ -1368,11 +1379,11 @@ describe('<webview> tag', function () {
 
         const destroy1Listener = () => {
           assert.equal(webContents, webview2.getWebContents())
-          assert.equal(null, webview.getWebContents())
+          assert.notStrictEqual(webContents, webview.getWebContents())
 
           const destroy2Listener = () => {
             assert.equal(webContents, webview.getWebContents())
-            assert.equal(null, webview2.getWebContents())
+            assert.notStrictEqual(webContents, webview2.getWebContents())
 
             // Make sure that events are hooked up to the right webview now
             webview.addEventListener('console-message', (e) => {
