@@ -17,7 +17,9 @@
 
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
+#include "atom/common/options_switches.h"
 #include "base/strings/stringprintf.h"
+#include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/stream_info.h"
 #include "net/url_request/url_request.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
@@ -76,7 +78,7 @@ void OnPdfResourceIntercepted(
         content::BrowserContext::GetDownloadManager(browser_context);
 
     download_manager->DownloadUrl(
-        content::DownloadUrlParameters::CreateForWebContentsMainFrame(
+        content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
             web_contents, original_url, NO_TRAFFIC_ANNOTATION_YET));
     return;
   }

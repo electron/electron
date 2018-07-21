@@ -30,6 +30,7 @@
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
 #include "pdf/pdf.h"
+#include "pdf/pdf_ppapi.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
 
 namespace atom {
