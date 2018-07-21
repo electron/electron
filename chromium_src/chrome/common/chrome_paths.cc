@@ -16,7 +16,7 @@
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_paths_internal.h"
 #include "chrome/common/widevine_cdm_constants.h"
-#include "media/media_features.h"
+#include "media/media_buildflags.h"
 #include "third_party/widevine/cdm/stub/widevine_cdm_version.h"
 #include "third_party/widevine/cdm/widevine_cdm_common.h"
 
