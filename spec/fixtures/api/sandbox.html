@@ -35,20 +35,21 @@
         await invokeGc()
         ipcRenderer.send('answer', new Hello().say())
       },
-      'allocate-memory': async () => {
-        await invokeGc()
-        const {privateBytes: bytesBeforeOpen} = process.getProcessMemoryInfo()
-        let w = open('./allocate-memory.html')
-        await invokeGc()
-        const {privateBytes: bytesAfterOpen} = process.getProcessMemoryInfo()
-        w.close()
-        w = null
-        await invokeGc()
-        const {privateBytes: bytesAfterClose} = process.getProcessMemoryInfo()
-        ipcRenderer.send('answer', {
-          bytesBeforeOpen, bytesAfterOpen, bytesAfterClose
-        })
-      },
+      // FIXME: Chromium 67 - getProcessMemoryInfo has been removed
+      // 'allocate-memory': async () => {
+      //   await invokeGc()
+      //   const {privateBytes: bytesBeforeOpen} = process.getProcessMemoryInfo()
+      //   let w = open('./allocate-memory.html')
+      //   await invokeGc()
+      //   const {privateBytes: bytesAfterOpen} = process.getProcessMemoryInfo()
+      //   w.close()
+      //   w = null
+      //   await invokeGc()
+      //   const {privateBytes: bytesAfterClose} = process.getProcessMemoryInfo()
+      //   ipcRenderer.send('answer', {
+      //     bytesBeforeOpen, bytesAfterOpen, bytesAfterClose
+      //   })
+      // },
       'window-events': () => {
         document.title = 'changed'
       },
