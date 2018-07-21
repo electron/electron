@@ -242,4 +242,12 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
                             *details);
 }
 
+blink::mojom::PermissionStatus
+AtomPermissionManager::GetPermissionStatusForFrame(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin) {
+  return blink::mojom::PermissionStatus::GRANTED;
+}
+
 }  // namespace atom
