@@ -808,15 +808,7 @@ describe('app module', () => {
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
-      for (const {memory, pid, type, cpu} of appMetrics) {
-        expect(memory.workingSetSize).to.be.above(0, 'working set size is not > 0')
-
-        // windows causes failures here due to CI server configuration
-        if (process.platform !== 'win32') {
-          expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
-          expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
-        }
-
+      for (const {pid, type, cpu} of appMetrics) {
         expect(pid).to.be.above(0, 'pid is not > 0')
         expect(type).to.be.a('string').that.is.not.empty()
 
