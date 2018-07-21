@@ -17,8 +17,6 @@ class AtomResourceDispatcherHostDelegate
   AtomResourceDispatcherHostDelegate();
 
   // content::ResourceDispatcherHostDelegate:
-  bool HandleExternalProtocol(const GURL& url,
-                              content::ResourceRequestInfo* info) override;
   bool ShouldInterceptResourceAsStream(net::URLRequest* request,
                                        const std::string& mime_type,
                                        GURL* origin,

@@ -24,6 +24,7 @@
 #include "atom/browser/window_list.h"
 #include "atom/common/google_api_key.h"
 #include "atom/common/options_switches.h"
+#include "atom/common/platform_util.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
@@ -45,6 +46,7 @@
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "device/geolocation/public/cpp/location_provider.h"
+#include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "services/network/public/cpp/resource_request_body.h"
@@ -559,6 +561,51 @@ void AtomBrowserClient::RenderProcessExited(content::RenderProcessHost* host,
     }
     render_process_host_pids_.erase(host_pid);
   }
+}
+
+void OnOpenExternal(const GURL& escaped_url, bool allowed) {
+  if (allowed)
+    platform_util::OpenExternal(
+#if defined(OS_WIN)
+        base::UTF8ToUTF16(escaped_url.spec()),
+#else
+        escaped_url,
+#endif
+        true);
+}
+
+void HandleExternalProtocolInUI(
+    const GURL& url,
+    const content::ResourceRequestInfo::WebContentsGetter& web_contents_getter,
+    bool has_user_gesture) {
+  content::WebContents* web_contents = web_contents_getter.Run();
+  if (!web_contents)
+    return;
+
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  if (!permission_helper)
+    return;
+
+  GURL escaped_url(net::EscapeExternalHandlerValue(url.spec()));
+  auto callback = base::Bind(&OnOpenExternal, escaped_url);
+  permission_helper->RequestOpenExternalPermission(callback, has_user_gesture,
+                                                   url);
+}
+
+bool AtomBrowserClient::HandleExternalProtocol(
+    const GURL& url,
+    content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+    int child_id,
+    content::NavigationUIData* navigation_data,
+    bool is_main_frame,
+    ui::PageTransition page_transition,
+    bool has_user_gesture) {
+  BrowserThread::PostTask(
+      BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
+                     has_user_gesture));
+  return true;
 }
 
 }  // namespace atom
