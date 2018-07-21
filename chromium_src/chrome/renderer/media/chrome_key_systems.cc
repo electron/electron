@@ -102,10 +102,6 @@ class ExternalClearKeyProperties : public KeySystemProperties {
     return media::EmeFeatureSupport::NOT_SUPPORTED;
   }
 
-  std::string GetPepperType() const override {
-    return kExternalClearKeyPepperType;
-  }
-
  private:
   const std::string key_system_name_;
 };
