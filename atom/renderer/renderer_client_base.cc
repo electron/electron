@@ -78,7 +78,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the
