@@ -39,6 +39,45 @@
 
 namespace {
 
+// Taken from src/media/cdm/cdm_paths.cc
+const char kPlatformSpecific[] = "_platform_specific";
+
+// Name of the component platform in the manifest.
+const char kComponentPlatform[] =
+#if defined(OS_MACOSX)
+    "mac";
+#elif defined(OS_WIN)
+    "win";
+#elif defined(OS_CHROMEOS)
+    "cros";
+#elif defined(OS_LINUX)
+    "linux";
+#else
+    "unsupported_platform";
+#endif
+
+// Name of the component architecture in the manifest.
+const char kComponentArch[] =
+#if defined(ARCH_CPU_X86)
+    "x86";
+#elif defined(ARCH_CPU_X86_64)
+    "x64";
+#elif defined(ARCH_CPU_ARMEL)
+    "arm";
+#else
+    "unsupported_arch";
+#endif
+// End src/media/cdm/cdm_paths.cc
+
+base::FilePath GetWidevinePath() {
+  base::FilePath path;
+  const std::string kPlatformArch =
+      std::string(kComponentPlatform) + "_" + kComponentArch;
+  return path.AppendASCII(kWidevineCdmBaseDirectory)
+      .AppendASCII(kPlatformSpecific)
+      .AppendASCII(kPlatformArch);
+}
+
 // The Pepper Flash plugins are in a directory with this name.
 const base::FilePath::CharType kPepperFlashBaseDirectory[] =
     FILE_PATH_LITERAL("PepperFlash");
@@ -377,9 +416,8 @@ bool PathProvider(int key, base::FilePath* result) {
       if (!GetInternalPluginsDirectory(&cur))
         return false;
       cur =
-          cur.Append(
-                 media::GetPlatformSpecificDirectory(kWidevineCdmBaseDirectory))
-              .AppendASCII(base::GetNativeLibraryName(kWidevineCdmLibraryName));
+          cur.Append(GetWidevinePath())
+             .AppendASCII(base::GetNativeLibraryName(kWidevineCdmLibraryName));
       break;
 #endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
     case chrome::FILE_RESOURCES_PACK:
