@@ -37,8 +37,8 @@ using media::KeySystemProperties;
 using media::SupportedCodecs;
 
 #if BUILDFLAG(ENABLE_LIBRARY_CDMS)
-static const char kExternalClearKeyPepperType[] =
-    "application/x-ppapi-clearkey-cdm";
+// static const char kExternalClearKeyPepperType[] =
+//     "application/x-ppapi-clearkey-cdm";
 
 // KeySystemProperties implementation for external Clear Key systems.
 class ExternalClearKeyProperties : public KeySystemProperties {
