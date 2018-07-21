@@ -39,7 +39,8 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
 void BrowserClient::SetApplicationLocale(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  if (!BrowserThread::PostTask(
+  if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
+      !BrowserThread::PostTask(
           BrowserThread::IO, FROM_HERE,
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
