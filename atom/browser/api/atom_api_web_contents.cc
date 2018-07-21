@@ -316,7 +316,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents), type_(type) {
   const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   if (type == REMOTE) {
-    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+                                       false);
     Init(isolate);
     AttachAsUserData(web_contents);
     InitZoomController(web_contents, options);
@@ -457,7 +458,8 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Initialize zoom controller.
   InitZoomController(web_contents, options);
 
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+                                     false);
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -1128,7 +1130,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(user_agent);
+    web_contents()->SetUserAgentOverride(user_agent, false);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -1238,7 +1240,7 @@ bool WebContents::IsCrashed() const {
 
 void WebContents::SetUserAgent(const std::string& user_agent,
                                mate::Arguments* args) {
-  web_contents()->SetUserAgentOverride(user_agent);
+  web_contents()->SetUserAgentOverride(user_agent, false);
 }
 
 std::string WebContents::GetUserAgent() {
