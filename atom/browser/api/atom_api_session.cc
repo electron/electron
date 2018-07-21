@@ -47,7 +47,9 @@
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/proxy_resolution/proxy_config_service_fixed.h"
+#include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
+#include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -349,7 +351,8 @@ void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
   auto* proxy_service =
       getter->GetURLRequestContext()->proxy_resolution_service();
   proxy_service->ResetConfigService(
-      base::WrapUnique(new net::ProxyConfigServiceFixed(config)));
+      base::WrapUnique(new net::ProxyConfigServiceFixed(
+          net::ProxyConfigWithAnnotation(config, NO_TRAFFIC_ANNOTATION_YET))));
   // Refetches and applies the new pac script if provided.
   proxy_service->ForceReloadProxyConfig();
   RunCallbackInUI(callback);
