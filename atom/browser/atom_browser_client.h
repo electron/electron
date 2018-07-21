@@ -122,6 +122,14 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void RenderProcessExited(content::RenderProcessHost* host,
                            base::TerminationStatus status,
                            int exit_code) override;
+  bool HandleExternalProtocol(
+      const GURL& url,
+      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
+      int child_id,
+      content::NavigationUIData* navigation_data,
+      bool is_main_frame,
+      ui::PageTransition page_transition,
+      bool has_user_gesture) override;
 
  private:
   struct ProcessPreferences {
