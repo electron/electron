@@ -135,8 +135,6 @@ nativeImage.createFromBuffer(buffer, {
 ```js
 // Deprecated
 const info = process.getProcessMemoryInfo()
-const privateBytes = info.privateBytes // deprecated property
-const sharedBytes = info.sharedBytes // deprecated property
 ```
 
 ## `screen`

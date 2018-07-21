@@ -151,7 +151,6 @@ void AtomSandboxedRendererClient::InitializeBindings(
   b.SetMethod("getPid", &base::GetCurrentProcId);
   b.SetMethod("getResourcesPath", &NodeBindings::GetHelperResourcesPath);
   b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
-  b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
   b.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                         base::Unretained(metrics_.get())));

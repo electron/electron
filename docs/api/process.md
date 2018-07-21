@@ -14,7 +14,6 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `crash()`
 - `hang()`
 - `getHeapStatistics()`
-- `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
 - `getCPUUsage()`
 - `getIOCounters()`
@@ -155,22 +154,6 @@ Returns `Object`:
 * `doesZapGarbage` Boolean
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
-
-### `process.getProcessMemoryInfo()`
-
-Returns `Object`:
-
-* `workingSetSize` Integer - The amount of memory currently pinned to actual physical
-  RAM.
-* `peakWorkingSetSize` Integer - The maximum amount of memory that has ever been pinned
-  to actual physical RAM.
-* `privateBytes` Integer - The amount of memory not shared by other processes, such as
-  JS heap or HTML content.
-* `sharedBytes` Integer - The amount of memory shared between processes, typically
-  memory consumed by the Electron code itself.
-
-Returns an object giving memory usage statistics about the current process. Note
-that all statistics are reported in Kilobytes.
 
 ### `process.getSystemMemoryInfo()`
 
