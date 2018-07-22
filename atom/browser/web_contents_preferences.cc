@@ -78,9 +78,7 @@ WebContentsPreferences::WebContentsPreferences(
 #endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
-  auto copy =
-      base::DictionaryValue::From(base::Value::ToUniquePtrValue(dict_.Clone()));
-  last_dict_.Swap(copy.get());
+  last_dict_ = dict_.Clone();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
@@ -92,8 +90,9 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
     const base::StringPiece& key,
     bool val) {
   bool existing;
-  if (!dict_.GetBoolean(key, &existing)) {
-    dict_.SetBoolean(key, val);
+  // if (!dict_.GetBoolean(key, &existing)) {
+  if (!GetBoolean(key, &existing)) {
+    dict_.SetPath({key}, base::Value(val));
     return val;
   }
   return existing;
@@ -102,7 +101,7 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
                                        bool default_value) {
   bool bool_value = default_value;
-  dict_.GetBoolean(name, &bool_value);
+  GetBoolean(name, &bool_value);
   return bool_value;
 }
 
@@ -133,49 +132,49 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line) {
   bool b;
   // Check if plugins are enabled.
-  if (dict_.GetBoolean(options::kPlugins, &b) && b)
+  if (GetBoolean(options::kPlugins, &b) && b)
     command_line->AppendSwitch(switches::kEnablePlugins);
 
   // Experimental flags.
-  if (dict_.GetBoolean(options::kExperimentalFeatures, &b) && b)
+  if (GetBoolean(options::kExperimentalFeatures, &b) && b)
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
   // Check if we have node integration specified.
   bool node_integration = true;
-  dict_.GetBoolean(options::kNodeIntegration, &node_integration);
+  GetBoolean(options::kNodeIntegration, &node_integration);
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   node_integration ? "true" : "false");
 
   // Whether to enable node integration in Worker.
-  if (dict_.GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
+  if (GetBoolean(options::kNodeIntegrationInWorker, &b) && b)
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // Check if webview tag creation is enabled, default to nodeIntegration value.
   // TODO(kevinsawicki): Default to false in 2.0
   bool webview_tag = node_integration;
-  dict_.GetBoolean(options::kWebviewTag, &webview_tag);
+  GetBoolean(options::kWebviewTag, &webview_tag);
   command_line->AppendSwitchASCII(switches::kWebviewTag,
                                   webview_tag ? "true" : "false");
 
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (dict_.GetBoolean(options::kSandbox, &b) && b)
+  if (GetBoolean(options::kSandbox, &b) && b)
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
     command_line->AppendSwitch(::switches::kNoSandbox);
-  if (dict_.GetBoolean(options::kNativeWindowOpen, &b) && b)
+  if (GetBoolean(options::kNativeWindowOpen, &b) && b)
     command_line->AppendSwitch(switches::kNativeWindowOpen);
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (dict_.GetString(options::kPreloadScript, &preload)) {
+  if (GetString(options::kPreloadScript, &preload)) {
     if (base::FilePath(preload).IsAbsolute())
       command_line->AppendSwitchNative(switches::kPreloadScript, preload);
     else
       LOG(ERROR) << "preload script must have absolute path.";
-  } else if (dict_.GetString(options::kPreloadURL, &preload)) {
+  } else if (GetString(options::kPreloadURL, &preload)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload_path;
     if (net::FileURLToFilePath(GURL(preload), &preload_path))
@@ -194,29 +193,29 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 
   // Run Electron APIs and preload script in isolated world
-  if (dict_.GetBoolean(options::kContextIsolation, &b) && b)
+  if (GetBoolean(options::kContextIsolation, &b) && b)
     command_line->AppendSwitch(switches::kContextIsolation);
 
   // --background-color.
   std::string s;
-  if (dict_.GetString(options::kBackgroundColor, &s))
+  if (GetString(options::kBackgroundColor, &s))
     command_line->AppendSwitchASCII(switches::kBackgroundColor, s);
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
-  if (dict_.GetInteger(options::kGuestInstanceID, &guest_instance_id))
+  if (GetInteger(options::kGuestInstanceID, &guest_instance_id))
     command_line->AppendSwitchASCII(switches::kGuestInstanceID,
                                     base::IntToString(guest_instance_id));
 
   // Pass the opener's window id.
   int opener_id;
-  if (dict_.GetInteger(options::kOpenerID, &opener_id))
+  if (GetInteger(options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::IntToString(opener_id));
 
 #if defined(OS_MACOSX)
   // Enable scroll bounce.
-  if (dict_.GetBoolean(options::kScrollBounce, &b) && b)
+  if (GetBoolean(options::kScrollBounce, &b) && b)
     command_line->AppendSwitch(switches::kScrollBounce);
 #endif
 
@@ -231,11 +230,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 
   // Enable blink features.
-  if (dict_.GetString(options::kEnableBlinkFeatures, &s))
+  if (GetString(options::kEnableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
 
   // Disable blink features.
-  if (dict_.GetString(options::kDisableBlinkFeatures, &s))
+  if (GetString(options::kDisableBlinkFeatures, &s))
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures, s);
 
   if (guest_instance_id) {
@@ -262,31 +261,29 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
-  auto copy =
-      base::DictionaryValue::From(base::Value::ToUniquePtrValue(dict_.Clone()));
-  last_dict_.Swap(copy.get());
+  last_dict_ = dict_.Clone();
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebPreferences* prefs) {
   bool b;
-  if (dict_.GetBoolean("javascript", &b))
+  if (GetBoolean("javascript", &b))
     prefs->javascript_enabled = b;
-  if (dict_.GetBoolean("images", &b))
+  if (GetBoolean("images", &b))
     prefs->images_enabled = b;
-  if (dict_.GetBoolean("textAreasAreResizable", &b))
+  if (GetBoolean("textAreasAreResizable", &b))
     prefs->text_areas_are_resizable = b;
-  if (dict_.GetBoolean("webgl", &b)) {
+  if (GetBoolean("webgl", &b)) {
     prefs->webgl1_enabled = b;
     prefs->webgl2_enabled = b;
   }
-  if (dict_.GetBoolean(options::kWebSecurity, &b)) {
+  if (GetBoolean(options::kWebSecurity, &b)) {
     prefs->web_security_enabled = b;
     prefs->allow_running_insecure_content = !b;
   }
-  if (dict_.GetBoolean(options::kAllowRunningInsecureContent, &b))
+  if (GetBoolean(options::kAllowRunningInsecureContent, &b))
     prefs->allow_running_insecure_content = b;
-  if (dict_.GetBoolean("navigateOnDragDrop", &b))
+  if (GetBoolean("navigateOnDragDrop", &b))
     prefs->navigate_on_drag_drop = b;
   const base::DictionaryValue* fonts = nullptr;
   if (dict_.GetDictionary("defaultFontFamily", &fonts)) {
@@ -316,15 +313,38 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->default_encoding = encoding;
 }
 
-bool WebContentsPreferences::GetInteger(const base::StringPiece& attribute_name,
-                                        int* val) {
-  // if it is already an integer, no conversion needed
-  if (dict_.GetInteger(attribute_name, val))
+bool WebContentsPreferences::GetString(const base::StringPiece& key,
+                                       std::string* val) const {
+  auto v = dict_.FindPath({key});
+  if (v || v->is_string()) {
+    *val = v->GetString();
     return true;
+  }
 
-  std::string str;
-  if (dict_.GetString(attribute_name, &str))
-    return base::StringToInt(str, val);
+  return false;
+}
+
+bool WebContentsPreferences::GetInteger(const base::StringPiece& key,
+                                        int* val) const {
+  auto v = dict_.FindPath({key});
+  if (v && v->is_int()) {
+    *val = v->GetInt();
+    return true;
+  }
+
+  if (v && v->is_string())
+    return base::StringToInt(v->GetString(), val);
+
+  return false;
+}
+
+bool WebContentsPreferences::GetBoolean(const base::StringPiece& key,
+                                        bool* val) const {
+  auto v = dict_.FindPath({key});
+  if (v && v->is_bool()) {
+    *val = v->GetBool();
+    return true;
+  }
 
   return false;
 }

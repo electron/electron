@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -48,10 +49,18 @@ class WebContentsPreferences
   // Modify the WebPreferences according to preferences.
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
+  bool GetString(const base::StringPiece& key, std::string* val) const;
+
+  // Get preferences value as integer possibly coercing it from a string
+  bool GetInteger(const base::StringPiece& key, int* val) const;
+
+  // Get preferences value as boolean
+  bool GetBoolean(const base::StringPiece& key, bool* val) const;
+
   // Returns the web preferences.
-  base::DictionaryValue* dict() { return &dict_; }
-  const base::DictionaryValue* dict() const { return &dict_; }
-  base::DictionaryValue* last_dict() { return &last_dict_; }
+  base::Value* dict() { return &dict_; }
+  const base::Value* dict() const { return &dict_; }
+  base::Value* last_dict() { return &last_dict_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -63,15 +72,12 @@ class WebContentsPreferences
   // Set preference value to given bool if user did not provide value
   bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
 
-  // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const base::StringPiece& attribute_name, int* val);
-
   static std::vector<WebContentsPreferences*> instances_;
 
   content::WebContents* web_contents_;
 
-  base::DictionaryValue dict_;
-  base::DictionaryValue last_dict_;
+  base::Value dict_;
+  base::Value last_dict_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

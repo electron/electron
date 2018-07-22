@@ -1174,8 +1174,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;
-    if (web_preferences->dict()->GetString(options::kBackgroundColor,
-                                           &color_name)) {
+    if (web_preferences->GetString(options::kBackgroundColor, &color_name)) {
       view->SetBackgroundColor(ParseHexColor(color_name));
     } else {
       view->SetBackgroundColor(SK_ColorTRANSPARENT);

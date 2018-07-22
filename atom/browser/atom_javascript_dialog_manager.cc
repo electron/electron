@@ -62,7 +62,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   std::string checkbox;
   if (origin_counts_[origin] > 1 && web_preferences &&
       web_preferences->IsEnabled("safeDialogs") &&
-      !web_preferences->dict()->GetString("safeDialogsMessage", &checkbox)) {
+      !web_preferences->GetString("safeDialogsMessage", &checkbox)) {
     checkbox = "Prevent this app from creating additional dialogs";
   }
 

@@ -252,11 +252,10 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     return;
 
   // Do we have an affinity site to manage ?
-  std::string affinity;
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  if (web_preferences &&
-      web_preferences->dict()->GetString("affinity", &affinity) &&
+  std::string affinity;
+  if (web_preferences && web_preferences->GetString("affinity", &affinity) &&
       !affinity.empty()) {
     affinity = base::ToLowerASCII(affinity);
     auto iter = site_per_affinities.find(affinity);

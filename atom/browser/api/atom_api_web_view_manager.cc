@@ -27,7 +27,6 @@ void AddGuest(int guest_instance_id,
   if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
-  printf("HELLO %d\n", guest_instance_id);
   double zoom_factor;
   if (options.GetDouble(atom::options::kZoomFactor, &zoom_factor)) {
     atom::WebContentsZoomController::FromWebContents(guest_web_contents)
