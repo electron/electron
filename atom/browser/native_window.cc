@@ -60,7 +60,10 @@ NativeWindow::NativeWindow(const mate::Dictionary& options,
 
 NativeWindow::~NativeWindow() {
   // It's possible that the windows gets destroyed before it's closed, in that
-  // case we need to ensure the OnWindowClosed message is still notified.
+  // case we need to ensure the Widget delegate gets destroyed and
+  // OnWindowClosed message is still notified.
+  if (widget_->widget_delegate())
+    widget_->OnNativeWidgetDestroyed();
   NotifyWindowClosed();
 }
 
