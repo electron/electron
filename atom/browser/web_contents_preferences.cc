@@ -119,7 +119,9 @@ bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
 }
 
 void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
-  dict_.MergeDictionary(&extend);
+  base::DictionaryValue* to_merge;
+  if (dict_.GetAsDictionary(&to_merge))
+    to_merge->MergeDictionary(&extend);
 }
 
 // static
