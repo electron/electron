@@ -29,6 +29,19 @@
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
+namespace {
+
+template <typename str>
+bool GetString(base::Value* dict, const base::StringPiece& key, str* val) {
+  if (dict && dict->is_dict()) {
+    auto v = dict->FindPath({key});
+    return v && v->GetAsString(val);
+  }
+  return false;
+}
+
+}  // namespace
+
 namespace atom {
 
 // static
@@ -184,8 +197,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   }
 
   // Custom args for renderer process
-  base::Value* customArgs;
-  if (dict_.Get(options::kCustomArgs, &customArgs) && customArgs->is_list()) {
+  auto customArgs = dict_.FindPath({options::kCustomArgs});
+  if (customArgs && customArgs->is_list()) {
     for (const base::Value& customArg : customArgs->GetList()) {
       if (customArg.is_string())
         command_line->AppendArg(customArg.GetString());
@@ -220,11 +233,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 #endif
 
   // Custom command line switches.
-  const base::ListValue* args;
-  if (dict_.GetList("commandLineSwitches", &args)) {
-    for (size_t i = 0; i < args->GetSize(); ++i) {
-      std::string arg;
-      if (args->GetString(i, &arg) && !arg.empty())
+  auto args = dict_.FindPath({"commandLineSwitches"});
+  if (args && args->is_list()) {
+    for (auto& arg_val : args->GetList()) {
+      auto& arg = arg_val.GetString();
+      if (!arg.empty())
         command_line->AppendSwitch(arg);
     }
   }
@@ -285,22 +298,24 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->allow_running_insecure_content = b;
   if (GetBoolean("navigateOnDragDrop", &b))
     prefs->navigate_on_drag_drop = b;
-  const base::DictionaryValue* fonts = nullptr;
-  if (dict_.GetDictionary("defaultFontFamily", &fonts)) {
+
+  auto fonts = dict_.FindPath({"defaultFontFamily"});
+  if (fonts && fonts->is_dict()) {
     base::string16 font;
-    if (fonts->GetString("standard", &font))
+    if (::GetString(fonts, "standard", &font))
       prefs->standard_font_family_map[content::kCommonScript] = font;
-    if (fonts->GetString("serif", &font))
+    if (::GetString(fonts, "serif", &font))
       prefs->serif_font_family_map[content::kCommonScript] = font;
-    if (fonts->GetString("sansSerif", &font))
+    if (::GetString(fonts, "sansSerif", &font))
       prefs->sans_serif_font_family_map[content::kCommonScript] = font;
-    if (fonts->GetString("monospace", &font))
+    if (::GetString(fonts, "monospace", &font))
       prefs->fixed_font_family_map[content::kCommonScript] = font;
-    if (fonts->GetString("cursive", &font))
+    if (::GetString(fonts, "cursive", &font))
       prefs->cursive_font_family_map[content::kCommonScript] = font;
-    if (fonts->GetString("fantasy", &font))
+    if (::GetString(fonts, "fantasy", &font))
       prefs->fantasy_font_family_map[content::kCommonScript] = font;
   }
+
   int size;
   if (GetInteger("defaultFontSize", &size))
     prefs->default_font_size = size;
@@ -309,14 +324,14 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (GetInteger("minimumFontSize", &size))
     prefs->minimum_font_size = size;
   std::string encoding;
-  if (dict_.GetString("defaultEncoding", &encoding))
+  if (GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
 }
 
 bool WebContentsPreferences::GetString(const base::StringPiece& key,
                                        std::string* val) const {
   auto v = dict_.FindPath({key});
-  if (v || v->is_string()) {
+  if (v && v->is_string()) {
     *val = v->GetString();
     return true;
   }
