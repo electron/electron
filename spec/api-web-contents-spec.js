@@ -40,7 +40,7 @@ describe('webContents module', () => {
     it('returns an array of web contents', (done) => {
       w.webContents.on('devtools-opened', () => {
         const all = webContents.getAllWebContents().sort((a, b) => {
-          return a.getId() - b.getId()
+          return a.id - b.id
         })
 
         assert.ok(all.length >= 4)
@@ -61,15 +61,15 @@ describe('webContents module', () => {
       if (isCi) return done()
 
       const specWebContents = remote.getCurrentWebContents()
-      assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
+      assert.equal(specWebContents.id, webContents.getFocusedWebContents().id)
 
       specWebContents.once('devtools-opened', () => {
-        assert.equal(specWebContents.devToolsWebContents.getId(), webContents.getFocusedWebContents().getId())
+        assert.equal(specWebContents.devToolsWebContents.id, webContents.getFocusedWebContents().id)
         specWebContents.closeDevTools()
       })
 
       specWebContents.once('devtools-closed', () => {
-        assert.equal(specWebContents.getId(), webContents.getFocusedWebContents().getId())
+        assert.equal(specWebContents.id, webContents.getFocusedWebContents().id)
         done()
       })
 

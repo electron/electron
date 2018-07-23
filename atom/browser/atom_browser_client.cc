@@ -344,10 +344,6 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
       web_preferences->AppendCommandLineSwitches(command_line);
     SessionPreferences::AppendExtraCommandLineSwitches(
         web_contents->GetBrowserContext(), command_line);
-
-    auto context_id = atom::api::WebContents::GetIDForContents(web_contents);
-    command_line->AppendSwitchASCII(switches::kContextId,
-                                    base::IntToString(context_id));
   }
 }
 

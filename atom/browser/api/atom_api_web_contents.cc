@@ -1103,17 +1103,6 @@ void WebContents::NavigationEntryCommitted(
        details.is_same_document, details.did_replace_entry);
 }
 
-int64_t WebContents::GetIDForContents(content::WebContents* web_contents) {
-  int64_t process_id = web_contents->GetMainFrame()->GetProcess()->GetID();
-  int64_t routing_id = web_contents->GetMainFrame()->GetRoutingID();
-  int64_t rv = (process_id << 32) + routing_id;
-  return rv;
-}
-
-int64_t WebContents::GetID() const {
-  return WebContents::GetIDForContents(web_contents());
-}
-
 int WebContents::GetProcessID() const {
   return web_contents()->GetMainFrame()->GetProcess()->GetID();
 }
@@ -1129,7 +1118,7 @@ WebContents::Type WebContents::GetType() const {
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
-  return GetID() == web_contents->GetID();
+  return ID() == web_contents->ID();
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
@@ -1992,7 +1981,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
-      .SetMethod("getId", &WebContents::GetID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
