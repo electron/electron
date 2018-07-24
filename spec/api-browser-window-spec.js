@@ -1,7 +1,8 @@
 'use strict'
 
 const assert = require('assert')
-const {expect} = require('chai')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -13,9 +14,11 @@ const {ipcRenderer, remote, screen} = require('electron')
 const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
 const features = process.atomBinding('features')
-
+const {expect} = chai
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
+
+chai.use(dirtyChai)
 
 describe('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -23,6 +26,24 @@ describe('BrowserWindow module', () => {
   let ws = null
   let server
   let postData
+
+  const defaultOptions = {
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      backgroundThrottling: false
+    }
+  }
+
+  const openTheWindow = async (options = defaultOptions) => {
+    // The `afterEach` hook isn't called if a test fails,
+    // we should make sure that the window is closed ourselves.
+    await closeTheWindow()
+
+    w = new BrowserWindow(options)
+    return w
+  }
 
   const closeTheWindow = function () {
     return closeWindow(w).then(() => { w = null })
@@ -78,24 +99,13 @@ describe('BrowserWindow module', () => {
     server = null
   })
 
-  beforeEach(() => {
-    w = new BrowserWindow({
-      show: false,
-      width: 400,
-      height: 400,
-      webPreferences: {
-        backgroundThrottling: false
-      }
-    })
-  })
+  beforeEach(openTheWindow)
 
   afterEach(closeTheWindow)
 
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', () => {
-      w.close()
-      w = null
-      w = new BrowserWindow({
+      openTheWindow({
         webContents: void 0
       })
     })
@@ -412,50 +422,48 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.capturePage(rect, callback)', () => {
-    it('calls the callback with a Buffer', (done) => {
-      w.capturePage({
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100
-      }, (image) => {
-        assert.equal(image.isEmpty(), true)
-        done()
+    it('calls the callback with a Buffer', async () => {
+      const image = await new Promise((resolve) => {
+        w.capturePage({
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100
+        }, resolve)
       })
+
+      expect(image.isEmpty()).to.be.true()
     })
 
-    it('preserves transparency', (done) => {
-      w.close()
-      const width = 400
-      const height = 400
-      w = new BrowserWindow({
+    it('preserves transparency', async () => {
+      const w = await openTheWindow({
         show: false,
-        width: width,
-        height: height,
+        width: 400,
+        height: 400,
         transparent: true
       })
       w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-      w.once('ready-to-show', () => {
-        w.show()
-        w.capturePage((image) => {
-          let imgBuffer = image.toPNG()
-          // Check 25th byte in the PNG
-          // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
-          assert.equal(imgBuffer[25], 6)
-          done()
-        })
-      })
+      await emittedOnce(w, 'ready-to-show')
+      w.show()
+
+      const image = await new Promise((resolve) => w.capturePage(resolve))
+      const imgBuffer = image.toPNG()
+
+      // Check the 25th byte in the PNG.
+      // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
+      expect(imgBuffer[25]).to.equal(6)
     })
   })
 
   describe('BrowserWindow.setSize(width, height)', () => {
-    it('sets the window size', (done) => {
+    it('sets the window size', async () => {
       const size = [300, 400]
-      w.once('resize', () => {
-        assertBoundsEqual(w.getSize(), size)
-        done()
-      })
+
+      const resized = emittedOnce(w, 'resize')
       w.setSize(size[0], size[1])
+      await resized
+
+      assertBoundsEqual(w.getSize(), size)
     })
   })
 
