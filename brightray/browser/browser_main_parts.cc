@@ -184,10 +184,20 @@ void OverrideAppLogsPath() {
 }
 #endif
 
-void BrowserMainParts::PreEarlyInitialization() {
+void BrowserMainParts::InitializeFeatureList() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  const auto enable_features =
+      cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
+  const auto disable_features =
+      cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
+
   std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
-  feature_list->InitializeFromCommandLine("", "");
+  feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
+}
+
+void BrowserMainParts::PreEarlyInitialization() {
+  InitializeFeatureList();
   OverrideAppLogsPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());
@@ -256,6 +266,16 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
+  // We already initialized feature list in PreEarlyInitialization(), but
+  // the user JS script would not have had a chance to alter the command-line
+  // switches at that point. Lets reinitialize it here to pick up the
+  // command-line changes. Note that some Chromium code (e.g.
+  // gpu_process_host.cc) queries the feature list between
+  // PreEarlyInitialization() and here so the user script may not have
+  // control over all features. Better than nothing though!
+  base::FeatureList::ClearInstanceForTesting();
+  InitializeFeatureList();
+
   content::WebUIControllerFactory::RegisterFactory(
       WebUIControllerFactory::GetInstance());
 

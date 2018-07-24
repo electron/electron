@@ -52,6 +52,8 @@ class BrowserMainParts : public content::BrowserMainParts {
   void OverrideAppLogsPath();
 #endif
 
+  void InitializeFeatureList();
+
   std::unique_ptr<IOThread> io_thread_;
 
 #if defined(TOOLKIT_VIEWS)
