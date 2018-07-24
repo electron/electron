@@ -111,6 +111,7 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
+                  '<(libchromiumcontent_dir)/libbase_static.a',
                   '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
@@ -204,6 +205,7 @@
               'link_settings': {
                 'libraries': [
                   # Following libraries are always linked statically.
+                  '<(libchromiumcontent_dir)/libbase_static.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
