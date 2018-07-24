@@ -502,4 +502,16 @@ void AtomURLRequest::InformDelegateErrorOccured(const std::string& error,
     delegate_->OnError(error, isRequestError);
 }
 
+void AtomURLRequest::GetUploadProgress(mate::Dictionary* progress) const {
+  net::UploadProgress upload_progress;
+  if (request_) {
+    progress->Set("started", true);
+    upload_progress = request_->GetUploadProgress();
+  } else {
+    progress->Set("started", false);
+  }
+  progress->Set("current", upload_progress.position());
+  progress->Set("total", upload_progress.size());
+}
+
 }  // namespace atom
