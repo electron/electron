@@ -200,6 +200,7 @@ static_library("electron_lib") {
     "//third_party/boringssl",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
+    "//third_party/webrtc_overrides:init_webrtc",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
     "//ui/views",
