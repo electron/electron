@@ -1264,6 +1264,11 @@ Sets the opacity of the window. On Linux does nothing.
 
 Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
+#### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
+
+* `rects` [Rectangle[]](structures/rectangle.md) - Sets a shape on the window.
+  Passing an empty list reverts the window to being rectangular.
+
 #### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` [ThumbarButton[]](structures/thumbar-button.md)
