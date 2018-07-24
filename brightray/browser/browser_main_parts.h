@@ -33,6 +33,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
+  bool ShouldContentCreateFeatureList() override;
   int PreEarlyInitialization() override;
   void ToolkitInitialized() override;
   void PreMainMessageLoopStart() override;
@@ -47,6 +48,8 @@ class BrowserMainParts : public content::BrowserMainParts {
   void InitializeMainNib();
   void OverrideAppLogsPath();
 #endif
+
+  void InitializeFeatureList();
 
   std::unique_ptr<IOThread> io_thread_;
 
