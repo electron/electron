@@ -57,6 +57,9 @@ class RendererClientBase : public content::ContentRendererClient {
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
   bool isolated_world_;
+
+  // An increasing ID used for indentifying an V8 context in this process.
+  int next_context_id_ = 0;
 };
 
 }  // namespace atom
