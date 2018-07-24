@@ -1346,8 +1346,9 @@ Changes window icon.
 
 * `visible` Boolean
 
-Sets whether the window traffic light buttons should be visible. This has no
-effect when `titleBarStyle` is set to `customButtonsOnHover`.
+Sets whether the window traffic light buttons should be visible.
+
+This cannot be called when `titleBarStyle` is set to `customButtonsOnHover`.
 
 #### `win.setAutoHideMenuBar(hide)`
 
