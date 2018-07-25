@@ -366,7 +366,7 @@ static_library("electron_lib") {
 
 electron_paks("packed_resources") {
   if (is_mac) {
-    output_dir = "$root_gen_dir/electron_repack"
+    output_dir = "$root_gen_dir/repack"
     copy_data_to_bundle = true
   } else {
     output_dir = root_out_dir
@@ -589,6 +589,7 @@ if (is_mac) {
       ":electron_app_manifest",
       ":electron_lib",
       ":js2asar",
+      ":packed_resources",
       "//build/config:exe_and_shlib_deps",
       "//ui/strings",
       "//content:sandbox_helper_win",
