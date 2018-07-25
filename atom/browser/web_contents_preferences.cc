@@ -73,9 +73,6 @@ WebContentsPreferences::WebContentsPreferences(
   } else {
     SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
   }
-#if defined(OS_MACOSX)
-  SetDefaultBoolIfUndefined(options::kScrollBounce, false);
-#endif
   SetDefaultBoolIfUndefined(options::kOffscreen, false);
 
   last_dict_ = std::move(*dict_.CreateDeepCopy());
@@ -211,12 +208,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (dict_.GetInteger(options::kOpenerID, &opener_id))
     command_line->AppendSwitchASCII(switches::kOpenerID,
                                     base::IntToString(opener_id));
-
-#if defined(OS_MACOSX)
-  // Enable scroll bounce.
-  if (dict_.GetBoolean(options::kScrollBounce, &b) && b)
-    command_line->AppendSwitch(switches::kScrollBounce);
-#endif
 
   // Custom command line switches.
   const base::ListValue* args;

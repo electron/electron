@@ -65,6 +65,10 @@
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #endif  // defined(ENABLE_PEPPER_FLASH)
 
+#if defined(OS_MACOSX)
+#include "base/mac/mac_util.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -251,10 +255,11 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   if (!ShouldCreateNewSiteInstance(rfh, browser_context, current_instance, url))
     return;
 
-  // Do we have an affinity site to manage ?
-  std::string affinity;
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_preferences = WebContentsPreferences::From(web_contents);
+
+  // Do we have an affinity site to manage?
+  std::string affinity;
   if (web_preferences &&
       web_preferences->dict()->GetString("affinity", &affinity) &&
       !affinity.empty()) {
@@ -264,13 +269,9 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
     if (iter != site_per_affinities.end() &&
         IsSameWebSite(browser_context, iter->second->GetSiteURL(), dest_site)) {
       *new_instance = iter->second;
-    } else {
-      site_per_affinities[affinity] = candidate_instance;
-      *new_instance = candidate_instance;
-      // Remember the original web contents for the pending renderer process.
-      auto* pending_process = candidate_instance->GetProcess();
-      pending_processes_[pending_process->GetID()] = web_contents;
+      return;
     }
+    site_per_affinities[affinity] = candidate_instance;
   } else {
     // OverrideSiteInstanceForNavigation will be called more than once during a
     // navigation (currently twice, on request and when it's about to commit in
@@ -285,12 +286,25 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
       *new_instance = current_instance;
       return;
     }
-
-    *new_instance = candidate_instance;
-    // Remember the original web contents for the pending renderer process.
-    auto* pending_process = candidate_instance->GetProcess();
-    pending_processes_[pending_process->GetID()] = web_contents;
   }
+
+  // Chromium reads the NSScrollViewRubberbanding value to set rubber banding
+  // whenever it is going to create a renderer process.
+#if defined(OS_MACOSX)
+  bool scroll_bounce = false;
+  if (web_preferences)
+    web_preferences->dict()->GetBoolean(options::kScrollBounce, &scroll_bounce);
+  CFPreferencesSetAppValue(CFSTR("NSScrollViewRubberbanding"),
+                           scroll_bounce ? kCFBooleanTrue : kCFBooleanFalse,
+                           kCFPreferencesCurrentApplication);
+  CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
+#endif
+
+  // We should start a new renderer process.
+  *new_instance = candidate_instance;
+  // Remember the original web contents for the pending renderer process.
+  auto* pending_process = candidate_instance->GetProcess();
+  pending_processes_[pending_process->GetID()] = web_contents;
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
