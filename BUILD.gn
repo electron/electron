@@ -365,11 +365,9 @@ static_library("electron_lib") {
 }
 
 electron_paks("packed_resources") {
+  output_dir = "$root_gen_dir/electron_repack"
   if (is_mac) {
-    output_dir = "$root_gen_dir/electron_repack"
     copy_data_to_bundle = true
-  } else {
-    output_dir = root_out_dir
   }
 }
 
