@@ -38,7 +38,7 @@ $ gclient sync --with_branch_heads --with_tags
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-$ gn gen out/Default --args='root_extra_deps=["//electron"] is_electron_build=true is_component_build=true use_jumbo_build=true v8_promise_internal_field_count=1 v8_typed_array_max_size_in_heap=0'
+$ gn gen out/Default --args='import("//electron/build/args/debug.gn")'
 ```
 
 This will generate all the ninja files needed for the build. You shouldn't have

@@ -1,0 +1,4 @@
+import("all.gn")
+is_component_build = false
+is_official_build = true
+is_component_ffmpeg = true
