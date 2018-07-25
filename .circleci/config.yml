@@ -324,7 +324,7 @@ jobs:
           name: Setup depot tools
           command: |
             git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-            echo 'export PATH=$PATH:`pwd`/depot_tools' >> $BASH_ENV
+            echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
       - checkout:
           path: src/electron
       - restore_cache:
@@ -351,8 +351,8 @@ jobs:
           name: GN gen
           command: |
             cd src
-            echo 'export SCCACHE_WRAPPER="'`pwd`'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
-            echo 'export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools' >> $BASH_ENV
+            echo 'export SCCACHE_WRAPPER="'"$PWD"'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
+            echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
             source $BASH_ENV
             gn gen out/Default --args='import("//electron/build/args/debug.gn")'
       - run:
