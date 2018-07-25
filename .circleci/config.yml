@@ -147,6 +147,72 @@ build-steps: &build-steps
     - store_artifacts:
         path: out
 
+gn-build-steps: &gn-build-steps
+  steps:
+    - run:
+        name: Setup depot tools
+        command: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+    - checkout:
+        path: src/electron
+    - restore_cache:
+        paths:
+          - ~/.gclient-cache
+        keys:
+          - v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
+          - v1-gclient-cache-
+    - run:
+        name: Gclient sync
+        command: |
+          gclient config \
+            --name "src/electron" \
+            --unmanaged \
+            --cache-dir "$HOME/.gclient-cache" \
+            "$CIRCLE_REPOSITORY_URL"
+
+          gclient sync --with_branch_heads --with_tags
+    - save_cache:
+        paths:
+          - ~/.gclient-cache
+        key: v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
+    - run:
+        name: GN gen
+        command: |
+          cd src
+          echo 'export SCCACHE_WRAPPER="'"$PWD"'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          source $BASH_ENV
+          gn gen out/Default --args='import("'$GN_CONFIG'")'
+    - run:
+        name: Ninja build
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_app
+    - run:
+        name: Check sccache stats after build
+        command: $SCCACHE_WRAPPER -s
+    - run:
+        name: Setup for headless testing
+        command: |
+          sh -e /etc/init.d/xvfb start
+    - run:
+        name: Test
+        environment:
+          MOCHA_REPORTER: mocha-junit-reporter
+          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        command: |
+          cd src
+          ninja -C out/Default electron/build/node:headers
+          export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
+          (cd electron/spec && npm install)
+          ./out/Default/electron electron/spec --ci --enable-logging
+    - store_test_results:
+        path: src/junit
+    - store_artifacts:
+        path: src/junit
+
 build-defaults: &build-defaults
   docker:
     - image: electronbuilds/electron:0.0.8
@@ -313,77 +379,23 @@ jobs:
       xcode: "8.3.3"
     <<: *build-steps
 
-  electron-linux-gn-fyi:
+  electron-gn-linux-debug-fyi:
     environment:
       DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/debug.gn
     docker:
       - image: electronbuilds/electron:0.0.8
     resource_class: 2xlarge
-    steps:
-      - run:
-          name: Setup depot tools
-          command: |
-            git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-            echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
-      - checkout:
-          path: src/electron
-      - restore_cache:
-          paths:
-            - ~/.gclient-cache
-          keys:
-            - v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
-            - v1-gclient-cache-
-      - run:
-          name: Gclient sync
-          command: |
-            gclient config \
-              --name "src/electron" \
-              --unmanaged \
-              --cache-dir "$HOME/.gclient-cache" \
-              "$CIRCLE_REPOSITORY_URL"
+    <<: *gn-build-steps
 
-            gclient sync --with_branch_heads --with_tags
-      - save_cache:
-          paths:
-            - ~/.gclient-cache
-          key: v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
-      - run:
-          name: GN gen
-          command: |
-            cd src
-            echo 'export SCCACHE_WRAPPER="'"$PWD"'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
-            echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
-            source $BASH_ENV
-            gn gen out/Default --args='import("//electron/build/args/debug.gn")'
-      - run:
-          name: Ninja build
-          command: |
-            cd src
-            ninja -C out/Default electron:electron_app
-      - run:
-          name: Check sccache stats after build
-          command: $SCCACHE_WRAPPER -s
-
-      - run:
-          name: Setup for headless testing
-          command: |
-            sh -e /etc/init.d/xvfb start
-      - run:
-          name: Test
-          environment:
-            MOCHA_REPORTER: mocha-junit-reporter
-            MOCHA_FILE: junit/test-results.xml
-            ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-          command: |
-            cd src
-            ninja -C out/Default electron/build/node:headers
-            export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
-            (cd electron/spec && npm install)
-            ./out/Default/electron electron/spec --ci --enable-logging
-      - store_test_results:
-          path: src/junit
-      - store_artifacts:
-          path: src/junit
+  electron-gn-linux-release-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/release.gn
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
 
 workflows:
   version: 2
@@ -413,7 +425,8 @@ workflows:
       - electron-mas-x64
   build-gn-linux:
     jobs:
-      - electron-linux-gn-fyi
+      - electron-gn-linux-debug-fyi
+      - electron-gn-linux-release-fyi
 
   nightly-release-test:
     triggers:
