@@ -31,7 +31,7 @@ While Electron strives to support new versions of Chromium as soon as possible,
 developers should be aware that upgrading is a serious undertaking - involving
 hand-editing dozens or even hundreds of files. Given the resources and
 contributions available today, Electron will often not be on the very latest
-version of Chromium, lagging behind by either days or weeks.
+version of Chromium, lagging behind by several weeks or a few months.
 
 We feel that our current system of updating the Chromium component strikes an
 appropriate balance between the resources we have available and the needs of
