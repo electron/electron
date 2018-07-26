@@ -178,6 +178,8 @@ static_library("electron_lib") {
     "brightray",
     "build/node",
     "native_mate",
+    "//base",
+    "//base:i18n",
     "//chrome/common:constants",
     "//components/cdm/renderer",
     "//components/network_session_configurator/common",
@@ -440,8 +442,6 @@ if (is_mac) {
     framework_contents = [ "Resources" ]
     public_deps = [ ":electron_lib" ]
     deps = [
-      "//base",
-      "//base:i18n",
       ":electron_framework_resources",
       ":electron_xibs",
     ]

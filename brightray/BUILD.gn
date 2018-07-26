@@ -10,6 +10,7 @@ filenames_gypi = exec_script(
 static_library("brightray") {
   deps = [
     "//base",
+    "//base:base_static",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//content/public/browser",
