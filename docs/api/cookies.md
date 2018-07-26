@@ -10,7 +10,7 @@ a `Session`.
 For example:
 
 ```javascript
-const {session} = require('electron')
+const {session} = require('electron').remote
 
 // Query all cookies.
 session.defaultSession.cookies.get({}, (error, cookies) => {
