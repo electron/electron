@@ -35,7 +35,6 @@
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
 
 #if defined(OS_MACOSX)
-#include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #endif
 
@@ -157,15 +156,6 @@ void RendererClientBase::RenderThreadStarted() {
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
   }
-#endif
-
-#if defined(OS_MACOSX)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool scroll_bounce = command_line->HasSwitch(switches::kScrollBounce);
-  CFPreferencesSetAppValue(CFSTR("NSScrollViewRubberbanding"),
-                           scroll_bounce ? kCFBooleanTrue : kCFBooleanFalse,
-                           kCFPreferencesCurrentApplication);
-  CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
 #endif
 }
 
