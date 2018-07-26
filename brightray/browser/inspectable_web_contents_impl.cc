@@ -167,14 +167,18 @@ int ResponseWriter::Initialize(const net::CompletionCallback& callback) {
 int ResponseWriter::Write(net::IOBuffer* buffer,
                           int num_bytes,
                           const net::CompletionCallback& callback) {
-  auto* id = new base::Value(stream_id_);
-  base::Value* chunk = new base::Value(std::string(buffer->data(), num_bytes));
+  std::string chunk = std::string(buffer->data(), num_bytes);
+  if (!base::IsStringUTF8(chunk))
+    return num_bytes;
+
+  base::Value* id = new base::Value(stream_id_);
+  base::Value* chunk_value = new base::Value(chunk);
 
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
       base::BindOnce(&InspectableWebContentsImpl::CallClientFunction, bindings_,
                      "DevToolsAPI.streamWrite", base::Owned(id),
-                     base::Owned(chunk), nullptr));
+                     base::Owned(chunk_value), nullptr));
   return num_bytes;
 }
 
