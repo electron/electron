@@ -160,8 +160,8 @@ gn-build-steps: &gn-build-steps
         paths:
           - ~/.gclient-cache
         keys:
-          - v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
-          - v1-gclient-cache-
+          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+          - v1-gclient-cache-{{ arch }}-
     - run:
         name: Gclient sync
         command: |
@@ -175,15 +175,16 @@ gn-build-steps: &gn-build-steps
     - save_cache:
         paths:
           - ~/.gclient-cache
-        key: v1-gclient-cache-{{ checksum "src/electron/DEPS" }}
+        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
     - run:
         name: GN gen
         command: |
           cd src
-          echo 'export SCCACHE_WRAPPER="'"$PWD"'/libchromiumcontent/tools/sccache/aad2120/linux/sccache"' >> $BASH_ENV
+          SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/linux/sccache"
+          echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           source $BASH_ENV
-          gn gen out/Default --args='import("'$GN_CONFIG'")'
+          gn gen out/Default --args='import("'$GN_CONFIG'") sccache_wrapper="'"$SCCACHE_PATH"'"'
     - run:
         name: Ninja build
         command: |
