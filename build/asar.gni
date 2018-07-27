@@ -16,6 +16,7 @@ template("chdir_action") {
                            ])
     assert(defined(cwd), "Need cwd in $target_name")
     script = "//electron/build/run-in-dir.py"
+    sources += [ invoker.script ]
     args = [
       cwd,
       rebase_path(invoker.script),
