@@ -43,6 +43,7 @@ class AtomURLRequest : public base::RefCountedThreadSafe<AtomURLRequest>,
   void PassLoginInformation(const base::string16& username,
                             const base::string16& password) const;
   void SetLoadFlags(int flags) const;
+  void GetUploadProgress(mate::Dictionary* progress) const;
 
  protected:
   // Overrides of net::URLRequest::Delegate
