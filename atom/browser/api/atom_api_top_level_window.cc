@@ -194,6 +194,13 @@ void TopLevelWindow::OnWindowRestore() {
   Emit("restore");
 }
 
+void TopLevelWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
+                                        bool* prevent_default) {
+  if (Emit("will-resize", new_bounds)) {
+    *prevent_default = true;
+  }
+}
+
 void TopLevelWindow::OnWindowResize() {
   Emit("resize");
 }

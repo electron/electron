@@ -490,9 +490,20 @@ Emitted when the window is minimized.
 
 Emitted when the window is restored from a minimized state.
 
+#### Event: 'will-resize' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `newBounds` [`Rectangle`](structures/rectangle.md) - Size the window is being resized to.
+
+Emitted before the window is resized. Calling `event.preventDefault()` will prevent the window from being resized.
+
+Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
+
 #### Event: 'resize'
 
-Emitted when the window is being resized.
+Emitted after the window has been resized.
 
 #### Event: 'move'
 

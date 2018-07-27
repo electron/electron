@@ -60,6 +60,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
+  void OnWindowWillResize(const gfx::Rect& new_bounds,
+                          bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
