@@ -140,9 +140,13 @@ template("electron_paks") {
       repack_whitelist = invoker.repack_whitelist
     }
 
-    source_patterns = [ "${root_gen_dir}/content/app/strings/content_strings_" ]
+    source_patterns = [
+      "${root_gen_dir}/content/app/strings/content_strings_",
+      "${root_gen_dir}/ui/strings/ui_strings_",
+    ]
     deps = [
       "//content/app/strings",
+      "//ui/strings:ui_strings",
     ]
 
     input_locales = locales
