@@ -582,7 +582,7 @@ app.on('web-contents-created', (event, contents) => {
 
 By default your app can use standard JS API's to open child windows, for example
 `window.open` or links with a `target` of `_blank`.  If your app doesn't use these
-child windows you should prevent any being created.  If you do need this feature you
+child windows, you should prevent any being created.  If you do need this feature, you
 should very carefully filter which windows you allow to be created.
 
 ### Why?
