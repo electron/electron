@@ -81,6 +81,7 @@ improve the security of your application.
 10. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
 11. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups)
 12. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
+13. [Prevent child windows being created](#13-prevent-child-windows-being-created)
 
 
 ## 1) Only Load Secure Content
@@ -577,9 +578,42 @@ app.on('web-contents-created', (event, contents) => {
 })
 ```
 
+## 13) Prevent child windows being created
+
+By default your app can use standard JS API's to open child windows, for example
+`window.open` or links with a `target` of `_blank`.  If your app doesn't use these
+child windows you should prevent any being created.  If you do need this feature you
+should very carefully filter which windows you allow to be created.
+
+### Why?
+
+If someone can open a secondary window inside your app it is possible from them to gain
+XSS into your application and in some cases full RCE capabilities.
+
+### How?
+
+Before a new [`webContents`](web-contents) is created Electron will fire the `new-window`
+event on the hosting `webContents`. Use the event to prevent the creation of child windows.
+
+```js
+// Handle for a specific window
+const mainWindow = new BrowserWindow()
+mainWindow.webContents.on('new-window', (event) => {
+  event.preventDefault()
+})
+
+// Handle for all windows automatically
+app.on('browser-window-created', (event, window) => {
+  window.webContents.on('new-window', (newWindowEvent) => {
+    newWindowEvent.preventDefault()
+  })
+})
+```
+
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
 
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
+[web-contents]: ../api/web-contents.md
 [webview-tag]: ../api/webview-tag.md
