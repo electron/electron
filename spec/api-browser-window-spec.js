@@ -1617,9 +1617,16 @@ describe('BrowserWindow module', () => {
 
       it('validates process APIs access in sandboxed renderer', (done) => {
         ipcMain.once('answer', function (event, test) {
+          assert.equal(test.pid, w.webContents.getOSProcessId())
+          assert.equal(test.arch, remote.process.arch)
           assert.equal(test.platform, remote.process.platform)
           assert.deepEqual(test.env, remote.process.env)
           assert.equal(test.execPath, remote.process.helperExecPath)
+          assert.equal(test.resourcesPath, remote.process.resourcesPath)
+          assert.equal(test.sandboxed, true)
+          assert.equal(test.type, 'renderer')
+          assert.equal(test.version, remote.process.version)
+          assert.deepEqual(test.versions, remote.process.versions)
           done()
         })
         remote.process.env.sandboxmain = 'foo'

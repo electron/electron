@@ -16,10 +16,19 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `getHeapStatistics()`
 - `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
+- `getCPUUsage()`
+- `getIOCounters()`
 - `argv`
 - `execPath`
 - `env`
+- `pid`
+- `arch`
 - `platform`
+- `resourcesPath`
+- `sandboxed`
+- `type`
+- `version`
+- `versions`
 
 ## Events
 
@@ -67,6 +76,11 @@ instead of the `--no-deprecation` command line flag.
 ### `process.resourcesPath`
 
 A `String` representing the path to the resources directory.
+
+### `process.sandboxed`
+
+A `Boolean`. When the renderer process is sandboxed, this property is `true`,
+otherwise it is `undefined`.
 
 ### `process.throwDeprecation`
 
