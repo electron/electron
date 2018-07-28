@@ -1600,9 +1600,11 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      it('validate process.env access in sandbox renderer', (done) => {
+      it('validates process APIs access in sandboxed renderer', (done) => {
         ipcMain.once('answer', function (event, test) {
-          assert.equal(test, 'foo')
+          assert.equal(test.platform, remote.process.platform)
+          assert.deepEqual(test.env, remote.process.env)
+          assert.equal(test.execPath, remote.process.helperExecPath)
           done()
         })
         remote.process.env.sandboxmain = 'foo'
