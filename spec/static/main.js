@@ -79,6 +79,8 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
+global.setTimeoutPromisified = util.promisify(setTimeout)
+
 const coverage = new Coverage({
   outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
 })
