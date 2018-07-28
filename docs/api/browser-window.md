@@ -1240,7 +1240,7 @@ mode set (but with a value within the valid range), `normal` will be assumed.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
-* `overlay` [NativeImage](native-image.md) - the icon to display on the bottom
+* `overlay` [NativeImage](native-image.md) | null - the icon to display on the bottom
 right corner of the taskbar icon. If this parameter is `null`, the overlay is
 cleared
 * `description` String - a description that will be provided to Accessibility
