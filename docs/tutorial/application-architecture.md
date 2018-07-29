@@ -31,7 +31,7 @@ The main process manages all web pages and their corresponding renderer
 processes. Each renderer process is isolated and only cares about the web page
 running in it.
 
-In web pages, calling native GUI related APIs is not allowed because managing
+In web pages, calling native GUI-related APIs is not allowed because managing
 native GUI resources in web pages is very dangerous and it is easy to leak
 resources. If you want to perform GUI operations in a web page, the renderer
 process of the web page must communicate with the main process to request that
@@ -74,7 +74,7 @@ Since communication between the processes is possible, a renderer process
 can call upon the main process to perform tasks. Electron comes with a
 module called `remote` that exposes APIs usually only available on the
 main process. In order to create a `BrowserWindow` from a renderer process,
-we'd use the remote as a middle-man:
+we'd use the remote as a middleman:
 
 ```javascript
 // This will work in a renderer process, but be `undefined` in the
