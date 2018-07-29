@@ -159,6 +159,22 @@ describe('webContents module', () => {
     })
   })
 
+  describe('openDevTools() API', () => {
+    it('can show window with activation', async () => {
+      w.show()
+      assert.strictEqual(w.isFocused(), true)
+      w.webContents.openDevTools({ mode: 'detach', activate: true })
+      await emittedOnce(w.webContents, 'devtools-opened')
+      assert.strictEqual(w.isFocused(), false)
+    })
+
+    it('can show window without activation', async () => {
+      w.webContents.openDevTools({ mode: 'detach', activate: false })
+      await emittedOnce(w.webContents, 'devtools-opened')
+      assert.strictEqual(w.isDevToolsOpened(), true)
+    })
+  })
+
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', (done) => {
       ipcMain.once('keydown', (event, key) => {

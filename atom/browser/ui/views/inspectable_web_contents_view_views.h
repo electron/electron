@@ -32,11 +32,11 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   // InspectableWebContentsView:
   views::View* GetView() override;
   views::View* GetWebView() override;
-  void ShowDevTools() override;
+  void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   bool IsDevToolsViewFocused() override;
-  void SetIsDocked(bool docked) override;
+  void SetIsDocked(bool docked, bool activate) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const base::string16& title) override;

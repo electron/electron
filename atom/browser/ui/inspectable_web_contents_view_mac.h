@@ -23,11 +23,11 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   ~InspectableWebContentsViewMac() override;
 
   gfx::NativeView GetNativeView() const override;
-  void ShowDevTools() override;
+  void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
   bool IsDevToolsViewFocused() override;
-  void SetIsDocked(bool docked) override;
+  void SetIsDocked(bool docked, bool activate) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const base::string16& title) override;
