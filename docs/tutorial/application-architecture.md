@@ -17,7 +17,7 @@ its own process, which is called __the renderer process__.
 
 In normal browsers, web pages usually run in a sandboxed environment and are not
 allowed access to native resources. Electron users, however, have the power to
-use Node.js APIs in web pages allowing lower level operating system
+use Node.js APIs in web pages allowing lower-level operating system
 interactions.
 
 ### Differences Between Main Process and Renderer Process
