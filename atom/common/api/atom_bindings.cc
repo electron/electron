@@ -14,8 +14,8 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
-#include "base/process/process_metrics_iocounters.h"
 #include "base/process/process_info.h"
+#include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
 
@@ -178,9 +178,13 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
 }
 
 // static
-int64_t AtomBindings::GetCreationTime(v8::Isolate* isolate) {
-  auto metrics = base::CurrentProcessInfo::CreationTime();
-  return metrics.ToInternalValue();
+v8::Local<v8::Value> AtomBindings::GetCreationTime(v8::Isolate* isolate) {
+  auto timeValue = base::CurrentProcessInfo::CreationTime();
+  if (timeValue.is_null()) {
+    return v8::Null(isolate);
+  }
+  double jsTime = timeValue.ToJsTime();
+  return v8::Number::New(isolate, jsTime);
 }
 
 // static
