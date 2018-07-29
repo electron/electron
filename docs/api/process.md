@@ -102,7 +102,7 @@ Causes the main thread of the current process crash.
 
 Returns [`number`]
 Indicates the creation time of the application.
-The time is represented as microseconds (s/1,000,000) since the Windows epoch (1601-01-01 00:00:00 UTC)
+The time is represented as number of milliseconds since epoch.
 
 ### `process.getCPUUsage()`
 

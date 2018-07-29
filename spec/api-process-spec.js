@@ -1,10 +1,11 @@
+const {expect} = require('chai')
 const assert = require('assert')
 
 describe('process module', () => {
   describe('process.getCreationTime()', () => {
     it('returns a creation time', () => {
       const creationTime = process.getCreationTime()
-      assert.equal(typeof creationTime, 'number')
+      expect(creationTime).to.be.a('number').and.be.at.least(0)
     })
   })
 
