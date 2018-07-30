@@ -595,9 +595,6 @@ if (is_mac) {
       "//ui/strings",
       "//content:sandbox_helper_win",
     ]
-    if (!is_component_build && is_component_ffmpeg) {
-      configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
-    }
 
     public_deps = [
       "//tools/v8_context_snapshot:v8_context_snapshot",
@@ -635,6 +632,11 @@ if (is_mac) {
         "/DELAYLOAD:API-MS-WIN-CORE-WINRT-L1-1-0.DLL",
         "/DELAYLOAD:API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL",
       ]
+    }
+    if (is_linux) {
+      if (!is_component_build && is_component_ffmpeg) {
+        configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
+      }
     }
   }
 }
