@@ -6,6 +6,7 @@ import("build/npm.gni")
 import("//pdf/features.gni")
 import("//build/config/win/manifest.gni")
 import("electron_paks.gni")
+import("//third_party/ffmpeg/ffmpeg_options.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -594,6 +595,9 @@ if (is_mac) {
       "//ui/strings",
       "//content:sandbox_helper_win",
     ]
+    if (!is_component_build && is_component_ffmpeg) {
+      configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
+    }
 
     public_deps = [
       "//tools/v8_context_snapshot:v8_context_snapshot",
