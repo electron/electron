@@ -9,8 +9,9 @@ property of a `Session`.
 
 The methods of `WebRequest` accept an optional `filter` and a `listener`. The
 `listener` will be called with `listener(details)` when the API's event has
-happened. The `details` object describes the request. Passing `null`
-as `listener` will unsubscribe from the event.
+happened. The `details` object describes the request.
+
+⚠️ Only the last attached `listener` will be used. Passing `null` as `listener` will unsubscribe from the event.
 
 The `filter` object has a `urls` property which is an Array of URL
 patterns that will be used to filter out the requests that do not match the URL
