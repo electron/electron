@@ -1174,7 +1174,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;
-    if (web_preferences->GetString(options::kBackgroundColor, &color_name)) {
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
       view->SetBackgroundColor(ParseHexColor(color_name));
     } else {
       view->SetBackgroundColor(SK_ColorTRANSPARENT);
@@ -1887,7 +1888,7 @@ v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->dict());
+  return mate::ConvertToV8(isolate, *web_preferences->preference());
 }
 
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(v8::Isolate* isolate) {
@@ -1895,7 +1896,7 @@ v8::Local<v8::Value> WebContents::GetLastWebPreferences(v8::Isolate* isolate) {
       WebContentsPreferences::FromWebContents(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->last_dict());
+  return mate::ConvertToV8(isolate, *web_preferences->last_preference());
 }
 
 v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {

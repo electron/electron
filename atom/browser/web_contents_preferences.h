@@ -5,7 +5,6 @@
 #ifndef ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 #define ATOM_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -49,18 +48,15 @@ class WebContentsPreferences
   // Modify the WebPreferences according to preferences.
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
-  bool GetString(const base::StringPiece& key, std::string* val) const;
+  // Clear the current WebPreferences.
+  void Clear();
 
-  // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const base::StringPiece& key, int* val) const;
-
-  // Get preferences value as boolean
-  bool GetBoolean(const base::StringPiece& key, bool* val) const;
+  // Return true if the particular preference value exists.
+  bool GetPreference(const base::StringPiece& name, std::string* value);
 
   // Returns the web preferences.
-  base::Value* dict() { return &dict_; }
-  const base::Value* dict() const { return &dict_; }
-  base::Value* last_dict() { return &last_dict_; }
+  base::Value* preference() { return &preference_; }
+  base::Value* last_preference() { return &last_preference_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -76,8 +72,8 @@ class WebContentsPreferences
 
   content::WebContents* web_contents_;
 
-  base::Value dict_;
-  base::Value last_dict_;
+  base::Value preference_ = base::Value(base::Value::Type::DICTIONARY);
+  base::Value last_preference_ = base::Value(base::Value::Type::DICTIONARY);
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

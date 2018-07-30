@@ -255,7 +255,8 @@ void AtomBrowserClient::OverrideSiteInstanceForNavigation(
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   std::string affinity;
-  if (web_preferences && web_preferences->GetString("affinity", &affinity) &&
+  if (web_preferences &&
+      web_preferences->GetPreference("affinity", &affinity) &&
       !affinity.empty()) {
     affinity = base::ToLowerASCII(affinity);
     auto iter = site_per_affinities.find(affinity);
