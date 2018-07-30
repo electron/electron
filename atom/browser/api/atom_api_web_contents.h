@@ -199,6 +199,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Methods for creating <webview>.
   void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
+  void AttachToIframe(content::WebContents* embedder_web_contents,
+                      int embedder_frame_id);
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;

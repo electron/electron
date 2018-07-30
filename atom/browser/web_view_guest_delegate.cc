@@ -10,6 +10,7 @@
 #include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
@@ -26,7 +27,8 @@ const int kDefaultHeight = 300;
 SetSizeParams::SetSizeParams() = default;
 SetSizeParams::~SetSizeParams() = default;
 
-WebViewGuestDelegate::WebViewGuestDelegate() {}
+WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder)
+    : embedder_web_contents_(embedder) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {}
 
@@ -100,6 +102,36 @@ void WebViewGuestDelegate::ResizeDueToAutoResize(const gfx::Size& new_size) {
   UpdateGuestSize(new_size, auto_size_enabled_);
 }
 
+void WebViewGuestDelegate::AttachToIframe(
+    content::WebContents* embedder_web_contents,
+    int embedder_frame_id) {
+  embedder_web_contents_ = embedder_web_contents;
+  attached_ = true;
+
+  int embedder_process_id =
+      embedder_web_contents_->GetMainFrame()->GetProcess()->GetID();
+  auto* embedder_frame =
+      content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
+  DCHECK_EQ(embedder_web_contents_,
+            content::WebContents::FromRenderFrameHost(embedder_frame));
+
+  // Attach this inner WebContents |guest_web_contents| to the outer
+  // WebContents |embedder_web_contents|. The outer WebContents's
+  // frame |embedder_frame| hosts the inner WebContents.
+  web_contents()->AttachToOuterWebContentsFrame(embedder_web_contents_,
+                                                embedder_frame);
+
+  ResetZoomController();
+
+  embedder_zoom_controller_ =
+      WebContentsZoomController::FromWebContents(embedder_web_contents_);
+  auto* zoom_controller = api_web_contents_->GetZoomController();
+  embedder_zoom_controller_->AddObserver(this);
+  zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
+
+  api_web_contents_->Emit("did-attach");
+}
+
 void WebViewGuestDelegate::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
   if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
@@ -114,35 +146,12 @@ void WebViewGuestDelegate::DidDetach() {
   ResetZoomController();
 }
 
-void WebViewGuestDelegate::DidAttach(int guest_proxy_routing_id) {
-  attached_ = true;
-  api_web_contents_->Emit("did-attach");
-
-  ResetZoomController();
-
-  embedder_zoom_controller_ =
-      WebContentsZoomController::FromWebContents(embedder_web_contents_);
-  auto* zoom_controller = api_web_contents_->GetZoomController();
-  embedder_zoom_controller_->AddObserver(this);
-  zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
-}
-
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
   return embedder_web_contents_;
 }
 
 void WebViewGuestDelegate::SetGuestHost(content::GuestHost* guest_host) {
   guest_host_ = guest_host;
-}
-
-void WebViewGuestDelegate::WillAttach(
-    content::WebContents* embedder_web_contents,
-    int element_instance_id,
-    bool is_full_page_plugin,
-    const base::Closure& completion_callback) {
-  embedder_web_contents_ = embedder_web_contents;
-  is_full_page_plugin_ = is_full_page_plugin;
-  completion_callback.Run();
 }
 
 void WebViewGuestDelegate::OnZoomLevelChanged(
@@ -185,10 +194,6 @@ void WebViewGuestDelegate::ResetZoomController() {
     embedder_zoom_controller_->RemoveObserver(this);
     embedder_zoom_controller_ = nullptr;
   }
-}
-
-bool WebViewGuestDelegate::CanBeEmbeddedInsideCrossProcessFrames() {
-  return true;
 }
 
 content::RenderWidgetHost* WebViewGuestDelegate::GetOwnerRenderWidgetHost() {

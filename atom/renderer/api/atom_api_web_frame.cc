@@ -11,8 +11,10 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
+#include "atom/renderer/guest_view_container.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
+#include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
@@ -61,6 +63,29 @@ namespace atom {
 namespace api {
 
 namespace {
+
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
+  v8::Local<v8::Context> context =
+      v8::Local<v8::Object>::Cast(value)->CreationContext();
+  if (context.IsEmpty())
+    return nullptr;
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
+  if (!frame)
+    return nullptr;
+  return content::RenderFrame::FromWebFrame(frame);
+}
+
+class RenderFrameStatus : public content::RenderFrameObserver {
+ public:
+  explicit RenderFrameStatus(content::RenderFrame* render_frame)
+      : content::RenderFrameObserver(render_frame) {}
+  ~RenderFrameStatus() final {}
+
+  bool is_ok() { return render_frame() != nullptr; }
+
+  // RenderFrameObserver implementation.
+  void OnDestruct() final {}
+};
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
@@ -178,8 +203,37 @@ void WebFrame::RegisterElementResizeCallback(
     guest_view_container->RegisterElementResizeCallback(callback);
 }
 
-void WebFrame::AttachGuest(int id) {
-  content::RenderFrame::FromWebFrame(web_frame_)->AttachGuest(id);
+int WebFrame::AttachIframeGuest(int element_instance_id,
+                                v8::Local<v8::Value> content_window) {
+  // Get the WebLocalFrame before (possibly) executing any user-space JS while
+  // getting the |params|. We track the status of the RenderFrame via an
+  // observer in case it is deleted during user code execution.
+  content::RenderFrame* render_frame = GetRenderFrame(content_window);
+  RenderFrameStatus render_frame_status(render_frame);
+
+  if (!render_frame_status.is_ok())
+    return -1;
+
+  blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+  // Parent must exist.
+  blink::WebFrame* parent_frame = frame->Parent();
+  DCHECK(parent_frame);
+  DCHECK(parent_frame->IsWebLocalFrame());
+
+  content::RenderFrame* embedder_parent_frame =
+      content::RenderFrame::FromWebFrame(parent_frame->ToWebLocalFrame());
+
+  // Create a GuestViewContainer if it does not exist.
+  // An element instance ID uniquely identifies an GuestViewContainer
+  // within a RenderView.
+  auto* guest_view_container = GuestViewContainer::FromID(element_instance_id);
+  // This is the first time we hear about the |element_instance_id|.
+  DCHECK(!guest_view_container);
+  // The <webview> element's GC takes ownership of |guest_view_container|.
+  guest_view_container = new GuestViewContainer(embedder_parent_frame);
+  guest_view_container->SetElementInstanceID(element_instance_id);
+
+  return render_frame->GetRoutingID();
 }
 
 void WebFrame::DetachGuest(int id) {
@@ -466,7 +520,7 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("registerElementResizeCallback",
                  &WebFrame::RegisterElementResizeCallback)
-      .SetMethod("attachGuest", &WebFrame::AttachGuest)
+      .SetMethod("attachIframeGuest", &WebFrame::AttachIframeGuest)
       .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerURLSchemeAsBypassingCSP",

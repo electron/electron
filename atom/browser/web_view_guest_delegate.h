@@ -35,7 +35,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
                              public content::WebContentsObserver,
                              public WebContentsZoomController::Observer {
  public:
-  WebViewGuestDelegate();
+  explicit WebViewGuestDelegate(content::WebContents* embedder);
   ~WebViewGuestDelegate() override;
 
   void Initialize(api::WebContents* api_web_contents);
@@ -53,21 +53,19 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // Return true if attached.
   bool IsAttached() const { return attached_; }
 
+  // Attach to the iframe.
+  void AttachToIframe(content::WebContents* embedder_web_contents,
+                      int embedder_frame_id);
+
  protected:
   // content::WebContentsObserver:
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
 
   // content::BrowserPluginGuestDelegate:
-  void DidAttach(int guest_proxy_routing_id) final;
   void DidDetach() final;
   content::WebContents* GetOwnerWebContents() const final;
   void SetGuestHost(content::GuestHost* guest_host) final;
-  void WillAttach(content::WebContents* embedder_web_contents,
-                  int element_instance_id,
-                  bool is_full_page_plugin,
-                  const base::Closure& completion_callback) final;
-  bool CanBeEmbeddedInsideCrossProcessFrames() override;
   content::RenderWidgetHost* GetOwnerRenderWidgetHost() override;
   content::SiteInstance* GetOwnerSiteInstance() override;
   content::WebContents* CreateNewGuestWindow(

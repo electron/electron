@@ -396,7 +396,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(new WebViewGuestDelegate);
+    guest_delegate_.reset(new WebViewGuestDelegate(embedder_->web_contents()));
     params.guest_delegate = guest_delegate_.get();
 
 #if defined(ENABLE_OSR)
@@ -1129,10 +1129,6 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     return;
   }
 
-  if (guest_delegate_ && !guest_delegate_->IsAttached()) {
-    return;
-  }
-
   content::NavigationController::LoadURLParams params(url);
 
   if (!options.Get("httpReferrer", &params.referrer)) {
@@ -1756,6 +1752,12 @@ bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
 
+void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
+                                 int embedder_frame_id) {
+  if (guest_delegate_)
+    guest_delegate_->AttachToIframe(embedder_web_contents, embedder_frame_id);
+}
+
 bool WebContents::IsOffScreen() const {
 #if defined(ENABLE_OSR)
   return type_ == OFF_SCREEN;
@@ -2045,6 +2047,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
