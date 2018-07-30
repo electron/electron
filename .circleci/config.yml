@@ -184,7 +184,7 @@ gn-build-steps: &gn-build-steps
           echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           source $BASH_ENV
-          gn gen out/Default --args='import("'$GN_CONFIG'") sccache_wrapper="'"$SCCACHE_PATH"'"'
+          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'
     - run:
         name: Ninja build
         command: |
