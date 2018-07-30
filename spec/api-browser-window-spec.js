@@ -84,6 +84,12 @@ describe('BrowserWindow module', () => {
               }
             })
           })
+        } else if (req.url === '/302') {
+          res.setHeader('Location', '/200')
+          res.statusCode = 302
+          res.end()
+        } else if (req.url === '/navigate-302') {
+          res.end(`<html><body><script>window.location='${server.url}/302'</script></body></html>`)
         } else {
           res.end()
         }
@@ -341,6 +347,63 @@ describe('BrowserWindow module', () => {
       ipcRenderer.send('close-on-will-navigate', w.id)
       ipcRenderer.once('closed-on-will-navigate', () => { done() })
       w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'))
+    })
+  })
+
+  describe('will-redirect event', () => {
+    it('is emitted on redirects', (done) => {
+      w.webContents.on('will-redirect', (event, url) => {
+        done()
+      })
+      w.loadURL(`${server.url}/302`)
+    })
+
+    it('is emitted after will-navigate on redirects', (done) => {
+      let navigateCalled = false
+      w.loadURL(`${server.url}/navigate-302`)
+      w.webContents.on('will-navigate', () => {
+        navigateCalled = true
+      })
+      w.webContents.on('will-redirect', (event, url) => {
+        expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
+        done()
+      })
+    })
+
+    it('is emitted before did-stop-loading on redirects', (done) => {
+      let stopCalled = false
+      w.webContents.on('did-stop-loading', () => {
+        stopCalled = true
+      })
+      w.webContents.on('will-redirect', (event, url) => {
+        expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first')
+        done()
+      })
+      w.loadURL(`${server.url}/302`)
+    })
+
+    it('allows the window to be closed from the event listener', (done) => {
+      ipcRenderer.send('close-on-will-redirect', w.id)
+      ipcRenderer.once('closed-on-will-redirect', () => { done() })
+      w.loadURL(`${server.url}/302`)
+    })
+
+    it('can be prevented', (done) => {
+      ipcRenderer.send('prevent-will-redirect', w.id)
+      w.webContents.on('will-navigate', (e, url) => {
+        expect(url).to.equal(`${server.url}/302`)
+      })
+      w.webContents.on('did-stop-loading', () => {
+        expect(w.webContents.getURL()).to.equal(
+          `${server.url}/navigate-302`,
+          'url should not have changed after navigation event'
+        )
+        done()
+      })
+      w.webContents.on('will-redirect', (e, url) => {
+        expect(url).to.equal(`${server.url}/200`)
+      })
+      w.loadURL(`${server.url}/navigate-302`)
     })
   })
 
