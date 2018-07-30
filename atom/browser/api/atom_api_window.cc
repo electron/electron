@@ -644,6 +644,16 @@ double Window::GetOpacity() {
   return window_->GetOpacity();
 }
 
+void Window::SetShape(const std::vector<gfx::Rect>& rects) {
+#if !defined(OS_MACOSX)
+  auto native_window_views = static_cast<NativeWindowViews*>(window_.get());
+  auto shape = base::MakeUnique<SkRegion>();
+  for (const auto& rect : rects)
+    shape->op(gfx::RectToSkIRect(rect), SkRegion::kUnion_Op);
+  native_window_views->widget()->SetShape(std::move(shape));
+#endif  // !defined(OS_MACOSX)
+}
+
 void Window::FocusOnWebView() {
   window_->FocusOnWebView();
 }
@@ -1084,6 +1094,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hasShadow", &Window::HasShadow)
       .SetMethod("setOpacity", &Window::SetOpacity)
       .SetMethod("getOpacity", &Window::GetOpacity)
+      .SetMethod("setShape", &Window::SetShape)
       .SetMethod("setRepresentedFilename", &Window::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &Window::GetRepresentedFilename)
       .SetMethod("setDocumentEdited", &Window::SetDocumentEdited)

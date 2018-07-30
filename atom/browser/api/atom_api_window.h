@@ -164,6 +164,7 @@ class Window : public mate::TrackableObject<Window>,
   bool HasShadow();
   void SetOpacity(const double opacity);
   double GetOpacity();
+  void SetShape(const std::vector<gfx::Rect>& rects);
   void FocusOnWebView();
   void BlurWebView();
   bool IsWebViewFocused();
