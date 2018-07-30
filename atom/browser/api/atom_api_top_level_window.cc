@@ -578,6 +578,10 @@ double TopLevelWindow::GetOpacity() {
   return window_->GetOpacity();
 }
 
+void TopLevelWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+  window_->widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
 void TopLevelWindow::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
@@ -1007,6 +1011,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hasShadow", &TopLevelWindow::HasShadow)
       .SetMethod("setOpacity", &TopLevelWindow::SetOpacity)
       .SetMethod("getOpacity", &TopLevelWindow::GetOpacity)
+      .SetMethod("setShape", &TopLevelWindow::SetShape)
       .SetMethod("setRepresentedFilename",
                  &TopLevelWindow::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename",

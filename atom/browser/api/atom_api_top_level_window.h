@@ -148,6 +148,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool HasShadow();
   void SetOpacity(const double opacity);
   double GetOpacity();
+  void SetShape(const std::vector<gfx::Rect>& rects);
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);

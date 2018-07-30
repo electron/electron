@@ -1273,6 +1273,17 @@ Sets the opacity of the window. On Linux does nothing.
 
 Returns `Number` - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
+#### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
+
+* `rects` [Rectangle[]](structures/rectangle.md) - Sets a shape on the window.
+  Passing an empty list reverts the window to being rectangular.
+
+Setting a window shape determines the area within the window where the system
+permits drawing and user interaction. Outside of the given region, no pixels
+will be drawn and no mouse events will be registered. Mouse events outside of
+the region will not be received by that window, but will fall through to
+whatever is behind the window.
+
 #### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` [ThumbarButton[]](structures/thumbar-button.md)

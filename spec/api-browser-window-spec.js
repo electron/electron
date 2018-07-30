@@ -928,6 +928,17 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setShape(rects)', () => {
+    it('allows setting shape', () => {
+      assert.doesNotThrow(() => {
+        w.setShape([])
+        w.setShape([{x: 0, y: 0, width: 100, height: 100}])
+        w.setShape([{x: 0, y: 0, width: 100, height: 100}, {x: 0, y: 200, width: 1000, height: 100}])
+        w.setShape([])
+      })
+    })
+  })
+
   describe('"useContentSize" option', () => {
     it('make window created with content size when used', () => {
       w.destroy()
