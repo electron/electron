@@ -6,6 +6,7 @@ import("build/npm.gni")
 import("//pdf/features.gni")
 import("//build/config/win/manifest.gni")
 import("electron_paks.gni")
+import("//third_party/ffmpeg/ffmpeg_options.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -631,6 +632,11 @@ if (is_mac) {
         "/DELAYLOAD:API-MS-WIN-CORE-WINRT-L1-1-0.DLL",
         "/DELAYLOAD:API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL",
       ]
+    }
+    if (is_linux) {
+      if (!is_component_build && is_component_ffmpeg) {
+        configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
+      }
     }
   }
 }
