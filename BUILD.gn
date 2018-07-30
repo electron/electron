@@ -35,18 +35,18 @@ declare_args() {
 }
 
 if (is_mas_build) {
-  assert(is_mac, "It doesn't make sense to build a MAS build on a non-mac platform")
+  assert(is_mac,
+         "It doesn't make sense to build a MAS build on a non-mac platform")
 }
 
-filenames_gypi = exec_script(
-  "//build/gypi_to_gn.py",
-  [
-    rebase_path("filenames.gypi"),
-    "--replace=<(SHARED_INTERMEDIATE_DIR)=$target_gen_dir",
-  ],
-  "scope",
-  [ "filenames.gypi" ]
-)
+filenames_gypi =
+    exec_script("//build/gypi_to_gn.py",
+                [
+                  rebase_path("filenames.gypi"),
+                  "--replace=<(SHARED_INTERMEDIATE_DIR)=$target_gen_dir",
+                ],
+                "scope",
+                [ "filenames.gypi" ])
 
 config("branding") {
   defines = [
@@ -69,15 +69,22 @@ config("features") {
 }
 
 npm_action("atom_browserify_sandbox") {
-  deps = [ ":atom_js2c_copy" ]
+  deps = [
+    ":atom_js2c_copy",
+  ]
 
   sandbox_args = [
     "lib/sandboxed_renderer/init.js",
-    "-r", "./lib/sandboxed_renderer/api/exports/electron.js:electron",
-    "-r", "./lib/sandboxed_renderer/api/exports/fs.js:fs",
-    "-r", "./lib/sandboxed_renderer/api/exports/os.js:os",
-    "-r", "./lib/sandboxed_renderer/api/exports/path.js:path",
-    "-r", "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/electron.js:electron",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/fs.js:fs",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/os.js:os",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/path.js:path",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
   ]
 
   inputs = [
@@ -88,24 +95,34 @@ npm_action("atom_browserify_sandbox") {
     "lib/sandboxed_renderer/api/exports/path.js",
     "lib/sandboxed_renderer/api/exports/child_process.js",
   ]
-  outputs = [ "$target_gen_dir/js2c/preload_bundle.js" ]
+  outputs = [
+    "$target_gen_dir/js2c/preload_bundle.js",
+  ]
 
   script = "browserify"
   args = sandbox_args + [
-    "-o", rebase_path(outputs[0])
-  ]
+           "-o",
+           rebase_path(outputs[0]),
+         ]
 }
 
 npm_action("atom_browserify_isolated") {
-  deps = [ ":atom_js2c_copy" ]
+  deps = [
+    ":atom_js2c_copy",
+  ]
 
-  inputs = [ "lib/isolated_renderer/init.js" ]
-  outputs = [ "$target_gen_dir/js2c/isolated_bundle.js" ]
+  inputs = [
+    "lib/isolated_renderer/init.js",
+  ]
+  outputs = [
+    "$target_gen_dir/js2c/isolated_bundle.js",
+  ]
 
   script = "browserify"
   args = inputs + [
-    "-o", rebase_path(outputs[0])
-  ]
+           "-o",
+           rebase_path(outputs[0]),
+         ]
 }
 
 copy("atom_js2c_copy") {
@@ -113,14 +130,16 @@ copy("atom_js2c_copy") {
     "lib/common/asar.js",
     "lib/common/asar_init.js",
   ]
-  outputs = [ "$target_gen_dir/js2c/{{source_file_part}}" ]
+  outputs = [
+    "$target_gen_dir/js2c/{{source_file_part}}",
+  ]
 }
 
 action("atom_js2c") {
   deps = [
-    ":atom_js2c_copy",
-    ":atom_browserify_sandbox",
     ":atom_browserify_isolated",
+    ":atom_browserify_sandbox",
+    ":atom_js2c_copy",
   ]
 
   js2c_sources = filenames_gypi.js2c_sources
@@ -132,14 +151,14 @@ action("atom_js2c") {
 
   inputs = js2c_sources + browserify_sources
 
-  outputs = [ "$target_gen_dir/atom_natives.h" ]
+  outputs = [
+    "$target_gen_dir/atom_natives.h",
+  ]
 
   script = "tools/js2c.py"
-  args = [
-    rebase_path("//third_party/electron_node")
-  ] + rebase_path(outputs, root_build_dir) + [
-    rebase_path("$target_gen_dir/js2c", root_build_dir)
-  ]
+  args = [ rebase_path("//third_party/electron_node") ] +
+         rebase_path(outputs, root_build_dir) +
+         [ rebase_path("$target_gen_dir/js2c", root_build_dir) ]
 }
 
 asar("js2asar") {
@@ -150,24 +169,28 @@ asar("js2asar") {
       "lib/renderer/api/desktop-capturer.js",
     ]
   }
-  outputs = [ "$root_out_dir/resources/electron.asar" ]
+  outputs = [
+    "$root_out_dir/resources/electron.asar",
+  ]
   root = "lib"
 }
 
 asar("app2asar") {
   sources = filenames_gypi.default_app_sources
-  outputs = [ "$root_out_dir/resources/default_app.asar" ]
+  outputs = [
+    "$root_out_dir/resources/default_app.asar",
+  ]
   root = "default_app"
 }
 
 group("electron") {
-  deps = [ ":electron_lib" ]
+  deps = [
+    ":electron_lib",
+  ]
 }
 
 static_library("electron_lib") {
-  configs += [
-    "//v8:external_startup_data",
-  ]
+  configs += [ "//v8:external_startup_data" ]
 
   public_configs = [
     ":branding",
@@ -384,7 +407,9 @@ if (is_mac) {
   electron_mac_bundle_id = "com.$electron_company_abbr.$electron_project_name"
 
   mac_xib_bundle_data("electron_xibs") {
-    sources = [ "atom/common/resources/mac/MainMenu.xib" ]
+    sources = [
+      "atom/common/resources/mac/MainMenu.xib",
+    ]
   }
 
   bundle_data("electron_framework_resources") {
@@ -413,12 +438,14 @@ if (is_mac) {
 
   if (is_component_build) {
     bundle_data("electron_framework_libraries") {
-      public_deps = [ "build/node" ]
+      public_deps = [
+        "build/node",
+      ]
       sources = [
-        "$root_out_dir/libnode.dylib"
+        "$root_out_dir/libnode.dylib",
       ]
       outputs = [
-        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}"
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
       ]
     }
   }
@@ -441,7 +468,9 @@ if (is_mac) {
     output_name = electron_framework_name
     framework_version = electron_framework_version
     framework_contents = [ "Resources" ]
-    public_deps = [ ":electron_lib" ]
+    public_deps = [
+      ":electron_lib",
+    ]
     deps = [
       ":electron_framework_resources",
       ":electron_xibs",
@@ -453,13 +482,9 @@ if (is_mac) {
       deps += [ ":electron_framework_libraries" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
-    extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
-    ]
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework" ]
 
-    include_dirs = [
-      ".",
-    ]
+    include_dirs = [ "." ]
     sources = filenames_gypi.framework_sources
 
     libs = [
@@ -472,7 +497,8 @@ if (is_mac) {
       "StoreKit.framework",
     ]
     ldflags = [
-      "-F", rebase_path("external_binaries", root_build_dir),
+      "-F",
+      rebase_path("external_binaries", root_build_dir),
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
@@ -480,20 +506,20 @@ if (is_mac) {
     if (is_component_build) {
       ldflags += [
         "-rpath",
-        "@executable_path/../../../../../.."
+        "@executable_path/../../../../../..",
       ]
     }
   }
 
   mac_app_bundle("electron_helper_app") {
     output_name = electron_helper_name
-    deps = [ ":electron_framework+link" ]
+    deps = [
+      ":electron_framework+link",
+    ]
     sources = filenames_gypi.app_sources
     include_dirs = [ "." ]
     info_plist = "atom/renderer/resources/mac/Info.plist"
-    extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper",
-    ]
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
     ldflags = [
       "-rpath",
       "@executable_path/../../..",
@@ -507,9 +533,9 @@ if (is_mac) {
     ]
     if (!is_mas_build) {
       sources += [
-        "external_binaries/Squirrel.framework",
-        "external_binaries/ReactiveCocoa.framework",
         "external_binaries/Mantle.framework",
+        "external_binaries/ReactiveCocoa.framework",
+        "external_binaries/Squirrel.framework",
       ]
     }
     outputs = [
@@ -527,28 +553,33 @@ if (is_mac) {
     include_dirs = [ "." ]
     libs = [ "AppKit.framework" ]
     info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
-    extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper"
-    ]
+    extra_substitutions =
+        [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
   }
 
   bundle_data("electron_login_helper_app") {
-    public_deps = [ ":electron_login_helper" ]
-    sources = [ "$root_out_dir/$electron_login_helper_name.app" ]
-    outputs = [ "{{bundle_contents_dir}}/Library/LoginItems" ]
+    public_deps = [
+      ":electron_login_helper",
+    ]
+    sources = [
+      "$root_out_dir/$electron_login_helper_name.app",
+    ]
+    outputs = [
+      "{{bundle_contents_dir}}/Library/LoginItems",
+    ]
   }
 
   bundle_data("electron_app_resources") {
     public_deps = [
-      ":js2asar",
       ":app2asar",
+      ":js2asar",
     ]
     sources = [
-      "$root_out_dir/resources/electron.asar",
       "$root_out_dir/resources/default_app.asar",
+      "$root_out_dir/resources/electron.asar",
     ]
     outputs = [
-      "{{bundle_resources_dir}}/{{source_file_part}}"
+      "{{bundle_resources_dir}}/{{source_file_part}}",
     ]
   }
 
@@ -564,9 +595,7 @@ if (is_mac) {
       deps += [ ":electron_login_helper_app" ]
     }
     info_plist = "atom/browser/resources/mac/Info.plist"
-    extra_substitutions = [
-      "ATOM_BUNDLE_ID=$electron_mac_bundle_id",
-    ]
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id" ]
     ldflags = [
       "-rpath",
       "@executable_path/../Frameworks",
@@ -592,8 +621,8 @@ if (is_mac) {
       ":js2asar",
       ":packed_resources",
       "//build/config:exe_and_shlib_deps",
-      "//ui/strings",
       "//content:sandbox_helper_win",
+      "//ui/strings",
     ]
 
     public_deps = [
@@ -603,9 +632,9 @@ if (is_mac) {
     if (is_win) {
       sources += [
         # TODO: we should be generating our .rc files more like how chrome does
-        "atom/browser/resources/win/resources.h",
         "atom/browser/resources/win/atom.ico",
         "atom/browser/resources/win/atom.rc",
+        "atom/browser/resources/win/resources.h",
       ]
 
       deps += [
