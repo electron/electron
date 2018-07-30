@@ -845,7 +845,8 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-void WebContents::DidStartNavigation(
+bool WebContents::EmitNavigationEvent(
+    const std::string& event,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -866,8 +867,27 @@ void WebContents::DidStartNavigation(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  Emit("did-start-navigation", url, is_same_document, is_main_frame,
-       frame_process_id, frame_routing_id);
+  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
+              frame_routing_id);
+}
+
+void WebContents::DidStartNavigation(
+    content::NavigationHandle* navigation_handle) {
+  EmitNavigationEvent("did-start-navigation", navigation_handle);
+}
+
+void OnStopSoon(WebContents* web_contents) {
+  if (web_contents && !web_contents->IsDestroyed())
+    web_contents->Stop();
+}
+
+void WebContents::DidRedirectNavigation(
+    content::NavigationHandle* navigation_handle) {
+  if (EmitNavigationEvent("will-redirect", navigation_handle)) {
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
+        base::ThreadTaskRunnerHandle::Get());
+    task_runner->PostTask(FROM_HERE, base::BindOnce(&OnStopSoon, this));
+  }
 }
 
 void WebContents::DidFinishNavigation(

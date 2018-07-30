@@ -366,6 +366,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidStopLoading() override;
   void DidStartNavigation(
       content::NavigationHandle* navigation_handle) override;
+  void DidRedirectNavigation(
+      content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -447,6 +449,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   void InitZoomController(content::WebContents* web_contents,
                           const mate::Dictionary& options);
+  bool EmitNavigationEvent(const std::string& event,
+                           content::NavigationHandle* navigation_handle);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

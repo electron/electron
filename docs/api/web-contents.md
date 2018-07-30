@@ -170,6 +170,7 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
+* `event` Event
 * `url` String
 * `isInPlace` Boolean
 * `isMainFrame` Boolean
@@ -178,6 +179,26 @@ Returns:
 
 Emitted when any frame (including main) starts navigating. `isInplace` will be
 `true` for in-page navigations.
+
+#### Event: 'will-redirect'
+
+Returns:
+
+* `event` Event
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when a server side redirect occurs during navigation.  For example a 302
+redirect.
+
+This event will be emitted after `did-start-navigation` and always before the
+`did-navigate` event for the same navigation.
+
+Calling `event.preventDefault()` will prevent the navigation (not just the
+redirect).
 
 #### Event: 'did-navigate'
 
