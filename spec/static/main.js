@@ -1,5 +1,5 @@
-// Disable use of deprecated functions.
-process.throwDeprecation = true
+// Deprecated APIs are still supported and should be tested.
+process.throwDeprecation = false
 
 const electron = require('electron')
 const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
