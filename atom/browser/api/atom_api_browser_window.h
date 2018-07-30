@@ -71,7 +71,7 @@ class BrowserWindow : public TopLevelWindow,
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(v8::Local<v8::Value> value) override;
-  void SetVibrancy(mate::Arguments* args) override;
+  void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
