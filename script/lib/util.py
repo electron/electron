@@ -87,7 +87,7 @@ def download(text, url, path):
     downloaded_size = 0
     block_size = 128
 
-    ci = os.environ.get('CI') == '1'
+    ci = os.environ.get('CI') is not None
 
     while True:
       buf = web_file.read(block_size)
