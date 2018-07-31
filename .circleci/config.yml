@@ -208,7 +208,7 @@ gn-build-steps: &gn-build-steps
           ninja -C out/Default electron/build/node:headers
           export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
           (cd electron/spec && npm install)
-          ./out/Default/electron electron/spec --ci --enable-logging
+          python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
     - store_test_results:
         path: src/junit
     - store_artifacts:

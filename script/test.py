@@ -18,6 +18,9 @@ if sys.platform == 'linux2':
     # will be picked up by electron.
     try:
         import lib.dbus_mock
+        import atexit
+        lib.dbus_mock.start()
+        atexit.register(lib.dbus_mock.stop)
     except ImportError:
         # If not available, the powerMonitor tests will be skipped since
         # DBUS_SYSTEM_BUS_ADDRESS will not be set
