@@ -184,7 +184,7 @@ gn-build-steps: &gn-build-steps
           echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           source $BASH_ENV
-          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'
+          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
     - run:
         name: Ninja build
         command: |
@@ -380,7 +380,7 @@ jobs:
       xcode: "8.3.3"
     <<: *build-steps
 
-  electron-gn-linux-debug-fyi:
+  electron-gn-linux-x64-debug-fyi:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
@@ -389,10 +389,30 @@ jobs:
     resource_class: 2xlarge
     <<: *gn-build-steps
 
-  electron-gn-linux-release-fyi:
+  electron-gn-linux-x64-release-fyi:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-ia32-debug-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "x86"'
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-ia32-release-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_EXTRA_ARGS: 'target_cpu = "x86"'
     docker:
       - image: electronbuilds/electron:0.0.8
     resource_class: 2xlarge
@@ -426,8 +446,10 @@ workflows:
       - electron-mas-x64
   build-gn-linux:
     jobs:
-      - electron-gn-linux-debug-fyi
-      - electron-gn-linux-release-fyi
+      - electron-gn-linux-x64-debug-fyi
+      - electron-gn-linux-x64-release-fyi
+      - electron-gn-linux-ia32-debug-fyi
+      - electron-gn-linux-ia32-release-fyi
 
   nightly-release-test:
     triggers:
