@@ -112,7 +112,8 @@ bool RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes) {
   // mov imm64, rax
   record->thunk[0] = 0x48;
   record->thunk[1] = 0xb8;
-  void* handler = &CrashForExceptionInNonABICompliantCodeRange;
+  void* handler =
+      reinterpret_cast<void*>(&CrashForExceptionInNonABICompliantCodeRange);
   memcpy(&record->thunk[2], &handler, 8);
 
   // jmp rax
