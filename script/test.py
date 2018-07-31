@@ -55,6 +55,8 @@ def main():
     electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.exe'.format(PROJECT_NAME))
     resources_path = os.path.join(SOURCE_ROOT, 'out', config)
+    if config != 'R':
+      os.environ['ELECTRON_SKIP_NATIVE_MODULE_TESTS'] = '1'
   else:
     electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
     resources_path = os.path.join(SOURCE_ROOT, 'out', config)

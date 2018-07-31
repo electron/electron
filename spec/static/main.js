@@ -99,7 +99,7 @@ if (global.isCi) {
   })
 }
 
-global.nativeModulesEnabled = process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1
+global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 
 // Register app as standard scheme.
 global.standardScheme = 'app'
