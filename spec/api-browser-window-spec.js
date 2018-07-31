@@ -1686,10 +1686,8 @@ describe('BrowserWindow module', () => {
           done()
         })
         w.loadURL(`file://${path.join(fixtures, 'api', 'native-window-open-iframe.html')}`)
-      })
-      it('loads native addons correctly after reload', (done) => {
-        if (!nativeModulesEnabled) return done()
-
+      });
+      (nativeModulesEnabled ? it : it.skip)('loads native addons correctly after reload', (done) => {
         ipcMain.once('answer', (event, content) => {
           assert.equal(content, 'function')
           ipcMain.once('answer', (event, content) => {
