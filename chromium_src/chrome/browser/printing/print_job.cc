@@ -265,6 +265,7 @@ void PrintJob::StartPdfToEmfConversion(
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
       content_area, gfx::Point(0, 0), gfx::Size(kPrinterDpi, kPrinterDpi), /*autorotate=*/true,
+      settings_.color() == COLOR,
       print_text_with_gdi ? PdfRenderSettings::Mode::GDI_TEXT
                           : PdfRenderSettings::Mode::NORMAL);
   pdf_conversion_state_->Start(
@@ -313,6 +314,7 @@ void PrintJob::StartPdfToPostScriptConversion(
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
       content_area, physical_offsets, gfx::Size(kPrinterDpi, kPrinterDpi), true /* autorotate? */,
+      settings_.color() == COLOR,
       ps_level2 ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3);
   pdf_conversion_state_->Start(
