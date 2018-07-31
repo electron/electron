@@ -17,7 +17,7 @@ template("electron_repack_percent") {
 
     # All sources should also have deps for completeness.
     sources = [
-      "$root_gen_dir/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
+      "$root_gen_dir/third_party/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
       "$root_gen_dir/components/components_resources_${percent}_percent.pak",
       "$root_gen_dir/content/app/resources/content_resources_${percent}_percent.pak",
       "$root_gen_dir/ui/resources/ui_resources_${percent}_percent.pak",
@@ -53,7 +53,7 @@ template("electron_extra_paks") {
                            ])
     output = "${invoker.output_dir}/resources.pak"
     sources = [
-      "$root_gen_dir/blink/public/resources/blink_resources.pak",
+      "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
       "$root_gen_dir/content/content_resources.pak",
