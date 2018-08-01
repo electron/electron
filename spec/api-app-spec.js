@@ -168,8 +168,9 @@ describe('app module', () => {
       const electronPath = remote.getGlobal('process').execPath
 
       appProcess = ChildProcess.spawn(electronPath, [appPath])
-      appProcess.on('close', code => {
-        expect(code).to.equal(123)
+      appProcess.on('close', (code, signal) => {
+        expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound')
+        expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
         done()
       })
     })
