@@ -7,6 +7,9 @@ image: libcc-20-vs2017
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_ENABLE_LOGGING: true
+  matrix:
+    - gn_args: debug
+    - gn_args: release
 build_script:
   - git config --global core.longpaths true
   - cd ..
@@ -21,7 +24,7 @@ build_script:
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
-  - gn gen out/Default "--args=import(\"//electron/build/args/debug.gn\")"
+  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
 test_script:
   - ninja -C out/Default electron/build/node:headers
