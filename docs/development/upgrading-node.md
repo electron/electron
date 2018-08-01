@@ -69,12 +69,12 @@ We need to generate a patch file from each patch applied to V8.
     - commit these removals
 4. Inspect Node [repo](https://github.com/electron/node) to see what patches upstream Node
   used with their v8 after bumping its version
-  - `git log --oneline deps/V8`
+  - `git log --oneline "deps/v8"`
 5. Create a checklist of the patches. This is useful for tracking your work and for
   having a quick reference of commit hashes to use in the `git diff-tree` step below.
 6. Read `patches/common/v8/README.md` to see which patchfiles came from the previous version of V8 and therefore need to be removed.
   - Delete each patchfile referenced in `patches/common/v8/README.md`
-7. Apply all patches with the `get-patch` script:
+7. Apply all patches with the [`get-patch` script](https://github.com/electron/libchromiumcontent/blob/master/script/README.md#get-patch):
   - `./script/get-patch --repo src/v8 --output-dir patches/v8 --commit abc123 def456 ...`
 8. Update `patches/common/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
@@ -88,7 +88,7 @@ We need to generate a patch file from each patch applied to V8.
   electron/vendor/libchromiumcontent$ cd ../..
   electron$ git add vendor
   electron$ git commit -m "update submodule references for node and libcc"
-  electron$ git pso upgrade-to-chromium-62
+  electron$ git push origin upgrade-to-chromium-<VERSION>
   electron$ script/bootstrap.py -d
   electron$ script/build.py -c -D
   ```
