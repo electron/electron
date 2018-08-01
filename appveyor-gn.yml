@@ -9,6 +9,7 @@ environment:
   ELECTRON_ENABLE_LOGGING: true
   matrix:
     - gn_args: debug
+      ELECTRON_SKIP_NATIVE_MODULE_TESTS: 1
     - gn_args: release
 build_script:
   - git config --global core.longpaths true
