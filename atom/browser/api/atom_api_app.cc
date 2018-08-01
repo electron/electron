@@ -1114,6 +1114,10 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
+    pid_dict.SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
+
     memory_dict.Set(
         "workingSetSize",
         static_cast<double>(
