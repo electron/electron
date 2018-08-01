@@ -30,6 +30,7 @@ build_script:
 test_script:
   - ninja -C out/Default electron/build/node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
+  - ps: $env:npm_config_msvs_version="2017"
   - ps: Push-Location; cd electron/spec
   - npm install
   - ps: Pop-Location
