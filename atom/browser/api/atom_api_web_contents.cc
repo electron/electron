@@ -19,6 +19,7 @@
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/net/atom_navigation_throttle.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #if defined(ENABLE_OSR)
 #include "atom/browser/osr/osr_output_device.h"
@@ -876,18 +877,9 @@ void WebContents::DidStartNavigation(
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
-void OnStopSoon(WebContents* web_contents) {
-  if (web_contents && !web_contents->IsDestroyed())
-    web_contents->Stop();
-}
-
 void WebContents::DidRedirectNavigation(
     content::NavigationHandle* navigation_handle) {
-  if (EmitNavigationEvent("will-redirect", navigation_handle)) {
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-        base::ThreadTaskRunnerHandle::Get());
-    task_runner->PostTask(FROM_HERE, base::BindOnce(&OnStopSoon, this));
-  }
+  EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
 void WebContents::DidFinishNavigation(

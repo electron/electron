@@ -266,6 +266,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
     observers_.RemoveObserver(obs);
   }
 
+  bool EmitNavigationEvent(const std::string& event,
+                           content::NavigationHandle* navigation_handle);
+
  protected:
   WebContents(v8::Isolate* isolate,
               content::WebContents* web_contents,
@@ -449,8 +452,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   void InitZoomController(content::WebContents* web_contents,
                           const mate::Dictionary& options);
-  bool EmitNavigationEvent(const std::string& event,
-                           content::NavigationHandle* navigation_handle);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;

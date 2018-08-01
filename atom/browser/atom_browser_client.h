@@ -47,6 +47,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);
 
+  std::vector<std::unique_ptr<content::NavigationThrottle>>
+  CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
+
  protected:
   // content::ContentBrowserClient:
   void RenderProcessWillLaunch(
