@@ -37,7 +37,8 @@ class WebContentsPreferences
   ~WebContentsPreferences() override;
 
   // A simple way to know whether a Boolean property is enabled.
-  bool IsEnabled(const base::StringPiece& name, bool default_value = false);
+  bool IsEnabled(const base::StringPiece& name,
+                 bool default_value = false) const;
 
   // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
@@ -52,7 +53,7 @@ class WebContentsPreferences
   void Clear();
 
   // Return true if the particular preference value exists.
-  bool GetPreference(const base::StringPiece& name, std::string* value);
+  bool GetPreference(const base::StringPiece& name, std::string* value) const;
 
   // Returns the web preferences.
   base::Value* preference() { return &preference_; }

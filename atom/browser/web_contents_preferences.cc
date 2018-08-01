@@ -32,7 +32,7 @@ DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
 
 namespace {
 
-bool GetAsString(base::Value* val,
+bool GetAsString(const base::Value* val,
                  const base::StringPiece& path,
                  std::string* out) {
   if (val) {
@@ -45,7 +45,7 @@ bool GetAsString(base::Value* val,
   return false;
 }
 
-bool GetAsString(base::Value* val,
+bool GetAsString(const base::Value* val,
                  const base::StringPiece& path,
                  base::string16* out) {
   if (val) {
@@ -58,7 +58,9 @@ bool GetAsString(base::Value* val,
   return false;
 }
 
-bool GetAsInteger(base::Value* val, const base::StringPiece& path, int* out) {
+bool GetAsInteger(const base::Value* val,
+                  const base::StringPiece& path,
+                  int* out) {
   if (val) {
     auto* found = val->FindKey(path);
     if (found && found->is_int()) {
@@ -66,17 +68,6 @@ bool GetAsInteger(base::Value* val, const base::StringPiece& path, int* out) {
       return true;
     } else if (found && found->is_string()) {
       return base::StringToInt(found->GetString(), out);
-    }
-  }
-  return false;
-}
-
-bool GetAsBoolean(base::Value* val, const base::StringPiece& path, bool* out) {
-  if (val) {
-    auto* found = val->FindKeyOfType(path, base::Value::Type::BOOLEAN);
-    if (found) {
-      *out = found->GetBool();
-      return true;
     }
   }
   return false;
@@ -155,7 +146,7 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
 }
 
 bool WebContentsPreferences::IsEnabled(const base::StringPiece& name,
-                                       bool default_value) {
+                                       bool default_value) const {
   auto* current_value =
       preference_.FindKeyOfType(name, base::Value::Type::BOOLEAN);
   if (current_value)
@@ -174,7 +165,7 @@ void WebContentsPreferences::Clear() {
 }
 
 bool WebContentsPreferences::GetPreference(const base::StringPiece& name,
-                                           std::string* value) {
+                                           std::string* value) const {
   return GetAsString(&preference_, name, value);
 }
 
@@ -209,11 +200,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
   // Check if we have node integration specified.
-  bool enable_node_integration = true;
-  auto* node_integration_value = preference_.FindKeyOfType(
-      options::kNodeIntegration, base::Value::Type::BOOLEAN);
-  if (node_integration_value)
-    enable_node_integration = node_integration_value->GetBool();
+  bool enable_node_integration = IsEnabled(options::kNodeIntegration, true);
   command_line->AppendSwitchASCII(switches::kNodeIntegration,
                                   enable_node_integration ? "true" : "false");
 
@@ -223,11 +210,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   // Check if webview tag creation is enabled, default to nodeIntegration value.
   // TODO(kevinsawicki): Default to false in 2.0
-  bool webview_tag = enable_node_integration;
-  auto* webview_tag_value = preference_.FindKeyOfType(
-      options::kWebviewTag, base::Value::Type::BOOLEAN);
-  if (webview_tag_value)
-    webview_tag = webview_tag_value->GetBool();
+  bool webview_tag = IsEnabled(options::kWebviewTag, enable_node_integration);
   command_line->AppendSwitchASCII(switches::kWebviewTag,
                                   webview_tag ? "true" : "false");
 
@@ -346,25 +329,25 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     content::WebPreferences* prefs) {
-  bool b;
-  if (GetAsBoolean(&preference_, "javascript", &b))
-    prefs->javascript_enabled = b;
-  if (GetAsBoolean(&preference_, "images", &b))
-    prefs->images_enabled = b;
-  if (GetAsBoolean(&preference_, "textAreasAreResizable", &b))
-    prefs->text_areas_are_resizable = b;
-  if (GetAsBoolean(&preference_, "webgl", &b)) {
-    prefs->webgl1_enabled = b;
-    prefs->webgl2_enabled = b;
-  }
-  if (GetAsBoolean(&preference_, options::kWebSecurity, &b)) {
-    prefs->web_security_enabled = b;
-    prefs->allow_running_insecure_content = !b;
-  }
-  if (GetAsBoolean(&preference_, options::kAllowRunningInsecureContent, &b))
-    prefs->allow_running_insecure_content = b;
-  if (GetAsBoolean(&preference_, "navigateOnDragDrop", &b))
-    prefs->navigate_on_drag_drop = b;
+  prefs->javascript_enabled = IsEnabled("javascript", true /* default_value */);
+  prefs->images_enabled = IsEnabled("images", true /* default_value */);
+  prefs->text_areas_are_resizable =
+      IsEnabled("textAreasAreResizable", true /* default_value */);
+  prefs->navigate_on_drag_drop =
+      IsEnabled("navigateOnDragDrop", false /* default_value */);
+
+  // Check if webgl should be enabled.
+  bool is_webgl_enabled = IsEnabled("webgl", true /* default_value */);
+  prefs->webgl1_enabled = is_webgl_enabled;
+  prefs->webgl2_enabled = is_webgl_enabled;
+
+  // Check if web security should be enabled.
+  bool is_web_security_enabled =
+      IsEnabled(options::kWebSecurity, true /* default_value */);
+  prefs->web_security_enabled = is_web_security_enabled;
+  prefs->allow_running_insecure_content =
+      IsEnabled(options::kAllowRunningInsecureContent,
+                !is_web_security_enabled /* default_value */);
 
   auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
                                                base::Value::Type::DICTIONARY);
