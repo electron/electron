@@ -280,7 +280,7 @@ describe('nativeImage module', () => {
     })
 
     it('loads images from paths relative to the current working directory', () => {
-      const imagePath = `.${path.sep}${path.join('spec', 'fixtures', 'assets', 'logo.png')}`
+      const imagePath = path.relative('.', path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const image = nativeImage.createFromPath(imagePath)
       expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 538, height: 190})
