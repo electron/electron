@@ -81,7 +81,8 @@ improve the security of your application.
 10. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
 11. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups)
 12. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
-
+13. [Disable or limit navigation](#13-disable-or-limit-navigation)
+14. [Disable or limit creation of new windows](#13-disable-or-limit-creation-of-new-windows)
 
 ## 1) Only Load Secure Content
 
@@ -536,7 +537,7 @@ for newly created [`<webview>`][webview-tag] tags.
 
 Before a [`<webview>`][webview-tag] tag is attached, Electron will fire the
 `will-attach-webview` event on the hosting `webContents`. Use the event to
-prevent the creation of webviews with possibly insecure options.
+prevent the creation of `webViews` with possibly insecure options.
 
 ```js
 app.on('web-contents-created', (event, contents) => {
@@ -559,6 +560,93 @@ app.on('web-contents-created', (event, contents) => {
 Again, this list merely minimizes the risk, it does not remove it. If your goal
 is to display a website, a browser will be a more secure option.
 
+## 13) Disable or limit navigation
+
+If your app has no need to navigate or only needs to navigate to known pages,
+it is a good idea to limit navigation outright to that known scope, disallowing
+any other kinds of navigation.
+
+### Why?
+
+Navigation is a common attack vector. If an attacker can convince your app to
+navigate away from its current page, they can possibly force your app to open
+web sites on the Internet. Even if your `webContents` are configured to be more
+secure (like having `nodeIntegration` disabled or `contextIsolation` enabled),
+getting your app to open a random web site will make the work of exploiting your
+app a lot easier.
+
+A common attack pattern is that the attacker convinces your app's users to
+interact with the app in such a way that it navigates to one of the attacker's
+pages. This is usually done via links, plugins, or other user-generated content.
+
+### How?
+
+If your app has no need for navigation, you can call `event.preventDefault()`
+in a [`will-navigate`][will-navigate] handler. If you know which pages your app
+might navigate to, check the URL in the event handler and only let navigation
+occur if it matches the URLs you're expecting.
+
+We recommend that you use Node's parser for URLs. Simple string comparisons can
+sometimes be fooled - a `startsWith('https://google.com')` test would let
+`https://google.com.attacker.com` through.
+
+```js
+const URL = require('url')
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('will-navigate', (event, navigationUrl) => {
+    const parsedUrl = new URL(navigationUrl)
+
+    if (url.hostname !== 'my-own-server.com') {
+      event.preventDefault()
+    }
+  })
+})
+```
+
+## 14) Disable or limit creation of new windows
+
+If you have a known set of windows, it's a good idea to limit the creation of
+additional windows in your app.
+
+### Why?
+
+Much like navigation, the creation of new `webContents` is a common attack
+vector. Attackers attempt to convince your app to create new windows, frames,
+or other renderer processes with more privileges than they had before; or
+with pages opened that they couldn't open before.
+
+If you have no need to create windows in addition to the ones you know you'll
+need to create, disabling the creation buys you a little bit of extra
+security at no cost. This is commonly the case for apps that open one
+`BrowserWindow` and do not need to open an arbitrary number of additional
+windows at runtime.
+
+### How?
+
+[`webContents`][web-contents] will emit the [`new-window`][new-window] event
+before creating new windows. That event will be passed, amongst other
+parameters, the `url` the window was requested to open and the options used to
+create it. We recommend that you use the event to scrutinize the creation of
+windows, limiting it to only what you need.
+
+```js
+const { shell } = require('electron')
+
+app.on('web-contents-created', (event, contents) => {
+  contents.on('new-window', (event, navigationUrl) => {
+    // In this example, we'll ask the operating system
+    // to open this event's url in the default browser.
+    event.preventDefault()
+
+    shell.openExternal(navigationUrl)
+  })
+})
+```
+
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
+[web-contents]: ../api/web-contents.md
+[new-window]: ../api/web-contents#event-new-window
+[will-navigate]: ../api/web-contents#event-will-navigate
