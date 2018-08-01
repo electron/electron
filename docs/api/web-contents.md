@@ -191,14 +191,31 @@ Returns:
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
 
-Emitted when a server side redirect occurs during navigation.  For example a 302
+Emitted as a server side redirect occurs during navigation.  For example a 302
 redirect.
 
 This event will be emitted after `did-start-navigation` and always before the
-`did-navigate` event for the same navigation.
+`did-redirect-navigation` event for the same navigation.
 
 Calling `event.preventDefault()` will prevent the navigation (not just the
 redirect).
+
+#### Event: 'did-redirect-navigation'
+
+Returns:
+
+* `event` Event
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted after a server side redirect occurs during navigation.  For example a 302
+redirect.
+
+This event can not be prevented, if you want to prevent redirects you should
+checkout out the `will-redirect` event above.
 
 #### Event: 'did-navigate'
 
