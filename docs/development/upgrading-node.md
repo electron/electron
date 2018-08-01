@@ -75,7 +75,7 @@ We need to generate a patch file from each patch applied to V8.
 6. Read `patches/common/v8/README.md` to see which patchfiles came from the previous version of V8 and therefore need to be removed.
   - Delete each patchfile referenced in `patches/common/v8/README.md`
 7. Apply all patches with the `get-patch` script:
-  - `./script/get-patch --repo src/v8 --output_-dir patches/v8 --commit abc123 def456 ... --filename backport_abc123.patch cherry-pick_def456.patch`
+  - `./script/get-patch --repo src/v8 --output-dir patches/v8 --commit abc123 def456 ...`
 8. Update `patches/common/v8/README.md` with references to all new patches that have been added so that the next person will know which need to be removed.
 9. Update Electron's submodule references:
   ```sh
@@ -87,7 +87,7 @@ We need to generate a patch file from each patch applied to V8.
   electron/vendor/libchromiumcontent$ git checkout upgrade-to-chromium-X
   electron/vendor/libchromiumcontent$ cd ../..
   electron$ git add vendor
-  electron$ git commit -m "update submodule references for node and libc"
+  electron$ git commit -m "update submodule references for node and libcc"
   electron$ git pso upgrade-to-chromium-62
   electron$ script/bootstrap.py -d
   electron$ script/build.py -c -D
