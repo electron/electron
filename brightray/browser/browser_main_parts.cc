@@ -266,16 +266,6 @@ void BrowserMainParts::PreMainMessageLoopStart() {
 }
 
 void BrowserMainParts::PreMainMessageLoopRun() {
-  // We already initialized feature list in PreEarlyInitialization(), but
-  // the user JS script would not have had a chance to alter the command-line
-  // switches at that point. Lets reinitialize it here to pick up the
-  // command-line changes. Note that some Chromium code (e.g.
-  // gpu_process_host.cc) queries the feature list between
-  // PreEarlyInitialization() and here so the user script may not have
-  // control over all features. Better than nothing though!
-  base::FeatureList::ClearInstanceForTesting();
-  InitializeFeatureList();
-
   content::WebUIControllerFactory::RegisterFactory(
       WebUIControllerFactory::GetInstance());
 
