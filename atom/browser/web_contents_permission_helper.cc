@@ -63,6 +63,17 @@ void WebContentsPermissionHelper::RequestPermission(
       base::Bind(&OnPermissionResponse, callback));
 }
 
+bool WebContentsPermissionHelper::CheckPermission(
+    content::PermissionType permission,
+    const base::DictionaryValue* details) {
+  auto* rfh = web_contents_->GetMainFrame();
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionManager());
+  auto origin = web_contents_->GetLastCommittedURL();
+  return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,
+                                                        details);
+}
+
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     const base::Callback<void(bool)>& callback) {
   RequestPermission(
@@ -100,6 +111,16 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
       callback, user_gesture, &details);
+}
+
+bool WebContentsPermissionHelper::CheckMediaAccessPermission(
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  base::DictionaryValue details;
+  details.SetString("securityOrigin", security_origin.spec());
+  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
+  // are presented as same type in content_converter.h.
+  return CheckPermission(content::PermissionType::AUDIO_CAPTURE, &details);
 }
 
 }  // namespace atom

@@ -75,6 +75,8 @@ class Session : public mate::TrackableObject<Session>,
   void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   void SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                    mate::Arguments* args);
+  void SetPermissionCheckHandler(v8::Local<v8::Value> val,
+                                 mate::Arguments* args);
   void ClearHostResolverCache(mate::Arguments* args);
   void ClearAuthCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);

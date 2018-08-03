@@ -31,9 +31,14 @@ class AtomPermissionManager : public content::PermissionManager {
                                              content::PermissionType,
                                              const StatusCallback&,
                                              const base::DictionaryValue&)>;
+  using CheckHandler = base::Callback<bool(content::WebContents*,
+                                           content::PermissionType,
+                                           const GURL& requesting_origin,
+                                           const base::DictionaryValue&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
+  void SetPermissionCheckHandler(const CheckHandler& handler);
 
   // content::PermissionManager:
   int RequestPermission(
@@ -67,6 +72,11 @@ class AtomPermissionManager : public content::PermissionManager {
       const base::Callback<
           void(const std::vector<blink::mojom::PermissionStatus>&)>& callback);
 
+  bool CheckPermissionWithDetails(content::PermissionType permission,
+                                  content::RenderFrameHost* render_frame_host,
+                                  const GURL& requesting_origin,
+                                  const base::DictionaryValue* details);
+
  protected:
   void OnPermissionResponse(int request_id,
                             int permission_id,
@@ -93,6 +103,7 @@ class AtomPermissionManager : public content::PermissionManager {
   using PendingRequestsMap = base::IDMap<std::unique_ptr<PendingRequest>>;
 
   RequestHandler request_handler_;
+  CheckHandler check_handler_;
 
   PendingRequestsMap pending_requests_;
 
