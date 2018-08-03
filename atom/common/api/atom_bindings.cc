@@ -133,6 +133,7 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
   isolate->GetHeapStatistics(&v8_heap_stats);
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("totalHeapSize",
            static_cast<double>(v8_heap_stats.total_heap_size() >> 10));
   dict.Set(
@@ -161,6 +162,7 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
   auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("workingSetSize",
            static_cast<double>(metrics->GetWorkingSetSize() >> 10));
   dict.Set("peakWorkingSetSize",
@@ -185,6 +187,7 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
   }
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("total", mem_info.total);
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
@@ -207,6 +210,7 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 
 v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   int processor_count = base::SysInfo::NumberOfProcessors();
   dict.Set("percentCPUUsage",
            metrics_->GetPlatformIndependentCPUUsage() / processor_count);
@@ -227,6 +231,7 @@ v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
   auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
   base::IoCounters io_counters;
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
 
   if (metrics->GetIOCounters(&io_counters)) {
     dict.Set("readOperationCount", io_counters.ReadOperationCount);
