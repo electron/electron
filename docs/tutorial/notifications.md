@@ -9,6 +9,7 @@ the currently running operating system's native notification APIs to display it.
 you want to show Notifications in the main process please check out the
 [Notification](../api/notification.md) module.
 
+**Note:** You don't need user permission to show notification.
 ```javascript
 let myNotification = new Notification('Title', {
   body: 'Lorem Ipsum Dolor Sit Amet'
