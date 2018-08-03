@@ -81,6 +81,11 @@ ipcMain.on('echo', function (event, msg) {
 
 global.setTimeoutPromisified = util.promisify(setTimeout)
 
+global.permissionChecks = {
+  allow: () => electron.session.defaultSession.setPermissionCheckHandler(null),
+  reject: () => electron.session.defaultSession.setPermissionCheckHandler(() => false)
+}
+
 const coverage = new Coverage({
   outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
 })

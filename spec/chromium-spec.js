@@ -106,6 +106,10 @@ describe('chromium feature', () => {
   describe('navigator.mediaDevices', () => {
     if (isCI) return
 
+    afterEach(() => {
+      remote.getGlobal('permissionChecks').allow()
+    })
+
     it('can return labels of enumerated devices', (done) => {
       navigator.mediaDevices.enumerateDevices().then((devices) => {
         const labels = devices.map((device) => device.label)
@@ -114,6 +118,19 @@ describe('chromium feature', () => {
           done()
         } else {
           done(new Error(`No device labels found: ${JSON.stringify(labels)}`))
+        }
+      }).catch(done)
+    })
+
+    it('does not return labels of enumerated devices when permission denied', (done) => {
+      remote.getGlobal('permissionChecks').reject()
+      navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const labels = devices.map((device) => device.label)
+        const labelFound = labels.some((label) => !!label)
+        if (labelFound) {
+          done(new Error(`Device labels were found: ${JSON.stringify(labels)}`))
+        } else {
+          done()
         }
       }).catch(done)
     })
