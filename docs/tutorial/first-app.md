@@ -198,6 +198,8 @@ Finally the `index.html` is the web page you want to show:
 Once you've created your initial `main.js`, `index.html`, and `package.json`
 files, you can try your app by running `npm start` from your application's
 directory.
+If your app won't run, change inside your `package.json` the value
+of the parameter `"start"` to `"electron ."`.
 
 ## Trying this Example
 
