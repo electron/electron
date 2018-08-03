@@ -37,7 +37,8 @@ class WebContentsPreferences
   ~WebContentsPreferences() override;
 
   // A simple way to know whether a Boolean property is enabled.
-  bool IsEnabled(const base::StringPiece& name, bool default_value = false);
+  bool IsEnabled(const base::StringPiece& name,
+                 bool default_value = false) const;
 
   // $.extend(|web_preferences|, |new_web_preferences|).
   void Merge(const base::DictionaryValue& new_web_preferences);
@@ -48,10 +49,15 @@ class WebContentsPreferences
   // Modify the WebPreferences according to preferences.
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
+  // Clear the current WebPreferences.
+  void Clear();
+
+  // Return true if the particular preference value exists.
+  bool GetPreference(const base::StringPiece& name, std::string* value) const;
+
   // Returns the web preferences.
-  base::DictionaryValue* dict() { return &dict_; }
-  const base::DictionaryValue* dict() const { return &dict_; }
-  base::DictionaryValue* last_dict() { return &last_dict_; }
+  base::Value* preference() { return &preference_; }
+  base::Value* last_preference() { return &last_preference_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -63,15 +69,12 @@ class WebContentsPreferences
   // Set preference value to given bool if user did not provide value
   bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
 
-  // Get preferences value as integer possibly coercing it from a string
-  bool GetInteger(const base::StringPiece& attribute_name, int* val);
-
   static std::vector<WebContentsPreferences*> instances_;
 
   content::WebContents* web_contents_;
 
-  base::DictionaryValue dict_;
-  base::DictionaryValue last_dict_;
+  base::Value preference_ = base::Value(base::Value::Type::DICTIONARY);
+  base::Value last_preference_ = base::Value(base::Value::Type::DICTIONARY);
 
   DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };

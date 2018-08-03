@@ -55,7 +55,7 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
     base::DictionaryValue web_preferences_dict;
     if (mate::ConvertFromV8(isolate, web_preferences.GetHandle(),
                             &web_preferences_dict)) {
-      existing_preferences->dict()->Clear();
+      existing_preferences->Clear();
       existing_preferences->Merge(web_preferences_dict);
     }
   } else {

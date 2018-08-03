@@ -990,7 +990,8 @@ void App::ImportCertificate(const base::DictionaryValue& options,
                             const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
-    std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    auto copy = base::DictionaryValue::From(
+        base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
         browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,

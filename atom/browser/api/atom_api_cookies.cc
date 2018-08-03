@@ -262,12 +262,13 @@ Cookies::~Cookies() {}
 
 void Cookies::Get(const base::DictionaryValue& filter,
                   const GetCallback& callback) {
-  std::unique_ptr<base::DictionaryValue> copied(filter.CreateDeepCopy());
+  auto copy = base::DictionaryValue::From(
+      base::Value::ToUniquePtrValue(filter.Clone()));
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter),
-                     std::move(copied), callback));
+      base::BindOnce(GetCookiesOnIO, base::RetainedRef(getter), std::move(copy),
+                     callback));
 }
 
 void Cookies::Remove(const GURL& url,
@@ -282,12 +283,13 @@ void Cookies::Remove(const GURL& url,
 
 void Cookies::Set(const base::DictionaryValue& details,
                   const SetCallback& callback) {
-  std::unique_ptr<base::DictionaryValue> copied(details.CreateDeepCopy());
+  auto copy = base::DictionaryValue::From(
+      base::Value::ToUniquePtrValue(details.Clone()));
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter),
-                     std::move(copied), callback));
+      base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
+                     callback));
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {

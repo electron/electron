@@ -452,7 +452,8 @@ void AtomNetworkDelegate::OnListenerResultInUI(
     uint64_t id,
     T out,
     const base::DictionaryValue& response) {
-  std::unique_ptr<base::DictionaryValue> copy = response.CreateDeepCopy();
+  auto copy = base::DictionaryValue::From(
+      base::Value::ToUniquePtrValue(response.Clone()));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(&AtomNetworkDelegate::OnListenerResultInIO<T>,
