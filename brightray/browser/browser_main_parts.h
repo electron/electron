@@ -46,13 +46,13 @@ class BrowserMainParts : public content::BrowserMainParts {
   int PreCreateThreads() override;
   void PostDestroyThreads() override;
 
+  void InitializeFeatureList();
+
  private:
 #if defined(OS_MACOSX)
   void InitializeMainNib();
   void OverrideAppLogsPath();
 #endif
-
-  void InitializeFeatureList();
 
   std::unique_ptr<IOThread> io_thread_;
 
