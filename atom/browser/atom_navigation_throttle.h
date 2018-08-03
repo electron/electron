@@ -7,8 +7,6 @@
 
 #include "content/public/browser/navigation_throttle.h"
 
-class URLPattern;
-
 namespace atom {
 
 class AtomNavigationThrottle : public content::NavigationThrottle {
@@ -18,7 +16,7 @@ class AtomNavigationThrottle : public content::NavigationThrottle {
 
   AtomNavigationThrottle::ThrottleCheckResult WillRedirectRequest() override;
 
-  const char* GetNameForLogging() { return "AtomNavigationThrottle"; }
+  const char* GetNameForLogging() override { return "AtomNavigationThrottle"; }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomNavigationThrottle);

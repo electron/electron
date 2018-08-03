@@ -16,10 +16,10 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
+#include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
-#include "atom/browser/net/atom_navigation_throttle.h"
 #include "atom/browser/net/atom_network_delegate.h"
 #if defined(ENABLE_OSR)
 #include "atom/browser/osr/osr_output_device.h"
