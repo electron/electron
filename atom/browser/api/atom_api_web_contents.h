@@ -213,9 +213,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
-  double GetZoomLevel();
+  double GetZoomLevel() const;
   void SetZoomFactor(double factor);
-  double GetZoomFactor();
+  double GetZoomFactor() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
@@ -231,11 +231,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the web preferences of current WebContents.
-  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
-  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
+  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
   // Returns the owner window.
-  v8::Local<v8::Value> GetOwnerBrowserWindow();
+  v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.

@@ -1854,7 +1854,7 @@ void WebContents::SetZoomLevel(double level) {
   zoom_controller_->SetZoomLevel(level);
 }
 
-double WebContents::GetZoomLevel() {
+double WebContents::GetZoomLevel() const {
   return zoom_controller_->GetZoomLevel();
 }
 
@@ -1863,7 +1863,7 @@ void WebContents::SetZoomFactor(double factor) {
   SetZoomLevel(level);
 }
 
-double WebContents::GetZoomFactor() {
+double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
   return content::ZoomLevelToZoomFactor(level);
 }
@@ -1884,22 +1884,23 @@ void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
   rfh->Send(reply_msg);
 }
 
-v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+v8::Local<v8::Value> WebContents::GetWebPreferences(
+    v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
   return mate::ConvertToV8(isolate, *web_preferences->preference());
 }
 
-v8::Local<v8::Value> WebContents::GetLastWebPreferences(v8::Isolate* isolate) {
-  WebContentsPreferences* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents());
+v8::Local<v8::Value> WebContents::GetLastWebPreferences(
+    v8::Isolate* isolate) const {
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
   return mate::ConvertToV8(isolate, *web_preferences->last_preference());
 }
 
-v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() const {
   if (owner_window())
     return BrowserWindow::From(isolate(), owner_window());
   else

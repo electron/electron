@@ -95,7 +95,6 @@ extern const char kAppPath[];
 
 extern const char kBackgroundColor[];
 extern const char kPreloadScript[];
-extern const char kPreloadURL[];
 extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
