@@ -113,11 +113,23 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
       callback, user_gesture, &details);
 }
 
+std::string MediaStreamTypeToString(content::MediaStreamType type) {
+  switch (type) {
+    case content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
+      return "audio";
+    case content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
+      return "video";
+    default:
+      return "unknown";
+  }
+}
+
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
     const GURL& security_origin,
     content::MediaStreamType type) {
   base::DictionaryValue details;
   details.SetString("securityOrigin", security_origin.spec());
+  details.SetString("mediaType", MediaStreamTypeToString(type));
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
   return CheckPermission(content::PermissionType::AUDIO_CAPTURE, &details);
