@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_SPECIAL_STORAGE_POLICY_H_
-#define BRIGHTRAY_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#ifndef ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#define ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
 
 #include "storage/browser/quota/special_storage_policy.h"
 
-namespace brightray {
+namespace atom {
 
 class SpecialStoragePolicy : public storage::SpecialStoragePolicy {
  public:
@@ -26,6 +26,6 @@ class SpecialStoragePolicy : public storage::SpecialStoragePolicy {
   ~SpecialStoragePolicy() override;
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_SPECIAL_STORAGE_POLICY_H_
+#endif  // ATOM_BROWSER_SPECIAL_STORAGE_POLICY_H_
