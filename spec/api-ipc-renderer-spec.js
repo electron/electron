@@ -5,6 +5,7 @@ const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -225,15 +226,16 @@ describe('ipc renderer module', () => {
     })
   })
 
-  it('throws an error when removing all the listeners', () => {
-    ipcRenderer.on('test-event', () => {})
-    expect(ipcRenderer.listenerCount('test-event')).to.equal(1)
+  describe('ipcRenderer.on', () => {
+    it('is not used for internals', async () => {
+      w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
 
-    expect(() => {
-      ipcRenderer.removeAllListeners()
-    }).to.throw(/Removing all listeners from ipcRenderer will make Electron internals stop working/)
+      await emittedOnce(w.webContents, 'did-finish-load')
 
-    ipcRenderer.removeAllListeners('test-event')
-    expect(ipcRenderer.listenerCount('test-event')).to.equal(0)
+      const script = `require('electron').ipcRenderer.eventNames()`
+      const result = await w.webContents.executeJavaScript(script)
+      expect(result).to.deep.equal([])
+    })
   })
 })

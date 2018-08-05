@@ -1578,20 +1578,23 @@ void WebContents::TabTraverse(bool reverse) {
   web_contents()->FocusThroughTabTraversal(reverse);
 }
 
-bool WebContents::SendIPCMessage(bool all_frames,
+bool WebContents::SendIPCMessage(bool internal,
+                                 bool send_to_all,
                                  const std::string& channel,
                                  const base::ListValue& args) {
-  return SendIPCMessageWithSender(all_frames, channel, args);
+  return SendIPCMessageWithSender(internal, send_to_all, channel, args);
 }
 
-bool WebContents::SendIPCMessageWithSender(bool all_frames,
+bool WebContents::SendIPCMessageWithSender(bool internal,
+                                           bool send_to_all,
                                            const std::string& channel,
                                            const base::ListValue& args,
                                            int32_t sender_id) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    return frame_host->Send(new AtomFrameMsg_Message(
-        frame_host->GetRoutingID(), all_frames, channel, args, sender_id));
+    return frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(),
+                                                     internal, send_to_all,
+                                                     channel, args, sender_id));
   }
   return false;
 }
@@ -2107,6 +2110,7 @@ void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
 }
 
 void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
+                                      bool internal,
                                       bool send_to_all,
                                       int32_t web_contents_id,
                                       const std::string& channel,
@@ -2115,7 +2119,8 @@ void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
       isolate(), web_contents_id);
 
   if (web_contents) {
-    web_contents->SendIPCMessageWithSender(send_to_all, channel, args, ID());
+    web_contents->SendIPCMessageWithSender(internal, send_to_all, channel, args,
+                                           ID());
   }
 }
 

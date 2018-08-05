@@ -34,13 +34,15 @@ IPC_SYNC_MESSAGE_ROUTED2_1(AtomFrameHostMsg_Message_Sync,
                            base::ListValue /* arguments */,
                            base::ListValue /* result */)
 
-IPC_MESSAGE_ROUTED4(AtomFrameHostMsg_Message_To,
+IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
+                    bool /* internal */,
                     bool /* send_to_all */,
                     int32_t /* web_contents_id */,
                     std::string /* channel */,
                     base::ListValue /* arguments */)
 
-IPC_MESSAGE_ROUTED4(AtomFrameMsg_Message,
+IPC_MESSAGE_ROUTED5(AtomFrameMsg_Message,
+                    bool /* internal */,
                     bool /* send_to_all */,
                     std::string /* channel */,
                     base::ListValue /* arguments */,
