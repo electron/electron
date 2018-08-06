@@ -9,7 +9,6 @@
 
 namespace net {
 class URLRequestContext;
-class URLRequestJobFactory;
 }  // namespace net
 
 namespace brightray {
@@ -20,7 +19,6 @@ class URLRequestContextGetterFactory {
   virtual ~URLRequestContextGetterFactory() {}
 
   virtual net::URLRequestContext* Create() = 0;
-  virtual net::URLRequestJobFactory* job_factory() = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetterFactory);

@@ -74,7 +74,6 @@ BrowserContext::~BrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
-  weak_factory_.InvalidateWeakPtrs();
   io_handle_->ShutdownOnUIThread();
 }
 

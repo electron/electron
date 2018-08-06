@@ -19,7 +19,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter_observer.h"
 
 namespace base {
 class DictionaryValue;
@@ -114,8 +113,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = static_cast<const AtomURLRequestJobFactory*>(
+        request_context_getter->GetURLRequestContext()->job_factory());
     if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
@@ -159,13 +158,10 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = static_cast<const AtomURLRequestJobFactory*>(
+        request_context_getter->GetURLRequestContext()->job_factory());
     if (!job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;
-    // It is possible a protocol is handled but can not be intercepted.
-    if (!job_factory->HasProtocolHandler(scheme))
-      return PROTOCOL_FAIL;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
         isolate, request_context_getter.get(), handler);
     if (!job_factory->InterceptProtocol(scheme, std::move(protocol_handler)))

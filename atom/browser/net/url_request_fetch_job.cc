@@ -9,7 +9,6 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/net/request_context_factory.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"

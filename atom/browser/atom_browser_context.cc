@@ -129,7 +129,7 @@ AtomBrowserContext::GetFactoryForMainRequestContext(
   return new AtomMainRequestContextFactory(
       GetPath(), IsOffTheRecord(), use_cache_, user_agent_,
       GetCookieableSchemes(), protocol_handlers,
-      std::move(request_interceptors), GetWeakPtr());
+      std::move(request_interceptors), this);
 }
 
 AtomBlobReader* AtomBrowserContext::GetBlobReader() {

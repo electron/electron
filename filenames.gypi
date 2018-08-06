@@ -288,8 +288,6 @@
       'atom/browser/net/atom_url_request.h',
       'atom/browser/net/atom_url_request_job_factory.cc',
       'atom/browser/net/atom_url_request_job_factory.h',
-      'atom/browser/net/http_protocol_handler.cc',
-      'atom/browser/net/http_protocol_handler.h',
       'atom/browser/net/js_asker.cc',
       'atom/browser/net/js_asker.h',
       'atom/browser/net/request_context_factory.cc',

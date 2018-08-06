@@ -118,7 +118,8 @@ URLRequestContextGetter::URLRequestContextGetter(
     ResourceContext* resource_context)
     : factory_(factory),
       resource_context_(resource_context),
-      url_request_context_(nullptr) {
+      url_request_context_(nullptr),
+      context_shutting_down_(false) {
   // Must first be created on the UI thread.
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 }
@@ -131,15 +132,16 @@ URLRequestContextGetter::~URLRequestContextGetter() {
 void URLRequestContextGetter::NotifyContextShuttingDown() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  factory_.reset();
+  context_shutting_down_ = true;
   url_request_context_ = nullptr;
   net::URLRequestContextGetter::NotifyContextShuttingDown();
+  factory_.reset();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
-  if (factory_.get() && !url_request_context_) {
+  if (factory_.get() && !url_request_context_ && !context_shutting_down_) {
     url_request_context_ = factory_->Create();
     if (resource_context_) {
       resource_context_->request_context_ = url_request_context_;

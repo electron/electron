@@ -19,17 +19,16 @@ class HttpAuthPreferences;
 class HttpNetworkSession;
 class ProxyConfigService;
 class URLRequestContextStorage;
-class URLRequestJobFactory;
 }  // namespace net
 
 namespace brightray {
-class BrowserContext;
 class NetLog;
 class RequireCTDelegate;
 }  // namespace brightray
 
 namespace atom {
 
+class AtomBrowserContext;
 struct CookieDetails;
 
 class AtomMainRequestContextFactory
@@ -43,12 +42,11 @@ class AtomMainRequestContextFactory
       std::vector<std::string> cookieable_schemes,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector request_interceptors,
-      base::WeakPtr<brightray::BrowserContext> browser_context);
+      AtomBrowserContext* browser_context);
   ~AtomMainRequestContextFactory() override;
 
   // URLRequestContextGetterFactory:
   net::URLRequestContext* Create() override;
-  net::URLRequestJobFactory* job_factory() override { return job_factory_; }
 
  private:
   // Notify cookie changes on the UI thread.
@@ -67,7 +65,7 @@ class AtomMainRequestContextFactory
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector request_interceptors_;
   brightray::NetLog* net_log_;
-  net::URLRequestJobFactory* job_factory_;
+  AtomBrowserContext* browser_context_;
 
   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
   std::unique_ptr<brightray::RequireCTDelegate> ct_delegate_;
@@ -78,7 +76,6 @@ class AtomMainRequestContextFactory
   std::unique_ptr<net::CookieChangeSubscription> cookie_change_sub_;
   std::unique_ptr<net::URLRequestContext> url_request_context_;
 
-  base::WeakPtr<brightray::BrowserContext> browser_context_;
   base::WeakPtrFactory<AtomMainRequestContextFactory> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomMainRequestContextFactory);
