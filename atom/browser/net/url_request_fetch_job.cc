@@ -9,6 +9,7 @@
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/request_context_factory.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
 #include "native_mate/dictionary.h"
@@ -93,12 +94,13 @@ void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
   if (options.Get("session", &val)) {
     if (val->IsNull()) {
       // We have to create the URLRequestContextGetter on UI thread.
+      url_request_context_getter_ =
+          new brightray::URLRequestContextGetter(nullptr, nullptr);
     } else {
       mate::Handle<api::Session> session;
       if (mate::ConvertFromV8(isolate, val, &session) && !session.IsEmpty()) {
         AtomBrowserContext* browser_context = session->browser_context();
-        url_request_context_getter_ =
-            browser_context->url_request_context_getter();
+        url_request_context_getter_ = browser_context->GetRequestContext();
       }
     }
   }
@@ -163,6 +165,8 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
       request()->extra_request_headers().ToString());
 
   fetcher_->Start();
+
+  url_request_context_getter_ = nullptr;
 }
 
 void URLRequestFetchJob::HeadersCompleted() {

@@ -246,7 +246,7 @@ class ResolveProxyHelper {
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->url_request_context_getter();
+        browser_context->GetRequestContext();
     context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE, base::BindOnce(&ResolveProxyHelper::ResolveProxy,
                                   base::Unretained(this), context_getter, url));
@@ -599,10 +599,9 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(
-          &SetDevToolsNetworkEmulationClientIdInIO,
-          base::RetainedRef(browser_context_->url_request_context_getter()),
-          devtools_network_emulation_client_id_));
+      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
+                     base::RetainedRef(browser_context_->GetRequestContext()),
+                     devtools_network_emulation_client_id_));
 }
 
 void Session::DisableNetworkEmulation() {
@@ -611,10 +610,9 @@ void Session::DisableNetworkEmulation() {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(
-          &SetDevToolsNetworkEmulationClientIdInIO,
-          base::RetainedRef(browser_context_->url_request_context_getter()),
-          std::string()));
+      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
+                     base::RetainedRef(browser_context_->GetRequestContext()),
+                     std::string()));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

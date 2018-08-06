@@ -4,6 +4,8 @@
 
 #include "brightray/browser/url_request_context_getter.h"
 
+#include <vector>
+
 #include "base/task_scheduler/post_task.h"
 #include "brightray/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -122,7 +124,6 @@ URLRequestContextGetter::URLRequestContextGetter(
 }
 
 URLRequestContextGetter::~URLRequestContextGetter() {
-  DCHECK_CURRENTLY_ON(BrowserThread::IO);
   DCHECK(!factory_.get());
   DCHECK(!url_request_context_);
 }

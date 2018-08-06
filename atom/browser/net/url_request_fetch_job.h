@@ -11,6 +11,7 @@
 #include "content/browser/streams/stream.h"
 #include "content/browser/streams/stream_read_observer.h"
 #include "net/url_request/url_fetcher_delegate.h"
+#include "net/url_request/url_request_context_getter.h"
 
 namespace atom {
 

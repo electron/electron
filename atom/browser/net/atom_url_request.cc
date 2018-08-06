@@ -4,7 +4,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/net/atom_url_request.h"
+
 #include <string>
+
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
@@ -70,11 +72,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
     return nullptr;
   }
   scoped_refptr<brightray::URLRequestContextGetter> request_context_getter(
-      browser_context->url_request_context_getter());
-  DCHECK(request_context_getter);
-  if (!request_context_getter) {
-    return nullptr;
-  }
+      browser_context->GetRequestContext());
   scoped_refptr<AtomURLRequest> atom_url_request(new AtomURLRequest(delegate));
   if (content::BrowserThread::PostTask(
           content::BrowserThread::IO, FROM_HERE,

@@ -66,10 +66,6 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
       bool in_memory) override;
   std::string GetMediaDeviceIDSalt() override;
 
-  URLRequestContextGetter* url_request_context_getter() const {
-    return io_handle_->GetMainRequestContextGetter().get();
-  }
-
   void InitPrefs();
   PrefService* prefs() { return prefs_.get(); }
 

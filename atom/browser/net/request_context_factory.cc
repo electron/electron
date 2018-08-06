@@ -4,6 +4,8 @@
 
 #include "atom/browser/net/request_context_factory.h"
 
+#include <algorithm>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"

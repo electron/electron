@@ -49,9 +49,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         URLRequestContextGetterFactory* factory);
     content::ResourceContext* GetResourceContext() const;
     scoped_refptr<URLRequestContextGetter> GetMediaRequestContextGetter() const;
-    scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter() const {
-      return main_request_context_getter_;
-    }
 
     void ShutdownOnUIThread();
 

@@ -5,9 +5,11 @@
 #ifndef ATOM_BROWSER_NET_REQUEST_CONTEXT_FACTORY_H_
 #define ATOM_BROWSER_NET_REQUEST_CONTEXT_FACTORY_H_
 
-#include "brightray/browser/net/url_request_context_getter_factory.h"
+#include <string>
+#include <vector>
 
 #include "base/files/file_path.h"
+#include "brightray/browser/net/url_request_context_getter_factory.h"
 #include "content/public/browser/browser_context.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 
