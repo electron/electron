@@ -343,7 +343,8 @@ void InspectableWebContentsImpl::CloseDevTools() {
       managed_devtools_web_contents_.reset();
     }
     embedder_message_dispatcher_.reset();
-    web_contents_->Focus();
+    if (!IsGuest())
+      web_contents_->Focus();
   }
 }
 

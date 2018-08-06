@@ -81,7 +81,7 @@
   if (visible && devtools_docked_) {
     webContents->SetAllowOtherViews(true);
     devToolsWebContents->SetAllowOtherViews(true);
-  } else {
+  } else if (!inspectable_web_contents->IsGuest()) {
     webContents->SetAllowOtherViews(false);
   }
 
