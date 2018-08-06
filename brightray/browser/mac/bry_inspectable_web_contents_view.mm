@@ -32,11 +32,17 @@
              name:NSWindowDidBecomeMainNotification
            object:nil];
 
-  auto* contents =
-      inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
-  auto contentsView = contents->GetNativeView();
-  [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-  [self addSubview:contentsView];
+  if (inspectableWebContentsView_->inspectable_web_contents()->IsGuest()) {
+    fake_view_.reset([[NSView alloc] init]);
+    [fake_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [self addSubview:fake_view_];
+  } else {
+    auto* contents = inspectableWebContentsView_->inspectable_web_contents()
+                         ->GetWebContents();
+    auto contentsView = contents->GetNativeView();
+    [contentsView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [self addSubview:contentsView];
+  }
 
   // See https://code.google.com/p/chromium/issues/detail?id=348490.
   [self setWantsLayer:YES];
@@ -194,7 +200,7 @@
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
-  if (!inspectable_web_contents)
+  if (!inspectable_web_contents || inspectable_web_contents->IsGuest())
     return;
   auto* webContents = inspectable_web_contents->GetWebContents();
   auto webContentsView = webContents->GetNativeView();

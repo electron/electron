@@ -448,7 +448,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
                                             mate::Handle<api::Session> session,
                                             const mate::Dictionary& options) {
   Observe(web_contents);
-  InitWithWebContents(web_contents, session->browser_context());
+  InitWithWebContents(web_contents, session->browser_context(), IsGuest());
 
   managed_web_contents()->GetView()->SetDelegate(this);
 

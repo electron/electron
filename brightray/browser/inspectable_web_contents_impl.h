@@ -39,7 +39,7 @@ class InspectableWebContentsImpl
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  explicit InspectableWebContentsImpl(content::WebContents*);
+  InspectableWebContentsImpl(content::WebContents* web_contents, bool is_guest);
   ~InspectableWebContentsImpl() override;
 
   InspectableWebContentsView* GetView() const override;
@@ -48,6 +48,7 @@ class InspectableWebContentsImpl
 
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
+  bool IsGuest() const override;
   void SetDevToolsWebContents(content::WebContents* devtools) override;
   void SetDockState(const std::string& state) override;
   void ShowDevTools() override;
@@ -214,6 +215,7 @@ class InspectableWebContentsImpl
   // The external devtools assigned by SetDevToolsWebContents.
   content::WebContents* external_devtools_web_contents_ = nullptr;
 
+  bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
 
   using ExtensionsAPIs = std::map<std::string, std::string>;

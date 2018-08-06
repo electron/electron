@@ -202,15 +202,20 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
-    content::WebContents* web_contents)
+    content::WebContents* web_contents,
+    bool is_guest)
     : frontend_loaded_(false),
       can_dock_(true),
       delegate_(nullptr),
+      pref_service_(
+          static_cast<BrowserContext*>(web_contents->GetBrowserContext())
+              ->prefs()),
       web_contents_(web_contents),
+      is_guest_(is_guest),
+      view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
-  auto* context =
-      static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
-  pref_service_ = context->prefs();
+  if (is_guest)
+    return;
   auto* bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict) {
     DictionaryToRect(*bounds_dict, &devtools_bounds_);
@@ -235,8 +240,6 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
-
-  view_.reset(CreateInspectableContentsView(this));
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
@@ -280,6 +283,10 @@ void InspectableWebContentsImpl::SetDelegate(
 InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate()
     const {
   return delegate_;
+}
+
+bool InspectableWebContentsImpl::IsGuest() const {
+  return is_guest_;
 }
 
 void InspectableWebContentsImpl::SetDockState(const std::string& state) {
