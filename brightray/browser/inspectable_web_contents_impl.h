@@ -49,6 +49,7 @@ class InspectableWebContentsImpl
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
   bool IsGuest() const override;
+  void ReleaseWebContents() override;
   void SetDevToolsWebContents(content::WebContents* devtools) override;
   void SetDockState(const std::string& state) override;
   void ShowDevTools() override;

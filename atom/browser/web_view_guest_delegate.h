@@ -40,9 +40,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   void Initialize(api::WebContents* api_web_contents);
 
-  // Called when the WebContents is going to be destroyed.
-  void Destroy();
-
   // Used to toggle autosize mode for this GuestView, and set both the automatic
   // and normal sizes.
   void SetSize(const SetSizeParams& params);

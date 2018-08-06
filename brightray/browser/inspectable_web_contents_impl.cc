@@ -289,6 +289,10 @@ bool InspectableWebContentsImpl::IsGuest() const {
   return is_guest_;
 }
 
+void InspectableWebContentsImpl::ReleaseWebContents() {
+  web_contents_.release();
+}
+
 void InspectableWebContentsImpl::SetDockState(const std::string& state) {
   if (state == "detach") {
     can_dock_ = false;

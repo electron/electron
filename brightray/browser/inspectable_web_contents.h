@@ -36,6 +36,7 @@ class InspectableWebContents {
   virtual InspectableWebContentsDelegate* GetDelegate() const = 0;
 
   virtual bool IsGuest() const = 0;
+  virtual void ReleaseWebContents() = 0;
   virtual void SetDevToolsWebContents(content::WebContents* devtools) = 0;
   virtual void SetDockState(const std::string& state) = 0;
   virtual void ShowDevTools() = 0;

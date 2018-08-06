@@ -37,13 +37,6 @@ void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
   Observe(api_web_contents->GetWebContents());
 }
 
-void WebViewGuestDelegate::Destroy() {
-  // Give the content module an opportunity to perform some cleanup.
-  ResetZoomController();
-  guest_host_->WillDestroy();
-  guest_host_ = nullptr;
-}
-
 void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
   bool enable_auto_size =
       params.enable_auto_size ? *params.enable_auto_size : auto_size_enabled_;

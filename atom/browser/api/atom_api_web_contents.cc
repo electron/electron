@@ -504,27 +504,18 @@ WebContents::~WebContents() {
   if (managed_web_contents()) {
     managed_web_contents()->GetView()->SetDelegate(nullptr);
 
-    // For webview we need to tell content module to do some cleanup work before
-    // destroying it.
-    if (type_ == WEB_VIEW)
-      guest_delegate_->Destroy();
-
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
-    if (type_ == WEB_VIEW) {
-      DestroyWebContents(false /* async */);
+    if (type_ == BROWSER_WINDOW && owner_window()) {
+      for (ExtendedWebContentsObserver& observer : observers_)
+        observer.OnCloseContents();
     } else {
-      if (type_ == BROWSER_WINDOW && owner_window()) {
-        for (ExtendedWebContentsObserver& observer : observers_)
-          observer.OnCloseContents();
-      } else {
-        DestroyWebContents(true /* async */);
-      }
-      // The WebContentsDestroyed will not be called automatically because we
-      // destroy the webContents in the next tick. So we have to manually
-      // call it here to make sure "destroyed" event is emitted.
-      WebContentsDestroyed();
+      DestroyWebContents(!IsGuest() /* async */);
     }
+    // The WebContentsDestroyed will not be called automatically because we
+    // destroy the webContents in the next tick. So we have to manually
+    // call it here to make sure "destroyed" event is emitted.
+    WebContentsDestroyed();
   }
 }
 
@@ -1075,7 +1066,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // 1. call webContents.destroy();
 // 2. garbage collection;
 // 3. user closes the window of webContents;
-// For webview only #1 will happen, for BrowserWindow both #1 and #3 may
+// 4. the embedder detaches the frame.
+// For webview only #4 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
 // by api::BrowserWindow.
@@ -1083,6 +1075,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // sure "destroyed" event is emitted. For #3, the content::WebContents will
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
+// For #4, the WebContents will be destroyed by embedder.
 void WebContents::WebContentsDestroyed() {
   // Cleanup relationships with other parts.
   RemoveFromWeakMap();
@@ -1092,6 +1085,13 @@ void WebContents::WebContentsDestroyed() {
   MarkDestroyed();
 
   Emit("destroyed");
+
+  // For guest view based on OOPIF, the WebContents is released by the embedder
+  // frame, and we need to clear the reference to the memory.
+  if (IsGuest() && managed_web_contents()) {
+    managed_web_contents()->ReleaseWebContents();
+    ResetManagedWebContents(false);
+  }
 
   // Destroy the native class in next tick.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
