@@ -24,8 +24,7 @@ class SpecialStoragePolicy;
 namespace brightray {
 
 class BrowserContext : public base::RefCounted<BrowserContext>,
-                       public content::BrowserContext,
-                       public brightray::URLRequestContextGetter::Delegate {
+                       public content::BrowserContext {
  public:
   // Get the BrowserContext according to its |partition| and |in_memory|,
   // empty pointer when be returned when there is no matching BrowserContext.
@@ -68,7 +67,7 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   std::string GetMediaDeviceIDSalt() override;
 
   URLRequestContextGetter* url_request_context_getter() const {
-    return url_request_getter_.get();
+    return io_handle_->GetMainRequestContextGetter().get();
   }
 
   void InitPrefs();
@@ -80,15 +79,14 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
 
   // Subclasses should override this to register custom preferences.
   virtual void RegisterPrefs(PrefRegistrySimple* pref_registry) {}
-
-  // URLRequestContextGetter::Delegate:
-  std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() override;
+  virtual URLRequestContextGetterFactory* GetFactoryForMainRequestContext(
+      content::ProtocolHandlerMap* protocol_handlers,
+      content::URLRequestInterceptorScopedVector request_interceptors) = 0;
 
   base::FilePath GetPath() const override;
 
  private:
   friend class base::RefCounted<BrowserContext>;
-  class ResourceContext;
 
   void RegisterInternalPrefs(PrefRegistrySimple* pref_registry);
 
@@ -117,11 +115,10 @@ class BrowserContext : public base::RefCounted<BrowserContext>,
   base::FilePath path_;
   bool in_memory_;
 
-  std::unique_ptr<ResourceContext> resource_context_;
-  scoped_refptr<URLRequestContextGetter> url_request_getter_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
+  URLRequestContextGetter::Handle* io_handle_;
 
   base::WeakPtrFactory<BrowserContext> weak_factory_;
 

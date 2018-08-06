@@ -93,10 +93,6 @@ void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
   if (options.Get("session", &val)) {
     if (val->IsNull()) {
       // We have to create the URLRequestContextGetter on UI thread.
-      url_request_context_getter_ = new brightray::URLRequestContextGetter(
-          this, nullptr, base::FilePath(), true,
-          BrowserThread::GetTaskRunnerForThread(BrowserThread::IO), nullptr,
-          content::URLRequestInterceptorScopedVector());
     } else {
       mate::Handle<api::Session> session;
       if (mate::ConvertFromV8(isolate, val, &session) && !session.IsEmpty()) {

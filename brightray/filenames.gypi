@@ -49,6 +49,7 @@
       'browser/media/media_stream_devices_controller.h',
       'browser/net/require_ct_delegate.cc',
       'browser/net/require_ct_delegate.h',
+      'browser/net/url_request_context_getter_factory.h',
       'browser/net_log.cc',
       'browser/net_log.h',
       'browser/network_delegate.cc',
