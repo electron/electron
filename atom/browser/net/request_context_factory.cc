@@ -23,7 +23,6 @@
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net/url_request_context_getter_factory.h"
 #include "brightray/browser/net_log.h"
-#include "brightray/common/switches.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
@@ -86,7 +85,7 @@ net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
   } else {
     int max_size = 0;
     base::StringToInt(
-        command_line->GetSwitchValueASCII(brightray::switches::kDiskCacheSize),
+        command_line->GetSwitchValueASCII(atom::switches::kDiskCacheSize),
         &max_size);
     base::FilePath cache_path = base_path.Append(FILE_PATH_LITERAL("Cache"));
     return new net::HttpCache::DefaultBackend(
@@ -256,21 +255,20 @@ net::URLRequestContext* AtomMainRequestContextFactory::Create() {
   }
 
   // --proxy-server
-  if (command_line.HasSwitch(brightray::switches::kNoProxyServer)) {
+  if (command_line.HasSwitch(switches::kNoProxyServer)) {
     storage_->set_proxy_resolution_service(
         net::ProxyResolutionService::CreateDirect());
-  } else if (command_line.HasSwitch(brightray::switches::kProxyServer)) {
+  } else if (command_line.HasSwitch(switches::kProxyServer)) {
     net::ProxyConfig proxy_config;
     proxy_config.proxy_rules().ParseFromString(
-        command_line.GetSwitchValueASCII(brightray::switches::kProxyServer));
+        command_line.GetSwitchValueASCII(switches::kProxyServer));
     proxy_config.proxy_rules().bypass_rules.ParseFromString(
-        command_line.GetSwitchValueASCII(
-            brightray::switches::kProxyBypassList));
+        command_line.GetSwitchValueASCII(switches::kProxyBypassList));
     storage_->set_proxy_resolution_service(
         net::ProxyResolutionService::CreateFixed(proxy_config));
-  } else if (command_line.HasSwitch(brightray::switches::kProxyPacUrl)) {
-    auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(GURL(
-        command_line.GetSwitchValueASCII(brightray::switches::kProxyPacUrl)));
+  } else if (command_line.HasSwitch(switches::kProxyPacUrl)) {
+    auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(
+        GURL(command_line.GetSwitchValueASCII(switches::kProxyPacUrl)));
     proxy_config.set_pac_mandatory(true);
     storage_->set_proxy_resolution_service(
         net::ProxyResolutionService::CreateFixed(proxy_config));
@@ -293,17 +291,16 @@ net::URLRequestContext* AtomMainRequestContextFactory::Create() {
 #endif
 
   // --auth-server-whitelist
-  if (command_line.HasSwitch(brightray::switches::kAuthServerWhitelist)) {
-    http_auth_preferences_->SetServerWhitelist(command_line.GetSwitchValueASCII(
-        brightray::switches::kAuthServerWhitelist));
+  if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
+    http_auth_preferences_->SetServerWhitelist(
+        command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
   }
 
   // --auth-negotiate-delegate-whitelist
-  if (command_line.HasSwitch(
-          brightray::switches::kAuthNegotiateDelegateWhitelist)) {
+  if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
     http_auth_preferences_->SetDelegateWhitelist(
         command_line.GetSwitchValueASCII(
-            brightray::switches::kAuthNegotiateDelegateWhitelist));
+            switches::kAuthNegotiateDelegateWhitelist));
   }
 
   auto auth_handler_factory = net::HttpAuthHandlerRegistryFactory::Create(
@@ -331,7 +328,7 @@ net::URLRequestContext* AtomMainRequestContextFactory::Create() {
   network_session_params.ignore_certificate_errors = false;
 
   // --disable-http2
-  if (command_line.HasSwitch(brightray::switches::kDisableHttp2))
+  if (command_line.HasSwitch(switches::kDisableHttp2))
     network_session_params.enable_http2 = false;
 
   // --ignore-certificate-errors
@@ -339,10 +336,10 @@ net::URLRequestContext* AtomMainRequestContextFactory::Create() {
     network_session_params.ignore_certificate_errors = true;
 
   // --host-rules
-  if (command_line.HasSwitch(brightray::switches::kHostRules)) {
+  if (command_line.HasSwitch(switches::kHostRules)) {
     host_mapping_rules_.reset(new net::HostMappingRules);
     host_mapping_rules_->SetRulesFromString(
-        command_line.GetSwitchValueASCII(brightray::switches::kHostRules));
+        command_line.GetSwitchValueASCII(switches::kHostRules));
     network_session_params.host_mapping_rules = *host_mapping_rules_.get();
   }
 
