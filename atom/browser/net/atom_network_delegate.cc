@@ -8,10 +8,14 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/stl_util.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
+#include "net/base/load_flags.h"
+#include "net/base/net_errors.h"
 #include "net/url_request/url_request.h"
 #include "services/network/throttling/throttling_network_transaction.h"
 
@@ -232,7 +236,15 @@ AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo(
 AtomNetworkDelegate::ResponseListenerInfo::ResponseListenerInfo() = default;
 AtomNetworkDelegate::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-AtomNetworkDelegate::AtomNetworkDelegate() {}
+AtomNetworkDelegate::AtomNetworkDelegate() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kIgnoreConnectionsLimit)) {
+    std::string value =
+        command_line->GetSwitchValueASCII(switches::kIgnoreConnectionsLimit);
+    ignore_connections_limit_domains_ = base::SplitString(
+        value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  }
+}
 
 AtomNetworkDelegate::~AtomNetworkDelegate() {}
 
@@ -263,9 +275,17 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     GURL* new_url) {
-  if (!base::ContainsKey(response_listeners_, kOnBeforeRequest))
-    return brightray::NetworkDelegate::OnBeforeURLRequest(request, callback,
-                                                          new_url);
+  if (!base::ContainsKey(response_listeners_, kOnBeforeRequest)) {
+    for (const auto& domain : ignore_connections_limit_domains_) {
+      if (request->url().DomainIs(domain)) {
+        // Allow unlimited concurrent connections.
+        request->SetPriority(net::MAXIMUM_PRIORITY);
+        request->SetLoadFlags(request->load_flags() | net::LOAD_IGNORE_LIMITS);
+        break;
+      }
+    }
+    return net::OK;
+  }
 
   return HandleResponseEvent(kOnBeforeRequest, request, callback, new_url);
 }
@@ -279,8 +299,7 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
                            kDevToolsEmulateNetworkConditionsClientId,
                        client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
-    return brightray::NetworkDelegate::OnBeforeStartTransaction(
-        request, callback, headers);
+    return net::OK;
 
   return HandleResponseEvent(kOnBeforeSendHeaders, request, callback, headers,
                              *headers);
@@ -289,10 +308,8 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
 void AtomNetworkDelegate::OnStartTransaction(
     net::URLRequest* request,
     const net::HttpRequestHeaders& headers) {
-  if (!base::ContainsKey(simple_listeners_, kOnSendHeaders)) {
-    brightray::NetworkDelegate::OnStartTransaction(request, headers);
+  if (!base::ContainsKey(simple_listeners_, kOnSendHeaders))
     return;
-  }
 
   HandleSimpleEvent(kOnSendHeaders, request, headers);
 }
@@ -304,8 +321,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
     scoped_refptr<net::HttpResponseHeaders>* override,
     GURL* allowed) {
   if (!base::ContainsKey(response_listeners_, kOnHeadersReceived))
-    return brightray::NetworkDelegate::OnHeadersReceived(
-        request, callback, original, override, allowed);
+    return net::OK;
 
   return HandleResponseEvent(
       kOnHeadersReceived, request, callback,
@@ -314,10 +330,8 @@ int AtomNetworkDelegate::OnHeadersReceived(
 
 void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
                                            const GURL& new_location) {
-  if (!base::ContainsKey(simple_listeners_, kOnBeforeRedirect)) {
-    brightray::NetworkDelegate::OnBeforeRedirect(request, new_location);
+  if (!base::ContainsKey(simple_listeners_, kOnBeforeRedirect))
     return;
-  }
 
   HandleSimpleEvent(kOnBeforeRedirect, request, new_location,
                     request->response_headers(), request->GetSocketAddress(),
@@ -326,10 +340,8 @@ void AtomNetworkDelegate::OnBeforeRedirect(net::URLRequest* request,
 
 void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
                                             int net_error) {
-  if (!base::ContainsKey(simple_listeners_, kOnResponseStarted)) {
-    brightray::NetworkDelegate::OnResponseStarted(request, net_error);
+  if (!base::ContainsKey(simple_listeners_, kOnResponseStarted))
     return;
-  }
 
   if (request->status().status() != net::URLRequestStatus::SUCCESS)
     return;
@@ -347,18 +359,17 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
     // Error event.
     OnErrorOccurred(request, started);
     return;
-  } else if (request->response_headers() &&
-             net::HttpResponseHeaders::IsRedirectResponseCode(
-                 request->response_headers()->response_code())) {
+  }
+
+  if (request->response_headers() &&
+      net::HttpResponseHeaders::IsRedirectResponseCode(
+          request->response_headers()->response_code())) {
     // Redirect event.
-    brightray::NetworkDelegate::OnCompleted(request, started);
     return;
   }
 
-  if (!base::ContainsKey(simple_listeners_, kOnCompleted)) {
-    brightray::NetworkDelegate::OnCompleted(request, started);
+  if (!base::ContainsKey(simple_listeners_, kOnCompleted))
     return;
-  }
 
   HandleSimpleEvent(kOnCompleted, request, request->response_headers(),
                     request->was_cached());
@@ -368,12 +379,75 @@ void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
   callbacks_.erase(request->identifier());
 }
 
+net::NetworkDelegate::AuthRequiredResponse AtomNetworkDelegate::OnAuthRequired(
+    net::URLRequest* request,
+    const net::AuthChallengeInfo& auth_info,
+    const AuthCallback& callback,
+    net::AuthCredentials* credentials) {
+  return AUTH_REQUIRED_RESPONSE_NO_ACTION;
+}
+
+bool AtomNetworkDelegate::OnCanGetCookies(const net::URLRequest& request,
+                                          const net::CookieList& cookie_list) {
+  return true;
+}
+
+bool AtomNetworkDelegate::OnCanSetCookie(
+    const net::URLRequest& request,
+    const net::CanonicalCookie& cookie_line,
+    net::CookieOptions* options) {
+  return true;
+}
+
+bool AtomNetworkDelegate::OnCanAccessFile(
+    const net::URLRequest& request,
+    const base::FilePath& original_path,
+    const base::FilePath& absolute_path) const {
+  return true;
+}
+
+bool AtomNetworkDelegate::OnCanEnablePrivacyMode(
+    const GURL& url,
+    const GURL& first_party_for_cookies) const {
+  return false;
+}
+
+bool AtomNetworkDelegate::OnAreExperimentalCookieFeaturesEnabled() const {
+  return true;
+}
+
+bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
+    const net::URLRequest& request,
+    const GURL& target_url,
+    const GURL& referrer_url) const {
+  return false;
+}
+
+// TODO(deepak1556) : Enable after hooking into the reporting service
+// https://crbug.com/704259
+bool AtomNetworkDelegate::OnCanQueueReportingReport(
+    const url::Origin& origin) const {
+  return false;
+}
+
+void AtomNetworkDelegate::OnCanSendReportingReports(
+    std::set<url::Origin> origins,
+    base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {}
+
+bool AtomNetworkDelegate::OnCanSetReportingClient(const url::Origin& origin,
+                                                  const GURL& endpoint) const {
+  return false;
+}
+
+bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
+                                                  const GURL& endpoint) const {
+  return false;
+}
+
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
                                           bool started) {
-  if (!base::ContainsKey(simple_listeners_, kOnErrorOccurred)) {
-    brightray::NetworkDelegate::OnCompleted(request, started);
+  if (!base::ContainsKey(simple_listeners_, kOnErrorOccurred))
     return;
-  }
 
   HandleSimpleEvent(kOnErrorOccurred, request, request->was_cached(),
                     request->status());

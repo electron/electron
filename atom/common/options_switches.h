@@ -119,6 +119,7 @@ extern const char kDisableHttpCache[];
 extern const char kAuthServerWhitelist[];
 extern const char kAuthNegotiateDelegateWhitelist[];
 extern const char kDiskCacheSize[];
+extern const char kIgnoreConnectionsLimit[];
 
 }  // namespace switches
 

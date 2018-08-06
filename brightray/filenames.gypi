@@ -52,8 +52,6 @@
       'browser/net/url_request_context_getter_factory.h',
       'browser/net_log.cc',
       'browser/net_log.h',
-      'browser/network_delegate.cc',
-      'browser/network_delegate.h',
       'browser/notification_delegate.h',
       'browser/notification_presenter.cc',
       'browser/notification_presenter.h',
