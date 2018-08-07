@@ -122,7 +122,8 @@ describe('webContents module', () => {
     })
   })
 
-  describe('isCurrentlyAudible() API', () => {
+  // Disabled because flaky. See #13969
+  xdescribe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
       w.loadURL(`file://${path.join(__dirname, 'fixtures', 'api', 'is-currently-audible.html')}`)
       w.show()
