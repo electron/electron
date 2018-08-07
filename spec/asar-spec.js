@@ -2,6 +2,7 @@ const assert = require('assert')
 const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const util = require('util')
 const {closeWindow} = require('./window-helpers')
 
 const nativeImage = require('electron').nativeImage
@@ -549,6 +550,60 @@ describe('asar package', function () {
       })
     })
 
+    describe('fs.exists', function () {
+      it('handles an existing file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        // eslint-disable-next-line
+        fs.exists(p, function (exists) {
+          assert.equal(exists, true)
+          done()
+        })
+      })
+
+      it('handles a non-existent file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        // eslint-disable-next-line
+        fs.exists(p, function (exists) {
+          assert.equal(exists, false)
+          done()
+        })
+      })
+
+      it('promisified version handles an existing file', (done) => {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        // eslint-disable-next-line
+        util.promisify(fs.exists)(p).then(exists => {
+          assert.equal(exists, true)
+          done()
+        })
+      })
+
+      it('promisified version handles a non-existent file', function (done) {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        // eslint-disable-next-line
+        util.promisify(fs.exists)(p).then(exists => {
+          assert.equal(exists, false)
+          done()
+        })
+      })
+    })
+
+    describe('fs.existsSync', function () {
+      it('handles an existing file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        assert.doesNotThrow(function () {
+          assert.equal(fs.existsSync(p), true)
+        })
+      })
+
+      it('handles a non-existent file', function () {
+        var p = path.join(fixtures, 'asar', 'a.asar', 'not-exist')
+        assert.doesNotThrow(function () {
+          assert.equal(fs.existsSync(p), false)
+        })
+      })
+    })
+
     describe('fs.access', function () {
       it('accesses a normal file', function (done) {
         var p = path.join(fixtures, 'asar', 'a.asar', 'file1')
@@ -644,6 +699,12 @@ describe('asar package', function () {
           done()
         })
       })
+
+      it('can be promisified', () => {
+        return util.promisify(ChildProcess.exec)('echo ' + echo + ' foo bar').then(({ stdout }) => {
+          assert.equal(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
+        })
+      })
     })
 
     describe('child_process.execSync', function () {
@@ -680,6 +741,12 @@ describe('asar package', function () {
         var output = execFileSync(echo, ['test'])
         assert.equal(String(output), 'test\n')
       })
+
+      it('can be promisified', () => {
+        return util.promisify(ChildProcess.execFile)(echo, ['test']).then(({ stdout }) => {
+          assert.equal(stdout, 'test\n')
+        })
+      })
     })
 
     describe('internalModuleReadFile', function () {
@@ -697,6 +764,18 @@ describe('asar package', function () {
       it('reads a normal file with unpacked files', function () {
         var p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
         assert.equal(internalModuleReadFile(p).toString().trim(), 'a')
+      })
+    })
+
+    describe('util.promisify', function () {
+      it('can promisify all fs functions', function () {
+        const originalFs = require('original-fs')
+
+        for (const key in originalFs) {
+          if (originalFs[key][util.promisify.custom] && !fs[key][util.promisify.custom]) {
+            assert(false, `fs.${key}[util.promisify.custom] missing`)
+          }
+        }
       })
     })
 
