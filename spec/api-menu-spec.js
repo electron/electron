@@ -42,6 +42,12 @@ describe('Menu module', () => {
       }).to.not.throw()
     })
 
+    it('returns 0 item count for empty objects ', () => {
+      const menu = Menu.buildFromTemplate([{}, {}])
+      const items = menu.getItemCount()
+      expect(items).to.equal(0)
+    })
+
     describe('Menu sorting and building', () => {
       describe('sorts groups', () => {
         it('does a simple sort', () => {
