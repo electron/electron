@@ -191,6 +191,7 @@ group("electron") {
 
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
+  configs += [ "//third_party/electron_node:node_internals" ]
 
   public_configs = [
     ":branding",
@@ -200,7 +201,7 @@ static_library("electron_lib") {
   deps = [
     ":atom_js2c",
     "brightray",
-    "build/node",
+    "//third_party/electron_node:node_lib",
     "native_mate",
     "//base",
     "//base:i18n",
@@ -436,20 +437,6 @@ if (is_mac) {
     ]
   }
 
-  if (is_component_build) {
-    bundle_data("electron_framework_libraries") {
-      public_deps = [
-        "build/node",
-      ]
-      sources = [
-        "$root_out_dir/libnode.dylib",
-      ]
-      outputs = [
-        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
-      ]
-    }
-  }
-
   bundle_data("electron_crashpad_helper") {
     sources = [
       "$root_out_dir/crashpad_handler",
@@ -477,9 +464,6 @@ if (is_mac) {
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
-    }
-    if (is_component_build) {
-      deps += [ ":electron_framework_libraries" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
     extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework" ]

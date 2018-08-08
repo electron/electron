@@ -43,7 +43,7 @@ phases:
   - bash: |
       set +e
       cd src
-      ninja -C out/Default electron/build/node:headers
+      ninja -C out/Default third_party/electron_node:headers
       export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
       (cd electron/spec && npm install)
       ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging

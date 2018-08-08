@@ -4,7 +4,7 @@ vars = {
   'libchromiumcontent_revision':
     'd24e0218be60fcfa64ce372f8a21c971f9da066c',
   'node_version':
-    'v10.2.0-37-gbf0e061ddc',
+    'e50ae507d74afa687c4699211d21a0f31ebca6e2',
 
   'chromium_git':
     'https://chromium.googlesource.com',
