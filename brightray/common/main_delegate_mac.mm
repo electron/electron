@@ -25,32 +25,21 @@ base::FilePath GetFrameworksPath() {
   return MainApplicationBundlePath().Append("Contents").Append("Frameworks");
 }
 
-base::FilePath GetResourcesPakFilePath(NSString* name) {
-  auto path = [base::mac::FrameworkBundle() pathForResource:name ofType:@"pak"];
-  return base::mac::NSStringToFilePath(path);
-}
-
 }  // namespace
 
-void LoadCommonResources() {
-  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
-  bundle.AddDataPackFromPath(GetResourcesPakFilePath(@"content_shell"),
-                             ui::GetSupportedScaleFactors()[0]);
-  bundle.AddDataPackFromPath(GetResourcesPakFilePath(@"pdf_viewer_resources"),
-                             ui::GetSupportedScaleFactors()[0]);
-}
-
 void MainDelegate::OverrideFrameworkBundlePath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Framework.framework");
+  base::FilePath helper_path =
+      GetFrameworksPath().Append(GetApplicationName() + " Framework.framework");
 
   base::mac::SetOverrideFrameworkBundlePath(helper_path);
 }
 
 void MainDelegate::OverrideChildProcessPath() {
-  base::FilePath helper_path = GetFrameworksPath().Append(GetApplicationName() + " Helper.app")
-    .Append("Contents")
-    .Append("MacOS")
-    .Append(GetApplicationName() + " Helper");
+  base::FilePath helper_path = GetFrameworksPath()
+                                   .Append(GetApplicationName() + " Helper.app")
+                                   .Append("Contents")
+                                   .Append("MacOS")
+                                   .Append(GetApplicationName() + " Helper");
 
   PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }

@@ -75,7 +75,7 @@ void EventSubscriberBase::On(const std::string& event_name) {
   v8::HandleScope handle_scope(isolate_);
   auto fn_template = g_cached_template.Get(isolate_);
   auto event = mate::StringToV8(isolate_, event_name);
-  auto js_handler_data = new JSHandlerData(isolate_, this);
+  auto* js_handler_data = new JSHandlerData(isolate_, this);
   v8::Local<v8::Value> fn = internal::BindFunctionWith(
       isolate_, isolate_->GetCurrentContext(), fn_template->GetFunction(),
       js_handler_data->handle_.Get(isolate_), event);

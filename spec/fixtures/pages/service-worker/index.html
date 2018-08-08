@@ -13,6 +13,6 @@
       ipcRenderer.send('reload');
     }
   }).catch(function(error) {
-    ipcRenderer.send('error', error);
+    ipcRenderer.send('error', `${error.message}\n${error.stack}`);
   })
 </script>

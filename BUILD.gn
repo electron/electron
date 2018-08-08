@@ -1,0 +1,671 @@
+import("//build/config/locales.gni")
+import("//tools/grit/repack.gni")
+import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
+import("build/asar.gni")
+import("build/npm.gni")
+import("//pdf/features.gni")
+import("//build/config/win/manifest.gni")
+import("electron_paks.gni")
+import("//third_party/ffmpeg/ffmpeg_options.gni")
+
+if (is_mac) {
+  import("//build/config/mac/rules.gni")
+  import("//third_party/icu/config.gni")
+  import("//v8/gni/v8.gni")
+}
+
+if (is_linux) {
+  import("//build/config/linux/pkg_config.gni")
+
+  pkg_config("gio_unix") {
+    packages = [ "gio-unix-2.0" ]
+  }
+}
+
+declare_args() {
+  electron_project_name = "electron"
+  electron_product_name = "Electron"
+  electron_company_name = "GitHub, Inc"
+  electron_company_abbr = "github"
+  electron_version = "0.0.0-dev"
+
+  enable_desktop_capturer = true
+  enable_run_as_node = true
+  enable_osr = false
+}
+
+if (is_mas_build) {
+  assert(is_mac,
+         "It doesn't make sense to build a MAS build on a non-mac platform")
+}
+
+filenames_gypi =
+    exec_script("//build/gypi_to_gn.py",
+                [
+                  rebase_path("filenames.gypi"),
+                  "--replace=<(SHARED_INTERMEDIATE_DIR)=$target_gen_dir",
+                ],
+                "scope",
+                [ "filenames.gypi" ])
+
+config("branding") {
+  defines = [
+    "ATOM_PRODUCT_NAME=\"$electron_product_name\"",
+    "ATOM_PROJECT_NAME=\"$electron_project_name\"",
+  ]
+}
+
+config("features") {
+  defines = []
+  if (enable_desktop_capturer) {
+    defines += [ "ENABLE_DESKTOP_CAPTURER=1" ]
+  }
+  if (enable_run_as_node) {
+    defines += [ "ENABLE_RUN_AS_NODE=1" ]
+  }
+  if (enable_osr) {
+    defines += [ "ENABLE_OSR=1" ]
+  }
+}
+
+npm_action("atom_browserify_sandbox") {
+  deps = [
+    ":atom_js2c_copy",
+  ]
+
+  sandbox_args = [
+    "lib/sandboxed_renderer/init.js",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/electron.js:electron",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/fs.js:fs",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/os.js:os",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/path.js:path",
+    "-r",
+    "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
+  ]
+
+  inputs = [
+    "lib/sandboxed_renderer/init.js",
+    "lib/sandboxed_renderer/api/exports/electron.js",
+    "lib/sandboxed_renderer/api/exports/fs.js",
+    "lib/sandboxed_renderer/api/exports/os.js",
+    "lib/sandboxed_renderer/api/exports/path.js",
+    "lib/sandboxed_renderer/api/exports/child_process.js",
+  ]
+  outputs = [
+    "$target_gen_dir/js2c/preload_bundle.js",
+  ]
+
+  script = "browserify"
+  args = sandbox_args + [
+           "-o",
+           rebase_path(outputs[0]),
+         ]
+}
+
+npm_action("atom_browserify_isolated") {
+  deps = [
+    ":atom_js2c_copy",
+  ]
+
+  inputs = [
+    "lib/isolated_renderer/init.js",
+  ]
+  outputs = [
+    "$target_gen_dir/js2c/isolated_bundle.js",
+  ]
+
+  script = "browserify"
+  args = inputs + [
+           "-o",
+           rebase_path(outputs[0]),
+         ]
+}
+
+copy("atom_js2c_copy") {
+  sources = [
+    "lib/common/asar.js",
+    "lib/common/asar_init.js",
+  ]
+  outputs = [
+    "$target_gen_dir/js2c/{{source_file_part}}",
+  ]
+}
+
+action("atom_js2c") {
+  deps = [
+    ":atom_browserify_isolated",
+    ":atom_browserify_sandbox",
+    ":atom_js2c_copy",
+  ]
+
+  js2c_sources = filenames_gypi.js2c_sources
+
+  browserify_sources = [
+    "$target_gen_dir/js2c/isolated_bundle.js",
+    "$target_gen_dir/js2c/preload_bundle.js",
+  ]
+
+  inputs = js2c_sources + browserify_sources
+
+  outputs = [
+    "$target_gen_dir/atom_natives.h",
+  ]
+
+  script = "tools/js2c.py"
+  args = [ rebase_path("//third_party/electron_node") ] +
+         rebase_path(outputs, root_build_dir) +
+         [ rebase_path("$target_gen_dir/js2c", root_build_dir) ]
+}
+
+asar("js2asar") {
+  sources = filenames_gypi.js_sources
+  if (enable_desktop_capturer) {
+    sources += [
+      "lib/browser/desktop-capturer.js",
+      "lib/renderer/api/desktop-capturer.js",
+    ]
+  }
+  outputs = [
+    "$root_out_dir/resources/electron.asar",
+  ]
+  root = "lib"
+}
+
+asar("app2asar") {
+  sources = filenames_gypi.default_app_sources
+  outputs = [
+    "$root_out_dir/resources/default_app.asar",
+  ]
+  root = "default_app"
+}
+
+group("electron") {
+  deps = [
+    ":electron_lib",
+  ]
+}
+
+static_library("electron_lib") {
+  configs += [ "//v8:external_startup_data" ]
+
+  public_configs = [
+    ":branding",
+    ":features",
+  ]
+
+  deps = [
+    ":atom_js2c",
+    "brightray",
+    "build/node",
+    "native_mate",
+    "//base",
+    "//base:i18n",
+    "//chrome/common:constants",
+    "//components/cdm/renderer",
+    "//components/network_session_configurator/common",
+    "//components/prefs",
+    "//components/printing/common",
+    "//components/security_state/content",
+    "//components/viz/service",
+    "//content/public/app:both",
+    "//content/public/child",
+    "//device/geolocation",
+    "//gin",
+    "//net:net_resources",
+    "//ppapi/host",
+    "//ppapi/proxy",
+    "//ppapi/shared_impl",
+    "//printing",
+    "//services/device/wake_lock/power_save_blocker",  # TODO: this requires a visibility patch to chromium src
+    "//skia",
+    "//third_party/WebKit/public:blink",
+    "//third_party/boringssl",
+    "//third_party/leveldatabase",
+    "//third_party/libyuv",
+    "//third_party/webrtc_overrides:init_webrtc",
+    "//ui/events:dom_keycode_converter",
+    "//ui/gl",
+    "//ui/views",
+    "//v8",
+  ]
+
+  include_dirs = [
+    "chromium_src",
+    ".",
+    "$target_gen_dir",
+
+    # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
+    # API of blink, then delete this include dir.
+    "//third_party/WebKit/Source",
+  ]
+
+  defines = []
+  libs = []
+
+  extra_source_filters = []
+  if (!is_linux) {
+    extra_source_filters += [
+      "*\bx/*",
+      "*_x11.h",
+      "*_x11.cc",
+      "*_gtk.h",
+      "*_gtk.cc",
+      "*\blibrary_loaders/*",
+    ]
+  }
+  if (!is_win) {
+    extra_source_filters += [
+      "*\bwin_*.h",
+      "*\bwin_*.cc",
+    ]
+  }
+  if (is_mac) {
+    extra_source_filters += [
+      "*_views.cc",
+      "*_views.h",
+      "*\bviews/*",
+      "*/autofill_popup.cc",
+      "*/autofill_popup.h",
+    ]
+  }
+
+  set_sources_assignment_filter(
+      sources_assignment_filter + extra_source_filters)
+  sources = filenames_gypi.lib_sources
+  set_sources_assignment_filter(sources_assignment_filter)
+
+  if (is_component_build) {
+    defines += [
+      # Import V8 symbols from shared library (node.dll / libnode.so)
+      "USING_V8_SHARED",
+      "USING_V8_PLATFORM_SHARED",
+      "USING_V8_BASE_SHARED",
+    ]
+  }
+
+  if (is_mac) {
+    deps += [
+      "//third_party/crashpad/crashpad/client",
+      "//ui/accelerated_widget_mac",
+    ]
+    include_dirs += [
+      # NOTE(nornagon): other chromium files use the full path to include
+      # crashpad; this is just here for compatibility between GN and GYP, so that
+      # the #includes can be agnostic about where crashpad is vendored.
+      "//third_party/crashpad",
+    ]
+    if (is_mas_build) {
+      deps -= [ "//third_party/crashpad/crashpad/client" ]
+      sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
+      sources -= [
+        "atom/browser/auto_updater_mac.mm",
+        "atom/common/crash_reporter/crash_reporter_mac.h",
+        "atom/common/crash_reporter/crash_reporter_mac.mm",
+      ]
+      defines += [ "MAS_BUILD" ]
+    } else {
+      libs += [
+        "Squirrel.framework",
+        "ReactiveCocoa.framework",
+        "Mantle.framework",
+      ]
+      cflags_objcc = [
+        "-F",
+        rebase_path("external_binaries", root_build_dir),
+      ]
+
+      # ReactiveCocoa which is used by Squirrel requires using __weak.
+      cflags_objcc += [ "-fobjc-weak" ]
+    }
+  }
+  if (is_linux) {
+    deps += [
+      "//build/config/linux/gtk",
+      "//chrome/browser/ui/libgtkui",
+      "//device/bluetooth",
+      "//ui/events/devices/x11",
+      "//ui/events/platform/x11",
+      "//ui/native_theme",
+      "//ui/views/controls/webview",
+      "//ui/wm",
+    ]
+    configs += [ ":gio_unix" ]
+    defines += [
+      # Disable warnings for g_settings_list_schemas.
+      "GLIB_DISABLE_DEPRECATION_WARNINGS",
+    ]
+    sources += filenames_gypi.lib_sources_linux
+    sources += filenames_gypi.lib_sources_nss
+  }
+  if (is_win) {
+    sources += filenames_gypi.lib_sources_win
+    libs += [ "dwmapi.lib" ]
+  }
+  if (is_linux || is_win) {
+    deps += [ "//third_party/breakpad:client" ]
+    include_dirs += [ "//third_party/breakpad" ]
+  }
+
+  if (enable_pdf) {
+    deps += [ "//pdf" ]
+  }
+
+  if (enable_run_as_node) {
+    sources += [
+      "atom/app/node_main.cc",
+      "atom/app/node_main.h",
+    ]
+  }
+
+  if (enable_osr) {
+    sources += [
+      "atom/browser/api/atom_api_web_contents_osr.cc",
+      "atom/browser/osr/osr_output_device.cc",
+      "atom/browser/osr/osr_output_device.h",
+      "atom/browser/osr/osr_render_widget_host_view.cc",
+      "atom/browser/osr/osr_render_widget_host_view.h",
+      "atom/browser/osr/osr_render_widget_host_view_mac.mm",
+      "atom/browser/osr/osr_view_proxy.cc",
+      "atom/browser/osr/osr_view_proxy.h",
+      "atom/browser/osr/osr_web_contents_view.cc",
+      "atom/browser/osr/osr_web_contents_view.h",
+      "atom/browser/osr/osr_web_contents_view_mac.mm",
+    ]
+    deps += [
+      "//components/viz/service",
+      "//ui/compositor",
+    ]
+  }
+
+  if (enable_desktop_capturer) {
+    deps += [ "//third_party/webrtc/modules/desktop_capture" ]
+    sources += [
+      "atom/browser/api/atom_api_desktop_capturer.cc",
+      "atom/browser/api/atom_api_desktop_capturer.h",
+    ]
+  }
+}
+
+electron_paks("packed_resources") {
+  if (is_mac) {
+    output_dir = "$root_gen_dir/electron_repack"
+    copy_data_to_bundle = true
+  } else {
+    output_dir = root_out_dir
+  }
+}
+
+if (is_mac) {
+  electron_framework_name = electron_product_name + " Framework"
+  electron_helper_name = electron_product_name + " Helper"
+  electron_login_helper_name = electron_product_name + " Login Helper"
+  electron_framework_version = "A"
+  electron_mac_bundle_id = "com.$electron_company_abbr.$electron_project_name"
+
+  mac_xib_bundle_data("electron_xibs") {
+    sources = [
+      "atom/common/resources/mac/MainMenu.xib",
+    ]
+  }
+
+  bundle_data("electron_framework_resources") {
+    public_deps = [
+      ":packed_resources",
+    ]
+    sources = []
+    if (icu_use_data_file) {
+      sources += [ "$root_out_dir/icudtl.dat" ]
+      public_deps += [ "//third_party/icu:icudata" ]
+    }
+    if (v8_use_external_startup_data) {
+      sources += [ "$root_out_dir/natives_blob.bin" ]
+      public_deps += [ "//v8" ]
+      if (use_v8_context_snapshot) {
+        sources += [ "$root_out_dir/v8_context_snapshot.bin" ]
+        public_deps += [ "//tools/v8_context_snapshot" ]
+      } else {
+        sources += [ "$root_out_dir/snapshot_blob.bin" ]
+      }
+    }
+    outputs = [
+      "{{bundle_resources_dir}}/{{source_file_part}}",
+    ]
+  }
+
+  if (is_component_build) {
+    bundle_data("electron_framework_libraries") {
+      public_deps = [
+        "build/node",
+      ]
+      sources = [
+        "$root_out_dir/libnode.dylib",
+      ]
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+    }
+  }
+
+  bundle_data("electron_crashpad_helper") {
+    sources = [
+      "$root_out_dir/crashpad_handler",
+    ]
+
+    outputs = [
+      "{{bundle_resources_dir}}/{{source_file_part}}",
+    ]
+
+    public_deps = [
+      "//third_party/crashpad/crashpad/handler:crashpad_handler",
+    ]
+  }
+
+  mac_framework_bundle("electron_framework") {
+    output_name = electron_framework_name
+    framework_version = electron_framework_version
+    framework_contents = [ "Resources" ]
+    public_deps = [
+      ":electron_lib",
+    ]
+    deps = [
+      ":electron_framework_resources",
+      ":electron_xibs",
+    ]
+    if (!is_mas_build) {
+      deps += [ ":electron_crashpad_helper" ]
+    }
+    if (is_component_build) {
+      deps += [ ":electron_framework_libraries" ]
+    }
+    info_plist = "atom/common/resources/mac/Info.plist"
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework" ]
+
+    include_dirs = [ "." ]
+    sources = filenames_gypi.framework_sources
+
+    libs = [
+      "Carbon.framework",
+      "QuartzCore.framework",
+      "Quartz.framework",
+      "Security.framework",
+      "SecurityInterface.framework",
+      "ServiceManagement.framework",
+      "StoreKit.framework",
+    ]
+    ldflags = [
+      "-F",
+      rebase_path("external_binaries", root_build_dir),
+      "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
+      "-rpath",
+      "@loader_path/Libraries",
+    ]
+    if (is_component_build) {
+      ldflags += [
+        "-rpath",
+        "@executable_path/../../../../../..",
+      ]
+    }
+  }
+
+  mac_app_bundle("electron_helper_app") {
+    output_name = electron_helper_name
+    deps = [
+      ":electron_framework+link",
+    ]
+    sources = filenames_gypi.app_sources
+    include_dirs = [ "." ]
+    info_plist = "atom/renderer/resources/mac/Info.plist"
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+    ldflags = [
+      "-rpath",
+      "@executable_path/../../..",
+    ]
+  }
+
+  bundle_data("electron_app_framework_bundle_data") {
+    sources = [
+      "$root_out_dir/$electron_framework_name.framework",
+      "$root_out_dir/$electron_helper_name.app",
+    ]
+    if (!is_mas_build) {
+      sources += [
+        "external_binaries/Mantle.framework",
+        "external_binaries/ReactiveCocoa.framework",
+        "external_binaries/Squirrel.framework",
+      ]
+    }
+    outputs = [
+      "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}",
+    ]
+    public_deps = [
+      ":electron_framework+link",
+      ":electron_helper_app",
+    ]
+  }
+
+  mac_app_bundle("electron_login_helper") {
+    output_name = electron_login_helper_name
+    sources = filenames_gypi.login_helper_sources
+    include_dirs = [ "." ]
+    libs = [ "AppKit.framework" ]
+    info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
+    extra_substitutions =
+        [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.loginhelper" ]
+  }
+
+  bundle_data("electron_login_helper_app") {
+    public_deps = [
+      ":electron_login_helper",
+    ]
+    sources = [
+      "$root_out_dir/$electron_login_helper_name.app",
+    ]
+    outputs = [
+      "{{bundle_contents_dir}}/Library/LoginItems",
+    ]
+  }
+
+  bundle_data("electron_app_resources") {
+    public_deps = [
+      ":app2asar",
+      ":js2asar",
+    ]
+    sources = [
+      "$root_out_dir/resources/default_app.asar",
+      "$root_out_dir/resources/electron.asar",
+    ]
+    outputs = [
+      "{{bundle_resources_dir}}/{{source_file_part}}",
+    ]
+  }
+
+  mac_app_bundle("electron_app") {
+    output_name = electron_product_name
+    sources = filenames_gypi.app_sources
+    include_dirs = [ "." ]
+    deps = [
+      ":electron_app_framework_bundle_data",
+      ":electron_app_resources",
+    ]
+    if (is_mas_build) {
+      deps += [ ":electron_login_helper_app" ]
+    }
+    info_plist = "atom/browser/resources/mac/Info.plist"
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id" ]
+    ldflags = [
+      "-rpath",
+      "@executable_path/../Frameworks",
+    ]
+  }
+} else {
+  windows_manifest("electron_app_manifest") {
+    sources = [
+      as_invoker_manifest,
+      common_controls_manifest,
+      default_compatibility_manifest,
+    ]
+  }
+
+  executable("electron_app") {
+    output_name = electron_project_name
+    sources = filenames_gypi.app_sources
+    include_dirs = [ "." ]
+    deps = [
+      ":app2asar",
+      ":electron_app_manifest",
+      ":electron_lib",
+      ":js2asar",
+      ":packed_resources",
+      "//build/config:exe_and_shlib_deps",
+      "//content:sandbox_helper_win",
+      "//ui/strings",
+    ]
+
+    public_deps = [
+      "//tools/v8_context_snapshot:v8_context_snapshot",
+    ]
+
+    if (is_win) {
+      sources += [
+        # TODO: we should be generating our .rc files more like how chrome does
+        "atom/browser/resources/win/atom.ico",
+        "atom/browser/resources/win/atom.rc",
+        "atom/browser/resources/win/resources.h",
+      ]
+
+      deps += [
+        # TODO: move non-windows specific deps into the non-windows-specific list
+        "//third_party/breakpad:breakpad_handler",
+        "//third_party/breakpad:breakpad_sender",
+        "//ui/native_theme:native_theme_browser",
+        "//ui/shell_dialogs",
+        "//ui/views/controls/webview",
+        "//ui/wm",
+        "//ui/wm/public",
+      ]
+
+      libs = [
+        "comctl32.lib",
+        "uiautomationcore.lib",
+        "wtsapi32.lib",
+      ]
+
+      configs += [ "//build/config/win:windowed" ]
+
+      ldflags = [
+        # TODO: these are for win7 compatibility, are there other things we need to do for that?
+        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-L1-1-0.DLL",
+        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL",
+      ]
+    }
+    if (is_linux) {
+      if (!is_component_build && is_component_ffmpeg) {
+        configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
+      }
+    }
+  }
+}

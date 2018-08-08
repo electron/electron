@@ -23,7 +23,6 @@
 /brightray/brightray.v12.suo
 /brightray/brightray.vcxproj*
 /brightray/brightray.xcodeproj/
-/build/
 /dist/
 /external_binaries/
 /out/
@@ -40,6 +39,14 @@
 /vendor/llvm/
 /vendor/npm/
 /vendor/python_26/
+/vendor/native_mksnapshot
+/vendor/LICENSES.chromium.html
 node_modules/
 SHASUMS256.txt
-**/package-lock.json
+**/yarn.lock
+compile_commands.json
+.envrc
+
+# npm package
+/npm/dist
+/npm/path.txt

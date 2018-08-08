@@ -14,12 +14,13 @@
     'debug_http2': 'false',
     'debug_nghttp2': 'false',
     # XXX(alexeykuzmin): Must match the clang version we use. See `clang -v`.
-    'llvm_version': '6.0',
+    'llvm_version': '7.0',
     'python': 'python',
     'openssl_fips': '',
     'openssl_no_asm': 1,
     'use_openssl_def': 0,
-    'OPENSSL_PRODUCT': 'libopenssl.a',
+    'openssl_product': 'libopenssl.a',
+    'node_debug_lib': 'false',
     'node_release_urlbase': 'https://atom.io/download/electron',
     'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
     'node_target_type': 'shared_library',
@@ -44,7 +45,7 @@
     'uv_library': 'static_library',
     'uv_parent_path': 'vendor/node/deps/uv',
     'uv_use_dtrace': 'false',
-    'V8_BASE': '',
+    'v8_base': '',
     'v8_postmortem_support': 'false',
     'v8_enable_i18n_support': 'false',
     'v8_enable_inspector': '1',
@@ -52,7 +53,7 @@
   # Settings to compile node under Windows.
   'target_defaults': {
     'target_conditions': [
-      ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node", "zlib", "nghttp2"]', {
+      ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node_lib", "zlib", "nghttp2"]', {
         'msvs_disabled_warnings': [
           4003,  # not enough actual parameters for macro 'V'
           4013,  # 'free' undefined; assuming extern returning int
@@ -61,6 +62,7 @@
           4055,  # 'type cast' : from data pointer 'void *' to function pointer
           4057,  # 'function' : 'volatile LONG *' differs in indirection to slightly different base types from 'unsigned long *'
           4065,  # switch statement contains 'default' but no 'case' labels
+          4129,  # unrecognized character escape sequence
           4189,  #
           4131,  # uses old-style declarator
           4133,  # incompatible types
@@ -74,6 +76,7 @@
           4232,  # address of dllimport 'free' is not static, identity not guaranteed
           4291,  # no matching operator delete found
           4295,  # array is too small to include a terminating null character
+          4309,  # 'static_cast': truncation of constant value
           4311,  # 'type cast': pointer truncation from 'void *const ' to 'unsigned long'
           4389,  # '==' : signed/unsigned mismatch
           4456,  # declaration of 'm' hides previous local declaration
@@ -108,6 +111,7 @@
             '-Wno-gnu-folding-constant',
             '-Wno-shift-negative-value',
             '-Wno-varargs', # https://git.io/v6Olj
+            '-Wno-unused-private-field',
           ],
         },
         'conditions': [
@@ -132,11 +136,13 @@
               '-Wno-string-plus-int',
               '-Wno-shift-negative-value',
               '-Wno-reserved-user-defined-literal',
+              '-Wno-implicit-function-declaration',
+              '-Wno-long-long',
             ],
           }],
         ],
       }],
-      ['_target_name=="node"', {
+      ['_target_name=="node_lib"', {
         'include_dirs': [
           '<(libchromiumcontent_src_dir)',
           '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
@@ -149,6 +155,7 @@
           'BUILDING_V8_SHARED',
           'BUILDING_V8_PLATFORM_SHARED',
           'BUILDING_V8_BASE_SHARED',
+          'NODE_WITHOUT_NODE_OPTIONS',
         ],
         'conditions': [
           ['OS=="mac" and libchromiumcontent_component==0', {
@@ -173,6 +180,22 @@
               '-ldbghelp.lib',
               '-lshlwapi.lib',
             ],
+            'msvs_settings': {
+              # Change location of some hard-coded paths.
+              'VCLinkerTool': {
+                'AdditionalOptions!': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libuv<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\libopenssl<(openssl_product)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\lib\\<(openssl_product)',
+                ],
+                'AdditionalOptions': [
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\zlib\\zlib<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\uv\\libuv<(STATIC_LIB_SUFFIX)',
+                  '/WHOLEARCHIVE:<(PRODUCT_DIR)\\obj\\vendor\\node\\deps\\openssl\\openssl<(STATIC_LIB_SUFFIX)',
+                ],
+              },
+            },
           }],
           ['OS=="linux" and libchromiumcontent_component==0', {
             # Prevent the linker from stripping symbols.
@@ -197,6 +220,11 @@
         'cflags': [
           '-fvisibility=hidden',
         ],
+      }],
+      ['_target_name=="openssl-cli"', {
+        'ldflags!': [
+          '-nostdlib++',
+        ]
       }],
       ['_target_name=="libuv"', {
         'conditions': [
@@ -245,7 +273,7 @@
           }],  # OS=="win"
         ],
       }],
-      ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node"]', {
+      ['OS=="linux" and _toolset=="target" and _target_name in ["dump_syms", "node_lib"]', {
         'conditions': [
           ['libchromiumcontent_component==0', {
             'libraries': [

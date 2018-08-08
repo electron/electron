@@ -13,9 +13,9 @@
 #include <algorithm>
 
 #include "base/posix/eintr_wrapper.h"
-#include "vendor/breakpad/src/client/linux/minidump_writer/directory_reader.h"
-#include "vendor/breakpad/src/common/linux/linux_libc_support.h"
-#include "vendor/breakpad/src/common/memory.h"
+#include "breakpad/src/client/linux/minidump_writer/directory_reader.h"
+#include "breakpad/src/common/linux/linux_libc_support.h"
+#include "breakpad/src/common/memory_allocator.h"
 
 #include "third_party/lss/linux_syscall_support.h"
 
@@ -23,7 +23,11 @@
 // where we either a) know the call cannot fail, or b) there is nothing we
 // can do when a call fails, we mark the return code as ignored. This avoids
 // spurious compiler warnings.
-#define IGNORE_RET(x) do { if (x); } while (0)
+#define IGNORE_RET(x) \
+  do {                \
+    if (x)            \
+      ;               \
+  } while (0)
 
 namespace crash_reporter {
 
@@ -68,7 +72,7 @@ void my_uint64tos(char* output, uint64_t i, unsigned i_len) {
 }
 
 // Converts a struct timeval to milliseconds.
-uint64_t kernel_timeval_to_ms(struct kernel_timeval *tv) {
+uint64_t kernel_timeval_to_ms(struct kernel_timeval* tv) {
   uint64_t ret = tv->tv_sec;  // Avoid overflow by explicitly using a uint64_t.
   ret *= 1000;
   ret += tv->tv_usec / 1000;
@@ -116,8 +120,7 @@ class MimeWriter {
                            size_t msg_data_size);
 
   // Append key/value pair.
-  void AddPairString(const char* msg_type,
-                     const char* msg_data) {
+  void AddPairString(const char* msg_type, const char* msg_data) {
     AddPairData(msg_type, my_strlen(msg_type), msg_data, my_strlen(msg_data));
   }
 
@@ -145,16 +148,14 @@ class MimeWriter {
  protected:
   void AddItem(const void* base, size_t size);
   // Minor performance trade-off for easier-to-maintain code.
-  void AddString(const char* str) {
-    AddItem(str, my_strlen(str));
-  }
+  void AddString(const char* str) { AddItem(str, my_strlen(str)); }
   void AddItemWithoutTrailingSpaces(const void* base, size_t size);
 
   struct kernel_iovec iov_[kIovCapacity];
-  int iov_index_;
+  int iov_index_ = 0;
 
   // Output file descriptor.
-  int fd_;
+  int fd_ = -1;
 
   const char* const mime_boundary_;
 
@@ -163,13 +164,9 @@ class MimeWriter {
 };
 
 MimeWriter::MimeWriter(int fd, const char* const mime_boundary)
-    : iov_index_(0),
-      fd_(fd),
-      mime_boundary_(mime_boundary) {
-}
+    : fd_(fd), mime_boundary_(mime_boundary) {}
 
-MimeWriter::~MimeWriter() {
-}
+MimeWriter::~MimeWriter() {}
 
 void MimeWriter::AddBoundary() {
   AddString(mime_boundary_);
@@ -234,7 +231,8 @@ void MimeWriter::AddPairDataInChunks(const char* msg_type,
   }
 }
 
-void MimeWriter::AddFileContents(const char* filename_msg, uint8_t* file_data,
+void MimeWriter::AddFileContents(const char* filename_msg,
+                                 uint8_t* file_data,
                                  size_t file_size) {
   AddString(g_form_data_msg);
   AddString(filename_msg);
@@ -257,12 +255,15 @@ void MimeWriter::AddItem(const void* base, size_t size) {
 }
 
 void MimeWriter::AddItemWithoutTrailingSpaces(const void* base, size_t size) {
-  AddItem(base, LengthWithoutTrailingSpaces(static_cast<const char*>(base),
-                                            size));
+  AddItem(base,
+          LengthWithoutTrailingSpaces(static_cast<const char*>(base), size));
 }
 
 void LoadDataFromFD(google_breakpad::PageAllocator* allocator,
-                    int fd, bool close_fd, uint8_t** file_data, size_t* size) {
+                    int fd,
+                    bool close_fd,
+                    uint8_t** file_data,
+                    size_t* size) {
   struct kernel_stat st;
   if (sys_fstat(fd, &st) != 0) {
     static const char msg[] = "Cannot upload crash dump: stat failed\n";
@@ -298,7 +299,9 @@ void LoadDataFromFD(google_breakpad::PageAllocator* allocator,
 
 void LoadDataFromFile(google_breakpad::PageAllocator* allocator,
                       const char* filename,
-                      int* fd, uint8_t** file_data, size_t* size) {
+                      int* fd,
+                      uint8_t** file_data,
+                      size_t* size) {
   // WARNING: this code runs in a compromised context. It may not call into
   // libc nor allocate memory normally.
   *fd = sys_open(filename, O_RDONLY, 0);
@@ -329,8 +332,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
   // where the boundary has two fewer leading '-' chars
   static const char header_msg[] =
       "--header=Content-Type: multipart/form-data; boundary=";
-  char* const header = reinterpret_cast<char*>(allocator->Alloc(
-      sizeof(header_msg) - 1 + strlen(mime_boundary) - 2 + 1));
+  char* const header = reinterpret_cast<char*>(
+      allocator->Alloc(sizeof(header_msg) - 1 + strlen(mime_boundary) - 2 + 1));
   memcpy(header, header_msg, sizeof(header_msg) - 1);
   memcpy(header + sizeof(header_msg) - 1, mime_boundary + 2,
          strlen(mime_boundary) - 2);
@@ -339,26 +342,23 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
   // The --post-file argument to wget looks like:
   //   --post-file=/tmp/...
   static const char post_file_msg[] = "--post-file=";
-  char* const post_file = reinterpret_cast<char*>(allocator->Alloc(
-       sizeof(post_file_msg) - 1 + strlen(dumpfile) + 1));
+  char* const post_file = reinterpret_cast<char*>(
+      allocator->Alloc(sizeof(post_file_msg) - 1 + strlen(dumpfile) + 1));
   memcpy(post_file, post_file_msg, sizeof(post_file_msg) - 1);
   memcpy(post_file + sizeof(post_file_msg) - 1, dumpfile, strlen(dumpfile));
 
   static const char kWgetBinary[] = "/usr/bin/wget";
   const char* args[] = {
-    kWgetBinary,
-    header,
-    post_file,
-    info.upload_url,
-    "--timeout=60",  // Set a timeout so we don't hang forever.
-    "--tries=1",     // Don't retry if the upload fails.
-    "--quiet",       // Be silent.
-    "-O",            // output reply to /dev/null.
-    "/dev/fd/3",
-    NULL,
+      kWgetBinary,    header, post_file, info.upload_url,
+      "--timeout=60",  // Set a timeout so we don't hang forever.
+      "--tries=1",     // Don't retry if the upload fails.
+      "--quiet",       // Be silent.
+      "-O",            // output reply to /dev/null.
+      "/dev/fd/3",    NULL,
   };
-  static const char msg[] = "Cannot upload crash dump: cannot exec "
-                            "/usr/bin/wget\n";
+  static const char msg[] =
+      "Cannot upload crash dump: cannot exec "
+      "/usr/bin/wget\n";
   execve(args[0], const_cast<char**>(args), environ);
   WriteLog(msg, sizeof(msg) - 1);
   sys__exit(1);
@@ -368,7 +368,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
 // ExecUploadProcessOrTerminate() to finish. Returns the number of bytes written
 // to |fd| and save the written contents to |buf|.
 // |buf| needs to be big enough to hold |bytes_to_read| + 1 characters.
-size_t WaitForCrashReportUploadProcess(int fd, size_t bytes_to_read,
+size_t WaitForCrashReportUploadProcess(int fd,
+                                       size_t bytes_to_read,
                                        char* buf) {
   size_t bytes_read = 0;
 
@@ -400,7 +401,8 @@ size_t WaitForCrashReportUploadProcess(int fd, size_t bytes_to_read,
 }
 
 // |buf| should be |expected_len| + 1 characters in size and NULL terminated.
-bool IsValidCrashReportId(const char* buf, size_t bytes_read,
+bool IsValidCrashReportId(const char* buf,
+                          size_t bytes_read,
                           size_t expected_len) {
   if (bytes_read != expected_len)
     return false;
@@ -412,7 +414,8 @@ bool IsValidCrashReportId(const char* buf, size_t bytes_read,
 }
 
 // |buf| should be |expected_len| + 1 characters in size and NULL terminated.
-void HandleCrashReportId(const char* buf, size_t bytes_read,
+void HandleCrashReportId(const char* buf,
+                         size_t bytes_read,
                          size_t expected_len) {
   if (!IsValidCrashReportId(buf, bytes_read, expected_len)) {
     static const char msg[] = "Failed to get crash dump id.";
@@ -472,7 +475,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
     // The FD is pointing to the end of the file.
     // Rewind, we'll read the data next.
     if (lseek(dumpfd, 0, SEEK_SET) == -1) {
-      static const char msg[] = "Cannot upload crash dump: failed to "
+      static const char msg[] =
+          "Cannot upload crash dump: failed to "
           "reposition minidump FD\n";
       WriteLog(msg, sizeof(msg) - 1);
       IGNORE_RET(sys_close(dumpfd));
@@ -482,16 +486,17 @@ void HandleCrashDump(const BreakpadInfo& info) {
   } else {
     // Dump is provided with a path.
     keep_fd = false;
-    LoadDataFromFile(
-        &allocator, info.filename, &dumpfd, &dump_data, &dump_size);
+    LoadDataFromFile(&allocator, info.filename, &dumpfd, &dump_data,
+                     &dump_size);
   }
 
   // We need to build a MIME block for uploading to the server. Since we are
   // going to fork and run wget, it needs to be written to a temp file.
   const int ufd = sys_open("/dev/urandom", O_RDONLY, 0);
   if (ufd < 0) {
-    static const char msg[] = "Cannot upload crash dump because /dev/urandom"
-                              " is missing\n";
+    static const char msg[] =
+        "Cannot upload crash dump because /dev/urandom"
+        " is missing\n";
     WriteLog(msg, sizeof(msg) - 1);
     return;
   }
@@ -504,7 +509,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
     temp_file_fd = dumpfd;
     // Rewind the destination, we are going to overwrite it.
     if (lseek(dumpfd, 0, SEEK_SET) == -1) {
-      static const char msg[] = "Cannot upload crash dump: failed to "
+      static const char msg[] =
+          "Cannot upload crash dump: failed to "
           "reposition minidump FD (2)\n";
       WriteLog(msg, sizeof(msg) - 1);
       IGNORE_RET(sys_close(dumpfd));
@@ -525,7 +531,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
       }
 
       if (temp_file_fd < 0) {
-        static const char msg[] = "Failed to create temporary file in /tmp: "
+        static const char msg[] =
+            "Failed to create temporary file in /tmp: "
             "cannot upload crash dump\n";
         WriteLog(msg, sizeof(msg) - 1);
         IGNORE_RET(sys_close(ufd));
@@ -598,8 +605,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
       uint64_t pid_value_len = my_uint64_len(info.pid);
       my_uint64tos(pid_value_buf, info.pid, pid_value_len);
       static const char pid_key_name[] = "pid";
-      writer.AddPairData(pid_key_name, sizeof(pid_key_name) - 1,
-                         pid_value_buf, pid_value_len);
+      writer.AddPairData(pid_key_name, sizeof(pid_key_name) - 1, pid_value_buf,
+                         pid_value_len);
       writer.AddBoundary();
     }
     writer.Flush();
@@ -636,8 +643,8 @@ void HandleCrashDump(const BreakpadInfo& info) {
     const unsigned oom_size_len = my_uint64_len(info.oom_size);
     my_uint64tos(oom_size_str, info.oom_size, oom_size_len);
     static const char oom_size_msg[] = "oom-size";
-    writer.AddPairData(oom_size_msg, sizeof(oom_size_msg) - 1,
-                       oom_size_str, oom_size_len);
+    writer.AddPairData(oom_size_msg, sizeof(oom_size_msg) - 1, oom_size_str,
+                       oom_size_len);
     writer.AddBoundary();
     writer.Flush();
   }
@@ -732,7 +739,7 @@ void HandleCrashDump(const BreakpadInfo& info) {
   // Main browser process.
   if (child <= 0)
     return;
-  (void) HANDLE_EINTR(sys_waitpid(child, NULL, 0));
+  (void)HANDLE_EINTR(sys_waitpid(child, NULL, 0));
 }
 
 size_t WriteLog(const char* buf, size_t nbytes) {

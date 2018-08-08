@@ -4,6 +4,7 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include "atom/browser/api/atom_api_web_contents_view.h"
 #include "atom/browser/native_window_views.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -27,16 +28,39 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
     owner_window()->HandleKeyboardEvent(source, event);
 }
 
+void CommonWebContentsDelegate::ShowAutofillPopup(
+    content::RenderFrameHost* frame_host,
+    content::RenderFrameHost* embedder_frame_host,
+    bool offscreen,
+    const gfx::RectF& bounds,
+    const std::vector<base::string16>& values,
+    const std::vector<base::string16>& labels) {
+  if (!owner_window())
+    return;
+
+  auto* window = static_cast<NativeWindowViews*>(owner_window());
+  autofill_popup_->CreateView(frame_host, embedder_frame_host, offscreen,
+                              window->content_view(), bounds);
+  autofill_popup_->SetItems(values, labels);
+}
+
+void CommonWebContentsDelegate::HideAutofillPopup() {
+  if (autofill_popup_)
+    autofill_popup_->Hide();
+}
+
 gfx::ImageSkia CommonWebContentsDelegate::GetDevToolsWindowIcon() {
   if (!owner_window())
     return gfx::ImageSkia();
-  return static_cast<views::WidgetDelegate*>(static_cast<NativeWindowViews*>(
-      owner_window()))->GetWindowAppIcon();
+  return static_cast<views::WidgetDelegate*>(
+             static_cast<NativeWindowViews*>(owner_window()))
+      ->GetWindowAppIcon();
 }
 
 #if defined(USE_X11)
 void CommonWebContentsDelegate::GetDevToolsWindowWMClass(
-    std::string* name, std::string* class_name) {
+    std::string* name,
+    std::string* class_name) {
   *class_name = Browser::Get()->GetName();
   *name = base::ToLowerASCII(*class_name);
 }

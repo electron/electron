@@ -16,6 +16,10 @@
 #include <windows.h>
 #endif
 
+namespace gfx {
+class Rect;
+}
+
 namespace atom {
 
 class NativeWindowObserver {
@@ -33,6 +37,9 @@ class NativeWindowObserver {
 
   // Called when the window is gonna closed.
   virtual void WillCloseWindow(bool* prevent_default) {}
+
+  // Called when the window wants to know the preferred width.
+  virtual void RequestPreferredWidth(int* width) {}
 
   // Called when closed button is clicked.
   virtual void OnCloseButtonClicked(bool* prevent_default) {}
@@ -60,6 +67,8 @@ class NativeWindowObserver {
   virtual void OnWindowUnmaximize() {}
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
+  virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
+                                  bool* prevent_default) {}
   virtual void OnWindowResize() {}
   virtual void OnWindowMove() {}
   virtual void OnWindowMoved() {}
@@ -76,10 +85,10 @@ class NativeWindowObserver {
                                     const base::DictionaryValue& details) {}
   virtual void OnNewWindowForTab() {}
 
-  // Called when window message received
-  #if defined(OS_WIN)
+// Called when window message received
+#if defined(OS_WIN)
   virtual void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {}
-  #endif
+#endif
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   virtual void OnExecuteWindowsCommand(const std::string& command_name) {}

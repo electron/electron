@@ -1,0 +1,318 @@
+if (is_debug) {
+  node_configuration = "Debug"
+} else {
+  node_configuration = "Release"
+}
+
+action("configure_node") {
+  script = "//third_party/electron_node/configure"
+  ssl_libname_suffix = ""
+  if (is_win) {
+    ssl_libname_suffix = ".dll"
+  }
+  args = [
+    "--enable-static",
+    "--release-urlbase=https://atom.io/download/electron",
+    "--shared-openssl",
+    "--shared-openssl-includes=" +
+        rebase_path("//third_party/boringssl/src/include"),
+    "--shared-openssl-libname=boringssl" + ssl_libname_suffix,
+    "--shared-openssl-libpath=" + rebase_path(root_out_dir),
+    "--without-npm",
+    "--without-bundled-v8",
+    "--without-dtrace",
+    "--without-etw",
+    "--without-perfctr",
+    "--without-v8-platform",
+    "--without-intl",
+    "--prefix=",
+    "--config-out-dir=" + rebase_path(target_gen_dir),
+    "--no-run-gyp",
+    "--dest-cpu=$target_cpu",
+  ]
+  if (is_component_build) {
+    args += [ "--shared" ]
+  }
+  outputs = [
+    "$target_gen_dir/config.gypi",
+  ]
+}
+
+action("gyp_node") {
+  script = "//tools/gyp/gyp_main.py"
+  deps = [
+    ":configure_node",
+  ]
+  inputs = [
+    "//third_party/electron_node/common.gypi",
+    "//third_party/electron_node/node.gyp",
+    "//third_party/electron_node/node.gypi",
+    "$target_gen_dir/config.gypi",
+    "node_override.gypi",
+  ]
+  outputs = [
+    "$target_out_dir/$node_configuration/build.ninja",
+  ]
+
+  # By default, node will build a dylib called something like
+  # libnode.$node_module_version.dylib, which is inconvenient for our
+  # purposes (since it makes the library's name unpredictable). This forces
+  # it to drop the module_version from the filename and just produce
+  # `libnode.dylib`.
+  if (is_mac) {
+    shlib_suffix = "dylib"
+  } else if (is_win) {
+    shlib_suffix = "dll"
+  } else if (is_linux) {
+    shlib_suffix = "so"
+  }
+
+  args = [
+    "-I",
+    rebase_path("$target_gen_dir/config.gypi", root_build_dir),
+    "-I",
+    rebase_path("node_override.gypi", root_build_dir),
+    "-I",
+    rebase_path("//third_party/electron_node/common.gypi", root_build_dir),
+    "-D",
+    "component=shared_library",
+    "-D",
+    "target_arch=$target_cpu",
+    "-D",
+    "host_arch=$host_cpu",
+    "-D",
+    "config_gypi=" + rebase_path("$target_gen_dir/config.gypi"),
+
+    # This has _gn suffixed otherwise it gets overridden by a shlib_suffix
+    # that's set in node's gyp files. Don't ask me 🤷
+    "-D",
+    "shlib_suffix_gn=" + shlib_suffix,
+    "-D",
+    "llvm_dir=" + rebase_path("//third_party/llvm-build/Release+Asserts"),
+    "-D",
+    "libcxx_dir=" + rebase_path("//buildtools/third_party/libc++"),
+    "-D",
+    "libcxxabi_dir=" + rebase_path("//buildtools/third_party/libc++abi"),
+    "-D",
+    "is_component_build=$is_component_build",
+
+    # bizarrely, gyp generates from the build root instead of from cwd
+    "-Goutput_dir=./$target_out_dir",
+    "-fninja",
+    rebase_path("//third_party/electron_node/node.gyp", root_build_dir),
+  ]
+}
+
+action("build_node") {
+  deps = [
+    ":gyp_node",
+    "//third_party/boringssl",
+    "//third_party/icu",
+    "//v8",
+    "//v8:v8_libbase",
+    "//v8:v8_libplatform",
+  ]
+  script = "//electron/build/run-ninja.py"
+  args = [
+    "-C",
+    rebase_path(target_out_dir, root_build_dir) + "/$node_configuration",
+    "node_lib",
+    "libuv",
+    "nghttp2",
+    "cares",
+    "http_parser",
+    "zlib",
+  ]
+  if (is_mac) {
+    if (is_component_build) {
+      outputs = [
+        "$target_out_dir/$node_configuration/libnode.dylib",
+      ]
+    } else {
+      outputs = [
+        "$target_out_dir/$node_configuration/libnode.a",
+        "$target_out_dir/$node_configuration/libcares.a",
+        "$target_out_dir/$node_configuration/libhttp_parser.a",
+        "$target_out_dir/$node_configuration/libnghttp2.a",
+        "$target_out_dir/$node_configuration/libuv.a",
+        "$target_out_dir/$node_configuration/libzlib.a",
+      ]
+    }
+  }
+  if (is_linux) {
+    if (is_component_build) {
+      outputs = [
+        "$target_out_dir/$node_configuration/lib/libnode.so",
+      ]
+    } else {
+      outputs = [
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/libnode.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/uv/libuv.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/nghttp2/libnghttp2.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/cares/libcares.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/http_parser/libhttp_parser.a",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/zlib/libzlib.a",
+      ]
+    }
+  }
+  if (is_win) {
+    if (is_component_build) {
+      outputs = [
+        "$target_out_dir/$node_configuration/node.dll.lib",
+        "$target_out_dir/$node_configuration/node.dll",
+      ]
+    } else {
+      outputs = [
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/node.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/uv/libuv.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/nghttp2/nghttp2.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/cares/cares.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/http_parser/http_parser.lib",
+        "$target_out_dir/$node_configuration/obj/third_party/electron_node/deps/zlib/zlib.lib",
+      ]
+    }
+  }
+}
+
+node_libs = get_target_outputs(":build_node")
+
+copy("copy_node") {
+  deps = [
+    ":build_node",
+  ]
+  sources = node_libs
+  outputs = [
+    "$root_out_dir/{{source_file_part}}",
+  ]
+}
+
+config("node_config") {
+  include_dirs = [
+    "//third_party/electron_node/src",
+    "//third_party/electron_node/deps/uv/include",
+    "//third_party/electron_node/deps/cares/include",
+  ]
+  if (is_win && is_component_build) {
+    # Windows builds need both the .dll and the .dll.lib copied, but only the
+    # .dll.lib goes in the `libs` list.
+    libs = [ node_libs[0] ]
+  } else {
+    libs = node_libs
+  }
+  cflags_cc = [ "-Wno-deprecated-declarations" ]
+  defines = [
+    # We need to access internal implementations of Node.
+    "NODE_WANT_INTERNALS=1",
+    "HAVE_OPENSSL=1",
+    "HAVE_INSPECTOR=1",
+  ]
+  if (is_component_build) {
+    defines += [ "NODE_SHARED_MODE" ]
+  }
+}
+
+group("node") {
+  public_configs = [ ":node_config" ]
+  public_deps = [
+    ":copy_node",
+  ]
+}
+
+node_headers_dir = "$root_gen_dir/node_headers/include/node"
+
+copy("node_headers") {
+  deps = [
+    ":configure_node",
+  ]
+  sources = [
+    "$target_gen_dir/config.gypi",
+    "//third_party/electron_node/common.gypi",
+    "//third_party/electron_node/src/callback_scope.h",
+    "//third_party/electron_node/src/core.h",
+    "//third_party/electron_node/src/exceptions.h",
+    "//third_party/electron_node/src/node.h",
+    "//third_party/electron_node/src/node_api.h",
+    "//third_party/electron_node/src/node_api_types.h",
+    "//third_party/electron_node/src/node_buffer.h",
+    "//third_party/electron_node/src/node_object_wrap.h",
+    "//third_party/electron_node/src/node_version.h",
+  ]
+  outputs = [
+    "$node_headers_dir/{{source_file_part}}",
+  ]
+}
+
+copy("v8_headers") {
+  sources = [
+    "//v8/include/v8-inspector-protocol.h",
+    "//v8/include/v8-inspector.h",
+    "//v8/include/v8-platform.h",
+    "//v8/include/v8-profiler.h",
+    "//v8/include/v8-testing.h",
+    "//v8/include/v8-util.h",
+    "//v8/include/v8-value-serializer-version.h",
+    "//v8/include/v8-version-string.h",
+    "//v8/include/v8-version.h",
+    "//v8/include/v8.h",
+    "//v8/include/v8config.h",
+  ]
+  outputs = [
+    "$node_headers_dir/{{source_file_part}}",
+  ]
+}
+
+copy("v8_platform_headers") {
+  sources = [
+    "//v8/include/libplatform/libplatform-export.h",
+    "//v8/include/libplatform/libplatform.h",
+    "//v8/include/libplatform/v8-tracing.h",
+  ]
+  outputs = [
+    "$node_headers_dir/libplatform/{{source_file_part}}",
+  ]
+}
+
+copy("uv_headers") {
+  sources = [
+    "//third_party/electron_node/deps/uv/include/android-ifaddrs.h",
+    "//third_party/electron_node/deps/uv/include/pthread-barrier.h",
+    "//third_party/electron_node/deps/uv/include/stdint-msvc2008.h",
+    "//third_party/electron_node/deps/uv/include/tree.h",
+    "//third_party/electron_node/deps/uv/include/uv-aix.h",
+    "//third_party/electron_node/deps/uv/include/uv-bsd.h",
+    "//third_party/electron_node/deps/uv/include/uv-darwin.h",
+    "//third_party/electron_node/deps/uv/include/uv-errno.h",
+    "//third_party/electron_node/deps/uv/include/uv-linux.h",
+    "//third_party/electron_node/deps/uv/include/uv-os390.h",
+    "//third_party/electron_node/deps/uv/include/uv-posix.h",
+    "//third_party/electron_node/deps/uv/include/uv-sunos.h",
+    "//third_party/electron_node/deps/uv/include/uv-threadpool.h",
+    "//third_party/electron_node/deps/uv/include/uv-unix.h",
+    "//third_party/electron_node/deps/uv/include/uv-version.h",
+    "//third_party/electron_node/deps/uv/include/uv-win.h",
+    "//third_party/electron_node/deps/uv/include/uv.h",
+  ]
+  outputs = [
+    "$node_headers_dir/{{source_file_part}}",
+  ]
+}
+
+copy("zlib_headers") {
+  sources = [
+    "//third_party/electron_node/deps/zlib/zconf.h",
+    "//third_party/electron_node/deps/zlib/zlib.h",
+  ]
+  outputs = [
+    "$node_headers_dir/{{source_file_part}}",
+  ]
+}
+
+group("headers") {
+  public_deps = [
+    ":node_headers",
+    ":uv_headers",
+    ":v8_headers",
+    ":v8_platform_headers",
+    ":zlib_headers",
+  ]
+}

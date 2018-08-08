@@ -10,24 +10,22 @@
 #include "base/bind.h"
 #include "base/bind_helpers.h"
 #include "base/location.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/single_thread_task_runner.h"
-#include "base/threading/sequenced_worker_pool.h"
+#include "base/task_scheduler/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "base/threading/worker_pool.h"
 #include "build/build_config.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job_worker.h"
 #include "content/public/browser/notification_service.h"
 #include "printing/printed_document.h"
-#include "printing/printed_page.h"
 
 #if defined(OS_WIN)
 #include "chrome/browser/printing/pdf_to_emf_converter.h"
 #include "printing/pdf_render_settings.h"
+#include "printing/metafile.h"
 #endif
 
 using base::TimeDelta;
@@ -45,10 +43,7 @@ void HoldRefCallback(const scoped_refptr<PrintJobWorkerOwner>& owner,
 }  // namespace
 
 PrintJob::PrintJob()
-    : source_(nullptr),
-      is_job_pending_(false),
-      is_canceling_(false),
-      quit_factory_(this) {
+    : is_job_pending_(false), is_canceling_(false), quit_factory_(this) {
   // This is normally a UI message loop, but in unit tests, the message loop is
   // of the 'default' type.
   DCHECK(base::MessageLoopForUI::IsCurrent() ||
@@ -65,19 +60,17 @@ PrintJob::~PrintJob() {
 }
 
 void PrintJob::Initialize(PrintJobWorkerOwner* job,
-                          PrintedPagesSource* source,
+                          const base::string16& name,
                           int page_count) {
-  DCHECK(!source_);
   DCHECK(!worker_);
   DCHECK(!is_job_pending_);
   DCHECK(!is_canceling_);
   DCHECK(!document_.get());
-  source_ = source;
   worker_ = job->DetachWorker(this);
   settings_ = job->settings();
 
   PrintedDocument* new_doc =
-      new PrintedDocument(settings_, source_, job->cookie());
+      new PrintedDocument(settings_, name, job->cookie());
   new_doc->set_page_count(page_count);
   UpdatePrintedDocument(new_doc);
 
@@ -126,7 +119,7 @@ void PrintJob::StartPrinting() {
 
   // Real work is done in PrintJobWorker::StartPrinting().
   worker_->PostTask(FROM_HERE,
-                    base::Bind(&HoldRefCallback, make_scoped_refptr(this),
+                    base::Bind(&HoldRefCallback, WrapRefCounted(this),
                                base::Bind(&PrintJobWorker::StartPrinting,
                                           base::Unretained(worker_.get()),
                                           base::RetainedRef(document_))));
@@ -135,10 +128,9 @@ void PrintJob::StartPrinting() {
 
   // Tell everyone!
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::NEW_DOC, document_.get(), nullptr));
+      new JobEventDetails(JobEventDetails::NEW_DOC, 0, document_.get()));
   content::NotificationService::current()->Notify(
-      chrome::NOTIFICATION_PRINT_JOB_EVENT,
-      content::Source<PrintJob>(this),
+      chrome::NOTIFICATION_PRINT_JOB_EVENT, content::Source<PrintJob>(this),
       content::Details<JobEventDetails>(details.get()));
 }
 
@@ -180,10 +172,9 @@ void PrintJob::Cancel() {
   }
   // Make sure a Cancel() is broadcast.
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::FAILED, nullptr, nullptr));
+      new JobEventDetails(JobEventDetails::FAILED, 0, nullptr));
   content::NotificationService::current()->Notify(
-      chrome::NOTIFICATION_PRINT_JOB_EVENT,
-      content::Source<PrintJob>(this),
+      chrome::NOTIFICATION_PRINT_JOB_EVENT, content::Source<PrintJob>(this),
       content::Details<JobEventDetails>(details.get()));
   Stop();
   is_canceling_ = false;
@@ -202,12 +193,6 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
   base::RunLoop().Run();
 
   return true;
-}
-
-void PrintJob::DisconnectSource() {
-  source_ = nullptr;
-  if (document_.get())
-    document_->DisconnectSource();
 }
 
 bool PrintJob::is_job_pending() const {
@@ -231,8 +216,8 @@ class PrintJob::PdfConversionState {
   void Start(const scoped_refptr<base::RefCountedMemory>& data,
              const PdfRenderSettings& conversion_settings,
              const PdfConverter::StartCallback& start_callback) {
-    converter_ = PdfConverter::StartPdfConverter(
-          data, conversion_settings, start_callback);
+    converter_ = PdfConverter::StartPdfConverter(data, conversion_settings,
+                                                 start_callback);
   }
 
   void GetMorePages(const PdfConverter::GetPageCallback& get_page_callback) {
@@ -276,10 +261,10 @@ void PrintJob::StartPdfToEmfConversion(
     bool print_text_with_gdi) {
   DCHECK(!pdf_conversion_state_);
   pdf_conversion_state_ =
-      base::MakeUnique<PdfConversionState>(page_size, content_area);
+      std::make_unique<PdfConversionState>(page_size, content_area);
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
-      content_area, gfx::Point(0, 0), kPrinterDpi, /*autorotate=*/true,
+      content_area, gfx::Point(0, 0), gfx::Size(kPrinterDpi, kPrinterDpi), /*autorotate=*/true,
       print_text_with_gdi ? PdfRenderSettings::Mode::GDI_TEXT
                           : PdfRenderSettings::Mode::NORMAL);
   pdf_conversion_state_->Start(
@@ -323,11 +308,11 @@ void PrintJob::StartPdfToPostScriptConversion(
     const gfx::Point& physical_offsets,
     bool ps_level2) {
   DCHECK(!pdf_conversion_state_);
-  pdf_conversion_state_ = base::MakeUnique<PdfConversionState>(
-      gfx::Size(), gfx::Rect());
+  pdf_conversion_state_ =
+      std::make_unique<PdfConversionState>(gfx::Size(), gfx::Rect());
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
-      content_area, physical_offsets, kPrinterDpi, true /* autorotate? */,
+      content_area, physical_offsets, gfx::Size(kPrinterDpi, kPrinterDpi), true /* autorotate? */,
       ps_level2 ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3);
   pdf_conversion_state_->Start(
@@ -349,7 +334,7 @@ void PrintJob::UpdatePrintedDocument(PrintedDocument* new_document) {
     DCHECK(!is_job_pending_);
     // Sync the document with the worker.
     worker_->PostTask(FROM_HERE,
-                      base::Bind(&HoldRefCallback, make_scoped_refptr(this),
+                      base::Bind(&HoldRefCallback, WrapRefCounted(this),
                                  base::Bind(&PrintJobWorker::OnDocumentChanged,
                                             base::Unretained(worker_.get()),
                                             base::RetainedRef(document_))));
@@ -407,10 +392,9 @@ void PrintJob::OnDocumentDone() {
   Stop();
 
   scoped_refptr<JobEventDetails> details(
-      new JobEventDetails(JobEventDetails::JOB_DONE, document_.get(), nullptr));
+      new JobEventDetails(JobEventDetails::JOB_DONE, 0, document_.get()));
   content::NotificationService::current()->Notify(
-      chrome::NOTIFICATION_PRINT_JOB_EVENT,
-      content::Source<PrintJob>(this),
+      chrome::NOTIFICATION_PRINT_JOB_EVENT, content::Source<PrintJob>(this),
       content::Details<JobEventDetails>(details.get()));
 }
 
@@ -441,41 +425,45 @@ void PrintJob::ControlledWorkerShutdown() {
   }
 #endif
 
-
   // Now make sure the thread object is cleaned up. Do this on a worker
   // thread because it may block.
-  base::WorkerPool::PostTaskAndReply(
+  base::PostTaskAndReply(
       FROM_HERE,
       base::Bind(&PrintJobWorker::Stop, base::Unretained(worker_.get())),
-      base::Bind(&PrintJob::HoldUntilStopIsCalled, this),
-      false);
+      base::Bind(&PrintJob::HoldUntilStopIsCalled, this));
 
   is_job_pending_ = false;
   registrar_.RemoveAll();
   UpdatePrintedDocument(nullptr);
 }
 
-void PrintJob::HoldUntilStopIsCalled() {
-}
+void PrintJob::HoldUntilStopIsCalled() {}
 
 void PrintJob::Quit() {
   base::RunLoop::QuitCurrentWhenIdleDeprecated();
 }
 
 // Takes settings_ ownership and will be deleted in the receiving thread.
+#if defined(OS_WIN)
 JobEventDetails::JobEventDetails(Type type,
+                                 int job_id,
                                  PrintedDocument* document,
                                  PrintedPage* page)
-    : document_(document),
-      page_(page),
-      type_(type) {
+    : document_(document), page_(page), type_(type), job_id_(job_id) {}
+#endif
+
+JobEventDetails::JobEventDetails(Type type,
+                                 int job_id,
+                                 PrintedDocument* document)
+    : document_(document), type_(type), job_id_(job_id) {}
+
+JobEventDetails::~JobEventDetails() {}
+
+PrintedDocument* JobEventDetails::document() const {
+  return document_.get();
 }
 
-JobEventDetails::~JobEventDetails() {
-}
-
-PrintedDocument* JobEventDetails::document() const { return document_.get(); }
-
+#if defined(OS_WIN)
 PrintedPage* JobEventDetails::page() const { return page_.get(); }
-
+#endif
 }  // namespace printing

@@ -19,10 +19,13 @@ namespace api {
 class MenuViews : public Menu {
  public:
   MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
+  ~MenuViews() override;
 
  protected:
-  void PopupAt(BrowserWindow* window,
-               int x, int y, int positioning_item,
+  void PopupAt(TopLevelWindow* window,
+               int x,
+               int y,
+               int positioning_item,
                const base::Closure& callback) override;
   void ClosePopupAt(int32_t window_id) override;
 

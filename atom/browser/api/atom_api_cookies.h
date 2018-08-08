@@ -49,7 +49,8 @@ class Cookies : public mate::TrackableObject<Cookies> {
   ~Cookies() override;
 
   void Get(const base::DictionaryValue& filter, const GetCallback& callback);
-  void Remove(const GURL& url, const std::string& name,
+  void Remove(const GURL& url,
+              const std::string& name,
               const base::Closure& callback);
   void Set(const base::DictionaryValue& details, const SetCallback& callback);
   void FlushStore(const base::Closure& callback);
@@ -58,12 +59,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   void OnCookieChanged(const CookieDetails*);
 
  private:
-  // Store a reference to ensure this class gets destroyed before the context.
   scoped_refptr<AtomBrowserContext> browser_context_;
-  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
-      cookie_change_subscription_;
-
-  net::URLRequestContextGetter* request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
 };

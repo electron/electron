@@ -5,29 +5,22 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/login_handler.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
-#include "atom/common/atom_constants.h"
 #include "atom/common/platform_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/stream_info.h"
 #include "net/base/escape.h"
-#include "net/ssl/client_cert_store.h"
-#include "net/url_request/url_request.h"
 #include "url/gurl.h"
 
-#if defined(USE_NSS_CERTS)
-#include "net/ssl/client_cert_store_nss.h"
-#elif defined(OS_WIN)
-#include "net/ssl/client_cert_store_win.h"
-#elif defined(OS_MACOSX)
-#include "net/ssl/client_cert_store_mac.h"
-#endif
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/common/atom_constants.h"
+#include "base/strings/stringprintf.h"
+#include "content/public/browser/stream_info.h"
+#include "net/url_request/url_request.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 using content::BrowserThread;
 
@@ -54,7 +47,7 @@ void HandleExternalProtocolInUI(
   if (!web_contents)
     return;
 
-  auto permission_helper =
+  auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   if (!permission_helper)
     return;
@@ -65,6 +58,7 @@ void HandleExternalProtocolInUI(
                                                    url);
 }
 
+#if defined(ENABLE_PDF_VIEWER)
 void OnPdfResourceIntercepted(
     const GURL& original_url,
     int render_process_host_id,
@@ -75,9 +69,10 @@ void OnPdfResourceIntercepted(
   if (!web_contents)
     return;
 
-  if (!WebContentsPreferences::IsPreferenceEnabled("plugins", web_contents)) {
-    auto browser_context = web_contents->GetBrowserContext();
-    auto download_manager =
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  if (!web_preferences || !web_preferences->IsEnabled(options::kPlugins)) {
+    auto* browser_context = web_contents->GetBrowserContext();
+    auto* download_manager =
         content::BrowserContext::GetDownloadManager(browser_context);
 
     download_manager->DownloadUrl(
@@ -102,6 +97,7 @@ void OnPdfResourceIntercepted(
   params.frame_tree_node_id = frame_host->GetFrameTreeNodeId();
   web_contents->GetController().LoadURLWithParams(params);
 }
+#endif  // defined(ENABLE_PDF_VIEWER)
 
 }  // namespace
 
@@ -111,40 +107,18 @@ bool AtomResourceDispatcherHostDelegate::HandleExternalProtocol(
     const GURL& url,
     content::ResourceRequestInfo* info) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::Bind(&HandleExternalProtocolInUI, url,
-                                     info->GetWebContentsGetterForRequest(),
-                                     info->HasUserGesture()));
+                          base::BindOnce(&HandleExternalProtocolInUI, url,
+                                         info->GetWebContentsGetterForRequest(),
+                                         info->HasUserGesture()));
   return true;
-}
-
-content::ResourceDispatcherHostLoginDelegate*
-AtomResourceDispatcherHostDelegate::CreateLoginDelegate(
-    net::AuthChallengeInfo* auth_info,
-    net::URLRequest* request) {
-  return new LoginHandler(auth_info, request);
-}
-
-std::unique_ptr<net::ClientCertStore>
-AtomResourceDispatcherHostDelegate::CreateClientCertStore(
-    content::ResourceContext* resource_context) {
-#if defined(USE_NSS_CERTS)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreNSS(
-      net::ClientCertStoreNSS::PasswordDelegateFactory()));
-#elif defined(OS_WIN)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreWin());
-#elif defined(OS_MACOSX)
-  return std::unique_ptr<net::ClientCertStore>(new net::ClientCertStoreMac());
-#elif defined(USE_OPENSSL)
-  return std::unique_ptr<net::ClientCertStore>();
-#endif
 }
 
 bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     net::URLRequest* request,
-    const base::FilePath& plugin_path,
     const std::string& mime_type,
     GURL* origin,
     std::string* payload) {
+#if defined(ENABLE_PDF_VIEWER)
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
 
@@ -164,6 +138,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
                    info->GetWebContentsGetterForRequest()));
     return true;
   }
+#endif  // defined(ENABLE_PDF_VIEWER)
   return false;
 }
 

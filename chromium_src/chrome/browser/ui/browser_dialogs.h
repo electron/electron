@@ -13,7 +13,7 @@ class SkBitmap;
 namespace content {
 class ColorChooser;
 class WebContents;
-}
+}  // namespace content
 
 namespace chrome {
 

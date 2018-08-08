@@ -11,7 +11,7 @@
 #include <sys/types.h>
 
 #include "base/macros.h"
-#include "vendor/breakpad/src/common/simple_string_dictionary.h"
+#include "breakpad/src/common/simple_string_dictionary.h"
 
 namespace crash_reporter {
 
@@ -21,15 +21,15 @@ typedef google_breakpad::NonAllocatingMap<256, 256, 64> CrashKeyStorage;
 // The minidump information can either be contained in a file descriptor (fd) or
 // in a file (whose path is in filename).
 struct BreakpadInfo {
-  int fd;                          // File descriptor to the Breakpad dump data.
-  const char* filename;            // Path to the Breakpad dump data.
-  const char* distro;              // Linux distro string.
-  unsigned distro_length;          // Length of |distro|.
-  bool upload;                     // Whether to upload or save crash dump.
-  uint64_t process_start_time;     // Uptime of the crashing process.
-  size_t oom_size;                 // Amount of memory requested if OOM.
-  uint64_t pid;                    // PID where applicable.
-  const char* upload_url;          // URL to upload the minidump.
+  int fd;                       // File descriptor to the Breakpad dump data.
+  const char* filename;         // Path to the Breakpad dump data.
+  const char* distro;           // Linux distro string.
+  unsigned distro_length;       // Length of |distro|.
+  bool upload;                  // Whether to upload or save crash dump.
+  uint64_t process_start_time;  // Uptime of the crashing process.
+  size_t oom_size;              // Amount of memory requested if OOM.
+  uint64_t pid;                 // PID where applicable.
+  const char* upload_url;       // URL to upload the minidump.
   CrashKeyStorage* crash_keys;
 };
 

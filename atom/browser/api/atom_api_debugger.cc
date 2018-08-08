@@ -26,19 +26,14 @@ namespace atom {
 namespace api {
 
 Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
-    : web_contents_(web_contents),
-      previous_request_id_(0) {
+    : web_contents_(web_contents) {
   Init(isolate);
 }
 
-Debugger::~Debugger() {
-}
+Debugger::~Debugger() {}
 
-void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host,
-                               bool replaced_with_another_client) {
+void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
   std::string detach_reason = "target closed";
-  if (replaced_with_another_client)
-    detach_reason = "replaced with devtools";
   Emit("detach", detach_reason);
 }
 
@@ -112,7 +107,7 @@ void Debugger::Detach() {
   if (!agent_host_.get())
     return;
   agent_host_->DetachClient(this);
-  AgentHostClosed(agent_host_.get(), false);
+  AgentHostClosed(agent_host_.get());
   agent_host_ = nullptr;
 }
 
@@ -144,9 +139,8 @@ void Debugger::SendCommand(mate::Arguments* args) {
 }
 
 // static
-mate::Handle<Debugger> Debugger::Create(
-    v8::Isolate* isolate,
-    content::WebContents* web_contents) {
+mate::Handle<Debugger> Debugger::Create(v8::Isolate* isolate,
+                                        content::WebContents* web_contents) {
   return mate::CreateHandle(isolate, new Debugger(isolate, web_contents));
 }
 
@@ -169,8 +163,10 @@ namespace {
 
 using atom::api::Debugger;
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   mate::Dictionary(isolate, exports)
       .Set("Debugger", Debugger::GetConstructor(isolate)->GetFunction());

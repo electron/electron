@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "native_mate/converter.h"
 
 namespace mate {
@@ -43,7 +44,8 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                const StringType& name,
                                const Args&... args) {
   internal::ValueVector converted_args = {
-      StringToV8(isolate, name), ConvertToV8(isolate, args)...,
+      StringToV8(isolate, name),
+      ConvertToV8(isolate, args)...,
   };
   return internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
 }

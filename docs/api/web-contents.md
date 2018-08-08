@@ -67,6 +67,8 @@ Returns:
 * `errorDescription` String
 * `validatedURL` String
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
 This event is like `did-finish-load` but emitted when the load failed or was
 cancelled, e.g. `window.stop()` is invoked.
@@ -78,6 +80,8 @@ Returns:
 
 * `event` Event
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
 Emitted when a frame has done navigation.
 
@@ -88,38 +92,6 @@ Corresponds to the points in time when the spinner of the tab started spinning.
 #### Event: 'did-stop-loading'
 
 Corresponds to the points in time when the spinner of the tab stopped spinning.
-
-#### Event: 'did-get-response-details'
-
-Returns:
-
-* `event` Event
-* `status` Boolean
-* `newURL` String
-* `originalURL` String
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-* `resourceType` String
-
-Emitted when details regarding a requested resource are available.
-`status` indicates the socket connection to download the resource.
-
-#### Event: 'did-get-redirect-request'
-
-Returns:
-
-* `event` Event
-* `oldURL` String
-* `newURL` String
-* `isMainFrame` Boolean
-* `httpResponseCode` Integer
-* `requestMethod` String
-* `referrer` String
-* `headers` Object
-
-Emitted when a redirect is received while requesting a resource.
 
 #### Event: 'dom-ready'
 
@@ -151,6 +123,9 @@ Returns:
   [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
   by Chromium or Electron) given to `window.open()`.
+* `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+  passed to the new window. May or may not result in the `Referer` header being
+  sent, depending on the referrer policy.
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -191,14 +166,47 @@ this purpose.
 
 Calling `event.preventDefault()` will prevent the navigation.
 
+#### Event: 'did-start-navigation'
+
+Returns:
+
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when any frame (including main) starts navigating. `isInplace` will be
+`true` for in-page navigations.
+
 #### Event: 'did-navigate'
 
 Returns:
 
 * `event` Event
 * `url` String
+* `httpResponseCode` Integer - -1 for non HTTP navigations
+* `httpStatusText` String - empty for non HTTP navigations
 
-Emitted when a navigation is done.
+Emitted when a main frame navigation is done.
+
+This event is not emitted for in-page navigations, such as clicking anchor links
+or updating the `window.location.hash`. Use `did-navigate-in-page` event for
+this purpose.
+
+#### Event: 'did-frame-navigate'
+
+Returns:
+
+* `event` Event
+* `url` String
+* `httpResponseCode` Integer - -1 for non HTTP navigations
+* `httpStatusText` String - empty for non HTTP navigations,
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted when any frame navigation is done.
 
 This event is not emitted for in-page navigations, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
@@ -211,8 +219,10 @@ Returns:
 * `event` Event
 * `url` String
 * `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
 
-Emitted when an in-page navigation happened.
+Emitted when an in-page navigation happened in any frame.
 
 When in-page navigation happens, the page URL changes but does not cause
 navigation outside of the page. Examples of this occurring are when anchor links
@@ -256,6 +266,14 @@ Returns:
 * `killed` Boolean
 
 Emitted when the renderer process crashes or is killed.
+
+#### Event: 'unresponsive'
+
+Emitted when the web page becomes unresponsive.
+
+#### Event: 'responsive'
+
+Emitted when the unresponsive web page becomes responsive again.
 
 #### Event: 'plugin-crashed'
 
@@ -517,11 +535,14 @@ first available device will be selected. `callback` should be called with
 cancel the request.
 
 ```javascript
-const {app, webContents} = require('electron')
-app.commandLine.appendSwitch('enable-web-bluetooth')
+const {app, BrowserWindow} = require('electron')
+
+let win = null
+app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 app.on('ready', () => {
-  webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  win = new BrowserWindow({width: 800, height: 600})
+  win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
     let result = deviceList.find((device) => {
       return device.deviceName === 'test'
@@ -595,6 +616,7 @@ Emitted when a `<webview>` has been attached to this web contents.
 
 Returns:
 
+* `event` Event
 * `level` Integer
 * `message` String
 * `line` Integer
@@ -609,10 +631,10 @@ for windows with *offscreen rendering* enabled.
 
 * `url` String
 * `options` Object (optional)
-  * `httpReferrer` String (optional) - A HTTP Referrer url.
+  * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadFileSystem[]](structures/upload-file-system.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
+  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Loads the `url` in the window. The `url` must contain the protocol prefix,
@@ -809,6 +831,10 @@ Mute the audio on the current web page.
 #### `contents.isAudioMuted()`
 
 Returns `Boolean` - Whether this page has been muted.
+
+#### `contents.isCurrentlyAudible()`
+
+Returns `Boolean` - Whether audio is currently playing.
 
 #### `contents.setZoomFactor(factor)`
 
@@ -1300,23 +1326,20 @@ For the `mouseWheel` event, the `event` object also have following properties:
 
 * `onlyDirty` Boolean (optional) - Defaults to `false`.
 * `callback` Function
-  * `frameBuffer` Buffer
+  * `image` [NativeImage](native-image.md)
   * `dirtyRect` [Rectangle](structures/rectangle.md)
 
 Begin subscribing for presentation events and captured frames, the `callback`
-will be called with `callback(frameBuffer, dirtyRect)` when there is a
-presentation event.
+will be called with `callback(image, dirtyRect)` when there is a presentation
+event.
 
-The `frameBuffer` is a `Buffer` that contains raw pixel data. On most machines,
-the pixel data is effectively stored in 32bit BGRA format, but the actual
-representation depends on the endianness of the processor (most modern
-processors are little-endian, on machines with big-endian processors the data
-is in 32bit ARGB format).
+The `image` is an instance of [NativeImage](native-image.md) that stores the
+captured frame.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
-`true`, `frameBuffer` will only contain the repainted area. `onlyDirty`
-defaults to `false`.
+`true`, `image` will only contain the repainted area. `onlyDirty` defaults to
+`false`.
 
 #### `contents.endFrameSubscription()`
 
@@ -1367,11 +1390,17 @@ Shows pop-up dictionary that searches the selected word on the page.
 Set the size of the page. This is only supported for `<webview>` guest contents.
 
 * `options` Object
-  * `normal` Object (optional) - Normal size of the page. This can be used in
+  * `enableAutoSize` Boolean (optional) - true to make the webview container automatically
+    resize within the bounds specified by the attributes normal, min and max.
+  * `normal` [Size](structures/size.md) (optional) - Normal size of the page. This can be used in
     combination with the [`disableguestresize`](webview-tag.md#disableguestresize)
     attribute to manually resize the webview guest contents.
-    * `width` Integer
-    * `height` Integer
+  * `min` [Size](structures/size.md) (optional) - Minimum size of the page. This can be used in
+    combination with the [`disableguestresize`](webview-tag.md#disableguestresize)
+    attribute to manually resize the webview guest contents.
+  * `max` [Size](structures/size.md) (optional) - Maximium size of the page. This can be used in
+    combination with the [`disableguestresize`](webview-tag.md#disableguestresize)
+    attribute to manually resize the webview guest contents.
 
 #### `contents.isOffscreen()`
 
@@ -1434,7 +1463,14 @@ more details.
 
 #### `contents.getOSProcessId()`
 
-Returns `Integer` - The `pid` of the associated renderer process.
+Returns `Integer` - The operating system `pid` of the associated renderer
+process.
+
+#### `contents.getProcessId()`
+
+Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
+be compared to the `frameProcessId` passed by frame specific navigation events
+(e.g. `did-frame-navigate`)
 
 ### Instance Properties
 

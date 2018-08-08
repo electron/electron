@@ -10,7 +10,7 @@ namespace views {
 class WebView;
 class Widget;
 class WidgetDelegate;
-}
+}  // namespace views
 
 namespace brightray {
 
@@ -21,7 +21,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
  public:
   explicit InspectableWebContentsViewViews(
       InspectableWebContentsImpl* inspectable_web_contents_impl);
-  ~InspectableWebContentsViewViews();
+  ~InspectableWebContentsViewViews() override;
 
   // InspectableWebContentsView:
   views::View* GetView() override;

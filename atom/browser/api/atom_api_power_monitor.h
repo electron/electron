@@ -9,6 +9,7 @@
 #include "atom/browser/lib/power_observer.h"
 #include "base/compiler_specific.h"
 #include "native_mate/handle.h"
+#include "ui/base/idle/idle.h"
 
 namespace atom {
 
@@ -35,12 +36,43 @@ class PowerMonitor : public mate::TrackableObject<PowerMonitor>,
   void UnblockShutdown();
 #endif
 
+#if defined(OS_MACOSX) || defined(OS_WIN)
+  void InitPlatformSpecificMonitors();
+#endif
+
   // base::PowerObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
   void OnSuspend() override;
   void OnResume() override;
 
  private:
+  void QuerySystemIdleState(v8::Isolate* isolate,
+                            int idle_threshold,
+                            const ui::IdleCallback& callback);
+  void QuerySystemIdleTime(const ui::IdleTimeCallback& callback);
+
+#if defined(OS_WIN)
+  // Static callback invoked when a message comes in to our messaging window.
+  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
+                                        UINT message,
+                                        WPARAM wparam,
+                                        LPARAM lparam);
+
+  LRESULT CALLBACK WndProc(HWND hwnd,
+                           UINT message,
+                           WPARAM wparam,
+                           LPARAM lparam);
+
+  // The window class of |window_|.
+  ATOM atom_;
+
+  // The handle of the module that contains the window procedure of |window_|.
+  HMODULE instance_;
+
+  // The window used for processing events.
+  HWND window_;
+#endif
+
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
 

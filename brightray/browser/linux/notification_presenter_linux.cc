@@ -16,11 +16,9 @@ NotificationPresenter* NotificationPresenter::Create() {
   return new NotificationPresenterLinux;
 }
 
-NotificationPresenterLinux::NotificationPresenterLinux() {
-}
+NotificationPresenterLinux::NotificationPresenterLinux() {}
 
-NotificationPresenterLinux::~NotificationPresenterLinux() {
-}
+NotificationPresenterLinux::~NotificationPresenterLinux() {}
 
 Notification* NotificationPresenterLinux::CreateNotificationObject(
     NotificationDelegate* delegate) {

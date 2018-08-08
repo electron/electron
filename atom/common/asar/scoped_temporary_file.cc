@@ -11,8 +11,7 @@
 
 namespace asar {
 
-ScopedTemporaryFile::ScopedTemporaryFile() {
-}
+ScopedTemporaryFile::ScopedTemporaryFile() {}
 
 ScopedTemporaryFile::~ScopedTemporaryFile() {
   if (!path_.empty()) {
@@ -51,7 +50,8 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
 
 bool ScopedTemporaryFile::InitFromFile(base::File* src,
                                        const base::FilePath::StringType& ext,
-                                       uint64_t offset, uint64_t size) {
+                                       uint64_t offset,
+                                       uint64_t size) {
   if (!src->IsValid())
     return false;
 
@@ -68,7 +68,7 @@ bool ScopedTemporaryFile::InitFromFile(base::File* src,
     return false;
 
   return dest.WriteAtCurrentPos(buf.data(), buf.size()) ==
-      static_cast<int>(size);
+         static_cast<int>(size);
 }
 
 }  // namespace asar

@@ -5,49 +5,42 @@
 #ifndef ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 #define ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 
+#include "content/public/browser/web_contents.h"
+
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
-#include "content/browser/renderer_host/render_widget_host_view_frame_subscriber.h"
-#include "content/public/browser/readback_types.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/geometry/size.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
+#include "content/public/browser/web_contents_observer.h"
+#include "ui/gfx/image/image.h"
 #include "v8/include/v8.h"
 
 namespace atom {
 
 namespace api {
 
-class FrameSubscriber : public content::RenderWidgetHostViewFrameSubscriber {
+class WebContents;
+
+class FrameSubscriber : public content::WebContentsObserver {
  public:
   using FrameCaptureCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   FrameSubscriber(v8::Isolate* isolate,
-                  content::RenderWidgetHostView* view,
+                  content::WebContents* web_contents,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
-
-  bool ShouldCaptureFrame(const gfx::Rect& damage_rect,
-                          base::TimeTicks present_time,
-                          scoped_refptr<media::VideoFrame>* storage,
-                          DeliverFrameCallback* callback) override;
-  const base::UnguessableToken& GetSourceIdForCopyRequest() override;
+  ~FrameSubscriber() override;
 
  private:
-  void OnFrameDelivered(const FrameCaptureCallback& callback,
-                        const gfx::Rect& damage_rect,
-                        const SkBitmap& bitmap,
-                        content::ReadbackResponse response);
+  gfx::Rect GetDamageRect();
+  void DidReceiveCompositorFrame() override;
+  void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
   v8::Isolate* isolate_;
-  content::RenderWidgetHostView* view_;
   FrameCaptureCallback callback_;
   bool only_dirty_;
 
-  base::UnguessableToken source_id_for_copy_request_;
-
-  base::WeakPtrFactory<FrameSubscriber> weak_factory_;
+  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };

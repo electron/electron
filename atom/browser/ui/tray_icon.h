@@ -45,11 +45,18 @@ class TrayIcon {
 
   // Sets the status icon highlight mode. This only works on macOS.
   enum HighlightMode {
-    ALWAYS,  // Always highlight the tray icon
-    NEVER,  // Never highlight the tray icon
+    ALWAYS,    // Always highlight the tray icon
+    NEVER,     // Never highlight the tray icon
     SELECTION  // Highlight the tray icon when clicked or the menu is opened
   };
   virtual void SetHighlightMode(HighlightMode mode);
+
+  // Setter and getter for the flag which determines whether to ignore double
+  // click events. These only work on macOS.
+#if defined(OS_MACOSX)
+  virtual void SetIgnoreDoubleClickEvents(bool ignore) = 0;
+  virtual bool GetIgnoreDoubleClickEvents() = 0;
+#endif
 
   // Displays a notification balloon with the specified contents.
   // Depending on the platform it might not appear by the icon tray.
@@ -90,7 +97,7 @@ class TrayIcon {
   void NotifyMouseExited(const gfx::Point& location = gfx::Point(),
                          int modifiers = 0);
   void NotifyMouseMoved(const gfx::Point& location = gfx::Point(),
-                         int modifiers = 0);
+                        int modifiers = 0);
 
  protected:
   TrayIcon();

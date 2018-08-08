@@ -15,7 +15,7 @@ namespace atom {
 class AtomMainDelegate : public brightray::MainDelegate {
  public:
   AtomMainDelegate();
-  ~AtomMainDelegate();
+  ~AtomMainDelegate() override;
 
  protected:
   // content::ContentMainDelegate:

@@ -10,6 +10,7 @@
 
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/window_list_observer.h"
+#include "atom/common/promise_util.h"
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
@@ -18,6 +19,7 @@
 #include "native_mate/arguments.h"
 
 #if defined(OS_WIN)
+#include <windows.h>
 #include "base/files/file_path.h"
 #endif
 
@@ -38,7 +40,7 @@ class LoginHandler;
 class Browser : public WindowListObserver {
  public:
   Browser();
-  ~Browser();
+  ~Browser() override;
 
   static Browser* Get();
 
@@ -100,6 +102,10 @@ class Browser : public WindowListObserver {
     bool opened_as_hidden = false;
     base::string16 path;
     std::vector<base::string16> args;
+
+    LoginItemSettings();
+    ~LoginItemSettings();
+    LoginItemSettings(const LoginItemSettings&);
   };
   void SetLoginItemSettings(LoginItemSettings settings);
   LoginItemSettings GetLoginItemSettings(const LoginItemSettings& options);
@@ -186,6 +192,10 @@ class Browser : public WindowListObserver {
     base::string16 description;
     base::FilePath icon_path;
     int icon_index;
+
+    UserTask();
+    UserTask(const UserTask&);
+    ~UserTask();
   };
 
   // Add a custom task to jump list.
@@ -229,17 +239,14 @@ class Browser : public WindowListObserver {
 
   void PreMainMessageLoopRun();
 
-  void AddObserver(BrowserObserver* obs) {
-    observers_.AddObserver(obs);
-  }
+  void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
 
-  void RemoveObserver(BrowserObserver* obs) {
-    observers_.RemoveObserver(obs);
-  }
+  void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
 
   bool is_shutting_down() const { return is_shutdown_; }
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
+  util::Promise* WhenReady(v8::Isolate* isolate);
 
  protected:
   // Returns the version of application bundle or executable file.
@@ -254,7 +261,7 @@ class Browser : public WindowListObserver {
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
-  bool is_quiting_;
+  bool is_quiting_ = false;
 
  private:
   // WindowListObserver implementations:
@@ -265,17 +272,17 @@ class Browser : public WindowListObserver {
   base::ObserverList<BrowserObserver> observers_;
 
   // Whether `app.exit()` has been called
-  bool is_exiting_;
+  bool is_exiting_ = false;
 
   // Whether "ready" event has been emitted.
-  bool is_ready_;
+  bool is_ready_ = false;
 
   // The browser is being shutdown.
-  bool is_shutdown_;
-
-  std::string name_override_;
+  bool is_shutdown_ = false;
 
   int badge_count_ = 0;
+
+  util::Promise* ready_promise_ = nullptr;
 
 #if defined(OS_MACOSX)
   base::DictionaryValue about_panel_options_;

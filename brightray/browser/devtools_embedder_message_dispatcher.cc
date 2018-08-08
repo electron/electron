@@ -33,8 +33,7 @@ bool GetValue(const base::Value& value, gfx::Rect* rect) {
   int y = 0;
   int width = 0;
   int height = 0;
-  if (!dict->GetInteger("x", &x) ||
-      !dict->GetInteger("y", &y) ||
+  if (!dict->GetInteger("x", &x) || !dict->GetInteger("y", &y) ||
       !dict->GetInteger("width", &width) ||
       !dict->GetInteger("height", &height))
     return false;
@@ -69,8 +68,7 @@ template <typename T, typename... Ts>
 struct ParamTuple<T, Ts...> {
   bool Parse(const base::ListValue& list,
              const base::ListValue::const_iterator& it) {
-    return it != list.end() && GetValue(*it, &head) &&
-           tail.Parse(list, it + 1);
+    return it != list.end() && GetValue(*it, &head) && tail.Parse(list, it + 1);
   }
 
   template <typename H, typename... As>
@@ -82,7 +80,7 @@ struct ParamTuple<T, Ts...> {
   ParamTuple<Ts...> tail;
 };
 
-template<typename... As>
+template <typename... As>
 bool ParseAndHandle(const base::Callback<void(As...)>& handler,
                     const DispatchCallback& callback,
                     const base::ListValue& list) {
@@ -93,7 +91,7 @@ bool ParseAndHandle(const base::Callback<void(As...)>& handler,
   return true;
 }
 
-template<typename... As>
+template <typename... As>
 bool ParseAndHandleWithCallback(
     const base::Callback<void(const DispatchCallback&, As...)>& handler,
     const DispatchCallback& callback,
@@ -126,28 +124,28 @@ class DispatcherImpl : public DevToolsEmbedderMessageDispatcher {
     return it != handlers_.end() && it->second.Run(callback, *params);
   }
 
-  template<typename... As>
+  template <typename... As>
   void RegisterHandler(const std::string& method,
                        void (Delegate::*handler)(As...),
                        Delegate* delegate) {
-    handlers_[method] = base::Bind(&ParseAndHandle<As...>,
-                                   base::Bind(handler,
-                                              base::Unretained(delegate)));
+    handlers_[method] =
+        base::Bind(&ParseAndHandle<As...>,
+                   base::Bind(handler, base::Unretained(delegate)));
   }
 
-  template<typename... As>
+  template <typename... As>
   void RegisterHandlerWithCallback(
       const std::string& method,
       void (Delegate::*handler)(const DispatchCallback&, As...),
       Delegate* delegate) {
-    handlers_[method] = base::Bind(&ParseAndHandleWithCallback<As...>,
-                                   base::Bind(handler,
-                                              base::Unretained(delegate)));
+    handlers_[method] =
+        base::Bind(&ParseAndHandleWithCallback<As...>,
+                   base::Bind(handler, base::Unretained(delegate)));
   }
 
  private:
-  using Handler = base::Callback<bool(const DispatchCallback&,
-                                      const base::ListValue&)>;
+  using Handler =
+      base::Callback<bool(const DispatchCallback&, const base::ListValue&)>;
   using HandlerMap = std::map<std::string, Handler>;
   HandlerMap handlers_;
 };
@@ -165,15 +163,16 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
                      &Delegate::SetInspectedPageBounds, delegate);
   d->RegisterHandler("inspectElementCompleted",
                      &Delegate::InspectElementCompleted, delegate);
-  d->RegisterHandler("inspectedURLChanged",
-                     &Delegate::InspectedURLChanged, delegate);
-  d->RegisterHandlerWithCallback("setIsDocked",
-                                 &Delegate::SetIsDocked, delegate);
+  d->RegisterHandler("inspectedURLChanged", &Delegate::InspectedURLChanged,
+                     delegate);
+  d->RegisterHandlerWithCallback("setIsDocked", &Delegate::SetIsDocked,
+                                 delegate);
   d->RegisterHandler("openInNewTab", &Delegate::OpenInNewTab, delegate);
+  d->RegisterHandler("showItemInFolder", &Delegate::ShowItemInFolder, delegate);
   d->RegisterHandler("save", &Delegate::SaveToFile, delegate);
   d->RegisterHandler("append", &Delegate::AppendToFile, delegate);
-  d->RegisterHandler("requestFileSystems",
-                     &Delegate::RequestFileSystems, delegate);
+  d->RegisterHandler("requestFileSystems", &Delegate::RequestFileSystems,
+                     delegate);
   d->RegisterHandler("addFileSystem", &Delegate::AddFileSystem, delegate);
   d->RegisterHandler("removeFileSystem", &Delegate::RemoveFileSystem, delegate);
   d->RegisterHandler("upgradeDraggedFileSystemPermissions",
@@ -185,21 +184,32 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("searchInPath", &Delegate::SearchInPath, delegate);
   d->RegisterHandler("setWhitelistedShortcuts",
                      &Delegate::SetWhitelistedShortcuts, delegate);
+  d->RegisterHandler("setEyeDropperActive", &Delegate::SetEyeDropperActive,
+                     delegate);
+  d->RegisterHandler("showCertificateViewer", &Delegate::ShowCertificateViewer,
+                     delegate);
   d->RegisterHandler("zoomIn", &Delegate::ZoomIn, delegate);
   d->RegisterHandler("zoomOut", &Delegate::ZoomOut, delegate);
   d->RegisterHandler("resetZoom", &Delegate::ResetZoom, delegate);
+  d->RegisterHandler("setDevicesDiscoveryConfig",
+                     &Delegate::SetDevicesDiscoveryConfig, delegate);
   d->RegisterHandler("setDevicesUpdatesEnabled",
                      &Delegate::SetDevicesUpdatesEnabled, delegate);
+  d->RegisterHandler("performActionOnRemotePage",
+                     &Delegate::PerformActionOnRemotePage, delegate);
+  d->RegisterHandler("openRemotePage", &Delegate::OpenRemotePage, delegate);
+  d->RegisterHandler("openNodeFrontend", &Delegate::OpenNodeFrontend, delegate);
   d->RegisterHandler("dispatchProtocolMessage",
                      &Delegate::DispatchProtocolMessageFromDevToolsFrontend,
                      delegate);
-  d->RegisterHandlerWithCallback("sendJsonRequest",
-                                 &Delegate::SendJsonRequest, delegate);
-  d->RegisterHandlerWithCallback("getPreferences",
-                                 &Delegate::GetPreferences, delegate);
+  d->RegisterHandlerWithCallback("sendJsonRequest", &Delegate::SendJsonRequest,
+                                 delegate);
+  d->RegisterHandlerWithCallback("getPreferences", &Delegate::GetPreferences,
+                                 delegate);
   d->RegisterHandler("setPreference", &Delegate::SetPreference, delegate);
   d->RegisterHandler("removePreference", &Delegate::RemovePreference, delegate);
   d->RegisterHandler("clearPreferences", &Delegate::ClearPreferences, delegate);
+  d->RegisterHandler("connectionReady", &Delegate::ConnectionReady, delegate);
   d->RegisterHandler("registerExtensionsAPI", &Delegate::RegisterExtensionsAPI,
                      delegate);
   return d;

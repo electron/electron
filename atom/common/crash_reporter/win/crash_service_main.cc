@@ -21,8 +21,11 @@ const char kCrashesDirectory[] = "crashes-directory";
 const wchar_t kPipeNameFormat[] = L"\\\\.\\pipe\\$1 Crash Service";
 const wchar_t kStandardLogFile[] = L"operation_log.txt";
 
-void InvalidParameterHandler(const wchar_t*, const wchar_t*, const wchar_t*,
-                             unsigned int, uintptr_t) {
+void InvalidParameterHandler(const wchar_t*,
+                             const wchar_t*,
+                             const wchar_t*,
+                             unsigned int,
+                             uintptr_t) {
   // noop.
 }
 
@@ -51,8 +54,8 @@ int Main(const wchar_t* cmd) {
                << kApplicationName;
     return 1;
   }
-  std::wstring application_name = cmd_line.GetSwitchValueNative(
-      kApplicationName);
+  std::wstring application_name =
+      cmd_line.GetSwitchValueNative(kApplicationName);
 
   if (!cmd_line.HasSwitch(kCrashesDirectory)) {
     LOG(ERROR) << "Crashes directory path must be specified with --"
@@ -78,17 +81,15 @@ int Main(const wchar_t* cmd) {
   VLOG(1) << "Session start. cmdline is [" << cmd << "]";
 
   // Setting the crash reporter.
-  base::string16 pipe_name = base::ReplaceStringPlaceholders(kPipeNameFormat,
-                                                 application_name,
-                                                 NULL);
+  base::string16 pipe_name =
+      base::ReplaceStringPlaceholders(kPipeNameFormat, application_name, NULL);
   cmd_line.AppendSwitch("no-window");
   cmd_line.AppendSwitchASCII("max-reports", "128");
   cmd_line.AppendSwitchASCII("reporter", ATOM_PROJECT_NAME "-crash-service");
   cmd_line.AppendSwitchNative("pipe-name", pipe_name);
 
   breakpad::CrashService crash_service;
-  if (!crash_service.Initialize(application_name, operating_dir,
-                                operating_dir))
+  if (!crash_service.Initialize(application_name, operating_dir, operating_dir))
     return 2;
 
   VLOG(1) << "Ready to process crash requests";

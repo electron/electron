@@ -4,62 +4,50 @@
 
 #include "atom/browser/native_window.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "atom/browser/atom_browser_context.h"
-#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/draggable_region.h"
-#include "atom/common/native_mate_converters/file_path_converter.h"
+#include "atom/common/color_util.h"
 #include "atom/common/options_switches.h"
-#include "base/files/file_util.h"
-#include "base/json/json_writer.h"
-#include "base/message_loop/message_loop.h"
-#include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
-#include "components/prefs/pref_service.h"
-#include "content/public/browser/navigation_entry.h"
-#include "content/public/browser/plugin_service.h"
-#include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
-#include "content/public/browser/render_widget_host.h"
-#include "content/public/browser/render_widget_host_view.h"
-#include "content/public/common/content_switches.h"
-#include "ipc/ipc_message_macros.h"
 #include "native_mate/dictionary.h"
-#include "third_party/skia/include/core/SkRegion.h"
-#include "ui/gfx/codec/png_codec.h"
-#include "ui/gfx/geometry/point.h"
-#include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/geometry/size.h"
-#include "ui/gfx/geometry/size_conversions.h"
+#include "ui/views/widget/widget.h"
+
+#if defined(OS_WIN)
+#include "ui/base/win/shell.h"
+#include "ui/display/win/screen_win.h"
+#endif
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
 
 namespace atom {
 
-NativeWindow::NativeWindow(
-    brightray::InspectableWebContents* inspectable_web_contents,
-    const mate::Dictionary& options,
-    NativeWindow* parent)
-    : content::WebContentsObserver(inspectable_web_contents->GetWebContents()),
-      has_frame_(true),
-      transparent_(false),
-      enable_larger_than_screen_(false),
-      is_closed_(false),
-      sheet_offset_x_(0.0),
-      sheet_offset_y_(0.0),
-      aspect_ratio_(0.0),
-      parent_(parent),
-      is_modal_(false),
-      is_osr_dummy_(false),
-      inspectable_web_contents_(inspectable_web_contents),
-      weak_factory_(this) {
+namespace {
+
+#if defined(OS_WIN)
+gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
+  if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
+    return size;
+
+  gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
+      window->GetAcceleratedWidget(), gfx::Size(64, 64));
+
+  // Some AMD drivers can't display windows that are less than 64x64 pixels,
+  // so expand them to be at least that size. http://crbug.com/286609
+  gfx::Size expanded(std::max(size.width(), min_size.width()),
+                     std::max(size.height(), min_size.height()));
+  return expanded;
+}
+#endif
+
+}  // namespace
+
+NativeWindow::NativeWindow(const mate::Dictionary& options,
+                           NativeWindow* parent)
+    : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
@@ -74,16 +62,6 @@ NativeWindow::~NativeWindow() {
   // It's possible that the windows gets destroyed before it's closed, in that
   // case we need to ensure the OnWindowClosed message is still notified.
   NotifyWindowClosed();
-}
-
-// static
-NativeWindow* NativeWindow::FromWebContents(
-    content::WebContents* web_contents) {
-  for (const auto& window : WindowList::GetWindows()) {
-    if (window->web_contents() == web_contents)
-      return window;
-  }
-  return nullptr;
 }
 
 void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
@@ -152,9 +130,9 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
     // Disable fullscreen button if 'fullscreen' is specified to false.
-  #if defined(OS_MACOSX)
+#if defined(OS_MACOSX)
     fullscreenable = false;
-  #endif
+#endif
   }
   // Overriden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
@@ -170,12 +148,18 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   if (options.Get(options::kKiosk, &kiosk) && kiosk) {
     SetKiosk(kiosk);
   }
+#if defined(OS_MACOSX)
+  std::string type;
+  if (options.Get(options::kVibrancyType, &type)) {
+    SetVibrancy(type);
+  }
+#endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(color);
+    SetBackgroundColor(ParseHexColor(color));
   } else if (!transparent()) {
     // For normal window, use white as default background.
-    SetBackgroundColor("#FFFF");
+    SetBackgroundColor(SK_ColorWHITE);
   }
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
@@ -186,6 +170,10 @@ void NativeWindow::InitFromOptions(const mate::Dictionary& options) {
   options.Get(options::kShow, &show);
   if (show)
     Show();
+}
+
+bool NativeWindow::IsClosed() const {
+  return is_closed_;
 }
 
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
@@ -281,6 +269,21 @@ gfx::Size NativeWindow::GetMaximumSize() const {
   return GetSizeConstraints().GetMaximumSize();
 }
 
+gfx::Size NativeWindow::GetContentMinimumSize() const {
+  return GetContentSizeConstraints().GetMinimumSize();
+}
+
+gfx::Size NativeWindow::GetContentMaximumSize() const {
+  gfx::Size maximum_size = GetContentSizeConstraints().GetMaximumSize();
+#if defined(OS_WIN)
+  return GetContentSizeConstraints().HasMaximumSize()
+             ? GetExpandedWindowSize(this, maximum_size)
+             : maximum_size;
+#else
+  return maximum_size;
+#endif
+}
+
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
   sheet_offset_x_ = offsetX;
   sheet_offset_y_ = offsetY;
@@ -294,91 +297,66 @@ double NativeWindow::GetSheetOffsetY() {
   return sheet_offset_y_;
 }
 
-void NativeWindow::SetRepresentedFilename(const std::string& filename) {
-}
+void NativeWindow::SetRepresentedFilename(const std::string& filename) {}
 
 std::string NativeWindow::GetRepresentedFilename() {
   return "";
 }
 
-void NativeWindow::SetDocumentEdited(bool edited) {
-}
+void NativeWindow::SetDocumentEdited(bool edited) {}
 
 bool NativeWindow::IsDocumentEdited() {
   return false;
 }
 
-void NativeWindow::SetFocusable(bool focusable) {
-}
+void NativeWindow::SetFocusable(bool focusable) {}
 
-void NativeWindow::SetMenu(AtomMenuModel* menu) {
-}
+void NativeWindow::SetMenu(AtomMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
-void NativeWindow::SetAutoHideCursor(bool auto_hide) {
-}
+void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
-void NativeWindow::SelectPreviousTab() {
-}
+void NativeWindow::SelectPreviousTab() {}
 
-void NativeWindow::SelectNextTab() {
-}
+void NativeWindow::SelectNextTab() {}
 
-void NativeWindow::MergeAllWindows() {
-}
+void NativeWindow::MergeAllWindows() {}
 
-void NativeWindow::MoveTabToNewWindow() {
-}
+void NativeWindow::MoveTabToNewWindow() {}
 
-void NativeWindow::ToggleTabBar() {
-}
+void NativeWindow::ToggleTabBar() {}
 
 bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& filename) {
-}
+void NativeWindow::SetVibrancy(const std::string& filename) {}
 
 void NativeWindow::SetTouchBar(
-    const std::vector<mate::PersistentDictionary>& items) {
-}
+    const std::vector<mate::PersistentDictionary>& items) {}
 
-void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {
-}
+void NativeWindow::RefreshTouchBarItem(const std::string& item_id) {}
 
 void NativeWindow::SetEscapeTouchBarItem(
-    const mate::PersistentDictionary& item) {
-}
+    const mate::PersistentDictionary& item) {}
 
-void NativeWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
-}
-
-void NativeWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
-}
-
-bool NativeWindow::IsWebViewFocused() {
-  auto host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
-  return host_view && host_view->HasFocus();
-}
-
-void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {
-}
+void NativeWindow::SetAutoHideMenuBar(bool auto_hide) {}
 
 bool NativeWindow::IsMenuBarAutoHide() {
   return false;
 }
 
-void NativeWindow::SetMenuBarVisibility(bool visible) {
-}
+void NativeWindow::SetMenuBarVisibility(bool visible) {}
 
 bool NativeWindow::IsMenuBarVisible() {
   return true;
+}
+
+bool NativeWindow::SetWindowButtonVisibility(bool visible) {
+  return false;
 }
 
 double NativeWindow::GetAspectRatio() {
@@ -396,10 +374,13 @@ void NativeWindow::SetAspectRatio(double aspect_ratio,
 }
 
 void NativeWindow::PreviewFile(const std::string& path,
-                               const std::string& display_name) {
-}
+                               const std::string& display_name) {}
 
-void NativeWindow::CloseFilePreview() {
+void NativeWindow::CloseFilePreview() {}
+
+void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.RequestPreferredWidth(width);
 }
 
 void NativeWindow::NotifyWindowCloseButtonClicked() {
@@ -477,6 +458,12 @@ void NativeWindow::NotifyWindowRestore() {
     observer.OnWindowRestore();
 }
 
+void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                                          bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowWillResize(new_bounds, prevent_default);
+}
+
 void NativeWindow::NotifyWindowResize() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
@@ -551,30 +538,30 @@ void NativeWindow::NotifyTouchBarItemInteraction(
 }
 
 void NativeWindow::NotifyNewWindowForTab() {
-  for (NativeWindowObserver &observer : observers_)
+  for (NativeWindowObserver& observer : observers_)
     observer.OnNewWindowForTab();
 }
 
 #if defined(OS_WIN)
-void NativeWindow::NotifyWindowMessage(
-    UINT message, WPARAM w_param, LPARAM l_param) {
+void NativeWindow::NotifyWindowMessage(UINT message,
+                                       WPARAM w_param,
+                                       LPARAM l_param) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
 
-std::unique_ptr<SkRegion> NativeWindow::DraggableRegionsToSkRegion(
-    const std::vector<DraggableRegion>& regions) {
-  std::unique_ptr<SkRegion> sk_region(new SkRegion);
-  for (const DraggableRegion& region : regions) {
-    sk_region->op(
-        region.bounds.x(),
-        region.bounds.y(),
-        region.bounds.right(),
-        region.bounds.bottom(),
-        region.draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);
-  }
-  return sk_region;
+views::Widget* NativeWindow::GetWidget() {
+  return widget();
 }
+
+const views::Widget* NativeWindow::GetWidget() const {
+  return widget();
+}
+
+NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
+    : key(UserDataKey()), window(window) {}
+
+NativeWindowRelay::~NativeWindowRelay() = default;
 
 }  // namespace atom

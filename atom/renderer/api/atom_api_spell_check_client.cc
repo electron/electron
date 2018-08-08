@@ -9,12 +9,13 @@
 
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "third_party/icu/source/common/unicode/uscript.h"
 #include "third_party/WebKit/public/web/WebTextCheckingCompletion.h"
 #include "third_party/WebKit/public/web/WebTextCheckingResult.h"
+#include "third_party/icu/source/common/unicode/uscript.h"
 
 namespace atom {
 
@@ -36,6 +37,27 @@ bool HasWordCharacters(const base::string16& text, int index) {
 }
 
 }  // namespace
+
+class SpellCheckClient::SpellcheckRequest {
+ public:
+  SpellcheckRequest(const base::string16& text,
+                    blink::WebTextCheckingCompletion* completion)
+      : text_(text), completion_(completion) {
+    DCHECK(completion);
+  }
+  ~SpellcheckRequest() {}
+
+  base::string16 text() { return text_; }
+  blink::WebTextCheckingCompletion* completion() { return completion_; }
+
+ private:
+  base::string16 text_;  // Text to be checked in this task.
+
+  // The interface to send the misspelled ranges to WebKit.
+  blink::WebTextCheckingCompletion* completion_;
+
+  DISALLOW_COPY_AND_ASSIGN(SpellcheckRequest);
+};
 
 SpellCheckClient::SpellCheckClient(const std::string& language,
                                    bool auto_spell_correct_turned_on,
@@ -74,14 +96,27 @@ void SpellCheckClient::RequestCheckingOfText(
     const blink::WebString& textToCheck,
     blink::WebTextCheckingCompletion* completionCallback) {
   base::string16 text(textToCheck.Utf16());
+  // Ignore invalid requests.
   if (text.empty() || !HasWordCharacters(text, 0)) {
     completionCallback->DidCancelCheckingText();
     return;
   }
 
-  std::vector<blink::WebTextCheckingResult> results;
-  SpellCheckText(text, false, &results);
-  completionCallback->DidFinishCheckingText(results);
+  // Clean up the previous request before starting a new request.
+  if (pending_request_param_.get()) {
+    pending_request_param_->completion()->DidCancelCheckingText();
+  }
+
+  pending_request_param_.reset(new SpellcheckRequest(text, completionCallback));
+
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&SpellCheckClient::PerformSpellCheck, AsWeakPtr(),
+                     base::Owned(pending_request_param_.release())));
+}
+
+bool SpellCheckClient::IsSpellCheckingEnabled() const {
+  return true;
 }
 
 void SpellCheckClient::ShowSpellingUI(bool show) {}
@@ -190,6 +225,14 @@ bool SpellCheckClient::IsValidContraction(const SpellCheckScope& scope,
   return true;
 }
 
+void SpellCheckClient::PerformSpellCheck(SpellcheckRequest* param) {
+  DCHECK(param);
+
+  std::vector<blink::WebTextCheckingResult> results;
+  SpellCheckText(param->text(), false, &results);
+  param->completion()->DidFinishCheckingText(results);
+}
+
 SpellCheckClient::SpellCheckScope::SpellCheckScope(
     const SpellCheckClient& client)
     : handle_scope_(client.isolate_),
@@ -197,6 +240,8 @@ SpellCheckClient::SpellCheckScope::SpellCheckScope(
           v8::Local<v8::Context>::New(client.isolate_, client.context_)),
       provider_(client.provider_.NewHandle()),
       spell_check_(client.spell_check_.NewHandle()) {}
+
+SpellCheckClient::SpellCheckScope::~SpellCheckScope() = default;
 
 }  // namespace api
 

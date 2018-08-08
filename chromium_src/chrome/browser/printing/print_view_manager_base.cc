@@ -8,12 +8,10 @@
 
 #include "base/bind.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/timer/timer.h"
-#include "components/prefs/pref_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/chrome_notification_types.h"
 #include "chrome/browser/printing/print_job.h"
@@ -23,6 +21,7 @@
 #include "chrome/browser/ui/simple_message_box.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/print_messages.h"
+#include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/notification_details.h"
 #include "content/public/browser/notification_service.h"
@@ -43,9 +42,7 @@ using content::BrowserThread;
 
 namespace printing {
 
-namespace {
-
-}  // namespace
+namespace {}  // namespace
 
 PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
@@ -55,9 +52,7 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
       cookie_(0),
       queue_(g_browser_process->print_job_manager()->queue()) {
   DCHECK(queue_.get());
-#if !defined(OS_MACOSX)
   expecting_first_page_ = true;
-#endif  // OS_MACOSX
   printing_enabled_ = true;
 }
 
@@ -68,12 +63,12 @@ PrintViewManagerBase::~PrintViewManagerBase() {
 
 #if !defined(DISABLE_BASIC_PRINTING)
 bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
-                                    bool silent, bool print_background,
+                                    bool silent,
+                                    bool print_background,
                                     const base::string16& device_name) {
   int32_t id = rfh->GetRoutingID();
-  return PrintNowInternal(
-      rfh,
-      base::MakeUnique<PrintMsg_PrintPages>(id, silent, print_background, device_name));
+  return PrintNowInternal(rfh, std::make_unique<PrintMsg_PrintPages>(
+                                   id, silent, print_background, device_name));
 }
 #endif  // !DISABLE_BASIC_PRINTING
 
@@ -115,7 +110,14 @@ void PrintViewManagerBase::OnDidGetDocumentCookie(int cookie) {
 }
 
 void PrintViewManagerBase::OnDidPrintPage(
-  const PrintHostMsg_DidPrintPage_Params& params) {
+    const PrintHostMsg_DidPrintPage_Params& params) {
+// TODO(rbpotter): Remove this check once there are no more spurious
+// DidPrintPage messages.
+#if !defined(OS_WIN)
+  if (!expecting_first_page_)
+    return;
+#endif
+
   if (!OpportunisticallyCreatePrintJob(params.document_cookie))
     return;
 
@@ -126,12 +128,8 @@ void PrintViewManagerBase::OnDidPrintPage(
     return;
   }
 
-#if defined(OS_MACOSX)
-  const bool metafile_must_be_valid = true;
-#else
   const bool metafile_must_be_valid = expecting_first_page_;
   expecting_first_page_ = false;
-#endif  // OS_MACOSX
 
   base::SharedMemory shared_buf(params.metafile_data_handle, true);
   if (metafile_must_be_valid) {
@@ -142,8 +140,7 @@ void PrintViewManagerBase::OnDidPrintPage(
     }
   }
 
-  std::unique_ptr<PdfMetafileSkia> metafile(
-      new PdfMetafileSkia(SkiaDocumentType::PDF));
+  auto metafile = std::make_unique<PdfMetafileSkia>();
   if (metafile_must_be_valid) {
     if (!metafile->InitFromData(shared_buf.memory(), params.data_size)) {
       NOTREACHED() << "Invalid metafile header";
@@ -154,18 +151,15 @@ void PrintViewManagerBase::OnDidPrintPage(
 
 #if !defined(OS_WIN)
   // Update the rendered document. It will send notifications to the listener.
-  document->SetPage(params.page_number,
-                    std::move(metafile),
-                    params.page_size,
-                    params.content_area);
+  document->SetDocument(std::move(metafile), params.page_size,
+                        params.content_area);
 
   ShouldQuitFromInnerMessageLoop();
 #else
   print_job_->AppendPrintedPage(params.page_number);
   if (metafile_must_be_valid) {
-    bool print_text_with_gdi =
-        document->settings().print_text_with_gdi() &&
-        !document->settings().printer_is_xps();
+    bool print_text_with_gdi = document->settings().print_text_with_gdi() &&
+                               !document->settings().printer_is_xps();
 
     scoped_refptr<base::RefCountedBytes> bytes = new base::RefCountedBytes(
         reinterpret_cast<const unsigned char*>(shared_buf.memory()),
@@ -173,8 +167,7 @@ void PrintViewManagerBase::OnDidPrintPage(
 
     document->DebugDumpData(bytes.get(), FILE_PATH_LITERAL(".pdf"));
     print_job_->StartPdfToEmfConversion(
-        bytes, params.page_size, params.content_area,
-        print_text_with_gdi);
+        bytes, params.page_size, params.content_area, print_text_with_gdi);
   }
 #endif  // !OS_WIN
 }
@@ -285,8 +278,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
     return false;
 
   // We can't print if there is no renderer.
-  if (!web_contents() ||
-      !web_contents()->GetRenderViewHost() ||
+  if (!web_contents() || !web_contents()->GetRenderViewHost() ||
       !web_contents()->GetRenderViewHost()->IsRenderViewLive()) {
     return false;
   }
@@ -319,8 +311,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
 void PrintViewManagerBase::ShouldQuitFromInnerMessageLoop() {
   // Look at the reason.
   DCHECK(print_job_->document());
-  if (print_job_->document() &&
-      print_job_->document()->IsComplete() &&
+  if (print_job_->document() && print_job_->document()->IsComplete() &&
       inside_inner_message_loop_) {
     // We are in a message loop created by RenderAllMissingPagesNow. Quit from
     // it.
@@ -349,7 +340,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(PrintJobWorkerOwner* job) {
     return false;
 
   print_job_ = new PrintJob();
-  print_job_->Initialize(job, this, number_pages_);
+  print_job_->Initialize(job, RenderSourceName(), number_pages_);
   registrar_.Add(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
                  content::Source<PrintJob>(print_job_.get()));
   printing_succeeded_ = false;
@@ -362,8 +353,7 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
   bool result = RenderAllMissingPagesNow();
 
   // Verify that assertion.
-  if (print_job_.get() &&
-      print_job_->document() &&
+  if (print_job_.get() && print_job_->document() &&
       !print_job_->document()->IsComplete()) {
     DCHECK(!result);
     // That failed.
@@ -372,14 +362,14 @@ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
     // DO NOT wait for the job to finish.
     ReleasePrintJob();
   }
-#if !defined(OS_MACOSX)
   expecting_first_page_ = true;
-#endif  // OS_MACOSX
 }
 
 void PrintViewManagerBase::PrintingDone(bool success) {
+  auto* host = web_contents()->GetRenderViewHost();
   if (print_job_.get()) {
-    Send(new PrintMsg_PrintingDone(routing_id(), success));
+    if (host)
+      host->Send(new PrintMsg_PrintingDone(host->GetRoutingID(), success));
   }
   if (!callback.is_null()) {
     callback.Run(success && print_job_);
@@ -414,7 +404,6 @@ void PrintViewManagerBase::ReleasePrintJob() {
 
   registrar_.Remove(this, chrome::NOTIFICATION_PRINT_JOB_EVENT,
                     content::Source<PrintJob>(print_job_.get()));
-  print_job_->DisconnectSource();
   // Don't close the worker thread.
   print_job_ = NULL;
 }

@@ -1,5 +1,5 @@
-// Disable use of deprecated functions.
-process.throwDeprecation = true
+// Deprecated APIs are still supported and should be tested.
+process.throwDeprecation = false
 
 const electron = require('electron')
 const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
@@ -37,6 +37,9 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = true
 // sure we can reproduce it in renderer process.
 // eslint-disable-next-line
 process.stdout
+
+// Adding a variable for sandbox process.env test validation
+process.env.sandboxmain = ''
 
 // Access console to reproduce #3482.
 // eslint-disable-next-line
@@ -76,6 +79,8 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
+global.setTimeoutPromisified = util.promisify(setTimeout)
+
 const coverage = new Coverage({
   outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
 })
@@ -94,7 +99,7 @@ if (global.isCi) {
   })
 }
 
-global.nativeModulesEnabled = process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1
+global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 
 // Register app as standard scheme.
 global.standardScheme = 'app'

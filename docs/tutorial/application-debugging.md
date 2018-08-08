@@ -25,7 +25,7 @@ of the most powerful utilities in any Electron Developer's tool belt.
 
 ## Main Process
 
-Debugging the main process is a bit trickier, since you cannot simply open
+Debugging the main process is a bit trickier, since you cannot open
 developer tools for them. The Chromium Developer Tools can [be used
 to debug Electron's main process][node-inspect] thanks to a closer collaboration
 between Google / Chrome and Node.js, but you might encounter oddities like

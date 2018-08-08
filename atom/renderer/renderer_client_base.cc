@@ -7,35 +7,34 @@
 #include <string>
 #include <vector>
 
-#include "atom/common/atom_constants.h"
 #include "atom/common/color_util.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_autofill_agent.h"
 #include "atom/renderer/atom_render_frame_observer.h"
+#include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/memory/ptr_util.h"
+#include "base/process/process_handle.h"
 #include "base/strings/string_split.h"
+#include "base/strings/stringprintf.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
-#include "chrome/renderer/pepper/pepper_helper.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"
+#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
+#include "third_party/WebKit/public/web/WebCustomElement.h"  // NOLINT(build/include_alpha)
 #include "third_party/WebKit/public/web/WebFrameWidget.h"
 #include "third_party/WebKit/public/web/WebKit.h"
 #include "third_party/WebKit/public/web/WebPluginParams.h"
 #include "third_party/WebKit/public/web/WebScriptSource.h"
 #include "third_party/WebKit/public/web/WebSecurityPolicy.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
 
 #if defined(OS_MACOSX)
-#include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #endif
 
@@ -43,12 +42,29 @@
 #include <shlobj.h>
 #endif
 
+#if defined(ENABLE_PDF_VIEWER)
+#include "atom/common/atom_constants.h"
+#endif  // defined(ENABLE_PDF_VIEWER)
+
+#if defined(ENABLE_PEPPER_FLASH)
+#include "chrome/renderer/pepper/pepper_helper.h"
+#endif  // defined(ENABLE_PEPPER_FLASH)
+
+// This is defined in later versions of Chromium, remove this if you see
+// compiler complaining duplicate defines.
+#if defined(OS_WIN) || defined(OS_FUCHSIA)
+#define CrPRIdPid "ld"
+#else
+#define CrPRIdPid "d"
+#endif
+
 namespace atom {
 
 namespace {
 
 v8::Local<v8::Value> GetRenderProcessPreferences(
-    const PreferencesManager* preferences_manager, v8::Isolate* isolate) {
+    const PreferencesManager* preferences_manager,
+    v8::Isolate* isolate) {
   if (preferences_manager->preferences())
     return mate::ConvertToV8(isolate, *preferences_manager->preferences());
   else
@@ -58,8 +74,8 @@ v8::Local<v8::Value> GetRenderProcessPreferences(
 std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
-  return base::SplitString(
-      custom_schemes, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+  return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
+                           base::SPLIT_WANT_NONEMPTY);
 }
 
 }  // namespace
@@ -70,11 +86,23 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
-    isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-        switches::kContextIsolation);
+  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kContextIsolation);
 }
 
-RendererClientBase::~RendererClientBase() {
+RendererClientBase::~RendererClientBase() {}
+
+void RendererClientBase::DidCreateScriptContext(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  // global.setHidden("contextId", `${processId}-${++next_context_id_}`)
+  std::string context_id = base::StringPrintf(
+      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), ++next_context_id_);
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
+  v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
+  v8::Local<v8::Value> value = mate::ConvertToV8(isolate, context_id);
+  context->Global()->SetPrivate(context, private_key, value);
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -129,36 +157,31 @@ void RendererClientBase::RenderThreadStarted() {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
   }
 #endif
-
-#if defined(OS_MACOSX)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  bool scroll_bounce = command_line->HasSwitch(switches::kScrollBounce);
-  base::ScopedCFTypeRef<CFStringRef> rubber_banding_key(
-    base::SysUTF8ToCFStringRef("NSScrollViewRubberbanding"));
-  CFPreferencesSetAppValue(rubber_banding_key,
-                           scroll_bounce ? kCFBooleanTrue : kCFBooleanFalse,
-                           kCFPreferencesCurrentApplication);
-  CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication);
-#endif
 }
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new AtomRenderFrameObserver(render_frame, this);
+#if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
+#endif
+#if defined(ENABLE_PEPPER_FLASH)
   new PepperHelper(render_frame);
+#endif
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
   // This is required for widevine plugin detection provided during runtime.
   blink::ResetPluginCache();
 
+#if defined(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
+#endif  // defined(ENABLE_PDF_VIEWER)
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
+  new AtomRenderViewObserver(render_view);
   blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
   if (!web_frame_widget)
     return;
@@ -182,7 +205,7 @@ void RendererClientBase::DidClearWindowObject(
 std::unique_ptr<blink::WebSpeechSynthesizer>
 RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
-  return base::MakeUnique<TtsDispatcher>(client);
+  return std::make_unique<TtsDispatcher>(client);
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
@@ -191,7 +214,9 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
+#if defined(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
+#endif  // defined(ENABLE_PDF_VIEWER)
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 
@@ -216,7 +241,8 @@ void RendererClientBase::AddSupportedKeySystems(
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
-    blink::WebLocalFrame* frame, v8::Isolate* isolate) {
+    blink::WebLocalFrame* frame,
+    v8::Isolate* isolate) const {
   if (isolated_world())
     return frame->WorldScriptContext(isolate, World::ISOLATED_WORLD);
   else

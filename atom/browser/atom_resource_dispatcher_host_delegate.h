@@ -19,13 +19,7 @@ class AtomResourceDispatcherHostDelegate
   // content::ResourceDispatcherHostDelegate:
   bool HandleExternalProtocol(const GURL& url,
                               content::ResourceRequestInfo* info) override;
-  content::ResourceDispatcherHostLoginDelegate* CreateLoginDelegate(
-      net::AuthChallengeInfo* auth_info,
-      net::URLRequest* request) override;
-  std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
-      content::ResourceContext* resource_context) override;
   bool ShouldInterceptResourceAsStream(net::URLRequest* request,
-                                       const base::FilePath& plugin_path,
                                        const std::string& mime_type,
                                        GURL* origin,
                                        std::string* payload) override;

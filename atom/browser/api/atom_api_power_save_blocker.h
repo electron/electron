@@ -33,19 +33,18 @@ class PowerSaveBlocker : public mate::TrackableObject<PowerSaveBlocker> {
 
  private:
   void UpdatePowerSaveBlocker();
-  int Start(device::PowerSaveBlocker::PowerSaveBlockerType type);
+  int Start(device::mojom::WakeLockType type);
   bool Stop(int id);
   bool IsStarted(int id);
 
   std::unique_ptr<device::PowerSaveBlocker> power_save_blocker_;
 
-  // Currnet blocker type used by |power_save_blocker_|
-  device::PowerSaveBlocker::PowerSaveBlockerType current_blocker_type_;
+  // Current blocker type used by |power_save_blocker_|
+  device::mojom::WakeLockType current_blocker_type_;
 
   // Map from id to the corresponding blocker type for each request.
-  using PowerSaveBlockerTypeMap =
-      std::map<int, device::PowerSaveBlocker::PowerSaveBlockerType>;
-  PowerSaveBlockerTypeMap power_save_blocker_types_;
+  using WakeLockTypeMap = std::map<int, device::mojom::WakeLockType>;
+  WakeLockTypeMap power_save_blocker_types_;
 
   DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };

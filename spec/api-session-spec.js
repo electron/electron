@@ -96,6 +96,7 @@ describe('session module', () => {
         name: '1',
         value: '1'
       }, (error) => {
+        assert(error, 'Should have an error')
         assert.equal(error.message, 'Setting cookie failed')
         done()
       })
@@ -288,12 +289,17 @@ describe('session module', () => {
       res.end(mockPDF)
       downloadServer.close()
     })
+
+    const isPathEqual = (path1, path2) => {
+      return path.relative(path1, path2) === ''
+    }
     const assertDownload = (event, state, url, mimeType,
                                    receivedBytes, totalBytes, disposition,
                                    filename, port, savePath, isCustom) => {
       assert.equal(state, 'completed')
       assert.equal(filename, 'mock.pdf')
-      assert.equal(savePath, path.join(__dirname, 'fixtures', 'mock.pdf'))
+      assert.ok(path.isAbsolute(savePath))
+      assert.ok(isPathEqual(savePath, path.join(__dirname, 'fixtures', 'mock.pdf')))
       if (isCustom) {
         assert.equal(url, `${protocolName}://item`)
       } else {
@@ -585,35 +591,6 @@ describe('session module', () => {
         done()
       })
       w.loadURL(`https://127.0.0.1:${server.address().port}`)
-    })
-
-    describe('deprecated function signature', () => {
-      it('supports accepting the request', (done) => {
-        session.defaultSession.setCertificateVerifyProc((hostname, certificate, callback) => {
-          assert.equal(hostname, '127.0.0.1')
-          callback(true)
-        })
-
-        w.webContents.once('did-finish-load', () => {
-          assert.equal(w.webContents.getTitle(), 'hello')
-          done()
-        })
-        w.loadURL(`https://127.0.0.1:${server.address().port}`)
-      })
-
-      it('supports rejecting the request', (done) => {
-        session.defaultSession.setCertificateVerifyProc((hostname, certificate, callback) => {
-          assert.equal(hostname, '127.0.0.1')
-          callback(false)
-        })
-
-        const url = `https://127.0.0.1:${server.address().port}`
-        w.webContents.once('did-finish-load', () => {
-          assert.equal(w.webContents.getTitle(), url)
-          done()
-        })
-        w.loadURL(url)
-      })
     })
 
     it('rejects the request when the callback is called with -2', (done) => {

@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_url_request.h"
+
 #include <string>
+
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/net/atom_url_request.h"
 #include "atom/common/api/event_emitter_caller.h"
@@ -38,7 +40,7 @@ struct Converter<scoped_refptr<const net::IOBufferWithSize>> {
       *out = nullptr;
       return true;
     }
-    auto data = node::Buffer::Data(val);
+    auto* data = node::Buffer::Data(val);
     if (!data) {
       // This is an error as size is positive but data is null.
       return false;
@@ -123,6 +125,18 @@ bool URLRequest::ResponseState::Failed() const {
   return IsFlagSet(ResponseStateFlags::kFailed);
 }
 
+mate::Dictionary URLRequest::GetUploadProgress(v8::Isolate* isolate) {
+  mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate);
+
+  if (atom_request_) {
+    progress.Set("active", true);
+    atom_request_->GetUploadProgress(&progress);
+  } else {
+    progress.Set("active", false);
+  }
+  return progress;
+}
+
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   InitWith(isolate, wrapper);
 }
@@ -138,7 +152,7 @@ URLRequest::~URLRequest() {
 
 // static
 mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
-  auto isolate = args->isolate();
+  auto* isolate = args->isolate();
   v8::Local<v8::Object> options;
   args->GetNext(&options);
   mate::Dictionary dict(isolate, options);
@@ -157,8 +171,8 @@ mate::WrappableBase* URLRequest::New(mate::Arguments* args) {
     // Use the default session if not specified.
     session = Session::FromPartition(isolate, "");
   }
-  auto browser_context = session->browser_context();
-  auto api_url_request = new URLRequest(args->isolate(), args->GetThis());
+  auto* browser_context = session->browser_context();
+  auto* api_url_request = new URLRequest(args->isolate(), args->GetThis());
   auto atom_url_request = AtomURLRequest::Create(
       browser_context, method, url, redirect_policy, api_url_request);
 
@@ -181,6 +195,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
       .SetMethod("followRedirect", &URLRequest::FollowRedirect)
       .SetMethod("_setLoadFlags", &URLRequest::SetLoadFlags)
+      .SetMethod("getUploadProgress", &URLRequest::GetUploadProgress)
       .SetProperty("notStarted", &URLRequest::NotStarted)
       .SetProperty("finished", &URLRequest::Finished)
       // Response APi

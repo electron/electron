@@ -32,22 +32,11 @@
 
 namespace asar {
 
-URLRequestAsarJob::FileMetaInfo::FileMetaInfo()
-    : file_size(0),
-      mime_type_result(false),
-      file_exists(false),
-      is_directory(false) {
-}
+URLRequestAsarJob::FileMetaInfo::FileMetaInfo() = default;
 
-URLRequestAsarJob::URLRequestAsarJob(
-    net::URLRequest* request,
-    net::NetworkDelegate* network_delegate)
-    : net::URLRequestJob(request, network_delegate),
-      type_(TYPE_ERROR),
-      remaining_bytes_(0),
-      seek_offset_(0),
-      range_parse_result_(net::OK),
-      weak_ptr_factory_(this) {}
+URLRequestAsarJob::URLRequestAsarJob(net::URLRequest* request,
+                                     net::NetworkDelegate* network_delegate)
+    : net::URLRequestJob(request, network_delegate), weak_ptr_factory_(this) {}
 
 URLRequestAsarJob::~URLRequestAsarJob() {}
 
@@ -111,16 +100,15 @@ void URLRequestAsarJob::Start() {
     }
     file_task_runner_->PostTaskAndReply(
         FROM_HERE,
-        base::Bind(&URLRequestAsarJob::FetchMetaInfo, file_path_, type_,
-                   base::Unretained(meta_info)),
-        base::Bind(&URLRequestAsarJob::DidFetchMetaInfo,
-                   weak_ptr_factory_.GetWeakPtr(), base::Owned(meta_info)));
+        base::BindOnce(&URLRequestAsarJob::FetchMetaInfo, file_path_, type_,
+                       base::Unretained(meta_info)),
+        base::BindOnce(&URLRequestAsarJob::DidFetchMetaInfo,
+                       weak_ptr_factory_.GetWeakPtr(), base::Owned(meta_info)));
   } else {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE,
-        base::Bind(&URLRequestAsarJob::DidOpen,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   net::ERR_FILE_NOT_FOUND));
+        FROM_HERE, base::BindOnce(&URLRequestAsarJob::DidOpen,
+                                  weak_ptr_factory_.GetWeakPtr(),
+                                  net::ERR_FILE_NOT_FOUND));
   }
 }
 
@@ -140,11 +128,10 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   if (!dest_size)
     return 0;
 
-  int rv = stream_->Read(dest,
-                         dest_size,
-                         base::Bind(&URLRequestAsarJob::DidRead,
-                                    weak_ptr_factory_.GetWeakPtr(),
-                                    make_scoped_refptr(dest)));
+  int rv = stream_->Read(
+      dest, dest_size,
+      base::Bind(&URLRequestAsarJob::DidRead, weak_ptr_factory_.GetWeakPtr(),
+                 WrapRefCounted(dest)));
   if (rv >= 0) {
     remaining_bytes_ -= rv;
     DCHECK_GE(remaining_bytes_, 0);
@@ -184,9 +171,9 @@ std::unique_ptr<net::SourceStream> URLRequestAsarJob::SetUpSourceStream() {
       net::URLRequestJob::SetUpSourceStream();
   // Bug 9936 - .svgz files needs to be decompressed.
   return base::LowerCaseEqualsASCII(file_path_.Extension(), ".svgz")
-      ? net::GzipSourceStream::Create(std::move(source),
-                                      net::SourceStream::TYPE_GZIP)
-      : std::move(source);
+             ? net::GzipSourceStream::Create(std::move(source),
+                                             net::SourceStream::TYPE_GZIP)
+             : std::move(source);
 }
 
 bool URLRequestAsarJob::GetMimeType(std::string* mime_type) const {
@@ -241,10 +228,21 @@ void URLRequestAsarJob::FetchMetaInfo(const base::FilePath& file_path,
       meta_info->is_directory = file_info.is_directory;
     }
   }
-  // On Windows GetMimeTypeFromFile() goes to the registry. Thus it should be
-  // done in WorkerPool.
-  meta_info->mime_type_result =
-      net::GetMimeTypeFromFile(file_path, &meta_info->mime_type);
+
+  // We use GetWellKnownMimeTypeFromExtension() to ensure that configurations
+  // that may have been set by other programs on a user's machine don't affect
+  // the mime type returned (in particular, JS should always be
+  // (application/javascript). See https://crbug.com/797712. Using an accurate
+  // mime type is necessary at least for modules and sw, which enforce strict
+  // mime type requirements.
+  // TODO(deepak1556): Revert this when sw support is removed for file scheme.
+  base::FilePath::StringType file_extension = file_path.Extension();
+  if (file_extension.empty()) {
+    meta_info->mime_type_result = false;
+  } else {
+    meta_info->mime_type_result = net::GetWellKnownMimeTypeFromExtension(
+        file_extension.substr(1), &meta_info->mime_type);
+  }
 }
 
 void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
@@ -254,9 +252,8 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
     return;
   }
 
-  int flags = base::File::FLAG_OPEN |
-              base::File::FLAG_READ |
-              base::File::FLAG_ASYNC;
+  int flags =
+      base::File::FLAG_OPEN | base::File::FLAG_READ | base::File::FLAG_ASYNC;
   int rv = stream_->Open(
       meta_info_.file_path, flags,
       base::Bind(&URLRequestAsarJob::DidOpen, weak_ptr_factory_.GetWeakPtr()));
@@ -266,8 +263,8 @@ void URLRequestAsarJob::DidFetchMetaInfo(const FileMetaInfo* meta_info) {
 
 void URLRequestAsarJob::DidOpen(int result) {
   if (result != net::OK) {
-    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                           result));
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED, result));
     return;
   }
 
@@ -287,20 +284,19 @@ void URLRequestAsarJob::DidOpen(int result) {
   }
 
   if (!byte_range_.ComputeBounds(file_size)) {
-    NotifyStartError(
-        net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                              net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+    NotifyStartError(net::URLRequestStatus(
+        net::URLRequestStatus::FAILED, net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
     return;
   }
 
-  remaining_bytes_ = byte_range_.last_byte_position() -
-                     byte_range_.first_byte_position() + 1;
+  remaining_bytes_ =
+      byte_range_.last_byte_position() - byte_range_.first_byte_position() + 1;
   seek_offset_ = byte_range_.first_byte_position() + read_offset;
 
   if (remaining_bytes_ > 0 && seek_offset_ != 0) {
-    int rv = stream_->Seek(seek_offset_,
-                           base::Bind(&URLRequestAsarJob::DidSeek,
-                                      weak_ptr_factory_.GetWeakPtr()));
+    int rv =
+        stream_->Seek(seek_offset_, base::Bind(&URLRequestAsarJob::DidSeek,
+                                               weak_ptr_factory_.GetWeakPtr()));
     if (rv != net::ERR_IO_PENDING) {
       // stream_->Seek() failed, so pass an intentionally erroneous value
       // into DidSeek().
@@ -316,9 +312,8 @@ void URLRequestAsarJob::DidOpen(int result) {
 
 void URLRequestAsarJob::DidSeek(int64_t result) {
   if (result != seek_offset_) {
-    NotifyStartError(
-        net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                              net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
+    NotifyStartError(net::URLRequestStatus(
+        net::URLRequestStatus::FAILED, net::ERR_REQUEST_RANGE_NOT_SATISFIABLE));
     return;
   }
   set_expected_content_size(remaining_bytes_);

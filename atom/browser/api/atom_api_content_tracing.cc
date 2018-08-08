@@ -18,7 +18,7 @@ using content::TracingController;
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<base::trace_event::TraceConfig> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -41,34 +41,37 @@ namespace {
 
 using CompletionCallback = base::Callback<void(const base::FilePath&)>;
 
-scoped_refptr<TracingController::TraceDataSink> GetTraceDataSink(
-    const base::FilePath& path, const CompletionCallback& callback) {
+scoped_refptr<TracingController::TraceDataEndpoint> GetTraceDataEndpoint(
+    const base::FilePath& path,
+    const CompletionCallback& callback) {
   base::FilePath result_file_path = path;
   if (result_file_path.empty() && !base::CreateTemporaryFile(&result_file_path))
     LOG(ERROR) << "Creating temporary file failed";
 
-  return TracingController::CreateFileSink(result_file_path,
-                                           base::Bind(callback,
-                                                      result_file_path));
+  return TracingController::CreateFileEndpoint(
+      result_file_path, base::Bind(callback, result_file_path));
 }
 
 void StopRecording(const base::FilePath& path,
                    const CompletionCallback& callback) {
   TracingController::GetInstance()->StopTracing(
-      GetTraceDataSink(path, callback));
+      GetTraceDataEndpoint(path, callback));
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   auto controller = base::Unretained(TracingController::GetInstance());
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("getCategories", base::Bind(
-      &TracingController::GetCategories, controller));
-  dict.SetMethod("startRecording", base::Bind(
-      &TracingController::StartTracing, controller));
+  dict.SetMethod("getCategories",
+                 base::Bind(&TracingController::GetCategories, controller));
+  dict.SetMethod("startRecording",
+                 base::Bind(&TracingController::StartTracing, controller));
   dict.SetMethod("stopRecording", &StopRecording);
-  dict.SetMethod("getTraceBufferUsage", base::Bind(
-      &TracingController::GetTraceBufferUsage, controller));
+  dict.SetMethod(
+      "getTraceBufferUsage",
+      base::Bind(&TracingController::GetTraceBufferUsage, controller));
 }
 
 }  // namespace

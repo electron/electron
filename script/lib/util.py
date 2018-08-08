@@ -87,7 +87,7 @@ def download(text, url, path):
     downloaded_size = 0
     block_size = 128
 
-    ci = os.environ.get('CI') == '1'
+    ci = os.environ.get('CI') is not None
 
     while True:
       buf = web_file.read(block_size)
@@ -193,6 +193,12 @@ def electron_gyp():
     obj = eval(f.read());
     return obj['variables']
 
+def electron_features():
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  gyp = os.path.join(SOURCE_ROOT, 'features.gypi')
+  with open(gyp) as f:
+    obj = eval(f.read());
+    return obj['variables']['variables']
 
 def get_electron_version():
   return 'v' + electron_gyp()['version%']
@@ -246,7 +252,7 @@ def import_vs_env(target_arch):
     vs_arch = 'amd64_x86'
   else:
     vs_arch = 'x86_amd64'
-  env = get_vs_env('14.0', vs_arch)
+  env = get_vs_env('[15.0,16.0)', vs_arch)
   os.environ.update(env)
 
 

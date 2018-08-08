@@ -22,9 +22,8 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   // If there is no argument passed then we failed.
   v8::Local<v8::Value> value;
   if (!args->GetNext(&value)) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
-        base::Bind(callback, false, nullptr));
+    content::BrowserThread::PostTask(content::BrowserThread::IO, FROM_HERE,
+                                     base::BindOnce(callback, false, nullptr));
     return;
   }
 
@@ -37,7 +36,7 @@ void HandlerCallback(const BeforeStartCallback& before_start,
   std::unique_ptr<base::Value> options(converter.FromV8Value(value, context));
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(callback, true, base::Passed(&options)));
+      base::BindOnce(callback, true, std::move(options)));
 }
 
 }  // namespace
@@ -52,20 +51,19 @@ void AskForOptions(v8::Isolate* isolate,
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Context::Scope context_scope(context);
-  handler.Run(
-      *(request_details.get()),
-      mate::ConvertToV8(isolate,
-                        base::Bind(&HandlerCallback, before_start, callback)));
+  handler.Run(*(request_details.get()),
+              mate::ConvertToV8(isolate, base::Bind(&HandlerCallback,
+                                                    before_start, callback)));
 }
 
 bool IsErrorOptions(base::Value* value, int* error) {
-  if (value->IsType(base::Value::Type::DICTIONARY)) {
+  if (value->is_dict()) {
     base::DictionaryValue* dict = static_cast<base::DictionaryValue*>(value);
     if (dict->GetInteger("error", error))
       return true;
-  } else if (value->IsType(base::Value::Type::INTEGER)) {
-    if (value->GetAsInteger(error))
-      return true;
+  } else if (value->is_int()) {
+    *error = value->GetInt();
+    return true;
   }
   return false;
 }

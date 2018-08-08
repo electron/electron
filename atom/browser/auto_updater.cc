@@ -21,14 +21,11 @@ std::string AutoUpdater::GetFeedURL() {
   return "";
 }
 
-void AutoUpdater::SetFeedURL(mate::Arguments* args) {
-}
+void AutoUpdater::SetFeedURL(mate::Arguments* args) {}
 
-void AutoUpdater::CheckForUpdates() {
-}
+void AutoUpdater::CheckForUpdates() {}
 
-void AutoUpdater::QuitAndInstall() {
-}
+void AutoUpdater::QuitAndInstall() {}
 #endif
 
 }  // namespace auto_updater

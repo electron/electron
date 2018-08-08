@@ -10,12 +10,10 @@
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/asar/asar_util.h"
-#include "atom/common/atom_constants.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
-#include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
@@ -25,7 +23,7 @@
 
 #include "atom/common/node_includes.h"
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
-#include "vendor/node/src/tracing/trace_event.h"
+#include "tracing/trace_event.h"
 
 namespace atom {
 
@@ -39,10 +37,8 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 }  // namespace
 
 AtomRendererClient::AtomRendererClient()
-    : node_integration_initialized_(false),
-      node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
-      atom_bindings_(new AtomBindings(uv_default_loop())) {
-}
+    : node_bindings_(NodeBindings::Create(NodeBindings::RENDERER)),
+      atom_bindings_(new AtomBindings(uv_default_loop())) {}
 
 AtomRendererClient::~AtomRendererClient() {
   asar::ClearArchives();
@@ -54,40 +50,43 @@ void AtomRendererClient::RenderThreadStarted() {
 
 void AtomRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  new AtomRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomRendererClient::RenderViewCreated(content::RenderView* render_view) {
-  new AtomRenderViewObserver(render_view, this);
   RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   // Inform the document start pharse.
-  node::Environment* env = node_bindings_->uv_env();
-  if (env) {
-    v8::HandleScope handle_scope(env->isolate());
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = GetEnvironment(render_frame);
+  if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "document-start");
-  }
 }
 
 void AtomRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   // Inform the document end pharse.
-  node::Environment* env = node_bindings_->uv_env();
-  if (env) {
-    v8::HandleScope handle_scope(env->isolate());
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = GetEnvironment(render_frame);
+  if (env)
     mate::EmitEvent(env->isolate(), env->process_object(), "document-end");
-  }
 }
 
 void AtomRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
+
   // Only allow node integration for the main frame, unless it is a devtools
   // extension page.
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
     return;
+
+  injected_frames_.insert(render_frame);
 
   // Prepare the node bindings.
   if (!node_integration_initialized_) {
@@ -103,6 +102,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
+  environments_.insert(env);
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(env->isolate(), env->process_object());
@@ -121,15 +121,18 @@ void AtomRendererClient::DidCreateScriptContext(
 }
 
 void AtomRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
-  // Only allow node integration for the main frame, unless it is a devtools
-  // extension page.
-  if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
     return;
+  injected_frames_.erase(render_frame);
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (env)
-    mate::EmitEvent(env->isolate(), env->process_object(), "exit");
+  if (environments_.find(env) == environments_.end())
+    return;
+  environments_.erase(env);
+
+  mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
@@ -182,13 +185,14 @@ void AtomRendererClient::SetupMainWorldOverrides(
 
   // Wrap the bundle into a function that receives the binding object as
   // an argument.
-  std::string bundle(node::isolated_bundle_data,
-      node::isolated_bundle_data + sizeof(node::isolated_bundle_data));
-  std::string wrapper = "(function (binding, require) {\n" + bundle + "\n})";
-  auto script = v8::Script::Compile(
-      mate::ConvertToV8(isolate, wrapper)->ToString());
-  auto func = v8::Handle<v8::Function>::Cast(
-      script->Run(context).ToLocalChecked());
+  std::string left = "(function (binding, require) {\n";
+  std::string right = "\n})";
+  auto script = v8::Script::Compile(v8::String::Concat(
+      mate::ConvertToV8(isolate, left)->ToString(),
+      v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString())));
+  auto func =
+      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
 
   auto binding = v8::Object::New(isolate);
   api::Initialize(binding, v8::Null(isolate), context, nullptr);
@@ -203,12 +207,24 @@ void AtomRendererClient::SetupMainWorldOverrides(
     dict.Set(options::kOpenerID,
              command_line->GetSwitchValueASCII(switches::kOpenerID));
   dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
-  dict.Set("nativeWindowOpen",
+  dict.Set(options::kNativeWindowOpen,
            command_line->HasSwitch(switches::kNativeWindowOpen));
 
-  v8::Local<v8::Value> args[] = { binding };
+  v8::Local<v8::Value> args[] = {binding};
   ignore_result(func->Call(context, v8::Null(isolate), 1, args));
 }
 
+node::Environment* AtomRendererClient::GetEnvironment(
+    content::RenderFrame* render_frame) const {
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return nullptr;
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  auto context =
+      GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
+  node::Environment* env = node::Environment::GetCurrent(context);
+  if (environments_.find(env) == environments_.end())
+    return nullptr;
+  return env;
+}
 
 }  // namespace atom

@@ -18,6 +18,9 @@ if sys.platform == 'linux2':
     # will be picked up by electron.
     try:
         import lib.dbus_mock
+        import atexit
+        lib.dbus_mock.start()
+        atexit.register(lib.dbus_mock.stop)
     except ImportError:
         # If not available, the powerMonitor tests will be skipped since
         # DBUS_SYSTEM_BUS_ADDRESS will not be set
@@ -38,6 +41,7 @@ def main():
 
   if args.verbose:
     enable_verbose_mode()
+    os.environ['ELECTRON_ENABLE_LOGGING'] = '1'
 
   spec_modules = os.path.join(SOURCE_ROOT, 'spec', 'node_modules')
   if args.rebuild_native_modules or not os.path.isdir(spec_modules):
@@ -54,6 +58,8 @@ def main():
     electron = os.path.join(SOURCE_ROOT, 'out', config,
                               '{0}.exe'.format(PROJECT_NAME))
     resources_path = os.path.join(SOURCE_ROOT, 'out', config)
+    if config != 'R':
+      os.environ['ELECTRON_SKIP_NATIVE_MODULE_TESTS'] = '1'
   else:
     electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
     resources_path = os.path.join(SOURCE_ROOT, 'out', config)

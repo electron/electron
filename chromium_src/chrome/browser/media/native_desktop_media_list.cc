@@ -14,14 +14,14 @@ using base::PlatformThreadRef;
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/sequenced_worker_pool.h"
+#include "base/task_scheduler/post_task.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
 #include "content/public/browser/browser_thread.h"
 #include "media/base/video_util.h"
 #include "third_party/libyuv/include/libyuv/scale_argb.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "third_party/webrtc/modules/desktop_capture/desktop_frame.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
+#include "third_party/webrtc/modules/desktop_capture/desktop_frame.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/skia_util.h"
 
@@ -37,7 +37,7 @@ const int kDefaultUpdatePeriod = 1000;
 // media source has changed.
 uint32_t GetFrameHash(webrtc::DesktopFrame* frame) {
   int data_size = frame->stride() * frame->size().height();
-  return base::SuperFastHash(reinterpret_cast<char*>(frame->data()), data_size);
+  return base::Hash(frame->data(), data_size);
 }
 
 gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
@@ -50,9 +50,8 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
   result.allocN32Pixels(scaled_rect.width(), scaled_rect.height(), true);
 
   uint8* pixels_data = reinterpret_cast<uint8*>(result.getPixels());
-  libyuv::ARGBScale(frame->data(), frame->stride(),
-                    frame->size().width(), frame->size().height(),
-                    pixels_data, result.rowBytes(),
+  libyuv::ARGBScale(frame->data(), frame->stride(), frame->size().width(),
+                    frame->size().height(), pixels_data, result.rowBytes(),
                     scaled_rect.width(), scaled_rect.height(),
                     libyuv::kFilterBilinear);
 
@@ -76,9 +75,7 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
 NativeDesktopMediaList::SourceDescription::SourceDescription(
     DesktopMediaID id,
     const base::string16& name)
-    : id(id),
-      name(name) {
-}
+    : id(id), name(name) {}
 
 class NativeDesktopMediaList::Worker
     : public webrtc::DesktopCapturer::Callback {
@@ -137,12 +134,12 @@ void NativeDesktopMediaList::Worker::Refresh(
       base::string16 title;
       for (size_t i = 0; i < screens.size(); ++i) {
         if (mutiple_screens) {
-          title = base::UTF8ToUTF16("Screen " + base::IntToString(i+1));
+          title = base::UTF8ToUTF16("Screen " + base::IntToString(i + 1));
         } else {
           title = base::UTF8ToUTF16("Entire screen");
         }
-        sources.push_back(SourceDescription(DesktopMediaID(
-            DesktopMediaID::TYPE_SCREEN, screens[i].id), title));
+        sources.push_back(SourceDescription(
+            DesktopMediaID(DesktopMediaID::TYPE_SCREEN, screens[i].id), title));
       }
     }
   }
@@ -163,8 +160,7 @@ void NativeDesktopMediaList::Worker::Refresh(
   // Update list of windows before updating thumbnails.
   BrowserThread::PostTask(
       BrowserThread::UI, FROM_HERE,
-      base::Bind(&NativeDesktopMediaList::OnSourcesList,
-                 media_list_, sources));
+      base::Bind(&NativeDesktopMediaList::OnSourcesList, media_list_, sources));
 
   ImageHashesMap new_image_hashes;
 
@@ -202,8 +198,8 @@ void NativeDesktopMediaList::Worker::Refresh(
             ScaleDesktopFrame(std::move(current_frame_), thumbnail_size);
         BrowserThread::PostTask(
             BrowserThread::UI, FROM_HERE,
-            base::Bind(&NativeDesktopMediaList::OnSourceThumbnail,
-                        media_list_, i, thumbnail));
+            base::Bind(&NativeDesktopMediaList::OnSourceThumbnail, media_list_,
+                       i, thumbnail));
       }
     }
   }
@@ -235,9 +231,9 @@ NativeDesktopMediaList::NativeDesktopMediaList(
       view_dialog_id_(-1),
       observer_(NULL),
       weak_factory_(this) {
-  base::SequencedWorkerPool* worker_pool = BrowserThread::GetBlockingPool();
-  capture_task_runner_ = worker_pool->GetSequencedTaskRunner(
-      worker_pool->GetSequenceToken());
+  capture_task_runner_ = base::CreateSequencedTaskRunnerWithTraits(
+      {base::WithBaseSyncPrimitives(), base::MayBlock(),
+       base::TaskPriority::USER_VISIBLE});
 }
 
 NativeDesktopMediaList::~NativeDesktopMediaList() {
@@ -249,8 +245,7 @@ void NativeDesktopMediaList::SetUpdatePeriod(base::TimeDelta period) {
   update_period_ = period;
 }
 
-void NativeDesktopMediaList::SetThumbnailSize(
-    const gfx::Size& thumbnail_size) {
+void NativeDesktopMediaList::SetThumbnailSize(const gfx::Size& thumbnail_size) {
   thumbnail_size_ = thumbnail_size;
 }
 
@@ -280,7 +275,8 @@ const DesktopMediaList::Source& NativeDesktopMediaList::GetSource(
   return sources_[index];
 }
 
-std::vector<DesktopMediaList::Source> NativeDesktopMediaList::GetSources() const {
+std::vector<DesktopMediaList::Source> NativeDesktopMediaList::GetSources()
+    const {
   return sources_;
 }
 
@@ -352,9 +348,8 @@ void NativeDesktopMediaList::OnSourcesList(
   }
 }
 
-void NativeDesktopMediaList::OnSourceThumbnail(
-    int index,
-    const gfx::ImageSkia& image) {
+void NativeDesktopMediaList::OnSourceThumbnail(int index,
+                                               const gfx::ImageSkia& image) {
   DCHECK_LT(index, static_cast<int>(sources_.size()));
   sources_[index].thumbnail = image;
   observer_->OnSourceThumbnailChanged(index);
@@ -364,10 +359,9 @@ void NativeDesktopMediaList::OnRefreshFinished() {
   // Give a chance to the observer to stop the refresh work.
   bool is_continue = observer_->OnRefreshFinished();
   if (is_continue) {
-    BrowserThread::PostDelayedTask(
-        BrowserThread::UI, FROM_HERE,
-        base::Bind(&NativeDesktopMediaList::Refresh,
-                   weak_factory_.GetWeakPtr()),
-        update_period_);
+    BrowserThread::PostDelayedTask(BrowserThread::UI, FROM_HERE,
+                                   base::Bind(&NativeDesktopMediaList::Refresh,
+                                              weak_factory_.GetWeakPtr()),
+                                   update_period_);
   }
 }

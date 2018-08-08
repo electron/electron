@@ -21,17 +21,16 @@ class ColorChooserWin : public content::ColorChooser,
   static ColorChooserWin* Open(content::WebContents* web_contents,
                                SkColor initial_color);
 
-  ColorChooserWin(content::WebContents* web_contents,
-                  SkColor initial_color);
-  ~ColorChooserWin();
+  ColorChooserWin(content::WebContents* web_contents, SkColor initial_color);
+  ~ColorChooserWin() override;
 
   // content::ColorChooser overrides:
-  virtual void End() override;
-  virtual void SetSelectedColor(SkColor color) override {}
+  void End() override;
+  void SetSelectedColor(SkColor color) override {}
 
   // views::ColorChooserListener overrides:
-  virtual void OnColorChosen(SkColor color);
-  virtual void OnColorChooserDialogClosed();
+  void OnColorChosen(SkColor color) override;
+  void OnColorChooserDialogClosed() override;
 
  private:
   static ColorChooserWin* current_color_chooser_;
@@ -58,13 +57,12 @@ ColorChooserWin::ColorChooserWin(content::WebContents* web_contents,
                                  SkColor initial_color)
     : web_contents_(web_contents) {
   gfx::NativeWindow owning_window = web_contents->GetRenderViewHost()
-                                                ->GetWidget()
-                                                ->GetView()
-                                                ->GetNativeView()
-                                                ->GetToplevelWindow();
-  color_chooser_dialog_ = new ColorChooserDialog(this,
-                                                 initial_color,
-                                                 owning_window);
+                                        ->GetWidget()
+                                        ->GetView()
+                                        ->GetNativeView()
+                                        ->GetToplevelWindow();
+  color_chooser_dialog_ =
+      new ColorChooserDialog(this, initial_color, owning_window);
 }
 
 ColorChooserWin::~ColorChooserWin() {

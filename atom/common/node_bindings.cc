@@ -33,26 +33,30 @@
   V(atom_browser_browser_view)               \
   V(atom_browser_content_tracing)            \
   V(atom_browser_debugger)                   \
-  V(atom_browser_desktop_capturer)           \
   V(atom_browser_dialog)                     \
   V(atom_browser_download_item)              \
   V(atom_browser_global_shortcut)            \
   V(atom_browser_in_app_purchase)            \
   V(atom_browser_menu)                       \
   V(atom_browser_net)                        \
+  V(atom_browser_net_log)                    \
   V(atom_browser_power_monitor)              \
   V(atom_browser_power_save_blocker)         \
   V(atom_browser_protocol)                   \
   V(atom_browser_render_process_preferences) \
   V(atom_browser_session)                    \
   V(atom_browser_system_preferences)         \
+  V(atom_browser_top_level_window)           \
   V(atom_browser_tray)                       \
   V(atom_browser_web_contents)               \
+  V(atom_browser_web_contents_view)          \
+  V(atom_browser_view)                       \
   V(atom_browser_web_view_manager)           \
   V(atom_browser_window)                     \
   V(atom_common_asar)                        \
   V(atom_common_clipboard)                   \
   V(atom_common_crash_reporter)              \
+  V(atom_common_features)                    \
   V(atom_common_native_image)                \
   V(atom_common_notification)                \
   V(atom_common_screen)                      \
@@ -61,6 +65,15 @@
   V(atom_renderer_ipc)                       \
   V(atom_renderer_web_frame)
 
+#define ELECTRON_VIEW_MODULES(V) \
+  V(atom_browser_box_layout)     \
+  V(atom_browser_button)         \
+  V(atom_browser_label_button)   \
+  V(atom_browser_layout_manager) \
+  V(atom_browser_text_field)
+
+#define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -68,6 +81,12 @@
 // implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
+#if defined(ENABLE_VIEW_API)
+ELECTRON_VIEW_MODULES(V)
+#endif
+#if defined(ENABLE_DESKTOP_CAPTURER)
+ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
 #undef V
 
 namespace {
@@ -75,11 +94,13 @@ namespace {
 void stop_and_close_uv_loop(uv_loop_t* loop) {
   // Close any active handles
   uv_stop(loop);
-  uv_walk(loop, [](uv_handle_t* handle, void*){
-    if (!uv_is_closing(handle)) {
-      uv_close(handle, nullptr);
-    }
-  }, nullptr);
+  uv_walk(loop,
+          [](uv_handle_t* handle, void*) {
+            if (!uv_is_closing(handle)) {
+              uv_close(handle, nullptr);
+            }
+          },
+          nullptr);
 
   // Run the loop to let it finish all the closing handles
   // NB: after uv_stop(), uv_run(UV_RUN_DEFAULT) returns 0 when that's done
@@ -91,6 +112,8 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
   uv_loop_close(loop);
 }
 
+bool g_is_initialized = false;
+
 }  // namespace
 
 namespace atom {
@@ -100,9 +123,9 @@ namespace {
 // Convert the given vector to an array of C-strings. The strings in the
 // returned vector are only guaranteed valid so long as the vector of strings
 // is not modified.
-std::unique_ptr<const char*[]> StringVectorToArgArray(
+std::unique_ptr<const char* []> StringVectorToArgArray(
     const std::vector<std::string>& vector) {
-  std::unique_ptr<const char*[]> array(new const char*[vector.size()]);
+  std::unique_ptr<const char* []> array(new const char*[vector.size()]);
   for (size_t i = 0; i < vector.size(); ++i) {
     array[i] = vector[i].c_str();
   }
@@ -110,15 +133,16 @@ std::unique_ptr<const char*[]> StringVectorToArgArray(
 }
 
 base::FilePath GetResourcesPath(bool is_browser) {
-  auto command_line = base::CommandLine::ForCurrentProcess();
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
   PathService::Get(base::FILE_EXE, &exec_path);
 
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
-      is_browser ? exec_path.DirName().DirName().Append("Resources") :
-                   exec_path.DirName().DirName().DirName().DirName().DirName()
-                            .Append("Resources");
+      is_browser
+          ? exec_path.DirName().DirName().Append("Resources")
+          : exec_path.DirName().DirName().DirName().DirName().DirName().Append(
+                "Resources");
 #else
       exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
@@ -128,10 +152,7 @@ base::FilePath GetResourcesPath(bool is_browser) {
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
-    : browser_env_(browser_env),
-      embed_closed_(false),
-      uv_env_(nullptr),
-      weak_factory_(this) {
+    : browser_env_(browser_env), weak_factory_(this) {
   if (browser_env == WORKER) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
@@ -161,7 +182,17 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   ELECTRON_BUILTIN_MODULES(V)
+#if defined(ENABLE_VIEW_API)
+  ELECTRON_VIEW_MODULES(V)
+#endif
+#if defined(ENABLE_DESKTOP_CAPTURER)
+  ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
 #undef V
+}
+
+bool NodeBindings::IsInitialized() {
+  return g_is_initialized;
 }
 
 void NodeBindings::Initialize() {
@@ -189,6 +220,8 @@ void NodeBindings::Initialize() {
   if (browser_env_ == BROWSER || env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
+
+  g_is_initialized = true;
 }
 
 node::Environment* NodeBindings::CreateEnvironment(
@@ -219,11 +252,11 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::FilePath resources_path = GetResourcesPath(browser_env_ == BROWSER);
   base::FilePath script_path =
       resources_path.Append(FILE_PATH_LITERAL("electron.asar"))
-                    .Append(process_type)
-                    .Append(FILE_PATH_LITERAL("init.js"));
+          .Append(process_type)
+          .Append(FILE_PATH_LITERAL("init.js"));
   args.insert(args.begin() + 1, script_path.AsUTF8Unsafe());
 
-  std::unique_ptr<const char*[]> c_argv = StringVectorToArgArray(args);
+  std::unique_ptr<const char* []> c_argv = StringVectorToArgArray(args);
   node::Environment* env = node::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform),
       context, args.size(), c_argv.get(), 0, nullptr);
@@ -313,8 +346,8 @@ void NodeBindings::UvRunOnce() {
 
 void NodeBindings::WakeupMainThread() {
   DCHECK(task_runner_);
-  task_runner_->PostTask(FROM_HERE, base::Bind(&NodeBindings::UvRunOnce,
-                                               weak_factory_.GetWeakPtr()));
+  task_runner_->PostTask(FROM_HERE, base::BindOnce(&NodeBindings::UvRunOnce,
+                                                   weak_factory_.GetWeakPtr()));
 }
 
 void NodeBindings::WakeupEmbedThread() {
@@ -322,7 +355,7 @@ void NodeBindings::WakeupEmbedThread() {
 }
 
 // static
-void NodeBindings::EmbedThreadRunner(void *arg) {
+void NodeBindings::EmbedThreadRunner(void* arg) {
   NodeBindings* self = static_cast<NodeBindings*>(arg);
 
   while (true) {

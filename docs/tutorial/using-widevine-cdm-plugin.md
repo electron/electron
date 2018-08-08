@@ -16,7 +16,7 @@ version used by Electron, otherwise the plugin will not work even though
 
 Open `chrome://components/` in Chrome browser, find `WidevineCdm` and make
 sure it is up to date, then you can find all the plugin binaries from the
-`APP_DATA/Google/Chrome/WidevineCDM/VERSION/_platform_specific/PLATFORM_ARCH/`
+`Program Files(x86)/Google/Chrome/Application/VERSION/WidevineCDM/_platform_specific/PLATFORM_ARCH/`
 directory.
 
 `APP_DATA` is system's location for storing app data, on Windows it is

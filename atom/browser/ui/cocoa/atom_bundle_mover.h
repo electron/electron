@@ -26,7 +26,8 @@ class AtomBundleMover {
   static void Relaunch(NSString* destinationPath);
   static NSString* ShellQuotedString(NSString* string);
   static bool CopyBundle(NSString* srcPath, NSString* dstPath);
-  static bool AuthorizedInstall(NSString* srcPath, NSString* dstPath,
+  static bool AuthorizedInstall(NSString* srcPath,
+                                NSString* dstPath,
                                 bool* canceled);
   static bool IsApplicationAtPathRunning(NSString* bundlePath);
   static bool DeleteOrTrash(NSString* path);

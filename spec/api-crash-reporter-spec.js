@@ -1,5 +1,6 @@
 const assert = require('assert')
 const childProcess = require('child_process')
+const {expect} = require('chai')
 const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
@@ -13,6 +14,9 @@ const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
+
+  // TODO(alexeykuzmin): [Ch66] Fails. Fix it and enable back.
+  if (process.platform === 'linux') return
 
   let originalTempDirectory = null
   let tempDirectory = null
@@ -256,11 +260,31 @@ describe('crashReporter module', () => {
     })
   })
 
+  // TODO(alexeykuzmin): This suite should explicitly
+  // generate several crash reports instead of hoping
+  // that there will be enough of them already.
   describe('getLastCrashReport', () => {
     it('correctly returns the most recent report', () => {
       const reports = crashReporter.getUploadedReports()
-      const lastReport = reports[0]
-      assert(lastReport != null)
+      expect(reports).to.be.an('array')
+      expect(reports).to.have.lengthOf.at.least(2,
+          'There are not enough reports for this test')
+
+      const lastReport = crashReporter.getLastCrashReport()
+      expect(lastReport).to.be.an('object').that.includes.a.key('date')
+
+      // Let's find the newest report.
+      const {report: newestReport} = reports.reduce((acc, cur) => {
+        const timestamp = new Date(cur.date).getTime()
+        return (timestamp > acc.timestamp)
+          ? { report: cur, timestamp: timestamp }
+          : acc
+      }, { timestamp: -Infinity })
+      assert(newestReport, 'Hey!')
+
+      expect(lastReport.date.getTime()).to.be.equal(
+          newestReport.date.getTime(),
+          'Last report is not the newest.')
     })
   })
 

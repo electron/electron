@@ -4,11 +4,11 @@
 
 #include <utility>
 
-#include "chrome/browser/icon_loader.h"
 #include "base/bind.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/task_scheduler/task_traits.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "chrome/browser/icon_loader.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;

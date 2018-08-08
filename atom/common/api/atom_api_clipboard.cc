@@ -14,41 +14,6 @@
 
 #include "atom/common/node_includes.h"
 
-namespace {
-
-// TODO(alexeykuzmin): It is a copy of `sk_tool_utils::copy_to()`,
-// use the original function if possible, skia doesn't export it.
-bool copy_to(SkBitmap* dst, SkColorType dstColorType, const SkBitmap& src) {
-  SkPixmap srcPM;
-  if (!src.peekPixels(&srcPM)) {
-    return false;
-  }
-
-  SkBitmap tmpDst;
-  SkImageInfo dstInfo = srcPM.info().makeColorType(dstColorType);
-  if (!tmpDst.setInfo(dstInfo)) {
-    return false;
-  }
-
-  if (!tmpDst.tryAllocPixels()) {
-    return false;
-  }
-
-  SkPixmap dstPM;
-  if (!tmpDst.peekPixels(&dstPM)) {
-    return false;
-  }
-
-  if (!srcPM.readPixels(dstPM)) {
-    return false;
-  }
-
-  dst->swap(tmpDst);
-  return true;
-}
-
-}  // namespace
-
 namespace atom {
 
 namespace api {
@@ -87,8 +52,8 @@ std::string Clipboard::Read(const std::string& format_string) {
 v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
                                            mate::Arguments* args) {
   std::string data = Read(format_string);
-  return node::Buffer::Copy(
-      args->isolate(), data.data(), data.length()).ToLocalChecked();
+  return node::Buffer::Copy(args->isolate(), data.data(), data.length())
+      .ToLocalChecked();
 }
 
 void Clipboard::WriteBuffer(const std::string& format,
@@ -132,11 +97,11 @@ base::string16 Clipboard::ReadText(mate::Arguments* args) {
   base::string16 data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardType(args);
-  if (clipboard->IsFormatAvailable(
-      ui::Clipboard::GetPlainTextWFormatType(), type)) {
+  if (clipboard->IsFormatAvailable(ui::Clipboard::GetPlainTextWFormatType(),
+                                   type)) {
     clipboard->ReadText(type, &data);
   } else if (clipboard->IsFormatAvailable(
-             ui::Clipboard::GetPlainTextFormatType(), type)) {
+                 ui::Clipboard::GetPlainTextFormatType(), type)) {
     std::string result;
     clipboard->ReadAsciiText(type, &result);
     data = base::ASCIIToUTF16(result);
@@ -207,16 +172,17 @@ void Clipboard::WriteImage(const gfx::Image& image, mate::Arguments* args) {
   SkBitmap orig = image.AsBitmap();
   SkBitmap bmp;
 
-  if (copy_to(&bmp, orig.colorType(), orig)) {
+  if (bmp.tryAllocPixels(orig.info()) &&
+      orig.readPixels(bmp.info(), bmp.getPixels(), bmp.rowBytes(), 0, 0)) {
     writer.WriteImage(bmp);
-  } else {
-    writer.WriteImage(orig);
   }
 }
 
 #if !defined(OS_MACOSX)
 void Clipboard::WriteFindText(const base::string16& text) {}
-base::string16 Clipboard::ReadFindText() { return base::string16(); }
+base::string16 Clipboard::ReadFindText() {
+  return base::string16();
+}
 #endif
 
 void Clipboard::Clear(mate::Arguments* args) {
@@ -229,8 +195,10 @@ void Clipboard::Clear(mate::Arguments* args) {
 
 namespace {
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("availableFormats", &atom::api::Clipboard::AvailableFormats);
   dict.SetMethod("has", &atom::api::Clipboard::Has);

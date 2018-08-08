@@ -28,7 +28,6 @@ $ code electron-quick-start
 }
 ```
 
-**Note:** For Windows, use `"${workspaceRoot}/node_modules/.bin/electron.cmd"` for `runtimeExecutable`.
 
 ### 3. Debugging
 

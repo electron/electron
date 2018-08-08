@@ -28,7 +28,7 @@ enum MessageBoxType {
 };
 
 enum MessageBoxOptions {
-  MESSAGE_BOX_NONE    = 0,
+  MESSAGE_BOX_NONE = 0,
   MESSAGE_BOX_NO_LINK = 1 << 0,
 };
 

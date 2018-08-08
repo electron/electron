@@ -24,7 +24,7 @@ you through the installation.
 
 Once installed, confirm that everything works as expected. Find the macOS
 `Terminal` application in your `/Applications/Utilities` folder (or by
-simply search for the word `Terminal` in Spotlight). Open up `Terminal`
+searching for the word `Terminal` in Spotlight). Open up `Terminal`
 or another command line client of your choice and confirm that both `node`
 and `npm` are available:
 
@@ -57,7 +57,7 @@ select the `Node.js runtime`, `npm package manager`, and `Add to PATH`
 options.
 
 Once installed, confirm that everything works as expected. Find the Windows
-PowerShell by simply opening the Start Menu and typing `PowerShell`. Open
+PowerShell by opening the Start Menu and typing `PowerShell`. Open
 up `PowerShell` or another command line client of your choice and confirm that
 both `node` and `npm` are available:
 

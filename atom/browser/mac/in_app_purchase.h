@@ -19,6 +19,10 @@ typedef base::Callback<void(bool isProductValid)> InAppPurchaseCallback;
 
 bool CanMakePayments(void);
 
+void FinishAllTransactions(void);
+
+void FinishTransactionByDate(const std::string& date);
+
 std::string GetReceiptURL(void);
 
 void PurchaseProduct(const std::string& productID,

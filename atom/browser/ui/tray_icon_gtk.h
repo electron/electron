@@ -16,11 +16,10 @@ class StatusIconLinux;
 
 namespace atom {
 
-class TrayIconGtk : public TrayIcon,
-                    public views::StatusIconLinux::Delegate {
+class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
  public:
   TrayIconGtk();
-  virtual ~TrayIconGtk();
+  ~TrayIconGtk() override;
 
   // TrayIcon:
   void SetImage(const gfx::Image& image) override;

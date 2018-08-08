@@ -8,22 +8,34 @@
 #include "ui/views/widget/native_widget_aura.h"
 
 #if defined(OS_LINUX)
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
 #endif
 
+namespace {
+
+#if defined(OS_LINUX)
+bool IsDesktopEnvironmentUnity() {
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment desktop_env =
+      base::nix::GetDesktopEnvironment(env.get());
+  return desktop_env == base::nix::DESKTOP_ENVIRONMENT_UNITY;
+}
+#endif
+
+}  // namespace
+
 namespace brightray {
 
-ViewsDelegate::ViewsDelegate() {
-}
+ViewsDelegate::ViewsDelegate() {}
 
-ViewsDelegate::~ViewsDelegate() {
-}
+ViewsDelegate::~ViewsDelegate() {}
 
 void ViewsDelegate::SaveWindowPlacement(const views::Widget* window,
                                         const std::string& window_name,
                                         const gfx::Rect& bounds,
-                                        ui::WindowShowState show_state) {
-}
+                                        ui::WindowShowState show_state) {}
 
 bool ViewsDelegate::GetSavedWindowPlacement(
     const views::Widget* widget,
@@ -33,23 +45,20 @@ bool ViewsDelegate::GetSavedWindowPlacement(
   return false;
 }
 
-void ViewsDelegate::NotifyAccessibilityEvent(
-    views::View* view, ui::AXEvent event_type) {
-}
+void ViewsDelegate::NotifyAccessibilityEvent(views::View* view,
+                                             ax::mojom::Event event_type) {}
 
-void ViewsDelegate::NotifyMenuItemFocused(
-    const base::string16& menu_name,
-    const base::string16& menu_item_name,
-    int item_index,
-    int item_count,
-    bool has_submenu) {
-}
+void ViewsDelegate::NotifyMenuItemFocused(const base::string16& menu_name,
+                                          const base::string16& menu_item_name,
+                                          int item_index,
+                                          int item_count,
+                                          bool has_submenu) {}
 
 #if defined(OS_WIN)
 HICON ViewsDelegate::GetDefaultWindowIcon() const {
   // Use current exe's icon as default window icon.
   return LoadIcon(GetModuleHandle(NULL),
-                  MAKEINTRESOURCE(1  /* IDR_MAINFRAME */));
+                  MAKEINTRESOURCE(1 /* IDR_MAINFRAME */));
 }
 
 HICON ViewsDelegate::GetSmallWindowIcon() const {
@@ -71,11 +80,9 @@ views::NonClientFrameView* ViewsDelegate::CreateDefaultNonClientFrameView(
   return NULL;
 }
 
-void ViewsDelegate::AddRef() {
-}
+void ViewsDelegate::AddRef() {}
 
-void ViewsDelegate::ReleaseRef() {
-}
+void ViewsDelegate::ReleaseRef() {}
 
 content::WebContents* ViewsDelegate::CreateWebContents(
     content::BrowserContext* browser_context,
@@ -91,8 +98,7 @@ void ViewsDelegate::OnBeforeWidgetInit(
   if (params->native_widget)
     return;
 
-  if (params->parent &&
-      params->type != views::Widget::InitParams::TYPE_MENU &&
+  if (params->parent && params->type != views::Widget::InitParams::TYPE_MENU &&
       params->type != views::Widget::InitParams::TYPE_TOOLTIP) {
     params->native_widget = new views::NativeWidgetAura(delegate);
   } else {
@@ -104,8 +110,10 @@ bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #if defined(OS_LINUX)
   // On Ubuntu Unity, the system always provides a title bar for maximized
   // windows.
-  views::LinuxUI* ui = views::LinuxUI::instance();
-  return maximized && ui && ui->UnityIsRunning();
+  if (!maximized)
+    return false;
+  static bool is_desktop_environment_unity = IsDesktopEnvironmentUnity();
+  return is_desktop_environment_unity;
 #else
   return false;
 #endif

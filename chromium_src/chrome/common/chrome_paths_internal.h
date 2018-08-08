@@ -34,7 +34,8 @@ bool GetDefaultUserDataDirectory(base::FilePath* result);
 // of this directory, with names like "Cache" and "Media Cache".
 // This will always fill in |result| with a directory, sometimes
 // just |profile_dir|.
-void GetUserCacheDirectory(const base::FilePath& profile_dir, base::FilePath* result);
+void GetUserCacheDirectory(const base::FilePath& profile_dir,
+                           base::FilePath* result);
 
 // Get the path to the user's documents directory.
 bool GetUserDocumentsDirectory(base::FilePath* result);

@@ -179,14 +179,25 @@ describe('node feature', () => {
       it('can be scheduled in time', (done) => {
         remote.getGlobal('setTimeout')(done, 0)
       })
+
+      it('can be promisified', (done) => {
+        remote.getGlobal('setTimeoutPromisified')(0).then(done)
+      })
     })
 
     describe('setInterval called under Chromium event loop in browser process', () => {
       it('can be scheduled in time', (done) => {
-        let clear
-        let interval
-        clear = () => {
+        let interval = null
+        let clearing = false
+        const clear = () => {
+          if (interval === null || clearing) {
+            return
+          }
+          // interval might trigger while clearing (remote is slow sometimes)
+          clearing = true
           remote.getGlobal('clearInterval')(interval)
+          clearing = false
+          interval = null
           done()
         }
         interval = remote.getGlobal('setInterval')(clear, 10)
@@ -230,7 +241,7 @@ describe('node feature', () => {
       child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
         if (cmd === 'assert') {
           assert.equal(debuggerEnabled, true)
-          assert.equal(secondSessionOpened, false)
+          assert.equal(secondSessionOpened, true)
           assert.equal(success, true)
           done()
         }

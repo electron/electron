@@ -10,7 +10,7 @@
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
-}
+}  // namespace node
 
 namespace atom {
 

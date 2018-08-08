@@ -11,7 +11,7 @@
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
-}
+}  // namespace node
 
 namespace atom {
 
@@ -19,6 +19,7 @@ namespace atom {
 class JavascriptEnvironment {
  public:
   JavascriptEnvironment();
+  ~JavascriptEnvironment();
 
   void OnMessageLoopCreated();
   void OnMessageLoopDestroying();

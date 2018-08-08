@@ -23,13 +23,12 @@ SizeConstraints::~SizeConstraints() {}
 gfx::Size SizeConstraints::AddFrameToConstraints(
     const gfx::Size& size_constraints,
     const gfx::Insets& frame_insets) {
-  return gfx::Size(
-      size_constraints.width() == kUnboundedSize
-          ? kUnboundedSize
-          : size_constraints.width() + frame_insets.width(),
-      size_constraints.height() == kUnboundedSize
-          ? kUnboundedSize
-          : size_constraints.height() + frame_insets.height());
+  return gfx::Size(size_constraints.width() == kUnboundedSize
+                       ? kUnboundedSize
+                       : size_constraints.width() + frame_insets.width(),
+                   size_constraints.height() == kUnboundedSize
+                       ? kUnboundedSize
+                       : size_constraints.height() + frame_insets.height());
 }
 
 gfx::Size SizeConstraints::ClampSize(gfx::Size size) const {

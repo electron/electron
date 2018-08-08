@@ -92,6 +92,7 @@ void AtomURLRequestJobFactory::Clear() {
   for (auto& it : protocol_handler_map_)
     delete it.second;
   protocol_handler_map_.clear();
+  original_protocols_.clear();
 }
 
 net::URLRequestJob* AtomURLRequestJobFactory::MaybeCreateJobWithProtocolHandler(
@@ -126,7 +127,7 @@ bool AtomURLRequestJobFactory::IsHandledProtocol(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   return HasProtocolHandler(scheme) ||
-      net::URLRequest::IsHandledProtocol(scheme);
+         net::URLRequest::IsHandledProtocol(scheme);
 }
 
 bool AtomURLRequestJobFactory::IsSafeRedirectTarget(

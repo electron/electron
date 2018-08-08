@@ -14,16 +14,13 @@ void SetPlatformAccelerator(ui::Accelerator* accelerator) {
   unichar character;
   unichar characterIgnoringModifiers;
 
-  NSUInteger modifiers =
-      (accelerator->IsCtrlDown() ? NSControlKeyMask : 0) |
-      (accelerator->IsCmdDown() ? NSCommandKeyMask : 0) |
-      (accelerator->IsAltDown() ? NSAlternateKeyMask : 0) |
-      (accelerator->IsShiftDown() ? NSShiftKeyMask : 0);
+  NSUInteger modifiers = (accelerator->IsCtrlDown() ? NSControlKeyMask : 0) |
+                         (accelerator->IsCmdDown() ? NSCommandKeyMask : 0) |
+                         (accelerator->IsAltDown() ? NSAlternateKeyMask : 0) |
+                         (accelerator->IsShiftDown() ? NSShiftKeyMask : 0);
 
-  ui::MacKeyCodeForWindowsKeyCode(accelerator->key_code(),
-                                  modifiers,
-                                  &character,
-                                  &characterIgnoringModifiers);
+  ui::MacKeyCodeForWindowsKeyCode(accelerator->key_code(), modifiers,
+                                  &character, &characterIgnoringModifiers);
 
   if (character != characterIgnoringModifiers) {
     if (isdigit(characterIgnoringModifiers)) {

@@ -46,8 +46,7 @@ net::URLFetcher::RequestType GetRequestType(const std::string& raw) {
 // Pipe the response writer back to URLRequestFetchJob.
 class ResponsePiper : public net::URLFetcherResponseWriter {
  public:
-  explicit ResponsePiper(URLRequestFetchJob* job)
-      : first_write_(true), job_(job) {}
+  explicit ResponsePiper(URLRequestFetchJob* job) : job_(job) {}
 
   // net::URLFetcherResponseWriter:
   int Initialize(const net::CompletionCallback& callback) override {
@@ -69,7 +68,7 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
   }
 
  private:
-  bool first_write_;
+  bool first_write_ = true;
   URLRequestFetchJob* job_;
 
   DISALLOW_COPY_AND_ASSIGN(ResponsePiper);
@@ -77,15 +76,14 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
 
 }  // namespace
 
-URLRequestFetchJob::URLRequestFetchJob(
-    net::URLRequest* request, net::NetworkDelegate* network_delegate)
-    : JsAsker<net::URLRequestJob>(request, network_delegate),
-      pending_buffer_size_(0),
-      write_num_bytes_(0) {
-}
+URLRequestFetchJob::URLRequestFetchJob(net::URLRequest* request,
+                                       net::NetworkDelegate* network_delegate)
+    : JsAsker<net::URLRequestJob>(request, network_delegate) {}
 
-void URLRequestFetchJob::BeforeStartInUI(
-    v8::Isolate* isolate, v8::Local<v8::Value> value) {
+URLRequestFetchJob::~URLRequestFetchJob() = default;
+
+void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
+                                         v8::Local<v8::Value> value) {
   mate::Dictionary options;
   if (!mate::ConvertFromV8(isolate, value, &options))
     return;
@@ -96,9 +94,9 @@ void URLRequestFetchJob::BeforeStartInUI(
     if (val->IsNull()) {
       // We have to create the URLRequestContextGetter on UI thread.
       url_request_context_getter_ = new brightray::URLRequestContextGetter(
-          this, nullptr, nullptr, base::FilePath(), true,
-          BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-          nullptr, content::URLRequestInterceptorScopedVector());
+          this, nullptr, base::FilePath(), true,
+          BrowserThread::GetTaskRunnerForThread(BrowserThread::IO), nullptr,
+          content::URLRequestInterceptorScopedVector());
     } else {
       mate::Handle<api::Session> session;
       if (mate::ConvertFromV8(isolate, val, &session) && !session.IsEmpty()) {
@@ -111,9 +109,9 @@ void URLRequestFetchJob::BeforeStartInUI(
 }
 
 void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (!options->IsType(base::Value::Type::DICTIONARY)) {
-    NotifyStartError(net::URLRequestStatus(
-          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+  if (!options->is_dict()) {
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -129,8 +127,8 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
   // Check if URL is valid.
   GURL formated_url(url);
   if (!formated_url.is_valid()) {
-    NotifyStartError(net::URLRequestStatus(
-          net::URLRequestStatus::FAILED, net::ERR_INVALID_URL));
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           net::ERR_INVALID_URL));
     return;
   }
 
@@ -191,8 +189,8 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
   }
 
   // Write data to the pending buffer and clear them after the writing.
-  int bytes_read = BufferCopy(buffer, num_bytes,
-                              pending_buffer_.get(), pending_buffer_size_);
+  int bytes_read = BufferCopy(buffer, num_bytes, pending_buffer_.get(),
+                              pending_buffer_size_);
   ClearPendingBuffer();
   ReadRawDataComplete(bytes_read);
   return bytes_read;
@@ -218,8 +216,8 @@ int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   }
 
   // Read from the write buffer and clear them after reading.
-  int bytes_read = BufferCopy(write_buffer_.get(), write_num_bytes_,
-                              dest, dest_size);
+  int bytes_read =
+      BufferCopy(write_buffer_.get(), write_num_bytes_, dest, dest_size);
   net::CompletionCallback write_callback = write_callback_;
   ClearWriteBuffer();
   write_callback.Run(bytes_read);
@@ -265,8 +263,10 @@ void URLRequestFetchJob::OnURLFetchComplete(const net::URLFetcher* source) {
   }
 }
 
-int URLRequestFetchJob::BufferCopy(net::IOBuffer* source, int num_bytes,
-                                   net::IOBuffer* target, int target_size) {
+int URLRequestFetchJob::BufferCopy(net::IOBuffer* source,
+                                   int num_bytes,
+                                   net::IOBuffer* target,
+                                   int target_size) {
   int bytes_written = std::min(num_bytes, target_size);
   memcpy(target->data(), source->data(), bytes_written);
   return bytes_written;

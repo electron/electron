@@ -1,3 +1,5 @@
+# Official Guides
+
 Please make sure that you use the documents that match your Electron version.
 The version number should be a part of the page URL. If it's not, you are
 probably using the documentation of a development branch which may contain API
@@ -34,40 +36,42 @@ an issue:
 * [Application Architecture](tutorial/application-architecture.md)
   * [Main and Renderer Processes](tutorial/application-architecture.md#main-and-renderer-processes)
   * [Using Electron's APIs](tutorial/application-architecture.md#using-electron-apis)
-  * [Using Node.js APIs](tutorial/application-architecture.md#using-node.js-apis)
+  * [Using Node.js APIs](tutorial/application-architecture.md#using-nodejs-apis)
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
-  * [Inter-Process Communication](tutorial/application-architecture.md#)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
-  * [Recent Documents](tutorial/desktop-environment-integration.md#recent-documents-windows-mac-os)
+  * [Recent Documents](tutorial/desktop-environment-integration.md#recent-documents)
   * [Application Progress](tutorial/progress-bar.md)
-  * [Custom Dock Menu](tutorial/desktop-environment-integration.md#custom-dock-menu-mac-os)
+  * [Custom Dock Menu](tutorial/macos-dock.md)
   * [Custom Windows Taskbar](tutorial/windows-taskbar.md)
   * [Custom Linux Desktop Actions](tutorial/linux-desktop-actions.md)
   * [Keyboard Shortcuts](tutorial/keyboard-shortcuts.md)
   * [Offline/Online Detection](tutorial/online-offline-events.md)
   * [Represented File for macOS BrowserWindows](tutorial/represented-file.md)
   * [Native File Drag & Drop](tutorial/native-file-drag-drop.md)
-* [Application Accessibility](tutorial/accessibility.md)
+* [Accessibility](tutorial/accessibility.md)
   * [Spectron](tutorial/accessibility.md#spectron)
   * [Devtron](tutorial/accessibility.md#devtron)
   * [Enabling Accessibility](tutorial/accessibility.md#enabling-accessibility)
-* [Application Testing and Debugging](tutorial/application-debugging.md)
+* [Testing and Debugging](tutorial/application-debugging.md)
   * [Debugging the Main Process](tutorial/debugging-main-process.md)
   * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
-* [Application Distribution](tutorial/application-distribution.md)
-  * [Supported Platforms](tutorial/supported-platforms.md)
+  * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
+* Packaging
+  * [Code Signing](tutorial/code-signing.md)
+* [Distribution](tutorial/application-distribution.md)
+  * [Support](tutorial/support.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
-* [Application Security](tutorial/security.md)
+* [Security](tutorial/security.md)
   * [Reporting Security Issues](tutorial/security.md#reporting-security-issues)
   * [Chromium Security Issues and Upgrades](tutorial/security.md#chromium-security-issues-and-upgrades)
   * [Electron Security Warnings](tutorial/security.md#electron-security-warnings)
   * [Security Checklist](tutorial/security.md#checklist-security-recommendations)
-* [Application Updates](tutorial/updates.md)
+* [Updates](tutorial/updates.md)
   * [Deploying an Update Server](tutorial/updates.md#deploying-an-update-server)
   * [Implementing Updates in Your App](tutorial/updates.md#implementing-updates-in-your-app)
   * [Applying Updates](tutorial/updates.md#applying-updates)
@@ -77,7 +81,6 @@ an issue:
 These individual tutorials expand on topics discussed in the guide above.
 
 * [In Detail: Installing Electron](tutorial/installation.md)
-  * [Global versus Local Installation](tutorial/installation.md#global-versus-local-installation)
   * [Proxies](tutorial/installation.md#proxies)
   * [Custom Mirrors and Caches](tutorial/installation.md#custom-mirrors-and-caches)
   * [Troubleshooting](tutorial/installation.md#troubleshooting)
@@ -104,6 +107,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [Process Object](api/process.md)
 * [Supported Chrome Command Line Switches](api/chrome-command-line-switches.md)
 * [Environment Variables](api/environment-variables.md)
+* [Breaking API Changes](api/breaking-changes.md)
 
 ### Custom DOM Elements:
 
@@ -125,6 +129,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)
 * [net](api/net.md)
+* [netLog](api/net-log.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
@@ -150,22 +155,4 @@ These individual tutorials expand on topics discussed in the guide above.
 
 ## Development
 
-* [Coding Style](development/coding-style.md)
-* [Using clang-format on C++ Code](development/clang-format.md)
-* [Testing](development/testing.md)
-* [Source Code Directory Structure](development/source-code-directory-structure.md)
-* [Technical Differences to NW.js (formerly node-webkit)](development/atom-shell-vs-node-webkit.md)
-* [Build System Overview](development/build-system-overview.md)
-* [Build Instructions (macOS)](development/build-instructions-osx.md)
-* [Build Instructions (Windows)](development/build-instructions-windows.md)
-* [Build Instructions (Linux)](development/build-instructions-linux.md)
-* [Debug Instructions (macOS)](development/debugging-instructions-macos.md)
-* [Debug Instructions (Windows)](development/debug-instructions-windows.md)
-* [Setting Up Symbol Server in debugger](development/setting-up-symbol-server.md)
-* [Documentation Styleguide](styleguide.md)
-* [Contributing to Electron](../CONTRIBUTING.md)
-* [Issues](development/issues.md)
-* [Pull Requests](development/pull-requests.md)
-* [Upgrading Chromium](development/upgrading-chromium.md)
-* [Chromium Development](development/chromium-development.md)
-* [V8 Development](development/v8-development.md)
+See [development/README.md](development/README.md)

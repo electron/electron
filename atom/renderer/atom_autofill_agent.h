@@ -21,6 +21,7 @@ class AutofillAgent : public content::RenderFrameObserver,
                       public blink::WebAutofillClient {
  public:
   explicit AutofillAgent(content::RenderFrame* frame);
+  ~AutofillAgent() override;
 
   // content::RenderFrameObserver:
   void OnDestruct() override;
@@ -61,12 +62,12 @@ class AutofillAgent : public content::RenderFrameObserver,
   void DoFocusChangeComplete();
 
   // True when the last click was on the focused node.
-  bool focused_node_was_last_clicked_;
+  bool focused_node_was_last_clicked_ = false;
 
   // This is set to false when the focus changes, then set back to true soon
   // afterwards. This helps track whether an event happened after a node was
   // already focused, or if it caused the focus to change.
-  bool was_focused_before_now_;
+  bool was_focused_before_now_ = false;
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
 

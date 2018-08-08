@@ -18,11 +18,6 @@ namespace brightray {
 
 namespace {
 
-void RemoveNotification(base::WeakPtr<Notification> notification) {
-  if (notification)
-    notification->Dismiss();
-}
-
 void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const SkBitmap& icon,
                               const content::PlatformNotificationData& data,
@@ -77,9 +72,7 @@ class NotificationDelegateImpl final : public brightray::NotificationDelegate {
 
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
-    : browser_client_(browser_client),
-      render_process_id_(-1) {
-}
+    : browser_client_(browser_client), render_process_id_(-1) {}
 
 PlatformNotificationService::~PlatformNotificationService() {}
 
@@ -97,6 +90,7 @@ PlatformNotificationService::CheckPermissionOnIOThread(
     content::ResourceContext* resource_context,
     const GURL& origin,
     int render_process_id) {
+  render_process_id_ = render_process_id;
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
@@ -105,16 +99,14 @@ void PlatformNotificationService::DisplayNotification(
     const std::string& notification_id,
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
-    const content::NotificationResources& notification_resources,
-    base::Closure* cancel_callback) {
-  auto presenter = browser_client_->GetNotificationPresenter();
+    const content::NotificationResources& notification_resources) {
+  auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
   NotificationDelegateImpl* delegate =
       new NotificationDelegateImpl(notification_id);
-  auto notification = presenter->CreateNotification(delegate);
+  auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
-    *cancel_callback = base::Bind(&RemoveNotification, notification);
     browser_client_->WebNotificationAllowed(
         render_process_id_, base::Bind(&OnWebNotificationAllowed, notification,
                                        notification_resources.notification_icon,
@@ -128,17 +120,23 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const GURL& service_worker_scope,
     const GURL& origin,
     const content::PlatformNotificationData& notification_data,
-    const content::NotificationResources& notification_resources) {
-}
+    const content::NotificationResources& notification_resources) {}
 
 void PlatformNotificationService::ClosePersistentNotification(
     content::BrowserContext* browser_context,
+    const std::string& notification_id) {}
+
+void PlatformNotificationService::CloseNotification(
+    content::BrowserContext* browser_context,
     const std::string& notification_id) {
+  auto* presenter = browser_client_->GetNotificationPresenter();
+  if (!presenter)
+    return;
+  presenter->CloseNotificationWithId(notification_id);
 }
 
 void PlatformNotificationService::GetDisplayedNotifications(
     content::BrowserContext* browser_context,
-    const DisplayedNotificationsCallback& callback) {
-}
+    const DisplayedNotificationsCallback& callback) {}
 
 }  // namespace brightray

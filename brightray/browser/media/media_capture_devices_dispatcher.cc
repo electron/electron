@@ -127,11 +127,9 @@ void MediaCaptureDevicesDispatcher::DisableDeviceEnumerationForTesting() {
   is_device_enumeration_disabled_ = true;
 }
 
-void MediaCaptureDevicesDispatcher::OnAudioCaptureDevicesChanged() {
-}
+void MediaCaptureDevicesDispatcher::OnAudioCaptureDevicesChanged() {}
 
-void MediaCaptureDevicesDispatcher::OnVideoCaptureDevicesChanged() {
-}
+void MediaCaptureDevicesDispatcher::OnVideoCaptureDevicesChanged() {}
 
 void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     int render_process_id,
@@ -139,20 +137,16 @@ void MediaCaptureDevicesDispatcher::OnMediaRequestStateChanged(
     int page_request_id,
     const GURL& security_origin,
     content::MediaStreamType stream_type,
-    content::MediaRequestState state) {
-}
+    content::MediaRequestState state) {}
 
-void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(
-    int render_process_id,
-    int render_view_id) {
-}
+void MediaCaptureDevicesDispatcher::OnCreatingAudioStream(int render_process_id,
+                                                          int render_view_id) {}
 
 void MediaCaptureDevicesDispatcher::OnSetCapturingLinkSecured(
     int render_process_id,
     int render_frame_id,
     int page_request_id,
     content::MediaStreamType stream_type,
-    bool is_secure) {
-}
+    bool is_secure) {}
 
 }  // namespace brightray

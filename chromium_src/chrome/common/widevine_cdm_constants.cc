@@ -9,5 +9,5 @@
 
 const char kWidevineCdmPluginExtension[] = "";
 
-const int32_t kWidevineCdmPluginPermissions = ppapi::PERMISSION_DEV |
-                                              ppapi::PERMISSION_PRIVATE;
+const int32_t kWidevineCdmPluginPermissions =
+    ppapi::PERMISSION_DEV | ppapi::PERMISSION_PRIVATE;

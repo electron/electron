@@ -53,17 +53,16 @@ class PrinterQuery : public PrintJobWorkerOwner {
                    bool is_modifiable,
                    const base::Closure& callback);
 
-  void GetSettings(
-      GetSettingsAskParam ask_user_for_settings,
-      int expected_page_count,
-      bool has_selection,
-      MarginType margin_type,
-      bool is_scripted,
-      bool is_modifiable,
-      const base::string16& device_name,
-      const base::Closure& callback);
+  void GetSettings(GetSettingsAskParam ask_user_for_settings,
+                   int expected_page_count,
+                   bool has_selection,
+                   MarginType margin_type,
+                   bool is_scripted,
+                   bool is_modifiable,
+                   const base::string16& device_name,
+                   const base::Closure& callback);
 
-    // Updates the current settings with |new_settings| dictionary values.
+  // Updates the current settings with |new_settings| dictionary values.
   void SetSettings(std::unique_ptr<base::DictionaryValue> new_settings,
                    const base::Closure& callback);
 

@@ -14,4 +14,3 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv);
 }  // namespace atom
 
 #endif  // ATOM_APP_COMMAND_LINE_ARGS_H_
-

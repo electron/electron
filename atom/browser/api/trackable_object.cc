@@ -6,7 +6,6 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/supports_user_data.h"
 
 namespace mate {
@@ -29,17 +28,16 @@ class IDUserData : public base::SupportsUserData::Data {
 
 }  // namespace
 
-TrackableObjectBase::TrackableObjectBase()
-    : weak_map_id_(0), weak_factory_(this) {
-  cleanup_ = RegisterDestructionCallback(GetDestroyClosure());
+TrackableObjectBase::TrackableObjectBase() : weak_factory_(this) {
+  atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(
+      GetDestroyClosure());
 }
 
-TrackableObjectBase::~TrackableObjectBase() {
-  cleanup_.Run();
-}
+TrackableObjectBase::~TrackableObjectBase() {}
 
-base::Closure TrackableObjectBase::GetDestroyClosure() {
-  return base::Bind(&TrackableObjectBase::Destroy, weak_factory_.GetWeakPtr());
+base::OnceClosure TrackableObjectBase::GetDestroyClosure() {
+  return base::BindOnce(&TrackableObjectBase::Destroy,
+                        weak_factory_.GetWeakPtr());
 }
 
 void TrackableObjectBase::Destroy() {
@@ -48,24 +46,19 @@ void TrackableObjectBase::Destroy() {
 
 void TrackableObjectBase::AttachAsUserData(base::SupportsUserData* wrapped) {
   wrapped->SetUserData(kTrackedObjectKey,
-      base::MakeUnique<IDUserData>(weak_map_id_));
+                       std::make_unique<IDUserData>(weak_map_id_));
 }
 
 // static
 int32_t TrackableObjectBase::GetIDFromWrappedClass(
     base::SupportsUserData* wrapped) {
   if (wrapped) {
-    auto id = static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
+    auto* id =
+        static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
     if (id)
       return *id;
   }
   return 0;
-}
-
-// static
-base::Closure TrackableObjectBase::RegisterDestructionCallback(
-    const base::Closure& c) {
-  return atom::AtomBrowserMainParts::Get()->RegisterDestructionCallback(c);
 }
 
 }  // namespace mate

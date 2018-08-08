@@ -15,7 +15,15 @@
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "content/public/browser/web_contents_delegate.h"
 
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+#include "atom/browser/ui/autofill_popup.h"
+#endif
+
 using brightray::DevToolsFileSystemIndexer;
+
+namespace base {
+class SequencedTaskRunner;
+}
 
 namespace atom {
 
@@ -29,7 +37,7 @@ class CommonWebContentsDelegate
       public brightray::InspectableWebContentsViewDelegate {
  public:
   CommonWebContentsDelegate();
-  virtual ~CommonWebContentsDelegate();
+  ~CommonWebContentsDelegate() override;
 
   // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.
@@ -68,7 +76,8 @@ class CommonWebContentsDelegate
   content::ColorChooser* OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
-      const std::vector<content::ColorSuggestion>& suggestions) override;
+      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
+      override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       const content::FileChooserParams& params) override;
   void EnumerateDirectory(content::WebContents* web_contents,
@@ -85,6 +94,17 @@ class CommonWebContentsDelegate
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
+
+  // Autofill related events.
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+  void ShowAutofillPopup(content::RenderFrameHost* frame_host,
+                         content::RenderFrameHost* embedder_frame_host,
+                         bool offscreen,
+                         const gfx::RectF& bounds,
+                         const std::vector<base::string16>& values,
+                         const std::vector<base::string16>& labels);
+  void HideAutofillPopup();
+#endif
 
   // brightray::InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
@@ -104,25 +124,19 @@ class CommonWebContentsDelegate
                             const std::string& query) override;
 
   // brightray::InspectableWebContentsViewDelegate:
-#if defined(TOOLKIT_VIEWS)
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
 #if defined(USE_X11)
-  void GetDevToolsWindowWMClass(
-      std::string* name, std::string* class_name) override;
+  void GetDevToolsWindowWMClass(std::string* name,
+                                std::string* class_name) override;
 #endif
 
   // Destroy the managed InspectableWebContents object.
   void ResetManagedWebContents(bool async);
 
  private:
-  // Callback for when DevToolsSaveToFile has completed.
-  void OnDevToolsSaveToFile(const std::string& url);
-
-  // Callback for when DevToolsAppendToFile has completed.
-  void OnDevToolsAppendToFile(const std::string& url);
-
-  //
+  // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
                                         const std::string& file_system_path,
                                         int total_work);
@@ -141,15 +155,21 @@ class CommonWebContentsDelegate
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;
 
-  bool ignore_menu_shortcuts_;
+  bool offscreen_ = false;
+  bool ignore_menu_shortcuts_ = false;
 
   // Whether window is fullscreened by HTML5 api.
-  bool html_fullscreen_;
+  bool html_fullscreen_ = false;
 
   // Whether window is fullscreened by window api.
-  bool native_fullscreen_;
+  bool native_fullscreen_ = false;
 
+  // UI related helper classes.
+#if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
+  std::unique_ptr<AutofillPopup> autofill_popup_;
+#endif
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
+
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   // Make sure BrowserContext is alwasys destroyed after WebContents.
@@ -166,11 +186,12 @@ class CommonWebContentsDelegate
   PathsMap saved_files_;
 
   // Map id to index job, used for file system indexing requests from devtools.
-  typedef std::map<
-      int,
-      scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>>
-      DevToolsIndexingJobsMap;
+  typedef std::
+      map<int, scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>>
+          DevToolsIndexingJobsMap;
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
+
+  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

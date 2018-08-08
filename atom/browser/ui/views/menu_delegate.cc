@@ -14,13 +14,9 @@
 
 namespace atom {
 
-MenuDelegate::MenuDelegate(MenuBar* menu_bar)
-    : menu_bar_(menu_bar),
-      id_(-1) {
-}
+MenuDelegate::MenuDelegate(MenuBar* menu_bar) : menu_bar_(menu_bar), id_(-1) {}
 
-MenuDelegate::~MenuDelegate() {
-}
+MenuDelegate::~MenuDelegate() {}
 
 void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
   gfx::Point screen_loc;
@@ -38,12 +34,9 @@ void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
   menu_runner_.reset(new views::MenuRunner(
       item,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
-  menu_runner_->RunMenuAt(
-      button->GetWidget()->GetTopLevelWidget(),
-      button,
-      bounds,
-      views::MENU_ANCHOR_TOPRIGHT,
-      ui::MENU_SOURCE_MOUSE);
+  menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(), button,
+                          bounds, views::MENU_ANCHOR_TOPRIGHT,
+                          ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuDelegate::ExecuteCommand(int id) {

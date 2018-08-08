@@ -98,10 +98,8 @@
         popup.ipcRenderer.once('verified', () => {
           popup.ipcRenderer.send('child-answer')
         })
-        setTimeout(() => {
-          ipcRenderer.send('parent-ready')
-          popup.ipcRenderer.send('child-ready')
-        }, 50)
+        ipcRenderer.send('parent-ready')
+        popup.ipcRenderer.send('child-ready')
       }
     }
 

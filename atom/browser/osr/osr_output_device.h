@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_
 
 #include "base/callback.h"
-#include "cc/output/software_output_device.h"
+#include "components/viz/service/display/software_output_device.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
@@ -14,12 +14,12 @@ namespace atom {
 
 typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
 
-class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
+class OffScreenOutputDevice : public viz::SoftwareOutputDevice {
  public:
   OffScreenOutputDevice(bool transparent, const OnPaintCallback& callback);
-  ~OffScreenOutputDevice();
+  ~OffScreenOutputDevice() override;
 
-  // cc::SoftwareOutputDevice:
+  // viz::SoftwareOutputDevice:
   void Resize(const gfx::Size& pixel_size, float scale_factor) override;
   SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override;
   void EndPaint() override;
@@ -31,7 +31,7 @@ class OffScreenOutputDevice : public cc::SoftwareOutputDevice {
   const bool transparent_;
   OnPaintCallback callback_;
 
-  bool active_;
+  bool active_ = false;
 
   std::unique_ptr<SkCanvas> canvas_;
   std::unique_ptr<SkBitmap> bitmap_;

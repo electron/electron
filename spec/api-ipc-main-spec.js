@@ -1,8 +1,12 @@
 'use strict'
 
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 const {remote} = require('electron')
 const {ipcMain, BrowserWindow} = remote
@@ -45,22 +49,22 @@ describe('ipc main module', () => {
       const listener = () => {}
 
       w.on('test', listener)
-      assert.equal(w.listenerCount('test'), 1)
+      expect(w.listenerCount('test')).to.equal(1)
       w.removeListener('test', listener)
-      assert.equal(w.listenerCount('test'), 0)
+      expect(w.listenerCount('test')).to.equal(0)
     })
   })
 
   it('throws an error when removing all the listeners', () => {
     ipcMain.on('test-event', () => {})
-    assert.equal(ipcMain.listenerCount('test-event'), 1)
+    expect(ipcMain.listenerCount('test-event')).to.equal(1)
 
-    assert.throws(() => {
+    expect(() => {
       ipcMain.removeAllListeners()
-    }, /Removing all listeners from ipcMain will make Electron internals stop working/)
+    }).to.throw(/Removing all listeners from ipcMain will make Electron internals stop working/)
 
     ipcMain.removeAllListeners('test-event')
-    assert.equal(ipcMain.listenerCount('test-event'), 0)
+    expect(ipcMain.listenerCount('test-event')).to.equal(0)
   })
 
   describe('remote objects registry', () => {
@@ -68,7 +72,8 @@ describe('ipc main module', () => {
       w = new BrowserWindow({ show: false })
 
       ipcMain.once('error-message', (event, message) => {
-        assert(message.startsWith('Cannot call function \'getURL\' on missing remote object'), message)
+        const correctMsgStart = message.startsWith('Cannot call function \'getURL\' on missing remote object')
+        expect(correctMsgStart).to.be.true()
         done()
       })
 

@@ -26,12 +26,16 @@ struct VerifyRequestParams {
   std::string default_result;
   int error_code;
   scoped_refptr<net::X509Certificate> certificate;
+
+  VerifyRequestParams();
+  VerifyRequestParams(const VerifyRequestParams&);
+  ~VerifyRequestParams();
 };
 
 class AtomCertVerifier : public net::CertVerifier {
  public:
   explicit AtomCertVerifier(brightray::RequireCTDelegate* ct_delegate);
-  virtual ~AtomCertVerifier();
+  ~AtomCertVerifier() override;
 
   using VerifyProc = base::Callback<void(const VerifyRequestParams& request,
                                          const net::CompletionCallback&)>;
@@ -68,6 +72,6 @@ class AtomCertVerifier : public net::CertVerifier {
   DISALLOW_COPY_AND_ASSIGN(AtomCertVerifier);
 };
 
-}   // namespace atom
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_NET_ATOM_CERT_VERIFIER_H_

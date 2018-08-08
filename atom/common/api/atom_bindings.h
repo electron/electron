@@ -11,8 +11,8 @@
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
+#include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
-#include "vendor/node/deps/uv/include/uv.h"
 
 namespace node {
 class Environment;
@@ -35,9 +35,10 @@ class AtomBindings {
   static void Log(const base::string16& message);
   static void Crash();
   static void Hang();
+  static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
-      mate::Arguments* args);
+                                                  mate::Arguments* args);
   v8::Local<v8::Value> GetCPUUsage(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
 

@@ -9,7 +9,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface NSString(ANSI)
+@interface NSString (ANSI)
 - (BOOL)containsANSICodes;
 - (NSMutableAttributedString*)attributedStringParsingANSICodes;
 @end

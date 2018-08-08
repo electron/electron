@@ -1,0 +1,178 @@
+import("//build/config/locales.gni")
+import("//printing/features/features.gni")
+import("//tools/grit/repack.gni")
+import("//ui/base/ui_features.gni")
+
+# See: //chrome/chrome_paks.gni
+template("electron_repack_percent") {
+  percent = invoker.percent
+
+  repack(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "copy_data_to_bundle",
+                             "repack_whitelist",
+                             "visibility",
+                           ])
+
+    # All sources should also have deps for completeness.
+    sources = [
+      "$root_gen_dir/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
+      "$root_gen_dir/components/components_resources_${percent}_percent.pak",
+      "$root_gen_dir/content/app/resources/content_resources_${percent}_percent.pak",
+      "$root_gen_dir/ui/resources/ui_resources_${percent}_percent.pak",
+    ]
+
+    deps = [
+      "//components/resources",
+      "//content/app/resources",
+      "//third_party/WebKit/public:scaled_resources_${percent}_percent",
+      "//ui/resources",
+    ]
+
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+
+    if (toolkit_views) {
+      sources += [ "$root_gen_dir/ui/views/resources/views_resources_${percent}_percent.pak" ]
+      deps += [ "//ui/views/resources" ]
+    }
+
+    output = "${invoker.output_dir}/chrome_${percent}_percent.pak"
+  }
+}
+
+template("electron_extra_paks") {
+  repack(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "copy_data_to_bundle",
+                             "repack_whitelist",
+                             "visibility",
+                           ])
+    output = "${invoker.output_dir}/resources.pak"
+    sources = [
+      "$root_gen_dir/blink/public/resources/blink_resources.pak",
+      "$root_gen_dir/components/components_resources.pak",
+      "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
+      "$root_gen_dir/content/content_resources.pak",
+      "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
+      "$root_gen_dir/net/net_resources.pak",
+    ]
+    deps = [
+      "//components/resources",
+      "//content:resources",
+      "//content/browser/tracing:resources",
+      "//mojo/public/js:resources",
+      "//net:net_resources",
+      "//third_party/WebKit/public:resources",
+    ]
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+    if (defined(invoker.additional_paks)) {
+      sources += invoker.additional_paks
+    }
+
+    # New paks should be added here by default.
+    sources +=
+        [ "$root_gen_dir/content/browser/devtools/devtools_resources.pak" ]
+    deps += [ "//content/browser/devtools:devtools_resources" ]
+    if (enable_print_preview) {
+      sources += [ "$root_gen_dir/chrome/print_preview_resources.pak" ]
+      deps += [ "//chrome/browser/resources:print_preview_resources" ]
+    }
+  }
+}
+
+template("electron_paks") {
+  electron_repack_percent("${target_name}_100_percent") {
+    percent = "100"
+    forward_variables_from(invoker,
+                           [
+                             "copy_data_to_bundle",
+                             "deps",
+                             "output_dir",
+                             "repack_whitelist",
+                             "visibility",
+                           ])
+  }
+
+  if (enable_hidpi) {
+    electron_repack_percent("${target_name}_200_percent") {
+      percent = "200"
+      forward_variables_from(invoker,
+                             [
+                               "copy_data_to_bundle",
+                               "deps",
+                               "output_dir",
+                               "repack_whitelist",
+                               "visibility",
+                             ])
+    }
+  }
+
+  electron_extra_paks("${target_name}_extra") {
+    forward_variables_from(invoker,
+                           [
+                             "copy_data_to_bundle",
+                             "deps",
+                             "output_dir",
+                             "repack_whitelist",
+                             "visibility",
+                           ])
+    if (defined(invoker.additional_extra_paks)) {
+      additional_paks = invoker.additional_extra_paks
+    }
+  }
+
+  repack_locales("${target_name}_locales") {
+    forward_variables_from(invoker,
+                           [
+                             "copy_data_to_bundle",
+                             "deps",
+                             "visibility",
+                           ])
+    if (defined(invoker.locale_whitelist)) {
+      repack_whitelist = invoker.locale_whitelist
+    } else if (defined(invoker.repack_whitelist)) {
+      repack_whitelist = invoker.repack_whitelist
+    }
+
+    source_patterns = [
+      "${root_gen_dir}/content/app/strings/content_strings_",
+      "${root_gen_dir}/ui/strings/app_locale_settings_",
+      "${root_gen_dir}/ui/strings/ui_strings_",
+    ]
+    deps = [
+      "//content/app/strings",
+      "//ui/strings:app_locale_settings",
+      "//ui/strings:ui_strings",
+    ]
+
+    input_locales = locales
+    output_dir = "${invoker.output_dir}/locales"
+
+    if (is_mac) {
+      output_locales = locales_as_mac_outputs
+    } else {
+      output_locales = locales
+    }
+  }
+
+  group(target_name) {
+    forward_variables_from(invoker, [ "deps" ])
+    public_deps = [
+      ":${target_name}_100_percent",
+      ":${target_name}_extra",
+      ":${target_name}_locales",
+    ]
+    if (enable_hidpi) {
+      public_deps += [ ":${target_name}_200_percent" ]
+    }
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+  }
+}

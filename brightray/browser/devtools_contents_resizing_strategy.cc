@@ -7,15 +7,13 @@
 #include <algorithm>
 
 DevToolsContentsResizingStrategy::DevToolsContentsResizingStrategy()
-    : hide_inspected_contents_(false) {
-}
+    : hide_inspected_contents_(false) {}
 
 DevToolsContentsResizingStrategy::DevToolsContentsResizingStrategy(
     const gfx::Rect& bounds)
     : bounds_(bounds),
       hide_inspected_contents_(bounds_.IsEmpty() && !bounds_.x() &&
-          !bounds_.y()) {
-}
+                               !bounds_.y()) {}
 
 void DevToolsContentsResizingStrategy::CopyFrom(
     const DevToolsContentsResizingStrategy& strategy) {
@@ -26,7 +24,7 @@ void DevToolsContentsResizingStrategy::CopyFrom(
 bool DevToolsContentsResizingStrategy::Equals(
     const DevToolsContentsResizingStrategy& strategy) {
   return bounds_ == strategy.bounds() &&
-      hide_inspected_contents_ == strategy.hide_inspected_contents();
+         hide_inspected_contents_ == strategy.hide_inspected_contents();
 }
 
 void ApplyDevToolsContentsResizingStrategy(
@@ -34,13 +32,13 @@ void ApplyDevToolsContentsResizingStrategy(
     const gfx::Size& container_size,
     gfx::Rect* new_devtools_bounds,
     gfx::Rect* new_contents_bounds) {
-  new_devtools_bounds->SetRect(
-      0, 0, container_size.width(), container_size.height());
+  new_devtools_bounds->SetRect(0, 0, container_size.width(),
+                               container_size.height());
 
   const gfx::Rect& bounds = strategy.bounds();
   if (bounds.size().IsEmpty() && !strategy.hide_inspected_contents()) {
-    new_contents_bounds->SetRect(
-        0, 0, container_size.width(), container_size.height());
+    new_contents_bounds->SetRect(0, 0, container_size.width(),
+                                 container_size.height());
     return;
   }
 

@@ -5,25 +5,24 @@
 #include "atom/browser/web_view_manager.h"
 
 #include "atom/browser/atom_browser_context.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 
 namespace atom {
 
-WebViewManager::WebViewManager() {
-}
+WebViewManager::WebViewManager() {}
 
-WebViewManager::~WebViewManager() {
-}
+WebViewManager::~WebViewManager() {}
 
 void WebViewManager::AddGuest(int guest_instance_id,
                               int element_instance_id,
                               content::WebContents* embedder,
                               content::WebContents* web_contents) {
-  web_contents_embedder_map_[guest_instance_id] = { web_contents, embedder };
+  web_contents_embedder_map_[guest_instance_id] = {web_contents, embedder};
 
   // Map the element in embedder to guest.
-  int owner_process_id = embedder->GetRenderProcessHost()->GetID();
+  int owner_process_id = embedder->GetMainFrame()->GetProcess()->GetID();
   ElementInstanceKey key(owner_process_id, element_instance_id);
   element_instance_id_to_guest_map_[key] = guest_instance_id;
 }
@@ -75,9 +74,9 @@ bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
 // static
 WebViewManager* WebViewManager::GetWebViewManager(
     content::WebContents* web_contents) {
-  auto context = web_contents->GetBrowserContext();
+  auto* context = web_contents->GetBrowserContext();
   if (context) {
-    auto manager = context->GetGuestManager();
+    auto* manager = context->GetGuestManager();
     return static_cast<WebViewManager*>(manager);
   } else {
     return nullptr;

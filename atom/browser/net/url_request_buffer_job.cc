@@ -26,21 +26,22 @@ std::string GetExtFromURL(const GURL& url) {
 
 }  // namespace
 
-URLRequestBufferJob::URLRequestBufferJob(
-    net::URLRequest* request, net::NetworkDelegate* network_delegate)
+URLRequestBufferJob::URLRequestBufferJob(net::URLRequest* request,
+                                         net::NetworkDelegate* network_delegate)
     : JsAsker<net::URLRequestSimpleJob>(request, network_delegate),
-      status_code_(net::HTTP_NOT_IMPLEMENTED) {
-}
+      status_code_(net::HTTP_NOT_IMPLEMENTED) {}
+
+URLRequestBufferJob::~URLRequestBufferJob() = default;
 
 void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   const base::Value* binary = nullptr;
-  if (options->IsType(base::Value::Type::DICTIONARY)) {
+  if (options->is_dict()) {
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("mimeType", &mime_type_);
     dict->GetString("charset", &charset_);
     dict->GetBinary("data", &binary);
-  } else if (options->IsType(base::Value::Type::BINARY)) {
+  } else if (options->is_blob()) {
     binary = options.get();
   }
 
@@ -54,8 +55,8 @@ void URLRequestBufferJob::StartAsync(std::unique_ptr<base::Value> options) {
   }
 
   if (!binary) {
-    NotifyStartError(net::URLRequestStatus(
-          net::URLRequestStatus::FAILED, net::ERR_NOT_IMPLEMENTED));
+    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
+                                           net::ERR_NOT_IMPLEMENTED));
     return;
   }
 

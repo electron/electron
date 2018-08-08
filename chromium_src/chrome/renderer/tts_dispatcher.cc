@@ -13,12 +13,12 @@
 #include "third_party/WebKit/public/platform/WebString.h"
 #include "third_party/WebKit/public/platform/WebVector.h"
 
-using content::RenderThread;
-using blink::WebSpeechSynthesizerClient;
 using blink::WebSpeechSynthesisUtterance;
 using blink::WebSpeechSynthesisVoice;
+using blink::WebSpeechSynthesizerClient;
 using blink::WebString;
 using blink::WebVector;
+using content::RenderThread;
 
 int TtsDispatcher::next_utterance_id_ = 1;
 

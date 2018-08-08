@@ -13,7 +13,7 @@
 
 #if defined(__OBJC__)
 @class InAppTransactionObserver;
-#else  // __OBJC__
+#else   // __OBJC__
 class InAppTransactionObserver;
 #endif  // __OBJC__
 
@@ -34,6 +34,10 @@ struct Transaction {
   std::string errorMessage = "";
   std::string transactionState = "";
   Payment payment;
+
+  Transaction();
+  Transaction(const Transaction&);
+  ~Transaction();
 };
 
 // --------------------------- Classes ---------------------------

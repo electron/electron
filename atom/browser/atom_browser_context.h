@@ -26,7 +26,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static scoped_refptr<AtomBrowserContext> From(
-      const std::string& partition, bool in_memory,
+      const std::string& partition,
+      bool in_memory,
       const base::DictionaryValue& options = base::DictionaryValue());
 
   void SetUserAgent(const std::string& user_agent);
@@ -47,7 +48,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::vector<std::string> GetCookieableSchemes() override;
   void NotifyCookieChange(const net::CanonicalCookie& cookie,
                           bool removed,
-                          net::CookieStore::ChangeCause cause) override;
+                          net::CookieChangeCause cause) override;
 
   // content::BrowserContext:
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
@@ -59,8 +60,16 @@ class AtomBrowserContext : public brightray::BrowserContext {
 
   AtomBlobReader* GetBlobReader();
 
+  void set_cookie_change_subscription(
+      std::unique_ptr<
+          base::CallbackList<void(const CookieDetails*)>::Subscription>
+          subscription) {
+    cookie_change_subscription_.swap(subscription);
+  }
+
  protected:
-  AtomBrowserContext(const std::string& partition, bool in_memory,
+  AtomBrowserContext(const std::string& partition,
+                     bool in_memory,
                      const base::DictionaryValue& options);
   ~AtomBrowserContext() override;
 
@@ -73,6 +82,8 @@ class AtomBrowserContext : public brightray::BrowserContext {
   bool use_cache_;
 
   base::CallbackList<void(const CookieDetails*)> cookie_change_sub_list_;
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+      cookie_change_subscription_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserContext);
 };

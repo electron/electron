@@ -29,11 +29,11 @@ class WebRequest : public mate::TrackableObject<WebRequest> {
   ~WebRequest() override;
 
   // C++ can not distinguish overloaded member function.
-  template<AtomNetworkDelegate::SimpleEvent type>
+  template <AtomNetworkDelegate::SimpleEvent type>
   void SetSimpleListener(mate::Arguments* args);
-  template<AtomNetworkDelegate::ResponseEvent type>
+  template <AtomNetworkDelegate::ResponseEvent type>
   void SetResponseListener(mate::Arguments* args);
-  template<typename Listener, typename Method, typename Event>
+  template <typename Listener, typename Method, typename Event>
   void SetListener(Method method, Event type, mate::Arguments* args);
 
  private:

@@ -17,20 +17,19 @@ namespace brightray {
 namespace {
 
 base::string16 g_app_user_model_id;
-
 }
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
 
 std::string GetApplicationName() {
-  auto module = GetModuleHandle(nullptr);
+  auto* module = GetModuleHandle(nullptr);
   std::unique_ptr<FileVersionInfo> info(
       FileVersionInfo::CreateFileVersionInfoForModule(module));
   return base::UTF16ToUTF8(info->product_name());
 }
 
 std::string GetApplicationVersion() {
-  auto module = GetModuleHandle(nullptr);
+  auto* module = GetModuleHandle(nullptr);
   std::unique_ptr<FileVersionInfo> info(
       FileVersionInfo::CreateFileVersionInfoForModule(module));
   return base::UTF16ToUTF8(info->product_version());
@@ -47,12 +46,9 @@ PCWSTR GetRawAppUserModelID() {
     if (SUCCEEDED(GetCurrentProcessExplicitAppUserModelID(&current_app_id))) {
       g_app_user_model_id = current_app_id;
     } else {
-      std::string name = GetOverriddenApplicationName();
-      if (name.empty()) {
-        name = GetApplicationName();
-      }
+      std::string name = GetApplicationName();
       base::string16 generated_app_id = base::ReplaceStringPlaceholders(
-        kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
+          kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
       SetAppUserModelID(generated_app_id);
     }
     CoTaskMemFree(current_app_id);

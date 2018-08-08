@@ -6,8 +6,6 @@
 
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
@@ -17,18 +15,17 @@ namespace atom {
 namespace api {
 
 MenuViews::MenuViews(v8::Isolate* isolate, v8::Local<v8::Object> wrapper)
-    : Menu(isolate, wrapper),
-      weak_factory_(this) {
-}
+    : Menu(isolate, wrapper), weak_factory_(this) {}
 
-void MenuViews::PopupAt(BrowserWindow* window,
-                        int x, int y, int positioning_item,
+MenuViews::~MenuViews() = default;
+
+void MenuViews::PopupAt(TopLevelWindow* window,
+                        int x,
+                        int y,
+                        int positioning_item,
                         const base::Closure& callback) {
-  NativeWindow* native_window = static_cast<NativeWindow*>(window->window());
+  auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
-    return;
-  auto* web_contents = native_window->inspectable_web_contents();
-  if (!web_contents)
     return;
 
   // (-1, -1) means showing on mouse location.
@@ -36,8 +33,7 @@ void MenuViews::PopupAt(BrowserWindow* window,
   if (x == -1 || y == -1) {
     location = display::Screen::GetScreen()->GetCursorScreenPoint();
   } else {
-    auto* view = web_contents->GetView()->GetWebView();
-    gfx::Point origin = view->bounds().origin();
+    gfx::Point origin = native_window->GetContentBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
   }
 
@@ -47,17 +43,14 @@ void MenuViews::PopupAt(BrowserWindow* window,
   atom::UnresponsiveSuppressor suppressor;
 
   // Show the menu.
-  int32_t window_id = window->ID();
+  int32_t window_id = window->weak_map_id();
   auto close_callback = base::Bind(
       &MenuViews::OnClosed, weak_factory_.GetWeakPtr(), window_id, callback);
-  menu_runners_[window_id] = std::unique_ptr<MenuRunner>(new MenuRunner(
-      model(), flags, close_callback));
+  menu_runners_[window_id] =
+      std::make_unique<MenuRunner>(model(), flags, close_callback);
   menu_runners_[window_id]->RunMenuAt(
-      static_cast<NativeWindowViews*>(window->window())->widget(),
-      NULL,
-      gfx::Rect(location, gfx::Size()),
-      views::MENU_ANCHOR_TOPLEFT,
-      ui::MENU_SOURCE_MOUSE);
+      native_window->widget(), NULL, gfx::Rect(location, gfx::Size()),
+      views::MENU_ANCHOR_TOPLEFT, ui::MENU_SOURCE_MOUSE);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {

@@ -27,32 +27,36 @@ class NotifyIconHost {
   typedef std::vector<NotifyIcon*> NotifyIcons;
 
   // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK
-      WndProcStatic(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
+                                        UINT message,
+                                        WPARAM wparam,
+                                        LPARAM lparam);
 
-  LRESULT CALLBACK
-      WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+  LRESULT CALLBACK WndProc(HWND hwnd,
+                           UINT message,
+                           WPARAM wparam,
+                           LPARAM lparam);
 
   UINT NextIconId();
 
   // The unique icon ID we will assign to the next icon.
-  UINT next_icon_id_;
+  UINT next_icon_id_ = 1;
 
   // List containing all active NotifyIcons.
   NotifyIcons notify_icons_;
 
   // The window class of |window_|.
-  ATOM atom_;
+  ATOM atom_ = 0;
 
   // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_;
+  HMODULE instance_ = nullptr;
 
   // The window used for processing events.
-  HWND window_;
+  HWND window_ = nullptr;
 
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our status icons.
-  UINT taskbar_created_message_;
+  UINT taskbar_created_message_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(NotifyIconHost);
 };

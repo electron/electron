@@ -19,7 +19,7 @@ class PrintViewManagerBasic
     : public PrintViewManagerBase,
       public content::WebContentsUserData<PrintViewManagerBasic> {
  public:
-  virtual ~PrintViewManagerBasic();
+  ~PrintViewManagerBasic() override;
 
 #if defined(OS_ANDROID)
   // Sets the file descriptor into which the PDF will be written.

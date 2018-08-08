@@ -17,6 +17,9 @@
 
 namespace file_dialog {
 
+DialogSettings::DialogSettings() = default;
+DialogSettings::~DialogSettings() = default;
+
 namespace {
 
 // Makes sure that .jpg also shows .JPG.
@@ -184,8 +187,8 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (size_t j = 0; j < filter.second.size(); ++j) {
-      std::unique_ptr<std::string> file_extension(
-          new std::string("." + filter.second[j]));
+      auto file_extension =
+          std::make_unique<std::string>("." + filter.second[j]);
       gtk_file_filter_add_custom(
           gtk_filter, GTK_FILE_FILTER_FILENAME,
           reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
@@ -207,7 +210,7 @@ base::FilePath FileChooserDialog::AddExtensionForFilename(
     return path;
 
   GSList* filters = gtk_file_chooser_list_filters(GTK_FILE_CHOOSER(dialog_));
-  int i = g_slist_index(filters, selected_filter);
+  size_t i = g_slist_index(filters, selected_filter);
   g_slist_free(filters);
   if (i >= filters_.size())
     return path;

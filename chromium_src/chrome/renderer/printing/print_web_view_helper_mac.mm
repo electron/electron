@@ -22,13 +22,13 @@ using blink::WebLocalFrame;
 void PrintWebViewHelper::PrintPageInternal(
     const PrintMsg_PrintPage_Params& params,
     WebLocalFrame* frame) {
-  PdfMetafileSkia metafile(SkiaDocumentType::PDF);
+  PdfMetafileSkia metafile;
   CHECK(metafile.Init());
 
   int page_number = params.page_number;
   gfx::Size page_size_in_dpi;
   gfx::Rect content_area_in_dpi;
-  RenderPage(print_pages_params_->params, page_number, frame, false, &metafile,
+  RenderPage(print_pages_params_->params, page_number, frame, &metafile,
              &page_size_in_dpi, &content_area_in_dpi);
   metafile.FinishDocument();
 
@@ -56,11 +56,11 @@ bool PrintWebViewHelper::RenderPreviewPage(
   std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
 
-  bool render_to_draft = print_preview_context_.IsModifiable() &&
-                         is_print_ready_metafile_sent_;
+  bool render_to_draft =
+      print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_;
 
   if (render_to_draft) {
-    draft_metafile.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
+    draft_metafile.reset(new PdfMetafileSkia());
     CHECK(draft_metafile->Init());
     initial_render_metafile = draft_metafile.get();
   }
@@ -68,9 +68,9 @@ bool PrintWebViewHelper::RenderPreviewPage(
   base::TimeTicks begin_time = base::TimeTicks::Now();
   gfx::Size page_size;
   RenderPage(printParams, page_number, print_preview_context_.prepared_frame(),
-             true, initial_render_metafile, &page_size, NULL);
-  print_preview_context_.RenderedPreviewPage(
-      base::TimeTicks::Now() - begin_time);
+             initial_render_metafile, &page_size, nullptr);
+  print_preview_context_.RenderedPreviewPage(base::TimeTicks::Now() -
+                                             begin_time);
 
   if (draft_metafile.get()) {
     draft_metafile->FinishDocument();
@@ -89,7 +89,6 @@ bool PrintWebViewHelper::RenderPreviewPage(
 void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
                                     int page_number,
                                     WebLocalFrame* frame,
-                                    bool is_preview,
                                     PdfMetafileSkia* metafile,
                                     gfx::Size* page_size,
                                     gfx::Rect* content_rect) {
@@ -117,7 +116,6 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
       return;
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
-    cc::SetIsPreviewMetafile(canvas, is_preview);
     RenderPageContent(frame, page_number, canvas_area, content_area,
                       scale_factor, static_cast<blink::WebCanvas*>(canvas));
   }

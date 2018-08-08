@@ -193,8 +193,8 @@ bool PathProvider(int key, base::FilePath* result) {
 #else
       if (!GetUserDownloadsDirectory(&cur))
         return false;
-      // Do not create the download directory here, we have done it twice now
-      // and annoyed a lot of users.
+        // Do not create the download directory here, we have done it twice now
+        // and annoyed a lot of users.
 #endif
       break;
     case chrome::DIR_CRASH_DUMPS:
@@ -383,7 +383,7 @@ bool PathProvider(int key, base::FilePath* result) {
       if (base::mac::AmIBundled()) {
         cur = base::mac::FrameworkBundlePath();
         cur = cur.Append(FILE_PATH_LITERAL("Resources"))
-                 .Append(FILE_PATH_LITERAL("resources.pak"));
+                  .Append(FILE_PATH_LITERAL("resources.pak"));
         break;
       }
 #elif defined(OS_ANDROID)
@@ -401,7 +401,7 @@ bool PathProvider(int key, base::FilePath* result) {
       if (!PathService::Get(base::DIR_MODULE, &cur))
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("resources"))
-               .Append(FILE_PATH_LITERAL("extension"));
+                .Append(FILE_PATH_LITERAL("extension"));
       break;
 #if defined(OS_CHROMEOS)
     case chrome::DIR_CHROMEOS_WALLPAPERS:
@@ -516,8 +516,8 @@ bool PathProvider(int key, base::FilePath* result) {
         return false;
 
       cur = cur.Append(FILE_PATH_LITERAL("Google"))
-               .Append(FILE_PATH_LITERAL("Chrome"))
-               .Append(FILE_PATH_LITERAL("External Extensions"));
+                .Append(FILE_PATH_LITERAL("Chrome"))
+                .Append(FILE_PATH_LITERAL("External Extensions"));
       create_dir = false;
 #else
       if (!PathService::Get(base::DIR_MODULE, &cur))
@@ -543,19 +543,19 @@ bool PathProvider(int key, base::FilePath* result) {
     case chrome::DIR_NATIVE_MESSAGING:
 #if defined(OS_MACOSX)
 #if defined(GOOGLE_CHROME_BUILD)
-      cur = base::FilePath(FILE_PATH_LITERAL(
-           "/Library/Google/Chrome/NativeMessagingHosts"));
+      cur = base::FilePath(
+          FILE_PATH_LITERAL("/Library/Google/Chrome/NativeMessagingHosts"));
 #else
       cur = base::FilePath(FILE_PATH_LITERAL(
           "/Library/Application Support/Chromium/NativeMessagingHosts"));
 #endif
 #else  // defined(OS_MACOSX)
 #if defined(GOOGLE_CHROME_BUILD)
-      cur = base::FilePath(FILE_PATH_LITERAL(
-          "/etc/opt/chrome/native-messaging-hosts"));
+      cur = base::FilePath(
+          FILE_PATH_LITERAL("/etc/opt/chrome/native-messaging-hosts"));
 #else
-      cur = base::FilePath(FILE_PATH_LITERAL(
-          "/etc/chromium/native-messaging-hosts"));
+      cur = base::FilePath(
+          FILE_PATH_LITERAL("/etc/chromium/native-messaging-hosts"));
 #endif
 #endif  // !defined(OS_MACOSX)
       break;
@@ -589,8 +589,7 @@ bool PathProvider(int key, base::FilePath* result) {
 
   // TODO(bauerb): http://crbug.com/259796
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (create_dir && !base::PathExists(cur) &&
-      !base::CreateDirectory(cur))
+  if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur))
     return false;
 
   *result = cur;

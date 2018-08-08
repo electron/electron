@@ -12,10 +12,10 @@ namespace mate {
 bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
                                               v8::Local<v8::Value> val,
                                               base::DictionaryValue* out) {
-  std::unique_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-  std::unique_ptr<base::Value> value(converter->FromV8Value(
-      val, isolate->GetCurrentContext()));
-  if (value && value->IsType(base::Value::Type::DICTIONARY)) {
+  atom::V8ValueConverter converter;
+  std::unique_ptr<base::Value> value(
+      converter.FromV8Value(val, isolate->GetCurrentContext()));
+  if (value && value->is_dict()) {
     out->Swap(static_cast<base::DictionaryValue*>(value.get()));
     return true;
   } else {
@@ -26,17 +26,37 @@ bool Converter<base::DictionaryValue>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<base::DictionaryValue>::ToV8(
     v8::Isolate* isolate,
     const base::DictionaryValue& val) {
-  std::unique_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-  return converter->ToV8Value(&val, isolate->GetCurrentContext());
+  atom::V8ValueConverter converter;
+  return converter.ToV8Value(&val, isolate->GetCurrentContext());
+}
+
+bool Converter<base::Value>::FromV8(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> val,
+                                    base::Value* out) {
+  atom::V8ValueConverter converter;
+  std::unique_ptr<base::Value> value(
+      converter.FromV8Value(val, isolate->GetCurrentContext()));
+  if (value) {
+    *out = value->Clone();
+    return true;
+  } else {
+    return false;
+  }
+}
+
+v8::Local<v8::Value> Converter<base::Value>::ToV8(v8::Isolate* isolate,
+                                                  const base::Value& val) {
+  atom::V8ValueConverter converter;
+  return converter.ToV8Value(&val, isolate->GetCurrentContext());
 }
 
 bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
                                         v8::Local<v8::Value> val,
                                         base::ListValue* out) {
-  std::unique_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-  std::unique_ptr<base::Value> value(converter->FromV8Value(
-      val, isolate->GetCurrentContext()));
-  if (value->IsType(base::Value::Type::LIST)) {
+  atom::V8ValueConverter converter;
+  std::unique_ptr<base::Value> value(
+      converter.FromV8Value(val, isolate->GetCurrentContext()));
+  if (value->is_list()) {
     out->Swap(static_cast<base::ListValue*>(value.get()));
     return true;
   } else {
@@ -47,8 +67,8 @@ bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<base::ListValue>::ToV8(
     v8::Isolate* isolate,
     const base::ListValue& val) {
-  std::unique_ptr<atom::V8ValueConverter> converter(new atom::V8ValueConverter);
-  return converter->ToV8Value(&val, isolate->GetCurrentContext());
+  atom::V8ValueConverter converter;
+  return converter.ToV8Value(&val, isolate->GetCurrentContext());
 }
 
 }  // namespace mate

@@ -6,8 +6,7 @@
 
 namespace atom {
 
-OffscreenViewProxy::OffscreenViewProxy(views::View* view)
-    : view_(view), observer_(nullptr) {
+OffscreenViewProxy::OffscreenViewProxy(views::View* view) : view_(view) {
   view_bitmap_.reset(new SkBitmap);
 }
 
@@ -34,8 +33,7 @@ const SkBitmap* OffscreenViewProxy::GetBitmap() const {
 
 void OffscreenViewProxy::SetBitmap(const SkBitmap& bitmap) {
   if (view_bounds_.width() == bitmap.width() &&
-      view_bounds_.height() == bitmap.height() &&
-      observer_) {
+      view_bounds_.height() == bitmap.height() && observer_) {
     view_bitmap_.reset(new SkBitmap(bitmap));
     observer_->OnProxyViewPaint(view_bounds_);
   }

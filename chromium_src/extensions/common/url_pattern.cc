@@ -28,20 +28,16 @@ namespace {
 // TODO(aa): What about more obscure schemes like data: and javascript: ?
 // Note: keep this array in sync with kValidSchemeMasks.
 const char* const kValidSchemes[] = {
-    url::kHttpScheme,         url::kHttpsScheme,
-    url::kFileScheme,         url::kFtpScheme,
-    content::kChromeUIScheme, kExtensionScheme,
+    url::kHttpScheme,       url::kHttpsScheme,        url::kFileScheme,
+    url::kFtpScheme,        content::kChromeUIScheme, kExtensionScheme,
     url::kFileSystemScheme,
 };
 
 const int kValidSchemeMasks[] = {
-  URLPattern::SCHEME_HTTP,
-  URLPattern::SCHEME_HTTPS,
-  URLPattern::SCHEME_FILE,
-  URLPattern::SCHEME_FTP,
-  URLPattern::SCHEME_CHROMEUI,
-  URLPattern::SCHEME_EXTENSION,
-  URLPattern::SCHEME_FILESYSTEM,
+    URLPattern::SCHEME_HTTP,       URLPattern::SCHEME_HTTPS,
+    URLPattern::SCHEME_FILE,       URLPattern::SCHEME_FTP,
+    URLPattern::SCHEME_CHROMEUI,   URLPattern::SCHEME_EXTENSION,
+    URLPattern::SCHEME_FILESYSTEM,
 };
 
 static_assert(arraysize(kValidSchemes) == arraysize(kValidSchemeMasks),
@@ -59,15 +55,15 @@ const char kParseErrorInvalidHost[] = "Invalid host.";
 
 // Message explaining each URLPattern::ParseResult.
 const char* const kParseResultMessages[] = {
-  kParseSuccess,
-  kParseErrorMissingSchemeSeparator,
-  kParseErrorInvalidScheme,
-  kParseErrorWrongSchemeType,
-  kParseErrorEmptyHost,
-  kParseErrorInvalidHostWildcard,
-  kParseErrorEmptyPath,
-  kParseErrorInvalidPort,
-  kParseErrorInvalidHost,
+    kParseSuccess,
+    kParseErrorMissingSchemeSeparator,
+    kParseErrorInvalidScheme,
+    kParseErrorWrongSchemeType,
+    kParseErrorEmptyHost,
+    kParseErrorInvalidHostWildcard,
+    kParseErrorEmptyPath,
+    kParseErrorInvalidPort,
+    kParseErrorInvalidHost,
 };
 
 static_assert(URLPattern::NUM_PARSE_RESULTS == arraysize(kParseResultMessages),
@@ -157,8 +153,7 @@ URLPattern::URLPattern(int valid_schemes, base::StringPiece pattern)
 
 URLPattern::URLPattern(const URLPattern& other) = default;
 
-URLPattern::~URLPattern() {
-}
+URLPattern::~URLPattern() {}
 
 bool URLPattern::operator<(const URLPattern& other) const {
   return GetAsString() < other.GetAsString();
@@ -510,8 +505,8 @@ const std::string& URLPattern::GetAsString() const {
 
   bool standard_scheme = IsStandardScheme(scheme_);
 
-  std::string spec = scheme_ +
-      (standard_scheme ? url::kStandardSchemeSeparator : ":");
+  std::string spec =
+      scheme_ + (standard_scheme ? url::kStandardSchemeSeparator : ":");
 
   if (scheme_ != url::kFileScheme && standard_scheme) {
     if (match_subdomains_) {
@@ -540,10 +535,11 @@ bool URLPattern::OverlapsWith(const URLPattern& other) const {
   if (match_all_urls() || other.match_all_urls())
     return true;
   return (MatchesAnyScheme(other.GetExplicitSchemes()) ||
-          other.MatchesAnyScheme(GetExplicitSchemes()))
-      && (MatchesHost(other.host()) || other.MatchesHost(host()))
-      && (MatchesPortPattern(other.port()) || other.MatchesPortPattern(port()))
-      && (MatchesPath(StripTrailingWildcard(other.path())) ||
+          other.MatchesAnyScheme(GetExplicitSchemes())) &&
+         (MatchesHost(other.host()) || other.MatchesHost(host())) &&
+         (MatchesPortPattern(other.port()) ||
+          other.MatchesPortPattern(port())) &&
+         (MatchesPath(StripTrailingWildcard(other.path())) ||
           other.MatchesPath(StripTrailingWildcard(path())));
 }
 

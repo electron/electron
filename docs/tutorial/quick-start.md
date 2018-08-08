@@ -13,10 +13,10 @@ two documents:
 * To check out the process architecture, see
 [Main and Renderer Processes][processes].
 
-If you just came here to learn about Electron, check out the
+To learn more about Electron, check out the
 [official guides][readme].
 
 [first-app]: ./first-app.md
 [processes]: ./application-architecture.md#main-and-renderer-processes
-[readme]: ../README.md
+[readme]: ../
 

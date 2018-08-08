@@ -52,12 +52,12 @@ function getPlatformPath () {
 
   switch (platform) {
     case 'darwin':
-      return 'dist/Electron.app/Contents/MacOS/Electron'
+      return 'Electron.app/Contents/MacOS/Electron'
     case 'freebsd':
     case 'linux':
-      return 'dist/electron'
+      return 'electron'
     case 'win32':
-      return 'dist/electron.exe'
+      return 'electron.exe'
     default:
       throw new Error('Electron builds are not available on platform: ' + platform)
   }

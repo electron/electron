@@ -17,17 +17,18 @@
 
 namespace atom {
 
-class TrayIconCocoa : public TrayIcon,
-                      public AtomMenuModel::Observer {
+class TrayIconCocoa : public TrayIcon, public AtomMenuModel::Observer {
  public:
   TrayIconCocoa();
-  virtual ~TrayIconCocoa();
+  ~TrayIconCocoa() override;
 
   void SetImage(const gfx::Image& image) override;
   void SetPressedImage(const gfx::Image& image) override;
   void SetToolTip(const std::string& tool_tip) override;
   void SetTitle(const std::string& title) override;
   void SetHighlightMode(TrayIcon::HighlightMode mode) override;
+  void SetIgnoreDoubleClickEvents(bool ignore) override;
+  bool GetIgnoreDoubleClickEvents() override;
   void PopUpContextMenu(const gfx::Point& pos,
                         AtomMenuModel* menu_model) override;
   void SetContextMenu(AtomMenuModel* menu_model) override;
@@ -45,7 +46,7 @@ class TrayIconCocoa : public TrayIcon,
   base::scoped_nsobject<AtomMenuController> menu_;
 
   // Used for unregistering observer.
-  AtomMenuModel* menu_model_;  // weak ref.
+  AtomMenuModel* menu_model_ = nullptr;  // weak ref.
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };

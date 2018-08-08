@@ -4,27 +4,14 @@
 
 #include "atom/browser/ui/x/window_state_watcher.h"
 
-#include <X11/Xlib.h>
-
 #include "ui/events/platform/platform_event_source.h"
+#include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_atom_cache.h"
 
 namespace atom {
 
-namespace {
-
-const char* kAtomsToCache[] = {
-  "_NET_WM_STATE",
-  NULL,
-};
-
-}  // namespace
-
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
-    : window_(window),
-      widget_(window->GetAcceleratedWidget()),
-      was_minimized_(false),
-      was_maximized_(false) {
+    : window_(window), widget_(window->GetAcceleratedWidget()) {
   ui::PlatformEventSource::GetInstance()->AddPlatformEventObserver(this);
 }
 
@@ -71,8 +58,7 @@ void WindowStateWatcher::DidProcessEvent(const ui::PlatformEvent& event) {
 bool WindowStateWatcher::IsWindowStateEvent(const ui::PlatformEvent& event) {
   ::Atom changed_atom = event->xproperty.atom;
   return (changed_atom == gfx::GetAtom("_NET_WM_STATE") &&
-          event->type == PropertyNotify &&
-          event->xproperty.window == widget_);
+          event->type == PropertyNotify && event->xproperty.window == widget_);
 }
 
 }  // namespace atom

@@ -16,6 +16,7 @@
 #include "chrome/browser/ui/libgtkui/gtk_signal.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
 #define ANSI_FOREGROUND_RED "\x1b[31m"
@@ -41,7 +42,6 @@ class GtkMessageBox : public NativeWindowObserver {
                 const std::string& checkbox_label,
                 bool checkbox_checked)
       : cancel_id_(cancel_id),
-        checkbox_checked_(false),
         parent_(static_cast<NativeWindow*>(parent_window)) {
     // Create dialog.
     dialog_ =
@@ -85,7 +85,7 @@ class GtkMessageBox : public NativeWindowObserver {
     }
   }
 
-  ~GtkMessageBox() {
+  ~GtkMessageBox() override {
     gtk_widget_destroy(dialog_);
     if (parent_) {
       parent_->RemoveObserver(this);
@@ -159,9 +159,9 @@ class GtkMessageBox : public NativeWindowObserver {
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id to return when the dialog is closed without pressing buttons.
-  int cancel_id_;
+  int cancel_id_ = 0;
 
-  bool checkbox_checked_;
+  bool checkbox_checked_ = false;
 
   NativeWindow* parent_;
   GtkWidget* dialog_;
@@ -226,7 +226,8 @@ void ShowErrorBox(const base::string16& title, const base::string16& content) {
                   base::UTF16ToUTF8(content).c_str(), "", false)
         .RunSynchronous();
   } else {
-    fprintf(stderr, ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY ANSI_FOREGROUND_RED
+    fprintf(stderr,
+            ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY ANSI_FOREGROUND_RED
             "%s\n" ANSI_FOREGROUND_BLACK "%s" ANSI_RESET "\n",
             base::UTF16ToUTF8(title).c_str(),
             base::UTF16ToUTF8(content).c_str());

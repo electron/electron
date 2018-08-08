@@ -1,6 +1,6 @@
-const assert = require('assert')
 const {autoUpdater} = require('electron').remote
 const {ipcRenderer} = require('electron')
+const {expect} = require('chai')
 
 describe('autoUpdater module', function () {
   // XXX(alexeykuzmin): Calling `.skip()` in a 'before' hook
@@ -20,8 +20,8 @@ describe('autoUpdater module', function () {
         return done()
       }
 
-      ipcRenderer.once('auto-updater-error', function (event, message) {
-        assert.equal(message, 'Update URL is not set')
+      ipcRenderer.once('auto-updater-error', (event, message) => {
+        expect(message).to.equal('Update URL is not set')
         done()
       })
       autoUpdater.setFeedURL('')
@@ -29,9 +29,9 @@ describe('autoUpdater module', function () {
     })
   })
 
-  describe('getFeedURL', function () {
-    it('returns a falsey value by default', function () {
-      assert.ok(!autoUpdater.getFeedURL())
+  describe('getFeedURL', () => {
+    it('returns a falsey value by default', () => {
+      expect(autoUpdater.getFeedURL()).to.equal('')
     })
 
     it('correctly fetches the previously set FeedURL', function (done) {
@@ -43,7 +43,7 @@ describe('autoUpdater module', function () {
 
       const updateURL = 'https://fake-update.electron.io'
       autoUpdater.setFeedURL(updateURL)
-      assert.equal(autoUpdater.getFeedURL(), updateURL)
+      expect(autoUpdater.getFeedURL()).to.equal(updateURL)
       done()
     })
   })
@@ -61,27 +61,27 @@ describe('autoUpdater module', function () {
       })
 
       it('sets url successfully using old (url, headers) syntax', () => {
-        noThrow(() => autoUpdater.setFeedURL('http://electronjs.org', { header: 'val' }))
-        assert.equal(autoUpdater.getFeedURL(), 'http://electronjs.org')
+        const url = 'http://electronjs.org'
+        noThrow(() => autoUpdater.setFeedURL(url, { header: 'val' }))
+        expect(autoUpdater.getFeedURL()).to.equal(url)
       })
 
       it('throws if no url is provided when using the old style', () => {
-        assert.throws(
-          () => autoUpdater.setFeedURL(),
+        expect(() => autoUpdater.setFeedURL(),
           err => err.message.includes('Expected an options object with a \'url\' property to be provided') // eslint-disable-line
-        )
+        ).to.throw()
       })
 
       it('sets url successfully using new ({ url }) syntax', () => {
-        noThrow(() => autoUpdater.setFeedURL({ url: 'http://mymagicurl.local' }))
-        assert.equal(autoUpdater.getFeedURL(), 'http://mymagicurl.local')
+        const url = 'http://mymagicurl.local'
+        noThrow(() => autoUpdater.setFeedURL({ url }))
+        expect(autoUpdater.getFeedURL()).to.equal(url)
       })
 
       it('throws if no url is provided when using the new style', () => {
-        assert.throws(
-          () => autoUpdater.setFeedURL({ noUrl: 'lol' }),
+        expect(() => autoUpdater.setFeedURL({ noUrl: 'lol' }),
           err => err.message.includes('Expected options object to contain a \'url\' string property in setFeedUrl call') // eslint-disable-line
-        )
+        ).to.throw()
       })
     })
 
@@ -94,38 +94,35 @@ describe('autoUpdater module', function () {
         }
       })
 
-      it('emits an error when the application is unsigned', function (done) {
-        ipcRenderer.once('auto-updater-error', function (event, message) {
-          assert.equal(message, 'Could not get code signature for running application')
+      it('emits an error when the application is unsigned', done => {
+        ipcRenderer.once('auto-updater-error', (event, message) => {
+          expect(message).equal('Could not get code signature for running application')
           done()
         })
         autoUpdater.setFeedURL('')
       })
 
       it('does not throw if default is the serverType', () => {
-        assert.doesNotThrow(
-          () => autoUpdater.setFeedURL({ url: '', serverType: 'default' }),
+        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'default' }),
           isServerTypeError
-        )
+        ).to.not.throw()
       })
 
       it('does not throw if json is the serverType', () => {
-        assert.doesNotThrow(
-          () => autoUpdater.setFeedURL({ url: '', serverType: 'default' }),
+        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'default' }),
           isServerTypeError
-        )
+        ).to.not.throw()
       })
 
       it('does throw if an unknown string is the serverType', () => {
-        assert.throws(
-          () => autoUpdater.setFeedURL({ url: '', serverType: 'weow' }),
+        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'weow' }),
           isServerTypeError
-        )
+        ).to.throw()
       })
     })
   })
 
-  describe('quitAndInstall', function () {
+  describe('quitAndInstall', () => {
     it('emits an error on Windows when no update is available', function (done) {
       if (process.platform !== 'win32') {
         // FIXME(alexeykuzmin): Skip the test.
@@ -133,15 +130,15 @@ describe('autoUpdater module', function () {
         return done()
       }
 
-      ipcRenderer.once('auto-updater-error', function (event, message) {
-        assert.equal(message, 'No update available, can\'t quit and install')
+      ipcRenderer.once('auto-updater-error', (event, message) => {
+        expect(message).to.equal('No update available, can\'t quit and install')
         done()
       })
       autoUpdater.quitAndInstall()
     })
   })
 
-  describe('error event', function () {
+  describe('error event', () => {
     it('serializes correctly over the remote module', function (done) {
       if (process.platform === 'linux') {
         // FIXME(alexeykuzmin): Skip the test.
@@ -149,9 +146,9 @@ describe('autoUpdater module', function () {
         return done()
       }
 
-      autoUpdater.once('error', function (error) {
-        assert.equal(error instanceof Error, true)
-        assert.deepEqual(Object.getOwnPropertyNames(error), ['stack', 'message', 'name'])
+      autoUpdater.once('error', error => {
+        expect(error).to.be.an.instanceof(Error)
+        expect(Object.getOwnPropertyNames(error)).to.deep.equal(['stack', 'message', 'name'])
         done()
       })
 

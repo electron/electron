@@ -10,7 +10,8 @@
 #include "content/public/browser/web_ui_controller_factory.h"
 
 namespace base {
-template <typename T> struct DefaultSingletonTraits;
+template <typename T>
+struct DefaultSingletonTraits;
 }
 
 namespace brightray {
@@ -22,10 +23,10 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
   static WebUIControllerFactory* GetInstance();
 
   WebUIControllerFactory();
-  virtual ~WebUIControllerFactory();
+  ~WebUIControllerFactory() override;
 
-  content::WebUI::TypeID GetWebUIType(
-      content::BrowserContext* browser_context, const GURL& url) const override;
+  content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
+                                      const GURL& url) const override;
   bool UseWebUIForURL(content::BrowserContext* browser_context,
                       const GURL& url) const override;
   bool UseWebUIBindingsForURL(content::BrowserContext* browser_context,

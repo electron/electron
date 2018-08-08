@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "content/public/browser/render_widget_host_view.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -11,8 +12,9 @@ namespace atom {
 namespace api {
 
 bool WebContents::IsFocused() const {
-  auto view = web_contents()->GetRenderWidgetHostView();
-  if (!view) return false;
+  auto* view = web_contents()->GetRenderWidgetHostView();
+  if (!view)
+    return false;
 
   if (GetType() != BACKGROUND_PAGE) {
     auto window = [web_contents()->GetNativeView() window];

@@ -39,7 +39,7 @@ the main process perform those operations.
 
 > #### Aside: Communication Between Processes
 > In Electron, we have several ways to communicate between the main process
-and renderer processes. Like [`ipcRenderer`](../api/ipc-renderer.md) and
+and renderer processes, such as [`ipcRenderer`](../api/ipc-renderer.md) and
 [`ipcMain`](../api/ipc-main.md) modules for sending messages, and the
 [remote](../api/remote.md) module for RPC style communication. There is also
 an FAQ entry on [how to share data between web pages][share-data].
@@ -56,8 +56,8 @@ const electron = require('electron')
 
 All Electron APIs are assigned a process type. Many of them can only be
 used from the main process, some of them only from a renderer process,
-some from both. The documentation for the individual API will clearly
-state which process they can be used from.
+some from both. The documentation for each individual API will
+state which process it can be used from.
 
 A window in Electron is for instance created using the `BrowserWindow`
 class. It is only available in the main process.
@@ -119,7 +119,7 @@ install it as a dependency:
 npm install --save aws-sdk
 ```
 
-Then, in your Electron app, simply require and use the module as if you were
+Then, in your Electron app, require and use the module as if you were
 building a Node.js application:
 
 ```javascript
@@ -133,8 +133,7 @@ compiled to be used with Electron.
 
 The vast majority of Node.js modules are _not_ native. Only 400 out of the
 ~650.000 modules are native. However, if you do need native modules, please
-consult [this guide on how to recompile them for Electron][native-node] (it's
-easy).
+consult [this guide on how to recompile them for Electron][native-node].
 
 [node-docs]: https://nodejs.org/en/docs/
 [security]: ./security.md

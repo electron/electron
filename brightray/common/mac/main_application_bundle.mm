@@ -17,7 +17,8 @@ namespace {
 
 bool HasMainProcessKey() {
   NSDictionary* info_dictionary = [base::mac::MainBundle() infoDictionary];
-  return [[info_dictionary objectForKey:@"ElectronMainProcess"] boolValue] != NO;
+  return
+      [[info_dictionary objectForKey:@"ElectronMainProcess"] boolValue] != NO;
 }
 
 }  // namespace
@@ -48,7 +49,8 @@ base::FilePath MainApplicationBundlePath() {
 }
 
 NSBundle* MainApplicationBundle() {
-  return [NSBundle bundleWithPath:base::mac::FilePathToNSString(MainApplicationBundlePath())];
+  return [NSBundle bundleWithPath:base::mac::FilePathToNSString(
+                                      MainApplicationBundlePath())];
 }
 
 }  // namespace brightray

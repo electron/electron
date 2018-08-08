@@ -10,8 +10,8 @@ class InspectableWebContentsViewMac;
 
 using brightray::InspectableWebContentsViewMac;
 
-@interface BRYInspectableWebContentsView : BaseView<NSWindowDelegate> {
-@private
+@interface BRYInspectableWebContentsView : BaseView <NSWindowDelegate> {
+ @private
   brightray::InspectableWebContentsViewMac* inspectableWebContentsView_;
 
   base::scoped_nsobject<NSWindow> devtools_window_;
@@ -22,14 +22,16 @@ using brightray::InspectableWebContentsViewMac;
   DevToolsContentsResizingStrategy strategy_;
 }
 
-- (instancetype)initWithInspectableWebContentsViewMac:(InspectableWebContentsViewMac*)view;
+- (instancetype)initWithInspectableWebContentsViewMac:
+    (InspectableWebContentsViewMac*)view;
 - (void)removeObservers;
 - (void)notifyDevToolsFocused;
 - (void)setDevToolsVisible:(BOOL)visible;
 - (BOOL)isDevToolsVisible;
 - (BOOL)isDevToolsFocused;
 - (void)setIsDocked:(BOOL)docked;
-- (void)setContentsResizingStrategy:(const DevToolsContentsResizingStrategy&)strategy;
+- (void)setContentsResizingStrategy:
+    (const DevToolsContentsResizingStrategy&)strategy;
 - (void)setTitle:(NSString*)title;
 
 @end

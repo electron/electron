@@ -19,7 +19,7 @@ class NotificationPresenterMac : public NotificationPresenter {
   CocoaNotification* GetNotification(NSUserNotification* notif);
 
   NotificationPresenterMac();
-  ~NotificationPresenterMac();
+  ~NotificationPresenterMac() override;
 
  private:
   Notification* CreateNotificationObject(

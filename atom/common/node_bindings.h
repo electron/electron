@@ -8,8 +8,8 @@
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/single_thread_task_runner.h"
+#include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
-#include "vendor/node/deps/uv/include/uv.h"
 
 namespace base {
 class MessageLoop;
@@ -18,7 +18,7 @@ class MessageLoop;
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
-}
+}  // namespace node
 
 namespace atom {
 
@@ -32,6 +32,7 @@ class NodeBindings {
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
+  static bool IsInitialized();
 
   virtual ~NodeBindings();
 
@@ -84,10 +85,10 @@ class NodeBindings {
 
  private:
   // Thread to poll uv events.
-  static void EmbedThreadRunner(void *arg);
+  static void EmbedThreadRunner(void* arg);
 
   // Whether the libuv loop has ended.
-  bool embed_closed_;
+  bool embed_closed_ = false;
 
   // Loop used when constructed in WORKER mode
   uv_loop_t worker_loop_;
@@ -102,7 +103,7 @@ class NodeBindings {
   uv_sem_t embed_sem_;
 
   // Environment that to wrap the uv loop.
-  node::Environment* uv_env_;
+  node::Environment* uv_env_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_;
 

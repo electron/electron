@@ -24,7 +24,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView {
  public:
   OffScreenWebContentsView(bool transparent, const OnPaintCallback& callback);
-  ~OffScreenWebContentsView();
+  ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
 
@@ -38,10 +38,11 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void SetInitialFocus() override;
   void StoreFocus() override;
   void RestoreFocus() override;
+  void FocusThroughTabTraversal(bool reverse) override;
   content::DropData* GetDropData() const override;
   gfx::Rect GetViewBounds() const override;
-  void CreateView(
-      const gfx::Size& initial_size, gfx::NativeView context) override;
+  void CreateView(const gfx::Size& initial_size,
+                  gfx::NativeView context) override;
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost* render_widget_host,
       bool is_guest_view_hack) override;
@@ -51,7 +52,6 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewCreated(content::RenderViewHost* host) override;
   void RenderViewSwappedIn(content::RenderViewHost* host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
-  void GetScreenInfo(content::ScreenInfo* screen_info) const override;
 
 #if defined(OS_MACOSX)
   void SetAllowOtherViews(bool allow) override;
@@ -83,12 +83,12 @@ class OffScreenWebContentsView : public content::WebContentsView,
   OffScreenRenderWidgetHostView* GetView() const;
 
   const bool transparent_;
-  bool painting_;
-  int frame_rate_;
+  bool painting_ = true;
+  int frame_rate_ = 60;
   OnPaintCallback callback_;
 
   // Weak refs.
-  content::WebContents* web_contents_;
+  content::WebContents* web_contents_ = nullptr;
 
 #if defined(OS_MACOSX)
   OffScreenView* offScreenView_;

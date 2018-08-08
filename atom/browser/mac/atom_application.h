@@ -3,15 +3,15 @@
 // found in the LICENSE file.
 
 #include "base/callback.h"
-#include "base/mac/scoped_sending_event.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/mac/scoped_sending_event.h"
 
-@interface AtomApplication : NSApplication<CrAppProtocol,
-                                           CrAppControlProtocol,
-                                           NSUserActivityDelegate> {
+@interface AtomApplication : NSApplication <CrAppProtocol,
+                                            CrAppControlProtocol,
+                                            NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
-  base::scoped_nsobject<NSUserActivity> currentActivity_;
+  base::scoped_nsobject<NSUserActivity> currentActivity_ API_AVAILABLE(macosx(10.10));
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   base::Callback<bool()> shouldShutdown_;
@@ -27,7 +27,7 @@
 // CrAppControlProtocol:
 - (void)setHandlingSendEvent:(BOOL)handlingSendEvent;
 
-- (NSUserActivity*)getCurrentActivity;
+- (NSUserActivity*)getCurrentActivity API_AVAILABLE(macosx(10.10));
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL;

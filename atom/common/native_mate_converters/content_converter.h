@@ -9,66 +9,69 @@
 
 #include "content/public/browser/permission_type.h"
 #include "content/public/common/menu_item.h"
+#include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "native_mate/converter.h"
 #include "third_party/WebKit/public/platform/modules/permissions/permission_status.mojom.h"
 
 namespace content {
 struct ContextMenuParams;
-class ResourceRequestBody;
 class WebContents;
-}
+}  // namespace content
 
 using ContextMenuParamsWithWebContents =
     std::pair<content::ContextMenuParams, content::WebContents*>;
 
 namespace mate {
 
-template<>
+template <>
 struct Converter<content::MenuItem::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const content::MenuItem::Type& val);
 };
 
-template<>
+template <>
 struct Converter<ContextMenuParamsWithWebContents> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const ContextMenuParamsWithWebContents& val);
 };
 
-template<>
+template <>
 struct Converter<blink::mojom::PermissionStatus> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      blink::mojom::PermissionStatus* out);
 };
 
-template<>
+template <>
 struct Converter<content::PermissionType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const content::PermissionType& val);
 };
 
-template<>
-struct Converter<scoped_refptr<content::ResourceRequestBody>> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const scoped_refptr<content::ResourceRequestBody>& val);
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
-                     scoped_refptr<content::ResourceRequestBody>* out);
-};
-
-template<>
+template <>
 struct Converter<content::StopFindAction> {
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      content::StopFindAction* out);
 };
 
-template<>
+template <>
 struct Converter<content::WebContents*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    content::WebContents* val);
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      content::WebContents** out);
+};
+
+template <>
+struct Converter<content::Referrer> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const content::Referrer& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     content::Referrer* out);
 };
 
 }  // namespace mate

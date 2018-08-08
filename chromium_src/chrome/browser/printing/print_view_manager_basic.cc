@@ -15,11 +15,9 @@ DEFINE_WEB_CONTENTS_USER_DATA_KEY(printing::PrintViewManagerBasic);
 namespace printing {
 
 PrintViewManagerBasic::PrintViewManagerBasic(content::WebContents* web_contents)
-    : PrintViewManagerBase(web_contents) {
-}
+    : PrintViewManagerBase(web_contents) {}
 
-PrintViewManagerBasic::~PrintViewManagerBasic() {
-}
+PrintViewManagerBasic::~PrintViewManagerBasic() {}
 
 #if defined(OS_ANDROID)
 void PrintViewManagerBasic::RenderProcessGone(base::TerminationStatus status) {

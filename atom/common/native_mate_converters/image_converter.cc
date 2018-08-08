@@ -36,7 +36,7 @@ bool Converter<gfx::Image>::FromV8(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> Converter<gfx::Image>::ToV8(v8::Isolate* isolate,
-                                                  const gfx::Image& val) {
+                                                 const gfx::Image& val) {
   return ConvertToV8(isolate, atom::api::NativeImage::Create(isolate, val));
 }
 

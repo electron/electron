@@ -15,7 +15,7 @@
 #include "gin/v8_initializer.h"
 
 #include "atom/common/node_includes.h"
-#include "vendor/node/src/tracing/trace_event.h"
+#include "tracing/trace_event.h"
 
 namespace atom {
 
@@ -27,8 +27,9 @@ JavascriptEnvironment::JavascriptEnvironment()
       locker_(isolate_),
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
-      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
-}
+      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
+
+JavascriptEnvironment::~JavascriptEnvironment() = default;
 
 void JavascriptEnvironment::OnMessageLoopCreated() {
   isolate_holder_.AddRunMicrotasksObserver();
@@ -39,7 +40,7 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
 }
 
 bool JavascriptEnvironment::Initialize() {
-  auto cmd = base::CommandLine::ForCurrentProcess();
+  auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
   std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
@@ -53,15 +54,14 @@ bool JavascriptEnvironment::Initialize() {
   v8::V8::InitializePlatform(platform_);
   node::tracing::TraceEventHelper::SetTracingController(
       new v8::TracingController());
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 gin::IsolateHolder::kStableV8Extras,
-                                 gin::ArrayBufferAllocator::SharedInstance(),
-                                 false);
+  gin::IsolateHolder::Initialize(
+      gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
+      gin::ArrayBufferAllocator::SharedInstance(),
+      nullptr /* external_reference_table */, false /* create_v8_platform */);
   return true;
 }
 
-NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {
-}
+NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
 
 NodeEnvironment::~NodeEnvironment() {
   node::FreeEnvironment(env_);

@@ -184,7 +184,7 @@ of argument is notated by either the common types:
 
 If an argument or a method is unique to certain platforms, those platforms are
 denoted using a space-delimited italicized list following the datatype. Values
-can be `macOS`, `Windows`, or `Linux`.
+can be `macOS`, `Windows` or `Linux`.
 
 ```markdown
 * `animate` Boolean (optional) _macOS_ _Windows_ - Animate the thing.
@@ -230,4 +230,4 @@ a module or a class.
 
 ## Documentation Translations
 
-See [electron/electron-i18n](https://github.com/electron/electron-i18n#readme)
+See [electron/i18n](https://github.com/electron/i18n#readme)

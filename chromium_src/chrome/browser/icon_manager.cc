@@ -27,8 +27,7 @@ void RunCallbackIfNotCanceled(
 
 IconManager::IconManager() : weak_factory_(this) {}
 
-IconManager::~IconManager() {
-}
+IconManager::~IconManager() {}
 
 gfx::Image* IconManager::LookupIconFromFilepath(const base::FilePath& file_path,
                                                 IconLoader::IconSize size) {
@@ -52,8 +51,8 @@ base::CancelableTaskTracker::TaskId IconManager::LoadIcon(
   base::CancelableTaskTracker::IsCanceledCallback is_canceled;
   base::CancelableTaskTracker::TaskId id =
       tracker->NewTrackedTaskId(&is_canceled);
-  IconRequestCallback callback_runner = base::Bind(
-      &RunCallbackIfNotCanceled, is_canceled, callback);
+  IconRequestCallback callback_runner =
+      base::Bind(&RunCallbackIfNotCanceled, is_canceled, callback);
 
   IconLoader* loader = IconLoader::Create(
       file_path, size,
@@ -88,6 +87,6 @@ IconManager::CacheKey::CacheKey(const IconLoader::IconGroup& group,
                                 IconLoader::IconSize size)
     : group(group), size(size) {}
 
-bool IconManager::CacheKey::operator<(const CacheKey &other) const {
+bool IconManager::CacheKey::operator<(const CacheKey& other) const {
   return std::tie(group, size) < std::tie(other.group, other.size);
 }

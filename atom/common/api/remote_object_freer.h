@@ -5,23 +5,30 @@
 #ifndef ATOM_COMMON_API_REMOTE_OBJECT_FREER_H_
 #define ATOM_COMMON_API_REMOTE_OBJECT_FREER_H_
 
+#include <string>
+
 #include "atom/common/api/object_life_monitor.h"
 
 namespace atom {
 
 class RemoteObjectFreer : public ObjectLifeMonitor {
  public:
-  static void BindTo(
-      v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id);
+  static void BindTo(v8::Isolate* isolate,
+                     v8::Local<v8::Object> target,
+                     const std::string& context_id,
+                     int object_id);
 
  protected:
-  RemoteObjectFreer(
-      v8::Isolate* isolate, v8::Local<v8::Object> target, int object_id);
+  RemoteObjectFreer(v8::Isolate* isolate,
+                    v8::Local<v8::Object> target,
+                    const std::string& context_id,
+                    int object_id);
   ~RemoteObjectFreer() override;
 
   void RunDestructor() override;
 
  private:
+  std::string context_id_;
   int object_id_;
   int routing_id_;
 

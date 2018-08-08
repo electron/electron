@@ -5,10 +5,10 @@
 #include "brightray/browser/zoom_level_delegate.h"
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/values.h"
 #include "components/prefs/json_pref_store.h"
@@ -32,7 +32,7 @@ const char kPartitionPerHostZoomLevels[] = "partition.per_host_zoom_levels";
 
 std::string GetHash(const base::FilePath& partition_path) {
   size_t int_key = std::hash<base::FilePath>()(partition_path);
-  return base::SizeTToString(int_key);
+  return base::NumberToString(int_key);
 }
 
 }  // namespace
@@ -89,7 +89,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   if (!host_zoom_dictionaries->GetDictionary(partition_key_,
                                              &host_zoom_dictionary)) {
     host_zoom_dictionary = host_zoom_dictionaries->SetDictionary(
-        partition_key_, base::MakeUnique<base::DictionaryValue>());
+        partition_key_, std::make_unique<base::DictionaryValue>());
   }
 
   if (modification_is_removal)

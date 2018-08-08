@@ -14,8 +14,7 @@
 class DevToolsContentsResizingStrategy {
  public:
   DevToolsContentsResizingStrategy();
-  explicit DevToolsContentsResizingStrategy(
-      const gfx::Rect& bounds);
+  explicit DevToolsContentsResizingStrategy(const gfx::Rect& bounds);
 
   void CopyFrom(const DevToolsContentsResizingStrategy& strategy);
   bool Equals(const DevToolsContentsResizingStrategy& strategy);

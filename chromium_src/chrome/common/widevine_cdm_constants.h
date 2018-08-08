@@ -5,8 +5,9 @@
 #ifndef CHROME_COMMON_WIDEVINE_CDM_CONSTANTS_H_
 #define CHROME_COMMON_WIDEVINE_CDM_CONSTANTS_H_
 
-#include "base/macros.h"
 #include "base/files/file_path.h"
+#include "base/macros.h"
+#include "third_party/widevine/cdm/widevine_cdm_common.h"
 
 extern const char kWidevineCdmPluginExtension[];
 

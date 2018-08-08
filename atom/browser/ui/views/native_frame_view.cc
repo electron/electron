@@ -8,16 +8,10 @@
 
 namespace atom {
 
-namespace {
-
-const char kViewClassName[] = "AtomNativeFrameView";
-
-}  // namespace
+const char NativeFrameView::kViewClassName[] = "AtomNativeFrameView";
 
 NativeFrameView::NativeFrameView(NativeWindow* window, views::Widget* widget)
-    : views::NativeFrameView(widget),
-      window_(window) {
-}
+    : views::NativeFrameView(widget), window_(window) {}
 
 gfx::Size NativeFrameView::GetMinimumSize() const {
   return window_->GetMinimumSize();

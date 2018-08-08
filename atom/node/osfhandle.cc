@@ -23,10 +23,10 @@
 #include "third_party/icu/source/i18n/unicode/ucsdet.h"
 #include "third_party/icu/source/i18n/unicode/ulocdata.h"
 #include "third_party/icu/source/i18n/unicode/uregex.h"
-#include "third_party/icu/source/i18n/unicode/uspoof.h"
 #include "third_party/icu/source/i18n/unicode/usearch.h"
-#include "v8-profiler.h"
+#include "third_party/icu/source/i18n/unicode/uspoof.h"
 #include "v8-inspector.h"
+#include "v8-profiler.h"
 
 namespace node {
 
@@ -38,8 +38,8 @@ void ReferenceSymbols() {
   // v8_profiler symbols:
   v8::TracingCpuProfiler::Create(nullptr);
   // v8_inspector symbols:
-  reinterpret_cast<v8_inspector::V8InspectorSession*>(nullptr)->
-      canDispatchMethod(v8_inspector::StringView());
+  reinterpret_cast<v8_inspector::V8InspectorSession*>(nullptr)
+      ->canDispatchMethod(v8_inspector::StringView());
   reinterpret_cast<v8_inspector::V8InspectorClient*>(nullptr)->unmuteMetrics(0);
   // icu symbols:
   u_errorName(U_ZERO_ERROR);
@@ -61,8 +61,7 @@ void ReferenceSymbols() {
   reinterpret_cast<icu::Transliterator*>(nullptr)->clone();
   UParseError parse_error;
   icu::Transliterator::createFromRules(UnicodeString(), UnicodeString(),
-                                       UTRANS_FORWARD, parse_error,
-                                       status);
+                                       UTRANS_FORWARD, parse_error, status);
 }
 
 }  // namespace node

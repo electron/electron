@@ -11,12 +11,13 @@ namespace brightray {
 class NotificationPresenterMac;
 }
 
-@interface NotificationCenterDelegate :
-    NSObject<NSUserNotificationCenterDelegate> {
+@interface NotificationCenterDelegate
+    : NSObject <NSUserNotificationCenterDelegate> {
  @private
   brightray::NotificationPresenterMac* presenter_;
 }
-- (instancetype)initWithPresenter:(brightray::NotificationPresenterMac*)presenter;
+- (instancetype)initWithPresenter:
+    (brightray::NotificationPresenterMac*)presenter;
 @end
 
 #endif  // BROWSER_MAC_NOTIFICATION_DELEGATE_H_

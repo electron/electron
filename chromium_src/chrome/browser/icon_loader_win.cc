@@ -8,7 +8,6 @@
 #include <shellapi.h>
 
 #include "base/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/thread.h"
@@ -55,17 +54,17 @@ void IconLoader::ReadIcon() {
 
   std::unique_ptr<gfx::Image> image;
 
-  SHFILEINFO file_info = { 0 };
+  SHFILEINFO file_info = {0};
   if (SHGetFileInfo(group_.c_str(), FILE_ATTRIBUTE_NORMAL, &file_info,
-                     sizeof(SHFILEINFO),
-                     SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
+                    sizeof(SHFILEINFO),
+                    SHGFI_ICON | size | SHGFI_USEFILEATTRIBUTES)) {
     std::unique_ptr<SkBitmap> bitmap(
         IconUtil::CreateSkBitmapFromHICON(file_info.hIcon));
     if (bitmap.get()) {
-      gfx::ImageSkia image_skia(gfx::ImageSkiaRep(*bitmap,
-                                                  display::win::GetDPIScale()));
+      gfx::ImageSkia image_skia(
+          gfx::ImageSkiaRep(*bitmap, display::win::GetDPIScale()));
       image_skia.MakeThreadSafe();
-      image = base::MakeUnique<gfx::Image>(image_skia);
+      image = std::make_unique<gfx::Image>(image_skia);
       DestroyIcon(file_info.hIcon);
     }
   }

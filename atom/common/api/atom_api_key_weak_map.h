@@ -14,7 +14,7 @@ namespace atom {
 
 namespace api {
 
-template<typename K>
+template <typename K>
 class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
  public:
   static mate::Handle<KeyWeakMap<K>> Create(v8::Isolate* isolate) {
@@ -47,13 +47,9 @@ class KeyWeakMap : public mate::Wrappable<KeyWeakMap<K>> {
     return key_weak_map_.Get(isolate, key).ToLocalChecked();
   }
 
-  bool Has(const K& key) {
-    return key_weak_map_.Has(key);
-  }
+  bool Has(const K& key) { return key_weak_map_.Has(key); }
 
-  void Remove(const K& key) {
-    key_weak_map_.Remove(key);
-  }
+  void Remove(const K& key) { key_weak_map_.Remove(key); }
 
   atom::KeyWeakMap<K> key_weak_map_;
 

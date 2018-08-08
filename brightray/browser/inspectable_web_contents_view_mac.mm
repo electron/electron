@@ -9,14 +9,16 @@
 
 namespace brightray {
 
-InspectableWebContentsView* CreateInspectableContentsView(InspectableWebContentsImpl* inspectable_web_contents) {
+InspectableWebContentsView* CreateInspectableContentsView(
+    InspectableWebContentsImpl* inspectable_web_contents) {
   return new InspectableWebContentsViewMac(inspectable_web_contents);
 }
 
-InspectableWebContentsViewMac::InspectableWebContentsViewMac(InspectableWebContentsImpl* inspectable_web_contents)
+InspectableWebContentsViewMac::InspectableWebContentsViewMac(
+    InspectableWebContentsImpl* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
-      view_([[BRYInspectableWebContentsView alloc] initWithInspectableWebContentsViewMac:this]) {
-}
+      view_([[BRYInspectableWebContentsView alloc]
+          initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
   [view_ removeObservers];
@@ -48,7 +50,7 @@ void InspectableWebContentsViewMac::SetIsDocked(bool docked) {
 }
 
 void InspectableWebContentsViewMac::SetContentsResizingStrategy(
-      const DevToolsContentsResizingStrategy& strategy) {
+    const DevToolsContentsResizingStrategy& strategy) {
   [view_ setContentsResizingStrategy:strategy];
 }
 

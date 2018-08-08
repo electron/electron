@@ -47,10 +47,8 @@ SkColor ParseHexColor(const std::string& color_string) {
 }
 
 std::string ToRGBHex(SkColor color) {
-  return base::StringPrintf("#%02X%02X%02X",
-                            SkColorGetR(color),
-                            SkColorGetG(color),
-                            SkColorGetB(color));
+  return base::StringPrintf("#%02X%02X%02X", SkColorGetR(color),
+                            SkColorGetG(color), SkColorGetB(color));
 }
 
 }  // namespace atom

@@ -32,6 +32,7 @@
 #include "net/base/mime_util.h"
 #include "net/url_request/url_request.h"
 #include "net/url_request/url_request_context.h"
+#include "services/network/public/cpp/resource_response.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::BrowserThread;
@@ -145,7 +146,7 @@ class PdfViewerUI::ResourceRequester
         content::GetStreamContextForResourceContext(resource_context);
 
     std::unique_ptr<content::ResourceHandler> handler =
-        base::MakeUnique<content::StreamResourceHandler>(
+        std::make_unique<content::StreamResourceHandler>(
             request.get(), stream_context->registry(), origin, false);
     info->set_is_stream(true);
     stream_info_.reset(new content::StreamInfo);
@@ -169,7 +170,7 @@ class PdfViewerUI::ResourceRequester
 
  protected:
   // atom::LayeredResourceHandler::Delegate:
-  void OnResponseStarted(content::ResourceResponse* response) override {
+  void OnResponseStarted(network::ResourceResponse* response) override {
     DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
     auto resource_response_head = response->head;

@@ -56,7 +56,7 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
     bool operator==(const ElementInstanceKey& other) const {
       return (embedder_process_id == other.embedder_process_id) &&
-          (element_instance_id == other.element_instance_id);
+             (element_instance_id == other.element_instance_id);
     }
   };
   // (embedder_process_id, element_instance_id) => guest_instance_id

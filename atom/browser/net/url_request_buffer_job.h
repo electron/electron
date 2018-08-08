@@ -17,6 +17,7 @@ namespace atom {
 class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
  public:
   URLRequestBufferJob(net::URLRequest*, net::NetworkDelegate*);
+  ~URLRequestBufferJob() override;
 
   // JsAsker:
   void StartAsync(std::unique_ptr<base::Value> options) override;

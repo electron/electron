@@ -13,15 +13,12 @@
 
 namespace atom {
 
-NodeDebugger::NodeDebugger(node::Environment* env)
-    : env_(env) {
-}
+NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
 
-NodeDebugger::~NodeDebugger() {
-}
+NodeDebugger::~NodeDebugger() {}
 
 void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
-  auto inspector = env_->inspector_agent();
+  auto* inspector = env_->inspector_agent();
   if (inspector == nullptr)
     return;
 

@@ -3,12 +3,11 @@
 
 [![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
 [![AppVeyor Build Status](https://windows-ci.electronjs.org/api/projects/status/nilyf07hcef14dvj/branch/master?svg=true)](https://windows-ci.electronjs.org/project/AppVeyor/electron/branch/master)
-[![Jenkins Build Status](https://mac-ci.electronjs.org/buildStatus/icon?job=Electron%20org/electron/master)](https://mac-ci.electronjs.org/blue/organizations/jenkins/Electron%20org%2Felectron/activity?branch=master)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 
 :memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹.
-View these docs in other languages at [electron/electron-i18n](https://github.com/electron/electron-i18n/tree/master/content/).
+View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
@@ -21,7 +20,7 @@ announcements.
 This project adheres to the Contributor Covenant
 [code of conduct](https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
-behavior to [electron@github.com](mailto:electron@github.com).
+behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
 ## Installation
 
@@ -30,11 +29,11 @@ The preferred method is to install Electron as a development dependency in your
 app:
 
 ```sh
-npm install electron --save-dev --save-exact
+npm install electron --save-dev [--save-exact]
 ```
 
-The `--save-exact` flag is recommended as Electron does not follow semantic
-versioning. For info on how to manage Electron versions in your apps, see
+The `--save-exact` flag is recommended for Electron prior to version 2, as it does not follow semantic
+versioning. As of version 2.0.0, Electron follows semver, so you don't need `--save-exact` flag. For info on how to manage Electron versions in your apps, see
 [Electron versioning](docs/tutorial/electron-versioning.md).
 
 For more installation options and troubleshooting tips, see
@@ -85,26 +84,12 @@ const child = proc.spawn(electron)
 
 ## Documentation Translations
 
-Find documentation translations in [electron/electron-i18n](https://github.com/electron/electron-i18n).
+Find documentation translations in [electron/i18n](https://github.com/electron/i18n).
 
 ## Community
 
-You can ask questions and interact with the community in the following
-locations:
-- [`electron`](https://discuss.atom.io/c/electron) category on the Atom
-forums
-- `#atom-shell` channel on Freenode
-- [`Atom`](https://atom-slack.herokuapp.com) channel on Slack
-- [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
-- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
-- [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
-- [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
-- [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
-- [`electron-pl`](https://electronpl.github.io) *(Poland)*
-
-Check out [awesome-electron](https://github.com/sindresorhus/awesome-electron)
-for a community maintained list of useful example apps, tools and resources.
+Info on reporting bugs, getting help, finding third-party tools and sample apps,
+and more can be found in the [support document](docs/tutorial/support.md#finding-support).
 
 ## License
 

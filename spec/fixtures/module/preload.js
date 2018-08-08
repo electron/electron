@@ -1,1 +1,7 @@
-console.log([typeof require, typeof module, typeof process, typeof Buffer].join(' '))
+const types = {
+  require: typeof require,
+  module: typeof module,
+  process: typeof process,
+  Buffer: typeof Buffer
+}
+console.log(JSON.stringify(types))

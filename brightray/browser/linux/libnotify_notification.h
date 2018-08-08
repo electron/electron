@@ -18,7 +18,7 @@ class LibnotifyNotification : public Notification {
  public:
   LibnotifyNotification(NotificationDelegate* delegate,
                         NotificationPresenter* presenter);
-  virtual ~LibnotifyNotification();
+  ~LibnotifyNotification() override;
 
   static bool Initialize();
 
@@ -27,10 +27,15 @@ class LibnotifyNotification : public Notification {
   void Dismiss() override;
 
  private:
-  CHROMEG_CALLBACK_0(LibnotifyNotification, void, OnNotificationClosed,
+  CHROMEG_CALLBACK_0(LibnotifyNotification,
+                     void,
+                     OnNotificationClosed,
                      NotifyNotification*);
-  CHROMEG_CALLBACK_1(LibnotifyNotification, void, OnNotificationView,
-                     NotifyNotification*, char*);
+  CHROMEG_CALLBACK_1(LibnotifyNotification,
+                     void,
+                     OnNotificationView,
+                     NotifyNotification*,
+                     char*);
 
   NotifyNotification* notification_;
 

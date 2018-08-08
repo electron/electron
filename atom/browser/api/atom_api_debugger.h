@@ -17,7 +17,7 @@
 namespace content {
 class DevToolsAgentHost;
 class WebContents;
-}
+}  // namespace content
 
 namespace mate {
 class Arguments;
@@ -27,15 +27,15 @@ namespace atom {
 
 namespace api {
 
-class Debugger: public mate::TrackableObject<Debugger>,
-                public content::DevToolsAgentHostClient {
+class Debugger : public mate::TrackableObject<Debugger>,
+                 public content::DevToolsAgentHostClient {
  public:
   using SendCommandCallback =
       base::Callback<void(const base::DictionaryValue&,
                           const base::DictionaryValue&)>;
 
-  static mate::Handle<Debugger> Create(
-      v8::Isolate* isolate, content::WebContents* web_contents);
+  static mate::Handle<Debugger> Create(v8::Isolate* isolate,
+                                       content::WebContents* web_contents);
 
   // mate::TrackableObject:
   static void BuildPrototype(v8::Isolate* isolate,
@@ -46,8 +46,7 @@ class Debugger: public mate::TrackableObject<Debugger>,
   ~Debugger() override;
 
   // content::DevToolsAgentHostClient:
-  void AgentHostClosed(content::DevToolsAgentHost* agent_host,
-                       bool replaced_with_another_client) override;
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
                                const std::string& message) override;
 
@@ -63,7 +62,7 @@ class Debugger: public mate::TrackableObject<Debugger>,
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
   PendingRequestMap pending_requests_;
-  int previous_request_id_;
+  int previous_request_id_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(Debugger);
 };

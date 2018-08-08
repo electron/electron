@@ -15,7 +15,7 @@
 namespace atom {
 
 // Like ES6's WeakMap, but the key is Integer and the value is Weak Pointer.
-template<typename K>
+template <typename K>
 class KeyWeakMap {
  public:
   // Records the key and self, used by SetWeak.
@@ -48,9 +48,7 @@ class KeyWeakMap {
   }
 
   // Whethere there is an object with |key| in this WeakMap.
-  bool Has(const K& key) const {
-    return map_.find(key) != map_.end();
-  }
+  bool Has(const K& key) const { return map_.find(key) != map_.end(); }
 
   // Returns all objects.
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
@@ -79,8 +77,7 @@ class KeyWeakMap {
   }
 
   // Map of stored objects.
-  std::unordered_map<
-      K, std::pair<KeyObject, v8::Global<v8::Object>>> map_;
+  std::unordered_map<K, std::pair<KeyObject, v8::Global<v8::Object>>> map_;
 
   DISALLOW_COPY_AND_ASSIGN(KeyWeakMap);
 };

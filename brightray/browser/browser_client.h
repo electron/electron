@@ -23,7 +23,7 @@ class BrowserClient : public content::ContentBrowserClient {
   static void SetApplicationLocale(const std::string& locale);
 
   BrowserClient();
-  ~BrowserClient();
+  ~BrowserClient() override;
 
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
 
@@ -32,9 +32,7 @@ class BrowserClient : public content::ContentBrowserClient {
   // Subclasses should override this to enable or disable WebNotification.
   virtual void WebNotificationAllowed(
       int render_process_id,
-      const base::Callback<void(bool, bool)>& callback) {
-    callback.Run(false, true);
-  }
+      const base::Callback<void(bool, bool)>& callback);
 
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
@@ -47,7 +45,7 @@ class BrowserClient : public content::ContentBrowserClient {
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  net::NetLog* GetNetLog() override;
+  NetLog* GetNetLog() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   std::string GetApplicationLocale() override;

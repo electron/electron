@@ -93,19 +93,18 @@ class WebContentsZoomController
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
 
   // The current zoom mode.
-  ZoomMode zoom_mode_;
+  ZoomMode zoom_mode_ = ZOOM_MODE_DEFAULT;
 
   // Current zoom level.
-  double zoom_level_;
+  double zoom_level_ = 1.0;
 
   // kZoomFactor.
-  double default_zoom_factor_;
-  double temporary_zoom_level_;
+  double default_zoom_factor_ = 0;
 
-  int old_process_id_;
-  int old_view_id_;
+  int old_process_id_ = -1;
+  int old_view_id_ = -1;
 
-  WebContentsZoomController* embedder_zoom_controller_;
+  WebContentsZoomController* embedder_zoom_controller_ = nullptr;
 
   base::ObserverList<Observer> observers_;
 

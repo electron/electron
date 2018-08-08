@@ -11,7 +11,7 @@
 #include "atom/common/api/event_emitter_caller.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/browser_thread.h"
-#include "native_mate/native_mate/arguments.h"
+#include "native_mate/arguments.h"
 
 namespace mate {
 
@@ -71,7 +71,7 @@ class EventSubscriber : internal::EventSubscriberBase {
       ptr->handler_ = nullptr;
       content::BrowserThread::PostTask(
           content::BrowserThread::UI, FROM_HERE,
-          base::Bind(
+          base::BindOnce(
               [](EventSubscriber<HandlerType>* subscriber) {
                 {
                   // It is possible that this function will execute in the UI

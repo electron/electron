@@ -11,6 +11,7 @@
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/platform/platform_event_source.h"
+#include "ui/gfx/x/x11.h"
 #include "ui/gfx/x/x11_error_tracker.h"
 #include "ui/gfx/x/x11_types.h"
 
@@ -22,16 +23,14 @@ namespace {
 // exact modifiers, we need to grab all key combination including zero or more
 // of the following: Num lock, Caps lock and Scroll lock. So that we can make
 // sure the behavior of global shortcuts is consistent on all platforms.
-const unsigned int kModifiersMasks[] = {
-  0,                                // No additional modifier.
-  Mod2Mask,                         // Num lock
-  LockMask,                         // Caps lock
-  Mod5Mask,                         // Scroll lock
-  Mod2Mask | LockMask,
-  Mod2Mask | Mod5Mask,
-  LockMask | Mod5Mask,
-  Mod2Mask | LockMask | Mod5Mask
-};
+const unsigned int kModifiersMasks[] = {0,         // No additional modifier.
+                                        Mod2Mask,  // Num lock
+                                        LockMask,  // Caps lock
+                                        Mod5Mask,  // Scroll lock
+                                        Mod2Mask | LockMask,
+                                        Mod2Mask | Mod5Mask,
+                                        LockMask | Mod5Mask,
+                                        Mod2Mask | LockMask | Mod5Mask};
 
 int GetNativeModifiers(const ui::Accelerator& accelerator) {
   int modifiers = 0;
@@ -50,8 +49,7 @@ namespace extensions {
 // static
 GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
   CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
-  static GlobalShortcutListenerX11* instance =
-      new GlobalShortcutListenerX11();
+  static GlobalShortcutListenerX11* instance = new GlobalShortcutListenerX11();
   return instance;
 }
 
@@ -68,7 +66,7 @@ GlobalShortcutListenerX11::~GlobalShortcutListenerX11() {
 }
 
 void GlobalShortcutListenerX11::StartListening() {
-  DCHECK(!is_listening_);  // Don't start twice.
+  DCHECK(!is_listening_);                 // Don't start twice.
   DCHECK(!registered_hot_keys_.empty());  // Also don't start if no hotkey is
                                           // registered.
 
@@ -105,8 +103,8 @@ bool GlobalShortcutListenerX11::RegisterAcceleratorImpl(
   DCHECK(registered_hot_keys_.find(accelerator) == registered_hot_keys_.end());
 
   int modifiers = GetNativeModifiers(accelerator);
-  KeyCode keycode = XKeysymToKeycode(x_display_,
-      XKeysymForWindowsKeyCode(accelerator.key_code(), false));
+  KeyCode keycode = XKeysymToKeycode(
+      x_display_, XKeysymForWindowsKeyCode(accelerator.key_code(), false));
   gfx::X11ErrorTracker err_tracker;
 
   // Because XGrabKey only works on the exact modifiers mask, we should register
@@ -114,7 +112,7 @@ bool GlobalShortcutListenerX11::RegisterAcceleratorImpl(
   // Caps lock, Scroll lock. See comment about |kModifiersMasks|.
   for (size_t i = 0; i < arraysize(kModifiersMasks); ++i) {
     XGrabKey(x_display_, keycode, modifiers | kModifiersMasks[i],
-             x_root_window_, False, GrabModeAsync, GrabModeAsync);
+             x_root_window_, x11::False, GrabModeAsync, GrabModeAsync);
   }
 
   if (err_tracker.FoundNewError()) {
@@ -136,8 +134,8 @@ void GlobalShortcutListenerX11::UnregisterAcceleratorImpl(
   DCHECK(registered_hot_keys_.find(accelerator) != registered_hot_keys_.end());
 
   int modifiers = GetNativeModifiers(accelerator);
-  KeyCode keycode = XKeysymToKeycode(x_display_,
-      XKeysymForWindowsKeyCode(accelerator.key_code(), false));
+  KeyCode keycode = XKeysymToKeycode(
+      x_display_, XKeysymForWindowsKeyCode(accelerator.key_code(), false));
 
   for (size_t i = 0; i < arraysize(kModifiersMasks); ++i) {
     XUngrabKey(x_display_, keycode, modifiers | kModifiersMasks[i],
@@ -152,10 +150,10 @@ void GlobalShortcutListenerX11::OnXKeyPressEvent(::XEvent* x_event) {
   modifiers |= (x_event->xkey.state & ShiftMask) ? ui::EF_SHIFT_DOWN : 0;
   modifiers |= (x_event->xkey.state & ControlMask) ? ui::EF_CONTROL_DOWN : 0;
   modifiers |= (x_event->xkey.state & Mod1Mask) ? ui::EF_ALT_DOWN : 0;
-  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN: 0;
+  modifiers |= (x_event->xkey.state & Mod4Mask) ? ui::EF_COMMAND_DOWN : 0;
 
-  ui::Accelerator accelerator(
-      ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
+  ui::Accelerator accelerator(ui::KeyboardCodeFromXKeyEvent(x_event),
+                              modifiers);
   if (registered_hot_keys_.find(accelerator) != registered_hot_keys_.end())
     NotifyKeyPressed(accelerator);
 }

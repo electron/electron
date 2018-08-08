@@ -7,17 +7,14 @@
 
 #include <memory>
 
+#include "base/location.h"
 #include "base/memory/ref_counted.h"
 #include "printing/printing_context.h"
 
 namespace base {
 class MessageLoop;
 class SequencedTaskRunner;
-}
-
-namespace tracked_objects {
-class Location;
-}
+}  // namespace base
 
 namespace printing {
 
@@ -51,8 +48,7 @@ class PrintJobWorkerOwner
   bool RunsTasksInCurrentSequence() const;
 
   // Posts the given task to be run.
-  bool PostTask(const tracked_objects::Location& from_here,
-                const base::Closure& task);
+  bool PostTask(const base::Location& from_here, base::OnceClosure task);
 
  protected:
   friend class base::RefCountedThreadSafe<PrintJobWorkerOwner>;

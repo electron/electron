@@ -9,7 +9,8 @@
 
 @implementation NotificationCenterDelegate
 
-- (instancetype)initWithPresenter:(brightray::NotificationPresenterMac*)presenter {
+- (instancetype)initWithPresenter:
+    (brightray::NotificationPresenterMac*)presenter {
   self = [super init];
   if (!self)
     return nil;
@@ -20,29 +21,40 @@
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
         didDeliverNotification:(NSUserNotification*)notif {
-  auto notification = presenter_->GetNotification(notif);
+  auto* notification = presenter_->GetNotification(notif);
   if (notification)
     notification->NotificationDisplayed();
 }
 
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
-       didActivateNotification:(NSUserNotification *)notif {
-  auto notification = presenter_->GetNotification(notif);
+       didActivateNotification:(NSUserNotification*)notif {
+  auto* notification = presenter_->GetNotification(notif);
 
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
-    LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String] << ")";
+    LOG(INFO) << "Notification activated (" << [notif.identifier UTF8String]
+              << ")";
   }
 
   if (notification) {
-    // Ref: https://developer.apple.com/documentation/foundation/nsusernotificationactivationtype?language=objc
-    if (notif.activationType == NSUserNotificationActivationTypeContentsClicked) {
+    // Ref:
+    // https://developer.apple.com/documentation/foundation/nsusernotificationactivationtype?language=objc
+    if (notif.activationType ==
+        NSUserNotificationActivationTypeContentsClicked) {
       notification->NotificationClicked();
-    } else if (notif.activationType == NSUserNotificationActivationTypeActionButtonClicked) {
+    } else if (notif.activationType ==
+               NSUserNotificationActivationTypeActionButtonClicked) {
       notification->NotificationActivated();
-    } else if (notif.activationType == NSUserNotificationActivationTypeReplied) {
+    } else if (notif.activationType ==
+               NSUserNotificationActivationTypeReplied) {
       notification->NotificationReplied([notif.response.string UTF8String]);
-    } else if (notif.activationType == NSUserNotificationActivationTypeAdditionalActionClicked) {
-      notification->NotificationActivated([notif additionalActivationAction]);
+    } else {
+      if (@available(macOS 10.10, *)) {
+        if (notif.activationType ==
+            NSUserNotificationActivationTypeAdditionalActionClicked) {
+          notification->NotificationActivated(
+              [notif additionalActivationAction]);
+        }
+      }
     }
   }
 }

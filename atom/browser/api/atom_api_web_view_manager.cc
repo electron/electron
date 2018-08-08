@@ -23,7 +23,7 @@ void AddGuest(int guest_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
               const base::DictionaryValue& options) {
-  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->AddGuest(guest_instance_id, element_instance_id, embedder,
                       guest_web_contents);
@@ -34,17 +34,19 @@ void AddGuest(int guest_instance_id,
         ->SetDefaultZoomFactor(zoom_factor);
   }
 
-  WebContentsPreferences::FromWebContents(guest_web_contents)->Merge(options);
+  WebContentsPreferences::From(guest_web_contents)->Merge(options);
 }
 
 void RemoveGuest(content::WebContents* embedder, int guest_instance_id) {
-  auto manager = atom::WebViewManager::GetWebViewManager(embedder);
+  auto* manager = atom::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->RemoveGuest(guest_instance_id);
 }
 
-void Initialize(v8::Local<v8::Object> exports, v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context, void* priv) {
+void Initialize(v8::Local<v8::Object> exports,
+                v8::Local<v8::Value> unused,
+                v8::Local<v8::Context> context,
+                void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("addGuest", &AddGuest);
   dict.SetMethod("removeGuest", &RemoveGuest);

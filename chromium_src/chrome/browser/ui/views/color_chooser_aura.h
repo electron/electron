@@ -16,7 +16,7 @@ class WebContents;
 namespace views {
 class ColorChooserView;
 class Widget;
-}
+}  // namespace views
 
 // TODO(mukai): rename this as -Ash and move to c/b/ui/ash after Linux-aura
 // switches to its native color chooser.
@@ -30,12 +30,12 @@ class ColorChooserAura : public content::ColorChooser,
   ColorChooserAura(content::WebContents* web_contents, SkColor initial_color);
 
   // content::ColorChooser overrides:
-  virtual void End() override;
-  virtual void SetSelectedColor(SkColor color) override;
+  void End() override;
+  void SetSelectedColor(SkColor color) override;
 
   // views::ColorChooserListener overrides:
-  virtual void OnColorChosen(SkColor color) override;
-  virtual void OnColorChooserDialogClosed() override;
+  void OnColorChosen(SkColor color) override;
+  void OnColorChooserDialogClosed() override;
 
   void DidEndColorChooser();
 

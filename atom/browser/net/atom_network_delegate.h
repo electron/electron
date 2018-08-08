@@ -51,11 +51,19 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   struct SimpleListenerInfo {
     URLPatterns url_patterns;
     SimpleListener listener;
+
+    SimpleListenerInfo(URLPatterns, SimpleListener);
+    SimpleListenerInfo();
+    ~SimpleListenerInfo();
   };
 
   struct ResponseListenerInfo {
     URLPatterns url_patterns;
     ResponseListener listener;
+
+    ResponseListenerInfo(URLPatterns, ResponseListener);
+    ResponseListenerInfo();
+    ~ResponseListenerInfo();
   };
 
   AtomNetworkDelegate();
@@ -88,18 +96,18 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
       GURL* allowed_unsafe_redirect_url) override;
   void OnBeforeRedirect(net::URLRequest* request,
                         const GURL& new_location) override;
-  void OnResponseStarted(net::URLRequest* request) override;
+  void OnResponseStarted(net::URLRequest* request, int net_error) override;
   void OnCompleted(net::URLRequest* request, bool started) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
 
  private:
   void OnErrorOccurred(net::URLRequest* request, bool started);
 
-  template<typename...Args>
+  template <typename... Args>
   void HandleSimpleEvent(SimpleEvent type,
                          net::URLRequest* request,
                          Args... args);
-  template<typename Out, typename... Args>
+  template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent type,
                           net::URLRequest* request,
                           const net::CompletionCallback& callback,
@@ -107,12 +115,14 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                           Args... args);
 
   // Deal with the results of Listener.
-  template<typename T>
-  void OnListenerResultInIO(
-      uint64_t id, T out, std::unique_ptr<base::DictionaryValue> response);
-  template<typename T>
-  void OnListenerResultInUI(
-      uint64_t id, T out, const base::DictionaryValue& response);
+  template <typename T>
+  void OnListenerResultInIO(uint64_t id,
+                            T out,
+                            std::unique_ptr<base::DictionaryValue> response);
+  template <typename T>
+  void OnListenerResultInUI(uint64_t id,
+                            T out,
+                            const base::DictionaryValue& response);
 
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
@@ -124,6 +134,6 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
 
-}   // namespace atom
+}  // namespace atom
 
 #endif  // ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_

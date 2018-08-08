@@ -70,13 +70,14 @@ class Archive {
  private:
   base::FilePath path_;
   base::File file_;
-  int fd_;
-  uint32_t header_size_;
+  int fd_ = -1;
+  uint32_t header_size_ = 0;
   std::unique_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
   std::unordered_map<base::FilePath::StringType,
-                     std::unique_ptr<ScopedTemporaryFile>> external_files_;
+                     std::unique_ptr<ScopedTemporaryFile>>
+      external_files_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };

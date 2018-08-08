@@ -5,7 +5,6 @@
 #include "atom/browser/mac/dict_util.h"
 
 #include "base/json/json_writer.h"
-#include "base/memory/ptr_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
@@ -27,7 +26,7 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   if (!arr)
     return nullptr;
 
-  std::unique_ptr<base::ListValue> result(new base::ListValue);
+  auto result = std::make_unique<base::ListValue>();
   for (id value in arr) {
     if ([value isKindOfClass:[NSString class]]) {
       result->AppendString(base::SysNSStringToUTF8(value));
@@ -46,14 +45,14 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
       if (sub_arr)
         result->Append(std::move(sub_arr));
       else
-        result->Append(base::MakeUnique<base::Value>());
+        result->Append(std::make_unique<base::Value>());
     } else if ([value isKindOfClass:[NSDictionary class]]) {
       std::unique_ptr<base::DictionaryValue> sub_dict =
           NSDictionaryToDictionaryValue(value);
       if (sub_dict)
         result->Append(std::move(sub_dict));
       else
-        result->Append(base::MakeUnique<base::Value>());
+        result->Append(std::make_unique<base::Value>());
     } else {
       result->AppendString(base::SysNSStringToUTF8([value description]));
     }
@@ -62,14 +61,14 @@ std::unique_ptr<base::ListValue> NSArrayToListValue(NSArray* arr) {
   return result;
 }
 
-NSDictionary* DictionaryValueToNSDictionary(const base::DictionaryValue& value) {
+NSDictionary* DictionaryValueToNSDictionary(
+    const base::DictionaryValue& value) {
   std::string json;
   if (!base::JSONWriter::Write(value, &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
-  id obj = [NSJSONSerialization JSONObjectWithData:jsonData
-                                           options:0
-                                             error:nil];
+  id obj =
+      [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:nil];
   if (![obj isKindOfClass:[NSDictionary class]])
     return nil;
   return obj;
@@ -80,7 +79,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
   if (!dict)
     return nullptr;
 
-  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue);
+  auto result = std::make_unique<base::DictionaryValue>();
   for (id key in dict) {
     std::string str_key = base::SysNSStringToUTF8(
         [key isKindOfClass:[NSString class]] ? key : [key description]);
@@ -104,7 +103,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
         result->SetWithoutPathExpansion(str_key, std::move(sub_arr));
       else
         result->SetWithoutPathExpansion(str_key,
-                                        base::MakeUnique<base::Value>());
+                                        std::make_unique<base::Value>());
     } else if ([value isKindOfClass:[NSDictionary class]]) {
       std::unique_ptr<base::DictionaryValue> sub_dict =
           NSDictionaryToDictionaryValue(value);
@@ -112,7 +111,7 @@ std::unique_ptr<base::DictionaryValue> NSDictionaryToDictionaryValue(
         result->SetWithoutPathExpansion(str_key, std::move(sub_dict));
       else
         result->SetWithoutPathExpansion(str_key,
-                                        base::MakeUnique<base::Value>());
+                                        std::make_unique<base::Value>());
     } else {
       result->SetKey(str_key,
                      base::Value(base::SysNSStringToUTF8([value description])));

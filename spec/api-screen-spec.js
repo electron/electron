@@ -18,17 +18,4 @@ describe('screen module', () => {
       assert(display.size.height > 0)
     })
   })
-
-  describe('screen.getMenuBarHeight()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('returns an integer', () => {
-      const screenHeight = screen.getMenuBarHeight()
-      assert.equal(typeof screenHeight, 'number')
-    })
-  })
 })

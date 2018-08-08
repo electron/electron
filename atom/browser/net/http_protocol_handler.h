@@ -14,7 +14,7 @@ namespace atom {
 class HttpProtocolHandler : public net::URLRequestJobFactory::ProtocolHandler {
  public:
   explicit HttpProtocolHandler(const std::string&);
-  virtual ~HttpProtocolHandler();
+  ~HttpProtocolHandler() override;
 
   // net::URLRequestJobFactory::ProtocolHandler:
   net::URLRequestJob* MaybeCreateJob(

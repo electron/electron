@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_UI_WIN_TASKBAR_HOST_H_
 
 #include <shobjidl.h>
+#include <wrl/client.h>
 
 #include <map>
 #include <string>
@@ -13,7 +14,6 @@
 
 #include "atom/browser/native_window.h"
 #include "base/callback.h"
-#include "base/win/scoped_comptr.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 
@@ -26,24 +26,30 @@ class TaskbarHost {
     gfx::Image icon;
     std::vector<std::string> flags;
     base::Closure clicked_callback;
+
+    ThumbarButton();
+    ThumbarButton(const ThumbarButton&);
+    ~ThumbarButton();
   };
 
   TaskbarHost();
   virtual ~TaskbarHost();
 
   // Add or update the buttons in thumbar.
-  bool SetThumbarButtons(
-      HWND window, const std::vector<ThumbarButton>& buttons);
+  bool SetThumbarButtons(HWND window,
+                         const std::vector<ThumbarButton>& buttons);
 
   void RestoreThumbarButtons(HWND window);
 
   // Set the progress state in taskbar.
-  bool SetProgressBar(
-      HWND window, double value, const NativeWindow::ProgressState state);
+  bool SetProgressBar(HWND window,
+                      double value,
+                      const NativeWindow::ProgressState state);
 
   // Set the overlay icon in taskbar.
-  bool SetOverlayIcon(
-      HWND window, const gfx::Image& overlay, const std::string& text);
+  bool SetOverlayIcon(HWND window,
+                      const gfx::Image& overlay,
+                      const std::string& text);
 
   // Set the region of the window to show as a thumbnail in taskbar.
   bool SetThumbnailClip(HWND window, const gfx::Rect& region);
@@ -64,10 +70,10 @@ class TaskbarHost {
   std::vector<ThumbarButton> last_buttons_;
 
   // The COM object of taskbar.
-  base::win::ScopedComPtr<ITaskbarList3> taskbar_;
+  Microsoft::WRL::ComPtr<ITaskbarList3> taskbar_;
 
   // Whether we have already added the buttons to thumbar.
-  bool thumbar_buttons_added_;
+  bool thumbar_buttons_added_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };

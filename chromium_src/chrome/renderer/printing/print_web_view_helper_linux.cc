@@ -33,16 +33,15 @@ bool PrintWebViewHelper::RenderPreviewPage(
   std::unique_ptr<PdfMetafileSkia> draft_metafile;
   PdfMetafileSkia* initial_render_metafile = print_preview_context_.metafile();
   if (print_preview_context_.IsModifiable() && is_print_ready_metafile_sent_) {
-    draft_metafile.reset(new PdfMetafileSkia(SkiaDocumentType::PDF));
+    draft_metafile.reset(new PdfMetafileSkia());
     initial_render_metafile = draft_metafile.get();
   }
 
   base::TimeTicks begin_time = base::TimeTicks::Now();
-  PrintPageInternal(page_params,
-                    print_preview_context_.prepared_frame(),
+  PrintPageInternal(page_params, print_preview_context_.prepared_frame(),
                     initial_render_metafile);
-  print_preview_context_.RenderedPreviewPage(
-      base::TimeTicks::Now() - begin_time);
+  print_preview_context_.RenderedPreviewPage(base::TimeTicks::Now() -
+                                             begin_time);
   if (draft_metafile.get()) {
     draft_metafile->FinishDocument();
   } else if (print_preview_context_.IsModifiable() &&
@@ -51,14 +50,13 @@ bool PrintWebViewHelper::RenderPreviewPage(
     draft_metafile =
         print_preview_context_.metafile()->GetMetafileForCurrentPage(
             SkiaDocumentType::PDF);
-
   }
   return PreviewPageRendered(page_number, draft_metafile.get());
 }
 
 bool PrintWebViewHelper::PrintPagesNative(blink::WebLocalFrame* frame,
                                           int page_count) {
-  PdfMetafileSkia metafile(SkiaDocumentType::PDF);
+  PdfMetafileSkia metafile;
   if (!metafile.Init())
     return false;
 
@@ -94,8 +92,8 @@ bool PrintWebViewHelper::PrintPagesNative(blink::WebLocalFrame* frame,
   metafile.FinishDocument();
 
   PrintHostMsg_DidPrintPage_Params printed_page_params;
-  if (!CopyMetafileDataToSharedMem(
-          metafile, &printed_page_params.metafile_data_handle)) {
+  if (!CopyMetafileDataToSharedMem(metafile,
+                                   &printed_page_params.metafile_data_handle)) {
     return false;
   }
 

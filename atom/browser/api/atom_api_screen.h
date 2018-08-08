@@ -16,7 +16,7 @@ namespace gfx {
 class Point;
 class Rect;
 class Screen;
-}
+}  // namespace gfx
 
 namespace atom {
 
@@ -39,10 +39,6 @@ class Screen : public mate::EventEmitter<Screen>,
   std::vector<display::Display> GetAllDisplays();
   display::Display GetDisplayNearestPoint(const gfx::Point& point);
   display::Display GetDisplayMatching(const gfx::Rect& match_rect);
-
-#if defined(OS_MACOSX)
-  int getMenuBarHeight();
-#endif
 
   // display::DisplayObserver:
   void OnDisplayAdded(const display::Display& new_display) override;

@@ -92,8 +92,9 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  return static_cast<int>(info.size) == src.Read(
-      info.offset, const_cast<char*>(contents->data()), contents->size());
+  return static_cast<int>(info.size) ==
+         src.Read(info.offset, const_cast<char*>(contents->data()),
+                  contents->size());
 }
 
 }  // namespace asar

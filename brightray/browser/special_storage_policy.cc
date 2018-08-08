@@ -6,11 +6,9 @@
 
 namespace brightray {
 
-SpecialStoragePolicy::SpecialStoragePolicy() {
-}
+SpecialStoragePolicy::SpecialStoragePolicy() {}
 
-SpecialStoragePolicy::~SpecialStoragePolicy() {
-}
+SpecialStoragePolicy::~SpecialStoragePolicy() {}
 
 bool SpecialStoragePolicy::IsStorageProtected(const GURL& origin) {
   return true;
@@ -33,6 +31,10 @@ bool SpecialStoragePolicy::IsStorageSessionOnly(const GURL& origin) {
 }
 
 bool SpecialStoragePolicy::HasSessionOnlyOrigins() {
+  return false;
+}
+
+bool SpecialStoragePolicy::ShouldDeleteCookieOnExit(const GURL& origin) {
   return false;
 }
 

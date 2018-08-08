@@ -21,8 +21,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
  public:
   static SessionPreferences* FromBrowserContext(
       content::BrowserContext* context);
-  static void AppendExtraCommandLineSwitches(
-      content::BrowserContext* context, base::CommandLine* command_line);
+  static void AppendExtraCommandLineSwitches(content::BrowserContext* context,
+                                             base::CommandLine* command_line);
 
   explicit SessionPreferences(content::BrowserContext* context);
   ~SessionPreferences() override;

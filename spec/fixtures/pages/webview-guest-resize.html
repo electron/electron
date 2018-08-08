@@ -13,6 +13,9 @@
   const {ipcRenderer} = require('electron')
 
   const webview = document.getElementById('webview')
+  webview.addEventListener('did-finish-load', () => {
+    ipcRenderer.send('webview-loaded')
+  }, {once: true})
   webview.addEventListener('resize', event => {
     ipcRenderer.send('webview-element-resize', event.newWidth, event.newHeight)
   }, false)

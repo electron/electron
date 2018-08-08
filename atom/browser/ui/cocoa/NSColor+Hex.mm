@@ -14,11 +14,11 @@
 
   if (inColorString) {
     NSScanner* scanner = [NSScanner scannerWithString:inColorString];
-    (void) [scanner scanHexInt:&colorCode]; // ignore error
+    (void)[scanner scanHexInt:&colorCode];  // ignore error
   }
   redByte = (unsigned char)(colorCode >> 16);
   greenByte = (unsigned char)(colorCode >> 8);
-  blueByte = (unsigned char)(colorCode); // masks off high bits
+  blueByte = (unsigned char)(colorCode);  // masks off high bits
 
   return [NSColor colorWithCalibratedRed:(CGFloat)redByte / 0xff
                                    green:(CGFloat)greenByte / 0xff

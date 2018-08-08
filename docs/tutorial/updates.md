@@ -5,10 +5,54 @@ officially supported one is taking advantage of the built-in
 [Squirrel](https://github.com/Squirrel) framework and
 Electron's [autoUpdater](../api/auto-updater.md) module.
 
+## Using `update.electronjs.org`
+
+GitHub's Electron team maintains [update.electronjs.org], a free and open-source
+webservice that Electron apps can use to self-update. The service is designed 
+for Electron apps that meet the following criteria:
+
+- App runs on macOS or Windows
+- App has a public GitHub repository
+- Builds are published to GitHub Releases
+- Builds are code-signed
+
+The easiest way to use this service is by installing [update-electron-app],
+a Node.js module preconfigured for use with update.electronjs.org.
+
+Install the module:
+
+```sh
+npm install update-electron-app
+```
+
+Invoke the updater from your app's main process file:
+
+```js
+require('update-electron-app')()
+```
+
+By default, this module will check for updates at app startup, then every ten 
+minutes. When an update is found, it will automatically be downloaded in the background. When the download completes, a dialog is displayed allowing the user 
+to restart the app.
+
+If you need to customize your configuration, you can 
+[pass options to `update-electron-app`][update-electron-app]
+or 
+[use the update service directly][update.electronjs.org].
+
+## Using `electron-builder`
+
+If your app is packaged with [`electron-builder`][electron-builder-lib] you can use the
+[electron-updater] module, which does not require a server and allows for updates
+from S3, GitHub or any other static file host. This sidesteps Electron's built-in
+update mechanism, meaning that the rest of this documentation will not apply to
+`electron-builder`'s updater.
+
 ## Deploying an Update Server
 
-To get started, you first need to deploy a server that the
-[autoUpdater](../api/auto-updater.md) module will download new updates from.
+If you're developing a private Electron application, or if you're not
+publishing releases to GitHub Releases, it may be necessary to run your own 
+update server.
 
 Depending on your needs, you can choose from one of these:
 
@@ -22,12 +66,6 @@ handling releases and does not require releases to originate on GitHub.
 - [Nucleus][nucleus] – A complete update server for Electron apps maintained by
 Atlassian. Supports multiple applications and channels; uses a static file store
 to minify server cost.
-
-If your app is packaged with [`electron-builder`][electron-builder-lib] you can use the
-[electron-updater] module, which does not require a server and allows for updates
-from S3, GitHub or any other static file host. This sidesteps Electron's built-in
-update mechanism, meaning that the rest of this documentation will not apply to
-`electron-builder`'s updater.
 
 ## Implementing Updates in Your App
 
@@ -110,3 +148,5 @@ autoUpdater.on('error', message => {
 [gh-releases]: https://help.github.com/articles/creating-releases/
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [nucleus]: https://github.com/atlassian/nucleus
+[update.electronjs.org]: https://github.com/electron/update.electronjs.org
+[update-electron-app]: https://github.com/electron/update-electron-app

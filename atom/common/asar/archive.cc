@@ -117,16 +117,13 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
-    : path_(path), file_(base::File::FILE_OK), header_size_(0) {
+    : path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
-  fd_ =
-      _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
+  fd_ = _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
 #elif defined(OS_POSIX)
   fd_ = file_.GetPlatformFile();
-#else
-  fd_ = -1;
 #endif
 }
 
@@ -145,8 +142,8 @@ Archive::~Archive() {
 bool Archive::Init() {
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
-      LOG(WARNING) << "Opening " << path_.value()
-                   << ": " << base::File::ErrorToString(file_.error_details());
+      LOG(WARNING) << "Opening " << path_.value() << ": "
+                   << base::File::ErrorToString(file_.error_details());
     }
     return false;
   }
@@ -165,8 +162,8 @@ bool Archive::Init() {
   }
 
   uint32_t size;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadUInt32(
-          &size)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size()))
+           .ReadUInt32(&size)) {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
@@ -182,8 +179,8 @@ bool Archive::Init() {
   }
 
   std::string header;
-  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size())).ReadString(
-        &header)) {
+  if (!base::PickleIterator(base::Pickle(buf.data(), buf.size()))
+           .ReadString(&header)) {
     LOG(ERROR) << "Failed to parse header from " << path_.value();
     return false;
   }
@@ -191,7 +188,7 @@ bool Archive::Init() {
   std::string error;
   base::JSONReader reader;
   std::unique_ptr<base::Value> value(reader.ReadToValue(header));
-  if (!value || !value->IsType(base::Value::Type::DICTIONARY)) {
+  if (!value || !value->is_dict()) {
     LOG(ERROR) << "Failed to parse header: " << error;
     return false;
   }
@@ -224,13 +221,13 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) {
   if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
     return false;
 
-  if (node->HasKey("link")) {
+  if (node->FindKey("link")) {
     stats->is_file = false;
     stats->is_link = true;
     return true;
   }
 
-  if (node->HasKey("files")) {
+  if (node->FindKey("files")) {
     stats->is_file = false;
     stats->is_directory = true;
     return true;
@@ -294,7 +291,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return true;
   }
 
-  std::unique_ptr<ScopedTemporaryFile> temp_file(new ScopedTemporaryFile);
+  auto temp_file = std::make_unique<ScopedTemporaryFile>();
   base::FilePath::StringType ext = path.Extension();
   if (!temp_file->InitFromFile(&file_, ext, info.offset, info.size))
     return false;

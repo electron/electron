@@ -14,8 +14,8 @@
 *updater* @electron/updater
 
 # directories
-/.github/ @electron/hubbers
+/.github/ @electron/electrocats
 /default_app/ @electron/docs
 /docs/ @electron/docs
 /docs-translations/ @electron/i18n
-/npm/ @electron/hubbers
+/npm/ @electron/electrocats

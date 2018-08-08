@@ -18,20 +18,20 @@ class PreferencesManager;
 class RendererClientBase : public content::ContentRendererClient {
  public:
   RendererClientBase();
-  virtual ~RendererClientBase();
+  ~RendererClientBase() override;
 
-  virtual void DidCreateScriptContext(
-      v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
-  virtual void WillReleaseScriptContext(
-      v8::Handle<v8::Context> context, content::RenderFrame* render_frame) = 0;
+  virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
+                                      content::RenderFrame* render_frame);
+  virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
+                                        content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context) = 0;
 
-  bool isolated_world() { return isolated_world_; }
+  bool isolated_world() const { return isolated_world_; }
 
   // Get the context that the Electron API is running in.
-  v8::Local<v8::Context> GetContext(
-      blink::WebLocalFrame* frame, v8::Isolate* isolate);
+  v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
+                                    v8::Isolate* isolate) const;
 
  protected:
   void AddRenderBindings(v8::Isolate* isolate,
@@ -57,6 +57,9 @@ class RendererClientBase : public content::ContentRendererClient {
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
   bool isolated_world_;
+
+  // An increasing ID used for indentifying an V8 context in this process.
+  int next_context_id_ = 0;
 };
 
 }  // namespace atom

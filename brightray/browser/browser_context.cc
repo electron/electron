@@ -61,11 +61,11 @@ class BrowserContext::ResourceContext : public content::ResourceContext {
 BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
 
 // static
-scoped_refptr<BrowserContext> BrowserContext::Get(
-    const std::string& partition, bool in_memory) {
+scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
+                                                  bool in_memory) {
   PartitionKey key(partition, in_memory);
   if (browser_context_map_[key].get())
-    return make_scoped_refptr(browser_context_map_[key].get());
+    return WrapRefCounted(browser_context_map_[key].get());
 
   return nullptr;
 }
@@ -92,25 +92,29 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 }
 
 BrowserContext::~BrowserContext() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
-  BrowserThread::DeleteSoon(BrowserThread::IO,
-                            FROM_HERE,
-                            resource_context_.release());
+  if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
+    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                              resource_context_.release());
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestContextGetter::NotifyContextShutdownOnIO,
+                       base::RetainedRef(url_request_getter_)));
+  }
 }
 
 void BrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
   PrefServiceFactory prefs_factory;
   scoped_refptr<JsonPrefStore> pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
-  {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    pref_store->ReadPrefs();  // Synchronous.
-  }
+  pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
 
-  auto registry = make_scoped_refptr(new PrefRegistrySimple);
+  auto registry = WrapRefCounted(new PrefRegistrySimple);
   RegisterInternalPrefs(registry.get());
   RegisterPrefs(registry.get());
 
@@ -133,20 +137,15 @@ net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK(!url_request_getter_.get());
   url_request_getter_ = new URLRequestContextGetter(
-      this,
-      network_controller_handle(),
-      static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()),
-      GetPath(),
-      in_memory_,
-      BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
-      protocol_handlers,
-      std::move(protocol_interceptors));
+      this, static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()), GetPath(),
+      in_memory_, BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
+      protocol_handlers, std::move(protocol_interceptors));
   resource_context_->set_url_request_context_getter(url_request_getter_.get());
   return url_request_getter_.get();
 }
 
 std::unique_ptr<net::NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
-  return base::MakeUnique<NetworkDelegate>();
+  return std::make_unique<NetworkDelegate>();
 }
 
 std::string BrowserContext::GetMediaDeviceIDSalt() {
@@ -162,7 +161,7 @@ base::FilePath BrowserContext::GetPath() const {
 std::unique_ptr<content::ZoomLevelDelegate>
 BrowserContext::CreateZoomLevelDelegate(const base::FilePath& partition_path) {
   if (!IsOffTheRecord()) {
-    return base::MakeUnique<ZoomLevelDelegate>(prefs(), partition_path);
+    return std::make_unique<ZoomLevelDelegate>(prefs(), partition_path);
   }
   return std::unique_ptr<content::ZoomLevelDelegate>();
 }
@@ -195,10 +194,8 @@ content::SSLHostStateDelegate* BrowserContext::GetSSLHostStateDelegate() {
   return nullptr;
 }
 
-content::PermissionManager* BrowserContext::GetPermissionManager() {
-  if (!permission_manager_.get())
-    permission_manager_.reset(new PermissionManager);
-  return permission_manager_.get();
+content::BackgroundFetchDelegate* BrowserContext::GetBackgroundFetchDelegate() {
+  return nullptr;
 }
 
 content::BackgroundSyncController*
@@ -220,8 +217,7 @@ BrowserContext::CreateRequestContextForStoragePartition(
   return nullptr;
 }
 
-net::URLRequestContextGetter*
-BrowserContext::CreateMediaRequestContext() {
+net::URLRequestContextGetter* BrowserContext::CreateMediaRequestContext() {
   return url_request_getter_.get();
 }
 

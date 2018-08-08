@@ -152,7 +152,7 @@ button {
 }
 ```
 
-If you're setting just a custom titlebar as draggable, you also need to make all
+If you're only setting a custom titlebar as draggable, you also need to make all
 buttons in titlebar non-draggable.
 
 ## Text selection
@@ -176,4 +176,4 @@ when you right click on it a system menu will pop up. To make the context menu
 behave correctly on all platforms you should never use a custom context menu on
 draggable areas.
 
-[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore
+[ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore-options

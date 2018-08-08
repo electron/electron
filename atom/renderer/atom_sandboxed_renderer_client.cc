@@ -4,30 +4,23 @@
 
 #include "atom/renderer/atom_sandboxed_renderer_client.h"
 
-#include <string>
-
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
-#include "atom/renderer/atom_render_view_observer.h"
+#include "atom/renderer/atom_render_frame_observer.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/path_service.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_view.h"
-#include "content/public/renderer/render_view_observer.h"
-#include "ipc/ipc_message_macros.h"
-#include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/public/web/WebFrame.h"
+#include "third_party/WebKit/public/web/WebDocument.h"
 #include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebView.h"
 
 #include "atom/common/node_includes.h"
 #include "atom_natives.h"  // NOLINT: This file is generated with js2c
@@ -38,6 +31,11 @@ namespace {
 
 const std::string kIpcKey = "ipcNative";
 const std::string kModuleCacheKey = "native-module-cache";
+
+bool IsDevTools(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
+      "chrome-devtools");
+}
 
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
@@ -52,8 +50,9 @@ v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
 }
 
 // adapted from node.cc
-v8::Local<v8::Value> GetBinding(v8::Isolate* isolate, v8::Local<v8::String> key,
-    mate::Arguments* margs) {
+v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
+                                v8::Local<v8::String> key,
+                                mate::Arguments* margs) {
   v8::Local<v8::Object> exports;
   std::string module_key = mate::V8ToString(key);
   mate::Dictionary cache(isolate, GetModuleCache(isolate));
@@ -62,7 +61,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate, v8::Local<v8::String> key,
     return exports;
   }
 
-  auto mod = node::get_builtin_module(module_key.c_str());
+  auto* mod = node::get_builtin_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
@@ -75,7 +74,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate, v8::Local<v8::String> key,
   DCHECK_EQ(mod->nm_register_func, nullptr);
   DCHECK_NE(mod->nm_context_register_func, nullptr);
   mod->nm_context_register_func(exports, v8::Null(isolate),
-      isolate->GetCurrentContext(), mod->nm_priv);
+                                isolate->GetCurrentContext(), mod->nm_priv);
   cache.Set(module_key.c_str(), exports);
   return exports;
 }
@@ -84,27 +83,46 @@ base::CommandLine::StringVector GetArgv() {
   return base::CommandLine::ForCurrentProcess()->argv();
 }
 
+base::FilePath::StringType GetExecPath() {
+  base::FilePath path;
+  PathService::Get(base::FILE_EXE, &path);
+  return path.value();
+}
+
+v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
+                                         v8::Local<v8::String> preloadSrc) {
+  auto script = v8::Script::Compile(preloadSrc);
+  auto func = script->Run();
+  return func;
+}
+
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
+  b.SetMethod("createPreloadScript", CreatePreloadScript);
   b.SetMethod("crash", AtomBindings::Crash);
   b.SetMethod("hang", AtomBindings::Hang);
   b.SetMethod("getArgv", GetArgv);
+  b.SetMethod("getExecPath", GetExecPath);
+  b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
   b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
+
+  // Pass in CLI flags needed to setup the renderer
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kGuestInstanceID))
+    b.Set(options::kGuestInstanceID,
+          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
-class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
+class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
  public:
-  AtomSandboxedRenderViewObserver(content::RenderView* render_view,
-                                  AtomSandboxedRendererClient* renderer_client)
-    : AtomRenderViewObserver(render_view, nullptr),
-    v8_converter_(new atom::V8ValueConverter),
-    renderer_client_(renderer_client) {
-      v8_converter_->SetDisableNode(true);
-    }
+  AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
+                                   AtomSandboxedRendererClient* renderer_client)
+      : AtomRenderFrameObserver(render_frame, renderer_client),
+        renderer_client_(renderer_client) {}
 
  protected:
   void EmitIPCEvent(blink::WebLocalFrame* frame,
@@ -113,98 +131,88 @@ class AtomSandboxedRenderViewObserver : public AtomRenderViewObserver {
     if (!frame)
       return;
 
-    auto isolate = blink::MainThreadIsolate();
+    auto* isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
     auto context = frame->MainWorldScriptContext();
     v8::Context::Scope context_scope(context);
-    v8::Local<v8::Value> argv[] = {
-      mate::ConvertToV8(isolate, channel),
-      v8_converter_->ToV8Value(&args, context)
-    };
+    v8::Local<v8::Value> argv[] = {mate::ConvertToV8(isolate, channel),
+                                   mate::ConvertToV8(isolate, args)};
     renderer_client_->InvokeIpcCallback(
-        context,
-        "onMessage",
-        std::vector<v8::Local<v8::Value>>(argv, argv + 2));
+        context, "onMessage",
+        std::vector<v8::Local<v8::Value>>(argv, argv + node::arraysize(argv)));
   }
 
  private:
-  std::unique_ptr<atom::V8ValueConverter> v8_converter_;
   AtomSandboxedRendererClient* renderer_client_;
-  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderViewObserver);
+  DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
 };
 
 }  // namespace
-
 
 AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
   // Explicitly register electron's builtin modules.
   NodeBindings::RegisterBuiltinModules();
 }
 
-AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {
-}
+AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {}
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  new AtomSandboxedRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
 void AtomSandboxedRendererClient::RenderViewCreated(
     content::RenderView* render_view) {
-  new AtomSandboxedRenderViewObserver(render_view, this);
   RendererClientBase::RenderViewCreated(render_view);
 }
 
 void AtomSandboxedRendererClient::DidCreateScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
 
-  // Only allow preload for the main frame
-  if (!render_frame->IsMainFrame())
+  // Only allow preload for the main frame or
+  // For devtools we still want to run the preload_bundle script
+  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
     return;
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  std::string preload_script = command_line->GetSwitchValueASCII(
-      switches::kPreloadScript);
-  if (preload_script.empty())
-    return;
+  base::FilePath preload_script_path =
+      command_line->GetSwitchValuePath(switches::kPreloadScript);
 
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string preload_bundle_native(node::preload_bundle_data,
-      node::preload_bundle_data + sizeof(node::preload_bundle_data));
-  std::stringstream ss;
-  ss << "(function(binding, preloadPath, require) {\n";
-  ss << preload_bundle_native << "\n";
-  ss << "})";
-  std::string preload_wrapper = ss.str();
+  std::string left = "(function(binding, preloadPath, require) {\n";
+  std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
-  auto script = v8::Script::Compile(
-      mate::ConvertToV8(isolate, preload_wrapper)->ToString());
-  auto func = v8::Handle<v8::Function>::Cast(
-      script->Run(context).ToLocalChecked());
+  auto script = v8::Script::Compile(v8::String::Concat(
+      mate::ConvertToV8(isolate, left)->ToString(),
+      v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString())));
+  auto func =
+      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
   AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {
-    binding,
-    mate::ConvertToV8(isolate, preload_script)
-  };
+      binding, mate::ConvertToV8(isolate, preload_script_path.value())};
   // Execute the function with proper arguments
   ignore_result(func->Call(context, v8::Null(isolate), 2, args));
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
-    v8::Handle<v8::Context> context, content::RenderFrame* render_frame) {
-
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
   // Only allow preload for the main frame
   if (!render_frame->IsMainFrame())
     return;
 
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeIpcCallback(context, "onExit", std::vector<v8::Local<v8::Value>>());
@@ -214,7 +222,7 @@ void AtomSandboxedRendererClient::InvokeIpcCallback(
     v8::Handle<v8::Context> context,
     const std::string& callback_name,
     std::vector<v8::Handle<v8::Value>> args) {
-  auto isolate = context->GetIsolate();
+  auto* isolate = context->GetIsolate();
   auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();

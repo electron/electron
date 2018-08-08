@@ -1,0 +1,16 @@
+template("npm_action") {
+  assert(defined(invoker.script),
+         "Need script name to run (must be defined in package.json)")
+  assert(defined(invoker.args),
+         "Need script argumets")
+
+  action(target_name) {
+    forward_variables_from(invoker, ["deps", "public_deps", "sources", "inputs", "outputs"])
+    script = "//electron/build/npm-run.py"
+    args = [
+      "--silent",
+      invoker.script,
+      "--"
+    ] + invoker.args
+  }
+}

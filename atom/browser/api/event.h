@@ -15,8 +15,7 @@ class Message;
 
 namespace mate {
 
-class Event : public Wrappable<Event>,
-              public content::WebContentsObserver {
+class Event : public Wrappable<Event>, public content::WebContentsObserver {
  public:
   static Handle<Event> Create(v8::Isolate* isolate);
 
@@ -24,25 +23,29 @@ class Event : public Wrappable<Event>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Pass the sender and message to be replied.
-  void SetSenderAndMessage(content::WebContents* sender, IPC::Message* message);
+  void SetSenderAndMessage(content::RenderFrameHost* sender,
+                           IPC::Message* message);
 
   // event.PreventDefault().
   void PreventDefault(v8::Isolate* isolate);
 
-  // event.sendReply(json), used for replying synchronous message.
-  bool SendReply(const base::string16& json);
+  // event.sendReply(array), used for replying synchronous message.
+  bool SendReply(const base::ListValue& result);
 
  protected:
   explicit Event(v8::Isolate* isolate);
   ~Event() override;
 
   // content::WebContentsObserver implementations:
-  void WebContentsDestroyed() override;
+  void RenderFrameDeleted(content::RenderFrameHost* rfh) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
+                              content::RenderFrameHost* new_rfh) override;
+  void FrameDeleted(content::RenderFrameHost* rfh) override;
 
  private:
   // Replyer for the synchronous messages.
-  content::WebContents* sender_;
-  IPC::Message* message_;
+  content::RenderFrameHost* sender_ = nullptr;
+  IPC::Message* message_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(Event);
 };

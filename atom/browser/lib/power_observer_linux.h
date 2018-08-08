@@ -19,6 +19,7 @@ namespace atom {
 class PowerObserverLinux : public base::PowerObserver {
  public:
   PowerObserverLinux();
+  ~PowerObserverLinux() override;
 
  protected:
   void BlockSleep();

@@ -12,17 +12,24 @@ AtomDesktopWindowTreeHostWin::AtomDesktopWindowTreeHostWin(
     MessageHandlerDelegate* delegate,
     views::internal::NativeWidgetDelegate* native_widget_delegate,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-        : views::DesktopWindowTreeHostWin(native_widget_delegate,
-                                          desktop_native_widget_aura),
-          delegate_(delegate) {
-}
+    : views::DesktopWindowTreeHostWin(native_widget_delegate,
+                                      desktop_native_widget_aura),
+      delegate_(delegate) {}
 
-AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {
-}
+AtomDesktopWindowTreeHostWin::~AtomDesktopWindowTreeHostWin() {}
 
-bool AtomDesktopWindowTreeHostWin::PreHandleMSG(
-    UINT message, WPARAM w_param, LPARAM l_param, LRESULT* result) {
+bool AtomDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
+                                                WPARAM w_param,
+                                                LPARAM l_param,
+                                                LRESULT* result) {
   return delegate_->PreHandleMSG(message, w_param, l_param, result);
+}
+
+bool AtomDesktopWindowTreeHostWin::HasNativeFrame() const {
+  // Since we never use chromium's titlebar implementation, we can just say
+  // that we use a native titlebar. This will disable the repaint locking when
+  // DWM composition is disabled.
+  return true;
 }
 
 }  // namespace atom

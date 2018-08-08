@@ -4,7 +4,7 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
-`webFrame` export of the electron module is an instance of the `WebFrame`
+`webFrame` export of the Electron module is an instance of the `WebFrame`
 class representing the top frame of the current `BrowserWindow`. Sub-frames can
 be retrieved by certain properties and methods (e.g. `webFrame.firstChild`).
 
@@ -80,16 +80,6 @@ webFrame.setSpellCheckProvider('en-US', true, {
   }
 })
 ```
-
-### `webFrame.registerURLSchemeAsSecure(scheme)`
-
-* `scheme` String
-
-Registers the `scheme` as secure scheme.
-
-Secure schemes do not trigger mixed content warnings. For example, `https` and
-`data` are secure schemes because they cannot be corrupted by active network
-attackers.
 
 ### `webFrame.registerURLSchemeAsBypassingCSP(scheme)`
 
@@ -235,6 +225,15 @@ Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
 would be returned if there's no such frame or if the frame is not in the current
 renderer process.
 
+### `webFrame.findFrameByRoutingId(routingId)`
+
+* `routingId` Integer - An `Integer` representing the unique frame id in the
+   current renderer process. Routing IDs can be retrieved from `WebFrame`
+   instances (`webFrame.routingId`) and are also passed by frame
+   specific `WebContents` navigation events (e.g. `did-frame-navigate`)
+
+Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+
 ## Properties
 
 ### `webFrame.top`
@@ -262,5 +261,11 @@ current renderer process.
 ### `webFrame.nextSibling`
 
 A `WebFrame` representing next sibling frame, the property would be `null` if
-`webFrame` is the last frame its parent or if the next sibling is not in the
+`webFrame` is the last frame in its parent or if the next sibling is not in the
 current renderer process.
+
+### `webFrame.routingId`
+
+An `Integer` representing the unique frame id in the current renderer process.
+Distinct WebFrame instances that refer to the same underlying frame will have
+the same `routingId`.
