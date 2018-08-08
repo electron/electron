@@ -633,8 +633,14 @@ describe('Menu module', () => {
 
     it('throws an error if options is not an object', () => {
       expect(() => {
-        menu.popup()
+        menu.popup('this is a string, not an object')
       }).to.throw(/Options must be an object/)
+    })
+
+    it('allows for options to be optional', () => {
+      expect(() => {
+        menu.popup({})
+      }).to.not.throw()
     })
 
     it('should emit menu-will-show event', (done) => {
