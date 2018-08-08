@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 #define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 
+#include <string>
+
 #include "atom/browser/api/event_emitter.h"
 #include "chrome/browser/media/desktop_media_list_observer.h"
 #include "chrome/browser/media/native_desktop_media_list.h"
@@ -17,6 +19,12 @@ namespace api {
 class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
                        public DesktopMediaListObserver {
  public:
+  struct Source {
+    DesktopMediaList::Source media_list_source;
+    // Will be an empty string if not available.
+    std::string display_id;
+  };
+
   static mate::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
@@ -40,6 +48,9 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
 
  private:
   std::unique_ptr<DesktopMediaList> media_list_;
+#if defined(OS_WIN)
+  bool using_directx_capturer_;
+#endif  // defined(OS_WIN)
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };

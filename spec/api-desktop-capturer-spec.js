@@ -1,5 +1,5 @@
 const assert = require('assert')
-const {desktopCapturer, remote} = require('electron')
+const {desktopCapturer, remote, screen} = require('electron')
 
 const isCI = remote.getGlobal('isCi')
 
@@ -40,7 +40,7 @@ describe('desktopCapturer', () => {
     desktopCapturer.getSources({types: ['window', 'screen']}, callback)
   })
 
-  it('responds to subsequest calls of different options', (done) => {
+  it('responds to subsequent calls of different options', (done) => {
     let callCount = 0
     const callback = (error, sources) => {
       callCount++
@@ -50,5 +50,34 @@ describe('desktopCapturer', () => {
 
     desktopCapturer.getSources({types: ['window']}, callback)
     desktopCapturer.getSources({types: ['screen']}, callback)
+  })
+
+  it('returns an empty display_id for window sources on Windows and Mac', (done) => {
+    // Linux doesn't return any window sources.
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+      return done()
+    }
+    desktopCapturer.getSources({types: ['window']}, (error, sources) => {
+      assert.equal(error, null)
+      assert.notEqual(sources.length, 0)
+      sources.forEach((source) => { assert.equal(source.display_id.length, 0) })
+      done()
+    })
+  })
+
+  it('returns display_ids matching the Screen API on Windows and Mac', (done) => {
+    if (process.platform !== 'win32' && process.platform !== 'darwin') {
+      return done()
+    }
+    const displays = screen.getAllDisplays()
+    desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
+      assert.equal(error, null)
+      assert.notEqual(sources.length, 0)
+      assert.equal(sources.length, displays.length)
+      for (let i = 0; i < sources.length; i++) {
+        assert.equal(sources[i].display_id, displays[i].id)
+      }
+      done()
+    })
   })
 })
