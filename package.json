@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "2.1.0-unsupported-20180809",
+  "version": "2.1.0-unsupported.20180809",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
