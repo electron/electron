@@ -21,8 +21,8 @@ const versionType = args._[0]
 
 assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 if (!versionType && !args.notesOnly) {
-  console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
-     ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
+  console.log(`Usage: prepare-release versionType [major | minor | patch | beta | specificVersion]` +
+     ` (--stable) (--notesOnly) (--automaticRelease) (--branch) (--version)`)
   process.exit(1)
 }
 
@@ -33,7 +33,12 @@ github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 function getNewVersion (dryRun) {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
-  let scriptArgs = [bumpScript, `--bump ${versionType}`]
+  let scriptArgs = [bumpScript]
+  if (versionType === 'specificVersion' && args.version) {
+    scriptArgs.push(`--version ${args.version}`)
+  } else {
+    scriptArgs.push(`--bump ${versionType}`)
+  }
   if (args.stable) {
     scriptArgs.push('--stable')
   }

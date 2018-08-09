@@ -1,3 +1,4 @@
+const args = require('minimist')(process.argv.slice(2))
 const temp = require('temp')
 const fs = require('fs')
 const path = require('path')
@@ -104,7 +105,11 @@ new Promise((resolve, reject) => {
   })
 })
 .then((release) => {
-  npmTag = release.prerelease ? 'beta' : 'latest'
+  if (args.tag) {
+    npmTag = args.tag
+  } else {
+    npmTag = release.prerelease ? 'beta' : 'latest'
+  }
 })
 .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
 .then(() => {
