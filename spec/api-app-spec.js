@@ -796,8 +796,7 @@ describe('app module', () => {
     })
   })
 
-  // TODO(marshallofsound): [Ch66] Failed on Windows x64 + ia32 on CI, passes locally
-  xdescribe('getAppMetrics() API', () => {
+  describe('getAppMetrics() API', () => {
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics()
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
@@ -805,8 +804,13 @@ describe('app module', () => {
       const types = []
       for (const {memory, pid, type, cpu} of appMetrics) {
         expect(memory.workingSetSize).to.be.above(0, 'working set size is not > 0')
-        expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
-        expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
+
+        // windows causes failures here due to CI server configuration
+        if (process.platform !== 'win32') {
+          expect(memory.privateBytes).to.be.above(0, 'private bytes is not > 0')
+          expect(memory.sharedBytes).to.be.above(0, 'shared bytes is not > 0')
+        }
+
         expect(pid).to.be.above(0, 'pid is not > 0')
         expect(type).to.be.a('string').that.is.not.empty()
 
