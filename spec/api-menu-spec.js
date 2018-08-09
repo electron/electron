@@ -9,9 +9,7 @@ const {closeWindow} = require('./window-helpers')
 const {expect} = chai
 chai.use(dirtyChai)
 
-describe.only('some feature', function () {
-  // ... only tests in this block will be run
-describe('Menu module', () => {
+describe.only('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
@@ -46,14 +44,14 @@ describe('Menu module', () => {
 
     it('does not throw exceptions for empty objects and null values ', () => {
       expect(() => {
-        Menu.buildFromTemplate([{}, {}, null, null]).to.not.throw()
-      })
+        Menu.buildFromTemplate([{}, {}, null, null])
+      }).to.not.throw()
     })
 
     it('does throw exception for object without role or label attribute', () => {
       expect(() => {
-        Menu.buildFromTemplate([{"randomKey":"ldks"}]).to.throw('Invalid template for MenuItem')
-      })
+        Menu.buildFromTemplate([{ 'randomKey':'ldks'}])
+      }).to.throw('Invalid template for MenuItem')
     })
 
     it('returns 0 item count for empty objects ', () => {
@@ -719,5 +717,4 @@ describe('Menu module', () => {
       expect(Menu.getApplicationMenu()).to.be.null()
     })
   })
-})
 })
