@@ -12,8 +12,10 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/path_service.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
@@ -81,6 +83,12 @@ base::CommandLine::StringVector GetArgv() {
   return base::CommandLine::ForCurrentProcess()->argv();
 }
 
+base::FilePath::StringType GetExecPath() {
+  base::FilePath path;
+  PathService::Get(base::FILE_EXE, &path);
+  return path.value();
+}
+
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
@@ -89,6 +97,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   b.SetMethod("crash", AtomBindings::Crash);
   b.SetMethod("hang", AtomBindings::Hang);
   b.SetMethod("getArgv", GetArgv);
+  b.SetMethod("getExecPath", GetExecPath);
   b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
   b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
