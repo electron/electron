@@ -43,6 +43,7 @@ class DevToolsEmbedderMessageDispatcher {
     virtual void SetIsDocked(const DispatchCallback& callback,
                              bool is_docked) = 0;
     virtual void OpenInNewTab(const std::string& url) = 0;
+    virtual void ShowItemInFolder(const std::string& file_system_path) = 0;
     virtual void SaveToFile(const std::string& url,
                             const std::string& content,
                             bool save_as) = 0;
@@ -64,10 +65,23 @@ class DevToolsEmbedderMessageDispatcher {
                               const std::string& file_system_path,
                               const std::string& query) = 0;
     virtual void SetWhitelistedShortcuts(const std::string& message) = 0;
+    virtual void SetEyeDropperActive(bool active) = 0;
+    virtual void ShowCertificateViewer(const std::string& cert_chain) = 0;
     virtual void ZoomIn() = 0;
     virtual void ZoomOut() = 0;
     virtual void ResetZoom() = 0;
+    virtual void SetDevicesDiscoveryConfig(
+        bool discover_usb_devices,
+        bool port_forwarding_enabled,
+        const std::string& port_forwarding_config,
+        bool network_discovery_enabled,
+        const std::string& network_discovery_config) = 0;
     virtual void SetDevicesUpdatesEnabled(bool enabled) = 0;
+    virtual void PerformActionOnRemotePage(const std::string& page_id,
+                                           const std::string& action) = 0;
+    virtual void OpenRemotePage(const std::string& browser_id,
+                                const std::string& url) = 0;
+    virtual void OpenNodeFrontend() = 0;
     virtual void DispatchProtocolMessageFromDevToolsFrontend(
         const std::string& message) = 0;
     virtual void SendJsonRequest(const DispatchCallback& callback,
@@ -78,6 +92,7 @@ class DevToolsEmbedderMessageDispatcher {
                                const std::string& value) = 0;
     virtual void RemovePreference(const std::string& name) = 0;
     virtual void ClearPreferences() = 0;
+    virtual void ConnectionReady() = 0;
     virtual void RegisterExtensionsAPI(const std::string& origin,
                                        const std::string& script) = 0;
   };

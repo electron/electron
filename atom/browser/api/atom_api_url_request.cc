@@ -125,6 +125,18 @@ bool URLRequest::ResponseState::Failed() const {
   return IsFlagSet(ResponseStateFlags::kFailed);
 }
 
+mate::Dictionary URLRequest::GetUploadProgress(v8::Isolate* isolate) {
+  mate::Dictionary progress = mate::Dictionary::CreateEmpty(isolate);
+
+  if (atom_request_) {
+    progress.Set("active", true);
+    atom_request_->GetUploadProgress(&progress);
+  } else {
+    progress.Set("active", false);
+  }
+  return progress;
+}
+
 URLRequest::URLRequest(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   InitWith(isolate, wrapper);
 }
@@ -183,6 +195,7 @@ void URLRequest::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setChunkedUpload", &URLRequest::SetChunkedUpload)
       .SetMethod("followRedirect", &URLRequest::FollowRedirect)
       .SetMethod("_setLoadFlags", &URLRequest::SetLoadFlags)
+      .SetMethod("getUploadProgress", &URLRequest::GetUploadProgress)
       .SetProperty("notStarted", &URLRequest::NotStarted)
       .SetProperty("finished", &URLRequest::Finished)
       // Response APi

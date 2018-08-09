@@ -1,37 +1,14 @@
 import("//build/config/ui.gni")
 
-filenames_gypi = exec_script(
-  "//build/gypi_to_gn.py",
-  [ rebase_path("filenames.gypi") ],
-  "scope",
-  [ "filenames.gypi" ]
-)
-
-
-if (is_linux) {
-  # TODO: Experiment with using //tools/generate_library_loader for generating
-  # the libnotify loader.
-  copy("libnotify_headers") {
-    sources = [
-      "/usr/include/libnotify/notify.h",
-      "/usr/include/libnotify/notification.h",
-      "/usr/include/libnotify/notify-enum-types.h",
-      "/usr/include/libnotify/notify-features.h",
-    ]
-    outputs = [ "$target_gen_dir/libnotify-copy/libnotify/{{source_file_part}}" ]
-  }
-  config("libnotify_config") {
-    include_dirs = [ "$target_gen_dir/libnotify-copy" ]
-  }
-  group("libnotify") {
-    deps = [ ":libnotify_headers" ]
-    public_configs = [ ":libnotify_config" ]
-  }
-}
+filenames_gypi = exec_script("//build/gypi_to_gn.py",
+                             [ rebase_path("filenames.gypi") ],
+                             "scope",
+                             [ "filenames.gypi" ])
 
 static_library("brightray") {
   deps = [
     "//base",
+    "//base:base_static",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//content/public/browser",
@@ -41,19 +18,15 @@ static_library("brightray") {
     "//ui/views",
   ]
 
-  include_dirs = [
-    "..",
-  ]
+  include_dirs = [ ".." ]
 
   defines = [
     "DISABLE_NACL=1",
+    "ELECTRON_GN_BUILD",
   ]
 
   if (is_linux) {
-    deps += [
-      "//build/config/linux/gtk3",
-      ":libnotify",
-    ]
+    deps += [ "//build/config/linux/gtk" ]
   }
 
   extra_source_filters = []
@@ -65,7 +38,8 @@ static_library("brightray") {
     ]
   }
 
-  set_sources_assignment_filter(sources_assignment_filter + extra_source_filters)
+  set_sources_assignment_filter(
+      sources_assignment_filter + extra_source_filters)
   sources = filenames_gypi.brightray_sources
   set_sources_assignment_filter(sources_assignment_filter)
 }

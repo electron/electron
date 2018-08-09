@@ -194,6 +194,13 @@ void TopLevelWindow::OnWindowRestore() {
   Emit("restore");
 }
 
+void TopLevelWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
+                                        bool* prevent_default) {
+  if (Emit("will-resize", new_bounds)) {
+    *prevent_default = true;
+  }
+}
+
 void TopLevelWindow::OnWindowResize() {
   Emit("resize");
 }
@@ -571,6 +578,10 @@ double TopLevelWindow::GetOpacity() {
   return window_->GetOpacity();
 }
 
+void TopLevelWindow::SetShape(const std::vector<gfx::Rect>& rects) {
+  window_->widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
 void TopLevelWindow::SetRepresentedFilename(const std::string& filename) {
   window_->SetRepresentedFilename(filename);
 }
@@ -692,9 +703,9 @@ void TopLevelWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void TopLevelWindow::SetVibrancy(mate::Arguments* args) {
-  std::string type;
-  args->GetNext(&type);
+void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
+                                 v8::Local<v8::Value> value) {
+  std::string type = mate::V8ToString(value);
   window_->SetVibrancy(type);
 }
 
@@ -736,6 +747,13 @@ void TopLevelWindow::AddTabbedWindow(NativeWindow* window,
                                      mate::Arguments* args) {
   if (!window_->AddTabbedWindow(window))
     args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
+}
+
+void TopLevelWindow::SetWindowButtonVisibility(bool visible,
+                                               mate::Arguments* args) {
+  if (!window_->SetWindowButtonVisibility(visible)) {
+    args->ThrowError("Not supported for this window");
+  }
 }
 
 void TopLevelWindow::SetAutoHideMenuBar(bool auto_hide) {
@@ -993,6 +1011,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hasShadow", &TopLevelWindow::HasShadow)
       .SetMethod("setOpacity", &TopLevelWindow::SetOpacity)
       .SetMethod("getOpacity", &TopLevelWindow::GetOpacity)
+      .SetMethod("setShape", &TopLevelWindow::SetShape)
       .SetMethod("setRepresentedFilename",
                  &TopLevelWindow::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename",
@@ -1030,6 +1049,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("moveTabToNewWindow", &TopLevelWindow::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &TopLevelWindow::ToggleTabBar)
       .SetMethod("addTabbedWindow", &TopLevelWindow::AddTabbedWindow)
+      .SetMethod("setWindowButtonVisibility",
+                 &TopLevelWindow::SetWindowButtonVisibility)
 #endif
       .SetMethod("setAutoHideMenuBar", &TopLevelWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &TopLevelWindow::IsMenuBarAutoHide)

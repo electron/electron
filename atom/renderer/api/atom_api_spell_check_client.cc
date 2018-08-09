@@ -115,6 +115,10 @@ void SpellCheckClient::RequestCheckingOfText(
                      base::Owned(pending_request_param_.release())));
 }
 
+bool SpellCheckClient::IsSpellCheckingEnabled() const {
+  return true;
+}
+
 void SpellCheckClient::ShowSpellingUI(bool show) {}
 
 bool SpellCheckClient::IsShowingSpellingUI() {

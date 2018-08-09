@@ -26,7 +26,9 @@ bool PreferencesManager::OnControlMessageReceived(const IPC::Message& message) {
 
 void PreferencesManager::OnUpdatePreferences(
     const base::ListValue& preferences) {
-  preferences_ = preferences.CreateDeepCopy();
+  auto copy =
+      base::ListValue::From(base::Value::ToUniquePtrValue(preferences.Clone()));
+  preferences_.swap(copy);
 }
 
 }  // namespace atom

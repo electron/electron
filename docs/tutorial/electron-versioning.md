@@ -49,7 +49,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | Chromium version updates        |                                    | fix-related chromium patches  |
 
 
-Note that most chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
+Note that most Chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
 # Stabilization Branches
 
@@ -136,12 +136,12 @@ We reconcile flagged code with our versioning strategy as follows:
 
 We seek to increase clarity at all levels of the update and releases process. Starting with `2.0.0` we will require pull requests adhere to the [Conventional Commits](https://conventionalcommits.org/) spec, which can be summarized as follows:
 
-* Commits that would result in a semver **major** bump must start with `BREAKING CHANGE:`.
+* Commits that would result in a semver **major** bump must start their body with `BREAKING CHANGE:`.
 * Commits that would result in a semver **minor** bump must start with `feat:`.
 * Commits that would result in a semver **patch** bump must start with `fix:`.
 
 * We allow squashing of commits, provided that the squashed message adheres the the above message format.
-* It is acceptable for some commits in a pull request to not include a semantic prefix, as long as a later commit in the same pull request contains a meaningful encompassing semantic message.
+* It is acceptable for some commits in a pull request to not include a semantic prefix, as long as the pull request title contains a meaningful encompassing semantic message.
 
 # Versionless `master`
 

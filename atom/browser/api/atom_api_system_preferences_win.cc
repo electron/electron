@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <dwmapi.h>
 #include <iomanip>
 
 #include "atom/browser/api/atom_api_system_preferences.h"
@@ -38,7 +39,7 @@ std::string SystemPreferences::GetAccentColor() {
   DWORD color = 0;
   BOOL opaque = FALSE;
 
-  if (FAILED(dwmGetColorizationColor(&color, &opaque))) {
+  if (FAILED(DwmGetColorizationColor(&color, &opaque))) {
     return "";
   }
 

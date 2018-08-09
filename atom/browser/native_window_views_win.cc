@@ -187,6 +187,16 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       if (HIWORD(w_param) == THBN_CLICKED)
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
+    case WM_SIZING: {
+      bool prevent_default = false;
+      NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
+                             &prevent_default);
+      if (prevent_default) {
+        ::GetWindowRect(GetAcceleratedWidget(),
+                        reinterpret_cast<RECT*>(l_param));
+      }
+      return false;
+    }
     case WM_SIZE: {
       // Handle window state change.
       HandleSizeEvent(w_param, l_param);
@@ -198,7 +208,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     case WM_MOVING: {
       if (!movable_)
-        ::GetWindowRect(GetAcceleratedWidget(), (LPRECT)l_param);
+        ::GetWindowRect(GetAcceleratedWidget(),
+                        reinterpret_cast<RECT*>(l_param));
       return false;
     }
     case WM_MOVE: {

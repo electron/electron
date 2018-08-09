@@ -1,3 +1,24 @@
+notify-slack-failure: &notify-slack-failure
+  run:
+    name: Send a slack notification on failure
+    command: |
+      if [ "$NIGHTLY_BUILD" == "true" ]; then
+        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        curl -g -H "Content-Type: application/json" -X POST \
+        -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
+      fi
+    when: on_fail
+notify-slack-success: &notify-slack-success
+  run:
+    name: Send a slack notification on success
+    command: |
+      if [ "$NIGHTLY_BUILD" == "true" ]; then
+        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        curl -g -H "Content-Type: application/json" -X POST \
+        -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
+      fi
+    when: on_success
+
 build-steps: &build-steps
   steps:
     - checkout
@@ -81,9 +102,13 @@ build-steps: &build-steps
               mkdir junit
               script/test.py --ci --rebuild_native_modules
             else
-              echo 'Testing Electron release build'
-              mkdir junit
-              script/test.py --ci --rebuild_native_modules -c R
+              if [ "$UPLOAD_TO_S3" == "1" ]; then
+                echo 'Testing Electron release build'
+                mkdir junit
+                script/test.py --ci --rebuild_native_modules -c R
+              else
+                echo 'Skipping tests on GitHub release'
+              fi
             fi
           else
            echo 'Skipping tests due to configuration'
@@ -109,6 +134,8 @@ build-steps: &build-steps
           if [ "$CREATE_TYPESCRIPT_DEFS" == "true" ]; then
             npm run create-typescript-definitions
           fi
+    - <<: *notify-slack-failure
+    - <<: *notify-slack-success
     - persist_to_workspace:
         root: out
         paths:
@@ -118,10 +145,74 @@ build-steps: &build-steps
     - store_artifacts:
         path: junit
     - store_artifacts:
-        path: out/electron.d.ts
-    - store_artifacts:
-        path: out/electron-api.json
+        path: out
 
+gn-build-steps: &gn-build-steps
+  steps:
+    - run:
+        name: Setup depot tools
+        command: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+    - checkout:
+        path: src/electron
+    - restore_cache:
+        paths:
+          - ~/.gclient-cache
+        keys:
+          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+          - v1-gclient-cache-{{ arch }}-
+    - run:
+        name: Gclient sync
+        command: |
+          gclient config \
+            --name "src/electron" \
+            --unmanaged \
+            --cache-dir "$HOME/.gclient-cache" \
+            "$CIRCLE_REPOSITORY_URL"
+
+          gclient sync --with_branch_heads --with_tags
+    - save_cache:
+        paths:
+          - ~/.gclient-cache
+        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+    - run:
+        name: GN gen
+        command: |
+          cd src
+          SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/linux/sccache"
+          echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          source $BASH_ENV
+          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+    - run:
+        name: Ninja build
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_app
+    - run:
+        name: Check sccache stats after build
+        command: $SCCACHE_WRAPPER -s
+    - run:
+        name: Setup for headless testing
+        command: |
+          sh -e /etc/init.d/xvfb start
+    - run:
+        name: Test
+        environment:
+          MOCHA_REPORTER: mocha-junit-reporter
+          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        command: |
+          cd src
+          ninja -C out/Default electron/build/node:headers
+          export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
+          (cd electron/spec && npm install)
+          python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+    - store_test_results:
+        path: src/junit
+    - store_artifacts:
+        path: src/junit
 
 build-defaults: &build-defaults
   docker:
@@ -165,6 +256,7 @@ jobs:
     environment:
       TARGET_ARCH: arm
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: 2xlarge
 
@@ -203,6 +295,7 @@ jobs:
     environment:
       TARGET_ARCH: arm64
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: 2xlarge
 
@@ -219,6 +312,7 @@ jobs:
     environment:
       TARGET_ARCH: ia32
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: xlarge
 
@@ -242,6 +336,7 @@ jobs:
     environment:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
+      NIGHTLY_BUILD: true
     <<: *build-defaults
     resource_class: xlarge
 
@@ -259,6 +354,7 @@ jobs:
       TARGET_ARCH: x64
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+      NIGHTLY_BUILD: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
@@ -279,10 +375,48 @@ jobs:
       MAS_BUILD: 1
       RUN_RELEASE_BUILD: true
       INSTALL_MACOS_NODE: true
+      NIGHTLY_BUILD: true
     macos:
       xcode: "8.3.3"
     <<: *build-steps
 
+  electron-gn-linux-x64-debug-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/debug.gn
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-x64-release-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/release.gn
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-ia32-debug-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "x86"'
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-ia32-release-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_EXTRA_ARGS: 'target_cpu = "x86"'
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
 
 workflows:
   version: 2
@@ -310,6 +444,12 @@ workflows:
   build-mas-x64:
     jobs:
       - electron-mas-x64
+  build-gn-linux:
+    jobs:
+      - electron-gn-linux-x64-debug-fyi
+      - electron-gn-linux-x64-release-fyi
+      - electron-gn-linux-ia32-debug-fyi
+      - electron-gn-linux-ia32-release-fyi
 
   nightly-release-test:
     triggers:
@@ -327,12 +467,3 @@ workflows:
       - electron-linux-arm64-release-nightly
       - electron-linux-ia32-release-nightly
       - electron-linux-x64-release-nightly
-
-experimental:
-  notify:
-    branches:
-      only:
-        - master
-        - 2-0-x
-        - 1-8-x
-        - 1-7-x

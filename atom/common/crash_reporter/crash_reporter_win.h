@@ -65,7 +65,9 @@ class CrashReporterWin : public CrashReporter {
   google_breakpad::CustomClientInfo custom_info_;
 
   bool skip_system_crash_handler_ = false;
+#ifdef _WIN64
   bool code_range_registered_ = false;
+#endif
   std::unique_ptr<google_breakpad::ExceptionHandler> breakpad_;
 
   DISALLOW_COPY_AND_ASSIGN(CrashReporterWin);

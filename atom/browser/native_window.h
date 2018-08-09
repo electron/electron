@@ -187,6 +187,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual void ToggleTabBar();
   virtual bool AddTabbedWindow(NativeWindow* window);
 
+  // Returns false if unsupported.
+  virtual bool SetWindowButtonVisibility(bool visible);
+
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);
   virtual bool IsMenuBarAutoHide();
@@ -233,6 +236,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMinimize();
   void NotifyWindowRestore();
   void NotifyWindowMove();
+  void NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                              bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();

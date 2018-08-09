@@ -990,7 +990,8 @@ void App::ImportCertificate(const base::DictionaryValue& options,
                             const net::CompletionCallback& callback) {
   auto browser_context = AtomBrowserContext::From("", false);
   if (!certificate_manager_model_) {
-    std::unique_ptr<base::DictionaryValue> copy = options.CreateDeepCopy();
+    auto copy = base::DictionaryValue::From(
+        base::Value::ToUniquePtrValue(options.Clone()));
     CertificateManagerModel::Create(
         browser_context.get(),
         base::Bind(&App::OnCertificateManagerModelCreated,
@@ -1113,6 +1114,10 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
+
+    pid_dict.SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
 
     memory_dict.Set(
         "workingSetSize",

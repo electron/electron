@@ -16,14 +16,18 @@ def main():
   source_files = sys.argv[3:]
 
   output_dir = tempfile.mkdtemp()
-  copy_files(source_files, output_dir)
+  copy_files(source_files, output_dir, folder_name)
   call_asar(archive, os.path.join(output_dir, folder_name))
   shutil.rmtree(output_dir)
 
 
-def copy_files(source_files, output_dir):
+def copy_files(source_files, output_dir, folder_name):
   for source_file in source_files:
     output_path = os.path.join(output_dir, source_file)
+    # Files that aren't in the default_app folder need to be put inside
+    # the temp one we are making so they end up in the ASAR
+    if not os.path.normpath(source_file).startswith(folder_name + os.sep):
+      output_path = os.path.join(output_dir, folder_name, source_file)
     safe_mkdir(os.path.dirname(output_path))
     shutil.copy2(source_file, output_path)
 

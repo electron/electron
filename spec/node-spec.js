@@ -179,6 +179,10 @@ describe('node feature', () => {
       it('can be scheduled in time', (done) => {
         remote.getGlobal('setTimeout')(done, 0)
       })
+
+      it('can be promisified', (done) => {
+        remote.getGlobal('setTimeoutPromisified')(0).then(done)
+      })
     })
 
     describe('setInterval called under Chromium event loop in browser process', () => {

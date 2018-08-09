@@ -98,12 +98,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  static int64_t GetIDForContents(content::WebContents* web_contents);
-
   // Notifies to destroy any guest web contents before destroying self.
   void DestroyWebContents(bool async);
 
-  int64_t GetID() const;
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   Type GetType() const;
@@ -143,6 +140,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  bool IsCurrentlyAudible();
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
@@ -215,9 +213,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
-  double GetZoomLevel();
+  double GetZoomLevel() const;
   void SetZoomFactor(double factor);
-  double GetZoomFactor();
+  double GetZoomFactor() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
@@ -233,11 +231,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
   // Returns the web preferences of current WebContents.
-  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
-  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
+  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
   // Returns the owner window.
-  v8::Local<v8::Value> GetOwnerBrowserWindow();
+  v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.

@@ -46,6 +46,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   void RequestCheckingOfText(
       const blink::WebString& textToCheck,
       blink::WebTextCheckingCompletion* completionCallback) override;
+  bool IsSpellCheckingEnabled() const override;
 
   // blink::WebSpellCheckPanelHostClient:
   void ShowSpellingUI(bool show) override;

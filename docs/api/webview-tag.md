@@ -1,5 +1,15 @@
 # `<webview>` Tag
 
+## Warning
+
+Electron's `webview` tag is based on [Chromium's `webview`][chrome-webview], which
+is undergoing dramatic architectural changes. This impacts the stability of `webviews`,
+including rendering, navigation, and event routing. We currently recommend to not
+use the `webview` tag and to consider alternatives, like `iframe`, Electron's `BrowserView`,
+or an architecture that avoids embedded content altogether.
+
+## Overview
+
 > Display external web content in an isolated frame and process.
 
 Process: [Renderer](../glossary.md#renderer-process)
@@ -449,6 +459,10 @@ Set guest page muted.
 ### `<webview>.isAudioMuted()`
 
 Returns `Boolean` - Whether guest page has been muted.
+
+#### `<webview>.isCurrentlyAudible()`
+
+Returns `Boolean` - Whether audio is currently playing.
 
 ### `<webview>.undo()`
 
@@ -914,3 +928,4 @@ Emitted when DevTools is closed.
 Emitted when DevTools is focused / opened.
 
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
+[chrome-webview]: https://developer.chrome.com/apps/tags/webview

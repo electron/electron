@@ -60,6 +60,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
+  void OnWindowWillResize(const gfx::Rect& new_bounds,
+                          bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
@@ -146,6 +148,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   bool HasShadow();
   void SetOpacity(const double opacity);
   double GetOpacity();
+  void SetShape(const std::vector<gfx::Rect>& rects);
   void SetRepresentedFilename(const std::string& filename);
   std::string GetRepresentedFilename();
   void SetDocumentEdited(bool edited);
@@ -163,7 +166,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetVisibleOnAllWorkspaces(bool visible);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
-  virtual void SetVibrancy(mate::Arguments* args);
+  virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
   void SetTouchBar(const std::vector<mate::PersistentDictionary>& items);
   void RefreshTouchBarItem(const std::string& item_id);
   void SetEscapeTouchBarItem(const mate::PersistentDictionary& item);
@@ -173,6 +176,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, mate::Arguments* args);
+  void SetWindowButtonVisibility(bool visible, mate::Arguments* args);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);

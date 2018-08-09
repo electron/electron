@@ -15,6 +15,7 @@
 #include <glib.h>  // for g_setenv()
 #endif
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/message_loop/message_loop.h"
@@ -178,14 +179,29 @@ void OverrideAppLogsPath() {
 }
 #endif
 
-int BrowserMainParts::PreEarlyInitialization() {
-  std::unique_ptr<base::FeatureList> feature_list(new base::FeatureList);
+void BrowserMainParts::InitializeFeatureList() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  const auto enable_features =
+      cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
+  auto disable_features =
+      cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
+
   // TODO(deepak1556): Disable guest webcontents based on OOPIF feature.
   // Disable surface synchronization and async wheel events to make OSR work.
-  feature_list->InitializeFromCommandLine(
-      "",
-      "GuestViewCrossProcessFrames,SurfaceSynchronization,AsyncWheelEvents");
+  disable_features +=
+      ",GuestViewCrossProcessFrames,SurfaceSynchronization,AsyncWheelEvents";
+
+  auto feature_list = std::make_unique<base::FeatureList>();
+  feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
+}
+
+bool BrowserMainParts::ShouldContentCreateFeatureList() {
+  return false;
+}
+
+int BrowserMainParts::PreEarlyInitialization() {
+  InitializeFeatureList();
   OverrideAppLogsPath();
 #if defined(USE_X11)
   views::LinuxUI::SetInstance(BuildGtkUi());

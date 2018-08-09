@@ -355,6 +355,10 @@ bool NativeWindow::IsMenuBarVisible() {
   return true;
 }
 
+bool NativeWindow::SetWindowButtonVisibility(bool visible) {
+  return false;
+}
+
 double NativeWindow::GetAspectRatio() {
   return aspect_ratio_;
 }
@@ -452,6 +456,12 @@ void NativeWindow::NotifyWindowMinimize() {
 void NativeWindow::NotifyWindowRestore() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowRestore();
+}
+
+void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                                          bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowWillResize(new_bounds, prevent_default);
 }
 
 void NativeWindow::NotifyWindowResize() {

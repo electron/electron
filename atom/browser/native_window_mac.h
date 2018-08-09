@@ -119,6 +119,8 @@ class NativeWindowMac : public NativeWindow {
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
 
+  bool SetWindowButtonVisibility(bool visible) override;
+
   void SetVibrancy(const std::string& type) override;
   void SetTouchBar(
       const std::vector<mate::PersistentDictionary>& items) override;
@@ -127,6 +129,9 @@ class NativeWindowMac : public NativeWindow {
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+
+  // Use a custom content view instead of Chromium's BridgedContentView.
+  void OverrideNSWindowContentView();
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
@@ -152,6 +157,9 @@ class NativeWindowMac : public NativeWindow {
   views::View* GetContentsView() override;
 
  private:
+  // Add custom layers to the content view.
+  void AddContentViewLayers();
+
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void ShowWindowButton(NSWindowButton button);
 
@@ -186,6 +194,10 @@ class NativeWindowMac : public NativeWindow {
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = NORMAL;
+
+  // The visibility mode of window button controls when explicitly set through
+  // setWindowButtonVisibility().
+  base::Optional<bool> window_button_visibility_;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;

@@ -39,6 +39,8 @@ def main():
     iojs_lib = os.path.join(lib_dir, 'iojs.lib')
     atom_lib = os.path.join(out_dir, 'node.dll.lib')
     shutil.copy2(atom_lib, iojs_lib)
+    node_lib = os.path.join(lib_dir, 'node.lib')
+    shutil.copy2(atom_lib, node_lib)
 
   # Native modules can only be compiled against release builds on Windows
   if config[0] == 'R' or PLATFORM != 'win32':

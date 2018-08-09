@@ -1103,17 +1103,6 @@ void WebContents::NavigationEntryCommitted(
        details.is_same_document, details.did_replace_entry);
 }
 
-int64_t WebContents::GetIDForContents(content::WebContents* web_contents) {
-  int64_t process_id = web_contents->GetMainFrame()->GetProcess()->GetID();
-  int64_t routing_id = web_contents->GetMainFrame()->GetRoutingID();
-  int64_t rv = (process_id << 32) + routing_id;
-  return rv;
-}
-
-int64_t WebContents::GetID() const {
-  return WebContents::GetIDForContents(web_contents());
-}
-
 int WebContents::GetProcessID() const {
   return web_contents()->GetMainFrame()->GetProcess()->GetID();
 }
@@ -1129,7 +1118,7 @@ WebContents::Type WebContents::GetType() const {
 }
 
 bool WebContents::Equal(const WebContents* web_contents) const {
-  return GetID() == web_contents->GetID();
+  return ID() == web_contents->ID();
 }
 
 void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
@@ -1185,8 +1174,8 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;
-    if (web_preferences->dict()->GetString(options::kBackgroundColor,
-                                           &color_name)) {
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
       view->SetBackgroundColor(ParseHexColor(color_name));
     } else {
       view->SetBackgroundColor(SK_ColorTRANSPARENT);
@@ -1432,6 +1421,10 @@ void WebContents::SetAudioMuted(bool muted) {
 
 bool WebContents::IsAudioMuted() {
   return web_contents()->IsAudioMuted();
+}
+
+bool WebContents::IsCurrentlyAudible() {
+  return web_contents()->IsCurrentlyAudible();
 }
 
 void WebContents::Print(mate::Arguments* args) {
@@ -1861,7 +1854,7 @@ void WebContents::SetZoomLevel(double level) {
   zoom_controller_->SetZoomLevel(level);
 }
 
-double WebContents::GetZoomLevel() {
+double WebContents::GetZoomLevel() const {
   return zoom_controller_->GetZoomLevel();
 }
 
@@ -1870,7 +1863,7 @@ void WebContents::SetZoomFactor(double factor) {
   SetZoomLevel(level);
 }
 
-double WebContents::GetZoomFactor() {
+double WebContents::GetZoomFactor() const {
   auto level = GetZoomLevel();
   return content::ZoomLevelToZoomFactor(level);
 }
@@ -1891,22 +1884,23 @@ void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
   rfh->Send(reply_msg);
 }
 
-v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
+v8::Local<v8::Value> WebContents::GetWebPreferences(
+    v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->dict());
+  return mate::ConvertToV8(isolate, *web_preferences->preference());
 }
 
-v8::Local<v8::Value> WebContents::GetLastWebPreferences(v8::Isolate* isolate) {
-  WebContentsPreferences* web_preferences =
-      WebContentsPreferences::FromWebContents(web_contents());
+v8::Local<v8::Value> WebContents::GetLastWebPreferences(
+    v8::Isolate* isolate) const {
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
     return v8::Null(isolate);
-  return mate::ConvertToV8(isolate, *web_preferences->last_dict());
+  return mate::ConvertToV8(isolate, *web_preferences->last_preference());
 }
 
-v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
+v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() const {
   if (owner_window())
     return BrowserWindow::From(isolate(), owner_window());
   else
@@ -1988,7 +1982,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
-      .SetMethod("getId", &WebContents::GetID)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
@@ -2018,6 +2011,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
+      .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)

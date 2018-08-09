@@ -1,10 +1,12 @@
 'use strict'
 
-/* eslint-disable no-unused-expressions */
-
-const {expect} = require('chai')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const {nativeImage} = require('electron')
 const path = require('path')
+
+const {expect} = chai
+chai.use(dirtyChai)
 
 describe('nativeImage module', () => {
   const ImageFormat = {
@@ -111,16 +113,16 @@ describe('nativeImage module', () => {
       expect(empty.toDataURL()).to.equal('data:image/png;base64,')
       expect(empty.toDataURL({scaleFactor: 2.0})).to.equal('data:image/png;base64,')
       expect(empty.getSize()).to.deep.equal({width: 0, height: 0})
-      expect(empty.getBitmap()).to.be.empty
-      expect(empty.getBitmap({scaleFactor: 2.0})).to.be.empty
-      expect(empty.toBitmap()).to.be.empty
-      expect(empty.toBitmap({scaleFactor: 2.0})).to.be.empty
-      expect(empty.toJPEG(100)).to.be.empty
-      expect(empty.toPNG()).to.be.empty
-      expect(empty.toPNG({scaleFactor: 2.0})).to.be.empty
+      expect(empty.getBitmap()).to.be.empty()
+      expect(empty.getBitmap({scaleFactor: 2.0})).to.be.empty()
+      expect(empty.toBitmap()).to.be.empty()
+      expect(empty.toBitmap({scaleFactor: 2.0})).to.be.empty()
+      expect(empty.toJPEG(100)).to.be.empty()
+      expect(empty.toPNG()).to.be.empty()
+      expect(empty.toPNG({scaleFactor: 2.0})).to.be.empty()
 
       if (process.platform === 'darwin') {
-        expect(empty.getNativeHandle()).to.be.empty
+        expect(empty.getNativeHandle()).to.be.empty()
       }
     })
   })
@@ -135,7 +137,7 @@ describe('nativeImage module', () => {
 
       const imageB = nativeImage.createFromBuffer(imageA.toPNG())
       expect(imageB.getSize()).to.deep.equal({width: 538, height: 190})
-      expect(imageA.toBitmap().equals(imageB.toBitmap())).to.be.true
+      expect(imageA.toBitmap().equals(imageB.toBitmap())).to.be.true()
 
       const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100))
       expect(imageC.getSize()).to.deep.equal({width: 538, height: 190})
@@ -214,7 +216,7 @@ describe('nativeImage module', () => {
       expect(imageTwo.getSize()).to.deep.equal(
           {width: imageData.width, height: imageData.height})
 
-      expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true
+      expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true()
     })
 
     it('supports a scale factor', () => {
@@ -249,7 +251,7 @@ describe('nativeImage module', () => {
       expect(imageC.getSize()).to.deep.equal(
           {width: imageData.width, height: imageData.height})
 
-      expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true
+      expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true()
     })
 
     it('supports a scale factor', () => {
@@ -278,23 +280,23 @@ describe('nativeImage module', () => {
     })
 
     it('loads images from paths relative to the current working directory', () => {
-      const imagePath = `.${path.sep}${path.join('spec', 'fixtures', 'assets', 'logo.png')}`
+      const imagePath = path.relative('.', path.join(__dirname, 'fixtures', 'assets', 'logo.png'))
       const image = nativeImage.createFromPath(imagePath)
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
     it('loads images from paths with `.` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures')}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
     it('loads images from paths with `..` segments', () => {
       const imagePath = `${path.join(__dirname, 'fixtures', 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`
       const image = nativeImage.createFromPath(imagePath)
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 538, height: 190})
     })
 
@@ -325,7 +327,7 @@ describe('nativeImage module', () => {
 
       const imagePath = path.join(__dirname, 'fixtures', 'assets', 'icon.ico')
       const image = nativeImage.createFromPath(imagePath)
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 256, height: 256})
     })
   })
@@ -355,7 +357,7 @@ describe('nativeImage module', () => {
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate')
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
     })
 
     it('returns allows an HSL shift for a valid image on darwin', function () {
@@ -366,7 +368,7 @@ describe('nativeImage module', () => {
       }
 
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8])
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
     })
   })
 
@@ -425,7 +427,7 @@ describe('nativeImage module', () => {
       const cropB = image.crop({width: 25, height: 64, x: 30, y: 40})
       expect(cropA.getSize()).to.deep.equal({width: 25, height: 64})
       expect(cropB.getSize()).to.deep.equal({width: 25, height: 64})
-      expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false
+      expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false()
     })
   })
 
@@ -471,7 +473,7 @@ describe('nativeImage module', () => {
         buffer: 'invalid'
       })
 
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 1, height: 1})
 
       expect(image.toDataURL({scaleFactor: 1.0})).to.equal(imageDataOne.dataUrl)
@@ -506,7 +508,7 @@ describe('nativeImage module', () => {
         dataURL: 'invalid'
       })
 
-      expect(image.isEmpty()).to.be.false
+      expect(image.isEmpty()).to.be.false()
       expect(image.getSize()).to.deep.equal({width: 1, height: 1})
 
       expect(image.toDataURL({scaleFactor: 1.0})).to.equal(imageDataOne.dataUrl)

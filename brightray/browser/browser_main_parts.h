@@ -33,6 +33,7 @@ class BrowserMainParts : public content::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
+  bool ShouldContentCreateFeatureList() override;
   int PreEarlyInitialization() override;
   void ToolkitInitialized() override;
   void PreMainMessageLoopStart() override;
@@ -41,6 +42,8 @@ class BrowserMainParts : public content::BrowserMainParts {
   void PostMainMessageLoopRun() override;
   int PreCreateThreads() override;
   void PostDestroyThreads() override;
+
+  void InitializeFeatureList();
 
  private:
 #if defined(OS_MACOSX)

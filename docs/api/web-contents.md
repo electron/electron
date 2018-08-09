@@ -832,6 +832,10 @@ Mute the audio on the current web page.
 
 Returns `Boolean` - Whether this page has been muted.
 
+#### `contents.isCurrentlyAudible()`
+
+Returns `Boolean` - Whether audio is currently playing.
+
 #### `contents.setZoomFactor(factor)`
 
 * `factor` Number - Zoom factor.
@@ -1464,7 +1468,7 @@ process.
 
 #### `contents.getProcessId()`
 
-Returns `Integer` - The chromium internal `pid` of the associated renderer. Can
+Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
 

@@ -154,6 +154,14 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(env);
+
+  // We already initialized the feature list in
+  // brightray::BrowserMainParts::PreEarlyInitialization(), but
+  // the user JS script would not have had a chance to alter the command-line
+  // switches at that point. Lets reinitialize it here to pick up the
+  // command-line changes.
+  base::FeatureList::ClearInstanceForTesting();
+  brightray::BrowserMainParts::InitializeFeatureList();
 }
 
 int AtomBrowserMainParts::PreCreateThreads() {

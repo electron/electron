@@ -112,6 +112,15 @@
                extraHeightPlusFrame);
   }
 
+  {
+    bool prevent_default = false;
+    gfx::Rect new_bounds(gfx::Point(sender.frame.origin), gfx::Size(newSize));
+    shell_->NotifyWindowWillResize(new_bounds, &prevent_default);
+    if (prevent_default) {
+      return sender.frame.size;
+    }
+  }
+
   return newSize;
 }
 

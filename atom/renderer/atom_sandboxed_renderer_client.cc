@@ -12,8 +12,10 @@
 #include "atom/common/options_switches.h"
 #include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/path_service.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
@@ -81,14 +83,29 @@ base::CommandLine::StringVector GetArgv() {
   return base::CommandLine::ForCurrentProcess()->argv();
 }
 
+base::FilePath::StringType GetExecPath() {
+  base::FilePath path;
+  PathService::Get(base::FILE_EXE, &path);
+  return path.value();
+}
+
+v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
+                                         v8::Local<v8::String> preloadSrc) {
+  auto script = v8::Script::Compile(preloadSrc);
+  auto func = script->Run();
+  return func;
+}
+
 void InitializeBindings(v8::Local<v8::Object> binding,
                         v8::Local<v8::Context> context) {
   auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
+  b.SetMethod("createPreloadScript", CreatePreloadScript);
   b.SetMethod("crash", AtomBindings::Crash);
   b.SetMethod("hang", AtomBindings::Hang);
   b.SetMethod("getArgv", GetArgv);
+  b.SetMethod("getExecPath", GetExecPath);
   b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
   b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
@@ -97,7 +114,7 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kGuestInstanceID))
     b.Set(options::kGuestInstanceID,
-        command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
+          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
@@ -153,6 +170,8 @@ void AtomSandboxedRendererClient::RenderViewCreated(
 void AtomSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(context, render_frame);
+
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))

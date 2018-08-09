@@ -118,7 +118,6 @@ const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
-const char kExperimentalCanvasFeatures[] = "experimentalCanvasFeatures";
 
 // Opener window's ID.
 const char kOpenerID[] = "openerId";
@@ -189,13 +188,9 @@ const char kAppUserModelId[] = "app-user-model-id";
 // The application path
 const char kAppPath[] = "app-path";
 
-// The context ID for this process
-const char kContextId[] = "context-id";
-
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
-const char kPreloadURL[] = "preload-url";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
 const char kContextIsolation[] = "context-isolation";

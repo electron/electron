@@ -1,5 +1,5 @@
-// Disable use of deprecated functions.
-process.throwDeprecation = true
+// Deprecated APIs are still supported and should be tested.
+process.throwDeprecation = false
 
 const electron = require('electron')
 const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
@@ -79,6 +79,8 @@ ipcMain.on('echo', function (event, msg) {
   event.returnValue = msg
 })
 
+global.setTimeoutPromisified = util.promisify(setTimeout)
+
 const coverage = new Coverage({
   outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
 })
@@ -97,7 +99,7 @@ if (global.isCi) {
   })
 }
 
-global.nativeModulesEnabled = process.platform !== 'win32' || process.execPath.toLowerCase().indexOf('\\out\\d\\') === -1
+global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 
 // Register app as standard scheme.
 global.standardScheme = 'app'

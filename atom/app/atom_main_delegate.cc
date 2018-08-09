@@ -131,8 +131,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   brightray::MainDelegate::PreSandboxStartup();
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
 
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))
