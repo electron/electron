@@ -63,12 +63,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
   webrtc::DesktopCaptureOptions options =
     content::CreateDesktopCaptureOptions();
 #if defined(OS_WIN)
-  if (content::desktop_capture::CreateDesktopCaptureOptions()
-      .allow_directx_capturer()) {
+  if (options.allow_directx_capturer()) {
     // DxgiDuplicatorController should be alive in this scope according to
     // screen_capturer_win.cc.
     auto duplicator = webrtc::DxgiDuplicatorController::Instance();
-    cap->using_directx_capturer_ =
+    using_directx_capturer_ =
         webrtc::ScreenCapturerWinDirectx::IsSupported();
   }
 #endif  // defined(OS_WIN)
