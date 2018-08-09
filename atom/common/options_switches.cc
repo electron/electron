@@ -191,7 +191,6 @@ const char kAppPath[] = "app-path";
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
-const char kPreloadURL[] = "preload-url";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
 const char kContextIsolation[] = "context-isolation";
