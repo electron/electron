@@ -52,7 +52,6 @@ class DesktopCapturer: public mate::EventEmitter<DesktopCapturer>,
   bool using_directx_capturer_ = false;
 #endif  // defined(OS_WIN)
 
-
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
 
