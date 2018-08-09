@@ -30,7 +30,9 @@ SetSizeParams::~SetSizeParams() = default;
 WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder)
     : embedder_web_contents_(embedder) {}
 
-WebViewGuestDelegate::~WebViewGuestDelegate() {}
+WebViewGuestDelegate::~WebViewGuestDelegate() {
+  ResetZoomController();
+}
 
 void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
   api_web_contents_ = api_web_contents;
@@ -118,8 +120,8 @@ void WebViewGuestDelegate::AttachToIframe(
 
   embedder_zoom_controller_ =
       WebContentsZoomController::FromWebContents(embedder_web_contents_);
-  auto* zoom_controller = api_web_contents_->GetZoomController();
   embedder_zoom_controller_->AddObserver(this);
+  auto* zoom_controller = api_web_contents_->GetZoomController();
   zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
 
   api_web_contents_->Emit("did-attach");
