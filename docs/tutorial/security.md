@@ -618,7 +618,7 @@ app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl)
 
-    if (url.hostname !== 'my-own-server.com') {
+    if (parsedUrl.hostname !== 'my-own-server.com') {
       event.preventDefault()
     }
   })
@@ -669,5 +669,5 @@ app.on('web-contents-created', (event, contents) => {
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
-[new-window]: ../api/web-contents#event-new-window
-[will-navigate]: ../api/web-contents#event-will-navigate
+[new-window]: ../api/web-contents.md#event-new-window
+[will-navigate]: ../api/web-contents.md#event-will-navigate
