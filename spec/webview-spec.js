@@ -544,6 +544,7 @@ describe('<webview> tag', function () {
           typeofFunctionApply: 'function'
         },
         pageContext: {
+          openedLocation: '',
           preloadProperty: 'undefined',
           pageProperty: 'string',
           typeofRequire: 'undefined',
