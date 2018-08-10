@@ -141,7 +141,7 @@ will be passed via `callback(filename)`.
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
-    return value or callback response. This option is ignored on Windows.
+    return value or callback response.
   * `noLink` Boolean (optional) - On Windows Electron will try to figure out which one of
     the `buttons` are common buttons (like "Cancel" or "Yes"), and show the
     others as command links in the dialog. This can make the dialog appear in
