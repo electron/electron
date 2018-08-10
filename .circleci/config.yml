@@ -403,6 +403,7 @@ jobs:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
+      NPM_CONFIG_ARCH: ia32
     docker:
       - image: electronbuilds/electron:0.0.8
     resource_class: 2xlarge
@@ -413,6 +414,7 @@ jobs:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
+      NPM_CONFIG_ARCH: ia32
     docker:
       - image: electronbuilds/electron:0.0.8
     resource_class: 2xlarge
