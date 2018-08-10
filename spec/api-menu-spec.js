@@ -9,7 +9,7 @@ const {closeWindow} = require('./window-helpers')
 const {expect} = chai
 chai.use(dirtyChai)
 
-describe.only('Menu module', () => {
+describe('Menu module', () => {
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([
