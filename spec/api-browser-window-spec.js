@@ -1363,6 +1363,8 @@ describe('BrowserWindow module', () => {
             preload: preload
           }
         })
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
+
         let htmlPath = path.join(fixtures, 'api', 'sandbox.html?verify-ipc-sender')
         const pageUrl = 'file://' + htmlPath
         let childWc
@@ -1541,6 +1543,8 @@ describe('BrowserWindow module', () => {
             sandbox: true
           }
         })
+        ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
+
         w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?reload-remote-child'))
 
         ipcMain.on('get-remote-module-path', (event) => {

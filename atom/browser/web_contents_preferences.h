@@ -48,6 +48,9 @@ class WebContentsPreferences
   // Modify the WebPreferences according to preferences.
   void OverrideWebkitPrefs(content::WebPreferences* prefs);
 
+  // Returns the preload script path.
+  bool GetPreloadPath(base::FilePath::StringType* path) const;
+
   // Returns the web preferences.
   base::DictionaryValue* dict() { return &dict_; }
   const base::DictionaryValue* dict() const { return &dict_; }
