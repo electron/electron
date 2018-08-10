@@ -42,16 +42,21 @@ describe('Menu module', () => {
       }).to.not.throw()
     })
 
-    it('does throw exceptions for empty objects and null values ', () => {
+    it('does throw exceptions for empty objects and null values', () => {
       expect(() => {
-        Menu.buildFromTemplate([{}, {}, null, null])
-      }).to.throw(/Invalid template for MenuItem/)
+        Menu.buildFromTemplate([{}, null])
+      }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
 
-    it('does throw exception for object without role or label attribute', () => {
+    it('does throw exception for object without role, label, or type attribute', () => {
       expect(() => {
-        Menu.buildFromTemplate([{ 'randomKey': 'ldks' }])
-      }).to.throw(/Invalid template for MenuItem/)
+        Menu.buildFromTemplate([{ 'visible': true }])
+      }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
+    })
+    it('does throw exception for undefined', () => {
+      expect(() => {
+        Menu.buildFromTemplate([undefined])
+      }).to.throw(/Invalid template for MenuItem: must have at least one of label, role or type/)
     })
 
     describe('Menu sorting and building', () => {
