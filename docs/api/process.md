@@ -113,7 +113,7 @@ Causes the main thread of the current process crash.
 
 ### `process.getCreationTime()`
 
-Returns `number | null` - The number of milliseconds since epoch, or `null` if the information is unavailable
+Returns `Number | null` - The number of milliseconds since epoch, or `null` if the information is unavailable
 
 Indicates the creation time of the application.
 The time is represented as number of milliseconds since epoch. It returns null if it is unable to get the process creation time.
