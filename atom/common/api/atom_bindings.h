@@ -37,6 +37,7 @@ class AtomBindings {
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
+  static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   mate::Arguments* args);
   v8::Local<v8::Value> GetCPUUsage(v8::Isolate* isolate);

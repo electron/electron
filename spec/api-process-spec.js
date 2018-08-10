@@ -1,6 +1,13 @@
 const {expect} = require('chai')
 
 describe('process module', () => {
+  describe('process.getCreationTime()', () => {
+    it('returns a creation time', () => {
+      const creationTime = process.getCreationTime()
+      expect(creationTime).to.be.a('number').and.be.at.least(0)
+    })
+  })
+
   describe('process.getCPUUsage()', () => {
     it('returns a cpu usage object', () => {
       const cpuUsage = process.getCPUUsage()

@@ -14,6 +14,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
+#include "base/process/process_info.h"
 #include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "native_mate/dictionary.h"
@@ -55,6 +56,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   dict.SetMethod("log", &Log);
   dict.SetMethod("getHeapStatistics", &GetHeapStatistics);
   dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
+  dict.SetMethod("getCreationTime", &GetCreationTime);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                            base::Unretained(this)));
@@ -175,6 +177,16 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
   }
 
   return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> AtomBindings::GetCreationTime(v8::Isolate* isolate) {
+  auto timeValue = base::CurrentProcessInfo::CreationTime();
+  if (timeValue.is_null()) {
+    return v8::Null(isolate);
+  }
+  double jsTime = timeValue.ToJsTime();
+  return v8::Number::New(isolate, jsTime);
 }
 
 // static
