@@ -42,22 +42,16 @@ describe('Menu module', () => {
       }).to.not.throw()
     })
 
-    it('does not throw exceptions for empty objects and null values ', () => {
+    it('does throw exceptions for empty objects and null values ', () => {
       expect(() => {
         Menu.buildFromTemplate([{}, {}, null, null])
-      }).to.not.throw()
+      }).to.throw(/Invalid template for MenuItem/)
     })
 
     it('does throw exception for object without role or label attribute', () => {
       expect(() => {
         Menu.buildFromTemplate([{ 'randomKey': 'ldks' }])
       }).to.throw('Invalid template for MenuItem')
-    })
-
-    it('returns 0 item count for empty objects ', () => {
-      const menu = Menu.buildFromTemplate([{}, {}])
-      const items = menu.getItemCount()
-      expect(items).to.equal(0)
     })
 
     describe('Menu sorting and building', () => {
