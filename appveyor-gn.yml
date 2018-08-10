@@ -11,6 +11,9 @@ environment:
     - gn_args: debug
       ELECTRON_SKIP_NATIVE_MODULE_TESTS: 1
     - gn_args: release
+platform:
+  - x86
+  - x64
 build_script:
   - git config --global core.longpaths true
   - cd ..
