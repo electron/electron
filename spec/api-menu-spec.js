@@ -50,7 +50,7 @@ describe.only('Menu module', () => {
 
     it('does throw exception for object without role or label attribute', () => {
       expect(() => {
-        Menu.buildFromTemplate([{ 'randomKey':'ldks'}])
+        Menu.buildFromTemplate([{ 'randomKey': 'ldks' }])
       }).to.throw('Invalid template for MenuItem')
     })
 
