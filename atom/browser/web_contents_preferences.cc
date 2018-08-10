@@ -169,6 +169,30 @@ bool WebContentsPreferences::GetPreference(const base::StringPiece& name,
   return GetAsString(&preference_, name, value);
 }
 
+bool WebContentsPreferences::GetPreloadPath(
+    base::FilePath::StringType* path) const {
+  DCHECK(path);
+  base::FilePath::StringType preload;
+  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
+    if (base::FilePath(preload).IsAbsolute()) {
+      *path = std::move(preload);
+      return true;
+    } else {
+      LOG(ERROR) << "preload script must have absolute path.";
+    }
+  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
+    // Translate to file path if there is "preload-url" option.
+    base::FilePath preload_path;
+    if (net::FileURLToFilePath(GURL(preload), &preload_path)) {
+      *path = std::move(preload_path.value());
+      return true;
+    } else {
+      LOG(ERROR) << "preload url must be file:// protocol.";
+    }
+  }
+  return false;
+}
+
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
@@ -228,19 +252,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute())
-      command_line->AppendSwitchNative(switches::kPreloadScript, preload);
-    else
-      LOG(ERROR) << "preload script must have absolute path.";
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
-    // Translate to file path if there is "preload-url" option.
-    base::FilePath preload_path;
-    if (net::FileURLToFilePath(GURL(preload), &preload_path))
-      command_line->AppendSwitchPath(switches::kPreloadScript, preload_path);
-    else
-      LOG(ERROR) << "preload url must be file:// protocol.";
-  }
+  if (GetPreloadPath(&preload))
+    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
 
   // Custom args for renderer process
   auto* customArgs =

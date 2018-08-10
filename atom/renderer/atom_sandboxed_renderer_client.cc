@@ -177,16 +177,12 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
     return;
 
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath preload_script_path =
-      command_line->GetSwitchValuePath(switches::kPreloadScript);
-
   auto* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   // Wrap the bundle into a function that receives the binding object and the
   // preload script path as arguments.
-  std::string left = "(function(binding, preloadPath, require) {\n";
+  std::string left = "(function(binding, require) {\n";
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
   auto script = v8::Script::Compile(v8::String::Concat(
@@ -199,10 +195,10 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
   AddRenderBindings(isolate, binding);
-  v8::Local<v8::Value> args[] = {
-      binding, mate::ConvertToV8(isolate, preload_script_path.value())};
+  v8::Local<v8::Value> args[] = {binding};
   // Execute the function with proper arguments
-  ignore_result(func->Call(context, v8::Null(isolate), 2, args));
+  ignore_result(
+      func->Call(context, v8::Null(isolate), node::arraysize(args), args));
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
