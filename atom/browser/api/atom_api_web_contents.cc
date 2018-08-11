@@ -1891,6 +1891,16 @@ void WebContents::OnGetZoomLevel(content::RenderFrameHost* rfh,
   rfh->Send(reply_msg);
 }
 
+v8::Local<v8::Value> WebContents::GetPreloadPath(v8::Isolate* isolate) const {
+  if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
+    base::FilePath::StringType preload;
+    if (web_preferences->GetPreloadPath(&preload)) {
+      return mate::ConvertToV8(isolate, preload);
+    }
+  }
+  return v8::Null(isolate);
+}
+
 v8::Local<v8::Value> WebContents::GetWebPreferences(v8::Isolate* isolate) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (!web_preferences)
@@ -2053,6 +2063,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("_getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
+      .SetMethod("_getPreloadPath", &WebContents::GetPreloadPath)
       .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
