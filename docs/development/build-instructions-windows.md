@@ -42,25 +42,29 @@ $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debugging:
+You can also bootstrap for debug builds:
 
 ```powershell
 $ cd electron
-$ npm run bootstrap-dev
+$ npm run bootstrap:dev
 ```
 
 ## Building
 
-Build both Release and Debug targets:
+Build both `Release` and `Debug` targets:
 
 ```powershell
 $ npm run build
 ```
 
-You can also only build the `Debug` target:
+You can also only build the `Debug` target or the `Release` target:
 
 ```powershell
-$ npm run build-dev
+$ npm run build:dev
+```
+
+```powershell
+$ npm run build:release
 ```
 
 After building is done, you can find `electron.exe` under `out\D` (debug
