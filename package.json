@@ -48,7 +48,7 @@
     "bootstrap": "python ./script/bootstrap.py -v",
     "browserify": "browserify",
     "bump-version": "./script/bump-version.py",
-    "build": "python ./script/build.py -c",
+    "build": "python ./script/build.py",
     "build:dev": "python ./script/build.py -c D",
     "build:release": "python ./script/build.py -c R",
     "rebuild-test-modules": "python ./script/rebuild-test-modules.py",
