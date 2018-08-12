@@ -69,12 +69,14 @@ The bootstrap script will download all necessary build dependencies and create
 the build project files. Notice that we're using [ninja](https://ninja-build.org/)
 to build Electron so there is no Xcode project generated.
 
+To bootstrap for a static, non-developer build, run:
+
 ```sh
 $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debug builds:
+Or to bootstrap for a development session that builds faster by not statically linking:
 
 ```sh
 $ cd electron
@@ -90,13 +92,13 @@ $ ./script/build.py --compdb
 
 ## Building
 
-Build both `Release` and `Debug` targets:
+To build both `Release` and `Debug` targets:
 
 ```sh
 $ npm run build
 ```
 
-You can also only build the `Debug` target or the `Release` target:
+You can also build either the `Debug` or `Release` target on its own:
 
 ```sh
 $ npm run build:dev

@@ -71,12 +71,14 @@ the build project files. You must have Python 2.7.x for the script to succeed.
 Downloading certain files can take a long time. Notice that we are using
 `ninja` to build Electron so there is no `Makefile` generated.
 
+To bootstrap for a static, non-developer build, run:
+
 ```sh
 $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debug builds:
+Or to bootstrap for a development session that builds faster by not statically linking:
 
 ```sh
 $ cd electron
@@ -135,7 +137,7 @@ This will put a working distribution with much smaller file sizes in
 the `dist` directory. After running the `create-dist.py` script, you
 may want to remove the 1.3+ gigabyte binary which is still in `out/R`.
 
-You can also build the `Debug` target only or the `Release` target only:
+You can also build either the `Debug` or `Release` target on its own:
 
 ```sh
 $ npm run build:dev
