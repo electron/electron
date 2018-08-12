@@ -76,7 +76,7 @@ $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debugging:
+You can also bootstrap for debug builds:
 
 ```sh
 $ cd electron
