@@ -37,23 +37,36 @@ The bootstrap script will download all necessary build dependencies and create
 the build project files. Notice that we're using `ninja` to build Electron so
 there is no Visual Studio project generated.
 
+To bootstrap for a static, non-developer build, run:
+
 ```powershell
 $ cd electron
-$ python script\bootstrap.py -v
+$ npm run bootstrap
+```
+
+Or to bootstrap for a development session that builds faster by not statically linking:
+
+```powershell
+$ cd electron
+$ npm run bootstrap:dev
 ```
 
 ## Building
 
-Build both Release and Debug targets:
+Build both `Release` and `Debug` targets:
 
 ```powershell
-$ python script\build.py
+$ npm run build
 ```
 
-You can also only build the Debug target:
+You can also build either the `Debug` or `Release` target on its own:
 
 ```powershell
-$ python script\build.py -c D
+$ npm run build:dev
+```
+
+```powershell
+$ npm run build:release
 ```
 
 After building is done, you can find `electron.exe` under `out\D` (debug

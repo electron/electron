@@ -15,7 +15,7 @@ Please also ensure that your system and Python version support at least TLS 1.2.
 This depends on both your version of macOS and Python. For a quick test, run:
 
 ```sh
-$ python ./script/tls.py
+$ npm run check-tls
 ```
 
 If the script returns that your configuration is using an outdated security
@@ -69,9 +69,18 @@ The bootstrap script will download all necessary build dependencies and create
 the build project files. Notice that we're using [ninja](https://ninja-build.org/)
 to build Electron so there is no Xcode project generated.
 
+To bootstrap for a static, non-developer build, run:
+
 ```sh
 $ cd electron
-$ ./script/bootstrap.py -v
+$ npm run bootstrap
+```
+
+Or to bootstrap for a development session that builds faster by not statically linking:
+
+```sh
+$ cd electron
+$ npm run bootstrap:dev
 ```
 
 If you are using editor supports [JSON compilation database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) based
@@ -83,16 +92,20 @@ $ ./script/build.py --compdb
 
 ## Building
 
-Build both `Release` and `Debug` targets:
+To build both `Release` and `Debug` targets:
 
 ```sh
-$ ./script/build.py
+$ npm run build
 ```
 
-You can also only build the `Debug` target:
+You can also build either the `Debug` or `Release` target on its own:
 
 ```sh
-$ ./script/build.py -c D
+$ npm run build:dev
+```
+
+```sh
+$ npm run build:release
 ```
 
 After building is done, you can find `Electron.app` under `out/D`.
