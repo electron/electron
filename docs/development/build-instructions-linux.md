@@ -12,7 +12,7 @@ Follow the guidelines below for building Electron on Linux.
   For a quick test, run the following script:
 
   ```sh
-  $ python ./script/tls.py
+  $ npm run check-tls
   ```
 
   If the script returns that your configuration is using an outdated security
@@ -73,7 +73,14 @@ Downloading certain files can take a long time. Notice that we are using
 
 ```sh
 $ cd electron
-$ ./script/bootstrap.py --verbose
+$ npm run bootstrap
+```
+
+You can also bootstrap for debugging:
+
+```sh
+$ cd electron
+$ npm run bootstrap-dev
 ```
 
 If you are using editor supports [JSON compilation database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) based
@@ -112,7 +119,7 @@ $ ./script/bootstrap.py -v --target_arch=arm
 If you would like to build both `Release` and `Debug` targets:
 
 ```sh
-$ ./script/build.py
+$ npm run build
 ```
 
 This script will cause a very large Electron executable to be placed in
@@ -131,7 +138,7 @@ may want to remove the 1.3+ gigabyte binary which is still in `out/R`.
 You can also build the `Debug` target only:
 
 ```sh
-$ ./script/build.py -c D
+$ npm run build-dev
 ```
 
 After building is done, you can find the `electron` debug binary under `out/D`.

@@ -15,7 +15,7 @@ Please also ensure that your system and Python version support at least TLS 1.2.
 This depends on both your version of macOS and Python. For a quick test, run:
 
 ```sh
-$ python ./script/tls.py
+$ npm run check-tls
 ```
 
 If the script returns that your configuration is using an outdated security
@@ -71,7 +71,14 @@ to build Electron so there is no Xcode project generated.
 
 ```sh
 $ cd electron
-$ ./script/bootstrap.py -v
+$ npm run bootstrap
+```
+
+You can also bootstrap for debugging:
+
+```sh
+$ cd electron
+$ npm run bootstrap-dev
 ```
 
 If you are using editor supports [JSON compilation database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) based
@@ -86,13 +93,13 @@ $ ./script/build.py --compdb
 Build both `Release` and `Debug` targets:
 
 ```sh
-$ ./script/build.py
+$ npm run build
 ```
 
 You can also only build the `Debug` target:
 
 ```sh
-$ ./script/build.py -c D
+$ npm run build-dev
 ```
 
 After building is done, you can find `Electron.app` under `out/D`.
