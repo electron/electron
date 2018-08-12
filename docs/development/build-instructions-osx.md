@@ -74,11 +74,11 @@ $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debugging:
+You can also bootstrap for debug builds:
 
 ```sh
 $ cd electron
-$ npm run bootstrap-dev
+$ npm run bootstrap:dev
 ```
 
 If you are using editor supports [JSON compilation database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) based
@@ -96,10 +96,14 @@ Build both `Release` and `Debug` targets:
 $ npm run build
 ```
 
-You can also only build the `Debug` target:
+You can also only build the `Debug` target or the `Release` target:
 
 ```sh
-$ npm run build-dev
+$ npm run build:dev
+```
+
+```sh
+$ npm run build:release
 ```
 
 After building is done, you can find `Electron.app` under `out/D`.

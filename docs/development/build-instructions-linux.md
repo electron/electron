@@ -80,7 +80,7 @@ You can also bootstrap for debugging:
 
 ```sh
 $ cd electron
-$ npm run bootstrap-dev
+$ npm run bootstrap:dev
 ```
 
 If you are using editor supports [JSON compilation database](http://clang.llvm.org/docs/JSONCompilationDatabase.html) based
@@ -135,10 +135,14 @@ This will put a working distribution with much smaller file sizes in
 the `dist` directory. After running the `create-dist.py` script, you
 may want to remove the 1.3+ gigabyte binary which is still in `out/R`.
 
-You can also build the `Debug` target only:
+You can also build the `Debug` target only or the `Release` target only:
 
 ```sh
-$ npm run build-dev
+$ npm run build:dev
+```
+
+```sh
+$ npm run build:release
 ```
 
 After building is done, you can find the `electron` debug binary under `out/D`.
