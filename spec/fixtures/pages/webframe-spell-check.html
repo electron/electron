@@ -2,9 +2,9 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   const {ipcRenderer, webFrame} = require('electron')
-  webFrame.setSpellCheckProvider('en-US', true, {
-    spellCheck: text => {
-      ipcRenderer.send('spec-spell-check', text)
+  webFrame.setSpellCheckProvider('en-US', {
+    spellCheck: (words, callback) => {
+      ipcRenderer.send('spec-spell-check', words, callback != undefined)
     }
   })
 </script>

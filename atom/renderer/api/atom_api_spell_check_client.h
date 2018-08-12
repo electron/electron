@@ -5,6 +5,7 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,7 +32,6 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                          public base::SupportsWeakPtr<SpellCheckClient> {
  public:
   SpellCheckClient(const std::string& language,
-                   bool auto_spell_correct_turned_on,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> provider);
   ~SpellCheckClient() override;
@@ -39,11 +39,6 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
  private:
   class SpellcheckRequest;
   // blink::WebTextCheckClient:
-  void CheckSpelling(
-      const blink::WebString& text,
-      int& misspelledOffset,
-      int& misspelledLength,
-      blink::WebVector<blink::WebString>* optionalSuggestions) override;
   void RequestCheckingOfText(
       const blink::WebString& textToCheck,
       blink::WebTextCheckingCompletion* completionCallback) override;
@@ -65,22 +60,27 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
     ~SpellCheckScope();
   };
 
-  // Check the spelling of text.
-  void SpellCheckText(const base::string16& text,
-                      bool stop_at_first_result,
-                      std::vector<blink::WebTextCheckingResult>* results);
+  // Run through the word iterator and send out requests
+  // to the JS API for checking spellings of words in the current
+  // request.
+  void SpellCheckText();
 
   // Call JavaScript to check spelling a word.
-  bool SpellCheckWord(const SpellCheckScope& scope,
-                      const base::string16& word_to_check) const;
+  // The javascript function will callback OnSpellCheckDone
+  // with the results of all the misspelt words.
+  void SpellCheckWords(const SpellCheckScope& scope,
+                       const std::vector<base::string16>& words);
 
   // Returns whether or not the given word is a contraction of valid words
   // (e.g. "word:word").
-  bool IsValidContraction(const SpellCheckScope& scope,
-                          const base::string16& word);
+  // Output variable contraction_words will contain individual
+  // words in the contraction.
+  bool IsContraction(const SpellCheckScope& scope,
+                     const base::string16& word,
+                     std::vector<base::string16>* contraction_words);
 
-  // Performs spell checking from the request queue.
-  void PerformSpellCheck(SpellcheckRequest* param);
+  // Callback for the JS API which returns the list of misspelt words.
+  void OnSpellCheckDone(const std::vector<base::string16>& misspelt_words);
 
   // Represents character attributes used for filtering out characters which
   // are not supported by this SpellCheck object.

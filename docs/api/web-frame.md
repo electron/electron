@@ -57,26 +57,38 @@ Sets the maximum and minimum pinch-to-zoom level.
 
 Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
-### `webFrame.setSpellCheckProvider(language, autoCorrectWord, provider)`
+### `webFrame.setSpellCheckProvider(language, provider)`
 
 * `language` String
-* `autoCorrectWord` Boolean
 * `provider` Object
-  * `spellCheck` Function - Returns `Boolean`.
-    * `text` String
+  * `spellCheck` Function.
+    * `words` String[]
+    * `callback` Function
+      * `misspeltWords` String[]
 
 Sets a provider for spell checking in input fields and text areas.
 
-The `provider` must be an object that has a `spellCheck` method that returns
-whether the word passed is correctly spelled.
+The `provider` must be an object that has a `spellCheck` method that accepts
+an array of individual words for spellchecking.
+The `spellCheck` function runs asynchronously and calls the `callback` function
+with an array of misspelt words when complete.
 
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
-const { webFrame } = require('electron')
-webFrame.setSpellCheckProvider('en-US', true, {
-  spellCheck (text) {
-    return !(require('spellchecker').isMisspelled(text))
+const {webFrame} = require('electron')
+const spellChecker = require('spellchecker')
+webFrame.setSpellCheckProvider('en-US', {
+  spellCheck (words, callback) {
+    setTimeout(() => {
+      let misspeltWords = []
+      for (let word of words) {
+        if (spellChecker.isMisspelled(word)) {
+          misspeltWords.push(word)
+        }
+      }
+      callback(misspeltWords)
+    }, 0)
   }
 })
 ```

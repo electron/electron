@@ -153,11 +153,13 @@ describe('webFrame module', function () {
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true)
 
     const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')
-    const misspelledWord = 'spleling'
-    for (const keyCode of [...misspelledWord, ' ']) {
-      w.webContents.sendInputEvent({ type: 'char', keyCode })
+    const inputText = 'spleling test '
+    for (const keyCode of inputText) {
+      w.webContents.sendInputEvent({type: 'char', keyCode})
     }
-    const [, text] = await spellCheckerFeedback
-    expect(text).to.equal(misspelledWord)
+    const [, words, callback] = await spellCheckerFeedback
+
+    expect(words).to.deep.equal(['spleling', 'test'])
+    expect(callback).to.be.true()
   })
 })
