@@ -37,12 +37,14 @@ The bootstrap script will download all necessary build dependencies and create
 the build project files. Notice that we're using `ninja` to build Electron so
 there is no Visual Studio project generated.
 
+To bootstrap for a static, non-developer build, run:
+
 ```powershell
 $ cd electron
 $ npm run bootstrap
 ```
 
-You can also bootstrap for debug builds:
+Or to bootstrap for a development session that builds faster by not statically linking:
 
 ```powershell
 $ cd electron
@@ -57,7 +59,7 @@ Build both `Release` and `Debug` targets:
 $ npm run build
 ```
 
-You can also only build the `Debug` target or the `Release` target:
+You can also build either the `Debug` or `Release` target on its own:
 
 ```powershell
 $ npm run build:dev
