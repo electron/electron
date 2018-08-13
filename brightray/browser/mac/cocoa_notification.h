@@ -31,6 +31,7 @@ class CocoaNotification : public Notification {
   void NotificationActivated();
   void NotificationActivated(NSUserNotificationAction* action)
     API_AVAILABLE(macosx(10.10));
+  void NotificationDismissed();
 
   NSUserNotification* notification() const { return notification_; }
 
