@@ -22,10 +22,6 @@
 #include "base/debug/leak_tracker.h"
 #endif
 
-namespace base {
-class MessageLoop;
-}
-
 namespace net {
 class HostMappingRules;
 class HostResolver;
@@ -38,6 +34,8 @@ class URLRequestJobFactory;
 
 namespace brightray {
 
+class BrowserContext;
+class ResourceContext;
 class RequireCTDelegate;
 class NetLog;
 
@@ -48,55 +46,76 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     Delegate() {}
     virtual ~Delegate() {}
 
-    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate();
-    virtual std::string GetUserAgent();
+    virtual std::unique_ptr<net::NetworkDelegate> CreateNetworkDelegate() = 0;
     virtual std::unique_ptr<net::URLRequestJobFactory>
-    CreateURLRequestJobFactory(content::ProtocolHandlerMap* protocol_handlers);
+    CreateURLRequestJobFactory(
+        net::URLRequestContext* url_request_context,
+        content::ProtocolHandlerMap* protocol_handlers) = 0;
     virtual net::HttpCache::BackendFactory* CreateHttpCacheBackendFactory(
-        const base::FilePath& base_path);
+        const base::FilePath& base_path) = 0;
     virtual std::unique_ptr<net::CertVerifier> CreateCertVerifier(
-        RequireCTDelegate* ct_delegate);
-    virtual net::SSLConfigService* CreateSSLConfigService();
-    virtual std::vector<std::string> GetCookieableSchemes();
-    virtual void NotifyCookieChange(const net::CanonicalCookie& cookie,
-                                    bool removed,
-                                    net::CookieChangeCause cause) {}
+        RequireCTDelegate* ct_delegate) = 0;
+    virtual void GetCookieableSchemes(
+        std::vector<std::string>* cookie_schemes) {}
+    virtual void OnCookieChanged(const net::CanonicalCookie& cookie,
+                                 net::CookieChangeCause cause) {}
   };
 
   URLRequestContextGetter(
-      Delegate* delegate,
       NetLog* net_log,
-      const base::FilePath& base_path,
+      ResourceContext* resource_context,
       bool in_memory,
-      scoped_refptr<base::SingleThreadTaskRunner> io_task_runner,
+      const std::string& user_agent,
+      const base::FilePath& base_path,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
-
-  // net::CookieChangeDispatcher::CookieChangedCallback implementation.
-  void OnCookieChanged(const net::CanonicalCookie& cookie,
-                       net::CookieChangeCause cause);
 
   // net::URLRequestContextGetter:
   net::URLRequestContext* GetURLRequestContext() override;
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
       const override;
 
-  net::HostResolver* host_resolver();
   net::URLRequestJobFactory* job_factory() const { return job_factory_; }
+  void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
-  void NotifyContextShutdownOnIO();
+  // Discard reference to URLRequestContext and inform observers to
+  // shutdown. Must be called only on IO thread.
+  void NotifyContextShuttingDown(std::unique_ptr<ResourceContext>);
 
  private:
+  friend class BrowserContext;
+
+  // Responsible for destroying URLRequestContextGetter
+  // on the IO thread.
+  class Handle {
+   public:
+    explicit Handle(base::WeakPtr<BrowserContext> browser_context);
+    ~Handle();
+
+    scoped_refptr<URLRequestContextGetter> CreateMainRequestContextGetter(
+        content::ProtocolHandlerMap* protocol_handlers,
+        content::URLRequestInterceptorScopedVector protocol_interceptors);
+    content::ResourceContext* GetResourceContext() const;
+    scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter() const;
+
+    void ShutdownOnUIThread();
+
+   private:
+    void LazyInitialize() const;
+
+    scoped_refptr<URLRequestContextGetter> main_request_context_getter_;
+    std::unique_ptr<ResourceContext> resource_context_;
+    base::WeakPtr<BrowserContext> browser_context_;
+    mutable bool initialized_;
+
+    DISALLOW_COPY_AND_ASSIGN(Handle);
+  };
+
   ~URLRequestContextGetter() override;
 
-  Delegate* delegate_;
-
-  NetLog* net_log_;
-  base::FilePath base_path_;
-  bool in_memory_;
-  scoped_refptr<base::SingleThreadTaskRunner> io_task_runner_;
-
-  std::string user_agent_;
+  // net::CookieChangeDispatcher::CookieChangedCallback implementation.
+  void OnCookieChanged(const net::CanonicalCookie& cookie,
+                       net::CookieChangeCause cause) const;
 
 #if DCHECK_IS_ON()
   base::debug::LeakTracker<URLRequestContextGetter> leak_tracker_;
@@ -110,11 +129,16 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<net::HttpNetworkSession> http_network_session_;
   std::unique_ptr<net::CookieChangeSubscription> cookie_change_sub_;
+
+  net::URLRequestJobFactory* job_factory_;
+  Delegate* delegate_;
+  NetLog* net_log_;
+  ResourceContext* resource_context_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
-
-  net::URLRequestJobFactory* job_factory_;  // weak ref
-
+  base::FilePath base_path_;
+  bool in_memory_;
+  std::string user_agent_;
   bool context_shutting_down_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestContextGetter);

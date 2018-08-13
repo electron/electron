@@ -9,7 +9,7 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/net/cookie_details.h"
-#include "base/callback.h"
+#include "base/callback_list.h"
 #include "native_mate/handle.h"
 #include "net/cookies/canonical_cookie.h"
 
@@ -59,6 +59,8 @@ class Cookies : public mate::TrackableObject<Cookies> {
   void OnCookieChanged(const CookieDetails*);
 
  private:
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+      cookie_change_subscription_;
   scoped_refptr<AtomBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);
