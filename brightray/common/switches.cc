@@ -50,9 +50,6 @@ const char kAuthServerWhitelist[] = "auth-server-whitelist";
 const char kAuthNegotiateDelegateWhitelist[] =
     "auth-negotiate-delegate-whitelist";
 
-// Forces the maximum disk space to be used by the disk cache, in bytes.
-const char kDiskCacheSize[] = "disk-cache-size";
-
 }  // namespace switches
 
 }  // namespace brightray

@@ -8,16 +8,17 @@
 #include <string>
 
 #include "atom/browser/net/js_asker.h"
-#include "brightray/browser/url_request_context_getter.h"
 #include "content/browser/streams/stream.h"
 #include "content/browser/streams/stream_read_observer.h"
 #include "net/url_request/url_fetcher_delegate.h"
+#include "net/url_request/url_request_context_getter.h"
 
 namespace atom {
 
+class AtomBrowserContext;
+
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
-                           public net::URLFetcherDelegate,
-                           public brightray::URLRequestContextGetter::Delegate {
+                           public net::URLFetcherDelegate {
  public:
   URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
   ~URLRequestFetchJob() override;
@@ -51,6 +52,7 @@ class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
   void ClearPendingBuffer();
   void ClearWriteBuffer();
 
+  scoped_refptr<AtomBrowserContext> custom_browser_context_;
   scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
   std::unique_ptr<net::URLFetcher> fetcher_;
   std::unique_ptr<net::HttpResponseInfo> response_info_;
