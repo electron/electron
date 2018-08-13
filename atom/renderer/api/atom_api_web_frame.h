@@ -54,9 +54,6 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name,
       v8::Local<v8::Object> options);
-  void RegisterElementResizeCallback(
-      int element_instance_id,
-      const GuestViewContainer::ResizeCallback& callback);
   int AttachIframeGuest(int element_instance_id,
                         v8::Local<v8::Value> content_window);
   void DetachGuest(int element_instance_id);

@@ -195,14 +195,6 @@ v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
       blink::WebString::FromUTF16(name), options);
 }
 
-void WebFrame::RegisterElementResizeCallback(
-    int element_instance_id,
-    const GuestViewContainer::ResizeCallback& callback) {
-  auto* guest_view_container = GuestViewContainer::FromID(element_instance_id);
-  if (guest_view_container)
-    guest_view_container->RegisterElementResizeCallback(callback);
-}
-
 int WebFrame::AttachIframeGuest(int element_instance_id,
                                 v8::Local<v8::Value> content_window) {
   // Get the WebLocalFrame before (possibly) executing any user-space JS while
@@ -518,8 +510,6 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
                  &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
-      .SetMethod("registerElementResizeCallback",
-                 &WebFrame::RegisterElementResizeCallback)
       .SetMethod("attachIframeGuest", &WebFrame::AttachIframeGuest)
       .SetMethod("detachGuest", &WebFrame::DetachGuest)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
