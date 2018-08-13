@@ -1498,23 +1498,28 @@ describe('<webview> tag', function () {
     })
 
     it('emits resize events', async () => {
+      const firstResizeSignal = waitForEvent(webview, 'resize')
+      const domReadySignal = waitForEvent(webview, 'dom-ready')
+
       webview.src = `file://${fixtures}/pages/a.html`
       div.appendChild(webview)
       document.body.appendChild(div)
 
-      const firstResizeEvent = await waitForEvent(webview, 'resize')
+      const firstResizeEvent = await firstResizeSignal
       expect(firstResizeEvent.target).to.equal(webview)
       expect(firstResizeEvent.newWidth).to.equal(100)
       expect(firstResizeEvent.newHeight).to.equal(10)
 
-      await waitForEvent(webview, 'dom-ready')
+      await domReadySignal
+
+      const secondResizeSignal = waitForEvent(webview, 'resize')
 
       const newWidth = 1234
       const newHeight = 789
       div.style.width = `${newWidth}px`
       div.style.height = `${newHeight}px`
 
-      const secondResizeEvent = await waitForEvent(webview, 'resize')
+      const secondResizeEvent = await secondResizeSignal
       expect(secondResizeEvent.target).to.equal(webview)
       expect(secondResizeEvent.newWidth).to.equal(newWidth)
       expect(secondResizeEvent.newHeight).to.equal(newHeight)
