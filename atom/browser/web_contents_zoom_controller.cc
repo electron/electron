@@ -228,6 +228,9 @@ void WebContentsZoomController::DidFinishNavigation(
 }
 
 void WebContentsZoomController::WebContentsDestroyed() {
+  for (Observer& observer : observers_)
+    observer.OnZoomControllerWebContentsDestroyed();
+
   observers_.Clear();
   embedder_zoom_controller_ = nullptr;
 }

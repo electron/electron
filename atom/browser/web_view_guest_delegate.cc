@@ -165,6 +165,10 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
   }
 }
 
+void WebViewGuestDelegate::OnZoomControllerWebContentsDestroyed() {
+  ResetZoomController();
+}
+
 void WebViewGuestDelegate::UpdateGuestSize(const gfx::Size& new_size,
                                            bool due_to_auto_resize) {
   if (due_to_auto_resize)
