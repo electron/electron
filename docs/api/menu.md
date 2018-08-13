@@ -264,6 +264,13 @@ window.addEventListener('contextmenu', (e) => {
 </script>
 ```
 
+## Avoid creating the default Menu
+
+When using a custom `Menu` avoiding the creation of the default `Menu` will increase the performance of the app.
+
+To avoid rendering the default `Menu`, add the following property in your `package.json`:
+
+- `customMenu: true`
 
 ## Notes on macOS Application Menu
 
