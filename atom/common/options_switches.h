@@ -86,6 +86,7 @@ extern const char kEnableMixedSandbox[];
 extern const char kEnablePlugins[];
 extern const char kPpapiFlashPath[];
 extern const char kPpapiFlashVersion[];
+extern const char kDisableHttpCache[];
 extern const char kStandardSchemes[];
 extern const char kRegisterServiceWorkerSchemes[];
 extern const char kSecureSchemes[];
@@ -107,18 +108,6 @@ extern const char kWebviewTag[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
-
-extern const char kHostRules[];
-extern const char kNoProxyServer[];
-extern const char kProxyServer[];
-extern const char kProxyBypassList[];
-extern const char kProxyPacUrl[];
-extern const char kDisableHttp2[];
-extern const char kDisableHttpCache[];
-extern const char kAuthServerWhitelist[];
-extern const char kAuthNegotiateDelegateWhitelist[];
-extern const char kDiskCacheSize[];
-extern const char kIgnoreConnectionsLimit[];
 
 }  // namespace switches
 

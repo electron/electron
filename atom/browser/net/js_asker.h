@@ -7,6 +7,7 @@
 
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/callback.h"
+#include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"

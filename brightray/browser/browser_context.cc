@@ -11,6 +11,7 @@
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/network_delegate.h"
 #include "brightray/browser/special_storage_policy.h"
 #include "brightray/browser/zoom_level_delegate.h"
 #include "brightray/common/application_info.h"
@@ -19,6 +20,7 @@
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/resource_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
 
@@ -35,6 +37,26 @@ std::string MakePartitionName(const std::string& input) {
 
 }  // namespace
 
+class BrowserContext::ResourceContext : public content::ResourceContext {
+ public:
+  ResourceContext() : getter_(nullptr) {}
+
+  void set_url_request_context_getter(URLRequestContextGetter* getter) {
+    getter_ = getter;
+  }
+
+ private:
+  net::HostResolver* GetHostResolver() override {
+    return getter_->host_resolver();
+  }
+
+  net::URLRequestContext* GetRequestContext() override {
+    return getter_->GetURLRequestContext();
+  }
+
+  URLRequestContextGetter* getter_;
+};
+
 // static
 BrowserContext::BrowserContextMap BrowserContext::browser_context_map_;
 
@@ -50,6 +72,7 @@ scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
 
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     : in_memory_(in_memory),
+      resource_context_(new ResourceContext),
       storage_policy_(new SpecialStoragePolicy),
       weak_factory_(this) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
@@ -65,8 +88,6 @@ BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
 
   content::BrowserContext::Initialize(this, path_);
 
-  io_handle_ = new URLRequestContextGetter::Handle(GetWeakPtr());
-
   browser_context_map_[PartitionKey(partition, in_memory)] = GetWeakPtr();
 }
 
@@ -74,7 +95,14 @@ BrowserContext::~BrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
-  io_handle_->ShutdownOnUIThread();
+  if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
+    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                              resource_context_.release());
+    BrowserThread::PostTask(
+        BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestContextGetter::NotifyContextShutdownOnIO,
+                       base::RetainedRef(url_request_getter_)));
+  }
 }
 
 void BrowserContext::InitPrefs() {
@@ -107,9 +135,17 @@ URLRequestContextGetter* BrowserContext::GetRequestContext() {
 net::URLRequestContextGetter* BrowserContext::CreateRequestContext(
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  auto* factory = GetFactoryForMainRequestContext(
+  DCHECK(!url_request_getter_.get());
+  url_request_getter_ = new URLRequestContextGetter(
+      this, static_cast<NetLog*>(BrowserClient::Get()->GetNetLog()), GetPath(),
+      in_memory_, BrowserThread::GetTaskRunnerForThread(BrowserThread::IO),
       protocol_handlers, std::move(protocol_interceptors));
-  return io_handle_->CreateMainRequestContextGetter(factory).get();
+  resource_context_->set_url_request_context_getter(url_request_getter_.get());
+  return url_request_getter_.get();
+}
+
+std::unique_ptr<net::NetworkDelegate> BrowserContext::CreateNetworkDelegate() {
+  return std::make_unique<NetworkDelegate>();
 }
 
 std::string BrowserContext::GetMediaDeviceIDSalt() {
@@ -135,7 +171,7 @@ bool BrowserContext::IsOffTheRecord() const {
 }
 
 content::ResourceContext* BrowserContext::GetResourceContext() {
-  return io_handle_->GetResourceContext();
+  return resource_context_.get();
 }
 
 content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
@@ -178,19 +214,17 @@ BrowserContext::CreateRequestContextForStoragePartition(
     bool in_memory,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector request_interceptors) {
-  NOTREACHED();
   return nullptr;
 }
 
 net::URLRequestContextGetter* BrowserContext::CreateMediaRequestContext() {
-  return io_handle_->GetMediaRequestContextGetter().get();
+  return url_request_getter_.get();
 }
 
 net::URLRequestContextGetter*
 BrowserContext::CreateMediaRequestContextForStoragePartition(
     const base::FilePath& partition_path,
     bool in_memory) {
-  NOTREACHED();
   return nullptr;
 }
 

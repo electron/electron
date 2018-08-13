@@ -46,8 +46,6 @@
 #include "net/dns/host_cache.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
-#include "net/http/http_cache.h"
-#include "net/http/http_transaction_factory.h"
 #include "net/proxy_resolution/proxy_config_service_fixed.h"
 #include "net/proxy_resolution/proxy_service.h"
 #include "net/url_request/static_http_user_agent_settings.h"
@@ -246,7 +244,7 @@ class ResolveProxyHelper {
       : callback_(callback),
         original_thread_(base::ThreadTaskRunnerHandle::Get()) {
     scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->GetRequestContext();
+        browser_context->url_request_context_getter();
     context_getter->GetNetworkTaskRunner()->PostTask(
         FROM_HERE, base::BindOnce(&ResolveProxyHelper::ResolveProxy,
                                   base::Unretained(this), context_getter, url));
@@ -455,6 +453,15 @@ void SetDevToolsNetworkEmulationClientIdInIO(
   network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
 }
 
+// Clear protocol handlers in IO thread.
+void ClearJobFactoryInIO(
+    scoped_refptr<brightray::URLRequestContextGetter> request_context_getter) {
+  auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
+      request_context_getter->job_factory());
+  if (job_factory)
+    job_factory->Clear();
+}
+
 void DestroyGlobalHandle(v8::Isolate* isolate,
                          const v8::Global<v8::Value>& global_handle) {
   v8::Locker locker(isolate);
@@ -488,6 +495,10 @@ Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 }
 
 Session::~Session() {
+  auto* getter = browser_context_->GetRequestContext();
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::BindOnce(ClearJobFactoryInIO, base::RetainedRef(getter)));
   content::BrowserContext::GetDownloadManager(browser_context())
       ->RemoveObserver(this);
   DestroyGlobalHandle(isolate(), cookies_);
@@ -586,9 +597,10 @@ void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
-                     base::RetainedRef(browser_context_->GetRequestContext()),
-                     devtools_network_emulation_client_id_));
+      base::BindOnce(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          devtools_network_emulation_client_id_));
 }
 
 void Session::DisableNetworkEmulation() {
@@ -597,9 +609,10 @@ void Session::DisableNetworkEmulation() {
       devtools_network_emulation_client_id_, std::move(conditions));
   BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
-                     base::RetainedRef(browser_context_->GetRequestContext()),
-                     std::string()));
+      base::BindOnce(
+          &SetDevToolsNetworkEmulationClientIdInIO,
+          base::RetainedRef(browser_context_->url_request_context_getter()),
+          std::string()));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,

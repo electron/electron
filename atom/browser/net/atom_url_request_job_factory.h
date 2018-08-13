@@ -23,28 +23,25 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   AtomURLRequestJobFactory();
   ~AtomURLRequestJobFactory() override;
 
-  // Requests are forwarded to the chained job factory if
-  // this class decides to not handle them.
-  void Chain(std::unique_ptr<net::URLRequestJobFactory> job_factory);
-
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,
   // URLRequestJobFactory takes ownership of |protocol_handler|.
-  bool SetProtocolHandler(
-      const std::string& scheme,
-      std::unique_ptr<ProtocolHandler> protocol_handler) const;
+  bool SetProtocolHandler(const std::string& scheme,
+                          std::unique_ptr<ProtocolHandler> protocol_handler);
 
   // Intercepts the ProtocolHandler for a scheme.
-  bool InterceptProtocol(
-      const std::string& scheme,
-      std::unique_ptr<ProtocolHandler> protocol_handler) const;
-  bool UninterceptProtocol(const std::string& scheme) const;
+  bool InterceptProtocol(const std::string& scheme,
+                         std::unique_ptr<ProtocolHandler> protocol_handler);
+  bool UninterceptProtocol(const std::string& scheme);
+
+  // Returns the protocol handler registered with scheme.
+  ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;
 
   // Whether the protocol handler is registered by the job factory.
   bool HasProtocolHandler(const std::string& scheme) const;
 
   // Clear all protocol handlers.
-  void Clear() const;
+  void Clear();
 
   // URLRequestJobFactory implementation
   net::URLRequestJob* MaybeCreateJobWithProtocolHandler(
@@ -64,15 +61,13 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
  private:
   using ProtocolHandlerMap = std::map<std::string, ProtocolHandler*>;
 
-  mutable ProtocolHandlerMap protocol_handler_map_;
+  ProtocolHandlerMap protocol_handler_map_;
 
   // Map that stores the original protocols of schemes.
   using OriginalProtocolsMap =
       std::unordered_map<std::string, std::unique_ptr<ProtocolHandler>>;
   // Can only be accessed in IO thread.
-  mutable OriginalProtocolsMap original_protocols_;
-
-  std::unique_ptr<net::URLRequestJobFactory> job_factory_;
+  OriginalProtocolsMap original_protocols_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
