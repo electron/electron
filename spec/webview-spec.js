@@ -64,8 +64,7 @@ describe('<webview> tag', function () {
     return closeTheWindow()
   })
 
-  // TODO(codebytere): re-enable this test
-  xit('works without script tag in page', async () => {
+  it('works without script tag in page', async () => {
     const w = await openTheWindow({show: false})
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
     await emittedOnce(ipcMain, 'pong')
@@ -991,9 +990,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(jkleinsc): this test causes the test suite to hang on Windows release
-  // builds.  Temporarily disabling so that release build tests will finish.
-  xdescribe('found-in-page event', () => {
+  describe('found-in-page event', () => {
     it('emits when a request is made', (done) => {
       let requestId = null
       let activeMatchOrdinal = []
