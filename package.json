@@ -30,7 +30,8 @@
     "standard": "^10.0.0",
     "standard-markdown": "^4.0.0",
     "sumchecker": "^2.0.2",
-    "temp": "^0.8.3"
+    "temp": "^0.8.3",
+    "cross-var": "^1.1.0"
   },
   "standard": {
     "ignore": [
@@ -67,7 +68,7 @@
     "lint-docs": "remark docs -qf && npm run lint-js-in-markdown && npm run create-typescript-definitions && npm run lint-docs-relative-links",
     "lint-docs-relative-links": "python ./script/check-relative-doc-links.py",
     "lint-js-in-markdown": "standard-markdown docs",
-    "create-api-json": "electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
+    "create-api-json": "cross-var electron-docs-linter docs --outfile=out/electron-api.json --version=$npm_package_version",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --in=out/electron-api.json --out=out/electron.d.ts",
     "mock-release": "node ./script/ci-release-build.js",
     "preinstall": "node -e 'process.exit(0)'",
