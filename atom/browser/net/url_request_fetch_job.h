@@ -8,16 +8,15 @@
 #include <string>
 
 #include "atom/browser/net/js_asker.h"
-#include "brightray/browser/url_request_context_getter.h"
 #include "content/browser/streams/stream.h"
 #include "content/browser/streams/stream_read_observer.h"
 #include "net/url_request/url_fetcher_delegate.h"
+#include "net/url_request/url_request_context_getter.h"
 
 namespace atom {
 
 class URLRequestFetchJob : public JsAsker<net::URLRequestJob>,
-                           public net::URLFetcherDelegate,
-                           public brightray::URLRequestContextGetter::Delegate {
+                           public net::URLFetcherDelegate {
  public:
   URLRequestFetchJob(net::URLRequest*, net::NetworkDelegate*);
   ~URLRequestFetchJob() override;

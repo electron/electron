@@ -95,7 +95,7 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
   }
 
   brightray::URLRequestContextGetter* url_request_context_getter =
-      browser_context_->url_request_context_getter();
+      browser_context_->GetRequestContext();
   if (!url_request_context_getter)
     return;
   BrowserThread::PostTask(

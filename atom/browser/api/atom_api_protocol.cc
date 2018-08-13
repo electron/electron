@@ -95,8 +95,8 @@ void Protocol::UnregisterProtocol(const std::string& scheme,
 Protocol::ProtocolError Protocol::UnregisterProtocolInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-      request_context_getter->job_factory());
+  auto* job_factory = static_cast<const AtomURLRequestJobFactory*>(
+      request_context_getter->GetURLRequestContext()->job_factory());
   if (!job_factory->HasProtocolHandler(scheme))
     return PROTOCOL_NOT_REGISTERED;
   job_factory->SetProtocolHandler(scheme, nullptr);
@@ -117,7 +117,9 @@ void Protocol::IsProtocolHandled(const std::string& scheme,
 bool Protocol::IsProtocolHandledInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  return request_context_getter->job_factory()->IsHandledProtocol(scheme);
+  return request_context_getter->GetURLRequestContext()
+      ->job_factory()
+      ->IsHandledProtocol(scheme);
 }
 
 void Protocol::UninterceptProtocol(const std::string& scheme,
@@ -136,8 +138,8 @@ void Protocol::UninterceptProtocol(const std::string& scheme,
 Protocol::ProtocolError Protocol::UninterceptProtocolInIO(
     scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
     const std::string& scheme) {
-  return static_cast<AtomURLRequestJobFactory*>(
-             request_context_getter->job_factory())
+  return static_cast<const AtomURLRequestJobFactory*>(
+             request_context_getter->GetURLRequestContext()->job_factory())
                  ->UninterceptProtocol(scheme)
              ? PROTOCOL_OK
              : PROTOCOL_NOT_INTERCEPTED;
