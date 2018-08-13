@@ -869,13 +869,6 @@ describe('app module', () => {
     })
 
     describe('when app.enableMixedSandbox() is called', () => {
-      // TODO(zcbenz): Find out why it fails in CI.
-      before(function () {
-        if (isCI && process.platform === 'win32') {
-          this.skip()
-        }
-      })
-
       it('adds --enable-sandbox to render processes created with sandbox: true', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
         appProcess = ChildProcess.spawn(remote.process.execPath, [appPath])
@@ -898,13 +891,6 @@ describe('app module', () => {
     })
 
     describe('when the app is launched with --enable-mixed-sandbox', () => {
-      // TODO(zcbenz): Find out why it fails in CI.
-      before(function () {
-        if (isCI && process.platform === 'win32') {
-          this.skip()
-        }
-      })
-
       it('adds --enable-sandbox to render processes created with sandbox: true', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
         appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'])
