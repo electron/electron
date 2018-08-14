@@ -1147,12 +1147,15 @@ describe('<webview> tag', function () {
 
     it('updates when the window is shown after the ready-to-show event', async () => {
       const w = await openTheWindow({ show: false })
+      const readyToShowSignal = emittedOnce(w, 'ready-to-show')
+      const pongSignal1 = emittedOnce(ipcMain, 'pong')
       w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
-
-      await emittedOnce(w, 'ready-to-show')
+      await pongSignal1
+      const pongSignal2 = emittedOnce(ipcMain, 'pong')
+      await readyToShowSignal
       w.show()
 
-      const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+      const [, visibilityState, hidden] = await pongSignal2
       assert(!hidden)
       assert.equal(visibilityState, 'visible')
     })
