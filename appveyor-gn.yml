@@ -3,7 +3,7 @@ branches:
   except:
   - /^release$|^release-\d-\d-x$/
 build_cloud: libcc-20
-image: libcc-20-vs2017
+image: libcc-20-vs2017-15.4.5
 environment:
   DISABLE_CRASH_REPORTER_TESTS: true
   ELECTRON_ENABLE_LOGGING: true
