@@ -6,13 +6,22 @@
 #include <objbase.h>
 #include <sapi.h>
 #include <wrl/client.h>
+#include <sphelper.h>
 
 #include "base/memory/singleton.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "base/win/scoped_co_mem.h"
 #include "chrome/browser/speech/tts_controller.h"
 #include "chrome/browser/speech/tts_platform.h"
+
+namespace {
+// ISpObjectToken key and value names.
+const wchar_t kAttributesKey[] = L"Attributes";
+const wchar_t kGenderValue[] = L"Gender";
+const wchar_t kLanguageValue[] = L"Language";
+}  // anonymous namespace.
 
 class TtsPlatformImplWin : public TtsPlatformImpl {
  public:
@@ -44,7 +53,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
   ~TtsPlatformImplWin() override {}
 
   void OnSpeechEvent();
-
+  void SetVoiceFromName(const std::string& name);
   Microsoft::WRL::ComPtr<ISpVoice> speech_synthesizer_;
 
   // These apply to the current utterance only.
@@ -54,7 +63,7 @@ class TtsPlatformImplWin : public TtsPlatformImpl {
   ULONG stream_number_;
   int char_position_;
   bool paused_;
-
+  std::string last_voice_name_;
   friend struct base::DefaultSingletonTraits<TtsPlatformImplWin>;
 
   DISALLOW_COPY_AND_ASSIGN(TtsPlatformImplWin);
@@ -75,9 +84,7 @@ bool TtsPlatformImplWin::Speak(int utterance_id,
 
   if (!speech_synthesizer_.Get())
     return false;
-
-  // TODO(dmazzoni): support languages other than the default: crbug.com/88059
-
+  SetVoiceFromName(voice.name);
   if (params.rate >= 0.0) {
     // Map our multiplicative range of 0.1x to 10.0x onto Microsoft's
     // linear range of -10 to 10:
@@ -166,19 +173,51 @@ bool TtsPlatformImplWin::IsSpeaking() {
 }
 
 void TtsPlatformImplWin::GetVoices(std::vector<VoiceData>* out_voices) {
-  // TODO: get all voices, not just default voice.
-  // http://crbug.com/88059
-  out_voices->push_back(VoiceData());
-  VoiceData& voice = out_voices->back();
-  voice.native = true;
-  voice.name = "native";
-  voice.events.insert(TTS_EVENT_START);
-  voice.events.insert(TTS_EVENT_END);
-  voice.events.insert(TTS_EVENT_MARKER);
-  voice.events.insert(TTS_EVENT_WORD);
-  voice.events.insert(TTS_EVENT_SENTENCE);
-  voice.events.insert(TTS_EVENT_PAUSE);
-  voice.events.insert(TTS_EVENT_RESUME);
+  Microsoft::WRL::ComPtr<IEnumSpObjectTokens> voice_tokens;
+  unsigned long voice_count;
+  if (S_OK !=
+      SpEnumTokens(SPCAT_VOICES, NULL, NULL, voice_tokens.GetAddressOf()))
+    return;
+  if (S_OK != voice_tokens->GetCount(&voice_count))
+    return;
+  for (unsigned i = 0; i < voice_count; i++) {
+    VoiceData voice;
+    Microsoft::WRL::ComPtr<ISpObjectToken> voice_token;
+    if (S_OK != voice_tokens->Next(1, voice_token.GetAddressOf(), NULL))
+      return;
+    base::win::ScopedCoMem<WCHAR> description;
+    if (S_OK != SpGetDescription(voice_token.Get(), &description))
+      continue;
+    voice.name = base::WideToUTF8(description.get());
+    Microsoft::WRL::ComPtr<ISpDataKey> attributes;
+    if (S_OK != voice_token->OpenKey(kAttributesKey, attributes.GetAddressOf()))
+      continue;
+    base::win::ScopedCoMem<WCHAR> gender;
+    if (S_OK == attributes->GetStringValue(kGenderValue, &gender)) {
+      if (0 == _wcsicmp(gender.get(), L"male"))
+        voice.gender = TTS_GENDER_MALE;
+      else if (0 == _wcsicmp(gender.get(), L"female"))
+        voice.gender = TTS_GENDER_FEMALE;
+    }
+    base::win::ScopedCoMem<WCHAR> language;
+    if (S_OK == attributes->GetStringValue(kLanguageValue, &language)) {
+      int lcid_value;
+      base::HexStringToInt(base::WideToUTF8(language.get()), &lcid_value);
+      LCID lcid = MAKELCID(lcid_value, SORT_DEFAULT);
+      WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
+      LCIDToLocaleName(lcid, locale_name, LOCALE_NAME_MAX_LENGTH, 0);
+      voice.lang = base::WideToUTF8(locale_name);
+    }
+    voice.native = true;
+    voice.events.insert(TTS_EVENT_START);
+    voice.events.insert(TTS_EVENT_END);
+    voice.events.insert(TTS_EVENT_MARKER);
+    voice.events.insert(TTS_EVENT_WORD);
+    voice.events.insert(TTS_EVENT_SENTENCE);
+    voice.events.insert(TTS_EVENT_PAUSE);
+    voice.events.insert(TTS_EVENT_RESUME);
+    out_voices->push_back(voice);
+  }
 }
 
 void TtsPlatformImplWin::OnSpeechEvent() {
@@ -217,7 +256,30 @@ void TtsPlatformImplWin::OnSpeechEvent() {
     }
   }
 }
-
+void TtsPlatformImplWin::SetVoiceFromName(const std::string& name) {
+  if (name.empty() || name == last_voice_name_)
+    return;
+  last_voice_name_ = name;
+  Microsoft::WRL::ComPtr<IEnumSpObjectTokens> voice_tokens;
+  unsigned long voice_count;
+  if (S_OK !=
+      SpEnumTokens(SPCAT_VOICES, NULL, NULL, voice_tokens.GetAddressOf()))
+    return;
+  if (S_OK != voice_tokens->GetCount(&voice_count))
+    return;
+  for (unsigned i = 0; i < voice_count; i++) {
+    Microsoft::WRL::ComPtr<ISpObjectToken> voice_token;
+    if (S_OK != voice_tokens->Next(1, voice_token.GetAddressOf(), NULL))
+      return;
+    base::win::ScopedCoMem<WCHAR> description;
+    if (S_OK != SpGetDescription(voice_token.Get(), &description))
+      continue;
+    if (name == base::WideToUTF8(description.get())) {
+      speech_synthesizer_->SetVoice(voice_token.Get());
+      break;
+    }
+  }
+}
 TtsPlatformImplWin::TtsPlatformImplWin()
     : utterance_id_(0),
       prefix_len_(0),
