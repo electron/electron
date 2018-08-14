@@ -2,6 +2,7 @@ import("all.gn")
 is_component_build = false
 is_component_ffmpeg = true
 is_official_build = true
+strip_debug_info = true
 
 # TODO(nornagon): linking non-CFI code (nodejs) with CFI code fails at runtime.
 # Once we can build nodejs with CFI flags matching Electron's, remove this.

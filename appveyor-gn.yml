@@ -31,6 +31,7 @@ build_script:
   - cd src
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
+  - ninja -C out/Default electron:electron_dist_zip
 test_script:
   - ninja -C out/Default electron/build/node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
@@ -43,3 +44,5 @@ test_script:
 artifacts:
 - path: test-results.xml
   name: test-results.xml
+- path: src/out/Default/dist.zip
+  name: dist.zip

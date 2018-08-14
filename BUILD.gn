@@ -183,12 +183,6 @@ asar("app2asar") {
   root = "default_app"
 }
 
-group("electron") {
-  deps = [
-    ":electron_lib",
-  ]
-}
-
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -609,6 +603,17 @@ if (is_mac) {
       "//ui/strings",
     ]
 
+    data = []
+
+    data += [ "$root_out_dir/resources.pak" ]
+    data += [ "$root_out_dir/chrome_100_percent.pak" ]
+    if (enable_hidpi) {
+      data += [ "$root_out_dir/chrome_200_percent.pak" ]
+    }
+    foreach(locale, locales) {
+      data += [ "$root_out_dir/locales/$locale.pak" ]
+    }
+
     public_deps = [
       "//tools/v8_context_snapshot:v8_context_snapshot",
     ]
@@ -652,4 +657,57 @@ if (is_mac) {
       }
     }
   }
+}
+
+
+template("dist_zip") {
+  _runtime_deps_target = "${target_name}__deps"
+  _runtime_deps_file =
+      "$root_out_dir/gen.runtime/" +
+      get_label_info(target_name, "dir") + "/" +
+      get_label_info(target_name, "name") + ".runtime_deps"
+
+  group(_runtime_deps_target) {
+    forward_variables_from(invoker, [ "deps", "data_deps", "data" ])
+    write_runtime_deps = _runtime_deps_file
+  }
+
+  action(target_name) {
+    script = "//electron/build/zip.py"
+    deps = [ ":$_runtime_deps_target" ]
+    forward_variables_from(invoker, [ "outputs" ])
+    args = rebase_path(outputs + [ _runtime_deps_file ], root_build_dir)
+  }
+}
+
+
+copy("electron_license") {
+  sources = [ "LICENSE" ]
+  outputs = [ "$root_build_dir/{{source_file_part}}" ]
+}
+copy("chromium_licenses") {
+  deps = [ "//components/resources:about_credits" ]
+  sources = [ "$root_gen_dir/components/resources/about_credits.html" ]
+  outputs = [ "$root_build_dir/LICENSES.chromium.html" ]
+}
+
+group("licenses") {
+  data_deps = [ ":electron_license", ":chromium_licenses" ]
+}
+
+action("electron_version") {
+  script = "build/write_version.py"
+  outputs = [ "$root_build_dir/version" ]
+  args = rebase_path(outputs, root_build_dir) + [ electron_version ]
+}
+
+
+dist_zip("electron_dist_zip") {
+  data_deps = [ ":electron_app", ":licenses", ":electron_version" ]
+  outputs = [ "$root_build_dir/dist.zip" ]
+}
+
+
+group("electron") {
+  deps = [ ":electron_app" ]
 }

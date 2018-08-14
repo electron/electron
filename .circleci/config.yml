@@ -155,14 +155,24 @@ gn-build-steps: &gn-build-steps
           git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
           echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
           echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    - run:
+        name: Install Node.js 10 on MacOS
+        command: |
+          if [ "$INSTALL_MACOS_NODE" == "true" ]; then
+            echo 'Installing Node.js 10 for MacOS'
+            brew update
+            brew install node@10
+            brew install gnu-tar
+            echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> $BASH_ENV
+          fi
     - checkout:
         path: src/electron
     - restore_cache:
         paths:
           - ~/.gclient-cache
         keys:
-          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
-          - v1-gclient-cache-{{ arch }}-
+          - v3-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+          - v3-gclient-cache-{{ arch }}-
     - run:
         name: Gclient sync
         command: |
@@ -177,12 +187,16 @@ gn-build-steps: &gn-build-steps
     - save_cache:
         paths:
           - ~/.gclient-cache
-        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+        key: v3-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
     - run:
         name: GN gen
         command: |
           cd src
-          SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/linux/sccache"
+          if [ "$(uname)" = "Linux" ]; then
+            SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/linux/sccache"
+          else
+            SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/mac/sccache"
+          fi
           echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           source $BASH_ENV
@@ -193,12 +207,19 @@ gn-build-steps: &gn-build-steps
           cd src
           ninja -C out/Default electron:electron_app
     - run:
+        name: Build dist.zip
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_dist_zip
+    - run:
         name: Check sccache stats after build
         command: $SCCACHE_WRAPPER -s
     - run:
         name: Setup for headless testing
         command: |
-          sh -e /etc/init.d/xvfb start
+          if [ "$(uname)" = "Linux" ]; then
+            sh -e /etc/init.d/xvfb start
+          fi
     - run:
         name: Test
         environment:
@@ -211,12 +232,18 @@ gn-build-steps: &gn-build-steps
             ninja -C out/Default third_party/electron_node:headers
             export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
             (cd electron/spec && npm install)
-            python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+            if [ "$(uname)" = "Darwin" ]; then
+              ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
+            else
+              python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+            fi
           fi
     - store_test_results:
         path: src/junit
     - store_artifacts:
         path: src/junit
+    - store_artifacts:
+        path: src/out/Default/dist.zip
 
 build-defaults: &build-defaults
   docker:
@@ -351,6 +378,7 @@ jobs:
       INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
+    resource_class: xlarge
     <<: *build-steps
 
   electron-osx-x64-release-nightly:
@@ -371,6 +399,7 @@ jobs:
       INSTALL_MACOS_NODE: true
     macos:
       xcode: "8.3.3"
+    resource_class: 2xlarge
     <<: *build-steps
 
   electron-mas-x64-release-nightly:
@@ -512,6 +541,48 @@ jobs:
     resource_class: 2xlarge
     <<: *gn-build-steps
 
+  electron-gn-osx-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      INSTALL_MACOS_NODE: true
+      RUN_TESTS: false
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-build-steps
+
+  electron-gn-osx-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
+      INSTALL_MACOS_NODE: true
+      RUN_TESTS: true
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-build-steps
+
+  electron-gn-mas-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      INSTALL_MACOS_NODE: true
+      RUN_TESTS: false
+      GN_EXTRA_ARGS: 'is_mas_build = true'
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-build-steps
+
+  electron-gn-mas-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
+      INSTALL_MACOS_NODE: true
+      RUN_TESTS: true
+      GN_EXTRA_ARGS: 'is_mas_build = true'
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-build-steps
+
 workflows:
   version: 2
   build-arm:
@@ -548,6 +619,13 @@ workflows:
       - electron-gn-linux-arm-testing-fyi
       - electron-gn-linux-arm64-debug-fyi
       - electron-gn-linux-arm64-testing-fyi
+      - electron-gn-linux-x64-release-fyi
+  build-gn-mac:
+    jobs:
+      - electron-gn-osx-debug-fyi
+      - electron-gn-osx-testing-fyi
+      - electron-gn-mas-debug-fyi
+      - electron-gn-mas-testing-fyi
 
   nightly-release-test:
     triggers:
