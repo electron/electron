@@ -21,6 +21,7 @@ build_script:
   - md src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+  - ps: $env:SCCACHE_PATH="$pwd\src\libchromiumcontent\tools\sccache\aad2120\windows\sccache.exe"
   - >-
       gclient config
       --name "src\electron"
@@ -29,8 +30,13 @@ build_script:
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
-  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
+  - >-
+      %SCCACHE_PATH% -s
+  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\") cc_wrapper=\"%CC_WRAPPER%\" "
   - ninja -C out/Default electron:electron_app
+  - ninja -C out/Default electron:electron_dist_zip
+  - >-
+      %SCCACHE_PATH% -s
 test_script:
   - ninja -C out/Default electron/build/node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
@@ -43,3 +49,5 @@ test_script:
 artifacts:
 - path: test-results.xml
   name: test-results.xml
+- path: src/out/Default/dist.zip
+  name: dist.zip

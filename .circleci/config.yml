@@ -161,8 +161,8 @@ gn-build-steps: &gn-build-steps
         paths:
           - ~/.gclient-cache
         keys:
-          - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
-          - v1-gclient-cache-{{ arch }}-
+          - v4-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+          - v4-gclient-cache-{{ arch }}-
     - run:
         name: Gclient sync
         command: |
@@ -177,7 +177,7 @@ gn-build-steps: &gn-build-steps
     - save_cache:
         paths:
           - ~/.gclient-cache
-        key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+        key: v4-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
     - run:
         name: GN gen
         command: |
@@ -193,12 +193,16 @@ gn-build-steps: &gn-build-steps
           cd src
           ninja -C out/Default electron:electron_app
     - run:
+        name: Build dist.zip
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_dist_zip
+    - run:
         name: Check sccache stats after build
         command: $SCCACHE_WRAPPER -s
     - run:
         name: Setup for headless testing
-        command: |
-          sh -e /etc/init.d/xvfb start
+        command: sh -e /etc/init.d/xvfb start
     - run:
         name: Test
         environment:
@@ -217,6 +221,78 @@ gn-build-steps: &gn-build-steps
         path: src/junit
     - store_artifacts:
         path: src/junit
+    - store_artifacts:
+        path: src/out/Default/dist.zip
+
+gn-mac-build-steps: &gn-mac-build-steps
+  steps:
+    - run:
+        name: Setup depot tools
+        command: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+    - run:
+        name: Install Node.js 10 on MacOS
+        command: |
+          echo 'Installing Node.js 10 for MacOS'
+          brew update
+          brew install node@10
+          brew install gnu-tar
+          echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> $BASH_ENV
+    - checkout:
+        path: src/electron
+    - run:
+        name: Gclient sync
+        command: |
+          gclient config \
+            --name "src/electron" \
+            --unmanaged \
+            $GCLIENT_EXTRA_ARGS \
+            "$CIRCLE_REPOSITORY_URL"
+          gclient sync --with_branch_heads --with_tags
+    - run:
+        name: GN gen
+        command: |
+          cd src
+          SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/mac/sccache"
+          echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
+          source $BASH_ENV
+          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+    - run:
+        name: Ninja build
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_app
+    - run:
+        name: Build dist.zip
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_dist_zip
+    - run:
+        name: Check sccache stats after build
+        command: $SCCACHE_WRAPPER -s
+    - run:
+        name: Test
+        environment:
+          MOCHA_REPORTER: mocha-junit-reporter
+          MOCHA_FILE: junit/test-results.xml
+          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        command: |
+          if [ "$RUN_TESTS" != "false" ]; then
+            cd src
+            ninja -C out/Default third_party/electron_node:headers
+            export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
+            (cd electron/spec && npm install)
+            ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
+          fi
+    - store_test_results:
+        path: src/junit
+    - store_artifacts:
+        path: src/junit
+    - store_artifacts:
+        path: src/out/Default/dist.zip
 
 build-defaults: &build-defaults
   docker:
@@ -512,42 +588,80 @@ jobs:
     resource_class: 2xlarge
     <<: *gn-build-steps
 
+  electron-gn-osx-release-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/release.gn
+      RUN_TESTS: false
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-mac-build-steps
+
+  electron-gn-osx-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
+      RUN_TESTS: true
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-mac-build-steps
+
+  electron-gn-mas-release-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/release.gn
+      RUN_TESTS: false
+      GN_EXTRA_ARGS: 'is_mas_build = true'
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-mac-build-steps
+
+  electron-gn-mas-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
+      RUN_TESTS: true
+      GN_EXTRA_ARGS: 'is_mas_build = true'
+    macos:
+      xcode: "8.3.3"
+    resource_class: large
+    <<: *gn-mac-build-steps
+
 workflows:
   version: 2
-  build-arm:
-    jobs:
-      - electron-linux-arm
-      - electron-linux-arm-test:
-          requires:
-            - electron-linux-arm
-  build-arm64:
-    jobs:
-      - electron-linux-arm64
-      - electron-linux-arm64-test:
-          requires:
-            - electron-linux-arm64
-  build-ia32:
-    jobs:
-      - electron-linux-ia32
-  build-x64:
-    jobs:
-      - electron-linux-x64
-  build-osx-x64:
-    jobs:
-      - electron-osx-x64
-  build-mas-x64:
-    jobs:
-      - electron-mas-x64
+  # build-arm:
+  #   jobs:
+  #     - electron-linux-arm
+  #     - electron-linux-arm-test:
+  #         requires:
+  #           - electron-linux-arm
+  # build-arm64:
+  #   jobs:
+  #     - electron-linux-arm64
+  #     - electron-linux-arm64-test:
+  #         requires:
+  #           - electron-linux-arm64
+  # build-ia32:
+  #   jobs:
+  #     - electron-linux-ia32
+  # build-x64:
+  #   jobs:
+  #     - electron-linux-x64
+  # build-osx-x64:
+  #   jobs:
+  #     - electron-osx-x64
+  # build-mas-x64:
+  #   jobs:
+  #     - electron-mas-x64
   build-gn-linux:
     jobs:
-      - electron-gn-linux-x64-debug-fyi
-      - electron-gn-linux-x64-testing-fyi
-      - electron-gn-linux-ia32-debug-fyi
-      - electron-gn-linux-ia32-testing-fyi
-      - electron-gn-linux-arm-debug-fyi
-      - electron-gn-linux-arm-testing-fyi
-      - electron-gn-linux-arm64-debug-fyi
-      - electron-gn-linux-arm64-testing-fyi
+      - electron-gn-linux-x64-release-fyi
+      - electron-gn-linux-ia32-release-fyi
+      - electron-gn-linux-arm-release-fyi
+      - electron-gn-linux-arm64-release-fyi
+  build-gn-mac:
+    jobs:
+      - electron-gn-osx-release-fyi
+      - electron-gn-mas-release-fyi
 
   nightly-release-test:
     triggers:
