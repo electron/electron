@@ -205,7 +205,7 @@ gn-build-steps: &gn-build-steps
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          ninja -C out/Default electron/build/node:headers
+          ninja -C out/Default third_party/electron_node:headers
           export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
           (cd electron/spec && npm install)
           python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging

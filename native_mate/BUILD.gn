@@ -6,7 +6,7 @@ config("native_mate_config") {
 
 source_set("native_mate") {
   deps = [
-    "../build/node",
+    "//third_party/electron_node:node_lib",
     "//base",
     "//net",
     "//v8:v8_headers",
