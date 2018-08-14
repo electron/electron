@@ -1,3 +1,4 @@
+import("filenames.gni")
 import("//build/config/locales.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
@@ -48,15 +49,6 @@ if (is_mas_build) {
   assert(is_mac,
          "It doesn't make sense to build a MAS build on a non-mac platform")
 }
-
-filenames_gypi =
-    exec_script("//build/gypi_to_gn.py",
-                [
-                  rebase_path("filenames.gypi"),
-                  "--replace=<(SHARED_INTERMEDIATE_DIR)=$target_gen_dir",
-                ],
-                "scope",
-                [ "filenames.gypi" ])
 
 config("branding") {
   defines = [
@@ -158,7 +150,7 @@ action("atom_js2c") {
     ":atom_js2c_copy",
   ]
 
-  js2c_sources = filenames_gypi.js2c_sources
+  js2c_sources = filenames.js2c_sources
 
   browserify_sources = [
     "$target_gen_dir/js2c/isolated_bundle.js",
@@ -178,7 +170,7 @@ action("atom_js2c") {
 }
 
 asar("js2asar") {
-  sources = filenames_gypi.js_sources
+  sources = filenames.js_sources
   if (enable_desktop_capturer) {
     sources += [
       "lib/browser/desktop-capturer.js",
@@ -201,7 +193,7 @@ asar("js2asar") {
 }
 
 asar("app2asar") {
-  sources = filenames_gypi.default_app_sources
+  sources = filenames.default_app_sources
   outputs = [
     "$root_out_dir/resources/default_app.asar",
   ]
@@ -295,8 +287,12 @@ static_library("electron_lib") {
 
   set_sources_assignment_filter(
       sources_assignment_filter + extra_source_filters)
-  sources = filenames_gypi.lib_sources
+  sources = filenames.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
+
+  sources += [
+    "$target_gen_dir/atom_natives.h",
+  ]
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -304,7 +300,10 @@ static_library("electron_lib") {
 
   if (enable_fake_location_provider) {
     defines += [ "OVERRIDE_LOCATION_PROVIDER" ]
-    sources += filenames_gypi.lib_sources_location_provider
+    sources += [
+      "atom/browser/fake_location_provider.cc",
+      "atom/browser/fake_location_provider.h",
+    ]
   }
 
   if (is_mac) {
@@ -358,11 +357,11 @@ static_library("electron_lib") {
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
-    sources += filenames_gypi.lib_sources_linux
-    sources += filenames_gypi.lib_sources_nss
+    sources += filenames.lib_sources_linux
+    sources += filenames.lib_sources_nss
   }
   if (is_win) {
-    sources += filenames_gypi.lib_sources_win
+    sources += filenames.lib_sources_win
     libs += [ "dwmapi.lib" ]
   }
   if (is_linux || is_win) {
@@ -529,7 +528,7 @@ if (is_mac) {
     extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework", "ELECTRON_VERSION=$electron_version" ]
 
     include_dirs = [ "." ]
-    sources = filenames_gypi.framework_sources
+    sources = filenames.framework_sources
 
     libs = [
       "Carbon.framework",
@@ -560,7 +559,7 @@ if (is_mac) {
     deps = [
       ":electron_framework+link",
     ]
-    sources = filenames_gypi.app_sources
+    sources = filenames.app_sources
     include_dirs = [ "." ]
     info_plist = "atom/renderer/resources/mac/Info.plist"
     extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
@@ -593,7 +592,7 @@ if (is_mac) {
 
   mac_app_bundle("electron_login_helper") {
     output_name = electron_login_helper_name
-    sources = filenames_gypi.login_helper_sources
+    sources = filenames.login_helper_sources
     include_dirs = [ "." ]
     libs = [ "AppKit.framework" ]
     info_plist = "atom/app/resources/mac/loginhelper-Info.plist"
@@ -630,7 +629,7 @@ if (is_mac) {
 
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
-    sources = filenames_gypi.app_sources
+    sources = filenames.app_sources
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",
@@ -657,7 +656,7 @@ if (is_mac) {
 
   executable("electron_app") {
     output_name = electron_project_name
-    sources = filenames_gypi.app_sources
+    sources = filenames.app_sources
     include_dirs = [ "." ]
     deps = [
       ":app2asar",
