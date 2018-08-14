@@ -108,12 +108,12 @@ class OffScreenRenderWidgetHostView
   void SetNeedsBeginFrames(bool needs_begin_frames) override;
   void SetWantsAnimateOnlyBeginFrames() override;
 #if defined(OS_MACOSX)
-  ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   bool SupportsSpeech() const override;
   void SpeakSelection() override;
   bool IsSpeaking() const override;
+  bool ShouldContinueToPauseForFrame() override;
   void StopSpeaking() override;
 #endif  // defined(OS_MACOSX)
 
