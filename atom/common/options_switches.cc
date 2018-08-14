@@ -210,6 +210,9 @@ const char kWidevineCdmPath[] = "widevine-cdm-path";
 // Widevine CDM version.
 const char kWidevineCdmVersion[] = "widevine-cdm-version";
 
+// Forces the maximum disk space to be used by the disk cache, in bytes.
+const char kDiskCacheSize[] = "disk-cache-size";
+
 }  // namespace switches
 
 }  // namespace atom

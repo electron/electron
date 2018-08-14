@@ -472,7 +472,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
   net::URLFetcher* fetcher =
       (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
   pending_requests_[fetcher] = callback;
-  fetcher->SetRequestContext(browser_context->url_request_context_getter());
+  fetcher->SetRequestContext(browser_context->GetRequestContext());
   fetcher->SetExtraRequestHeaders(headers);
   fetcher->SaveResponseWithWriter(
       std::unique_ptr<net::URLFetcherResponseWriter>(

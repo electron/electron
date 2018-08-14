@@ -313,6 +313,8 @@
       'atom/browser/relauncher.h',
       'atom/browser/render_process_preferences.cc',
       'atom/browser/render_process_preferences.h',
+      'atom/browser/request_context_delegate.cc',
+      'atom/browser/request_context_delegate.h',
       'atom/browser/session_preferences.cc',
       'atom/browser/session_preferences.h',
       'atom/browser/ui/accelerator_util.cc',
