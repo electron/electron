@@ -22,7 +22,7 @@ class MacHelper : public content::BrowserCompositorMacClient,
   virtual ~MacHelper() {}
 
   // content::BrowserCompositorMacClient:
-  SkColor BrowserCompositorMacGetGutterColor(SkColor color) const override {
+  SkColor BrowserCompositorMacGetGutterColor() const override {
     // When making an element on the page fullscreen the element's background
     // may not match the page's, so use black as the gutter color to avoid
     // flashes of brighter colors during the transition.
@@ -30,7 +30,7 @@ class MacHelper : public content::BrowserCompositorMacClient,
         view_->render_widget_host()->delegate()->IsFullscreenForCurrentTab()) {
       return SK_ColorBLACK;
     }
-    return color;
+    return SK_ColorTRANSPARENT;
   }
 
   void BrowserCompositorMacOnBeginFrame() override {}
@@ -81,7 +81,7 @@ bool OffScreenRenderWidgetHostView::IsSpeaking() const {
 
 void OffScreenRenderWidgetHostView::StopSpeaking() {}
 
-bool CefRenderWidgetHostViewOSR::ShouldContinueToPauseForFrame() {
+bool OffScreenRenderWidgetHostView::ShouldContinueToPauseForFrame() {
   return browser_compositor_->ShouldContinueToPauseForFrame();
 }
 
