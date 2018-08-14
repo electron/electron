@@ -121,28 +121,6 @@ struct PrintSettings {
 namespace mate {
 
 template <>
-struct Converter<atom::SetSizeParams> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     atom::SetSizeParams* out) {
-    mate::Dictionary params;
-    if (!ConvertFromV8(isolate, val, &params))
-      return false;
-    bool autosize;
-    if (params.Get("enableAutoSize", &autosize))
-      out->enable_auto_size.reset(new bool(autosize));
-    gfx::Size size;
-    if (params.Get("min", &size))
-      out->min_size.reset(new gfx::Size(size));
-    if (params.Get("max", &size))
-      out->max_size.reset(new gfx::Size(size));
-    if (params.Get("normal", &size))
-      out->normal_size.reset(new gfx::Size(size));
-    return true;
-  }
-};
-
-template <>
 struct Converter<PrintSettings> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -396,7 +374,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(new WebViewGuestDelegate(embedder_->web_contents()));
+    guest_delegate_.reset(
+        new WebViewGuestDelegate(embedder_->web_contents(), this));
     params.guest_delegate = guest_delegate_.get();
 
 #if defined(ENABLE_OSR)
@@ -481,8 +460,6 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
-    guest_delegate_->Initialize(this);
-
     NativeWindow* owner_window = nullptr;
     if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
@@ -775,13 +752,6 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::ResizeDueToAutoResize(content::WebContents* web_contents,
-                                        const gfx::Size& new_size) {
-  if (IsGuest()) {
-    guest_delegate_->ResizeDueToAutoResize(new_size);
-  }
-}
-
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -926,6 +896,8 @@ void WebContents::DidFinishNavigation(
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
     }
+    if (IsGuest())
+      Emit("load-commit", url, is_main_frame);
   } else {
     auto url = navigation_handle->GetURL();
     int code = navigation_handle->GetNetErrorCode();
@@ -1743,9 +1715,8 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   }
 }
 
-void WebContents::SetSize(const SetSizeParams& params) {
-  if (guest_delegate_)
-    guest_delegate_->SetSize(params);
+void WebContents::SetSize(v8::Local<v8::Value>) {
+  // TODO(zcbenz): Remove this method in 4.0.
 }
 
 bool WebContents::IsGuest() const {

@@ -42,7 +42,6 @@ class ResourceRequestBody;
 
 namespace atom {
 
-struct SetSizeParams;
 class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
@@ -197,7 +196,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
-  void SetSize(const SetSizeParams& params);
+  void SetSize(v8::Local<v8::Value>);
   bool IsGuest() const;
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
@@ -342,8 +341,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::BluetoothChooser::EventHandler& handler) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
-  void ResizeDueToAutoResize(content::WebContents* web_contents,
-                             const gfx::Size& new_size) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;

@@ -7,7 +7,6 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/browser/web_contents/web_contents_impl.h"
-#include "content/public/browser/guest_host.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -17,91 +16,18 @@
 
 namespace atom {
 
-namespace {
-
-const int kDefaultWidth = 300;
-const int kDefaultHeight = 300;
-
-}  // namespace
-
-SetSizeParams::SetSizeParams() = default;
-SetSizeParams::~SetSizeParams() = default;
-
-WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder)
-    : embedder_web_contents_(embedder) {}
+WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder,
+                                           api::WebContents* api_web_contents)
+    : embedder_web_contents_(embedder), api_web_contents_(api_web_contents) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {
   ResetZoomController();
-}
-
-void WebViewGuestDelegate::Initialize(api::WebContents* api_web_contents) {
-  api_web_contents_ = api_web_contents;
-  Observe(api_web_contents->GetWebContents());
-}
-
-void WebViewGuestDelegate::SetSize(const SetSizeParams& params) {
-  bool enable_auto_size =
-      params.enable_auto_size ? *params.enable_auto_size : auto_size_enabled_;
-  gfx::Size min_size = params.min_size ? *params.min_size : min_auto_size_;
-  gfx::Size max_size = params.max_size ? *params.max_size : max_auto_size_;
-
-  if (params.normal_size)
-    normal_size_ = *params.normal_size;
-
-  min_auto_size_ = min_size;
-  min_auto_size_.SetToMin(max_size);
-  max_auto_size_ = max_size;
-  max_auto_size_.SetToMax(min_size);
-
-  enable_auto_size &= !min_auto_size_.IsEmpty() && !max_auto_size_.IsEmpty();
-
-  auto* rvh = web_contents()->GetRenderViewHost();
-  if (enable_auto_size) {
-    // Autosize is being enabled.
-    rvh->EnableAutoResize(min_auto_size_, max_auto_size_);
-    normal_size_.SetSize(0, 0);
-  } else {
-    // Autosize is being disabled.
-    // Use default width/height if missing from partially defined normal size.
-    if (normal_size_.width() && !normal_size_.height())
-      normal_size_.set_height(GetDefaultSize().height());
-    if (!normal_size_.width() && normal_size_.height())
-      normal_size_.set_width(GetDefaultSize().width());
-
-    gfx::Size new_size;
-    if (!normal_size_.IsEmpty()) {
-      new_size = normal_size_;
-    } else if (!guest_size_.IsEmpty()) {
-      new_size = guest_size_;
-    } else {
-      new_size = GetDefaultSize();
-    }
-
-    bool changed_due_to_auto_resize = false;
-    if (auto_size_enabled_) {
-      // Autosize was previously enabled.
-      rvh->DisableAutoResize(new_size);
-      changed_due_to_auto_resize = true;
-    } else {
-      // Autosize was already disabled.
-      guest_host_->SizeContents(new_size);
-    }
-
-    UpdateGuestSize(new_size, changed_due_to_auto_resize);
-  }
-
-  auto_size_enabled_ = enable_auto_size;
-}
-
-void WebViewGuestDelegate::ResizeDueToAutoResize(const gfx::Size& new_size) {
-  UpdateGuestSize(new_size, auto_size_enabled_);
 }
 
 void WebViewGuestDelegate::AttachToIframe(
     content::WebContents* embedder_web_contents,
     int embedder_frame_id) {
   embedder_web_contents_ = embedder_web_contents;
-  attached_ = true;
 
   int embedder_process_id =
       embedder_web_contents_->GetMainFrame()->GetProcess()->GetID();
@@ -113,8 +39,8 @@ void WebViewGuestDelegate::AttachToIframe(
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
-  web_contents()->AttachToOuterWebContentsFrame(embedder_web_contents_,
-                                                embedder_frame);
+  api_web_contents_->web_contents()->AttachToOuterWebContentsFrame(
+      embedder_web_contents_, embedder_frame);
 
   ResetZoomController();
 
@@ -127,26 +53,12 @@ void WebViewGuestDelegate::AttachToIframe(
   api_web_contents_->Emit("did-attach");
 }
 
-void WebViewGuestDelegate::DidFinishNavigation(
-    content::NavigationHandle* navigation_handle) {
-  if (navigation_handle->HasCommitted() && !navigation_handle->IsErrorPage()) {
-    auto is_main_frame = navigation_handle->IsInMainFrame();
-    auto url = navigation_handle->GetURL();
-    api_web_contents_->Emit("load-commit", url, is_main_frame);
-  }
-}
-
 void WebViewGuestDelegate::DidDetach() {
-  attached_ = false;
   ResetZoomController();
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() const {
   return embedder_web_contents_;
-}
-
-void WebViewGuestDelegate::SetGuestHost(content::GuestHost* guest_host) {
-  guest_host_ = guest_host;
 }
 
 void WebViewGuestDelegate::OnZoomLevelChanged(
@@ -167,25 +79,6 @@ void WebViewGuestDelegate::OnZoomLevelChanged(
 
 void WebViewGuestDelegate::OnZoomControllerWebContentsDestroyed() {
   ResetZoomController();
-}
-
-void WebViewGuestDelegate::UpdateGuestSize(const gfx::Size& new_size,
-                                           bool due_to_auto_resize) {
-  if (due_to_auto_resize)
-    api_web_contents_->Emit("size-changed", guest_size_.width(),
-                            guest_size_.height(), new_size.width(),
-                            new_size.height());
-  guest_size_ = new_size;
-}
-
-gfx::Size WebViewGuestDelegate::GetDefaultSize() const {
-  if (is_full_page_plugin_) {
-    // Full page plugins default to the size of the owner's viewport.
-    return embedder_web_contents_->GetRenderWidgetHostView()
-        ->GetVisibleViewportSize();
-  } else {
-    return gfx::Size(kDefaultWidth, kDefaultHeight);
-  }
 }
 
 void WebViewGuestDelegate::ResetZoomController() {

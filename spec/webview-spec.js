@@ -5,7 +5,7 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 const {ipcRenderer, remote} = require('electron')
-const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
+const {app, session, getGuestWebContents, ipcMain, BrowserWindow} = remote
 const {closeWindow} = require('./window-helpers')
 const {emittedOnce, waitForEvent} = require('./events-helpers')
 
@@ -1523,113 +1523,6 @@ describe('<webview> tag', function () {
       expect(secondResizeEvent.target).to.equal(webview)
       expect(secondResizeEvent.newWidth).to.equal(newWidth)
       expect(secondResizeEvent.newHeight).to.equal(newHeight)
-    })
-  })
-
-  describe('disableguestresize attribute', () => {
-    it('does not have attribute by default', () => {
-      loadWebView(webview)
-      assert(!webview.hasAttribute('disableguestresize'))
-    })
-
-    it('resizes guest when attribute is not present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const elementResize = emittedOnce(ipcMain, 'webview-element-resize')
-          .then(([, width, height]) => {
-            assert.equal(width, CONTENT_SIZE)
-            assert.equal(height, CONTENT_SIZE)
-          })
-
-      const guestResize = emittedOnce(ipcMain, 'webview-guest-resize')
-          .then(([, width, height]) => {
-            assert.equal(width, CONTENT_SIZE)
-            assert.equal(height, CONTENT_SIZE)
-          })
-
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-
-      return Promise.all([elementResize, guestResize])
-    })
-
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('does not resize guest when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const noGuestResizePromise = Promise.race([
-        emittedOnce(ipcMain, 'webview-guest-resize'),
-        new Promise(resolve => setTimeout(() => resolve(), 500))
-      ]).then((eventData = null) => {
-        if (eventData !== null) {
-          // Means we got the 'webview-guest-resize' event before the time out.
-          return Promise.reject(new Error('Unexpected guest resize message'))
-        }
-      })
-
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-
-      return noGuestResizePromise
-    })
-
-    it('dispatches element resize event even when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const whenElementResized = emittedOnce(ipcMain, 'webview-element-resize')
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-      const [, width, height] = await whenElementResized
-
-      expect(width).to.equal(CONTENT_SIZE)
-      expect(height).to.equal(CONTENT_SIZE)
-    })
-
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('can be manually resized with setSize even when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const GUEST_WIDTH = 10
-      const GUEST_HEIGHT = 20
-
-      const guestResizePromise = emittedOnce(ipcMain, 'webview-guest-resize')
-          .then(([, width, height]) => {
-            expect(width).to.be.equal(GUEST_WIDTH)
-            expect(height).to.be.equal(GUEST_HEIGHT)
-          })
-
-      const wc = webContents.getAllWebContents().find((wc) => {
-        return wc.hostWebContents &&
-            wc.hostWebContents.id === w.webContents.id
-      })
-      assert(wc)
-      wc.setSize({
-        normal: {
-          width: GUEST_WIDTH,
-          height: GUEST_HEIGHT
-        }
-      })
-
-      return guestResizePromise
     })
   })
 

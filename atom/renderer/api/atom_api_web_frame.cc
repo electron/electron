@@ -11,7 +11,6 @@
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
-#include "atom/renderer/guest_view_container.h"
 #include "base/memory/memory_pressure_listener.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -195,8 +194,7 @@ v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
       blink::WebString::FromUTF16(name), options);
 }
 
-int WebFrame::AttachIframeGuest(int element_instance_id,
-                                v8::Local<v8::Value> content_window) {
+int WebFrame::GetWebFrameId(v8::Local<v8::Value> content_window) {
   // Get the WebLocalFrame before (possibly) executing any user-space JS while
   // getting the |params|. We track the status of the RenderFrame via an
   // observer in case it is deleted during user code execution.
@@ -212,24 +210,7 @@ int WebFrame::AttachIframeGuest(int element_instance_id,
   DCHECK(parent_frame);
   DCHECK(parent_frame->IsWebLocalFrame());
 
-  content::RenderFrame* embedder_parent_frame =
-      content::RenderFrame::FromWebFrame(parent_frame->ToWebLocalFrame());
-
-  // Create a GuestViewContainer if it does not exist.
-  // An element instance ID uniquely identifies an GuestViewContainer
-  // within a RenderView.
-  auto* guest_view_container = GuestViewContainer::FromID(element_instance_id);
-  // This is the first time we hear about the |element_instance_id|.
-  DCHECK(!guest_view_container);
-  // The <webview> element's GC takes ownership of |guest_view_container|.
-  guest_view_container = new GuestViewContainer(embedder_parent_frame);
-  guest_view_container->SetElementInstanceID(element_instance_id);
-
   return render_frame->GetRoutingID();
-}
-
-void WebFrame::DetachGuest(int id) {
-  content::RenderFrame::FromWebFrame(web_frame_)->DetachGuest(id);
 }
 
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
@@ -510,8 +491,7 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
                  &WebFrame::SetLayoutZoomLevelLimits)
       .SetMethod("registerEmbedderCustomElement",
                  &WebFrame::RegisterEmbedderCustomElement)
-      .SetMethod("attachIframeGuest", &WebFrame::AttachIframeGuest)
-      .SetMethod("detachGuest", &WebFrame::DetachGuest)
+      .SetMethod("getWebFrameId", &WebFrame::GetWebFrameId)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
       .SetMethod("registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
