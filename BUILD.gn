@@ -239,7 +239,6 @@ static_library("electron_lib") {
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing",
-    "//services/device/wake_lock/power_save_blocker",  # TODO: this requires a visibility patch to chromium src
     "//skia",
     "//third_party/WebKit/public:blink",
     "//third_party/boringssl",
@@ -254,13 +253,19 @@ static_library("electron_lib") {
     "//v8",
   ]
 
+  # TODO: this requires a visibility patch to chromium src. it would be better
+  # to use the publicly-available API, which I think is mojo-based. Once
+  # electron switches to using the public API, we can remove this from the deps
+  # list and remove the visibility patch from chromium.
+  deps += [ "//services/device/wake_lock/power_save_blocker" ]
+
   include_dirs = [
     "chromium_src",
     ".",
     "$target_gen_dir",
 
     # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
-    # API of blink, then delete this include dir.
+    # API of blink, then remove this from the include_dirs.
     "//third_party/WebKit/Source",
   ]
 
@@ -714,7 +719,6 @@ if (is_mac) {
       ]
 
       deps += [
-        # TODO: move non-windows specific deps into the non-windows-specific list
         "//third_party/breakpad:breakpad_handler",
         "//third_party/breakpad:breakpad_sender",
         "//ui/native_theme:native_theme_browser",
@@ -733,9 +737,11 @@ if (is_mac) {
       configs += [ "//build/config/win:windowed" ]
 
       ldflags = [
-        # TODO: these are for win7 compatibility, are there other things we need to do for that?
-        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-L1-1-0.DLL",
-        "/DELAYLOAD:API-MS-WIN-CORE-WINRT-STRING-L1-1-0.DLL",
+        # Windows 7 doesn't have these DLLs.
+        # TODO: are there other DLLs we need to list here to be win7
+        # compatible?
+        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
+        "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll",
       ]
     }
     if (is_linux) {
