@@ -27,6 +27,7 @@
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
+#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_view.h"
@@ -332,6 +333,8 @@ class OffScreenRenderWidgetHostView
   // Selected text on the renderer.
   std::string selected_text_;
 #endif
+
+  content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 
   viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
       nullptr;
