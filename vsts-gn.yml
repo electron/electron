@@ -6,16 +6,25 @@ phases:
     timeoutInMinutes: 180
   steps:
   - bash: |
-      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-      echo "##vso[task.setvariable variable=PATH]$PATH:`pwd`/depot_tools"
+      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${AGENT_BUILDDIRECTORY}/depot_tools"
+      echo "##vso[task.setvariable variable=PATH]$PATH:${AGENT_BUILDDIRECTORY}/depot_tools"
     name: Setup_depot_tools
 
   - bash: |
+      set -ex
       gclient config \
         --name "src/electron" \
         --unmanaged \
         --cache-dir "/Users/electron/libcc_cache" \
         "https://github.com/electron/electron"
+      mkdir src
+      git clone https://github.com/electron/electron src/electron
+      # TODO: there's a subtle race condition here in that if you push two
+      # commits to $BUILD_SOURCEBRANCH in quick succession, it's possible that
+      # fetching the BUILD_SOURCEBRANCH ref will not actually fetch the
+      # BUILD_SOURCEVERSION commit, and so the checkout will fail. Find a
+      # better solution for checking out the commit to be built.
+      (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
       gclient sync --with_branch_heads --with_tags
     name: gclient_sync
 
