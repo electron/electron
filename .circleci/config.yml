@@ -169,6 +169,7 @@ gn-build-steps: &gn-build-steps
             --name "src/electron" \
             --unmanaged \
             --cache-dir "$HOME/.gclient-cache" \
+            $GCLIENT_EXTRA_ARGS \
             "$CIRCLE_REPOSITORY_URL"
 
           gclient sync --with_branch_heads --with_tags
@@ -204,11 +205,13 @@ gn-build-steps: &gn-build-steps
           MOCHA_FILE: junit/test-results.xml
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
-          cd src
-          ninja -C out/Default third_party/electron_node:headers
-          export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
-          (cd electron/spec && npm install)
-          python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+          if [ "$RUN_TESTS" != "false" ]; then
+            cd src
+            ninja -C out/Default third_party/electron_node:headers
+            export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
+            (cd electron/spec && npm install)
+            python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+          fi
     - store_test_results:
         path: src/junit
     - store_artifacts:
@@ -420,6 +423,50 @@ jobs:
     resource_class: 2xlarge
     <<: *gn-build-steps
 
+  electron-gn-linux-arm-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm"'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-arm-release-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm"'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-arm64-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-arm64-release-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/release.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
 workflows:
   version: 2
   build-arm:
@@ -452,6 +499,10 @@ workflows:
       - electron-gn-linux-x64-release-fyi
       - electron-gn-linux-ia32-debug-fyi
       - electron-gn-linux-ia32-release-fyi
+      - electron-gn-linux-arm-debug-fyi
+      - electron-gn-linux-arm-release-fyi
+      - electron-gn-linux-arm64-debug-fyi
+      - electron-gn-linux-arm64-release-fyi
 
   nightly-release-test:
     triggers:
