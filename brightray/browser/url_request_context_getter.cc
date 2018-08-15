@@ -31,6 +31,7 @@
 #include "net/cookies/cookie_monster.h"
 #include "net/cookies/cookie_store.h"
 #include "net/dns/mapped_host_resolver.h"
+#include "net/extras/sqlite/sqlite_channel_id_store.h"
 #include "net/http/http_auth_filter.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
@@ -216,29 +217,46 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     storage_->set_network_delegate(delegate_->CreateNetworkDelegate());
 
+    std::unique_ptr<net::CookieStore> cookie_store;
+    scoped_refptr<net::SQLiteChannelIDStore> channel_id_db;
+    // Create a single task runner to use with the CookieStore and
+    // ChannelIDStore.
+    scoped_refptr<base::SequencedTaskRunner> cookie_background_task_runner =
+        base::CreateSequencedTaskRunnerWithTraits(
+            {base::MayBlock(), base::TaskPriority::BACKGROUND,
+             base::TaskShutdownBehavior::BLOCK_SHUTDOWN});
     auto cookie_path = in_memory_
                            ? base::FilePath()
                            : base_path_.Append(FILE_PATH_LITERAL("Cookies"));
-    std::unique_ptr<net::CookieStore> cookie_store = content::CreateCookieStore(
-        content::CookieStoreConfig(cookie_path, false, false, nullptr));
-    storage_->set_cookie_store(std::move(cookie_store));
+    if (!in_memory_) {
+      channel_id_db = new net::SQLiteChannelIDStore(
+          base_path_.Append(FILE_PATH_LITERAL("Origin Bound Certs")),
+          cookie_background_task_runner);
+    }
+    std::unique_ptr<net::ChannelIDService> channel_id_service(
+        new net::ChannelIDService(
+            new net::DefaultChannelIDStore(channel_id_db.get())));
+    content::CookieStoreConfig cookie_config(cookie_path, false, false,
+                                             nullptr);
+    cookie_config.channel_id_service = channel_id_service.get();
+    cookie_config.background_task_runner = cookie_background_task_runner;
+    cookie_store = content::CreateCookieStore(cookie_config);
+    cookie_store->SetChannelIDServiceID(channel_id_service->GetUniqueID());
 
     // Set custom schemes that can accept cookies.
     net::CookieMonster* cookie_monster =
-        static_cast<net::CookieMonster*>(url_request_context_->cookie_store());
+        static_cast<net::CookieMonster*>(cookie_store.get());
     std::vector<std::string> cookie_schemes({"http", "https", "ws", "wss"});
     delegate_->GetCookieableSchemes(&cookie_schemes);
     cookie_monster->SetCookieableSchemes(cookie_schemes);
     // Cookie store will outlive notifier by order of declaration
     // in the header.
-    cookie_change_sub_ = url_request_context_->cookie_store()
-                             ->GetChangeDispatcher()
-                             .AddCallbackForAllChanges(base::Bind(
-                                 &URLRequestContextGetter::OnCookieChanged,
-                                 base::RetainedRef(this)));
-
-    storage_->set_channel_id_service(std::make_unique<net::ChannelIDService>(
-        new net::DefaultChannelIDStore(nullptr)));
+    cookie_change_sub_ =
+        cookie_store->GetChangeDispatcher().AddCallbackForAllChanges(
+            base::Bind(&URLRequestContextGetter::OnCookieChanged,
+                       base::RetainedRef(this)));
+    storage_->set_cookie_store(std::move(cookie_store));
+    storage_->set_channel_id_service(std::move(channel_id_service));
 
     storage_->set_http_user_agent_settings(
         base::WrapUnique(new net::StaticHttpUserAgentSettings(
