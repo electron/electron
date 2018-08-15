@@ -170,7 +170,6 @@ class OffScreenRenderWidgetHostView
   bool DelegatedFrameCanCreateResizeLock() const override;
   std::unique_ptr<content::CompositorResizeLock>
   DelegatedFrameHostCreateResizeLock() override;
-  viz::LocalSurfaceId GetLocalSurfaceId() const override;
   void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
   void OnBeginFrame(base::TimeTicks frame_time) override;
   void OnFrameTokenChanged(uint32_t frame_token) override;
@@ -181,6 +180,11 @@ class OffScreenRenderWidgetHostView
   void CompositorResizeLockEnded() override;
   bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
+
+  viz::LocalSurfaceId GetLocalSurfaceId() const override;
+  viz::FrameSinkId GetFrameSinkId() override;
+
+  void DidNavigate() override;
 
   bool TransformPointToLocalCoordSpace(const gfx::PointF& point,
                                        const viz::SurfaceId& original_surface,
@@ -261,11 +265,9 @@ class OffScreenRenderWidgetHostView
     child_host_view_ = child_view;
   }
 
-  viz::LocalSurfaceId local_surface_id() const { return local_surface_id_; }
-
  private:
   void SetupFrameRate(bool force);
-  void ResizeRootLayer();
+  void ResizeRootLayer(bool force);
 
   viz::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
 

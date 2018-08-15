@@ -776,6 +776,8 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
+  if (data.handle == base::kNullProcessHandle)
+    return;
   ChildProcessLaunched(data.process_type, data.handle);
 }
 
@@ -810,6 +812,16 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
       base::ProcessMetrics::CreateProcessMetrics(
           handle, content::BrowserChildProcessHost::GetPortProvider()));
 #else
+  // We do the same check here as what CreateProcessMetrics DCHECKs for,
+  // because that DCHECK triggers a crash when we run in OSR with GPU
+  // rendering disabled - @brenca
+  HANDLE duplicate_handle;
+  BOOL result =
+      ::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(),
+                        &duplicate_handle, PROCESS_QUERY_INFORMATION, FALSE, 0);
+  if (!result)
+    return;
+
   std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif

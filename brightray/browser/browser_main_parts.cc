@@ -186,8 +186,7 @@ void BrowserMainParts::InitializeFeatureList() {
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
 
-  // Disable surface synchronization and async wheel events to make OSR work.
-  disable_features += ",SurfaceSynchronization,AsyncWheelEvents";
+  disable_features += ",GuestViewCrossProcessFrames";
 
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
