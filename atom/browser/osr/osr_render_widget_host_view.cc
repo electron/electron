@@ -280,9 +280,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
-  // Surface synchronization is not supported with OSR.
-  DCHECK(!features::IsSurfaceSynchronizationEnabled());
-
 #if defined(OS_MACOSX)
   CreatePlatformWidget(is_guest_view_hack);
 #else
@@ -304,7 +301,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   native_window_->AddObserver(this);
 
-  ResizeRootLayer();
+  ResizeRootLayer(false);
   render_widget_host_->SetView(this);
   InstallTransparency();
 }
@@ -386,7 +383,7 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
   parent_host_view_->set_child_host_view(this);
   parent_host_view_->Hide();
 
-  ResizeRootLayer();
+  ResizeRootLayer(false);
   Show();
 }
 
@@ -580,7 +577,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   popup_position_ = pos;
 
-  ResizeRootLayer();
+  ResizeRootLayer(false);
   Show();
 }
 
@@ -744,10 +741,6 @@ OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
   return std::make_unique<content::CompositorResizeLock>(this, desired_size);
 }
 
-viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
-  return local_surface_id_;
-}
-
 void OffScreenRenderWidgetHostView::OnFirstSurfaceActivation(
     const viz::SurfaceInfo& surface_info) {}
 
@@ -775,7 +768,25 @@ bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
   return render_widget_host_->auto_resize_enabled();
 }
 
+viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
+  return local_surface_id_;
+}
+
 #endif  // !defined(OS_MACOSX)
+
+viz::FrameSinkId OffScreenRenderWidgetHostView::GetFrameSinkId() {
+  return GetDelegatedFrameHost()->frame_sink_id();
+}
+
+void OffScreenRenderWidgetHostView::DidNavigate() {
+  ResizeRootLayer(true);
+#if defined(OS_MACOSX)
+  browser_compositor_->DidNavigate();
+#else
+  if (delegated_frame_host_)
+    delegated_frame_host_->DidNavigate();
+#endif
+}
 
 bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
     const gfx::PointF& point,
@@ -883,7 +894,7 @@ OffScreenRenderWidgetHostView::CreateSoftwareOutputDevice(
   DCHECK(!copy_frame_generator_);
   DCHECK(!software_output_device_);
 
-  ResizeRootLayer();
+  ResizeRootLayer(false);
 
   software_output_device_ = new OffScreenOutputDevice(
       transparent_, base::Bind(&OffScreenRenderWidgetHostView::OnPaint,
@@ -1035,7 +1046,7 @@ void OffScreenRenderWidgetHostView::WasResized() {
     return;
   }
 
-  ResizeRootLayer();
+  ResizeRootLayer(false);
   if (render_widget_host_)
     render_widget_host_->WasResized();
   GetDelegatedFrameHost()->WasResized(local_surface_id_, size_,
@@ -1217,8 +1228,10 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   frame_rate_threshold_us_ = 1000000 / frame_rate_;
 
-  GetCompositor()->SetAuthoritativeVSyncInterval(
-      base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
+  if (GetCompositor()) {
+    GetCompositor()->SetAuthoritativeVSyncInterval(
+        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
+  }
 
   if (copy_frame_generator_.get()) {
     copy_frame_generator_->set_frame_rate_threshold_us(
@@ -1247,7 +1260,7 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   }
 }
 
-void OffScreenRenderWidgetHostView::ResizeRootLayer() {
+void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
   const float compositorScaleFactor = GetCompositor()->device_scale_factor();
@@ -1259,7 +1272,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer() {
   else
     size = popup_position_.size();
 
-  if (!scaleFactorDidChange && size == GetRootLayer()->bounds().size())
+  if (!force && !scaleFactorDidChange &&
+      size == GetRootLayer()->bounds().size())
     return;
 
   const gfx::Size& size_in_pixels =

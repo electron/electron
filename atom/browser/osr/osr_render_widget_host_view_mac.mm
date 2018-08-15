@@ -98,6 +98,10 @@ void OffScreenRenderWidgetHostView::DestroyPlatformWidget() {
   delete mac_helper_;
 }
 
+viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
+  return browser_compositor_->GetRendererLocalSurfaceId();
+}
+
 ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
   return browser_compositor_->GetCompositor();
 }
