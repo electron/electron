@@ -17,5 +17,6 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 
 ##### Release Notes
+<!-- Used to describe release notes for future release versions. See https://github.com/electron/clerk/blob/master/README.md for details. -->
 
 Notes: <!-- One-line Change Summary Here-->
