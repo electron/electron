@@ -1100,8 +1100,13 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
-  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
+                                                bool visibleOnFullScreen) {
+  if (visible) {
+    SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  } else if (visible && visibleOnFullScreen) {
+    SetCollectionBehavior(visible, (NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary));
+  }
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {

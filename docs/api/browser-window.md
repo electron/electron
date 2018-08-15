@@ -1397,11 +1397,16 @@ can still bring up the menu bar by pressing the single `Alt` key.
 
 Returns `Boolean` - Whether the menu bar is visible.
 
-#### `win.setVisibleOnAllWorkspaces(visible)`
+#### `win.setVisibleOnAllWorkspaces(visible[, visibleOnFullScreen])`
 
 * `visible` Boolean
 
 Sets whether the window should be visible on all workspaces.
+
+* `visibleOnFullScreen` Boolean (optional)
+
+Sets whether the window should be visible above fullscreen windows, `visible`
+must be set to `true`.
 
 **Note:** This API does nothing on Windows.
 
