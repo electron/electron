@@ -1111,7 +1111,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
 
   blink::WebMouseWheelEvent mouse_wheel_event(event);
 
-  mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded();
+  mouse_wheel_phase_handler_.SendWheelEndIfNeeded();
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
       mouse_wheel_event, false);
 
