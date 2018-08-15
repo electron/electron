@@ -163,7 +163,12 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible);
+#if defined(OS_MACOSX)
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen);
+#else
+  virtual void SetVisibleOnAllWorkspaces(bool visible);
+#endif
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
