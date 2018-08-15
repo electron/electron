@@ -1,0 +1,32 @@
+diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
+index d04390df..0b8677ce 100644
+--- a/include/openssl/ssl.h
++++ b/include/openssl/ssl.h
+@@ -4120,6 +4120,8 @@ extern "C++" OPENSSL_EXPORT void SSL_CTX_sess_set_get_cb(
+ // Use |SSL_enable_ocsp_stapling| instead.
+ OPENSSL_EXPORT int SSL_set_tlsext_status_type(SSL *ssl, int type);
+ 
++OPENSSL_EXPORT int SSL_get_tlsext_status_type(SSL *ssl);
++
+ // SSL_set_tlsext_status_ocsp_resp sets the OCSP response. It returns one on
+ // success and zero on error. On success, |ssl| takes ownership of |resp|, which
+ // must have been allocated by |OPENSSL_malloc|.
+diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
+index 0c004fd4..6c849b5b 100644
+--- a/ssl/ssl_lib.cc
++++ b/ssl/ssl_lib.cc
+@@ -2723,6 +2723,14 @@ int SSL_set_tlsext_status_type(SSL *ssl, int type) {
+   return 1;
+ }
+ 
++int SSL_get_tlsext_status_type(SSL *ssl) {
++  if (ssl->ocsp_stapling_enabled) {
++    return TLSEXT_STATUSTYPE_ocsp;
++  }
++
++  return TLSEXT_STATUSTYPE_nothing;
++}
++
+ int SSL_set_tlsext_status_ocsp_resp(SSL *ssl, uint8_t *resp, size_t resp_len) {
+   if (SSL_set_ocsp_response(ssl, resp, resp_len)) {
+     OPENSSL_free(resp);

@@ -1,0 +1,130 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 494ba22f29..6071422d7d 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -157,7 +157,7 @@ config("internal_config") {
+ 
+   include_dirs = [ "." ]
+ 
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines = [ "BUILDING_V8_SHARED" ]
+   }
+ }
+@@ -174,6 +174,20 @@ config("libplatform_config") {
+   if (is_component_build) {
+     defines = [ "USING_V8_PLATFORM_SHARED" ]
+   }
++
++  # For Electron "static_library" all V8 symbols are together in one DLL.
++  # V8 targets which depend on libplatform need to be built with
++  # BUILDING_V8_PLATFORM_SHARED in order to declare its symbols as exported.
++  #
++  # Caveat:
++  # This setting applies to _all_ dependent targets, even those outside
++  # of V8! Currently there are no other targets dependent on v8_libplatform
++  # which Electron would consume, so we don't need to do more complicated tweaks
++  # but be aware of this and check that it's still the case when upgrading
++  # to newer Chromium version.
++  if (is_electron_build && !is_electron_gn_build && !is_component_build) {
++    defines = [ "BUILDING_V8_PLATFORM_SHARED" ]
++  }
+ }
+ 
+ # This config should be applied to code using the libbase.
+@@ -185,6 +199,20 @@ config("libbase_config") {
+   if (is_android && current_toolchain != host_toolchain) {
+     libs += [ "log" ]
+   }
++
++  # For Electron "static_library" all V8 symbols are together in one DLL.
++  # V8 targets which depend on libbase need to be built with
++  # BUILDING_V8_BASE_SHARED in order to declare its symbols as exported.
++  #
++  # Caveat:
++  # This setting applies to _all_ dependent targets, even those outside
++  # of V8! Currently there are no other targets dependent on v8_libbase
++  # which Electron would consume, so we don't need to do more complicated tweaks
++  # but be aware of this and check that it's still the case when upgrading
++  # to newer Chromium version.
++  if (is_electron_build && !is_electron_gn_build && !is_component_build) {
++    defines = [ "BUILDING_V8_BASE_SHARED" ]
++  }
+ }
+ 
+ # This config should be applied to code using the libsampler.
+@@ -209,7 +209,7 @@ config("libsampler_config") {
+ # itself.
+ config("external_config") {
+   defines = []
+-  if (is_component_build) {
++  if (is_component_build || (is_electron_build && !is_electron_gn_build)) {
+     defines += [ "USING_V8_SHARED" ]
+   }
+   if (v8_enable_v8_checks) {
+@@ -2674,6 +2674,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
+ 
+     configs = [ ":internal_config" ]
+ 
++    configs += [ "//libchromiumcontent/chromiumcontent/config:build_time_executable" ]
++
+     deps = [
+       ":v8_base",
+       ":v8_init",
+@@ -2667,7 +2697,7 @@ group("v8_fuzzers") {
+   ]
+ }
+ 
+-if (is_component_build) {
++if (is_component_build || (is_electron_build && !is_electron_gn_build)) {
+   v8_component("v8") {
+     sources = [
+       "src/v8dll-main.cc",
+@@ -2681,6 +2711,13 @@ if (is_component_build) {
+     configs = [ ":internal_config" ]
+ 
+     public_configs = [ ":external_config" ]
++
++    # For Electron "static_library" keep V8 as a shared library. This is only
++    # needed so that other targets in Chromium build cleanly. Electron doesn't
++    # need the DLL.
++    if (is_electron_build && !is_electron_gn_build && !is_component_build) {
++      static_component_type = "shared_library"
++    }
+   }
+ 
+   v8_component("v8_for_testing") {
+diff --git a/gni/v8.gni b/gni/v8.gni
+index 9a2bb3dff4..53be2017c7 100644
+--- a/gni/v8.gni
++++ b/gni/v8.gni
+@@ -164,6 +164,16 @@ template("v8_executable") {
+ 
+ template("v8_component") {
+   component(target_name) {
++    # If this is a non-component build, but this target forces itself to be
++    # a shared library, we must reset the default configs that were applied
++    # (see the set_defaults("component") statement in BUILDCONFIG.gn)
++    # and assign those for shared libraries.
++    if (defined(invoker.static_component_type) &&
++        invoker.static_component_type == "shared_library") {
++      configs = []
++      configs = default_shared_library_configs
++    }
++
+     forward_variables_from(invoker, "*", [ "configs" ])
+     configs += invoker.configs
+     configs -= v8_remove_configs
+diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
+index 699b1bcbd4..11fc31d851 100644
+--- a/src/inspector/BUILD.gn
++++ b/src/inspector/BUILD.gn
+@@ -79,7 +79,7 @@ action("inspector_injected_script") {
+ 
+ config("inspector_config") {
+   visibility = [ ":*" ]  # Only targets in this file can depend on this.
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines = [ "BUILDING_V8_SHARED" ]
+   }
+ }

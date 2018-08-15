@@ -1,0 +1,91 @@
+diff --git a/.gn b/.gn
+index 50a8a2fe9f1e..66ced79f1627 100644
+--- a/.gn
++++ b/.gn
+@@ -259,4 +259,8 @@ exec_script_whitelist =
+       # Not gypi-to-gn.
+       "//google_apis/BUILD.gn",
+       "//printing/BUILD.gn",
++      # While electron transitions to GN, we use gypi_to_gn to synchronize
++      # file lists
++      "//electron/BUILD.gn",
++      "//electron/brightray/BUILD.gn",
+     ]
+diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
+index 7d60dd920904..d2f2cbc99915 100644
+--- a/build/config/BUILDCONFIG.gn
++++ b/build/config/BUILDCONFIG.gn
+@@ -123,6 +123,10 @@ if (current_os == "") {
+ #   even if the value is overridden, which is wasteful. See first bullet.
+ 
+ declare_args() {
++  is_electron_build = false
++  is_electron_gn_build = false
++  is_mas_build = false
++
+   # Set to enable the official build level of optimization. This has nothing
+   # to do with branding, but enables an additional level of optimization above
+   # release (!is_debug). This might be better expressed as a tri-state
+@@ -539,6 +539,7 @@ default_compiler_configs = [
+   "//build/config/compiler:thin_archive",
+   "//build/config/coverage:default_coverage",
+   "//build/config/sanitizers:default_sanitizer_flags",
++  "//libchromiumcontent/chromiumcontent/config:mas_build",
+ ]
+ 
+ if (is_win) {
+@@ -642,6 +645,7 @@ template("component") {
+     _component_mode = "shared_library"
+   } else if (defined(invoker.static_component_type)) {
+     assert(invoker.static_component_type == "static_library" ||
++           (is_electron_build && invoker.static_component_type == "shared_library") ||
+            invoker.static_component_type == "source_set")
+     _component_mode = invoker.static_component_type
+   } else if (is_android || !defined(invoker.sources)) {
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 9a10137aa405..bb33e5450eaa 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -579,10 +579,13 @@ config("compiler") {
+       ldflags += [ "-Wl,--lto-O0" ]
+     }
+ 
+-    cflags += [ "-fwhole-program-vtables" ]
+-    if (!is_win) {
+-      ldflags += [ "-fwhole-program-vtables" ]
+-    }
++    # -fwhole-program-vtables doesn't work well in Electron right now, as it's
++    # not a single binary and the optimizations break interfaces used across
++    # binary boundaries.
++    # cflags += [ "-fwhole-program-vtables" ]
++    # if (!is_win) {
++    #  ldflags += [ "-fwhole-program-vtables" ]
++    #}
+ 
+     # Work-around for http://openradar.appspot.com/20356002
+     if (is_mac) {
+diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
+index 1f6bc13e087f..4630045ff554 100644
+--- a/build/config/win/BUILD.gn
++++ b/build/config/win/BUILD.gn
+@@ -314,7 +314,7 @@ config("cfi_linker") {
+ # See https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx for a reference of
+ # what each value does.
+ config("default_crt") {
+-  if (is_component_build) {
++  if (is_component_build || (is_electron_build && !is_electron_gn_build)) {
+     # Component mode: dynamic CRT. Since the library is shared, it requires
+     # exceptions or will give errors about things not matching, so keep
+     # exceptions on.
+diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
+index bc9fe2cc2000..9173f6f0324c 100644
+--- a/third_party/blink/renderer/platform/BUILD.gn
++++ b/third_party/blink/renderer/platform/BUILD.gn
+@@ -134,6 +134,7 @@ action("instrumentation_probes") {
+ }
+ 
+ executable("character_data_generator") {
++  configs += [ "//libchromiumcontent/chromiumcontent/config:build_time_executable" ]
+   sources = [
+     "text/character_property_data_generator.cc",
+     "text/character_property_data_generator.h",

@@ -1,0 +1,33 @@
+diff --git a/include/v8.h b/include/v8.h
+index 573e80176d..5eefe26fe9 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -4318,6 +4318,13 @@ class V8_EXPORT ArrayBuffer : public Object {
+      */
+     virtual void* AllocateUninitialized(size_t length) = 0;
+ 
++    /**
++     * Free the memory block of size |length|, pointed to by |data|.
++     * That memory must be previously allocated by |Allocate| and not yet freed
++     * with a call to |Free| or |Realloc|
++     */
++    virtual void* Realloc(void* data, size_t length);
++
+     /**
+      * Free the memory block of size |length|, pointed to by |data|.
+      * That memory is guaranteed to be previously allocated by |Allocate|.
+diff --git a/src/api.cc b/src/api.cc
+index 8b177d041d..e06ca2a207 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -460,6 +460,10 @@ void V8::SetSnapshotDataBlob(StartupData* snapshot_blob) {
+   i::V8::SetSnapshotBlob(snapshot_blob);
+ }
+ 
++void* v8::ArrayBuffer::Allocator::Realloc(void* data, size_t length) {
++  UNIMPLEMENTED();
++}
++
+ namespace {
+ 
+ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {

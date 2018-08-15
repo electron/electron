@@ -1,0 +1,23 @@
+diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
+index 2417abcfdae2..13a06d02e012 100644
+--- a/content/browser/service_worker/service_worker_version.cc
++++ b/content/browser/service_worker/service_worker_version.cc
+@@ -53,9 +53,6 @@
+ #include "third_party/WebKit/public/web/WebConsoleMessage.h"
+ 
+ namespace content {
+-
+-using StatusCallback = ServiceWorkerVersion::StatusCallback;
+-
+ namespace {
+ 
+ // Timeout for an installed worker to start.
+@@ -103,7 +100,7 @@ void RunCallbacks(ServiceWorkerVersion* version,
+ 
+ // An adapter to run a |callback| after StartWorker.
+ void RunCallbackAfterStartWorker(base::WeakPtr<ServiceWorkerVersion> version,
+-                                 StatusCallback callback,
++                                 ServiceWorkerVersion::StatusCallback callback,
+                                  ServiceWorkerStatusCode status) {
+   if (status == SERVICE_WORKER_OK &&
+       version->running_status() != EmbeddedWorkerStatus::RUNNING) {

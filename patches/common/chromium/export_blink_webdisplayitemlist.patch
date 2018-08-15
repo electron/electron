@@ -1,0 +1,21 @@
+diff --git a/third_party/blink/public/platform/web_display_item_list.h b/third_party/blink/public/platform/web_display_item_list.h
+index 31a3f6d8d5f4..0b2a13230fbd 100644
+--- a/third_party/blink/public/platform/web_display_item_list.h
++++ b/third_party/blink/public/platform/web_display_item_list.h
+@@ -6,6 +6,7 @@
+ #define THIRD_PARTY_BLINK_PUBLIC_PLATFORM_WEB_DISPLAY_ITEM_LIST_H_
+ 
+ #include "third_party/blink/public/platform/web_blend_mode.h"
++#include "third_party/blink/public/platform/web_common.h"
+ #include "third_party/blink/public/platform/web_float_point.h"
+ #include "third_party/blink/public/platform/web_float_rect.h"
+ #include "third_party/blink/public/platform/web_rect.h"
+@@ -33,7 +34,7 @@ namespace blink {
+ // 'drawing' items) and operations to be performed when rendering this content
+ // (stored in 'clip', 'transform', 'filter', etc...). For more details see:
+ // http://dev.chromium.org/blink/slimming-paint.
+-class WebDisplayItemList {
++class BLINK_EXPORT WebDisplayItemList {
+  public:
+   virtual ~WebDisplayItemList() = default;
+ 

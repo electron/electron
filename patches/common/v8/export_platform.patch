@@ -1,0 +1,21 @@
+diff --git a/include/v8-platform.h b/include/v8-platform.h
+index ddc200abab..046de4e257 100644
+--- a/include/v8-platform.h
++++ b/include/v8-platform.h
+@@ -11,6 +11,7 @@
+ #include <memory>
+ #include <string>
+ 
++#include "v8.h"
+ #include "v8config.h"  // NOLINT(build/include)
+ 
+ namespace v8 {
+@@ -465,7 +466,7 @@ class Platform {
+    * since epoch. Useful for implementing |CurrentClockTimeMillis| if
+    * nothing special needed.
+    */
+-  static double SystemClockTimeMillis();
++  V8_EXPORT static double SystemClockTimeMillis();
+ };
+ 
+ }  // namespace v8

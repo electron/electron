@@ -1,0 +1,35 @@
+diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
+index 7426062f7381..bd5cd2fcd230 100644
+--- a/content/browser/renderer_host/browser_compositor_view_mac.h
++++ b/content/browser/renderer_host/browser_compositor_view_mac.h
+@@ -54,10 +54,13 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient {
+   // These will not return nullptr until Destroy is called.
+   DelegatedFrameHost* GetDelegatedFrameHost();
+ 
++  ui::Layer* GetRootLayer() { return root_layer_.get(); }
++
+   // Ensure that the currect compositor frame be cleared (even if it is
+   // potentially visible).
+   void ClearCompositorFrame();
+ 
++  ui::Compositor* GetCompositor();
+   gfx::AcceleratedWidget GetAcceleratedWidget();
+   void DidCreateNewRendererCompositorFrameSink(
+       viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
+diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
+index 7fcc24c15c37..7c31977b20f9 100644
+--- a/content/browser/renderer_host/browser_compositor_view_mac.mm
++++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
+@@ -208,6 +208,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
+     g_spare_recyclable_compositors.Get().clear();
+ }
+ 
++ui::Compositor* BrowserCompositorMac::GetCompositor() {
++  if (recyclable_compositor_)
++    return recyclable_compositor_->compositor();
++  return nullptr;
++}
++
+ gfx::AcceleratedWidget BrowserCompositorMac::GetAcceleratedWidget() {
+   if (recyclable_compositor_) {
+     return recyclable_compositor_->accelerated_widget_mac()

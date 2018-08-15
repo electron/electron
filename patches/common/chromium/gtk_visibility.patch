@@ -1,0 +1,13 @@
+diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
+index eb75461..2116f93 100644
+--- a/build/config/linux/gtk/BUILD.gn
++++ b/build/config/linux/gtk/BUILD.gn
+@@ -17,6 +17,8 @@ assert(is_linux, "This file should only be referenced on Linux")
+ group("gtk") {
+   visibility = [
+     "//chrome/test:interactive_ui_tests",
++    "//electron:*",
++    "//electron/brightray:*",
+     "//examples:peerconnection_client",
+     "//gpu/gles2_conform_support:gles2_conform_test_windowless",
+     "//remoting/host",

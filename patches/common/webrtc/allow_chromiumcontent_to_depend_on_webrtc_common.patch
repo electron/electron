@@ -1,0 +1,15 @@
+diff --git a/webrtc.gni b/webrtc.gni
+index f32e490f7..6bc8d1205 100644
+--- a/webrtc.gni
++++ b/webrtc.gni
+@@ -274,6 +274,10 @@ if (build_with_chromium) {
+   webrtc_default_visibility += [ webrtc_root + "/../webrtc_overrides/*" ]
+ }
+ 
++if (is_electron_build) {
++  webrtc_default_visibility += [ "//libchromiumcontent/chromiumcontent:webrtc_common" ]
++}
++
+ template("rtc_test") {
+   test(target_name) {
+     forward_variables_from(invoker,

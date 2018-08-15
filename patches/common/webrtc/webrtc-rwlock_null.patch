@@ -1,0 +1,36 @@
+diff --git a/rtc_base/synchronization/rw_lock_wrapper.cc b/rtc_base/synchronization/rw_lock_wrapper.cc
+index c8cd17edb8..50c6e25ad9 100644
+--- a/rtc_base/synchronization/rw_lock_wrapper.cc
++++ b/rtc_base/synchronization/rw_lock_wrapper.cc
+@@ -11,6 +11,9 @@
+ #include "rtc_base/synchronization/rw_lock_wrapper.h"
+ 
+ #include <assert.h>
++#include <stdlib.h>
++
++#include "system_wrappers/include/sleep.h"
+ 
+ #if defined(_WIN32)
+ #include "rtc_base/synchronization/rw_lock_win.h"
+@@ -21,11 +23,19 @@
+ namespace webrtc {
+ 
+ RWLockWrapper* RWLockWrapper::CreateRWLock() {
++  RWLockWrapper* rw_lock_ptr;
+ #ifdef _WIN32
+-  return RWLockWin::Create();
++  rw_lock_ptr = RWLockWin::Create();
+ #else
+-  return RWLockPosix::Create();
++  rw_lock_ptr = RWLockPosix::Create();
+ #endif
++  if (rw_lock_ptr != NULL) {
++    return rw_lock_ptr;
++  } else {
++    int msec_wait = 10 + (rand() % 90);
++    SleepMs(msec_wait);
++    return CreateRWLock();
++  }
+ }
+ 
+ }  // namespace webrtc

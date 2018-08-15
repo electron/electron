@@ -1,0 +1,28 @@
+repo: src/third_party/webrtc
+patches:
+-
+  author: null
+  file: webrtc-desktop_capturer_mac.patch
+  description: null
+-
+  author: null
+  file: webrtc-rwlock_null.patch
+  description: null
+-
+  author: Nitish Sakhawalkar <nitsakh@icloud.com>
+  file: disable-warning-win.patch
+  description:
+    Disable windows warning
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: allow_chromiumcontent_to_depend_on_webrtc_common.patch
+  description: |
+    ERROR at //chromiumcontent/BUILD.gn:152:3: Dependency not allowed.
+      static_library("webrtc_common") {
+      ^--------------------------------
+    The item //chromiumcontent:webrtc_common
+    can not depend on //third_party/webrtc:webrtc_common
+    because it is not in //third_party/webrtc:webrtc_common's visibility list: [
+      //third_party/webrtc/*
+      //third_party/webrtc_overrides/*
+    ]

@@ -1,0 +1,26 @@
+diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
+index 0bfe29512050..81439f7ab8f7 100644
+--- a/third_party/blink/renderer/core/fileapi/file.h
++++ b/third_party/blink/renderer/core/fileapi/file.h
+@@ -170,6 +170,9 @@ class CORE_EXPORT File final : public Blob {
+   }
+   const String& name() const { return name_; }
+ 
++  // Getter for the path IDL attribute.
++  const String& path() const { return GetPath(); }
++
+   // Getter for the lastModified IDL attribute,
+   // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
+   long long lastModified() const;
+diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
+index df954bc8f818..4683b2853bb4 100644
+--- a/third_party/blink/renderer/core/fileapi/file.idl
++++ b/third_party/blink/renderer/core/fileapi/file.idl
+@@ -32,6 +32,7 @@
+     Exposed=(Window,Worker)
+ ] interface File : Blob {
+     readonly attribute DOMString name;
++    readonly attribute DOMString path;
+     readonly attribute long long lastModified;
+ 
+     // Non-standard APIs

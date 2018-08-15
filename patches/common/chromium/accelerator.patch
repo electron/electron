@@ -1,0 +1,103 @@
+diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
+index a6756c2..5352958 100644
+--- a/ui/base/accelerators/accelerator.cc
++++ b/ui/base/accelerators/accelerator.cc
+@@ -11,6 +11,7 @@
+ #include "base/logging.h"
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_util.h"
++#include "base/strings/stringprintf.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "build/build_config.h"
+ #include "ui/base/l10n/l10n_util.h"
+@@ -21,9 +22,7 @@
+ #include <windows.h>
+ #endif
+ 
+-#if !defined(OS_WIN) && (defined(USE_AURA) || defined(OS_MACOSX))
+ #include "ui/events/keycodes/keyboard_code_conversion.h"
+-#endif
+ 
+ namespace ui {
+ 
+@@ -145,7 +144,17 @@ base::string16 Accelerator::GetShortcutText() const {
+   shortcut = KeyCodeToName(key_code_);
+ #endif
+ 
++  unsigned int flags = 0;
+   if (shortcut.empty()) {
++    if (IsShiftDown())
++      flags = ui::EF_SHIFT_DOWN;
++    const uint16_t c = DomCodeToUsLayoutCharacter(
++        UsLayoutKeyboardCodeToDomCode(key_code_), flags);
++    if (c != 0) {
++      shortcut =
++          static_cast<base::string16::value_type>(
++              base::ToUpperASCII(static_cast<base::char16>(c)));
++    }
+ #if defined(OS_WIN)
+     // Our fallback is to try translate the key code to a regular character
+     // unless it is one of digits (VK_0 to VK_9). Some keyboard
+@@ -154,17 +163,20 @@ base::string16 Accelerator::GetShortcutText() const {
+     // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
+     // default zoom level), we leave VK_[0-9] alone without translation.
+     wchar_t key;
+-    if (base::IsAsciiDigit(key_code_))
++    if (base::IsAsciiDigit(key_code_)) {
+       key = static_cast<wchar_t>(key_code_);
+-    else
+-      key = LOWORD(::MapVirtualKeyW(key_code_, MAPVK_VK_TO_CHAR));
+-    shortcut += key;
+-#elif defined(USE_AURA) || defined(OS_MACOSX)
+-    const uint16_t c = DomCodeToUsLayoutCharacter(
+-        UsLayoutKeyboardCodeToDomCode(key_code_), false);
+-    if (c != 0)
+-      shortcut +=
+-          static_cast<base::string16::value_type>(base::ToUpperASCII(c));
++      shortcut = key;
++    }
++#endif
++    if (key_code_ > VKEY_F1 && key_code_ <= VKEY_F24)
++      shortcut = base::UTF8ToUTF16(
++          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
++  } else if (IsShiftDown()) {
++#if defined(OS_MACOSX)
++    const base::char16 kShiftSymbol[] = {0x21e7, 0};
++    shortcut = kShiftSymbol;
++#else
++    shortcut = l10n_util::GetStringFUTF16(IDS_APP_SHIFT_MODIFIER, shortcut);
+ #endif
+   }
+ 
+@@ -221,15 +233,12 @@ base::string16 Accelerator::GetShortcutText() const {
+ 
+ base::string16 Accelerator::ApplyLongFormModifiers(
+     base::string16 shortcut) const {
+-  if (IsShiftDown())
+-    shortcut = l10n_util::GetStringFUTF16(IDS_APP_SHIFT_MODIFIER, shortcut);
+-
+   // Note that we use 'else-if' in order to avoid using Ctrl+Alt as a shortcut.
+   // See http://blogs.msdn.com/oldnewthing/archive/2004/03/29/101121.aspx for
+   // more information.
+   if (IsCtrlDown())
+     shortcut = l10n_util::GetStringFUTF16(IDS_APP_CONTROL_MODIFIER, shortcut);
+-  else if (IsAltDown())
++  if (IsAltDown())
+     shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
+ 
+   if (IsCmdDown()) {
+@@ -249,14 +258,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
+     base::string16 shortcut) const {
+   const base::char16 kCommandSymbol[] = {0x2318, 0};
+   const base::char16 kCtrlSymbol[] = {0x2303, 0};
+-  const base::char16 kShiftSymbol[] = {0x21e7, 0};
+   const base::char16 kOptionSymbol[] = {0x2325, 0};
+   const base::char16 kNoSymbol[] = {0};
+ 
+   std::vector<base::string16> parts;
+   parts.push_back(base::string16(IsCtrlDown() ? kCtrlSymbol : kNoSymbol));
+   parts.push_back(base::string16(IsAltDown() ? kOptionSymbol : kNoSymbol));
+-  parts.push_back(base::string16(IsShiftDown() ? kShiftSymbol : kNoSymbol));
+   parts.push_back(base::string16(IsCmdDown() ? kCommandSymbol : kNoSymbol));
+   parts.push_back(shortcut);
+   return base::StrCat(parts);

@@ -1,0 +1,69 @@
+#!/usr/bin/env python
+
+import argparse
+import os
+import subprocess
+import sys
+
+import lib.git as git
+from lib.patches import PatchesConfig
+
+
+SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+PATCHES_DIR = os.path.join(SOURCE_ROOT, 'patches')
+PATCHES_COMMON_DIR = os.path.join(PATCHES_DIR, 'common')
+PATCHES_MIPS64EL_DIR = os.path.join(PATCHES_DIR, 'mips64el')
+SRC = 'src'
+SRC_DIR = os.path.join(SOURCE_ROOT, SRC)
+
+
+def main():
+  args = parse_args()
+
+  project_root = os.path.abspath(args.project_root)
+
+  for folder in args.folders:
+    error = apply_patches_for_dir(folder, project_root, args.commit)
+    if error:
+      sys.stderr.write(error + '\n')
+      sys.stderr.flush()
+      return 1
+
+  return 0
+
+
+def apply_patches_for_dir(directory, project_root, commit):
+  for root, dirs, files in os.walk(directory):
+    config = PatchesConfig.from_directory(root, project_root=project_root)
+    patches_list = config.get_patches_list()
+    if patches_list is None:
+      continue
+
+    (success, failed_patches) = patches_list.apply(commit=commit)
+    if not success:
+      patch_path = failed_patches[0].get_file_path()
+      return '{0} failed to apply'.format(os.path.basename(patch_path))
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(description='Apply all required patches.')
+
+  parser.add_argument('--commit', default=False, action='store_true',
+                      help='Commit a patch after it has been applied')
+  parser.add_argument('--project-root', required=False, default=git.get_repo_root(os.path.abspath(__file__)),
+                      help='Parent folder to resolve repos relative paths against')
+  parser.add_argument('-t', '--target_arch',
+                      help='Target architecture')
+
+  parser.add_argument('-f', '--folder', dest='folders', help='Apply patches from this folder', nargs='*', default=[])
+
+  args = parser.parse_args()
+  if not args.folders:
+    args.folders.append(PATCHES_COMMON_DIR)
+    if args.target_arch == 'mips64el':
+      args.folders.append(PATCHES_MIPS64EL_DIR)
+  return args
+
+
+if __name__ == '__main__':
+    sys.exit(main())

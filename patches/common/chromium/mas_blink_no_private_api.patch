@@ -1,0 +1,112 @@
+diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
+index 65e6437c22a6..3b726d196427 100644
+--- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
++++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
+@@ -43,6 +43,7 @@
+ 
+ // The methods in this file are specific to the Mac OS X platform.
+ 
++#ifndef MAS_BUILD
+ // Forward declare Mac SPIs.
+ extern "C" {
+ void _NSDrawCarbonThemeBezel(NSRect frame, BOOL enabled, BOOL flipped);
+@@ -52,6 +53,7 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
+                                BOOL flipped,
+                                BOOL always_yes);
+ }
++#endif
+ 
+ namespace blink {
+ 
+@@ -74,10 +76,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
+   // behavior change while remaining a fragile solution.
+   // https://bugs.chromium.org/p/chromium/issues/detail?id=658085#c3
+   if (!use_ns_text_field_cell) {
++#ifndef MAS_BUILD
+     _NSDrawCarbonThemeBezel(
+         CGRect(r),
+         LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
+         YES);
++#endif
+     return false;
+   }
+ 
+@@ -163,10 +167,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
+                                     const PaintInfo& paint_info,
+                                     const IntRect& r) {
+   LocalCurrentGraphicsContext local_context(paint_info.context, r);
++#ifndef MAS_BUILD
+   _NSDrawCarbonThemeListBox(
+       CGRect(r),
+       LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
+       YES, YES);
++#endif
+   return false;
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
+index acf60f09fdb9..6376120a954f 100644
+--- a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
++++ b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
+@@ -27,6 +27,7 @@
+ 
+ namespace blink {
+ 
++#ifndef MAS_BUILD
+ extern "C" {
+ 
+ // Kill ring calls. Would be better to use NSKillRing.h, but that's not
+@@ -39,38 +40,53 @@ NSString* _NSYankFromKillRing();
+ void _NSNewKillRingSequence();
+ void _NSSetKillRingToYankedState();
+ }
++#endif
+ 
+ static void InitializeKillRingIfNeeded() {
+   static bool initialized_kill_ring = false;
+   if (!initialized_kill_ring) {
+     initialized_kill_ring = true;
++#ifndef MAS_BUILD
+     _NSInitializeKillRing();
++#endif
+   }
+ }
+ 
+ void KillRing::Append(const String& string) {
+   InitializeKillRingIfNeeded();
++#ifndef MAS_BUILD
+   _NSAppendToKillRing(string);
++#endif
+ }
+ 
+ void KillRing::Prepend(const String& string) {
+   InitializeKillRingIfNeeded();
++#ifndef MAS_BUILD
+   _NSPrependToKillRing(string);
++#endif
+ }
+ 
+ String KillRing::Yank() {
+   InitializeKillRingIfNeeded();
++#ifndef MAS_BUILD
+   return _NSYankFromKillRing();
++#else
++  return "";
++#endif
+ }
+ 
+ void KillRing::StartNewSequence() {
+   InitializeKillRingIfNeeded();
++#ifndef MAS_BUILD
+   _NSNewKillRingSequence();
++#endif
+ }
+ 
+ void KillRing::SetToYankedState() {
+   InitializeKillRingIfNeeded();
++#ifndef MAS_BUILD
+   _NSSetKillRingToYankedState();
++#endif
+ }
+ 
+ }  // namespace blink
