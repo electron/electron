@@ -264,6 +264,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       size_(native_window->GetSize()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
+      mouse_wheel_phase_handler_(this),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -1096,18 +1097,29 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
       return;
     }
   }
+
+  blink::WebMouseWheelEvent mouse_wheel_event(event);
+
+  mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded();
+  mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
+      mouse_wheel_event, false);
+
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
       if (popup_host_view_->popup_position_.Contains(
-              event.PositionInWidget().x, event.PositionInWidget().y)) {
-        blink::WebMouseWheelEvent popup_event(event);
-        popup_event.SetPositionInWidget(
-            popup_event.PositionInWidget().x -
+              mouse_wheel_event.PositionInWidget().x,
+              mouse_wheel_event.PositionInWidget().y)) {
+        blink::WebMouseWheelEvent popup_mouse_wheel_event(mouse_wheel_event);
+        popup_mouse_wheel_event.SetPositionInWidget(
+            mouse_wheel_event.PositionInWidget().x -
                 popup_host_view_->popup_position_.x(),
-            popup_event.PositionInWidget().y -
+            mouse_wheel_event.PositionInWidget().y -
                 popup_host_view_->popup_position_.y());
-        popup_host_view_->ProcessMouseWheelEvent(popup_event,
-                                                 ui::LatencyInfo());
+        popup_mouse_wheel_event.SetPositionInScreen(
+            popup_mouse_wheel_event.PositionInWidget().x,
+            popup_mouse_wheel_event.PositionInWidget().y);
+
+        popup_host_view_->SendMouseWheelEvent(popup_mouse_wheel_event);
         return;
       } else {
         // Scrolling outside of the popup widget so destroy it.
@@ -1117,6 +1129,28 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
             content::BrowserThread::UI, FROM_HERE,
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
+      }
+    } else if (!guest_host_views_.empty()) {
+      for (auto guest_host_view : guest_host_views_) {
+        if (!guest_host_view->render_widget_host_ ||
+            !guest_host_view->render_widget_host_->GetView()) {
+          continue;
+        }
+        const gfx::Rect& guest_bounds =
+            guest_host_view->render_widget_host_->GetView()->GetViewBounds();
+        if (guest_bounds.Contains(mouse_wheel_event.PositionInWidget().x,
+                                  mouse_wheel_event.PositionInWidget().y)) {
+          blink::WebMouseWheelEvent guest_mouse_wheel_event(mouse_wheel_event);
+          guest_mouse_wheel_event.SetPositionInWidget(
+              mouse_wheel_event.PositionInWidget().x - guest_bounds.x(),
+              mouse_wheel_event.PositionInWidget().y - guest_bounds.y());
+          guest_mouse_wheel_event.SetPositionInScreen(
+              guest_mouse_wheel_event.PositionInWidget().x,
+              guest_mouse_wheel_event.PositionInWidget().y);
+
+          guest_host_view->SendMouseWheelEvent(guest_mouse_wheel_event);
+          return;
+        }
       }
     }
   }
