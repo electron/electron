@@ -29,9 +29,9 @@ To start a debugging session, open up Terminal and start `lldb`, passing a debug
 build of Electron as a parameter.
 
 ```sh
-$ lldb ./out/D/Electron.app
-(lldb) target create "./out/D/Electron.app"
-Current executable set to './out/D/Electron.app' (x86_64).
+$ lldb ./out/Debug/Electron.app
+(lldb) target create "./out/Debug/Electron.app"
+Current executable set to './out/Debug/Electron.app' (x86_64).
 ```
 
 ### Setting Breakpoints
@@ -63,7 +63,7 @@ The app will immediately be paused, since Electron sets the app's name on launch
 
 ```sh
 (lldb) run
-Process 25244 launched: '/Users/fr/Code/electron/out/D/Electron.app/Contents/MacOS/Electron' (x86_64)
+Process 25244 launched: '/Users/fr/Code/electron/out/Debug/Electron.app/Contents/MacOS/Electron' (x86_64)
 Process 25244 stopped
 * thread #1: tid = 0x839a4c, 0x0000000100162db4 Electron Framework`atom::Browser::SetName(this=0x0000000108b14f20, name="Electron") + 20 at browser.cc:118, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
     frame #0: 0x0000000100162db4 Electron Framework`atom::Browser::SetName(this=0x0000000108b14f20, name="Electron") + 20 at browser.cc:118
