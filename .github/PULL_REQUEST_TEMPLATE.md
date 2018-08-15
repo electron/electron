@@ -1,3 +1,4 @@
+##### Description of Change
 <!--
 Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
@@ -13,3 +14,9 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/master/docs/development/testing.md)
 - [ ] relevant documentation is changed or added
 - [ ] PR title follows semantic [commit guidelines](https://github.com/electron/electron/blob/master/docs/development/pull-requests.md#commit-message-guidelines)
+
+
+##### Release Notes
+<!-- Used to describe release notes for future release versions. See https://github.com/electron/clerk/blob/master/README.md for details. -->
+
+Notes: <!-- One-line Change Summary Here-->
