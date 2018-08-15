@@ -1,9 +1,6 @@
-# Build Instructions (experimental GN build)
+# Build Instructions
 
-Follow the guidelines below for building Electron with the experimental GN
-build.
-
-> **NOTE**: The GN build system is in _experimental_ status.
+Follow the guidelines below for building Electron.
 
 ## Platform prerequisites
 
@@ -64,6 +61,46 @@ $ gclient config \
 $ gclient sync --with_branch_heads --with_tags
 # This will take a while, go get a coffee.
 ```
+
+### Chromium git cache
+
+`depot_tools` has an option that allows the developer to set a global cache for
+all git objects of Chromium + dependencies. This option uses `git clone
+--shared` to save bandwidth/space on multiple clones of the same repositories.
+
+If you intend to have several Electron build trees on the same machine (to work
+on different versions of Electron for example), it is recommended to set use
+the git cache to speed up the download of Chromium source. For example:
+
+```sh
+$ mkdir ~/.chromium-git-cache
+$ gclient config \
+    --name "src/electron" \
+    --unmanaged \
+    --cache_dir="$HOME/.chromium-git-cache" \
+    https://github.com/electron/electron
+$ gclient sync --with_branch_heads --with_tags
+```
+
+If the bootstrap script is interrupted while using the git cache, it will leave
+the cache locked. To remove the lock, pass the `--break_repo_locks` argument to
+`gclient sync`.
+
+#### Sharing the cache between multiple machines
+
+It is possible to share this directory with other machines by exporting it as
+SMB share on linux, but only one process/machine can be using the cache at a
+time. The locks created by git-cache script will try to prevent this, but it may
+not work perfectly in a network.
+
+On Windows, SMBv2 has a directory cache that will cause problems with the git
+cache script, so it is necessary to disable it by setting the registry key
+
+```sh
+HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Lanmanworkstation\Parameters\DirectoryCacheLifetime
+```
+
+to 0. More information: https://stackoverflow.com/a/9935126
 
 ## Building
 
