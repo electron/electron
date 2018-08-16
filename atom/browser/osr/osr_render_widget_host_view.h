@@ -328,6 +328,8 @@ class OffScreenRenderWidgetHostView
 #if defined(OS_MACOSX)
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
 
+  SkColor last_frame_root_background_color_;
+
   // Can not be managed by smart pointer because its header can not be included
   // in the file that has the destructor.
   MacHelper* mac_helper_;

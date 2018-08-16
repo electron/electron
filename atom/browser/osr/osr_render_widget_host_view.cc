@@ -281,6 +281,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
 #if defined(OS_MACOSX)
+  last_frame_root_background_color_ = SK_ColorTRANSPARENT;
   CreatePlatformWidget(is_guest_view_hack);
 #else
   // On macOS the ui::Compositor is created/owned by the platform view.
@@ -511,6 +512,10 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     viz::mojom::HitTestRegionListPtr hit_test_region_list) {
   TRACE_EVENT0("electron",
                "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
+
+#if defined(OS_MACOSX)
+  last_frame_root_background_color_ = frame.metadata.root_background_color;
+#endif
 
   if (frame.metadata.root_scroll_offset != last_scroll_offset_) {
     last_scroll_offset_ = frame.metadata.root_scroll_offset;
