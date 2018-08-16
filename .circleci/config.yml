@@ -387,6 +387,16 @@ jobs:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-x64-testing-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/testing.gn
     docker:
       - image: electronbuilds/electron:0.0.8
     resource_class: 2xlarge
@@ -405,6 +415,18 @@ jobs:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "x86"'
+      NPM_CONFIG_ARCH: ia32
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-ia32-testing-fyi:
+    environment:
+      DISPLAY: ':99.0'
+      GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
     docker:
@@ -434,6 +456,17 @@ jobs:
     resource_class: 2xlarge
     <<: *gn-build-steps
 
+  electron-gn-linux-arm-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm"'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
   electron-gn-linux-arm-release-fyi:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
@@ -448,6 +481,17 @@ jobs:
   electron-gn-linux-arm64-debug-fyi:
     environment:
       GN_CONFIG: //electron/build/args/debug.gn
+      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+      RUN_TESTS: false
+    docker:
+      - image: electronbuilds/electron:0.0.8
+    resource_class: 2xlarge
+    <<: *gn-build-steps
+
+  electron-gn-linux-arm64-testing-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
@@ -496,13 +540,13 @@ workflows:
   build-gn-linux:
     jobs:
       - electron-gn-linux-x64-debug-fyi
-      - electron-gn-linux-x64-release-fyi
+      - electron-gn-linux-x64-testing-fyi
       - electron-gn-linux-ia32-debug-fyi
-      - electron-gn-linux-ia32-release-fyi
+      - electron-gn-linux-ia32-testing-fyi
       - electron-gn-linux-arm-debug-fyi
-      - electron-gn-linux-arm-release-fyi
+      - electron-gn-linux-arm-testing-fyi
       - electron-gn-linux-arm64-debug-fyi
-      - electron-gn-linux-arm64-release-fyi
+      - electron-gn-linux-arm64-testing-fyi
 
   nightly-release-test:
     triggers:
@@ -521,3 +565,17 @@ workflows:
       - electron-linux-arm64-release-nightly
       - electron-linux-ia32-release-nightly
       - electron-linux-x64-release-nightly
+
+  nightly-gn-release-test:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - electron-gn-linux-x64-release-fyi
+      - electron-gn-linux-ia32-release-fyi
+      - electron-gn-linux-arm-release-fyi
+      - electron-gn-linux-arm64-release-fyi
