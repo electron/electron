@@ -14,7 +14,6 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
-#include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
 #include "base/process/process_handle.h"
@@ -24,6 +23,7 @@
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
@@ -222,17 +222,6 @@ bool RendererClientBase::OverrideCreatePlugin(
 
   *plugin = nullptr;
   return true;
-}
-
-content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
-    content::RenderFrame* render_frame,
-    const std::string& mime_type,
-    const GURL& original_url) {
-  if (mime_type == content::kBrowserPluginMimeType) {
-    return new GuestViewContainer(render_frame);
-  } else {
-    return nullptr;
-  }
 }
 
 void RendererClientBase::AddSupportedKeySystems(

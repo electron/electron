@@ -42,7 +42,8 @@ class CommonWebContentsDelegate
   // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.
   void InitWithWebContents(content::WebContents* web_contents,
-                           AtomBrowserContext* browser_context);
+                           AtomBrowserContext* browser_context,
+                           bool is_guest);
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);

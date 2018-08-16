@@ -1,4 +1,3 @@
 import("all.gn")
 is_debug = true
 is_component_build = true
-use_jumbo_build = true
