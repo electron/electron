@@ -512,6 +512,7 @@ workflows:
             branches:
               only:
                 - master
+                - 3-0-x
                 - 2-0-x
                 - 1-8-x
                 - 1-7-x
