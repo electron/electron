@@ -68,7 +68,7 @@ new Promise((resolve, reject) => {
 
   return github.repos.getReleases({
     owner: 'electron',
-    repo: 'electron'
+    repo: rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
   })
 })
 .then((releases) => {
