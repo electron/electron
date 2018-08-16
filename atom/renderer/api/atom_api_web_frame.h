@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "atom/renderer/guest_view_container.h"
 #include "native_mate/handle.h"
 #include "native_mate/wrappable.h"
 #include "third_party/WebKit/public/platform/WebCache.h"
@@ -54,11 +53,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
       const base::string16& name,
       v8::Local<v8::Object> options);
-  void RegisterElementResizeCallback(
-      int element_instance_id,
-      const GuestViewContainer::ResizeCallback& callback);
-  void AttachGuest(int element_instance_id);
-  void DetachGuest(int element_instance_id);
+  int GetWebFrameId(v8::Local<v8::Value> content_window);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
