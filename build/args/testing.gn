@@ -1,0 +1,7 @@
+import("all.gn")
+is_debug = false
+is_component_build = false
+is_official_build = false
+dcheck_always_on = true
+symbol_level = 1
+use_jumbo_build = true

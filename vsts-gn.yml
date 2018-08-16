@@ -36,7 +36,7 @@ phases:
       "$SCCACHE_WRAPPER" -s
       echo "##vso[task.setvariable variable=SCCACHE_WRAPPER]$SCCACHE_WRAPPER"
       echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
-      gn gen out/Default --args='import("//electron/build/args/debug.gn") cc_wrapper="'"$SCCACHE_WRAPPER"'"'
+      gn gen out/Default --args='import("//electron/build/args/testing.gn") cc_wrapper="'"$SCCACHE_WRAPPER"'"'
     name: GN_gen
 
   - bash: |

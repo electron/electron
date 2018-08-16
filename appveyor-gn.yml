@@ -10,7 +10,7 @@ environment:
   matrix:
     - gn_args: debug
       ELECTRON_SKIP_NATIVE_MODULE_TESTS: 1
-    - gn_args: release
+    - gn_args: testing
 platform:
   - x86
   - x64
