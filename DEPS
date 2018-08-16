@@ -33,7 +33,9 @@ hooks = [
   {
     'action': [
       'python',
-      'src/libchromiumcontent/script/apply-patches'
+      'src/libchromiumcontent/script/apply-patches',
+      '--project-root=.',
+      '--commit'
     ],
     'pattern':
       'src/libchromiumcontent',
