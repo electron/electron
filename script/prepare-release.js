@@ -14,13 +14,14 @@ const pass = '\u2713'.green
 const path = require('path')
 const pkg = require('../package.json')
 const readline = require('readline')
+const semver = require('semver')
 const versionType = args._[0]
 
 // TODO (future) automatically determine version based on conventional commits
 // via conventional-recommended-bump
 
 if (!versionType && !args.notesOnly) {
-  console.log(`Usage: prepare-release versionType [major | minor | patch | beta]` +
+  console.log(`Usage: prepare-release versionType [major | minor | patch | beta | nightly]` +
      ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
   process.exit(1)
 }
@@ -29,10 +30,15 @@ const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..')
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
-function getNewVersion (dryRun) {
+async function getNewVersion (dryRun) {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
-  let scriptArgs = [bumpScript, `--bump ${versionType}`]
+  let scriptArgs = [bumpScript]
+  if (versionType === 'nightly') {
+    scriptArgs.push(`--version ${await determineNextNightly(await getCurrentBranch())}`)
+  } else {
+    scriptArgs.push(`--bump ${versionType}`)
+  }
   if (args.stable) {
     scriptArgs.push('--stable')
   }
@@ -49,7 +55,45 @@ function getNewVersion (dryRun) {
     return newVersion
   } catch (err) {
     console.log(`${fail} Could not bump version, error was:`, err)
+    throw err
   }
+}
+
+async function determineNextNightly (currentBranch) {
+  const twoPad = (n) => n < 10 ? `0${n}` : `${n}`
+  const d = new Date()
+  const date = `${d.getFullYear()}${twoPad(d.getMonth() + 1)}${twoPad(d.getDate())}`
+
+  let version
+
+  if (currentBranch === 'master') {
+    version = await determineNextNightlyForMaster()
+  }
+  if (!version) {
+    throw new Error(`not yet implemented for release branch: ${currentBranch}`)
+  }
+
+  return `${version}-nightly.${date}`
+}
+
+async function determineNextNightlyForMaster () {
+  let branchNames
+  let result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], gitDir)
+  if (result.exitCode === 0) {
+    branchNames = result.stdout.trim().split('\n')
+    const filtered = branchNames.map(b => b.replace('origin/', ''))
+    return getNextReleaseBranch(filtered)
+  } else {
+    throw new Error('Release branches could not be fetched.')
+  }
+}
+
+function getNextReleaseBranch (branches) {
+  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0'))
+  const next = converted.reduce((v1, v2) => {
+    return semver.gt(v1, v2) ? v1 : v2
+  })
+  return `${parseInt(next.split('.')[0], 10) + 1}.0.0`
 }
 
 async function getCurrentBranch (gitDir) {
@@ -70,6 +114,9 @@ async function getCurrentBranch (gitDir) {
 }
 
 async function getReleaseNotes (currentBranch) {
+  if (versionType === 'nightly') {
+    return 'Nightlies do not get release notes, please compare tags for info'
+  }
   console.log(`Generating release notes for ${currentBranch}.`)
   let githubOpts = {
     owner: 'electron',
@@ -135,7 +182,7 @@ async function getReleaseNotes (currentBranch) {
 
 async function createRelease (branchToTarget, isBeta) {
   let releaseNotes = await getReleaseNotes(branchToTarget)
-  let newVersion = getNewVersion()
+  let newVersion = await getNewVersion()
   await tagRelease(newVersion)
   const githubOpts = {
     owner: 'electron',
@@ -208,7 +255,7 @@ async function tagRelease (version) {
 }
 
 async function verifyNewVersion () {
-  let newVersion = getNewVersion(true)
+  let newVersion = await getNewVersion(true)
   let response
   if (args.automaticRelease) {
     response = 'y'
@@ -238,8 +285,8 @@ async function promptForVersion (version) {
 
 async function prepareRelease (isBeta, notesOnly) {
   if (args.automaticRelease && (pkg.version.indexOf('beta') === -1 ||
-      versionType !== 'beta')) {
-    console.log(`${fail} Automatic release is only supported for beta releases`)
+      versionType !== 'beta') && versionType !== 'nightly') {
+    console.log(`${fail} Automatic release is only supported for beta and nightly releases`)
     process.exit(1)
   }
   let currentBranch
