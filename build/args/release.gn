@@ -1,7 +1,7 @@
 import("all.gn")
 is_component_build = false
-is_official_build = true
 is_component_ffmpeg = true
+is_official_build = true
 use_jumbo_build = true
 
 # TODO(nornagon): linking non-CFI code (nodejs) with CFI code fails at runtime.
