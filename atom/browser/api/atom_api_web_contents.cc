@@ -121,28 +121,6 @@ struct PrintSettings {
 namespace mate {
 
 template <>
-struct Converter<atom::SetSizeParams> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     atom::SetSizeParams* out) {
-    mate::Dictionary params;
-    if (!ConvertFromV8(isolate, val, &params))
-      return false;
-    bool autosize;
-    if (params.Get("enableAutoSize", &autosize))
-      out->enable_auto_size.reset(new bool(autosize));
-    gfx::Size size;
-    if (params.Get("min", &size))
-      out->min_size.reset(new gfx::Size(size));
-    if (params.Get("max", &size))
-      out->max_size.reset(new gfx::Size(size));
-    if (params.Get("normal", &size))
-      out->normal_size.reset(new gfx::Size(size));
-    return true;
-  }
-};
-
-template <>
 struct Converter<PrintSettings> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -396,7 +374,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params(session->browser_context(),
                                               site_instance);
-    guest_delegate_.reset(new WebViewGuestDelegate);
+    guest_delegate_.reset(
+        new WebViewGuestDelegate(embedder_->web_contents(), this));
     params.guest_delegate = guest_delegate_.get();
 
 #if defined(ENABLE_OSR)
@@ -448,7 +427,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
                                             mate::Handle<api::Session> session,
                                             const mate::Dictionary& options) {
   Observe(web_contents);
-  InitWithWebContents(web_contents, session->browser_context());
+  InitWithWebContents(web_contents, session->browser_context(), IsGuest());
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
@@ -481,8 +460,6 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
-    guest_delegate_->Initialize(this);
-
     NativeWindow* owner_window = nullptr;
     if (embedder_) {
       // New WebContents's owner_window is the embedder's owner_window.
@@ -504,27 +481,18 @@ WebContents::~WebContents() {
   if (managed_web_contents()) {
     managed_web_contents()->GetView()->SetDelegate(nullptr);
 
-    // For webview we need to tell content module to do some cleanup work before
-    // destroying it.
-    if (type_ == WEB_VIEW)
-      guest_delegate_->Destroy();
-
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
-    if (type_ == WEB_VIEW) {
-      DestroyWebContents(false /* async */);
+    if (type_ == BROWSER_WINDOW && owner_window()) {
+      for (ExtendedWebContentsObserver& observer : observers_)
+        observer.OnCloseContents();
     } else {
-      if (type_ == BROWSER_WINDOW && owner_window()) {
-        for (ExtendedWebContentsObserver& observer : observers_)
-          observer.OnCloseContents();
-      } else {
-        DestroyWebContents(true /* async */);
-      }
-      // The WebContentsDestroyed will not be called automatically because we
-      // destroy the webContents in the next tick. So we have to manually
-      // call it here to make sure "destroyed" event is emitted.
-      WebContentsDestroyed();
+      DestroyWebContents(!IsGuest() /* async */);
     }
+    // The WebContentsDestroyed will not be called automatically because we
+    // destroy the webContents in the next tick. So we have to manually
+    // call it here to make sure "destroyed" event is emitted.
+    WebContentsDestroyed();
   }
 }
 
@@ -784,13 +752,6 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::ResizeDueToAutoResize(content::WebContents* web_contents,
-                                        const gfx::Size& new_size) {
-  if (IsGuest()) {
-    guest_delegate_->ResizeDueToAutoResize(new_size);
-  }
-}
-
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
@@ -935,6 +896,8 @@ void WebContents::DidFinishNavigation(
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
     }
+    if (IsGuest())
+      Emit("load-commit", url, is_main_frame);
   } else {
     auto url = navigation_handle->GetURL();
     int code = navigation_handle->GetNetErrorCode();
@@ -1075,7 +1038,8 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // 1. call webContents.destroy();
 // 2. garbage collection;
 // 3. user closes the window of webContents;
-// For webview only #1 will happen, for BrowserWindow both #1 and #3 may
+// 4. the embedder detaches the frame.
+// For webview only #4 will happen, for BrowserWindow both #1 and #3 may
 // happen. The #2 should never happen for webContents, because webview is
 // managed by GuestViewManager, and BrowserWindow's webContents is managed
 // by api::BrowserWindow.
@@ -1083,6 +1047,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
 // sure "destroyed" event is emitted. For #3, the content::WebContents will
 // be destroyed on close, and WebContentsDestroyed would be called for it, so
 // we need to make sure the api::WebContents is also deleted.
+// For #4, the WebContents will be destroyed by embedder.
 void WebContents::WebContentsDestroyed() {
   // Cleanup relationships with other parts.
   RemoveFromWeakMap();
@@ -1092,6 +1057,13 @@ void WebContents::WebContentsDestroyed() {
   MarkDestroyed();
 
   Emit("destroyed");
+
+  // For guest view based on OOPIF, the WebContents is released by the embedder
+  // frame, and we need to clear the reference to the memory.
+  if (IsGuest() && managed_web_contents()) {
+    managed_web_contents()->ReleaseWebContents();
+    ResetManagedWebContents(false);
+  }
 
   // Destroy the native class in next tick.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
@@ -1126,10 +1098,6 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
     Emit("did-fail-load", static_cast<int>(net::ERR_INVALID_URL),
          net::ErrorToShortString(net::ERR_INVALID_URL),
          url.possibly_invalid_spec(), true);
-    return;
-  }
-
-  if (guest_delegate_ && !guest_delegate_->IsAttached()) {
     return;
   }
 
@@ -1747,13 +1715,18 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   }
 }
 
-void WebContents::SetSize(const SetSizeParams& params) {
-  if (guest_delegate_)
-    guest_delegate_->SetSize(params);
+void WebContents::SetSize(v8::Local<v8::Value>) {
+  // TODO(zcbenz): Remove this method in 4.0.
 }
 
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
+}
+
+void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
+                                 int embedder_frame_id) {
+  if (guest_delegate_)
+    guest_delegate_->AttachToIframe(embedder_web_contents, embedder_frame_id);
 }
 
 bool WebContents::IsOffScreen() const {
@@ -2045,6 +2018,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startDrag", &WebContents::StartDrag)
       .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
+      .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)

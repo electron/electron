@@ -5,7 +5,7 @@ const path = require('path')
 const http = require('http')
 const url = require('url')
 const {ipcRenderer, remote} = require('electron')
-const {app, session, getGuestWebContents, ipcMain, BrowserWindow, webContents} = remote
+const {app, session, ipcMain, BrowserWindow} = remote
 const {closeWindow} = require('./window-helpers')
 const {emittedOnce, waitForEvent} = require('./events-helpers')
 
@@ -64,8 +64,7 @@ describe('<webview> tag', function () {
     return closeTheWindow()
   })
 
-  // TODO(codebytere): re-enable this test
-  xit('works without script tag in page', async () => {
+  it('works without script tag in page', async () => {
     const w = await openTheWindow({show: false})
     w.loadURL('file://' + fixtures + '/pages/webview-no-script.html')
     await emittedOnce(ipcMain, 'pong')
@@ -693,7 +692,8 @@ describe('<webview> tag', function () {
     })
   })
 
-  describe('setDevToolsWebContents() API', () => {
+  // FIXME(zcbenz): Disabled because of moving to OOPIF webview.
+  xdescribe('setDevToolsWebContents() API', () => {
     it('sets webContents of webview as devtools', async () => {
       const webview2 = new WebView()
       loadWebView(webview2)
@@ -990,9 +990,7 @@ describe('<webview> tag', function () {
     })
   })
 
-  // TODO(jkleinsc): this test causes the test suite to hang on Windows release
-  // builds.  Temporarily disabling so that release build tests will finish.
-  xdescribe('found-in-page event', () => {
+  describe('found-in-page event', () => {
     it('emits when a request is made', (done) => {
       let requestId = null
       let activeMatchOrdinal = []
@@ -1149,12 +1147,15 @@ describe('<webview> tag', function () {
 
     it('updates when the window is shown after the ready-to-show event', async () => {
       const w = await openTheWindow({ show: false })
+      const readyToShowSignal = emittedOnce(w, 'ready-to-show')
+      const pongSignal1 = emittedOnce(ipcMain, 'pong')
       w.loadURL(`file://${fixtures}/pages/webview-visibilitychange.html`)
-
-      await emittedOnce(w, 'ready-to-show')
+      await pongSignal1
+      const pongSignal2 = emittedOnce(ipcMain, 'pong')
+      await readyToShowSignal
       w.show()
 
-      const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+      const [, visibilityState, hidden] = await pongSignal2
       assert(!hidden)
       assert.equal(visibilityState, 'visible')
     })
@@ -1255,232 +1256,6 @@ describe('<webview> tag', function () {
     expect(tabId).to.be.not.equal(w.webContents.id)
   })
 
-  // TODO(alexeykuzmin): Some tests rashe a renderer process.
-  // Fix them and enable the tests.
-  xdescribe('guestinstance attribute', () => {
-    it('before loading there is no attribute', () => {
-      loadWebView(webview)  // Don't wait for loading to finish.
-      assert(!webview.hasAttribute('guestinstance'))
-    })
-
-    it('loading a page sets the guest view', async () => {
-      await loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      })
-
-      const instance = webview.getAttribute('guestinstance')
-      assert.equal(instance, parseInt(instance))
-
-      const guest = getGuestWebContents(parseInt(instance))
-      assert.equal(guest, webview.getWebContents())
-    })
-
-    it('deleting the attribute destroys the webview', async () => {
-      await loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      })
-
-      const instance = parseInt(webview.getAttribute('guestinstance'))
-      const waitForDestroy = waitForEvent(webview, 'destroyed')
-      webview.removeAttribute('guestinstance')
-
-      await waitForDestroy
-      expect(getGuestWebContents(instance)).to.equal(undefined)
-    })
-
-    it('setting the attribute on a new webview moves the contents', (done) => {
-      const loadListener = () => {
-        const webContents = webview.getWebContents()
-        const instance = webview.getAttribute('guestinstance')
-
-        const destroyListener = () => {
-          assert.equal(webContents, webview2.getWebContents())
-
-          // Make sure that events are hooked up to the right webview now
-          webview2.addEventListener('console-message', (e) => {
-            assert.equal(e.message, 'a')
-            document.body.removeChild(webview2)
-            done()
-          })
-
-          webview2.src = `file://${fixtures}/pages/a.html`
-        }
-        webview.addEventListener('destroyed', destroyListener, {once: true})
-
-        const webview2 = new WebView()
-        loadWebView(webview2, {
-          guestinstance: instance
-        })
-      }
-      webview.addEventListener('did-finish-load', loadListener, {once: true})
-      loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      })
-    })
-
-    it('setting the attribute to an invalid guestinstance does nothing', async () => {
-      await loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      })
-      webview.setAttribute('guestinstance', 55)
-
-      // Make sure that events are still hooked up to the webview
-      const waitForMessage = waitForEvent(webview, 'console-message')
-      webview.src = `file://${fixtures}/pages/a.html`
-      const {message} = await waitForMessage
-      assert.equal(message, 'a')
-    })
-
-    it('setting the attribute on an existing webview moves the contents', (done) => {
-      const load1Listener = () => {
-        const webContents = webview.getWebContents()
-        const instance = webview.getAttribute('guestinstance')
-        let destroyedInstance
-
-        const destroyListener = () => {
-          assert.equal(webContents, webview2.getWebContents())
-          assert.equal(null, getGuestWebContents(parseInt(destroyedInstance)))
-
-          // Make sure that events are hooked up to the right webview now
-          webview2.addEventListener('console-message', (e) => {
-            assert.equal(e.message, 'a')
-            document.body.removeChild(webview2)
-            done()
-          })
-
-          webview2.src = 'file://' + fixtures + '/pages/a.html'
-        }
-        webview.addEventListener('destroyed', destroyListener, {once: true})
-
-        const webview2 = new WebView()
-        const load2Listener = () => {
-          destroyedInstance = webview2.getAttribute('guestinstance')
-          assert.notEqual(instance, destroyedInstance)
-
-          webview2.setAttribute('guestinstance', instance)
-        }
-        webview2.addEventListener('did-finish-load', load2Listener, {once: true})
-        loadWebView(webview2, {
-          src: `file://${fixtures}/api/blank.html`
-        })
-      }
-
-      webview.addEventListener('did-finish-load', load1Listener, {once: true})
-      loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      })
-    })
-
-    it('moving a guest back to its original webview should work', (done) => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      }).then(() => {
-        const webContents = webview.getWebContents()
-        const instance = webview.getAttribute('guestinstance')
-
-        const destroy1Listener = () => {
-          assert.equal(webContents, webview2.getWebContents())
-          assert.notStrictEqual(webContents, webview.getWebContents())
-
-          const destroy2Listener = () => {
-            assert.equal(webContents, webview.getWebContents())
-            assert.notStrictEqual(webContents, webview2.getWebContents())
-
-            // Make sure that events are hooked up to the right webview now
-            webview.addEventListener('console-message', (e) => {
-              document.body.removeChild(webview2)
-              assert.equal(e.message, 'a')
-              done()
-            })
-
-            webview.src = `file://${fixtures}/pages/a.html`
-          }
-          webview2.addEventListener('destroyed', destroy2Listener, {once: true})
-          webview.setAttribute('guestinstance', instance)
-        }
-        webview.addEventListener('destroyed', destroy1Listener, {once: true})
-
-        const webview2 = new WebView()
-        loadWebView(webview2, {guestinstance: instance})
-      })
-    })
-
-    // FIXME(alexeykuzmin): This test only passes if the previous test ^
-    // is run alongside.
-    it('setting the attribute on a webview in a different window moves the contents', (done) => {
-      loadWebView(webview, {
-        src: `file://${fixtures}/api/blank.html`
-      }).then(() => {
-        const instance = webview.getAttribute('guestinstance')
-
-        w = new BrowserWindow({ show: false })
-        w.webContents.once('did-finish-load', () => {
-          ipcMain.once('pong', () => {
-            assert(!webview.hasAttribute('guestinstance'))
-            done()
-          })
-
-          w.webContents.send('guestinstance', instance)
-        })
-        w.loadURL(`file://${fixtures}/pages/webview-move-to-window.html`)
-      })
-    })
-
-    it('does not delete the guestinstance attribute when moving the webview to another parent node', (done) => {
-      webview.addEventListener('dom-ready', function domReadyListener () {
-        webview.addEventListener('did-attach', () => {
-          assert(webview.guestinstance != null)
-          assert(webview.getWebContents() != null)
-          done()
-        })
-
-        document.body.replaceChild(webview, div)
-      })
-      webview.src = `file://${fixtures}/pages/a.html`
-
-      const div = document.createElement('div')
-      div.appendChild(webview)
-      document.body.appendChild(div)
-    })
-
-    it('does not destroy the webContents when hiding/showing the webview (regression)', (done) => {
-      webview.addEventListener('dom-ready', function () {
-        const instance = webview.getAttribute('guestinstance')
-        assert(instance != null)
-
-        // Wait for event directly since attach happens asynchronously over IPC
-        ipcMain.once('ELECTRON_GUEST_VIEW_MANAGER_ATTACH_GUEST', () => {
-          assert(webview.getWebContents() != null)
-          assert.equal(instance, webview.getAttribute('guestinstance'))
-          done()
-        })
-
-        webview.style.display = 'none'
-        webview.offsetHeight // eslint-disable-line
-        webview.style.display = 'block'
-      }, {once: true})
-      loadWebView(webview, {src: `file://${fixtures}/pages/a.html`})
-    })
-
-    it('does not reload the webContents when hiding/showing the webview (regression)', (done) => {
-      webview.addEventListener('dom-ready', function () {
-        webview.addEventListener('did-start-loading', () => {
-          done(new Error('webview started loading unexpectedly'))
-        })
-
-        // Wait for event directly since attach happens asynchronously over IPC
-        webview.addEventListener('did-attach', () => {
-          done()
-        })
-
-        webview.style.display = 'none'
-        webview.offsetHeight  // eslint-disable-line
-        webview.style.display = 'block'
-      }, {once: true})
-      loadWebView(webview, {src: `file://${fixtures}/pages/a.html`})
-    })
-  })
-
   describe('DOM events', () => {
     let div
 
@@ -1498,133 +1273,31 @@ describe('<webview> tag', function () {
     })
 
     it('emits resize events', async () => {
+      const firstResizeSignal = waitForEvent(webview, 'resize')
+      const domReadySignal = waitForEvent(webview, 'dom-ready')
+
       webview.src = `file://${fixtures}/pages/a.html`
       div.appendChild(webview)
       document.body.appendChild(div)
 
-      const firstResizeEvent = await waitForEvent(webview, 'resize')
+      const firstResizeEvent = await firstResizeSignal
       expect(firstResizeEvent.target).to.equal(webview)
       expect(firstResizeEvent.newWidth).to.equal(100)
       expect(firstResizeEvent.newHeight).to.equal(10)
 
-      await waitForEvent(webview, 'dom-ready')
+      await domReadySignal
+
+      const secondResizeSignal = waitForEvent(webview, 'resize')
 
       const newWidth = 1234
       const newHeight = 789
       div.style.width = `${newWidth}px`
       div.style.height = `${newHeight}px`
 
-      const secondResizeEvent = await waitForEvent(webview, 'resize')
+      const secondResizeEvent = await secondResizeSignal
       expect(secondResizeEvent.target).to.equal(webview)
       expect(secondResizeEvent.newWidth).to.equal(newWidth)
       expect(secondResizeEvent.newHeight).to.equal(newHeight)
-    })
-  })
-
-  describe('disableguestresize attribute', () => {
-    it('does not have attribute by default', () => {
-      loadWebView(webview)
-      assert(!webview.hasAttribute('disableguestresize'))
-    })
-
-    it('resizes guest when attribute is not present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const elementResize = emittedOnce(ipcMain, 'webview-element-resize')
-          .then(([, width, height]) => {
-            assert.equal(width, CONTENT_SIZE)
-            assert.equal(height, CONTENT_SIZE)
-          })
-
-      const guestResize = emittedOnce(ipcMain, 'webview-guest-resize')
-          .then(([, width, height]) => {
-            assert.equal(width, CONTENT_SIZE)
-            assert.equal(height, CONTENT_SIZE)
-          })
-
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-
-      return Promise.all([elementResize, guestResize])
-    })
-
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('does not resize guest when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const noGuestResizePromise = Promise.race([
-        emittedOnce(ipcMain, 'webview-guest-resize'),
-        new Promise(resolve => setTimeout(() => resolve(), 500))
-      ]).then((eventData = null) => {
-        if (eventData !== null) {
-          // Means we got the 'webview-guest-resize' event before the time out.
-          return Promise.reject(new Error('Unexpected guest resize message'))
-        }
-      })
-
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-
-      return noGuestResizePromise
-    })
-
-    it('dispatches element resize event even when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const whenElementResized = emittedOnce(ipcMain, 'webview-element-resize')
-      const CONTENT_SIZE = 300
-      assert(CONTENT_SIZE !== INITIAL_SIZE)
-      w.setContentSize(CONTENT_SIZE, CONTENT_SIZE)
-      const [, width, height] = await whenElementResized
-
-      expect(width).to.equal(CONTENT_SIZE)
-      expect(height).to.equal(CONTENT_SIZE)
-    })
-
-    // TODO(alexeykuzmin): [Ch66] Enable the test.
-    xit('can be manually resized with setSize even when attribute is present', async () => {
-      const INITIAL_SIZE = 200
-      const w = await openTheWindow(
-          {show: false, width: INITIAL_SIZE, height: INITIAL_SIZE})
-      w.loadURL(`file://${fixtures}/pages/webview-no-guest-resize.html`)
-      await emittedOnce(ipcMain, 'webview-loaded')
-
-      const GUEST_WIDTH = 10
-      const GUEST_HEIGHT = 20
-
-      const guestResizePromise = emittedOnce(ipcMain, 'webview-guest-resize')
-          .then(([, width, height]) => {
-            expect(width).to.be.equal(GUEST_WIDTH)
-            expect(height).to.be.equal(GUEST_HEIGHT)
-          })
-
-      const wc = webContents.getAllWebContents().find((wc) => {
-        return wc.hostWebContents &&
-            wc.hostWebContents.id === w.webContents.id
-      })
-      assert(wc)
-      wc.setSize({
-        normal: {
-          width: GUEST_WIDTH,
-          height: GUEST_HEIGHT
-        }
-      })
-
-      return guestResizePromise
     })
   })
 
