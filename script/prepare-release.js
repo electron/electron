@@ -206,14 +206,14 @@ async function createRelease (branchToTarget, isBeta) {
   githubOpts.name = `electron ${newVersion}`
   if (isBeta) {
     if (versionType === 'nightly') {
-      githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
-        `for any bugs you find in it.\n \n This release is published to npm ` +
-        `under the beta tag and can be installed via npm install electron@beta, ` +
-        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
-    } else {
       githubOpts.body = `Note: This is a nightly release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the nightly tag and can be installed via npm install electron@nightly, ` +
+        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+    } else {
+      githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
+        `for any bugs you find in it.\n \n This release is published to npm ` +
+        `under the beta tag and can be installed via npm install electron@beta, ` +
         `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
     }
     githubOpts.name = `${githubOpts.name}`
