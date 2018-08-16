@@ -160,7 +160,18 @@ v8::Local<v8::Value> AtomBindings::GetHeapStatistics(v8::Isolate* isolate) {
 }
 
 // static
-v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
+v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate,
+                                                        mate::Arguments* args) {
+  bool get_private_bytes = true;
+  bool get_shared_bytes = true;
+  if (args && args->Length() == 1) {
+    mate::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("getPrivateBytes", &get_private_bytes);
+      options.Get("getSharedBytes", &get_shared_bytes);
+    }
+  }
+
   auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
 
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
@@ -170,10 +181,15 @@ v8::Local<v8::Value> AtomBindings::GetProcessMemoryInfo(v8::Isolate* isolate) {
   dict.Set("peakWorkingSetSize",
            static_cast<double>(metrics->GetPeakWorkingSetSize() >> 10));
 
-  size_t private_bytes, shared_bytes;
-  if (metrics->GetMemoryBytes(&private_bytes, &shared_bytes)) {
-    dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
-    dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+  size_t private_bytes = 0, shared_bytes = 0;
+  if (metrics->GetMemoryBytes(get_private_bytes ? &private_bytes : nullptr,
+                              get_shared_bytes ? &shared_bytes : nullptr)) {
+    if (get_private_bytes) {
+      dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
+    }
+    if (get_shared_bytes) {
+      dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
+    }
   }
 
   return dict.GetHandle();
