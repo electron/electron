@@ -273,7 +273,10 @@ async function makeRelease (releaseToValidate) {
     checkVersion()
     let draftRelease = await getDraftRelease()
     uploadNodeShasums()
-    uploadIndexJson()
+
+    // FIXME(codebytere): re-enable later
+    if (process.env.UPLOAD_INDEX_JSON) uploadIndexJson()
+
     await createReleaseShasums(draftRelease)
     // Fetch latest version of release before verifying
     draftRelease = await getDraftRelease(pkgVersion, true)
