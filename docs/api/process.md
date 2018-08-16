@@ -142,7 +142,11 @@ Returns `Object`:
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
 
-### `process.getProcessMemoryInfo()`
+### `process.getProcessMemoryInfo([options])`
+
+* `options` Object (optional)
+  * `getPrivateBytes` Boolean (optional) - Default is `true`.
+  * `getSharedBytes` Boolean (optional) - Default is `true`.
 
 Returns `Object`:
 
