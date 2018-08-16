@@ -16,6 +16,7 @@ const pkg = require('../package.json')
 const readline = require('readline')
 const semver = require('semver')
 const versionType = args._[0]
+const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 
 // TODO (future) automatically determine version based on conventional commits
 // via conventional-recommended-bump
@@ -120,7 +121,7 @@ async function getReleaseNotes (currentBranch) {
   console.log(`Generating release notes for ${currentBranch}.`)
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     base: `v${pkg.version}`,
     head: currentBranch
   }
@@ -186,7 +187,7 @@ async function createRelease (branchToTarget, isBeta) {
   await tagRelease(newVersion)
   const githubOpts = {
     owner: 'electron',
-    repo: 'electron'
+    repo: targetRepo
   }
   console.log(`Checking for existing draft release.`)
   let releases = await github.repos.getReleases(githubOpts)
@@ -204,10 +205,17 @@ async function createRelease (branchToTarget, isBeta) {
   githubOpts.draft = true
   githubOpts.name = `electron ${newVersion}`
   if (isBeta) {
-    githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
-      `for any bugs you find in it.\n \n This release is published to npm ` +
-      `under the beta tag and can be installed via npm install electron@beta, ` +
-      `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+    if (versionType === 'nightly') {
+      githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
+        `for any bugs you find in it.\n \n This release is published to npm ` +
+        `under the beta tag and can be installed via npm install electron@beta, ` +
+        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+    } else {
+      githubOpts.body = `Note: This is a nightly release.  Please file new issues ` +
+        `for any bugs you find in it.\n \n This release is published to npm ` +
+        `under the nightly tag and can be installed via npm install electron@nightly, ` +
+        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+    }
     githubOpts.name = `${githubOpts.name}`
     githubOpts.prerelease = true
   } else {
