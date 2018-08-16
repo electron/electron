@@ -165,17 +165,18 @@ def upload_electron(release, file_path, args):
     return
 
   # Upload the file.
-  upload_io_to_github(release, filename, file_path)
+  upload_io_to_github(release, filename, file_path, args.version)
 
   # Upload the checksum file.
   upload_sha256_checksum(args.version, file_path)
 
 
-def upload_io_to_github(release, filename, filepath):
+def upload_io_to_github(release, filename, filepath, version):
   print 'Uploading %s to Github' % \
       (filename)
   script_path = os.path.join(SOURCE_ROOT, 'script', 'upload-to-github.js')
-  execute(['node', script_path, filepath, filename, str(release['id'])])
+  execute(['node', script_path, filepath, filename, str(release['id']),
+          version])
 
 
 def upload_sha256_checksum(version, file_path, key_prefix=None):

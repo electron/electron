@@ -72,10 +72,17 @@ def main():
     versions[3] = '0'
 
   if args.new_version != None:
-    versions = parse_version(re.sub('-beta', '', args.new_version))
+    clean_version = re.sub('-beta', '', args.new_version)
+    clean_version = re.sub('-nightly', '', clean_version)
+    versions = parse_version(clean_version)
 
   version = '.'.join(versions[:3])
-  suffix = '' if versions[3] == '0' else '-beta.' + versions[3]
+  suffix = ''
+
+  if args.new_version != None and '-nightly' in args.new_version:
+    suffix = '-nightly.' + versions[3]
+  elif versions[3] != '0':
+    suffix = '-beta.' + versions[3]
 
   if args.dry_run:
     print 'new version number would be: {0}\n'.format(version + suffix)
@@ -192,7 +199,14 @@ def update_package_json(version, suffix):
 
 
 def tag_version(version, suffix):
-  execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version + suffix)])
+  execute([
+    'git',
+    'commit',
+    '-a',
+    '-m',
+    'Bump v{0}'.format(version + suffix),
+    '-n'
+  ])
 
 
 if __name__ == '__main__':
