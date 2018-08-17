@@ -43,10 +43,10 @@ $ mkdir -p "$GIT_CACHE_PATH"
 
 ### sccache
 
-Electron builds compile tens of thousands of source files! You can avoid many
-of these by sharing Electron's CI output files with
-[sccache](https://github.com/mozilla/sccache). Doing so requires some optional
-steps (listed below) and these two environment variables:
+To build Electron, tens of thousands of source files must be compiled!
+You can doing many of these yourself by sharing Electron's CI output via
+[sccache](https://github.com/mozilla/sccache). Doing this requires some
+optional steps (listed below) and these two environment variables:
 
 ```sh
 export SCCACHE_BUCKET="electronjs-sccache"
