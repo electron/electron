@@ -77,7 +77,7 @@ async function determineNextNightly (currentBranch) {
       version = `${parts[0]}.${parts[1]}.${parseInt(parts[2], 10) + 1}`
     // it's a beta or nightly (X.Y.Z-beta.X or X.Y.Z-nightly.DATE)
     } else {
-      version = `${parts[0]}.${parts[1]}.0`
+      version = `${parts[0]}.${parts[1]}.${parts[2]}`
     }
   }
 
