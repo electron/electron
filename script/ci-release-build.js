@@ -1,3 +1,5 @@
+require('dotenv-safe').load()
+
 const assert = require('assert')
 const request = require('request')
 const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
@@ -44,7 +46,6 @@ async function makeRequest (requestOptions, parseResponse) {
 }
 
 async function circleCIcall (buildUrl, targetBranch, job, options) {
-  assert(process.env.CIRCLE_TOKEN, 'CIRCLE_TOKEN not found in environment')
   console.log(`Triggering CircleCI to run build job: ${job} on branch: ${targetBranch} with release flag.`)
   let buildRequest = {
     'build_parameters': {
@@ -77,7 +78,6 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
 }
 
 function buildAppVeyor (targetBranch, options) {
-  assert(process.env.APPVEYOR_TOKEN, 'APPVEYOR_TOKEN not found in environment')
   const validJobs = Object.keys(appVeyorJobs)
   if (options.job) {
     assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`)
@@ -139,7 +139,6 @@ async function buildVSTS (targetBranch, options) {
     assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
-  assert(process.env.VSTS_TOKEN, 'VSTS_TOKEN not found in environment')
   let environmentVariables = {}
 
   if (!options.ghRelease) {

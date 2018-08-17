@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2))
-const assert = require('assert')
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
@@ -16,9 +16,8 @@ const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
+const targetRepo = pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
 let failureCount = 0
-
-assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 
 const github = new GitHub({
   followRedirects: false
@@ -26,7 +25,7 @@ const github = new GitHub({
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 async function getDraftRelease (version, skipValidation) {
-  let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: 'electron'})
+  let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: targetRepo})
   let drafts
   let versionToCheck
   if (version) {
@@ -96,7 +95,6 @@ function assetsForVersion (version, validatingRelease) {
     `electron-${version}-linux-armv7l.zip`,
     `electron-${version}-linux-ia32-symbols.zip`,
     `electron-${version}-linux-ia32.zip`,
-//    `electron-${version}-linux-mips64el.zip`,
     `electron-${version}-linux-x64-symbols.zip`,
     `electron-${version}-linux-x64.zip`,
     `electron-${version}-mas-x64-dsym.zip`,
@@ -114,7 +112,6 @@ function assetsForVersion (version, validatingRelease) {
     `ffmpeg-${version}-linux-arm64.zip`,
     `ffmpeg-${version}-linux-armv7l.zip`,
     `ffmpeg-${version}-linux-ia32.zip`,
-//    `ffmpeg-${version}-linux-mips64el.zip`,
     `ffmpeg-${version}-linux-x64.zip`,
     `ffmpeg-${version}-mas-x64.zip`,
     `ffmpeg-${version}-win32-ia32.zip`,
@@ -144,6 +141,8 @@ function s3UrlsForVersion (version) {
 }
 
 function checkVersion () {
+  if (args.skipVersionCheck) return
+
   console.log(`Verifying that app version matches package version ${pkgVersion}.`)
   let startScript = path.join(__dirname, 'start.py')
   let scriptArgs = ['--version']
@@ -181,11 +180,7 @@ function uploadNodeShasums () {
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
   let scriptPath = path.join(__dirname, 'upload-index-json.py')
-  let scriptArgs = []
-  if (args.automaticRelease) {
-    scriptArgs.push('-R')
-  }
-  runScript(scriptPath, scriptArgs)
+  runScript(scriptPath, [pkgVersion])
   console.log(`${pass} Done uploading index.json to S3.`)
 }
 
@@ -196,7 +191,7 @@ async function createReleaseShasums (release) {
     console.log(`${fileName} already exists on GitHub; deleting before creating new file.`)
     await github.repos.deleteAsset({
       owner: 'electron',
-      repo: 'electron',
+      repo: targetRepo,
       id: existingAssets[0].id
     }).catch(err => {
       console.log(`${fail} Error deleting ${fileName} on GitHub:`, err)
@@ -215,7 +210,7 @@ async function createReleaseShasums (release) {
 async function uploadShasumFile (filePath, fileName, release) {
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     id: release.id,
     filePath,
     name: fileName
@@ -250,7 +245,7 @@ function saveShaSumFile (checksums, fileName) {
 async function publishRelease (release) {
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     id: release.id,
     tag_name: release.tag_name,
     draft: false
@@ -277,6 +272,7 @@ async function makeRelease (releaseToValidate) {
     let draftRelease = await getDraftRelease()
     uploadNodeShasums()
     uploadIndexJson()
+
     await createReleaseShasums(draftRelease)
     // Fetch latest version of release before verifying
     draftRelease = await getDraftRelease(pkgVersion, true)
@@ -304,7 +300,7 @@ async function verifyAssets (release) {
   let downloadDir = await makeTempDir()
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     headers: {
       Accept: 'application/octet-stream'
     }
