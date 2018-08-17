@@ -14,6 +14,7 @@ using brightray::InspectableWebContentsViewMac;
  @private
   brightray::InspectableWebContentsViewMac* inspectableWebContentsView_;
 
+  base::scoped_nsobject<NSView> fake_view_;
   base::scoped_nsobject<NSWindow> devtools_window_;
   BOOL devtools_visible_;
   BOOL devtools_docked_;

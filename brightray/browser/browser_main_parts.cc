@@ -186,10 +186,8 @@ void BrowserMainParts::InitializeFeatureList() {
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
 
-  // TODO(deepak1556): Disable guest webcontents based on OOPIF feature.
   // Disable surface synchronization and async wheel events to make OSR work.
-  disable_features +=
-      ",GuestViewCrossProcessFrames,SurfaceSynchronization,AsyncWheelEvents";
+  disable_features += ",SurfaceSynchronization,AsyncWheelEvents";
 
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);

@@ -152,7 +152,8 @@ CommonWebContentsDelegate::~CommonWebContentsDelegate() {}
 
 void CommonWebContentsDelegate::InitWithWebContents(
     content::WebContents* web_contents,
-    AtomBrowserContext* browser_context) {
+    AtomBrowserContext* browser_context,
+    bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
@@ -165,7 +166,8 @@ void CommonWebContentsDelegate::InitWithWebContents(
       !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(brightray::InspectableWebContents::Create(web_contents));
+  web_contents_.reset(
+      brightray::InspectableWebContents::Create(web_contents, is_guest));
   web_contents_->SetDelegate(this);
 }
 

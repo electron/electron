@@ -24,6 +24,7 @@ class WebContentsZoomController
     virtual void OnZoomLevelChanged(content::WebContents* web_contents,
                                     double level,
                                     bool is_temporary) {}
+    virtual void OnZoomControllerWebContentsDestroyed() {}
 
    protected:
     virtual ~Observer() {}
