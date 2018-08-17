@@ -342,7 +342,7 @@ def get_next_beta(v):
     return make_version(pv[0] , pv[1],  pv[2], 'beta.1')
 
   lv = parse_version(tag_list[-1])
-  return make_version(lv[0] , lv[1],  lv[2], str(int(lv[3]) + 1))
+  return make_version(pv[0], pv[1], pv[2], 'beta.' + str(int(lv[3]) + 1))
 
 def get_next_stable_from_pre(v):
   pv = clean_parse_version(v)
