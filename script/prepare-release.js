@@ -69,9 +69,16 @@ async function determineNextNightly (currentBranch) {
 
   if (currentBranch === 'master') {
     version = await determineNextNightlyForMaster()
-  }
-  if (!version) {
-    throw new Error(`not yet implemented for release branch: ${currentBranch}`)
+  } else {
+    const parts = pkg.version.split('.')
+
+    // it's a stable version (X.Y.Z)
+    if (parts.length === 3) {
+      version = `${parts[0]}.${parts[1]}.${parseInt(parts[2], 10) + 1}`
+    // it's a beta or nightly (X.Y.Z-beta.X or X.Y.Z-nightly.DATE)
+    } else {
+      version = `${parts[0]}.${parts[1]}.0`
+    }
   }
 
   return `${version}-nightly.${date}`
