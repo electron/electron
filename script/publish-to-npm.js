@@ -4,7 +4,6 @@ const path = require('path')
 const childProcess = require('child_process')
 const GitHubApi = require('github')
 const request = require('request')
-const assert = require('assert')
 const rootPackageJson = require('../package.json')
 
 if (!process.env.ELECTRON_NPM_OTP) {
@@ -124,8 +123,6 @@ new Promise((resolve, reject) => {
       env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
       cwd: tempDir
     })
-    const checkVersion = childProcess.execSync(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
-    assert.ok((`v${rootPackageJson.version}`.indexOf(checkVersion.toString().trim()) === 0), `Version is correct`)
     resolve(tarballPath)
   })
 })
