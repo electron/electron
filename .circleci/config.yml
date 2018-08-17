@@ -182,7 +182,9 @@ gn-build-steps: &gn-build-steps
         name: GN gen
         command: |
           cd src
+          SCCACHE_BUCKET="electronjs-sccache"
           SCCACHE_PATH="$PWD/electron/external_binaries/sccache"
+          SCCACHE_TWO_TIER=true
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           echo 'export SCCACHE_BUCKET="'"$SCCACHE_BUCKET"'"'           >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER="'"$SCCACHE_TWO_TIER"'"'       >> $BASH_ENV
