@@ -169,7 +169,6 @@ gn-build-steps: &gn-build-steps
           gclient config \
             --name "src/electron" \
             --unmanaged \
-            --cache-dir "${GIT_CACHE_PATH}" \
             $GCLIENT_EXTRA_ARGS \
             "$CIRCLE_REPOSITORY_URL"
 

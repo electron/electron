@@ -16,7 +16,6 @@ phases:
       gclient config \
         --name "src/electron" \
         --unmanaged \
-        --cache-dir "${GIT_CACHE_PATH}" \
         "https://github.com/electron/electron"
       mkdir src
       git clone https://github.com/electron/electron src/electron

@@ -25,9 +25,8 @@ build_script:
       gclient config
       --name "src\electron"
       --unmanaged
-      --cache-dir "${GIT_CACHE_PATH}"
       "https://github.com/electron/electron"
-  - gclient sync --with_branch_heads --with_tags
+  - gclient sync -v --with_branch_heads --with_tags
   - cd src
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
