@@ -17,7 +17,7 @@ try {
 
 var platformPath = getPlatformPath()
 
-if (installedVersion === version && fs.existsSync(path.join(__dirname, platformPath))) {
+if (installedVersion === version && fs.existsSync(path.join(__dirname, 'dist', platformPath))) {
   process.exit(0)
 }
 
