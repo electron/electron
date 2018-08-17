@@ -33,10 +33,7 @@ github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 async function getNewVersion (dryRun) {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
-  let scriptArgs = [bumpScript]
-  if (args.bump) {
-    scriptArgs.push(`--bump ${versionType}`)
-  }
+  let scriptArgs = [bumpScript, '--bump', versionType]
   if (args.stable) {
     scriptArgs.push('--stable')
   }
