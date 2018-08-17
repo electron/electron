@@ -11,8 +11,10 @@ import stat
 if sys.platform == "win32":
   import _winreg
 
-from lib.config import BASE_URL, PLATFORM, enable_verbose_mode, \
-                       get_target_arch, get_zip_name, build_env
+from lib.config import BASE_URL, PLATFORM, add_exec_bit \
+                       build_env, enable_verbose_mode, \
+                       get_target_arch, get_zip_name
+
 from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
                      execute, electron_gyp, electron_features, parse_version
 from lib.env_util import get_vs_location
@@ -144,7 +146,7 @@ def copy_chrome_binary(binary):
 
   # Copy file and keep the executable bit.
   shutil.copyfile(src, dest)
-  os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+  add_exec_bit(dest)
 
 def copy_vcruntime_binaries():
   arch = get_target_arch()
@@ -299,7 +301,7 @@ def create_chrome_binary_zip(binary, version):
     dest = os.path.join(DIST_DIR, binary)
     # Copy file and keep the executable bit.
     shutil.copyfile(src, dest)
-    os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+    add_exec_bit(dest)
 
     dist_name = get_zip_name(binary, version)
     zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
