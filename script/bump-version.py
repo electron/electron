@@ -88,6 +88,7 @@ def main():
   suffix = ''
   if '-' in version:
     suffix = '-' + version.split('-')[1]
+    versions[3] = parse_version(version)[3]
   version = version.split('-')[0]
 
   if args.dry_run:
