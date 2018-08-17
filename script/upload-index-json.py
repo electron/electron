@@ -10,7 +10,7 @@ from lib.util import s3put, scoped_cwd, safe_mkdir
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'D')
 
-BASE_URL = 'https://electron-metadumper.herokuapp.com/?version=v'
+BASE_URL = 'https://electron-metadumper.herokuapp.com/?version='
 
 version = sys.argv[1]
 authToken = os.getenv('META_DUMPER_AUTH_HEADER')
