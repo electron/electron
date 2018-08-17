@@ -2,6 +2,7 @@
 
 import atexit
 import contextlib
+import datetime
 import errno
 import platform
 import re
@@ -298,3 +299,66 @@ def update_node_modules(dirname, env=None):
 def add_exec_bit(filename):
   os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
 
+def clean_parse_version(v):
+  return parse_version(v.split("-")[0])        
+
+def is_stable(v):
+  return len(v.split(".")) == 3    
+
+def is_beta(v):
+  return 'beta' in v
+
+def is_nightly(v):
+  return 'nightly' in v
+
+def get_nightly_date():
+  return datetime.datetime.today().strftime('%Y%m%d')
+
+def get_last_major():
+  return execute(['node', 'script/get-last-major-for-master.js'])
+
+def get_next_nightly(v):
+  pv = clean_parse_version(v)
+  major = pv[0]; minor = pv[1]; patch = pv[2]
+
+  if (is_stable(v)):
+    patch = str(int(pv[2]) + 1)
+
+  if execute(['git', 'rev-parse', '--abbrev-ref', 'HEAD']) == "master":
+    major = str(get_last_major() + 1)
+    minor = '0'
+    patch = '0'
+
+  pre = 'nightly.' + get_nightly_date()
+  return make_version(major, minor, patch, pre)
+
+def non_empty(thing):
+  return thing.strip() != ''
+
+def get_next_beta(v):
+  pv = clean_parse_version(v)
+  tag_pattern = 'v' + pv[0] + '.' + pv[1] + '.' + pv[2] + '-beta.*'
+  tag_list = filter(
+    non_empty,
+    execute(['git', 'tag', '--list', '-l', tag_pattern]).strip().split('\n')
+  )
+  if len(tag_list) == 0:
+    return make_version(pv[0] , pv[1],  pv[2], 'beta.1')
+
+  lv = parse_version(tag_list[-1])
+  return make_version(lv[0] , lv[1],  lv[2], str(int(lv[3]) + 1))
+
+def get_next_stable_from_pre(v):
+  pv = clean_parse_version(v)
+  major = pv[0]; minor = pv[1]; patch = pv[2]
+  return make_version(major, minor, patch)
+
+def get_next_stable_from_stable(v):
+  pv = clean_parse_version(v)
+  major = pv[0]; minor = pv[1]; patch = pv[2]
+  return make_version(major, minor, str(int(patch) + 1))
+
+def make_version(major, minor, patch, pre = None):
+  if pre is None:
+    return major + '.' + minor + '.' + patch
+  return major + "." + minor + "." + patch + '-' + pre

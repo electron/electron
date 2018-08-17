@@ -26,7 +26,7 @@
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
     "request": "^2.68.0",
     "semver": "^5.5.0",
-    "serve": "^6.5.3",
+    "serve": "^6.5.8",
     "standard": "^10.0.0",
     "standard-markdown": "^4.0.0",
     "sumchecker": "^2.0.2",

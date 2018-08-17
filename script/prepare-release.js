@@ -14,7 +14,6 @@ const pass = '\u2713'.green
 const path = require('path')
 const pkg = require('../package.json')
 const readline = require('readline')
-const semver = require('semver')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 
@@ -22,7 +21,7 @@ const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 // via conventional-recommended-bump
 
 if (!versionType && !args.notesOnly) {
-  console.log(`Usage: prepare-release versionType [major | minor | patch | beta | nightly]` +
+  console.log(`Usage: prepare-release versionType [stable | beta | nightly]` +
      ` (--stable) (--notesOnly) (--automaticRelease) (--branch)`)
   process.exit(1)
 }
@@ -35,9 +34,7 @@ async function getNewVersion (dryRun) {
   console.log(`Bumping for new "${versionType}" version.`)
   let bumpScript = path.join(__dirname, 'bump-version.py')
   let scriptArgs = [bumpScript]
-  if (versionType === 'nightly') {
-    scriptArgs.push(`--version ${await determineNextNightly(await getCurrentBranch())}`)
-  } else {
+  if (args.bump) {
     scriptArgs.push(`--bump ${versionType}`)
   }
   if (args.stable) {
@@ -58,43 +55,6 @@ async function getNewVersion (dryRun) {
     console.log(`${fail} Could not bump version, error was:`, err)
     throw err
   }
-}
-
-async function determineNextNightly (currentBranch) {
-  const twoPad = (n) => n < 10 ? `0${n}` : `${n}`
-  const d = new Date()
-  const date = `${d.getFullYear()}${twoPad(d.getMonth() + 1)}${twoPad(d.getDate())}`
-
-  let version
-
-  if (currentBranch === 'master') {
-    version = await determineNextNightlyForMaster()
-  }
-  if (!version) {
-    throw new Error(`not yet implemented for release branch: ${currentBranch}`)
-  }
-
-  return `${version}-nightly.${date}`
-}
-
-async function determineNextNightlyForMaster () {
-  let branchNames
-  let result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], gitDir)
-  if (result.exitCode === 0) {
-    branchNames = result.stdout.trim().split('\n')
-    const filtered = branchNames.map(b => b.replace('origin/', ''))
-    return getNextReleaseBranch(filtered)
-  } else {
-    throw new Error('Release branches could not be fetched.')
-  }
-}
-
-function getNextReleaseBranch (branches) {
-  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0'))
-  const next = converted.reduce((v1, v2) => {
-    return semver.gt(v1, v2) ? v1 : v2
-  })
-  return `${parseInt(next.split('.')[0], 10) + 1}.0.0`
 }
 
 async function getCurrentBranch (gitDir) {
@@ -205,7 +165,7 @@ async function createRelease (branchToTarget, isBeta) {
   githubOpts.draft = true
   githubOpts.name = `electron ${newVersion}`
   if (isBeta) {
-    if (versionType === 'nightly') {
+    if (newVersion.indexOf('nightly') > 0) {
       githubOpts.body = `Note: This is a nightly release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the nightly tag and can be installed via npm install electron@nightly, ` +
@@ -293,7 +253,7 @@ async function promptForVersion (version) {
 
 async function prepareRelease (isBeta, notesOnly) {
   if (args.automaticRelease && (pkg.version.indexOf('beta') === -1 ||
-      versionType !== 'beta') && versionType !== 'nightly') {
+      versionType !== 'beta') && versionType !== 'nightly' && versionType !== 'stable') {
     console.log(`${fail} Automatic release is only supported for beta and nightly releases`)
     process.exit(1)
   }
