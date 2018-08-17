@@ -653,3 +653,81 @@ if (is_mac) {
     }
   }
 }
+
+group("electron_tests") {
+  testonly = true
+
+  deps = [
+    ":blink_unittests",
+    ":chromium_browsertests",
+    ":chromium_unittests",
+  ]
+}
+
+group("blink_unittests") {
+  testonly = true
+
+  deps = [
+    "//third_party/WebKit/public:all_blink",
+    "//third_party/WebKit/public:test_support",
+  ]
+}
+
+group("chromium_unittests") {
+  testonly = true
+
+  deps = [
+    "//base:base_unittests",
+    "//cc:cc_unittests",
+    "//cc/blink:cc_blink_unittests",
+    "//content/test:content_unittests",
+    "//crypto:crypto_unittests",
+    "//device:device_unittests",
+    "//gin:gin_unittests",
+    "//gpu:gpu_unittests",
+    "//gpu/ipc/service:gpu_ipc_service_unittests",
+    "//ipc:ipc_tests",
+    "//media:media_unittests",
+    "//media/capture:capture_unittests",
+    "//media/midi:midi_unittests",
+    "//media/mojo:media_mojo_unittests",
+    "//mojo:mojo_unittests",
+    "//mojo/common:mojo_common_unittests",
+    "//net:net_unittests",
+    "//ppapi:ppapi_unittests",
+    "//printing:printing_unittests",
+    "//skia:skia_unittests",
+    "//sql:sql_unittests",
+    "//storage:storage_unittests",
+    "//third_party/angle/src/tests:angle_unittests",
+    "//third_party/leveldatabase:env_chromium_unittests",
+    "//tools/gn:gn_unittests",
+    "//ui/base:ui_base_unittests",
+    "//ui/compositor:compositor_unittests",
+    "//ui/display:display_unittests",
+    "//ui/events:events_unittests",
+    "//ui/gl:gl_unittests",
+    "//url:url_unittests",
+    "//url/ipc:url_ipc_unittests",
+    "//v8/test/unittests:unittests",
+  ]
+
+  if (is_linux) {
+    deps += [
+      "//net:disk_cache_memory_test",
+      "//sandbox/linux:sandbox_linux_unittests",
+    ]
+
+    if (use_dbus) {
+      deps += [ "//dbus:dbus_unittests" ]
+    }
+  }
+}
+
+group("chromium_browsertests") {
+  testonly = true
+
+  deps = [
+    "//content/test:content_browsertests",
+  ]
+}
