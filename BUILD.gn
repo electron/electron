@@ -701,12 +701,13 @@ action("electron_version") {
   args = rebase_path(outputs, root_build_dir) + [ electron_version ]
 }
 
-
 dist_zip("electron_dist_zip") {
+  # Shortcut to error early if we try to package a component build
+  assert(is_component_build == false, "Cannot package a component build")
+
   data_deps = [ ":electron_app", ":licenses", ":electron_version" ]
   outputs = [ "$root_build_dir/dist.zip" ]
 }
-
 
 group("electron") {
   deps = [ ":electron_app" ]
