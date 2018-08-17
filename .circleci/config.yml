@@ -182,7 +182,7 @@ gn-build-steps: &gn-build-steps
         name: GN gen
         command: |
           cd src
-          SCCACHE_PATH="$PWD/libchromiumcontent/tools/sccache/aad2120/linux/sccache"
+          SCCACHE_PATH="$PWD/electron/external_binaries/sccache"
           echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
           echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
           source $BASH_ENV
