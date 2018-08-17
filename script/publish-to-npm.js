@@ -7,6 +7,11 @@ const request = require('request')
 const assert = require('assert')
 const rootPackageJson = require('../package.json')
 
+if (!process.env.ELECTRON_NPM_OTP) {
+  console.error('Please set ELECTRON_NPM_OTP')
+  process.exit(1)
+}
+
 const github = new GitHubApi({
   // debug: true,
   headers: { 'User-Agent': 'electron-npm-publisher' },
@@ -68,7 +73,7 @@ new Promise((resolve, reject) => {
 
   return github.repos.getReleases({
     owner: 'electron',
-    repo: 'electron'
+    repo: rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
   })
 })
 .then((releases) => {
@@ -104,7 +109,11 @@ new Promise((resolve, reject) => {
   })
 })
 .then((release) => {
-  npmTag = release.prerelease ? 'beta' : 'latest'
+  if (release.tag_name.indexOf('nightly') > 0) {
+    npmTag = 'nightly'
+  } else {
+    npmTag = release.prerelease ? 'beta' : 'latest'
+  }
 })
 .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
 .then(() => {
@@ -120,7 +129,7 @@ new Promise((resolve, reject) => {
     resolve(tarballPath)
   })
 })
-.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag}`))
+.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
 .catch((err) => {
   console.error(`Error: ${err}`)
   process.exit(1)

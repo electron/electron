@@ -1,3 +1,5 @@
+if (!process.env.CI) require('dotenv-safe').load()
+
 const GitHub = require('github')
 const github = new GitHub()
 
@@ -12,7 +14,7 @@ async function findRelease () {
   github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
   let releases = await github.repos.getReleases({
     owner: 'electron',
-    repo: 'electron'
+    repo: version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
   })
   let targetRelease = releases.data.find(release => {
     return release.tag_name === version
