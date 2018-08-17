@@ -31,9 +31,12 @@ def main():
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk-' + get_target_arch())
 
-  download_and_unzip('sccache-'+get_platform_key()+'-x64')
-  # https://bugs.python.org/issue15795
-  add_exec_bit('external_binaries/sccache')
+  # get sccache & set exec bit. https://bugs.python.org/issue15795
+  download_and_unzip('scccache-{0}-x64'.format(get_platform_key())
+  appname = 'sccache'
+  if sys.platform == 'win32':
+    appname += '.exe'
+  add_exec_bit(os.path.join('external_binaries', appname)
 
   with open(version_file, 'w') as f:
     f.write(VERSION)
