@@ -180,11 +180,7 @@ function uploadNodeShasums () {
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
   let scriptPath = path.join(__dirname, 'upload-index-json.py')
-  let scriptArgs = []
-  if (args.automaticRelease) {
-    scriptArgs.push('-R')
-  }
-  runScript(scriptPath, scriptArgs)
+  runScript(scriptPath, [pkgVersion])
   console.log(`${pass} Done uploading index.json to S3.`)
 }
 
@@ -275,9 +271,7 @@ async function makeRelease (releaseToValidate) {
     checkVersion()
     let draftRelease = await getDraftRelease()
     uploadNodeShasums()
-
-    // FIXME(codebytere): re-enable later
-    if (process.env.UPLOAD_INDEX_JSON) uploadIndexJson()
+    uploadIndexJson()
 
     await createReleaseShasums(draftRelease)
     // Fetch latest version of release before verifying
