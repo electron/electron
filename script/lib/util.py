@@ -7,6 +7,7 @@ import platform
 import re
 import shutil
 import ssl
+import stat
 import subprocess
 import sys
 import tarfile
@@ -293,3 +294,7 @@ def update_node_modules(dirname, env=None):
         pass
     else:
       execute_stdout(args, env)
+
+def add_exec_bit(filename):
+  os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
+
