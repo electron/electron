@@ -1,0 +1,2 @@
+import("release.gn")
+v8_enable_i18n_support = false

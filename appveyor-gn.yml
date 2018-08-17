@@ -33,6 +33,8 @@ build_script:
       %SCCACHE_PATH% -s
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\") cc_wrapper=\"%CC_WRAPPER%\" "
   - ninja -C out/Default electron:electron_app
+  - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\")"
+  - ninja -C out/ffmpeg third_party/ffmpeg
   - ninja -C out/Default electron:electron_dist_zip
   - >-
       %SCCACHE_PATH% -s
@@ -44,7 +46,7 @@ test_script:
   - npm install
   - ps: Pop-Location
   - ./out/Default/electron.exe electron/spec --ci
-  # TODO(nornagon): verify-ffmpeg step
+  - python src\electron\verify-ffmpeg.py -c Default --source_root "%pwd%\src" --ffmpeg_path "%pwd%\src\out\ffmpeg"
 artifacts:
 - path: test-results.xml
   name: test-results.xml
