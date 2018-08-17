@@ -117,7 +117,7 @@ def increase_version(versions, index):
 
 def update_electron_gyp(version, suffix):
   pattern = re.compile(" *'version%' *: *'[0-9.]+(-beta[0-9.]*)?(-dev)?"
-    + "(-nightly[0-9]*)?'")
+    + "(-nightly[0-9.]*)?'")
   with open('electron.gyp', 'r') as f:
     lines = f.readlines()
 
