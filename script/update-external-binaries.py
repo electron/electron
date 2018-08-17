@@ -5,7 +5,7 @@ import sys
 import os
 
 from lib.config import get_target_arch, get_platform_key
-from lib.util import safe_mkdir, rm_rf, extract_zip, tempdir, download
+from lib.util import add_exec_bit, safe_mkdir, rm_rf, extract_zip, tempdir, download
 
 
 VERSION = 'v1.4.0'
@@ -31,7 +31,9 @@ def main():
   elif sys.platform in ['cygwin', 'win32']:
     download_and_unzip('directxsdk-' + get_target_arch())
 
-  download_and_unzip('sccache-'+get_platform_key()+'-x64')
+  download_and_unzip('sccache-'+get_platform_key()+'-'+get_target_arch())
+  # https://bugs.python.org/issue15795
+  add_exec_bit('external_binaries/sccache')
 
   with open(version_file, 'w') as f:
     f.write(VERSION)
