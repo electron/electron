@@ -7,6 +7,11 @@ const request = require('request')
 const assert = require('assert')
 const rootPackageJson = require('../package.json')
 
+if (!process.env.ELECTRON_NPM_OTP) {
+  console.error('Please set ELECTRON_NPM_OTP')
+  process.exit(1)
+}
+
 const github = new GitHubApi({
   // debug: true,
   headers: { 'User-Agent': 'electron-npm-publisher' },
@@ -120,7 +125,7 @@ new Promise((resolve, reject) => {
     resolve(tarballPath)
   })
 })
-.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag}`))
+.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
 .catch((err) => {
   console.error(`Error: ${err}`)
   process.exit(1)
