@@ -109,7 +109,11 @@ new Promise((resolve, reject) => {
   })
 })
 .then((release) => {
-  npmTag = release.prerelease ? 'beta' : 'latest'
+  if (release.tag_name.indexOf('nightly') > 0) {
+    npmTag = 'nightly'
+  } else {
+    npmTag = release.prerelease ? 'beta' : 'latest'
+  }
 })
 .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
 .then(() => {
