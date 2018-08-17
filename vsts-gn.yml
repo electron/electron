@@ -11,11 +11,12 @@ phases:
     name: Setup_depot_tools
 
   - bash: |
+      export GIT_CACHE_PATH="/Users/electron/libcc_cache"
       set -ex
       gclient config \
         --name "src/electron" \
         --unmanaged \
-        --cache-dir "/Users/electron/libcc_cache" \
+        --cache-dir "${GIT_CACHE_PATH}" \
         "https://github.com/electron/electron"
       mkdir src
       git clone https://github.com/electron/electron src/electron

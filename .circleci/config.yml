@@ -154,6 +154,7 @@ gn-build-steps: &gn-build-steps
         command: |
           git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
           echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
     - checkout:
         path: src/electron
     - restore_cache:
@@ -168,7 +169,7 @@ gn-build-steps: &gn-build-steps
           gclient config \
             --name "src/electron" \
             --unmanaged \
-            --cache-dir "$HOME/.gclient-cache" \
+            --cache-dir "${GIT_CACHE_PATH}" \
             $GCLIENT_EXTRA_ARGS \
             "$CIRCLE_REPOSITORY_URL"
 
