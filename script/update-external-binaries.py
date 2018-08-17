@@ -4,7 +4,7 @@ import errno
 import sys
 import os
 
-from lib.config import get_target_arch, get_platform_key
+from lib.config import PLATFORM, get_target_arch
 from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
                      safe_mkdir, tempdir
 
@@ -32,7 +32,7 @@ def main():
     download_and_unzip('directxsdk-' + get_target_arch())
 
   # get sccache & set exec bit. https://bugs.python.org/issue15795
-  download_and_unzip('sccache-{0}-x64'.format(get_platform_key()))
+  download_and_unzip('sccache-{0}-x64'.format(PLATFORM))
   appname = 'sccache'
   if sys.platform == 'win32':
     appname += '.exe'
