@@ -47,6 +47,9 @@ The built-in `role` behavior will give the best native experience.
 The `label` and `accelerator` values are optional when using a `role` and will
 default to appropriate values for each platform.
 
+Every menu item must have either a `role`, `label`, or in the case of a separator
+a `type`.
+
 The `role` property can have following values:
 
 * `undo`
