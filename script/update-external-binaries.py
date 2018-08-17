@@ -5,8 +5,8 @@ import sys
 import os
 
 from lib.config import get_target_arch, get_platform_key
-from lib.util import add_exec_bit, safe_mkdir, rm_rf, extract_zip, tempdir, download
-
+from lib.util import add_exec_bit, download, extract_zip, rm_rf, \
+                     safe_mkdir, tempdir
 
 VERSION = 'v1.4.0'
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

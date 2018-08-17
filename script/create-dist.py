@@ -11,7 +11,7 @@ import stat
 if sys.platform == "win32":
   import _winreg
 
-from lib.config import BASE_URL, PLATFORM, add_exec_bit \
+from lib.config import BASE_URL, PLATFORM, add_exec_bit, \
                        build_env, enable_verbose_mode, \
                        get_target_arch, get_zip_name
 
