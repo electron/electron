@@ -201,7 +201,6 @@ static_library("electron_lib") {
   deps = [
     ":atom_js2c",
     "brightray",
-    "//third_party/electron_node:node_lib",
     "native_mate",
     "//base",
     "//base:i18n",
@@ -225,6 +224,7 @@ static_library("electron_lib") {
     "//skia",
     "//third_party/WebKit/public:blink",
     "//third_party/boringssl",
+    "//third_party/electron_node:node_lib",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:init_webrtc",
