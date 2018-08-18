@@ -112,7 +112,7 @@ new Promise((resolve, reject) => {
 .then(async (release) => {
   if (release.tag_name.indexOf('nightly') > 0) {
     const currentBranch = await getCurrentBranch()
-    if (currentBranch === 'nightly') {
+    if (currentBranch === 'master') {
       npmTag = 'nightly'
     } else {
       npmTag = `nightly-${currentBranch}`
