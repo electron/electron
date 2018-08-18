@@ -5,7 +5,7 @@ build.
 
 > **NOTE**: The GN build system is in _experimental_ status.
 
-## Prerequisites
+## Platform prerequisites
 
 Check the build prerequisites for your platform before proceeding
 
@@ -13,7 +13,7 @@ Check the build prerequisites for your platform before proceeding
   * [Linux](build-instructions-linux.md#prerequisites)
   * [Windows](build-instructions-windows.md#prerequisites)
 
-## Install `depot_tools`
+## GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset
 used for fetching Chromium and its dependencies.
@@ -27,7 +27,7 @@ try to download a Google-internal version that only Googlers have access to).
 
 [depot-tools]: http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
 
-## Enabling caching (recommended optional step)
+## Cached builds (optional step)
 
 ### GIT_CACHE_PATH
 
@@ -36,16 +36,16 @@ speed up subsequent calls to `gclient`. To do this, set a `GIT_CACHE_PATH`
 environment variable:
 
 ```sh
-$ export GIT_CACHE_PATH="$HOME/.git_cache"
-$ mkdir -p "$GIT_CACHE_PATH"
-# This will take about 16G.
+$ export GIT_CACHE_PATH="${HOME}/.git_cache"
+$ mkdir -p "${GIT_CACHE_PATH}"
+# This will use about 16G.
 ```
 
 ### sccache
 
-To build Electron, tens of thousands of source files must be compiled!
-You can doing many of these yourself by sharing Electron's CI output via
-[sccache](https://github.com/mozilla/sccache). Doing this requires some
+Thousands of files must be compiled to build Chromium and Electron.
+You can avoid much of the wait by reusing Electron CI's build output via
+[sccache](https://github.com/mozilla/sccache). This requires some
 optional steps (listed below) and these two environment variables:
 
 ```sh
@@ -53,7 +53,7 @@ export SCCACHE_BUCKET="electronjs-sccache"
 export SCCACHE_TWO_TIER=true
 ```
 
-### Getting the code with gclient
+## Getting the code
 
 ```sh
 $ mkdir electron-gn && cd electron-gn
@@ -71,8 +71,8 @@ $ gclient sync --with_branch_heads --with_tags
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 # this next line is needed only if building with sccache
-$ export GN_EXTRA_ARGS="$GN_EXTRA_ARGS cc_wrapper='$PWD/electron/external_binaries/sccache'"
-$ gn gen out/Default --args='import("//electron/build/args/debug.gn") $GN_EXTRA_ARGS'
+$ export GN_EXTRA_ARGS="${GN_EXTRA_ARGS} cc_wrapper=\"${PWD}/electron/external_binaries/sccache\""
+$ gn gen out/Default --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
 ```
 
 This will generate a build directory `out/Default` under `src/` with
@@ -95,7 +95,7 @@ $ gn gen out/Default --args='import("//electron/build/args/debug.gn") $GN_EXTRA_
 Electron:**
 
 ```sh
-$ gn gen out/Default --args='import("//electron/build/args/release.gn") $GN_EXTRA_ARGS'
+$ gn gen out/Default --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
 ```
 
 **To build, run `ninja` with the `electron:electron_app` target:**
