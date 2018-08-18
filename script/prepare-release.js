@@ -179,7 +179,7 @@ async function createRelease (branchToTarget, isBeta) {
     githubOpts.body = releaseNotes
   }
   githubOpts.tag_name = newVersion
-  githubOpts.target_commitish = branchToTarget
+  githubOpts.target_commitish = newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
   await github.repos.createRelease(githubOpts)
     .catch(err => {
       console.log(`${fail} Error creating new release: `, err)
