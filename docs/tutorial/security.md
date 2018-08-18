@@ -612,13 +612,13 @@ sometimes be fooled - a `startsWith('https://google.com')` test would let
 `https://google.com.attacker.com` through.
 
 ```js
-const URL = require('url')
+const URL = require('url').URL
 
 app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl)
 
-    if (parsedUrl.hostname !== 'my-own-server.com') {
+    if (parsedUrl.origin !== 'https://my-own-server.com') {
       event.preventDefault()
     }
   })
