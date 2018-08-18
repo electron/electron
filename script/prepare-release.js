@@ -139,6 +139,7 @@ async function getReleaseNotes (currentBranch) {
 }
 
 async function createRelease (branchToTarget, isBeta) {
+  console.log('creating release for', branchToTarget, `isBeta=${isBeta}`)
   let releaseNotes = await getReleaseNotes(branchToTarget)
   let newVersion = await getNewVersion()
   await tagRelease(newVersion)
@@ -180,6 +181,7 @@ async function createRelease (branchToTarget, isBeta) {
   }
   githubOpts.tag_name = newVersion
   githubOpts.target_commitish = branchToTarget
+  console.log('creating release with github opts', githubOpts)
   await github.repos.createRelease(githubOpts)
     .catch(err => {
       console.log(`${fail} Error creating new release: `, err)
