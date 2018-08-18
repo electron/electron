@@ -250,6 +250,13 @@ async function promptForVersion (version) {
   })
 }
 
+// function to determine if there have been commits to master since the last release
+async function changesToRelease () {
+  let lastCommitWasRelease = new RegExp(`Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?`, 'g')
+  let lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], gitDir)
+  return !lastCommitWasRelease.test(lastCommit.stdout)
+}
+
 async function prepareRelease (isBeta, notesOnly) {
   if (args.automaticRelease && (pkg.version.indexOf('beta') === -1 ||
       versionType !== 'beta') && versionType !== 'nightly' && versionType !== 'stable') {
@@ -266,10 +273,16 @@ async function prepareRelease (isBeta, notesOnly) {
     let releaseNotes = await getReleaseNotes(currentBranch)
     console.log(`Draft release notes are: \n${releaseNotes}`)
   } else {
-    await verifyNewVersion()
-    await createRelease(currentBranch, isBeta)
-    await pushRelease(currentBranch)
-    await runReleaseBuilds(currentBranch)
+    const changes = await changesToRelease(currentBranch)
+    if (changes) {
+      await verifyNewVersion()
+      await createRelease(currentBranch, isBeta)
+      await pushRelease(currentBranch)
+      await runReleaseBuilds(currentBranch)
+    } else {
+      console.log(`There are no new changes to this branch since the last release, aborting release.`)
+      process.exit(1)
+    }
   }
 }
 
