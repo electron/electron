@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
 const GitHubApi = require('github')
+const {GitProcess} = require('dugite')
 const request = require('request')
 const assert = require('assert')
 const rootPackageJson = require('../package.json')
@@ -108,9 +109,14 @@ new Promise((resolve, reject) => {
     })
   })
 })
-.then((release) => {
+.then(async (release) => {
   if (release.tag_name.indexOf('nightly') > 0) {
-    npmTag = 'nightly'
+    const currentBranch = await getCurrentBranch()
+    if (currentBranch === 'nightly') {
+      npmTag = 'nightly'
+    } else {
+      npmTag = `nightly-${currentBranch}`
+    }
   } else {
     npmTag = release.prerelease ? 'beta' : 'latest'
   }
@@ -134,3 +140,21 @@ new Promise((resolve, reject) => {
   console.error(`Error: ${err}`)
   process.exit(1)
 })
+
+async function getCurrentBranch () {
+  const gitDir = path.resolve(__dirname, '..')
+  console.log(`Determining current git branch`)
+  let gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
+  let branchDetails = await GitProcess.exec(gitArgs, gitDir)
+  if (branchDetails.exitCode === 0) {
+    let currentBranch = branchDetails.stdout.trim()
+    console.log(`Successfully determined current git branch is ` +
+      `${currentBranch}`)
+    return currentBranch
+  } else {
+    let error = GitProcess.parseError(branchDetails.stderr)
+    console.log(`Could not get details for the current branch,
+      error was ${branchDetails.stderr}`, error)
+    process.exit(1)
+  }
+}
