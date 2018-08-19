@@ -54,6 +54,7 @@ steps:
       script/test.py --ci --rebuild_native_modules
     fi
   name: Test
+  condition: or(ne(variables['ELECTRON_RELEASE'], '1'), eq(variables['UPLOAD_TO_S3'], '1'))
 
 - bash: |
     echo 'Verifying ffmpeg on build'
@@ -63,6 +64,7 @@ steps:
       script/verify-ffmpeg.py
     fi
   name: Verify_FFmpeg
+  condition: or(ne(variables['ELECTRON_RELEASE'], '1'), eq(variables['UPLOAD_TO_S3'], '1'))
 
 - task: PublishTestResults@2
   displayName: Publish Test Results
