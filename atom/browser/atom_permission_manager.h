@@ -75,7 +75,7 @@ class AtomPermissionManager : public content::PermissionManager {
   bool CheckPermissionWithDetails(content::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
-                                  const base::DictionaryValue* details);
+                                  const base::DictionaryValue* details) const;
 
  protected:
   void OnPermissionResponse(int request_id,

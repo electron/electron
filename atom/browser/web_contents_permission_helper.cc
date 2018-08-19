@@ -14,6 +14,21 @@
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
 
+namespace {
+
+std::string MediaStreamTypeToString(content::MediaStreamType type) {
+  switch (type) {
+    case content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
+      return "audio";
+    case content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
+      return "video";
+    default:
+      return "unknown";
+  }
+}
+
+}  // namespace
+
 namespace atom {
 
 namespace {
@@ -65,7 +80,7 @@ void WebContentsPermissionHelper::RequestPermission(
 
 bool WebContentsPermissionHelper::CheckPermission(
     content::PermissionType permission,
-    const base::DictionaryValue* details) {
+    const base::DictionaryValue* details) const {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionManager());
@@ -113,20 +128,9 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
       callback, user_gesture, &details);
 }
 
-std::string MediaStreamTypeToString(content::MediaStreamType type) {
-  switch (type) {
-    case content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
-      return "audio";
-    case content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
-      return "video";
-    default:
-      return "unknown";
-  }
-}
-
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
     const GURL& security_origin,
-    content::MediaStreamType type) {
+    content::MediaStreamType type) const {
   base::DictionaryValue details;
   details.SetString("securityOrigin", security_origin.spec());
   details.SetString("mediaType", MediaStreamTypeToString(type));
