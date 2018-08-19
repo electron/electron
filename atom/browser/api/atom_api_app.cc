@@ -870,6 +870,9 @@ std::string App::GetLocale() {
 void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
                            const base::FilePath& cwd) {
   Emit("second-instance", cmd, cwd);
+#if defined(OS_WIN)
+  Browser::Get()->CheckArgvForURL(cmd);
+#endif
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1231,6 +1234,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::Bind(&Browser::ClearRecentDocuments, browser))
       .SetMethod("setAppUserModelId",
                  base::Bind(&Browser::SetAppUserModelID, browser))
+      .SetMethod("getDefaultProtocolClient",
+                 base::Bind(&Browser::GetDefaultProtocolClient, browser))
       .SetMethod("isDefaultProtocolClient",
                  base::Bind(&Browser::IsDefaultProtocolClient, browser))
       .SetMethod("setAsDefaultProtocolClient",

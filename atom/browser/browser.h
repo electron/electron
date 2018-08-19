@@ -89,6 +89,9 @@ class Browser : public WindowListObserver {
   bool IsDefaultProtocolClient(const std::string& protocol,
                                mate::Arguments* args);
 
+  // Query the current default protocol handler for a protocol
+  base::string16 GetDefaultProtocolClient(const std::string& protocol);
+
   // Set/Get the badge count.
   bool SetBadgeCount(int count);
   int GetBadgeCount();
@@ -247,6 +250,10 @@ class Browser : public WindowListObserver {
   bool is_quiting() const { return is_quiting_; }
   bool is_ready() const { return is_ready_; }
   util::Promise* WhenReady(v8::Isolate* isolate);
+
+#if defined(OS_WIN)
+  void CheckArgvForURL(const base::CommandLine::StringVector& cmd);
+#endif
 
  protected:
   // Returns the version of application bundle or executable file.
