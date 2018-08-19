@@ -82,7 +82,7 @@ improve the security of your application.
 11. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups)
 12. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
 13. [Disable or limit navigation](#13-disable-or-limit-navigation)
-14. [Disable or limit creation of new windows](#13-disable-or-limit-creation-of-new-windows)
+14. [Disable or limit creation of new windows](#14-disable-or-limit-creation-of-new-windows)
 
 ## 1) Only Load Secure Content
 
