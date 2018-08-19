@@ -17,7 +17,9 @@ try {
 
 var platformPath = getPlatformPath()
 
-if (installedVersion === version && fs.existsSync(path.join(__dirname, platformPath))) {
+var electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
+
+if (installedVersion === version && fs.existsSync(electronPath)) {
   process.exit(0)
 }
 
