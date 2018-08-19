@@ -5,11 +5,11 @@ import re
 import sys
 import argparse
 
-from lib.util import execute, get_electron_version, parse_version, scoped_cwd
-
+from lib.util import execute, get_electron_version, parse_version, scoped_cwd, \
+is_nightly, is_beta, is_stable, get_next_nightly, get_next_beta, \
+get_next_stable_from_pre, get_next_stable_from_stable, clean_parse_version
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
 
 def main():
 
@@ -34,14 +34,7 @@ def main():
     action='store',
     default=None,
     dest='bump',
-    help='increment [major | minor | patch | beta]'
-  )
-  parser.add_argument(
-    '--stable',
-    action='store_true',
-    default= False,
-    dest='stable',
-    help='promote to stable (i.e. remove `-beta.x` suffix)'
+    help='increment [stable | beta | nightly]'
   )
   parser.add_argument(
     '--dry-run',
@@ -52,35 +45,55 @@ def main():
   )
 
   args = parser.parse_args()
+  curr_version = get_electron_version()
+
+  if args.bump not in ['stable', 'beta', 'nightly']:
+    raise Exception('bump must be set to either stable, beta or nightly')
+
+  if is_nightly(curr_version):
+    if args.bump == 'nightly':
+      version = get_next_nightly(curr_version)
+    elif args.bump == 'beta':
+      version = get_next_beta(curr_version)
+    elif args.bump == 'stable':
+      version = get_next_stable_from_pre(curr_version)
+    else:
+      not_reached()
+  elif is_beta(curr_version):
+    if args.bump == 'nightly':
+      version = get_next_nightly(curr_version)
+    elif args.bump == 'beta':
+      version = get_next_beta(curr_version)
+    elif args.bump == 'stable':
+      version = get_next_stable_from_pre(curr_version)
+    else:
+      not_reached()
+  elif is_stable(curr_version):
+    if args.bump == 'nightly':
+      version = get_next_nightly(curr_version)
+    elif args.bump == 'beta':
+      raise Exception("You can\'t bump to a beta from stable")
+    elif args.bump == 'stable':
+      version = get_next_stable_from_stable(curr_version)
+    else:
+      not_reached()
+  else:
+    raise Exception("Invalid current version: " + curr_version)
 
   if args.new_version == None and args.bump == None and args.stable == False:
     parser.print_help()
     return 1
 
-  increments = ['major', 'minor', 'patch', 'beta']
-
-  curr_version = get_electron_version()
-  versions = parse_version(re.sub('-beta', '', curr_version))
-
-  if args.bump in increments:
-    versions = increase_version(versions, increments.index(args.bump))
-    if versions[3] == '0':
-      # beta starts at 1
-      versions = increase_version(versions, increments.index('beta'))
-
-  if args.stable == True:
-    versions[3] = '0'
-
-  if args.new_version != None:
-    versions = parse_version(re.sub('-beta', '', args.new_version))
-
-  version = '.'.join(versions[:3])
-  suffix = '' if versions[3] == '0' else '-beta.' + versions[3]
+  versions = clean_parse_version(version)
+  suffix = ''
+  if '-' in version:
+    suffix = '-' + version.split('-')[1]
+    versions[3] = parse_version(version)[3]
+  version = version.split('-')[0]
 
   if args.dry_run:
     print 'new version number would be: {0}\n'.format(version + suffix)
     return 0
-
 
   with scoped_cwd(SOURCE_ROOT):
     update_electron_gyp(version, suffix)
@@ -92,6 +105,9 @@ def main():
 
   print 'Bumped to version: {0}'.format(version + suffix)
 
+def not_reached():
+  raise Exception('Unreachable code was reached')
+
 def increase_version(versions, index):
   for i in range(index + 1, 4):
     versions[i] = '0'
@@ -100,7 +116,8 @@ def increase_version(versions, index):
 
 
 def update_electron_gyp(version, suffix):
-  pattern = re.compile(" *'version%' *: *'[0-9.]+(-beta[0-9.]*)?'")
+  pattern = re.compile(" *'version%' *: *'[0-9.]+(-beta[0-9.]*)?(-dev)?"
+    + "(-nightly[0-9.]*)?'")
   with open('electron.gyp', 'r') as f:
     lines = f.readlines()
 
@@ -192,7 +209,14 @@ def update_package_json(version, suffix):
 
 
 def tag_version(version, suffix):
-  execute(['git', 'commit', '-a', '-m', 'Bump v{0}'.format(version + suffix)])
+  execute([
+    'git',
+    'commit',
+    '-a',
+    '-m',
+    'Bump v{0}'.format(version + suffix),
+    '-n'
+  ])
 
 
 if __name__ == '__main__':
