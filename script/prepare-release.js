@@ -252,7 +252,7 @@ async function promptForVersion (version) {
 
 // function to determine if there have been commits to master since the last release
 async function changesToRelease () {
-  let lastCommitWasRelease = new RegExp(`Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?`, 'g')
+  let lastCommitWasRelease = new RegExp(`^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$`, 'g')
   let lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], gitDir)
   return !lastCommitWasRelease.test(lastCommit.stdout)
 }
