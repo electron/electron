@@ -113,6 +113,7 @@ extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
 
 extern const char kDiskCacheSize[];
+extern const char kIgnoreConnectionsLimit[];
 
 }  // namespace switches
 
