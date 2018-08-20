@@ -185,9 +185,6 @@ void BrowserMainParts::InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
-
-  disable_features += ",GuestViewCrossProcessFrames";
-
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
