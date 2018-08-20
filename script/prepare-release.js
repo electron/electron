@@ -260,11 +260,6 @@ async function changesToRelease () {
 }
 
 async function prepareRelease (isBeta, notesOnly) {
-  if (args.automaticRelease && (pkg.version.indexOf('beta') === -1 ||
-      versionType !== 'beta') && versionType !== 'nightly' && versionType !== 'stable') {
-    console.log(`${fail} Automatic release is only supported for beta and nightly releases`)
-    process.exit(1)
-  }
   if (args.dryRun) {
     let newVersion = await getNewVersion(true)
     console.log(newVersion)
