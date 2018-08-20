@@ -763,8 +763,8 @@ group("blink_unittests") {
   testonly = true
 
   deps = [
-    "//third_party/WebKit/public:all_blink",
-    "//third_party/WebKit/public:test_support",
+    "//third_party/blink/public:all_blink",
+    "//third_party/blink/public:test_support",
   ]
 }
 
