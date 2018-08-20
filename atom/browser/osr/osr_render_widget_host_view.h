@@ -210,6 +210,9 @@ class OffScreenRenderWidgetHostView
 #if defined(OS_MACOSX)
   void CreatePlatformWidget(bool is_guest_view_hack);
   void DestroyPlatformWidget();
+  SkColor last_frame_root_background_color() const {
+    return last_frame_root_background_color_;
+  }
 #endif
 
   void CancelWidget();

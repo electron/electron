@@ -30,7 +30,7 @@ class MacHelper : public content::BrowserCompositorMacClient,
         view_->render_widget_host()->delegate()->IsFullscreenForCurrentTab()) {
       return SK_ColorBLACK;
     }
-    return last_frame_root_background_color_;
+    return view_->last_frame_root_background_color();
   }
 
   void BrowserCompositorMacOnBeginFrame() override {}

@@ -264,7 +264,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       size_(native_window->GetSize()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
-      mouse_wheel_phase_handler_(parent_host_view, this),
+      mouse_wheel_phase_handler_(render_widget_host_, this),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
