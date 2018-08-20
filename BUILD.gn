@@ -780,7 +780,6 @@ group("chromium_unittests") {
     "//device:device_unittests",
     "//gin:gin_unittests",
     "//gpu:gpu_unittests",
-    "//gpu/ipc/service:gpu_ipc_service_unittests",
     "//ipc:ipc_tests",
     "//media:media_unittests",
     "//media/capture:capture_unittests",
