@@ -437,16 +437,25 @@ if (is_mac) {
     ]
   }
 
-  bundle_data("electron_framework_libraries") {
-    sources = [
-      "$root_out_dir/libffmpeg.dylib",
-    ]
-    public_deps = [
-      "//third_party/ffmpeg:ffmpeg",
-    ]
-    outputs = [
-      "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
-    ]
+  if (!is_component_build) {
+    bundle_data("electron_framework_libraries") {
+      sources = []
+      public_deps = []
+      if (is_component_ffmpeg) {
+        sources += [
+          "$root_out_dir/libffmpeg.dylib",
+        ]
+        public_deps += [
+          "//third_party/ffmpeg:ffmpeg",
+        ]
+      }
+      outputs = [
+        "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
+      ]
+    }
+  } else {
+    group("electron_framework_libraries") {
+    }
   }
 
   bundle_data("electron_crashpad_helper") {
@@ -472,11 +481,9 @@ if (is_mac) {
     ]
     deps = [
       ":electron_framework_resources",
+      ":electron_framework_libraries",
       ":electron_xibs",
     ]
-    if (!is_component_build && is_component_ffmpeg) {
-      deps += [ ":electron_framework_libraries" ]
-    }
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
     }
