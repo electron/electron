@@ -21,6 +21,12 @@ if (installedVersion === version && fs.existsSync(path.join(__dirname, platformP
   process.exit(0)
 }
 
+var mirror
+
+if (version.indexOf('nightly') !== -1) {
+  mirror = 'https://github.com/electron/nightlies/releases/download/v'
+}
+
 // downloads if not cached
 download({
   cache: process.env.electron_config_cache,
@@ -29,7 +35,8 @@ download({
   arch: process.env.npm_config_arch,
   strictSSL: process.env.npm_config_strict_ssl === 'true',
   force: process.env.force_no_cache === 'true',
-  quiet: process.env.npm_config_loglevel === 'silent' || process.env.CI
+  quiet: process.env.npm_config_loglevel === 'silent' || process.env.CI,
+  mirror
 }, extractFile)
 
 // unzips and makes path.txt point at the correct executable
