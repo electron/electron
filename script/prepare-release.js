@@ -31,7 +31,9 @@ const gitDir = path.resolve(__dirname, '..')
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 async function getNewVersion (dryRun) {
-  console.log(`Bumping for new "${versionType}" version.`)
+  if (!dryRun) {
+    console.log(`Bumping for new "${versionType}" version.`)
+  }
   let bumpScript = path.join(__dirname, 'bump-version.py')
   let scriptArgs = [bumpScript, '--bump', versionType]
   if (args.stable) {
@@ -263,25 +265,25 @@ async function prepareRelease (isBeta, notesOnly) {
     console.log(`${fail} Automatic release is only supported for beta and nightly releases`)
     process.exit(1)
   }
-  let currentBranch
-  if (args.branch) {
-    currentBranch = args.branch
+  if (args.dryRun) {
+    let newVersion = await getNewVersion(true)
+    console.log(newVersion)
   } else {
-    currentBranch = await getCurrentBranch(gitDir)
-  }
-  if (notesOnly) {
-    let releaseNotes = await getReleaseNotes(currentBranch)
-    console.log(`Draft release notes are: \n${releaseNotes}`)
-  } else {
-    const changes = await changesToRelease(currentBranch)
-    if (changes) {
-      await verifyNewVersion()
-      await createRelease(currentBranch, isBeta)
-      await pushRelease(currentBranch)
-      await runReleaseBuilds(currentBranch)
+    const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(gitDir)
+    if (notesOnly) {
+      let releaseNotes = await getReleaseNotes(currentBranch)
+      console.log(`Draft release notes are: \n${releaseNotes}`)
     } else {
-      console.log(`There are no new changes to this branch since the last release, aborting release.`)
-      process.exit(1)
+      const changes = await changesToRelease(currentBranch)
+      if (changes) {
+        await verifyNewVersion()
+        await createRelease(currentBranch, isBeta)
+        await pushRelease(currentBranch)
+        await runReleaseBuilds(currentBranch)
+      } else {
+        console.log(`There are no new changes to this branch since the last release, aborting release.`)
+        process.exit(1)
+      }
     }
   }
 }
