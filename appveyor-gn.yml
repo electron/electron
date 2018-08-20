@@ -32,7 +32,7 @@ build_script:
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
 test_script:
-  - ninja -C out/Default electron/build/node:headers
+  - ninja -C out/Default third_party/electron_node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
   - ps: $env:npm_config_msvs_version="2017"
   - ps: Push-Location; cd electron/spec
