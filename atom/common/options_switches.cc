@@ -213,6 +213,9 @@ const char kWidevineCdmVersion[] = "widevine-cdm-version";
 // Forces the maximum disk space to be used by the disk cache, in bytes.
 const char kDiskCacheSize[] = "disk-cache-size";
 
+// Ignore the limit of 6 connections per host.
+const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
+
 }  // namespace switches
 
 }  // namespace atom

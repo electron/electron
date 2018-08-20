@@ -51,8 +51,6 @@
       'browser/net/require_ct_delegate.h',
       'browser/net_log.cc',
       'browser/net_log.h',
-      'browser/network_delegate.cc',
-      'browser/network_delegate.h',
       'browser/notification_delegate.h',
       'browser/notification_presenter.cc',
       'browser/notification_presenter.h',
