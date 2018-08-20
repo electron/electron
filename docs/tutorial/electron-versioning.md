@@ -77,13 +77,10 @@ Whatever you choose, you will periodically have to bump the version in your `pac
 
 The process is as follows:
 
-1. All new major and minor releases lines begin with a `-beta.N` tag for `N >= 1`. At that point, the feature set is **locked**. That release line admits no further features, and focuses only on security and stability.
-e.g. `2.0.0-beta.1`.
-2. Bug fixes, regression fixes, and security patches can be admitted. Upon doing so, a new beta is released incrementing `N`.
-e.g. `2.0.0-beta.2`
-3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information.
-e.g. `2.0.0`.
-4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented accordingly
+1. All new major and minor releases lines begin with a beta series indicated by semver prerelease tags of `beta.N`, e.g. `2.0.0-beta.1`. Only backwards-compatible changes are admitted after the first beta.
+2. If future backwards-compatible changes need to be made once a release is beta, they are applied and the prerelease tag is incremented, e.g. `2.0.0-beta.2`.
+3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information. e.g. `2.0.0`. Only backwards-compatible bug and security fixes are admitted after the first stable.
+4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented
 e.g. `2.0.1`.
 
 For each major and minor bump, you should expect to see something like the following:
