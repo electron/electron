@@ -812,18 +812,6 @@ void App::ChildProcessLaunched(int process_type, base::ProcessHandle handle) {
       base::ProcessMetrics::CreateProcessMetrics(
           handle, content::BrowserChildProcessHost::GetPortProvider()));
 #else
-  // We do the same check here as what CreateProcessMetrics DCHECKs for,
-  // because that DCHECK triggers a crash when we run in OSR with GPU
-  // rendering disabled - @brenca
-#if defined(OS_WIN)
-  HANDLE duplicate_handle;
-  BOOL result =
-      ::DuplicateHandle(::GetCurrentProcess(), handle, ::GetCurrentProcess(),
-                        &duplicate_handle, PROCESS_QUERY_INFORMATION, FALSE, 0);
-  if (!result)
-    return;
-#endif
-
   std::unique_ptr<base::ProcessMetrics> metrics(
       base::ProcessMetrics::CreateProcessMetrics(handle));
 #endif
