@@ -776,8 +776,6 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  if (data.handle == base::kNullProcessHandle)
-    return;
   ChildProcessLaunched(data.process_type, data.handle);
 }
 
