@@ -272,6 +272,9 @@ async function prepareRelease (isBeta, notesOnly) {
   if (notesOnly) {
     let releaseNotes = await getReleaseNotes(currentBranch)
     console.log(`Draft release notes are: \n${releaseNotes}`)
+  } else if (args.dryRun) {
+    let newVersion = await getNewVersion(true)
+    return newVersion
   } else {
     const changes = await changesToRelease(currentBranch)
     if (changes) {
