@@ -172,7 +172,7 @@ gn-build-steps: &gn-build-steps
             $GCLIENT_EXTRA_ARGS \
             "$CIRCLE_REPOSITORY_URL"
 
-          gclient sync -v --with_branch_heads --with_tags
+          gclient sync --with_branch_heads --with_tags
     - save_cache:
         paths:
           - ~/.gclient-cache
