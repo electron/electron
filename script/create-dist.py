@@ -11,12 +11,13 @@ import stat
 if sys.platform == "win32":
   import _winreg
 
-from lib.config import BASE_URL, PLATFORM, add_exec_bit, \
-                       build_env, enable_verbose_mode, \
-                       get_target_arch, get_zip_name
+from lib.config import BASE_URL, PLATFORM, build_env, \
+                       enable_verbose_mode, get_target_arch, get_zip_name
 
-from lib.util import scoped_cwd, rm_rf, get_electron_version, make_zip, \
-                     execute, electron_gyp, electron_features, parse_version
+from lib.util import add_exec_bit, electron_features, electron_gyp, \
+                     execute, get_electron_version, make_zip, \
+                     parse_version, rm_rf, scoped_cwd
+
 from lib.env_util import get_vs_location
 
 
