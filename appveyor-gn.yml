@@ -38,7 +38,7 @@ test_script:
   - ps: Push-Location; cd electron/spec
   - npm install
   - ps: Pop-Location
-  - ./out/Default/electron.exe electron/spec --ci
+  - .\out\Default\electron.exe electron\spec --ci
   # TODO(nornagon): verify-ffmpeg step
 artifacts:
 - path: test-results.xml
