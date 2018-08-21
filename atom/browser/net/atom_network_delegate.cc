@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/login_handler.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
@@ -14,6 +15,7 @@
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/resource_request_info.h"
 #include "net/base/load_flags.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request.h"
@@ -376,6 +378,12 @@ void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
 }
 
 void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
+  const auto& it = login_handler_map_.find(request->identifier());
+  if (it != login_handler_map_.end()) {
+    it->second->NotifyRequestDestroyed();
+    it->second = nullptr;
+    login_handler_map_.erase(it);
+  }
   callbacks_.erase(request->identifier());
 }
 
@@ -384,51 +392,69 @@ net::NetworkDelegate::AuthRequiredResponse AtomNetworkDelegate::OnAuthRequired(
     const net::AuthChallengeInfo& auth_info,
     const AuthCallback& callback,
     net::AuthCredentials* credentials) {
-  return AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  auto* resource_request_info =
+      content::ResourceRequestInfo::ForRequest(request);
+  if (!resource_request_info)
+    return AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  login_handler_map_.emplace(
+      request->identifier(),
+      new LoginHandler(request, auth_info, std::move(callback), credentials,
+                       resource_request_info));
+  return AUTH_REQUIRED_RESPONSE_IO_PENDING;
 }
+
 bool AtomNetworkDelegate::OnCanGetCookies(const net::URLRequest& request,
                                           const net::CookieList& cookie_list) {
   return true;
 }
+
 bool AtomNetworkDelegate::OnCanSetCookie(
     const net::URLRequest& request,
     const net::CanonicalCookie& cookie_line,
     net::CookieOptions* options) {
   return true;
 }
+
 bool AtomNetworkDelegate::OnCanAccessFile(
     const net::URLRequest& request,
     const base::FilePath& original_path,
     const base::FilePath& absolute_path) const {
   return true;
 }
+
 bool AtomNetworkDelegate::OnCanEnablePrivacyMode(
     const GURL& url,
     const GURL& first_party_for_cookies) const {
   return false;
 }
+
 bool AtomNetworkDelegate::OnAreExperimentalCookieFeaturesEnabled() const {
   return true;
 }
+
 bool AtomNetworkDelegate::OnCancelURLRequestWithPolicyViolatingReferrerHeader(
     const net::URLRequest& request,
     const GURL& target_url,
     const GURL& referrer_url) const {
   return false;
 }
+
 // TODO(deepak1556) : Enable after hooking into the reporting service
 // https://crbug.com/704259
 bool AtomNetworkDelegate::OnCanQueueReportingReport(
     const url::Origin& origin) const {
   return false;
 }
+
 void AtomNetworkDelegate::OnCanSendReportingReports(
     std::set<url::Origin> origins,
     base::OnceCallback<void(std::set<url::Origin>)> result_callback) const {}
+
 bool AtomNetworkDelegate::OnCanSetReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
   return false;
 }
+
 bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
                                                   const GURL& endpoint) const {
   return false;

@@ -667,17 +667,17 @@ void App::OnNewWindowForTab() {
 }
 #endif
 
-void App::OnLogin(LoginHandler* login_handler,
+void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
                   const base::DictionaryValue& request_details) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = false;
   content::WebContents* web_contents = login_handler->GetWebContents();
   if (web_contents) {
-    prevent_default =
-        Emit("login", WebContents::CreateFrom(isolate(), web_contents),
-             request_details, login_handler->auth_info(),
-             base::Bind(&PassLoginInformation, WrapRefCounted(login_handler)));
+    prevent_default = Emit(
+        "login", WebContents::CreateFrom(isolate(), web_contents),
+        request_details, login_handler->auth_info(),
+        base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
