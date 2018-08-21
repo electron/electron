@@ -25,7 +25,7 @@ phases:
       # BUILD_SOURCEVERSION commit, and so the checkout will fail. Find a
       # better solution for checking out the commit to be built.
       (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
-      gclient sync -v --with_branch_heads --with_tags
+      gclient sync --with_branch_heads --with_tags
     name: gclient_sync
 
   - bash: |
