@@ -15,6 +15,21 @@ BASE_URL = 'https://electron-metadumper.herokuapp.com/?version='
 version = sys.argv[1]
 authToken = os.getenv('META_DUMPER_AUTH_HEADER')
 
+def get_content(retry_count = 5):
+  try:
+    request = urllib2.Request(
+      BASE_URL + version,
+      headers={"Authorization" : authToken}
+    )
+
+    return urllib2.urlopen(
+      request
+    ).read()
+  except Exception as e:
+    if retry_count == 0:
+      raise e
+    return get_content(retry_count - 1)
+
 def main():
   if not authToken or authToken == "":
     raise Exception("Please set META_DUMPER_AUTH_HEADER")
@@ -23,14 +38,7 @@ def main():
     safe_mkdir(OUT_DIR)
     index_json = os.path.relpath(os.path.join(OUT_DIR, 'index.json'))
 
-    request = urllib2.Request(
-      BASE_URL + version,
-      headers={"Authorization" : authToken}
-    )
-
-    new_content = urllib2.urlopen(
-      request
-    ).read()
+    new_content = get_content()
 
     with open(index_json, "w") as f:
       f.write(new_content)
