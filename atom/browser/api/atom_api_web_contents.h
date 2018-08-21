@@ -198,7 +198,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
-  void SetSize(v8::Local<v8::Value>);
   bool IsGuest() const;
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);

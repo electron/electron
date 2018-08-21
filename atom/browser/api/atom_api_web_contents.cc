@@ -1722,10 +1722,6 @@ void WebContents::OnCursorChange(const content::WebCursor& cursor) {
   }
 }
 
-void WebContents::SetSize(v8::Local<v8::Value>) {
-  // TODO(zcbenz): Remove this method in 4.0.
-}
-
 bool WebContents::IsGuest() const {
   return type_ == WEB_VIEW;
 }
@@ -2022,7 +2018,6 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("startDrag", &WebContents::StartDrag)
-      .SetMethod("setSize", &WebContents::SetSize)
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
