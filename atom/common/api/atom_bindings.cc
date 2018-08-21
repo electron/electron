@@ -59,7 +59,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   dict.SetMethod("getCreationTime", &GetCreationTime);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
-                                           base::Unretained(this)));
+                                           base::Unretained(metrics_.get())));
   dict.SetMethod("getIOCounters", &GetIOCounters);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
@@ -220,17 +220,19 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
   return dict.GetHandle();
 }
 
-v8::Local<v8::Value> AtomBindings::GetCPUUsage(v8::Isolate* isolate) {
+// static
+v8::Local<v8::Value> AtomBindings::GetCPUUsage(base::ProcessMetrics* metrics,
+                                               v8::Isolate* isolate) {
   mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   int processor_count = base::SysInfo::NumberOfProcessors();
   dict.Set("percentCPUUsage",
-           metrics_->GetPlatformIndependentCPUUsage() / processor_count);
+           metrics->GetPlatformIndependentCPUUsage() / processor_count);
 
   // NB: This will throw NOTIMPLEMENTED() on Windows
   // For backwards compatibility, we'll return 0
 #if !defined(OS_WIN)
-  dict.Set("idleWakeupsPerSecond", metrics_->GetIdleWakeupsPerSecond());
+  dict.Set("idleWakeupsPerSecond", metrics->GetIdleWakeupsPerSecond());
 #else
   dict.Set("idleWakeupsPerSecond", 0);
 #endif

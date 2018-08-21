@@ -15,7 +15,6 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
-#include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -193,6 +192,10 @@ void NodeBindings::RegisterBuiltinModules() {
 
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
+}
+
+base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
+  return GetResourcesPath(false).value();
 }
 
 void NodeBindings::Initialize() {
