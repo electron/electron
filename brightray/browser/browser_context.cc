@@ -11,7 +11,6 @@
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/special_storage_policy.h"
 #include "brightray/browser/zoom_level_delegate.h"
 #include "brightray/common/application_info.h"
 #include "components/prefs/json_pref_store.h"
@@ -55,7 +54,6 @@ scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
 
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     : in_memory_(in_memory),
-      storage_policy_(new SpecialStoragePolicy),
       weak_factory_(this) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
@@ -158,10 +156,6 @@ content::DownloadManagerDelegate* BrowserContext::GetDownloadManagerDelegate() {
 
 content::BrowserPluginGuestManager* BrowserContext::GetGuestManager() {
   return nullptr;
-}
-
-storage::SpecialStoragePolicy* BrowserContext::GetSpecialStoragePolicy() {
-  return storage_policy_.get();
 }
 
 content::PushMessagingService* BrowserContext::GetPushMessagingService() {

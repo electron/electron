@@ -60,7 +60,8 @@ See the [Node documentation][node-cli] or run `node --help` in your terminal for
 Use a specified proxy server, which overrides the system setting. This switch
 only affects requests with HTTP protocol, including HTTPS and WebSocket
 requests. It is also noteworthy that not all proxy servers support HTTPS and
-WebSocket requests.
+WebSocket requests. The proxy URL does not support username and password
+authentication [per Chromium issue](https://bugs.chromium.org/p/chromium/issues/detail?id=615947).
 
 ## --proxy-bypass-list=`hosts`
 
