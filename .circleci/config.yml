@@ -294,6 +294,16 @@ gn-mac-build-steps: &gn-mac-build-steps
     - store_artifacts:
         path: src/out/Default/dist.zip
 
+gn-linux-build-machine: &gn-linux-build-machine
+  docker:
+    - image: electronbuilds/electron:0.0.8
+  resource_class: 2xlarge
+
+gn-mac-build-machine: &gn-mac-build-machine
+  macos:
+    xcode: "8.3.3"
+  resource_class: large
+
 build-defaults: &build-defaults
   docker:
     - image: electronbuilds/electron:0.0.8
@@ -465,27 +475,21 @@ jobs:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-x64-testing-fyi:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/testing.gn
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-x64-release-fyi:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-ia32-debug-fyi:
@@ -495,9 +499,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-ia32-testing-fyi:
@@ -506,9 +508,7 @@ jobs:
       GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-ia32-release-fyi:
@@ -517,9 +517,7 @@ jobs:
       GN_CONFIG: //electron/build/args/release.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm-debug-fyi:
@@ -528,9 +526,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm-testing-fyi:
@@ -539,9 +535,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm-release-fyi:
@@ -550,9 +544,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm64-debug-fyi:
@@ -561,9 +553,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm64-testing-fyi:
@@ -572,9 +562,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-linux-arm64-release-fyi:
@@ -583,37 +571,36 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
-    docker:
-      - image: electronbuilds/electron:0.0.8
-    resource_class: 2xlarge
+    <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
   electron-gn-osx-release-fyi:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
-      RUN_TESTS: false
-    macos:
-      xcode: "8.3.3"
-    resource_class: large
+      RUN_TESTS: true
+    <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
   electron-gn-osx-testing-fyi:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       RUN_TESTS: true
-    macos:
-      xcode: "8.3.3"
-    resource_class: large
+    <<: *gn-mac-build-machine
+    <<: *gn-mac-build-steps
+
+  electron-gn-osx-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      RUN_TESTS: false
+    <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
   electron-gn-mas-release-fyi:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
-      RUN_TESTS: false
+      RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
-    macos:
-      xcode: "8.3.3"
-    resource_class: large
+    <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
   electron-gn-mas-testing-fyi:
@@ -621,47 +608,59 @@ jobs:
       GN_CONFIG: //electron/build/args/testing.gn
       RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
-    macos:
-      xcode: "8.3.3"
-    resource_class: large
+    <<: *gn-mac-build-machine
+    <<: *gn-mac-build-steps
+
+  electron-gn-mas-debug-fyi:
+    environment:
+      GN_CONFIG: //electron/build/args/debug.gn
+      RUN_TESTS: false
+      GN_EXTRA_ARGS: 'is_mas_build = true'
+    <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
 workflows:
   version: 2
-  # build-arm:
-  #   jobs:
-  #     - electron-linux-arm
-  #     - electron-linux-arm-test:
-  #         requires:
-  #           - electron-linux-arm
-  # build-arm64:
-  #   jobs:
-  #     - electron-linux-arm64
-  #     - electron-linux-arm64-test:
-  #         requires:
-  #           - electron-linux-arm64
-  # build-ia32:
-  #   jobs:
-  #     - electron-linux-ia32
-  # build-x64:
-  #   jobs:
-  #     - electron-linux-x64
-  # build-osx-x64:
-  #   jobs:
-  #     - electron-osx-x64
-  # build-mas-x64:
-  #   jobs:
-  #     - electron-mas-x64
+  build-arm:
+    jobs:
+      - electron-linux-arm
+      - electron-linux-arm-test:
+          requires:
+            - electron-linux-arm
+  build-arm64:
+    jobs:
+      - electron-linux-arm64
+      - electron-linux-arm64-test:
+          requires:
+            - electron-linux-arm64
+  build-ia32:
+    jobs:
+      - electron-linux-ia32
+  build-x64:
+    jobs:
+      - electron-linux-x64
+  build-osx-x64:
+    jobs:
+      - electron-osx-x64
+  build-mas-x64:
+    jobs:
+      - electron-mas-x64
   build-gn-linux:
     jobs:
-      - electron-gn-linux-x64-release-fyi
-      - electron-gn-linux-ia32-release-fyi
-      - electron-gn-linux-arm-release-fyi
-      - electron-gn-linux-arm64-release-fyi
+      - electron-gn-linux-x64-debug-fyi
+      - electron-gn-linux-x64-testing-fyi
+      - electron-gn-linux-ia32-debug-fyi
+      - electron-gn-linux-ia32-testing-fyi
+      - electron-gn-linux-arm-debug-fyi
+      - electron-gn-linux-arm-testing-fyi
+      - electron-gn-linux-arm64-debug-fyi
+      - electron-gn-linux-arm64-testing-fyi
   build-gn-mac:
     jobs:
-      - electron-gn-osx-release-fyi
-      - electron-gn-mas-release-fyi
+      - electron-gn-mas-debug-fyi
+      - electron-gn-mas-testing-fyi
+      - electron-gn-osx-debug-fyi
+      - electron-gn-osx-testing-fyi
 
   nightly-release-test:
     triggers:
@@ -694,3 +693,5 @@ workflows:
       - electron-gn-linux-ia32-release-fyi
       - electron-gn-linux-arm-release-fyi
       - electron-gn-linux-arm64-release-fyi
+      - electron-gn-mas-release-fyi
+      - electron-gn-osx-release-fyi
