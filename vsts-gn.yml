@@ -16,7 +16,6 @@ phases:
       gclient config \
         --name "src/electron" \
         --unmanaged \
-        --cache-dir "${GIT_CACHE_PATH}" \
         "https://github.com/electron/electron"
       mkdir src
       git clone https://github.com/electron/electron src/electron
@@ -32,7 +31,7 @@ phases:
   - bash: |
       cd src
       export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-      export SCCACHE_WRAPPER="`pwd`/libchromiumcontent/tools/sccache/aad2120/mac/sccache"
+      export SCCACHE_WRAPPER="`pwd`/electron/external_binaries/sccache"
       export SCCACHE_HELPER="`pwd`/libchromiumcontent/script/sccache"
       "$SCCACHE_HELPER" --start-server --azure_container "$(SCCACHE_AZURE_BLOB_CONTAINER)" --azure_connection "$(SCCACHE_AZURE_CONNECTION_STRING)"
       echo "##vso[task.setvariable variable=SCCACHE_WRAPPER]$SCCACHE_WRAPPER"

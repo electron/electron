@@ -21,12 +21,11 @@ build_script:
   - md src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-  - ps: $env:SCCACHE_PATH="$pwd\src\libchromiumcontent\tools\sccache\aad2120\windows\sccache.exe"
+  - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache\sccache.exe"
   - >-
       gclient config
       --name "src\electron"
       --unmanaged
-      --cache-dir "${GIT_CACHE_PATH}"
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
