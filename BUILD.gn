@@ -636,6 +636,10 @@ if (is_mac) {
       data += [ "$root_out_dir/locales/$locale.pak" ]
     }
 
+    if (!is_mac) {
+      data += [ "$root_out_dir/resources" ]
+    }
+
     public_deps = [
       "//tools/v8_context_snapshot:v8_context_snapshot",
     ]
