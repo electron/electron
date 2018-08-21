@@ -26,7 +26,7 @@ build_script:
       --name "src\electron"
       --unmanaged
       "https://github.com/electron/electron"
-  - gclient sync -v --with_branch_heads --with_tags
+  - gclient sync --with_branch_heads --with_tags
   - cd src
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
