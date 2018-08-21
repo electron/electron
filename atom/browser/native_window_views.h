@@ -120,12 +120,8 @@ class NativeWindowViews : public NativeWindow,
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
 
-#if defined(OS_MACOSX)
   void SetVisibleOnAllWorkspaces(bool visible,
                                  bool visibleOnFullScreen) override;
-#else
-  void SetVisibleOnAllWorkspaces(bool visible) override;
-#endif
 
   bool IsVisibleOnAllWorkspaces() override;
 

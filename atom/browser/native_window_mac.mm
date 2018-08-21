@@ -1102,11 +1102,9 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
 
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
                                                 bool visibleOnFullScreen) {
-  if (visible) {
-    SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
-  } else if (visible && visibleOnFullScreen) {
-    SetCollectionBehavior(visible, (NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary));
-  }
+  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  SetCollectionBehavior(visibleOnFullScreen,
+                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {

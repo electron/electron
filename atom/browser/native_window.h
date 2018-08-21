@@ -165,12 +165,8 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-#if defined(OS_MACOSX)
   virtual void SetVisibleOnAllWorkspaces(bool visible,
-                                         bool visibleOnFullScreen) = 0;
-#else
-  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
-#endif
+                                         bool visibleOnFullScreen = false) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 

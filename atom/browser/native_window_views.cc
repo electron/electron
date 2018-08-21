@@ -1002,16 +1002,10 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
-#if defined(OS_MACOSX)
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
                                                   bool visibleOnFullScreen) {
   widget()->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
-#else
-void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
-  widget()->SetVisibleOnAllWorkspaces(visible);
-}
-#endif
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 #if defined(USE_X11)

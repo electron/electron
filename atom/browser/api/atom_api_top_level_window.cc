@@ -691,16 +691,12 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-#if defined(OS_MACOSX)
 void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                               bool visibleOnFullScreen) {
-  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
+                                               mate::Arguments* args) {
+  bool visibleOnFullScreen = false;
+  args->GetNext(&visibleOnFullScreen);
+  window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
-#else
-void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
-}
-#endif
 
 bool TopLevelWindow::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
