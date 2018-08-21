@@ -8,7 +8,12 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/scoped_refptr.h"
 #include "brightray/browser/browser_context.h"
+
+namespace storage {
+class SpecialStoragePolicy;
+}
 
 namespace atom {
 
@@ -16,6 +21,7 @@ class AtomBlobReader;
 class AtomDownloadManagerDelegate;
 class AtomPermissionManager;
 class RequestContextDelegate;
+class SpecialStoragePolicy;
 class WebViewManager;
 
 class AtomBrowserContext : public brightray::BrowserContext {
@@ -35,6 +41,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
   content::PermissionManager* GetPermissionManager() override;
+  storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
 
   // brightray::BrowserContext:
   void RegisterPrefs(PrefRegistrySimple* pref_registry) override;
@@ -58,6 +65,7 @@ class AtomBrowserContext : public brightray::BrowserContext {
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
+  scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<AtomBlobReader> blob_reader_;
   std::unique_ptr<RequestContextDelegate> request_context_delegate_;
   std::string user_agent_;

@@ -10,6 +10,7 @@
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/request_context_delegate.h"
+#include "atom/browser/special_storage_policy.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -42,7 +43,8 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
     : brightray::BrowserContext(partition, in_memory),
-      url_request_context_getter_(nullptr) {
+      url_request_context_getter_(nullptr),
+      storage_policy_(new SpecialStoragePolicy) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -96,6 +98,10 @@ content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
   if (!permission_manager_.get())
     permission_manager_.reset(new AtomPermissionManager);
   return permission_manager_.get();
+}
+
+storage::SpecialStoragePolicy* AtomBrowserContext::GetSpecialStoragePolicy() {
+  return storage_policy_.get();
 }
 
 void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
