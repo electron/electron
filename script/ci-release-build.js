@@ -34,8 +34,13 @@ async function makeRequest (requestOptions, parseResponse) {
           resolve(body)
         }
       } else {
+        console.error('Error occurred while requesting:', requestOptions.url)
         if (parseResponse) {
-          console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), requestOptions)
+          try {
+            console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), requestOptions)
+          } catch (err) {
+            console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
+          }
         } else {
           console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions)
         }
