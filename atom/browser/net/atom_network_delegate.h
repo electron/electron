@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -25,6 +26,8 @@ namespace atom {
 using URLPatterns = std::set<URLPattern>;
 
 const char* ResourceTypeToString(content::ResourceType type);
+
+class LoginHandler;
 
 class AtomNetworkDelegate : public net::NetworkDelegate {
  public:
@@ -162,6 +165,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                             T out,
                             const base::DictionaryValue& response);
 
+  std::map<uint64_t, scoped_refptr<LoginHandler>> login_handler_map_;
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
