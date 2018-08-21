@@ -21,7 +21,7 @@ build_script:
   - md src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-  - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache\sccache.exe"
+  - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - >-
       gclient config
       --name "src\electron"
@@ -31,7 +31,7 @@ build_script:
   - cd src
   - >-
       %SCCACHE_PATH% -s
-  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\") cc_wrapper=\"%CC_WRAPPER%\" "
+  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\") cc_wrapper=\"%SCCACHE_PATH%\" "
   - ninja -C out/Default electron:electron_app
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\")"
   - ninja -C out/ffmpeg third_party/ffmpeg
