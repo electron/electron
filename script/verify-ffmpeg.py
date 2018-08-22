@@ -74,10 +74,10 @@ def parse_args():
                       help='Test with Release or Debug configuration',
                       default='D',
                       required=False)
-  parser.add_argument('--source_root',
+  parser.add_argument('--source-root',
                       default=SOURCE_ROOT,
                       required=False)
-  parser.add_argument('--ffmpeg_path',
+  parser.add_argument('--ffmpeg-path',
                       default=FFMPEG_LIBCC_PATH,
                       required=False)
   return parser.parse_args()
