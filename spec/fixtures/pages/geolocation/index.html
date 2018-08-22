@@ -1,0 +1,12 @@
+<script>
+  const ipcRenderer = require('electron').ipcRenderer;
+  navigator.geolocation.getCurrentPosition((position) => {
+    ipcRenderer.send(position);
+  }, (error) => {
+    if (error) {
+      ipcRenderer.send('success')
+    } else {
+      ipcRenderer.send('unexpected error')
+    }
+  })
+</script>

@@ -31,6 +31,14 @@ bool IsPDFViewerEnabled() {
 #endif
 }
 
+bool IsFakeLocationProviderEnabled() {
+#if defined(OVERRIDE_LOCATION_PROVIDER)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -39,6 +47,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
+  dict.SetMethod("isFakeLocationProviderEnabled",
+                 &IsFakeLocationProviderEnabled);
 }
 
 }  // namespace
