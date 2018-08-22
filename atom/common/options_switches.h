@@ -112,6 +112,8 @@ extern const char kWebviewTag[];
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];
 
+extern const char kDiskCacheSize[];
+
 }  // namespace switches
 
 }  // namespace atom
