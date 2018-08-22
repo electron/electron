@@ -1400,13 +1400,12 @@ Returns `Boolean` - Whether the menu bar is visible.
 #### `win.setVisibleOnAllWorkspaces(visible[, visibleOnFullScreen])`
 
 * `visible` Boolean
+* `visibleOnFullScreen` Boolean (optional) _macOS_
 
 Sets whether the window should be visible on all workspaces.
 
-* `visibleOnFullScreen` Boolean (optional)
-
-Sets whether the window should be visible above fullscreen windows, `visible`
-must be set to `true`.
+`visibleOnFullScreen` sets whether the window should be visible above
+fullscreen windows
 
 **Note:** This API does nothing on Windows.
 
