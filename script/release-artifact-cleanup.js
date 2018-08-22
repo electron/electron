@@ -5,7 +5,7 @@ require('colors')
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['tag']
 })
-const { exec } = require('child_process')
+const { exec, execSync } = require('child_process')
 const fail = '\u2717'.red
 const { GitProcess } = require('dugite')
 
@@ -52,6 +52,10 @@ async function revertBumpCommit (tag) {
   }
 }
 
+// async function deleteDraft (tag) {
+
+// }
+
 async function deleteTag (tag, targetRepo) {
   const result = await (github.gitdata.deleteReference({
     owner: 'electron',
@@ -70,13 +74,17 @@ async function cleanReleaseArtifacts () {
   const tag = args.tag
 
   // delete tag from nightlies repo
-  let lastBumpCommit = await exec(`git log | grep 'Bump v[0-9.]*'`)
+  const lastBumpCommit = execSync(`git log | grep 'Bump v[0-9.]*' | head -n 1`).toString()
+
   if (lastBumpCommit.indexOf('nightly' > 0)) {
     await deleteTag(tag, 'nightlies')
   }
 
-  // delete tag from  `electron/electron`
+  // delete tag from `electron/electron`
   await deleteTag(tag, 'electron')
+
+  // delete release
+  // await deleteDraft(tag)
 
   // revert commit in `electron/electron`
   await revertBumpCommit()
