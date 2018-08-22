@@ -35,6 +35,11 @@ test_script:
   - ninja -C out/Default third_party/electron_node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
   - ps: $env:npm_config_msvs_version="2017"
+  - ps: >-
+      if ($env:gn_args -eq 'testing') {
+        New-Item .\out\Default\gen\node_headers\Release -Type directory
+        Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
+      }
   - ps: Push-Location; cd electron/spec
   - npm install
   - ps: Pop-Location
