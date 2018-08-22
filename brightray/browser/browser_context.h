@@ -17,10 +17,6 @@
 class PrefRegistrySimple;
 class PrefService;
 
-namespace storage {
-class SpecialStoragePolicy;
-}
-
 namespace brightray {
 
 class BrowserContext;
@@ -52,7 +48,6 @@ class BrowserContext
   content::ResourceContext* GetResourceContext() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
-  storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   content::PushMessagingService* GetPushMessagingService() override;
   content::SSLHostStateDelegate* GetSSLHostStateDelegate() override;
   content::BackgroundFetchDelegate* GetBackgroundFetchDelegate() override;
@@ -121,7 +116,6 @@ class BrowserContext
   base::FilePath path_;
   bool in_memory_;
 
-  scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   // Self-destructing class responsible for creating URLRequestContextGetter

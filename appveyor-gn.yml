@@ -21,16 +21,19 @@ build_script:
   - md src
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+  - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - >-
       gclient config
       --name "src\electron"
       --unmanaged
-      --cache-dir "${GIT_CACHE_PATH}"
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
   - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
   - ninja -C out/Default electron:electron_app
+  - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\")"
+  - ninja -C out/ffmpeg third_party/ffmpeg
+  - ninja -C out/Default electron:electron_dist_zip
 test_script:
   - ninja -C out/Default third_party/electron_node:headers
   - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
@@ -44,7 +47,9 @@ test_script:
   - npm install
   - ps: Pop-Location
   - .\out\Default\electron.exe electron\spec --ci
-  # TODO(nornagon): verify-ffmpeg step
+  - python src\electron\verify-ffmpeg.py -c Default --source-root "%pwd%\src" --ffmpeg-path "%pwd%\src\out\ffmpeg"
 artifacts:
 - path: test-results.xml
   name: test-results.xml
+- path: src/out/Default/dist.zip
+  name: dist.zip

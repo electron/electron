@@ -81,8 +81,6 @@
       'browser/win/win32_notification.h',
       'browser/win/windows_toast_notification.cc',
       'browser/win/windows_toast_notification.h',
-      'browser/special_storage_policy.cc',
-      'browser/special_storage_policy.h',
       'browser/url_request_context_getter.cc',
       'browser/url_request_context_getter.h',
       'browser/views/inspectable_web_contents_view_views.h',

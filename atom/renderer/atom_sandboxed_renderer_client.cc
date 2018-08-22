@@ -16,6 +16,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
+#include "base/process/process_handle.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
@@ -96,27 +97,6 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
   return func;
 }
 
-void InitializeBindings(v8::Local<v8::Object> binding,
-                        v8::Local<v8::Context> context) {
-  auto* isolate = context->GetIsolate();
-  mate::Dictionary b(isolate, binding);
-  b.SetMethod("get", GetBinding);
-  b.SetMethod("createPreloadScript", CreatePreloadScript);
-  b.SetMethod("crash", AtomBindings::Crash);
-  b.SetMethod("hang", AtomBindings::Hang);
-  b.SetMethod("getArgv", GetArgv);
-  b.SetMethod("getExecPath", GetExecPath);
-  b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
-  b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
-  b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
-
-  // Pass in CLI flags needed to setup the renderer
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kGuestInstanceID))
-    b.Set(options::kGuestInstanceID,
-          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
-}
-
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
  public:
   AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
@@ -152,9 +132,37 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
 AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
   // Explicitly register electron's builtin modules.
   NodeBindings::RegisterBuiltinModules();
+  metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
 AtomSandboxedRendererClient::~AtomSandboxedRendererClient() {}
+
+void AtomSandboxedRendererClient::InitializeBindings(
+    v8::Local<v8::Object> binding,
+    v8::Local<v8::Context> context) {
+  auto* isolate = context->GetIsolate();
+  mate::Dictionary b(isolate, binding);
+  b.SetMethod("get", GetBinding);
+  b.SetMethod("createPreloadScript", CreatePreloadScript);
+  b.SetMethod("crash", AtomBindings::Crash);
+  b.SetMethod("hang", AtomBindings::Hang);
+  b.SetMethod("getArgv", GetArgv);
+  b.SetMethod("getExecPath", GetExecPath);
+  b.SetMethod("getPid", &base::GetCurrentProcId);
+  b.SetMethod("getResourcesPath", &NodeBindings::GetHelperResourcesPath);
+  b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
+  b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
+  b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
+  b.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
+                                        base::Unretained(metrics_.get())));
+  b.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
+
+  // Pass in CLI flags needed to setup the renderer
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kGuestInstanceID))
+    b.Set(options::kGuestInstanceID,
+          command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
+}
 
 void AtomSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {

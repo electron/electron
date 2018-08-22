@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/renderer/renderer_client_base.h"
+#include "base/process/process_metrics.h"
 
 namespace atom {
 
@@ -16,6 +17,8 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   AtomSandboxedRendererClient();
   ~AtomSandboxedRendererClient() override;
 
+  void InitializeBindings(v8::Local<v8::Object> binding,
+                          v8::Local<v8::Context> context);
   void InvokeIpcCallback(v8::Handle<v8::Context> context,
                          const std::string& callback_name,
                          std::vector<v8::Handle<v8::Value>> args);
@@ -30,6 +33,8 @@ class AtomSandboxedRendererClient : public RendererClientBase {
   void RenderViewCreated(content::RenderView*) override;
 
  private:
+  std::unique_ptr<base::ProcessMetrics> metrics_;
+
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRendererClient);
 };
 

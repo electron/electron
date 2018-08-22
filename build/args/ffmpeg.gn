@@ -1,0 +1,3 @@
+import("release.gn")
+proprietary_codecs = false
+ffmpeg_branding = "Chromium"

@@ -27,6 +27,7 @@
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
 #include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
+#include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/browser/web_contents/web_contents_view.h"
@@ -108,12 +109,12 @@ class OffScreenRenderWidgetHostView
   void SetNeedsBeginFrames(bool needs_begin_frames) override;
   void SetWantsAnimateOnlyBeginFrames() override;
 #if defined(OS_MACOSX)
-  ui::AcceleratedWidgetMac* GetAcceleratedWidgetMac() const override;
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
   bool SupportsSpeech() const override;
   void SpeakSelection() override;
   bool IsSpeaking() const override;
+  bool ShouldContinueToPauseForFrame() override;
   void StopSpeaking() override;
 #endif  // defined(OS_MACOSX)
 
@@ -169,7 +170,6 @@ class OffScreenRenderWidgetHostView
   bool DelegatedFrameCanCreateResizeLock() const override;
   std::unique_ptr<content::CompositorResizeLock>
   DelegatedFrameHostCreateResizeLock() override;
-  viz::LocalSurfaceId GetLocalSurfaceId() const override;
   void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
   void OnBeginFrame(base::TimeTicks frame_time) override;
   void OnFrameTokenChanged(uint32_t frame_token) override;
@@ -180,6 +180,11 @@ class OffScreenRenderWidgetHostView
   void CompositorResizeLockEnded() override;
   bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
+
+  viz::LocalSurfaceId GetLocalSurfaceId() const override;
+  viz::FrameSinkId GetFrameSinkId() override;
+
+  void DidNavigate() override;
 
   bool TransformPointToLocalCoordSpace(const gfx::PointF& point,
                                        const viz::SurfaceId& original_surface,
@@ -205,6 +210,9 @@ class OffScreenRenderWidgetHostView
 #if defined(OS_MACOSX)
   void CreatePlatformWidget(bool is_guest_view_hack);
   void DestroyPlatformWidget();
+  SkColor last_frame_root_background_color() const {
+    return last_frame_root_background_color_;
+  }
 #endif
 
   void CancelWidget();
@@ -260,11 +268,9 @@ class OffScreenRenderWidgetHostView
     child_host_view_ = child_view;
   }
 
-  viz::LocalSurfaceId local_surface_id() const { return local_surface_id_; }
-
  private:
   void SetupFrameRate(bool force);
-  void ResizeRootLayer();
+  void ResizeRootLayer(bool force);
 
   viz::FrameSinkId AllocateFrameSinkId(bool is_guest_view_hack);
 
@@ -325,6 +331,8 @@ class OffScreenRenderWidgetHostView
 #if defined(OS_MACOSX)
   std::unique_ptr<content::BrowserCompositorMac> browser_compositor_;
 
+  SkColor last_frame_root_background_color_;
+
   // Can not be managed by smart pointer because its header can not be included
   // in the file that has the destructor.
   MacHelper* mac_helper_;
@@ -332,6 +340,8 @@ class OffScreenRenderWidgetHostView
   // Selected text on the renderer.
   std::string selected_text_;
 #endif
+
+  content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
 
   viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
       nullptr;
