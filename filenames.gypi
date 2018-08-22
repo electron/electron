@@ -680,6 +680,10 @@
       'chromium_src/chrome/utility/printing_handler_win.cc',
       'chromium_src/chrome/utility/printing_handler_win.h',
     ],
+    'lib_sources_location_provider': [
+      'atom/browser/fake_location_provider.cc',
+      'atom/browser/fake_location_provider.h',
+    ],
     'framework_sources': [
       'atom/app/atom_library_main.h',
       'atom/app/atom_library_main.mm',

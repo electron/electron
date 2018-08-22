@@ -356,6 +356,16 @@
           'link_settings': {
             'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
           },
+          'sources': [
+            '<@(lib_sources_location_provider)',
+          ],
+          'defines': [
+            # Enable fake location provider to mock geolocation
+            # responses in component build. Should not be enabled
+            # for release build. If you need to test with chromium's
+            # location provider, remove this definition.
+            'OVERRIDE_LOCATION_PROVIDER',
+          ],
         }],
         ['OS=="win"', {
           'sources': [
