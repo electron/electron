@@ -59,7 +59,7 @@ steps:
 - bash: |
     echo 'Verifying ffmpeg on build'
     if [ "$ELECTRON_RELEASE" == "1" ]; then
-      script/verify-ffmpeg.py -R
+      script/verify-ffmpeg.py -c R
     else
       script/verify-ffmpeg.py
     fi
