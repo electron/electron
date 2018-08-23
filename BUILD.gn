@@ -283,6 +283,7 @@ static_library("electron_lib") {
     defines += [
       # Import V8 symbols from shared library (node.dll / libnode.so)
       "USING_V8_SHARED",
+      "USING_UV_SHARED",
       "USING_V8_PLATFORM_SHARED",
       "USING_V8_BASE_SHARED",
     ]
