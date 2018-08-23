@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/permission_type.h"
@@ -43,12 +44,25 @@ class AtomPermissionManager::PendingRequest {
                  const StatusesCallback& callback)
       : render_process_id_(render_frame_host->GetProcess()->GetID()),
         callback_(callback),
+        permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
         remaining_results_(permissions.size()) {}
 
   void SetPermissionStatus(int permission_id,
                            blink::mojom::PermissionStatus status) {
     DCHECK(!IsComplete());
+
+    if (status == blink::mojom::PermissionStatus::GRANTED) {
+      const auto permission = permissions_[permission_id];
+      if (permission == content::PermissionType::MIDI_SYSEX) {
+        content::ChildProcessSecurityPolicy::GetInstance()
+            ->GrantSendMidiSysExMessage(render_process_id_);
+      } else if (permission == content::PermissionType::GEOLOCATION) {
+        AtomBrowserMainParts::Get()
+            ->GetGeolocationControl()
+            ->UserDidOptIntoLocationServices();
+      }
+    }
 
     results_[permission_id] = status;
     --remaining_results_;
@@ -63,6 +77,7 @@ class AtomPermissionManager::PendingRequest {
  private:
   int render_process_id_;
   const StatusesCallback callback_;
+  std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
   size_t remaining_results_;
 };
@@ -139,6 +154,10 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetID());
+      } else if (permission == content::PermissionType::GEOLOCATION) {
+        AtomBrowserMainParts::Get()
+            ->GetGeolocationControl()
+            ->UserDidOptIntoLocationServices();
       }
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
@@ -153,10 +172,6 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
 
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
-    if (permission == content::PermissionType::MIDI_SYSEX) {
-      content::ChildProcessSecurityPolicy::GetInstance()
-          ->GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
-    }
     const auto callback =
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
@@ -185,7 +200,6 @@ void AtomPermissionManager::OnPermissionResponse(
     pending_requests_.Remove(request_id);
   }
 }
-
 
 void AtomPermissionManager::ResetPermission(content::PermissionType permission,
                                             const GURL& requesting_origin,

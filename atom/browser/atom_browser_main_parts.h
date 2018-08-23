@@ -54,6 +54,10 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // Returns a closure that can be used to remove |callback| from the list.
   void RegisterDestructionCallback(base::OnceClosure callback);
 
+  // Returns the connection to GeolocationControl which can be
+  // used to enable the location services once per client.
+  device::mojom::GeolocationControl* GetGeolocationControl();
+
   Browser* browser() { return browser_.get(); }
 
  protected:
@@ -86,8 +90,6 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #else
   std::unique_ptr<brightray::ViewsDelegate> views_delegate_;
 #endif
-
-  device::mojom::GeolocationControl* GetGeolocationControl();
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcess> fake_browser_process_;
