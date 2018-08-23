@@ -205,6 +205,13 @@ void TopLevelWindow::OnWindowResize() {
   Emit("resize");
 }
 
+void TopLevelWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
+                                      bool* prevent_default) {
+  if (Emit("will-move", new_bounds)) {
+    *prevent_default = true;
+  }
+}
+
 void TopLevelWindow::OnWindowMove() {
   Emit("move");
 }

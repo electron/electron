@@ -464,6 +464,12 @@ void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
     observer.OnWindowWillResize(new_bounds, prevent_default);
 }
 
+void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
+                                        bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowWillMove(new_bounds, prevent_default);
+}
+
 void NativeWindow::NotifyWindowResize() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
