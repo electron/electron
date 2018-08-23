@@ -103,10 +103,11 @@ WebContentsPreferences::WebContentsPreferences(
   bool node = SetDefaultBoolIfUndefined(options::kNodeIntegration, true,
                                         Status::Deprecated);
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
-  SetDefaultBoolIfUndefined(options::kWebviewTag, node);
+  SetDefaultBoolIfUndefined(options::kWebviewTag, node, Status::Deprecated);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
-  SetDefaultBoolIfUndefined(options::kContextIsolation, false);
+  SetDefaultBoolIfUndefined(options::kContextIsolation, false,
+                            Status::Deprecated);
   SetDefaultBoolIfUndefined("javascript", true);
   SetDefaultBoolIfUndefined("images", true);
   SetDefaultBoolIfUndefined("textAreasAreResizable", true);
