@@ -391,6 +391,9 @@ static_library("electron_lib") {
   }
 
   if (enable_desktop_capturer) {
+    if (is_component_build && is_win) {
+      deps += [ "//third_party/webrtc/modules/desktop_capture" ]
+    }
     sources += [
       "atom/browser/api/atom_api_desktop_capturer.cc",
       "atom/browser/api/atom_api_desktop_capturer.h",
