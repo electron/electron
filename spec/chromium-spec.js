@@ -226,6 +226,47 @@ describe('chromium feature', () => {
     })
   })
 
+  describe('navigator.geolocation', () => {
+    before(function () {
+      if (!features.isFakeLocationProviderEnabled()) {
+        return this.skip()
+      }
+    })
+
+    it('returns position when permission is granted', (done) => {
+      navigator.geolocation.getCurrentPosition((position) => {
+        assert(position.timestamp)
+        done()
+      }, (error) => {
+        done(error)
+      })
+    })
+
+    it('returns error when permission is denied', (done) => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'geolocation-spec'
+        }
+      })
+      w.webContents.on('ipc-message', (event, args) => {
+        if (args[0] === 'success') {
+          done()
+        } else {
+          done('unexpected response from geolocation api')
+        }
+      })
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback) => {
+        if (permission === 'geolocation') {
+          callback(false)
+        } else {
+          callback(true)
+        }
+      })
+      w.loadURL(`file://${fixtures}/pages/geolocation/index.html`)
+    })
+  })
+
   describe('window.open', () => {
     it('returns a BrowserWindowProxy object', () => {
       const b = window.open('about:blank', '', 'show=no')

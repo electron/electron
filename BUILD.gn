@@ -32,6 +32,12 @@ declare_args() {
   enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = false
+
+  # Provide a fake location provider for mocking
+  # the geolocation responses. Disable it if you
+  # need to test with chromium's location provider.
+  # Should not be enabled for release build.
+  enable_fake_location_provider = !is_official_build
 }
 
 if (is_mas_build) {
@@ -282,6 +288,13 @@ static_library("electron_lib") {
     ]
   }
 
+  if (enable_fake_location_provider) {
+    defines += [
+      "OVERRIDE_LOCATION_PROVIDER"
+    ]
+    sources += filenames_gypi.lib_sources_location_provider
+  }
+
   if (is_mac) {
     deps += [
       "//third_party/crashpad/crashpad/client",
@@ -377,7 +390,6 @@ static_library("electron_lib") {
   }
 
   if (enable_desktop_capturer) {
-    deps += [ "//third_party/webrtc/modules/desktop_capture" ]
     sources += [
       "atom/browser/api/atom_api_desktop_capturer.cc",
       "atom/browser/api/atom_api_desktop_capturer.h",
