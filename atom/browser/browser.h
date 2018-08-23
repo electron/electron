@@ -34,7 +34,6 @@ class Image;
 namespace atom {
 
 class AtomMenuModel;
-class LoginHandler;
 
 // This class is used for control application-wide operations.
 class Browser : public WindowListObserver {
@@ -234,7 +233,7 @@ class Browser : public WindowListObserver {
   void OnAccessibilitySupportChanged();
 
   // Request basic auth login.
-  void RequestLogin(LoginHandler* login_handler,
+  void RequestLogin(scoped_refptr<LoginHandler> login_handler,
                     std::unique_ptr<base::DictionaryValue> request_details);
 
   void PreMainMessageLoopRun();

@@ -8,6 +8,7 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/browser/login_handler.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
@@ -177,7 +178,7 @@ void Browser::OnAccessibilitySupportChanged() {
 }
 
 void Browser::RequestLogin(
-    LoginHandler* login_handler,
+    scoped_refptr<LoginHandler> login_handler,
     std::unique_ptr<base::DictionaryValue> request_details) {
   for (BrowserObserver& observer : observers_)
     observer.OnLogin(login_handler, *(request_details.get()));

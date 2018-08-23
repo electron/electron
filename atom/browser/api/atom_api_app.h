@@ -99,7 +99,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
-  void OnLogin(LoginHandler* login_handler,
+  void OnLogin(scoped_refptr<LoginHandler> login_handler,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
