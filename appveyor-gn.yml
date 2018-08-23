@@ -31,6 +31,7 @@ build_script:
 test_script:
   - ps: >-
       if ($env:GN_CONFIG -eq 'testing') {
+        python electron\script\verify-ffmpeg.py -c Default --source-root "$PWD" --ffmpeg-path "$PWD\out\ffmpeg"
         ninja -C out/Default third_party/electron_node:headers
         $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
         $env:npm_config_msvs_version="2017"
@@ -39,11 +40,13 @@ test_script:
         Push-Location; cd electron/spec
         npm install
         Pop-Location
-        .\out\Default\electron.exe electron\spec --ci
-        python electron\script\verify-ffmpeg.py -c Default --source-root "$PWD" --ffmpeg-path "$PWD\out\ffmpeg"
       } else {
         echo "Skipping tests for $env:GN_CONFIG build"
       }
+  - >-
+      if "%GN_CONFIG%"=="testing" (
+        .\out\Default\electron.exe electron\spec --ci
+      )
 artifacts:
 - path: src/out/Default/dist.zip
   name: dist.zip
