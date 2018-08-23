@@ -182,6 +182,10 @@ tray.setHighlightMode('off')
 webContents.openDevTools({detach: true})
 // Replace with
 webContents.openDevTools({mode: 'detach'})
+
+// Removed
+webContents.setSize(options)
+// There is no replacement for this API
 ```
 
 ## `webFrame`
@@ -196,6 +200,18 @@ protocol.registerStandardSchemes(['app'], {secure: true})
 webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
 // Replace with
 protocol.registerStandardSchemes(['app'], {secure: true})
+```
+
+## `<webview>`
+
+```js
+// Removed
+webview.setAttribute('disableguestresize', '')
+// There is no replacement for this API
+
+// Removed
+webview.setAttribute('guestinstance', instanceId)
+// There is no replacement for this API
 ```
 
 ## Node Headers URL
