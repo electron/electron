@@ -150,8 +150,8 @@ bool WebContentsPreferences::SetDefaultBoolIfUndefined(
       auto internal_contents = atom::api::WebContents::CreateFrom(
           v8::Isolate::GetCurrent(), web_contents_);
       internal_contents->Emit("-deprecated-default",
-                              std::string("webPreferences.") + key.data(), val,
-                              !val);
+                              std::string("webPreferences.") + key.data(),
+                              /* oldDefault */ val, /* newDefault */ !val);
     }
   }
   return val;

@@ -29,8 +29,6 @@ namespace atom {
 class WebContentsPreferences
     : public content::WebContentsUserData<WebContentsPreferences> {
  public:
-  enum class Status { Deprecated, Stable };
-
   // Get self from WebContents.
   static WebContentsPreferences* From(content::WebContents* web_contents);
 
@@ -67,6 +65,8 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
   friend class AtomBrowserClient;
+
+  enum class Status { Deprecated, Stable };
 
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
