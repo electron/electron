@@ -8,14 +8,14 @@
 #include <map>
 #include <set>
 #include <string>
+#include <vector>
 
 #include "base/callback.h"
 #include "base/synchronization/lock.h"
 #include "base/values.h"
-#include "brightray/browser/network_delegate.h"
 #include "content/public/browser/resource_request_info.h"
 #include "extensions/common/url_pattern.h"
-#include "net/base/net_errors.h"
+#include "net/base/network_delegate.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_response_headers.h"
 
@@ -27,7 +27,9 @@ using URLPatterns = std::set<URLPattern>;
 
 const char* ResourceTypeToString(content::ResourceType type);
 
-class AtomNetworkDelegate : public brightray::NetworkDelegate {
+class LoginHandler;
+
+class AtomNetworkDelegate : public net::NetworkDelegate {
  public:
   using ResponseCallback = base::Callback<void(const base::DictionaryValue&)>;
   using SimpleListener = base::Callback<void(const base::DictionaryValue&)>;
@@ -86,6 +88,10 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   int OnBeforeStartTransaction(net::URLRequest* request,
                                const net::CompletionCallback& callback,
                                net::HttpRequestHeaders* headers) override;
+  void OnBeforeSendHeaders(net::URLRequest* request,
+                           const net::ProxyInfo& proxy_info,
+                           const net::ProxyRetryInfoMap& proxy_retry_info,
+                           net::HttpRequestHeaders* headers) override {}
   void OnStartTransaction(net::URLRequest* request,
                           const net::HttpRequestHeaders& headers) override;
   int OnHeadersReceived(
@@ -97,8 +103,43 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
   void OnBeforeRedirect(net::URLRequest* request,
                         const GURL& new_location) override;
   void OnResponseStarted(net::URLRequest* request, int net_error) override;
+  void OnNetworkBytesReceived(net::URLRequest* request,
+                              int64_t bytes_read) override {}
+  void OnNetworkBytesSent(net::URLRequest* request,
+                          int64_t bytes_sent) override {}
   void OnCompleted(net::URLRequest* request, bool started) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
+  void OnPACScriptError(int line_number, const base::string16& error) override {
+  }
+  AuthRequiredResponse OnAuthRequired(
+      net::URLRequest* request,
+      const net::AuthChallengeInfo& auth_info,
+      const AuthCallback& callback,
+      net::AuthCredentials* credentials) override;
+  bool OnCanGetCookies(const net::URLRequest& request,
+                       const net::CookieList& cookie_list) override;
+  bool OnCanSetCookie(const net::URLRequest& request,
+                      const net::CanonicalCookie& cookie_line,
+                      net::CookieOptions* options) override;
+  bool OnCanAccessFile(const net::URLRequest& request,
+                       const base::FilePath& original_path,
+                       const base::FilePath& absolute_path) const override;
+  bool OnCanEnablePrivacyMode(
+      const GURL& url,
+      const GURL& first_party_for_cookies) const override;
+  bool OnAreExperimentalCookieFeaturesEnabled() const override;
+  bool OnCancelURLRequestWithPolicyViolatingReferrerHeader(
+      const net::URLRequest& request,
+      const GURL& target_url,
+      const GURL& referrer_url) const override;
+  bool OnCanQueueReportingReport(const url::Origin& origin) const override;
+  void OnCanSendReportingReports(std::set<url::Origin> origins,
+                                 base::OnceCallback<void(std::set<url::Origin>)>
+                                     result_callback) const override;
+  bool OnCanSetReportingClient(const url::Origin& origin,
+                               const GURL& endpoint) const override;
+  bool OnCanUseReportingClient(const url::Origin& origin,
+                               const GURL& endpoint) const override;
 
  private:
   void OnErrorOccurred(net::URLRequest* request, bool started);
@@ -124,9 +165,11 @@ class AtomNetworkDelegate : public brightray::NetworkDelegate {
                             T out,
                             const base::DictionaryValue& response);
 
+  std::map<uint64_t, scoped_refptr<LoginHandler>> login_handler_map_;
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
+  std::vector<std::string> ignore_connections_limit_domains_;
 
   // Client id for devtools network emulation.
   std::string client_id_;
