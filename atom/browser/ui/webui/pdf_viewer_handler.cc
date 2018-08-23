@@ -113,7 +113,7 @@ void PdfViewerHandler::Initialize(const base::ListValue* args) {
     ResolveJavascriptCallback(*callback_id, *stream_info);
   } else {
     initialize_callback_id_ =
-        base::Value::ToUniquePtrValue(callback_id.Clone());
+        base::Value::ToUniquePtrValue(callback_id->Clone());
   }
 
   auto zoom_controller =
