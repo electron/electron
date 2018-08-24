@@ -60,6 +60,23 @@ base::ListValue SendSync(mate::Arguments* args,
   return result;
 }
 
+void SendTo(mate::Arguments* args,
+            bool send_to_all,
+            int32_t web_contents_id,
+            const base::string16& channel,
+            const base::ListValue& arguments) {
+  RenderFrame* render_frame = GetCurrentRenderFrame();
+  if (render_frame == nullptr)
+    return;
+
+  bool success = render_frame->Send(
+      new AtomFrameHostMsg_Message_To(render_frame->GetRoutingID(), send_to_all,
+                                      web_contents_id, channel, arguments));
+
+  if (!success)
+    args->ThrowError("Unable to send AtomFrameHostMsg_Message_To");
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -67,6 +84,7 @@ void Initialize(v8::Local<v8::Object> exports,
   mate::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("send", &Send);
   dict.SetMethod("sendSync", &SendSync);
+  dict.SetMethod("sendTo", &SendTo);
 }
 
 }  // namespace api
