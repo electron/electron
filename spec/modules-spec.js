@@ -11,9 +11,7 @@ describe('modules support', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('third-party module', () => {
-    describe('runas', () => {
-      if (!nativeModulesEnabled) return
-
+    (nativeModulesEnabled ? describe : describe.skip)('runas', () => {
       it('can be required in renderer', () => {
         require('runas')
       })

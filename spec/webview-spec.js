@@ -204,14 +204,9 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         src
       })
-    })
+    });
 
-    it('loads native modules when navigation happens', async function () {
-      if (!nativeModulesEnabled) {
-        this.skip()
-        return
-      }
-
+    (nativeModulesEnabled ? it : it.skip)('loads native modules when navigation happens', async function () {
       await loadWebView(webview, {
         nodeintegration: 'on',
         src: `file://${fixtures}/pages/native-module.html`
