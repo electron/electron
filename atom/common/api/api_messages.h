@@ -36,7 +36,7 @@ IPC_SYNC_MESSAGE_ROUTED2_1(AtomFrameHostMsg_Message_Sync,
 IPC_MESSAGE_ROUTED4(AtomFrameHostMsg_Message_To,
                     bool /* send_to_all */,
                     int32_t /* web_contents_id */,
-                    base::string16 /* channel */,
+                    std::string /* channel */,
                     base::ListValue /* arguments */)
 
 IPC_MESSAGE_ROUTED3(AtomFrameMsg_Message,

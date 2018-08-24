@@ -63,7 +63,7 @@ base::ListValue SendSync(mate::Arguments* args,
 void SendTo(mate::Arguments* args,
             bool send_to_all,
             int32_t web_contents_id,
-            const base::string16& channel,
+            const std::string& channel,
             const base::ListValue& arguments) {
   RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame == nullptr)
