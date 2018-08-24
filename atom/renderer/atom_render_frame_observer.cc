@@ -168,7 +168,7 @@ bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
 }
 
 void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
-                                               const base::string16& channel,
+                                               const std::string& channel,
                                                const base::ListValue& args) {
   // Don't handle browser messages before document element is created.
   // When we receive a message from the browser, we try to transfer it
@@ -195,7 +195,7 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
-                                           const base::string16& channel,
+                                           const std::string& channel,
                                            const base::ListValue& args) {
   if (!frame)
     return;

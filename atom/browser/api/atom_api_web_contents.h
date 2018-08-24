@@ -178,7 +178,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Send messages to browser.
   bool SendIPCMessage(bool all_frames,
-                      const base::string16& channel,
+                      const std::string& channel,
                       const base::ListValue& args);
 
   // Send WebInputEvent to the page.
@@ -410,12 +410,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when received a message from renderer.
   void OnRendererMessage(content::RenderFrameHost* frame_host,
-                         const base::string16& channel,
+                         const std::string& channel,
                          const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
   void OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                             const base::string16& channel,
+                             const std::string& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
 

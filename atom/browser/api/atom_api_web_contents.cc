@@ -303,7 +303,7 @@ struct WebContents::FrameDispatchHelper {
     api_web_contents->OnGetZoomLevel(rfh, reply_msg);
   }
 
-  void OnRendererMessageSync(const base::string16& channel,
+  void OnRendererMessageSync(const std::string& channel,
                              const base::ListValue& args,
                              IPC::Message* message) {
     api_web_contents->OnRendererMessageSync(rfh, channel, args, message);
@@ -1550,7 +1550,7 @@ void WebContents::TabTraverse(bool reverse) {
 }
 
 bool WebContents::SendIPCMessage(bool all_frames,
-                                 const base::string16& channel,
+                                 const std::string& channel,
                                  const base::ListValue& args) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
@@ -2063,18 +2063,18 @@ AtomBrowserContext* WebContents::GetBrowserContext() const {
 }
 
 void WebContents::OnRendererMessage(content::RenderFrameHost* frame_host,
-                                    const base::string16& channel,
+                                    const std::string& channel,
                                     const base::ListValue& args) {
   // webContents.emit(channel, new Event(), args...);
-  Emit(base::UTF16ToUTF8(channel), args);
+  Emit(channel, args);
 }
 
 void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                                        const base::string16& channel,
+                                        const std::string& channel,
                                         const base::ListValue& args,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
-  EmitWithSender(base::UTF16ToUTF8(channel), frame_host, message, args);
+  EmitWithSender(channel, frame_host, message, args);
 }
 
 // static

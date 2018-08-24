@@ -28,7 +28,7 @@ RenderFrame* GetCurrentRenderFrame() {
 }
 
 void Send(mate::Arguments* args,
-          const base::string16& channel,
+          const std::string& channel,
           const base::ListValue& arguments) {
   RenderFrame* render_frame = GetCurrentRenderFrame();
   if (render_frame == nullptr)
@@ -42,7 +42,7 @@ void Send(mate::Arguments* args,
 }
 
 base::ListValue SendSync(mate::Arguments* args,
-                         const base::string16& channel,
+                         const std::string& channel,
                          const base::ListValue& arguments) {
   base::ListValue result;
 

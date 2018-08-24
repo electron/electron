@@ -5,6 +5,8 @@
 #ifndef ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 #define ATOM_RENDERER_ATOM_RENDER_FRAME_OBSERVER_H_
 
+#include <string>
+
 #include "atom/renderer/renderer_client_base.h"
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -42,7 +44,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
 
  protected:
   virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
-                            const base::string16& channel,
+                            const std::string& channel,
                             const base::ListValue& args);
 
  private:
@@ -51,7 +53,7 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   bool IsMainWorld(int world_id);
   bool IsIsolatedWorld(int world_id);
   void OnBrowserMessage(bool send_to_all,
-                        const base::string16& channel,
+                        const std::string& channel,
                         const base::ListValue& args);
 
   content::RenderFrame* render_frame_;
