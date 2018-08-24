@@ -698,6 +698,8 @@ void InspectableWebContentsImpl::WebContentsDestroyed() {
   for (const auto& pair : pending_requests_)
     delete pair.first;
 
+  pending_requests_.clear();
+
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
 }
