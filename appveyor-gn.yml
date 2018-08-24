@@ -1,21 +1,15 @@
 version: 1.0.{build}
-branches:
-  except:
-  - /^release$|^release-\d-\d-x$/
 build_cloud: libcc-20
 image: libcc-20-vs2017-15.4.5
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   DISABLE_CRASH_REPORTER_TESTS: true
-  ELECTRON_ENABLE_LOGGING: true
-  matrix:
-    - gn_args: debug
-      ELECTRON_SKIP_NATIVE_MODULE_TESTS: 1
-    - gn_args: testing
-platform:
-  - x86
-  - x64
 build_script:
+  - ps: >-
+      if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
+        Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
+      }
+  - echo "Building $env:GN_CONFIG build"
   - git config --global core.longpaths true
   - cd ..
   - md src
@@ -29,27 +23,27 @@ build_script:
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
-  - gn gen out/Default "--args=import(\"//electron/build/args/%gn_args%.gn\")"
+  - gn gen out/Default "--args=import(\"//electron/build/args/%GN_CONFIG%.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/Default electron:electron_app
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\")"
   - ninja -C out/ffmpeg third_party/ffmpeg
   - ninja -C out/Default electron:electron_dist_zip
 test_script:
-  - ninja -C out/Default third_party/electron_node:headers
-  - ps: $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
-  - ps: $env:npm_config_msvs_version="2017"
   - ps: >-
-      if ($env:gn_args -eq 'testing') {
+      if ($env:GN_CONFIG -eq 'testing') {
+        python electron\script\verify-ffmpeg.py -c Default --source-root "$PWD" --ffmpeg-path "$PWD\out\ffmpeg"
+        ninja -C out/Default third_party/electron_node:headers
+        $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
+        $env:npm_config_msvs_version="2017"
         New-Item .\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
+        Push-Location; cd electron/spec
+        npm install
+        Pop-Location
+      } else {
+        echo "Skipping tests for $env:GN_CONFIG build"
       }
-  - ps: Push-Location; cd electron/spec
-  - npm install
-  - ps: Pop-Location
-  - .\out\Default\electron.exe electron\spec --ci
-  - python electron\verify-ffmpeg.py -c Default --source-root "%pwd%" --ffmpeg-path "%pwd%\out\ffmpeg"
+  - if "%GN_CONFIG%"=="testing" ( echo "Running test suite" & .\out\Default\electron.exe electron\spec --ci )
 artifacts:
-- path: test-results.xml
-  name: test-results.xml
 - path: src/out/Default/dist.zip
   name: dist.zip

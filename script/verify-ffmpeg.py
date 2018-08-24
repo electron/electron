@@ -50,6 +50,8 @@ def main():
   except KeyboardInterrupt:
     returncode = 0
 
+  if returncode == 0:
+    print 'ok Non proprietary ffmpeg does not contain proprietary codes.'
   return returncode
 
 
