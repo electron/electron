@@ -1054,7 +1054,7 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
-### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
+### `app.enableMixedSandbox()` _Experimental_
 
 Enables mixed sandbox mode on the app.
 
