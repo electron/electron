@@ -208,6 +208,10 @@ gfx::Rect NativeWindow::GetContentBounds() {
   return WindowBoundsToContentBounds(GetBounds());
 }
 
+bool NativeWindow::IsNormal() {
+  return !IsMinimized() && !IsMaximized() && !IsFullscreen();
+}
+
 void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   extensions::SizeConstraints content_constraints(GetContentSizeConstraints());

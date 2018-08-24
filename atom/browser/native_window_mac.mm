@@ -469,6 +469,8 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Default content view.
   SetContentView(new views::View());
   AddContentViewLayers();
+
+  original_frame_ = [window_ frame];
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -594,6 +596,9 @@ void NativeWindowMac::Maximize() {
   if (IsMaximized())
     return;
 
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ zoom:nil];
 }
 
@@ -618,6 +623,12 @@ bool NativeWindowMac::IsMaximized() {
 }
 
 void NativeWindowMac::Minimize() {
+  if (IsMinimized())
+    return;
+
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ miniaturize:nil];
 }
 
@@ -633,6 +644,9 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ toggleFullScreenMode:nil];
 }
 
@@ -666,6 +680,23 @@ gfx::Rect NativeWindowMac::GetBounds() {
   NSScreen* screen = [[NSScreen screens] firstObject];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
+}
+
+bool NativeWindowMac::IsNormal() {
+  return NativeWindow::IsNormal() && !IsSimpleFullScreen();
+}
+
+gfx::Rect NativeWindowMac::GetNormalBounds() {
+  if (IsNormal()) {
+    return GetBounds();
+  }
+  NSRect frame = original_frame_;
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] firstObject];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
+  // Works on OS_WIN !
+  // return widget()->GetRestoredBounds();
 }
 
 void NativeWindowMac::SetContentSizeConstraints(
@@ -860,7 +891,8 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     is_simple_fullscreen_ = true;
 
     // Take note of the current window size
-    original_frame_ = [window frame];
+    if (IsNormal())
+      original_frame_ = [window_ frame];
 
     simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
     simple_fullscreen_mask_ = [window styleMask];

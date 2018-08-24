@@ -67,6 +67,7 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect GetBounds() override;
   gfx::Rect GetContentBounds() override;
   gfx::Size GetContentSize() override;
+  gfx::Rect GetNormalBounds() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;

@@ -365,6 +365,14 @@ gfx::Rect TopLevelWindow::GetBounds() {
   return window_->GetBounds();
 }
 
+bool TopLevelWindow::IsNormal() {
+  return window_->IsNormal();
+}
+
+gfx::Rect TopLevelWindow::GetNormalBounds() {
+  return window_->GetNormalBounds();
+}
+
 void TopLevelWindow::SetContentBounds(const gfx::Rect& bounds,
                                       mate::Arguments* args) {
   bool animate = false;
@@ -967,6 +975,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreen", &TopLevelWindow::IsFullscreen)
       .SetMethod("setBounds", &TopLevelWindow::SetBounds)
       .SetMethod("getBounds", &TopLevelWindow::GetBounds)
+      .SetMethod("isNormal", &TopLevelWindow::IsNormal)
+      .SetMethod("getNormalBounds", &TopLevelWindow::GetNormalBounds)
       .SetMethod("setSize", &TopLevelWindow::SetSize)
       .SetMethod("getSize", &TopLevelWindow::GetSize)
       .SetMethod("setContentBounds", &TopLevelWindow::SetContentBounds)
