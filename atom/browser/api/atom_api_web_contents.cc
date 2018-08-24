@@ -2081,7 +2081,7 @@ void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
 void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
                                       bool send_to_all,
                                       int32_t web_contents_id,
-                                      const base::string16& channel,
+                                      const std::string& channel,
                                       const base::ListValue& args) {
   auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
       isolate(), web_contents_id);
