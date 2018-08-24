@@ -213,7 +213,9 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       if (!movable_ || prevent_default) {
         ::GetWindowRect(GetAcceleratedWidget(),
                         reinterpret_cast<RECT*>(l_param));
-        return true;
+        return true;  // Tells Windows that the Move is handled. If not true,
+                      // frameless windows can be moved using
+                      // -webkit-app-region: drag elements.
       }
       return false;
     }
