@@ -45,6 +45,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
+#include "device/geolocation/public/cpp/location_provider.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "services/network/public/cpp/resource_request_body.h"
@@ -60,6 +61,10 @@
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
+
+#if defined(OVERRIDE_LOCATION_PROVIDER)
+#include "atom/browser/fake_location_provider.h"
+#endif  // defined(OVERRIDE_LOCATION_PROVIDER)
 
 using content::BrowserThread;
 
@@ -491,6 +496,15 @@ std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return std::unique_ptr<net::ClientCertStore>();
+#endif
+}
+
+std::unique_ptr<device::LocationProvider>
+AtomBrowserClient::OverrideSystemLocationProvider() {
+#if defined(OVERRIDE_LOCATION_PROVIDER)
+  return std::make_unique<FakeLocationProvider>();
+#else
+  return nullptr;
 #endif
 }
 

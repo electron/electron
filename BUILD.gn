@@ -27,6 +27,12 @@ declare_args() {
   enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = true
+
+  # Provide a fake location provider for mocking
+  # the geolocation responses. Disable it if you
+  # need to test with chromium's location provider.
+  # Should not be enabled for release build.
+  enable_fake_location_provider = !is_official_build
 }
 
 filenames_gypi = exec_script(
@@ -311,6 +317,13 @@ static_library("electron_lib") {
   set_sources_assignment_filter(sources_assignment_filter + extra_source_filters)
   sources = filenames_gypi.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
+
+  if (enable_fake_location_provider) {
+    defines += [
+      "OVERRIDE_LOCATION_PROVIDER"
+    ]
+    sources += filenames_gypi.lib_sources_location_provider
+  }
 
   if (enable_run_as_node) {
     sources += [

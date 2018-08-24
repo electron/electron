@@ -237,9 +237,6 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
-  // TODO(deepak1556): Enable this optionally based on response
-  // from AtomPermissionManager.
-  GetGeolocationControl()->UserDidOptIntoLocationServices();
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
