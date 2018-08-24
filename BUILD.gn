@@ -318,17 +318,6 @@ static_library("electron_lib") {
   sources = filenames_gypi.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
 
-<<<<<<< HEAD
-=======
-  if (is_component_build) {
-    defines += [
-      # Import V8 symbols from shared library (node.dll / libnode.so)
-      "USING_V8_SHARED",
-      "USING_V8_PLATFORM_SHARED",
-      "USING_V8_BASE_SHARED",
-    ]
-  }
-
   if (enable_fake_location_provider) {
     defines += [
       "OVERRIDE_LOCATION_PROVIDER"
@@ -336,74 +325,6 @@ static_library("electron_lib") {
     sources += filenames_gypi.lib_sources_location_provider
   }
 
-  if (is_mac) {
-    deps += [
-      "//third_party/crashpad/crashpad/client",
-      "//ui/accelerated_widget_mac",
-    ]
-    include_dirs += [
-      # NOTE(nornagon): other chromium files use the full path to include
-      # crashpad; this is just here for compatibility between GN and GYP, so that
-      # the #includes can be agnostic about where crashpad is vendored.
-      "//third_party/crashpad",
-    ]
-    if (is_mas_build) {
-      deps -= [ "//third_party/crashpad/crashpad/client" ]
-      sources += [ "atom/browser/api/atom_api_app_mas.mm" ]
-      sources -= [
-        "atom/browser/auto_updater_mac.mm",
-        "atom/common/crash_reporter/crash_reporter_mac.h",
-        "atom/common/crash_reporter/crash_reporter_mac.mm",
-      ]
-      defines += [ "MAS_BUILD" ]
-    } else {
-      libs += [
-        "Squirrel.framework",
-        "ReactiveCocoa.framework",
-        "Mantle.framework",
-      ]
-      cflags_objcc = [
-        "-F",
-        rebase_path("external_binaries", root_build_dir),
-      ]
-
-      # ReactiveCocoa which is used by Squirrel requires using __weak.
-      cflags_objcc += [ "-fobjc-weak" ]
-    }
-  }
-  if (is_linux) {
-    deps += [
-      "//build/config/linux/gtk",
-      "//chrome/browser/ui/libgtkui",
-      "//device/bluetooth",
-      "//ui/events/devices/x11",
-      "//ui/events/platform/x11",
-      "//ui/native_theme",
-      "//ui/views/controls/webview",
-      "//ui/wm",
-    ]
-    configs += [ ":gio_unix" ]
-    defines += [
-      # Disable warnings for g_settings_list_schemas.
-      "GLIB_DISABLE_DEPRECATION_WARNINGS",
-    ]
-    sources += filenames_gypi.lib_sources_linux
-    sources += filenames_gypi.lib_sources_nss
-  }
-  if (is_win) {
-    sources += filenames_gypi.lib_sources_win
-    libs += [ "dwmapi.lib" ]
-  }
-  if (is_linux || is_win) {
-    deps += [ "//third_party/breakpad:client" ]
-    include_dirs += [ "//third_party/breakpad" ]
-  }
-
-  if (enable_pdf) {
-    deps += [ "//pdf" ]
-  }
-
->>>>>>> bce5bd87a... fix: opt into location services once device service has been started (#14253)
   if (enable_run_as_node) {
     sources += [
       "atom/app/node_main.cc",
