@@ -1019,6 +1019,7 @@ bool WebContents::OnMessageReceived(const IPC::Message& message,
     IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message, OnRendererMessage)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(AtomFrameHostMsg_Message_Sync, &helper,
                                     FrameDispatchHelper::OnRendererMessageSync)
+    IPC_MESSAGE_HANDLER(AtomFrameHostMsg_Message_To, OnRendererMessageTo)
     IPC_MESSAGE_FORWARD_DELAY_REPLY(
         AtomFrameHostMsg_SetTemporaryZoomLevel, &helper,
         FrameDispatchHelper::OnSetTemporaryZoomLevel)
@@ -2075,6 +2076,19 @@ void WebContents::OnRendererMessageSync(content::RenderFrameHost* frame_host,
                                         IPC::Message* message) {
   // webContents.emit(channel, new Event(sender, message), args...);
   EmitWithSender(channel, frame_host, message, args);
+}
+
+void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
+                                      bool send_to_all,
+                                      int32_t web_contents_id,
+                                      const base::string16& channel,
+                                      const base::ListValue& args) {
+  auto* web_contents = mate::TrackableObject<WebContents>::FromWeakMapID(
+      isolate(), web_contents_id);
+
+  if (web_contents) {
+    web_contents->SendIPCMessage(send_to_all, channel, args);
+  }
 }
 
 // static

@@ -22,6 +22,12 @@ base::ListValue SendSync(mate::Arguments* args,
                          const std::string& channel,
                          const base::ListValue& arguments);
 
+void SendTo(mate::Arguments* args,
+            bool send_to_all,
+            int32_t web_contents_id,
+            const base::string16& channel,
+            const base::ListValue& arguments);
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,

@@ -419,6 +419,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
                              const base::ListValue& args,
                              IPC::Message* message);
 
+  // Called when received a message from renderer to be forwarded.
+  void OnRendererMessageTo(content::RenderFrameHost* frame_host,
+                           bool send_to_all,
+                           int32_t web_contents_id,
+                           const base::string16& channel,
+                           const base::ListValue& args);
+
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.
   void OnSetTemporaryZoomLevel(content::RenderFrameHost* frame_host,
