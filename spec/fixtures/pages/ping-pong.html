@@ -5,6 +5,9 @@
   ipcRenderer.on('ping', function (event, id) {
     ipcRenderer.sendTo(id, 'pong', id)
   })
+  ipcRenderer.on('ping-æøåü', function (event, id) {
+    ipcRenderer.sendTo(id, 'pong-æøåü', id)
+  })
 </script>
 </body>
 </html>

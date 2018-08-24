@@ -154,6 +154,21 @@ describe('ipc renderer module', () => {
 
       contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
     })
+
+    it('sends message to WebContents (channel has special chars)', done => {
+      const webContentsId = remote.getCurrentWebContents().id
+
+      ipcRenderer.once('pong-æøåü', (event, id) => {
+        expect(webContentsId).to.equal(id)
+        done()
+      })
+
+      contents.once('did-finish-load', () => {
+        ipcRenderer.sendTo(contents.id, 'ping-æøåü', webContentsId)
+      })
+
+      contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
+    })
   })
 
   describe('remote listeners', () => {

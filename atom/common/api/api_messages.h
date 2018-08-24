@@ -25,17 +25,17 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
 IPC_STRUCT_TRAITS_END()
 
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message,
-                    base::string16 /* channel */,
+                    std::string /* channel */,
                     base::ListValue /* arguments */)
 
 IPC_SYNC_MESSAGE_ROUTED2_1(AtomFrameHostMsg_Message_Sync,
-                           base::string16 /* channel */,
+                           std::string /* channel */,
                            base::ListValue /* arguments */,
                            base::ListValue /* result */)
 
 IPC_MESSAGE_ROUTED3(AtomFrameMsg_Message,
                     bool /* send_to_all */,
-                    base::string16 /* channel */,
+                    std::string /* channel */,
                     base::ListValue /* arguments */)
 
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)

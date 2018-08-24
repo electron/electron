@@ -34,8 +34,7 @@ RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
 RemoteCallbackFreer::~RemoteCallbackFreer() {}
 
 void RemoteCallbackFreer::RunDestructor() {
-  base::string16 channel =
-      base::ASCIIToUTF16("ELECTRON_RENDERER_RELEASE_CALLBACK");
+  auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";
   base::ListValue args;
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
