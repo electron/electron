@@ -1,5 +1,5 @@
 const assert = require('assert')
-const { screen } = require('electron')
+const { screen } = require('electron').remote
 
 describe('screen module', () => {
   describe('screen.getCursorScreenPoint()', () => {

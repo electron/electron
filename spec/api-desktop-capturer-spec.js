@@ -1,6 +1,7 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { desktopCapturer, remote, screen } = require('electron')
+const { desktopCapturer, remote } = require('electron')
+const { screen } = remote
 const features = process.atomBinding('features')
 
 const { expect } = chai

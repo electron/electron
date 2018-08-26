@@ -65,6 +65,39 @@ not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
 guide](/docs/tutorial/using-native-node-modules.md) for more.
 
+## `electron.screen` in renderer process
+
+```js
+// Deprecated
+require('electron').screen
+// Replace with
+require('electron').remote.screen
+```
+
+## `require` in sandboxed renderers
+
+```js
+// Deprecated
+require('child_process')
+// Replace with
+require('electron').remote.require('child_process')
+
+// Deprecated
+require('fs')
+// Replace with
+require('electron').remote.require('fs')
+
+// Deprecated
+require('os')
+// Replace with
+require('electron').remote.require('os')
+
+// Deprecated
+require('path')
+// Replace with
+require('electron').remote.require('path')
+```
+
 
 # Breaking API Changes (3.0)
 
