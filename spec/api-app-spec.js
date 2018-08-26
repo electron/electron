@@ -7,6 +7,7 @@ const net = require('net')
 const fs = require('fs')
 const path = require('path')
 const {ipcRenderer, remote} = require('electron')
+const {emittedOnce} = require('./events-helpers')
 const {closeWindow} = require('./window-helpers')
 
 const {expect} = chai
@@ -146,21 +147,19 @@ describe('app module', () => {
       if (appProcess != null) appProcess.kill()
     })
 
-    it('emits a process exit event with the code', done => {
+    it('emits a process exit event with the code', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       const electronPath = remote.getGlobal('process').execPath
       let output = ''
 
       appProcess = ChildProcess.spawn(electronPath, [appPath])
       appProcess.stdout.on('data', data => { output += data })
+      const [code] = await emittedOnce(appProcess, 'close')
 
-      appProcess.on('close', code => {
-        if (process.platform !== 'win32') {
-          expect(output).to.include('Exit event with code: 123')
-        }
-        expect(code).to.equal(123)
-        done()
-      })
+      if (process.platform !== 'win32') {
+        expect(output).to.include('Exit event with code: 123')
+      }
+      expect(code).to.equal(123)
     })
 
     it('closes all windows', done => {
@@ -168,16 +167,16 @@ describe('app module', () => {
       const electronPath = remote.getGlobal('process').execPath
 
       appProcess = ChildProcess.spawn(electronPath, [appPath])
-      appProcess.on('close', (code, signal) => {
-        expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound')
-        expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
-        done()
-      })
+      const [code, signal] = await emittedOnce(appProcess, 'close')
+
+      expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound')
+      expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
     })
 
-    it('exits gracefully', function (done) {
+    it('exits gracefully', async function () {
       if (!['darwin', 'linux'].includes(process.platform)) {
         this.skip()
+        return
       }
 
       const electronPath = remote.getGlobal('process').execPath
@@ -187,12 +186,11 @@ describe('app module', () => {
       // Singleton will send us greeting data to let us know it's running.
       // After that, ask it to exit gracefully and confirm that it does.
       appProcess.stdout.on('data', data => appProcess.kill())
-      appProcess.on('exit', (code, sig) => {
-        const message = `code:\n${code}\nsig:\n${sig}`
-        expect(code).to.equal(0, message)
-        expect(sig).to.be.null(message)
-        done()
-      })
+      const [code, signal] = await emittedOnce(appProcess, 'close')
+
+      const message = `code:\n${code}\nsignal:\n${signal}`
+      expect(code).to.equal(0, message)
+      expect(signal).to.be.null(message)
     })
   })
 
