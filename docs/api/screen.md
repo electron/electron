@@ -7,6 +7,9 @@ Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer
 You cannot require or use this module until the `ready` event of the `app`
 module is emitted.
 
+In the renderer process context it depends on the [`remote`](remote.md) module,
+it is therefore not available when this module is disabled.
+
 `screen` is an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
 
 **Note:** In the renderer / DevTools, `window.screen` is a reserved DOM
