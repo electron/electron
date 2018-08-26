@@ -195,6 +195,11 @@ describe('crashReporter module', () => {
       preload: path.join(fixtures, 'module', 'preload-sandbox.js')
     }
   })
+  generateSpecs('with remote module disabled', {
+    webPreferences: {
+      enableRemoteModule: false
+    }
+  })
 
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
