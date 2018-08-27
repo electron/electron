@@ -70,6 +70,7 @@ describe('Notification module', () => {
       ]
     })
 
+    expect(n.actions.length).to.equal(2)
     expect(n.actions[0].type).to.equal('button')
     expect(n.actions[0].text).to.equal('1')
     expect(n.actions[1].type).to.equal('button')
@@ -85,6 +86,7 @@ describe('Notification module', () => {
       }
     ]
 
+    expect(n.actions.length).to.equal(2)
     expect(n.actions[0].type).to.equal('button')
     expect(n.actions[0].text).to.equal('3')
     expect(n.actions[1].type).to.equal('button')

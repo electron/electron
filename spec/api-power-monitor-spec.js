@@ -31,7 +31,7 @@ xdescribe('powerMonitor', () => {
       reset = Promise.promisify(logindMock.Reset, {context: logindMock})
     })
 
-    after(async () => { await reset() })
+    after(reset)
   }
 
   (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
@@ -51,7 +51,7 @@ xdescribe('powerMonitor', () => {
 
     it('should call Inhibit to delay suspend', async () => {
       const calls = await getCalls()
-      expect(calls.length).to.equal(1)
+      expect(calls).to.be.an('array').that.has.lengthOf(1)
       expect(calls[0].slice(1)).to.deep.equal([
         'Inhibit', [
           [[{type: 's', child: []}], ['sleep']],
@@ -78,7 +78,7 @@ xdescribe('powerMonitor', () => {
 
         it('should have called Inhibit again', async () => {
           const calls = await getCalls()
-          expect(calls.length).to.equal(2)
+          expect(calls).to.be.an('array').that.has.lengthOf(2)
           expect(calls[1].slice(1)).to.deep.equal([
             'Inhibit', [
               [[{type: 's', child: []}], ['sleep']],
@@ -94,13 +94,13 @@ xdescribe('powerMonitor', () => {
     describe('when a listener is added to shutdown event', () => {
       before(async () => {
         const calls = await getCalls()
-        expect(calls.length).to.equal(2)
+        expect(calls).to.be.an('array').that.has.lengthOf(2)
         dbusMockPowerMonitor.once('shutdown', () => { })
       })
 
       it('should call Inhibit to delay shutdown', async () => {
         const calls = await getCalls()
-        expect(calls.length).to.equal(3)
+        expect(calls).to.be.an('array').that.has.lengthOf(3)
         expect(calls[2].slice(1)).to.deep.equal([
           'Inhibit', [
             [[{type: 's', child: []}], ['shutdown']],
