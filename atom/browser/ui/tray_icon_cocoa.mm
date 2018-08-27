@@ -474,11 +474,18 @@ void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  menu_model->AddObserver(this);
 
-  // Create native menu.
-  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
-                                  useDefaultAccelerator:NO]);
+  menu_model_ = menu_model;
+
+  if (menu_model) {
+    menu_model->AddObserver(this);
+    // Create native menu.
+    menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
+                                    useDefaultAccelerator:NO]);
+  } else {
+    menu_.reset();
+  }
+
   [status_item_view_ setMenuController:menu_.get()];
 }
 
