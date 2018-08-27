@@ -168,6 +168,7 @@ void NodeBindings::Initialize() {
 
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
+  // NOTE: If you change this line, please ping @codebytere or @MarshallOfSound
   node::Init(nullptr, nullptr, nullptr, nullptr);
 
 #if defined(OS_WIN)
