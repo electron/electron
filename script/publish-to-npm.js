@@ -3,9 +3,14 @@ const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
 const GitHubApi = require('github')
+const {GitProcess} = require('dugite')
 const request = require('request')
-const assert = require('assert')
 const rootPackageJson = require('../package.json')
+
+if (!process.env.ELECTRON_NPM_OTP) {
+  console.error('Please set ELECTRON_NPM_OTP')
+  process.exit(1)
+}
 
 const github = new GitHubApi({
   // debug: true,
@@ -68,7 +73,7 @@ new Promise((resolve, reject) => {
 
   return github.repos.getReleases({
     owner: 'electron',
-    repo: 'electron'
+    repo: rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
   })
 })
 .then((releases) => {
@@ -103,8 +108,17 @@ new Promise((resolve, reject) => {
     })
   })
 })
-.then((release) => {
-  npmTag = release.prerelease ? 'beta' : 'latest'
+.then(async (release) => {
+  if (release.tag_name.indexOf('nightly') > 0) {
+    const currentBranch = await getCurrentBranch()
+    if (currentBranch === 'master') {
+      npmTag = 'nightly'
+    } else {
+      npmTag = `nightly-${currentBranch}`
+    }
+  } else {
+    npmTag = release.prerelease ? 'beta' : 'latest'
+  }
 })
 .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
 .then(() => {
@@ -115,13 +129,29 @@ new Promise((resolve, reject) => {
       env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
       cwd: tempDir
     })
-    const checkVersion = childProcess.execSync(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
-    assert.ok((`v${rootPackageJson.version}`.indexOf(checkVersion.toString().trim()) === 0), `Version is correct`)
     resolve(tarballPath)
   })
 })
-.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag}`))
+.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
 .catch((err) => {
   console.error(`Error: ${err}`)
   process.exit(1)
 })
+
+async function getCurrentBranch () {
+  const gitDir = path.resolve(__dirname, '..')
+  console.log(`Determining current git branch`)
+  let gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
+  let branchDetails = await GitProcess.exec(gitArgs, gitDir)
+  if (branchDetails.exitCode === 0) {
+    let currentBranch = branchDetails.stdout.trim()
+    console.log(`Successfully determined current git branch is ` +
+      `${currentBranch}`)
+    return currentBranch
+  } else {
+    let error = GitProcess.parseError(branchDetails.stderr)
+    console.log(`Could not get details for the current branch,
+      error was ${branchDetails.stderr}`, error)
+    process.exit(1)
+  }
+}
