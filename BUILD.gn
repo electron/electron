@@ -281,10 +281,7 @@ static_library("electron_lib") {
 
   if (is_component_build) {
     defines += [
-      # Import V8 symbols from shared library (node.dll / libnode.so)
-      "USING_V8_SHARED",
-      "USING_V8_PLATFORM_SHARED",
-      "USING_V8_BASE_SHARED",
+      "NODE_SHARED_MODE",
     ]
   }
 
@@ -390,6 +387,11 @@ static_library("electron_lib") {
   }
 
   if (enable_desktop_capturer) {
+    if (is_component_build && is_win) {
+      # On windows the implementation relies on unexported
+      # DxgiDuplicatorController class.
+      deps += [ "//third_party/webrtc/modules/desktop_capture" ]
+    }
     sources += [
       "atom/browser/api/atom_api_desktop_capturer.cc",
       "atom/browser/api/atom_api_desktop_capturer.h",
