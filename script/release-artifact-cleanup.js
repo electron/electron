@@ -53,8 +53,8 @@ async function deleteDraft (tag, repo) {
       repo,
       tag
     })
-    if (result.draft) {
-      console.log(`Published drafts cannot be deleted.`)
+    if (!result.draft) {
+      console.log(`Published releases cannot be deleted.`)
       process.exit(1)
     } else {
       await github.repos.deleteRelease({
