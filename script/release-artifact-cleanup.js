@@ -53,11 +53,16 @@ async function deleteDraft (tag, repo) {
       repo,
       tag
     })
-    await github.repos.deleteRelease({
-      owner: 'electron',
-      repo,
-      release_id: result.id
-    })
+    if (result.draft) {
+      console.log(`Published drafts cannot be deleted.`)
+      process.exit(1)
+    } else {
+      await github.repos.deleteRelease({
+        owner: 'electron',
+        repo,
+        release_id: result.id
+      })
+    }
     console.log(`Successfully deleted draft with tag ${tag}`)
   } catch (err) {
     console.log(`Couldn't delete draft: ${err}`)
