@@ -5,12 +5,10 @@ require('colors')
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['tag']
 })
-const { exec, execSync } = require('child_process')
-const fail = '\u2717'.red
+const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
 
 const GitHub = require('github')
-const pass = '\u2713'.green
 const path = require('path')
 
 const github = new GitHub()
@@ -21,36 +19,42 @@ github.authenticate({
   token: process.env.ELECTRON_GITHUB_TOKEN
 })
 
+function getLastBumpCommit () {
+  const data = execSync(`git log - n1--grep "Bump v[0-9.]*"--format = "format:{hash: %H, message: '%s'}"`)
+  return JSON.parse(data)
+}
+
 async function getCurrentBranch (gitDir) {
   const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
   const branchDetails = await GitProcess.exec(gitArgs, gitDir)
   if (branchDetails.exitCode === 0) {
     return branchDetails.stdout.trim()
-  } else {
-    const error = GitProcess.parseError(branchDetails.stderr)
-    console.log(`${fail} Couldn't get current branch: ${branchDetails.stderr}`, error)
-    process.exit(1)
   }
+
+  const error = GitProcess.parseError(branchDetails.stderr)
+  console.error(`Couldn't get current branch: `, error)
+  process.exit(1)
 }
 
 async function revertBumpCommit (tag) {
   const branch = getCurrentBranch()
-  const hashToRevert = await exec(`git log | grep 'Bump v[0-9.]*' | grep -o '\\w\\ {8,\\}' | head -n 1`)
-  await GitProcess.exec(['revert', hashToRevert], gitDir)
+  const commitToRevert = getLastBumpCommit().hash
+  await GitProcess.exec(['revert', commitToRevert], gitDir)
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
   if (pushDetails.exitCode === 0) {
-    console.log(`${pass} Successfully reverted release commit.`)
+    console.log(`Successfully reverted release commit.`)
   } else {
-    console.log(`${fail} Failed to push release commit: ${pushDetails.stderr}`)
+    const error = GitProcess.parseError(pushDetails.stderr)
+    console.error(`Failed to push release commit: `, error)
     process.exit(1)
   }
 }
 
-async function deleteDraft (tag, repo) {
+async function deleteDraft (tag, targetRepo) {
   try {
     const result = await github.repos.getReleaseByTag({
       owner: 'electron',
-      repo,
+      repo: targetRepo,
       tag
     })
     if (!result.draft) {
@@ -59,13 +63,13 @@ async function deleteDraft (tag, repo) {
     } else {
       await github.repos.deleteRelease({
         owner: 'electron',
-        repo,
+        repo: targetRepo,
         release_id: result.id
       })
     }
-    console.log(`Successfully deleted draft with tag ${tag}`)
+    console.log(`Successfully deleted draft with tag ${tag} from ${targetRepo}`)
   } catch (err) {
-    console.log(`Couldn't delete draft: ${err}`)
+    console.error(`Couldn't delete draft with tag ${tag} from ${targetRepo}: ${err}`)
     process.exit(1)
   }
 }
@@ -77,16 +81,16 @@ async function deleteTag (tag, targetRepo) {
       repo: targetRepo,
       ref: tag
     })
-    console.log(`Successfully deleted tag ${tag} from 'electron/electron'`)
+    console.log(`Successfully deleted tag ${tag} from ${targetRepo}`)
   } catch (err) {
-    console.log(`Couldn't delete tag ${tag} from 'electron/electron'`)
+    console.log(`Couldn't delete tag ${tag} from ${targetRepo}`)
     process.exit(1)
   }
 }
 
 async function cleanReleaseArtifacts () {
   const tag = args.tag
-  const lastBumpCommit = execSync(`git log | grep 'Bump v[0-9.]*' | head -n 1`).toString()
+  const lastBumpCommit = getLastBumpCommit().message
 
   if (lastBumpCommit.indexOf('nightly' > 0)) {
     await deleteDraft(tag, 'nightlies')
