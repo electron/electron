@@ -39,6 +39,14 @@ bool IsFakeLocationProviderEnabled() {
 #endif
 }
 
+bool IsViewApiEnabled() {
+#if defined(ENABLE_VIEW_API)
+  return true;
+#else
+  return false;
+#endif
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -49,6 +57,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
+  dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
 }
 
 }  // namespace
