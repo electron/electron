@@ -400,6 +400,7 @@ static_library("electron_lib") {
     ]
     deps += [
       "//components/viz/service",
+      "//services/viz/public/interfaces",
       "//ui/compositor",
     ]
   }
