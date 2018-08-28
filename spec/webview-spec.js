@@ -1294,6 +1294,19 @@ describe('<webview> tag', function () {
       expect(secondResizeEvent.newWidth).to.equal(newWidth)
       expect(secondResizeEvent.newHeight).to.equal(newHeight)
     })
+
+    it('emits focus event', async () => {
+      const domReadySignal = waitForEvent(webview, 'dom-ready')
+      webview.src = `file://${fixtures}/pages/a.html`
+      document.body.appendChild(webview)
+
+      await domReadySignal
+
+      const focusSignal = waitForEvent(webview, 'focus')
+      webview.contentWindow.focus()
+
+      await focusSignal
+    })
   })
 
   describe('zoom behavior', () => {
