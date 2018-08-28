@@ -340,14 +340,36 @@
           ],
           'link_settings': {
             'conditions': [
-              ['OS=="win"', {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/pepper_flash.lib',
-                ]
+              ['libchromiumcontent_component', {
+                'conditions': [
+                  ['OS=="win"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.dll',
+                     ]
+                  }],
+                  ['OS=="mac"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.dylib',
+                    ]
+                  }],
+                  ['OS=="linux"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.so',
+                    ]
+                  }],
+                ],
               }, {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/libpepper_flash.a',
-                ]
+                'conditions': [
+                  ['OS=="win"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.lib',
+                    ]
+                  }, {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.a',
+                    ]
+                  }],
+                ],
               }],
             ],
           },
