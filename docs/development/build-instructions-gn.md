@@ -88,7 +88,7 @@ out/Default --list`.
 Electron:**
 
 ```sh
-$ gn gen out/Default --args='import("//electron/build/args/debug.gn") $GN_EXTRA_ARGS'
+$ gn gen out/Default --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
 ```
 
 **For generating Release (aka "non-component" or "static") build config of
