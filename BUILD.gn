@@ -621,6 +621,7 @@ if (is_mac) {
     sources = [
       "$root_out_dir/resources/default_app.asar",
       "$root_out_dir/resources/electron.asar",
+      "atom/browser/resources/mac/electron.icns",
     ]
     outputs = [
       "{{bundle_resources_dir}}/{{source_file_part}}",
