@@ -42,6 +42,7 @@ declare_args() {
 
   # Enable flash plugin support.
   enable_pepper_flash = true
+  enable_pdf_viewer = true
 }
 
 if (is_mas_build) {
@@ -81,6 +82,9 @@ config("features") {
   }
   if (enable_pepper_flash) {
     defines += [ "ENABLE_PEPPER_FLASH" ]
+  }
+  if (enable_pdf_viewer) {
+    defines += [ "ENABLE_PDF_VIEWER" ]    
   }
 }
 
