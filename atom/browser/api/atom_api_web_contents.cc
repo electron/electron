@@ -766,7 +766,8 @@ void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID(),
+       base::GetProcId(render_view_host->GetProcess()->GetHandle()));
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {

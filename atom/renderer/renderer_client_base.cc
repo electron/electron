@@ -16,7 +16,7 @@
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/process/process_handle.h"
+#include "base/process/process.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
@@ -94,7 +94,8 @@ void RendererClientBase::DidCreateScriptContext(
     content::RenderFrame* render_frame) {
   // global.setHidden("contextId", `${processId}-${++nextContextId}`)
   std::string context_id = base::StringPrintf(
-      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), ++next_context_id_);
+      "%" CrPRIdPid "-%d", base::GetProcId(base::Process::Current().Handle()),
+      ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
   v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
