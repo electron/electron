@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2))
-const assert = require('assert')
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
@@ -16,18 +16,16 @@ const fail = '\u2717'.red
 const sumchecker = require('sumchecker')
 const temp = require('temp').track()
 const { URL } = require('url')
+const targetRepo = pkgVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
 let failureCount = 0
-
-assert(process.env.ELECTRON_GITHUB_TOKEN, 'ELECTRON_GITHUB_TOKEN not found in environment')
 
 const github = new GitHub({
   followRedirects: false
 })
 github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
-const gitDir = path.resolve(__dirname, '..')
 
 async function getDraftRelease (version, skipValidation) {
-  let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: 'electron'})
+  let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: targetRepo})
   let drafts
   let versionToCheck
   if (version) {
@@ -62,16 +60,18 @@ async function validateReleaseAssets (release, validatingRelease) {
   })
   check((failureCount === 0), `All required GitHub assets exist for release`, true)
 
-  if (release.draft) {
-    await verifyAssets(release)
-  } else {
-    await verifyShasums(downloadUrls)
-      .catch(err => {
-        console.log(`${fail} error verifyingShasums`, err)
-      })
+  if (!validatingRelease || !release.draft) {
+    if (release.draft) {
+      await verifyAssets(release)
+    } else {
+      await verifyShasums(downloadUrls)
+        .catch(err => {
+          console.log(`${fail} error verifyingShasums`, err)
+        })
+    }
+    const s3Urls = s3UrlsForVersion(release.tag_name)
+    await verifyShasums(s3Urls, true)
   }
-  const s3Urls = s3UrlsForVersion(release.tag_name)
-  await verifyShasums(s3Urls, true)
 }
 
 function check (condition, statement, exitIfFail = false) {
@@ -146,9 +146,15 @@ function s3UrlsForVersion (version) {
 }
 
 function checkVersion () {
+  if (args.skipVersionCheck) return
+
   console.log(`Verifying that app version matches package version ${pkgVersion}.`)
   let startScript = path.join(__dirname, 'start.py')
-  let appVersion = runScript(startScript, ['--version']).trim()
+  let scriptArgs = ['--version']
+  if (args.automaticRelease) {
+    scriptArgs.unshift('-R')
+  }
+  let appVersion = runScript(startScript, scriptArgs).trim()
   check((pkgVersion.indexOf(appVersion) === 0), `App version ${appVersion} matches ` +
     `package version ${pkgVersion}.`, true)
 }
@@ -179,7 +185,7 @@ function uploadNodeShasums () {
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
   let scriptPath = path.join(__dirname, 'upload-index-json.py')
-  runScript(scriptPath, [])
+  runScript(scriptPath, [pkgVersion])
   console.log(`${pass} Done uploading index.json to S3.`)
 }
 
@@ -190,7 +196,7 @@ async function createReleaseShasums (release) {
     console.log(`${fileName} already exists on GitHub; deleting before creating new file.`)
     await github.repos.deleteAsset({
       owner: 'electron',
-      repo: 'electron',
+      repo: targetRepo,
       id: existingAssets[0].id
     }).catch(err => {
       console.log(`${fail} Error deleting ${fileName} on GitHub:`, err)
@@ -209,7 +215,7 @@ async function createReleaseShasums (release) {
 async function uploadShasumFile (filePath, fileName, release) {
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     id: release.id,
     filePath,
     name: fileName
@@ -244,7 +250,7 @@ function saveShaSumFile (checksums, fileName) {
 async function publishRelease (release) {
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     id: release.id,
     tag_name: release.tag_name,
     draft: false
@@ -271,12 +277,13 @@ async function makeRelease (releaseToValidate) {
     let draftRelease = await getDraftRelease()
     uploadNodeShasums()
     uploadIndexJson()
+
     await createReleaseShasums(draftRelease)
     // Fetch latest version of release before verifying
     draftRelease = await getDraftRelease(pkgVersion, true)
     await validateReleaseAssets(draftRelease)
+    await tagLibCC()
     await publishRelease(draftRelease)
-    await cleanupReleaseBranch()
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       `"npm run publish-to-npm" to publish release to npm.`)
   }
@@ -298,7 +305,7 @@ async function verifyAssets (release) {
   let downloadDir = await makeTempDir()
   let githubOpts = {
     owner: 'electron',
-    repo: 'electron',
+    repo: targetRepo,
     headers: {
       Accept: 'application/octet-stream'
     }
@@ -444,24 +451,22 @@ async function validateChecksums (validationArgs) {
     `shasums defined in ${validationArgs.shaSumFile}.`)
 }
 
-async function cleanupReleaseBranch () {
-  console.log(`Cleaning up release branch.`)
-  let errorMessage = `Could not delete local release branch.`
-  let successMessage = `Successfully deleted local release branch.`
-  await callGit(['branch', '-D', 'release'], errorMessage, successMessage)
-  errorMessage = `Could not delete remote release branch.`
-  successMessage = `Successfully deleted remote release branch.`
-  return callGit(['push', 'origin', ':release'], errorMessage, successMessage)
-}
-
-async function callGit (args, errorMessage, successMessage) {
-  let gitResult = await GitProcess.exec(args, gitDir)
-  if (gitResult.exitCode === 0) {
-    console.log(`${pass} ${successMessage}`)
-    return true
+async function tagLibCC () {
+  const tag = `electron-${pkg.version}`
+  const libccDir = path.join(path.resolve(__dirname, '..'), 'vendor', 'libchromiumcontent')
+  console.log(`Tagging release ${tag}.`)
+  let tagDetails = await GitProcess.exec([ 'tag', '-a', '-m', tag, tag ], libccDir)
+  if (tagDetails.exitCode === 0) {
+    let pushDetails = await GitProcess.exec(['push', '--tags'], libccDir)
+    if (pushDetails.exitCode === 0) {
+      console.log(`${pass} Successfully tagged libchromiumcontent with ${tag}.`)
+    } else {
+      console.log(`${fail} Error pushing libchromiumcontent tag ${tag}: ` +
+        `${pushDetails.stderr}`)
+    }
   } else {
-    console.log(`${fail} ${errorMessage} ${gitResult.stderr}`)
-    process.exit(1)
+    console.log(`${fail} Error tagging libchromiumcontent with ${tag}: ` +
+      `${tagDetails.stderr}`)
   }
 }
 
