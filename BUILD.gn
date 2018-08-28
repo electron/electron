@@ -38,6 +38,8 @@ declare_args() {
   # need to test with chromium's location provider.
   # Should not be enabled for release build.
   enable_fake_location_provider = !is_official_build
+
+  enable_view_api = false
 }
 
 if (is_mas_build) {
@@ -71,6 +73,9 @@ config("features") {
   }
   if (enable_osr) {
     defines += [ "ENABLE_OSR=1" ]
+  }
+  if (enable_view_api) {
+    defines += [ "ENABLE_VIEW_API" ]
   }
 }
 
@@ -175,6 +180,15 @@ asar("js2asar") {
       "lib/renderer/api/desktop-capturer.js",
     ]
   }
+  if (enable_view_api) {
+     sources += [
+      "lib/browser/api/box-layout.js",
+      "lib/browser/api/button.js",
+      "lib/browser/api/label-button.js",
+      "lib/browser/api/layout-manager.js",
+      "lib/browser/api/text-field.js",
+     ]
+   }
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
@@ -395,6 +409,21 @@ static_library("electron_lib") {
     sources += [
       "atom/browser/api/atom_api_desktop_capturer.cc",
       "atom/browser/api/atom_api_desktop_capturer.h",
+    ]
+  }
+
+  if (enable_view_api) {
+    sources += [
+      "atom/browser/api/atom_api_box_layout.cc",
+      "atom/browser/api/atom_api_box_layout.h",
+      "atom/browser/api/atom_api_button.cc",
+      "atom/browser/api/atom_api_button.h",
+      "atom/browser/api/atom_api_label_button.cc",
+      "atom/browser/api/atom_api_label_button.h",
+      "atom/browser/api/atom_api_layout_manager.cc",
+      "atom/browser/api/atom_api_layout_manager.h",
+      "atom/browser/api/atom_api_text_field.cc",
+      "atom/browser/api/atom_api_text_field.h",
     ]
   }
 }

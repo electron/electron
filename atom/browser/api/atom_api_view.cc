@@ -26,9 +26,7 @@ View::~View() {
 #if defined(ENABLE_VIEW_API)
 void View::SetLayoutManager(mate::Handle<LayoutManager> layout_manager) {
   layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
-  // TODO(zcbenz): New versions of Chrome takes std::unique_ptr instead of raw
-  // pointer, remove the "release()" call when we upgraded to it.
-  view()->SetLayoutManager(layout_manager->TakeOver().release());
+  view()->SetLayoutManager(layout_manager->TakeOver());
 }
 
 void View::AddChildView(mate::Handle<View> child) {
