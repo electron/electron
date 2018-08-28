@@ -627,6 +627,18 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(handler);
 }
 
+void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
+                                        mate::Arguments* args) {
+  AtomPermissionManager::CheckHandler handler;
+  if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
+      browser_context()->GetPermissionManager());
+  permission_manager->SetPermissionCheckHandler(handler);
+}
+
 void Session::ClearHostResolverCache(mate::Arguments* args) {
   base::Closure callback;
   args->GetNext(&callback);
@@ -814,6 +826,8 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
       .SetMethod("setPermissionRequestHandler",
                  &Session::SetPermissionRequestHandler)
+      .SetMethod("setPermissionCheckHandler",
+                 &Session::SetPermissionCheckHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",

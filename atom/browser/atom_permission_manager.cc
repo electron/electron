@@ -100,6 +100,11 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   request_handler_ = handler;
 }
 
+void AtomPermissionManager::SetPermissionCheckHandler(
+    const CheckHandler& handler) {
+  check_handler_ = handler;
+}
+
 int AtomPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
@@ -222,5 +227,19 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
 
 void AtomPermissionManager::UnsubscribePermissionStatusChange(
     int subscription_id) {}
+
+bool AtomPermissionManager::CheckPermissionWithDetails(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    const base::DictionaryValue* details) const {
+  if (check_handler_.is_null()) {
+    return true;
+  }
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  return check_handler_.Run(web_contents, permission, requesting_origin,
+                            *details);
+}
 
 }  // namespace atom

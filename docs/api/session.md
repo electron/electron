@@ -311,6 +311,32 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 })
 ```
 
+#### `ses.setPermissionCheckHandler(handler)`
+
+* `handler` Function<Boolean> | null
+  * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.
+  * `permission` String - Enum of 'media'.
+  * `requestingOrigin` String - The origin URL of the permission check
+  * `details` Object - Some properties are only available on certain permission types.
+    * `securityOrigin` String - The security orign of the `media` check.
+    * `mediaType` String - The type of media access being requested, can be `video`,
+      `audio` or `unknown`
+
+Sets the handler which can be used to respond to permission checks for the `session`.
+Returning `true` will allow the permission and `false` will reject it.
+To clear the handler, call `setPermissionCheckHandler(null)`.
+
+```javascript
+const {session} = require('electron')
+session.fromPartition('some-partition').setPermissionCheckHandler((webContents, permission) => {
+  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+    return false // denied
+  }
+
+  return true
+})
+```
+
 #### `ses.clearHostResolverCache([callback])`
 
 * `callback` Function (optional) - Called when operation is done.
