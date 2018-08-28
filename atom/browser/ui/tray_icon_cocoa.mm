@@ -41,9 +41,16 @@ const CGFloat kVerticalTitleMargin = 2;
 
 @implementation StatusItemView
 
+- (void)dealloc {
+  trayIcon_ = nil;
+  menuController_ = nil;
+  [super dealloc];
+}
+
 - (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
   image_.reset([image copy]);
   trayIcon_ = icon;
+  menuController_ = nil;
   highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
   ignoreDoubleClickEvents_ = NO;
   forceHighlight_ = NO;
@@ -89,6 +96,7 @@ const CGFloat kVerticalTitleMargin = 2;
     trackingArea_.reset();
   }
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
+  [statusItem_ setView:nil];
   statusItem_.reset();
 }
 
