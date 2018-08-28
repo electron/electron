@@ -196,6 +196,11 @@
                       '<(libchromiumcontent_dir)/ffmpeg.dll',
                     ],
                   }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.dll',
+                    ],
+                  }],
                 ],
               },
               'destination': '<(PRODUCT_DIR)',
@@ -236,6 +241,11 @@
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/lib/libnode.so',
                       '<(libchromiumcontent_dir)/libffmpeg.so',
+                    ],
+                  }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.so',
                     ],
                   }],
                 ],
@@ -730,6 +740,11 @@
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/libnode.dylib',
                       '<(libchromiumcontent_dir)/libffmpeg.dylib',
+                    ],
+                  }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.dylib',
                     ],
                   }],
                 ],
