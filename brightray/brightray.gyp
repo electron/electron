@@ -112,6 +112,7 @@
                 'libraries': [
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libbase_static.a',
+                  '<(libchromiumcontent_dir)/libextras.a',
                   '<(libchromiumcontent_dir)/libgtkui.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
@@ -206,6 +207,7 @@
                 'libraries': [
                   # Following libraries are always linked statically.
                   '<(libchromiumcontent_dir)/libbase_static.a',
+                  '<(libchromiumcontent_dir)/libextras.a',
                   '<(libchromiumcontent_dir)/libhttp_server.a',
                   '<(libchromiumcontent_dir)/libdevice_service.a',
                   '<(libchromiumcontent_dir)/libdom_keycode_converter.a',
@@ -342,6 +344,7 @@
                   '-ldxgi.lib',
                   # Following libs are always linked statically.
                   '<(libchromiumcontent_dir)/base_static.lib',
+                  '<(libchromiumcontent_dir)/extras.lib',
                   '<(libchromiumcontent_dir)/sandbox.lib',
                   '<(libchromiumcontent_dir)/sandbox_helper_win.lib',
                   '<(libchromiumcontent_dir)/http_server.lib',

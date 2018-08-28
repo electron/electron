@@ -13,6 +13,7 @@ static_library("brightray") {
     "//components/prefs",
     "//content/public/browser",
     "//content/shell:resources",
+    "//net:extras",
     "//net:net_with_v8",
     "//skia",
     "//ui/views",
