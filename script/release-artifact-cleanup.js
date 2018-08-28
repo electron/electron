@@ -20,7 +20,7 @@ github.authenticate({
 })
 
 function getLastBumpCommit () {
-  const data = execSync(`git log - n1--grep "Bump v[0-9.]*"--format = "format:{hash: %H, message: '%s'}"`)
+  const data = execSync(`git log -n1 --grep "Bump v[0-9.]*" --format="format:{hash: %H, message: '%s'}"`)
   return JSON.parse(data)
 }
 
@@ -69,7 +69,7 @@ async function deleteDraft (tag, targetRepo) {
     }
     console.log(`Successfully deleted draft with tag ${tag} from ${targetRepo}`)
   } catch (err) {
-    console.error(`Couldn't delete draft with tag ${tag} from ${targetRepo}: ${err}`)
+    console.error(`Couldn't delete draft with tag ${tag} from ${targetRepo}: `, err)
     process.exit(1)
   }
 }
@@ -83,7 +83,7 @@ async function deleteTag (tag, targetRepo) {
     })
     console.log(`Successfully deleted tag ${tag} from ${targetRepo}`)
   } catch (err) {
-    console.log(`Couldn't delete tag ${tag} from ${targetRepo}`)
+    console.log(`Couldn't delete tag ${tag} from ${targetRepo}: `, err)
     process.exit(1)
   }
 }
