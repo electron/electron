@@ -32,6 +32,7 @@ declare_args() {
   enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = false
+  enable_pepper_flash = true
 
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
@@ -76,6 +77,9 @@ config("features") {
   }
   if (enable_view_api) {
     defines += [ "ENABLE_VIEW_API" ]
+  }
+  if (enable_pepper_flash) {
+    defines += [ "ENABLE_PEPPER_FLASH" ]
   }
 }
 
@@ -422,6 +426,10 @@ static_library("electron_lib") {
       "atom/browser/api/atom_api_text_field.h",
     ]
   }
+
+  if (enable_pepper_flash) {
+    deps += [ "components/pepper_flash" ]
+  }
 }
 
 electron_paks("packed_resources") {
@@ -717,6 +725,56 @@ if (is_mac) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
     }
+  }
+}
+
+component("pepper_flash") {
+  sources = [
+    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc",
+    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h",
+    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_broker_message_filter.h",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_clipboard_message_filter.h",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h",
+    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
+    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
+    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
+    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
+    "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_drm_renderer_host.h",
+    "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
+    "//chrome/renderer/pepper/pepper_flash_fullscreen_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_fullscreen_host.h",
+    "//chrome/renderer/pepper/pepper_flash_menu_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_menu_host.h",
+    "//chrome/renderer/pepper/pepper_flash_renderer_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_renderer_host.h",
+    "//chrome/renderer/pepper/pepper_helper.cc",
+    "//chrome/renderer/pepper/pepper_helper.h",
+    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
+    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
+  ]
+  deps = [
+    "//media:media_features",
+    "//ppapi/host",
+    "//ppapi/proxy",
+    "//ppapi/proxy:ipc",
+    "//ppapi/shared_impl",
+    "//services/device/public/mojom",
+    "//skia",
+    "//third_party/WebKit/public:blink",
+    "//third_party/adobe/flash:flapper_version_h",
+  ]
+  if (is_mac) {
+    sources += [
+      "//chrome/browser/renderer_host/pepper/monitor_finder_mac.h",
+      "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
+    ]
   }
 }
 
