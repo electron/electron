@@ -1161,7 +1161,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
     } else if (!guest_host_views_.empty()) {
-      for (auto guest_host_view : guest_host_views_) {
+      for (auto* guest_host_view : guest_host_views_) {
         if (!guest_host_view->render_widget_host_ ||
             !guest_host_view->render_widget_host_->GetView()) {
           continue;
