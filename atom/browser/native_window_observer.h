@@ -70,6 +70,8 @@ class NativeWindowObserver {
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
+  virtual void OnWindowWillMove(const gfx::Rect& new_bounds,
+                                bool* prevent_default) {}
   virtual void OnWindowMove() {}
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
