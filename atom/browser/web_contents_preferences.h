@@ -66,11 +66,15 @@ class WebContentsPreferences
   friend class content::WebContentsUserData<WebContentsPreferences>;
   friend class AtomBrowserClient;
 
+  enum class Status { Deprecated, Stable };
+
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(int process_id);
 
   // Set preference value to given bool if user did not provide value
-  bool SetDefaultBoolIfUndefined(const base::StringPiece& key, bool val);
+  bool SetDefaultBoolIfUndefined(const base::StringPiece& key,
+                                 bool val,
+                                 Status status = Status::Stable);
 
   static std::vector<WebContentsPreferences*> instances_;
 

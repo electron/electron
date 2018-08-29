@@ -34,6 +34,18 @@ app.releaseSingleInstance()
 app.releaseSingleInstanceLock()
 ```
 
+## `new BrowserWindow({ webPreferences: { ... }})`
+
+```js
+// Deprecated defaults
+const webPreferences = {}
+new BrowserWindow({ webPreferences })
+
+// webPreferences.contextIsolation - Default was false, will be true
+// webPreferences.nodeIntegration - Default was true, will be false
+// webPreferences.webviewTag - Default was true, will be false
+```
+
 
 # Breaking API Changes (3.0)
 
