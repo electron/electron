@@ -526,7 +526,7 @@ if (is_mac) {
       deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework" ]
+    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework", "ELECTRON_VERSION=$electron_version" ]
 
     include_dirs = [ "." ]
     sources = filenames_gypi.framework_sources
