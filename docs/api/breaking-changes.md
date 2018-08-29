@@ -212,6 +212,10 @@ webview.setAttribute('disableguestresize', '')
 // Removed
 webview.setAttribute('guestinstance', instanceId)
 // There is no replacement for this API
+
+// Keyboard listeners no longer work on webview tag
+webview.onkeydown = () => { /* handler */ }
+webview.onkeyup = () => { /* handler */ }
 ```
 
 ## Node Headers URL
