@@ -693,9 +693,11 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
 
 void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
                                                mate::Arguments* args) {
+  mate::Dictionary options;
   bool visibleOnFullScreen = false;
-  args->GetNext(&visibleOnFullScreen);
-  window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool TopLevelWindow::IsVisibleOnAllWorkspaces() {
