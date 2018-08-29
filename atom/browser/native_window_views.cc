@@ -1004,7 +1004,7 @@ bool NativeWindowViews::IsMenuBarVisible() {
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
                                                   bool visibleOnFullScreen) {
-  widget()->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
+  widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
