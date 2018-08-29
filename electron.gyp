@@ -196,6 +196,11 @@
                       '<(libchromiumcontent_dir)/ffmpeg.dll',
                     ],
                   }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.dll',
+                    ],
+                  }],
                 ],
               },
               'destination': '<(PRODUCT_DIR)',
@@ -236,6 +241,11 @@
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/lib/libnode.so',
                       '<(libchromiumcontent_dir)/libffmpeg.so',
+                    ],
+                  }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.so',
                     ],
                   }],
                 ],
@@ -340,14 +350,36 @@
           ],
           'link_settings': {
             'conditions': [
-              ['OS=="win"', {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/pepper_flash.lib',
-                ]
+              ['libchromiumcontent_component', {
+                'conditions': [
+                  ['OS=="win"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.dll',
+                     ]
+                  }],
+                  ['OS=="mac"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.dylib',
+                    ]
+                  }],
+                  ['OS=="linux"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.so',
+                    ]
+                  }],
+                ],
               }, {
-                'libraries': [
-                  '<(libchromiumcontent_dir)/libpepper_flash.a',
-                ]
+                'conditions': [
+                  ['OS=="win"', {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/pepper_flash.lib',
+                    ]
+                  }, {
+                    'libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.a',
+                    ]
+                  }],
+                ],
               }],
             ],
           },
@@ -708,6 +740,11 @@
                     'copied_libraries': [
                       '<(PRODUCT_DIR)/libnode.dylib',
                       '<(libchromiumcontent_dir)/libffmpeg.dylib',
+                    ],
+                  }],
+                  ['enable_pepper_flash==1', {
+                    'copied_libraries': [
+                      '<(libchromiumcontent_dir)/libpepper_flash.dylib',
                     ],
                   }],
                 ],
