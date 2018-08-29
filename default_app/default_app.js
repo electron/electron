@@ -16,10 +16,7 @@ exports.load = (appUrl) => {
       autoHideMenuBar: true,
       backgroundColor: '#FFFFFF',
       webPreferences: {
-        nodeIntegration: false,
-        webviewTag: false,
-        contextIsolation: true,
-        preload: path.resolve(__dirname, 'renderer.js')
+        nodeIntegrationInWorker: true
       },
       useContentSize: true,
       show: false
