@@ -31,7 +31,7 @@ declare_args() {
 
   enable_desktop_capturer = true
   enable_run_as_node = true
-  enable_osr = false
+  enable_osr = true
 
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you

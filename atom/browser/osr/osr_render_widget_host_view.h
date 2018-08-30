@@ -89,7 +89,6 @@ class OffScreenRenderWidgetHostView
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
-  gfx::Vector2dF GetLastScrollOffset(void) const override;
   gfx::NativeView GetNativeView(void) const override;
   gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
   ui::TextInputClient* GetTextInputClient() override;
@@ -106,6 +105,7 @@ class OffScreenRenderWidgetHostView
   SkColor background_color() const override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
+  void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
   void SetNeedsBeginFrames(bool needs_begin_frames) override;
   void SetWantsAnimateOnlyBeginFrames() override;
 #if defined(OS_MACOSX)
@@ -116,6 +116,7 @@ class OffScreenRenderWidgetHostView
   bool IsSpeaking() const override;
   bool ShouldContinueToPauseForFrame() override;
   void StopSpeaking() override;
+  bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MACOSX)
 
   // content::RenderWidgetHostViewBase:
@@ -149,7 +150,6 @@ class OffScreenRenderWidgetHostView
                    content::RenderWidgetHostViewGuest*) override;
   gfx::Vector2d GetOffsetFromRootSurface() override;
   gfx::Rect GetBoundsInRootWindow(void) override;
-  content::RenderWidgetHostImpl* GetRenderWidgetHostImpl() const override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
