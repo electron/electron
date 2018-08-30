@@ -9,11 +9,9 @@
       Function.prototype.apply = true
 
       const opened = window.open()
-      const openedLocation = opened.location
       opened.close()
 
       window.postMessage({
-        openedLocation,
         preloadProperty: typeof window.foo,
         pageProperty: typeof window.hello,
         typeofRequire: typeof require,

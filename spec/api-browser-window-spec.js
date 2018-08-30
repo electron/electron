@@ -3235,10 +3235,10 @@ describe('BrowserWindow module', () => {
         typeofRequire: 'function',
         typeofProcess: 'object',
         typeofArrayPush: 'function',
-        typeofFunctionApply: 'function'
+        typeofFunctionApply: 'function',
+        typeofPreloadExecuteJavaScriptProperty: 'undefined'
       },
       pageContext: {
-        openedLocation: '',
         preloadProperty: 'undefined',
         pageProperty: 'string',
         typeofRequire: 'undefined',
@@ -3251,6 +3251,7 @@ describe('BrowserWindow module', () => {
     }
 
     beforeEach(() => {
+      if (iw != null) iw.destroy()
       iw = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -3258,6 +3259,7 @@ describe('BrowserWindow module', () => {
           preload: path.join(fixtures, 'api', 'isolated-preload.js')
         }
       })
+      if (ws != null) ws.destroy()
       ws = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -3273,12 +3275,10 @@ describe('BrowserWindow module', () => {
       if (ws != null) ws.destroy()
     })
 
-    it('separates the page context from the Electron/preload context', (done) => {
-      ipcMain.once('isolated-world', (event, data) => {
-        assert.deepEqual(data, expectedContextData)
-        done()
-      })
+    it('separates the page context from the Electron/preload context', async () => {
       iw.loadURL(`file://${fixtures}/api/isolated.html`)
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      assert.deepEqual(data, expectedContextData)
     })
     it('recreates the contexts on reload', async () => {
       iw.loadURL(`file://${fixtures}/api/isolated.html`)
@@ -3287,25 +3287,21 @@ describe('BrowserWindow module', () => {
       const [, data] = await emittedOnce(ipcMain, 'isolated-world')
       assert.deepEqual(data, expectedContextData)
     })
-    it('enables context isolation on child windows', (done) => {
-      app.once('browser-window-created', (event, window) => {
-        assert.equal(window.webContents.getLastWebPreferences().contextIsolation, true)
-        done()
-      })
+    it('enables context isolation on child windows', async () => {
       iw.loadURL(`file://${fixtures}/pages/window-open.html`)
+      const [, window] = await emittedOnce(app, 'browser-window-created')
+      assert.ok(window.webContents.getLastWebPreferences().contextIsolation)
     })
-    it('separates the page context from the Electron/preload context with sandbox on', (done) => {
-      ipcMain.once('isolated-sandbox-world', (event, data) => {
-        assert.deepEqual(data, expectedContextData)
-        done()
-      })
-      iw.loadURL(`file://${fixtures}/api/isolated.html`)
+    it('separates the page context from the Electron/preload context with sandbox on', async () => {
+      ws.loadURL(`file://${fixtures}/api/isolated.html`)
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      assert.deepEqual(data, expectedContextData)
     })
     it('recreates the contexts on reload with sandbox on', async () => {
-      iw.loadURL(`file://${fixtures}/api/isolated.html`)
-      await emittedOnce(iw.webContents, 'did-finish-load')
-      iw.webContents.reload()
-      const [, data] = await emittedOnce(ipcMain, 'isolated-sandbox-world')
+      ws.loadURL(`file://${fixtures}/api/isolated.html`)
+      await emittedOnce(ws.webContents, 'did-finish-load')
+      ws.webContents.reload()
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
       assert.deepEqual(data, expectedContextData)
     })
     it('supports fetch api', async () => {
@@ -3320,6 +3316,17 @@ describe('BrowserWindow module', () => {
       const [, error] = await emittedOnce(ipcMain, 'isolated-fetch-error')
       fetchWindow.destroy()
       assert.equal(error, 'Failed to fetch')
+    })
+    it('doesn\'t break ipc serialization', async () => {
+      iw.loadURL('about:blank')
+      iw.webContents.executeJavaScript(`
+        const opened = window.open()
+        openedLocation = opened.location
+        opened.close()
+        window.postMessage({openedLocation}, '*')
+      `)
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      assert.equal(data.pageContext.openedLocation, '')
     })
   })
 

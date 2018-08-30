@@ -535,10 +535,10 @@ describe('<webview> tag', function () {
           typeofRequire: 'function',
           typeofProcess: 'object',
           typeofArrayPush: 'function',
-          typeofFunctionApply: 'function'
+          typeofFunctionApply: 'function',
+          typeofPreloadExecuteJavaScriptProperty: 'undefined'
         },
         pageContext: {
-          openedLocation: '',
           preloadProperty: 'undefined',
           pageProperty: 'string',
           typeofRequire: 'undefined',
