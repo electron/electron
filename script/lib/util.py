@@ -166,6 +166,17 @@ def execute_stdout(argv, env=os.environ, cwd=None):
   else:
     execute(argv, env, cwd)
 
+def electron_gyp():
+  # FIXME(alexeykuzmin): Use data from //BUILD.gn.
+  # electron.gyp is not used during the build.
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
+  with open(gyp) as f:
+    obj = eval(f.read());
+    return obj['variables']
+
+def get_electron_version():
+  return 'v' + electron_gyp()['version%']
 
 def boto_path_dirs():
   return [
