@@ -254,7 +254,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     content::RenderWidgetHost* host,
     OffScreenRenderWidgetHostView* parent_host_view,
     NativeWindow* native_window)
-    : render_widget_host_(content::RenderWidgetHostImpl::From(host)),
+    : content::RenderWidgetHostViewBase(host),
+      render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       parent_host_view_(parent_host_view),
       native_window_(native_window),
       transparent_(transparent),
@@ -264,7 +265,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       size_(native_window->GetSize()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
-      mouse_wheel_phase_handler_(render_widget_host_, this),
+      mouse_wheel_phase_handler_(this),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
   bool is_guest_view_hack = parent_host_view_ != nullptr;
@@ -283,7 +284,13 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #if defined(OS_MACOSX)
   last_frame_root_background_color_ = SK_ColorTRANSPARENT;
   CreatePlatformWidget(is_guest_view_hack);
-#else
+#endif
+
+  bool opaque = SkColorGetA(background_color()) == SK_AlphaOPAQUE;
+  GetRootLayer()->SetFillsBoundsOpaquely(opaque);
+  GetRootLayer()->SetColor(background_color());
+
+#if !defined(OS_MACOSX)
   // On macOS the ui::Compositor is created/owned by the platform view.
   content::ImageTransportFactory* factory =
       content::ImageTransportFactory::GetInstance();
@@ -397,10 +404,6 @@ void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
   SetSize(new_bounds.size());
 }
 
-gfx::Vector2dF OffScreenRenderWidgetHostView::GetLastScrollOffset() const {
-  return last_scroll_offset_;
-}
-
 gfx::NativeView OffScreenRenderWidgetHostView::GetNativeView() const {
   return gfx::NativeView();
 }
@@ -496,6 +499,22 @@ bool OffScreenRenderWidgetHostView::LockMouse() {
 }
 
 void OffScreenRenderWidgetHostView::UnlockMouse() {}
+
+void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
+    content::RenderWidgetHostView* view) {
+  DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
+              ->IsRenderWidgetHostViewChildFrame());
+  DCHECK(!static_cast<content::RenderWidgetHostViewBase*>(view)
+              ->IsRenderWidgetHostViewGuest());
+  OffScreenRenderWidgetHostView* view_osr =
+      static_cast<OffScreenRenderWidgetHostView*>(view);
+  SetBackgroundColor(view_osr->background_color());
+  if (GetDelegatedFrameHost() && view_osr->GetDelegatedFrameHost()) {
+    GetDelegatedFrameHost()->TakeFallbackContentFrom(
+        view_osr->GetDelegatedFrameHost());
+  }
+  host()->GetContentRenderingTimeoutFrom(view_osr->host());
+}
 
 void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
     viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink) {
@@ -670,11 +689,6 @@ gfx::Vector2d OffScreenRenderWidgetHostView::GetOffsetFromRootSurface() {
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
-}
-
-content::RenderWidgetHostImpl*
-OffScreenRenderWidgetHostView::GetRenderWidgetHostImpl() const {
-  return render_widget_host_;
 }
 
 viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
@@ -1116,7 +1130,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
 
   blink::WebMouseWheelEvent mouse_wheel_event(event);
 
-  mouse_wheel_phase_handler_.SendWheelEndIfNeeded();
+  mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded();
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
       mouse_wheel_event, false);
 
@@ -1291,7 +1305,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
                                    local_surface_id_);
 
 #if defined(OS_MACOSX)
-  bool resized = browser_compositor_->UpdateNSViewAndDisplay();
+  bool resized = UpdateNSViewAndDisplay();
 #else
   bool resized = true;
   GetDelegatedFrameHost()->WasResized(local_surface_id_, size,
