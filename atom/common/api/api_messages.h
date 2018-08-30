@@ -39,10 +39,11 @@ IPC_MESSAGE_ROUTED4(AtomFrameHostMsg_Message_To,
                     std::string /* channel */,
                     base::ListValue /* arguments */)
 
-IPC_MESSAGE_ROUTED3(AtomFrameMsg_Message,
+IPC_MESSAGE_ROUTED4(AtomFrameMsg_Message,
                     bool /* send_to_all */,
                     std::string /* channel */,
-                    base::ListValue /* arguments */)
+                    base::ListValue /* arguments */,
+                    int32_t /* sender_id */)
 
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 

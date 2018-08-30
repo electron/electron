@@ -132,8 +132,6 @@ describe('ipc renderer module', () => {
   describe('ipcRenderer.sendTo', () => {
     let contents = null
 
-    beforeEach(() => { contents = webContents.create({}) })
-
     afterEach(() => {
       ipcRenderer.removeAllListeners('pong')
       contents.destroy()
@@ -141,30 +139,58 @@ describe('ipc renderer module', () => {
     })
 
     it('sends message to WebContents', done => {
-      const webContentsId = remote.getCurrentWebContents().id
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+      })
 
-      ipcRenderer.once('pong', (event, id) => {
-        expect(webContentsId).to.equal(id)
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong', (event, data) => {
+        expect(payload).to.equal(data)
         done()
       })
 
       contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', webContentsId)
+        ipcRenderer.sendTo(contents.id, 'ping', payload)
+      })
+
+      contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
+    })
+
+    it('sends message to WebContents (sanboxed renderer)', done => {
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js'),
+        sandbox: true
+      })
+
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong', (event, data) => {
+        expect(payload).to.equal(data)
+        done()
+      })
+
+      contents.once('did-finish-load', () => {
+        ipcRenderer.sendTo(contents.id, 'ping', payload)
       })
 
       contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
     })
 
     it('sends message to WebContents (channel has special chars)', done => {
-      const webContentsId = remote.getCurrentWebContents().id
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+      })
 
-      ipcRenderer.once('pong-æøåü', (event, id) => {
-        expect(webContentsId).to.equal(id)
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong-æøåü', (event, data) => {
+        expect(payload).to.equal(data)
         done()
       })
 
       contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping-æøåü', webContentsId)
+        ipcRenderer.sendTo(contents.id, 'ping-æøåü', payload)
       })
 
       contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)

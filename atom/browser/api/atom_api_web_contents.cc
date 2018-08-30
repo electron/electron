@@ -1556,10 +1556,17 @@ void WebContents::TabTraverse(bool reverse) {
 bool WebContents::SendIPCMessage(bool all_frames,
                                  const std::string& channel,
                                  const base::ListValue& args) {
+  return SendIPCMessageWithSender(all_frames, channel, args);
+}
+
+bool WebContents::SendIPCMessageWithSender(bool all_frames,
+                                           const std::string& channel,
+                                           const base::ListValue& args,
+                                           int32_t sender_id) {
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
     return frame_host->Send(new AtomFrameMsg_Message(
-        frame_host->GetRoutingID(), all_frames, channel, args));
+        frame_host->GetRoutingID(), all_frames, channel, args, sender_id));
   }
   return false;
 }
@@ -2090,7 +2097,7 @@ void WebContents::OnRendererMessageTo(content::RenderFrameHost* frame_host,
       isolate(), web_contents_id);
 
   if (web_contents) {
-    web_contents->SendIPCMessage(send_to_all, channel, args);
+    web_contents->SendIPCMessageWithSender(send_to_all, channel, args, ID());
   }
 }
 

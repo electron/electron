@@ -181,6 +181,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const std::string& channel,
                       const base::ListValue& args);
 
+  bool SendIPCMessageWithSender(bool all_frames,
+                                const std::string& channel,
+                                const base::ListValue& args,
+                                int32_t sender_id = 0);
+
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
