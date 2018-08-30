@@ -23,6 +23,7 @@ chai.use(dirtyChai)
 describe('BrowserWindow module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
   let w = null
+  let iw = null
   let ws = null
   let server
   let postData
@@ -3250,15 +3251,13 @@ describe('BrowserWindow module', () => {
     }
 
     beforeEach(() => {
-      if (w != null) w.destroy()
-      w = new BrowserWindow({
+      iw = new BrowserWindow({
         show: false,
         webPreferences: {
           contextIsolation: true,
           preload: path.join(fixtures, 'api', 'isolated-preload.js')
         }
       })
-      if (ws != null) ws.destroy()
       ws = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -3270,6 +3269,7 @@ describe('BrowserWindow module', () => {
     })
 
     afterEach(() => {
+      if (iw != null) iw.destroy()
       if (ws != null) ws.destroy()
     })
 
@@ -3278,41 +3278,48 @@ describe('BrowserWindow module', () => {
         assert.deepEqual(data, expectedContextData)
         done()
       })
-      w.loadURL(`file://${fixtures}/api/isolated.html`)
+      iw.loadURL(`file://${fixtures}/api/isolated.html`)
     })
-    it('recreates the contexts on reload', (done) => {
-      w.webContents.once('did-finish-load', () => {
-        ipcMain.once('isolated-world', (event, data) => {
-          assert.deepEqual(data, expectedContextData)
-          done()
-        })
-        w.webContents.reload()
-      })
-      w.loadURL(`file://${fixtures}/api/isolated.html`)
+    it('recreates the contexts on reload', async () => {
+      iw.loadURL(`file://${fixtures}/api/isolated.html`)
+      await emittedOnce(iw.webContents, 'did-finish-load')
+      iw.webContents.reload()
+      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      assert.deepEqual(data, expectedContextData)
     })
     it('enables context isolation on child windows', (done) => {
       app.once('browser-window-created', (event, window) => {
         assert.equal(window.webContents.getLastWebPreferences().contextIsolation, true)
         done()
       })
-      w.loadURL(`file://${fixtures}/pages/window-open.html`)
+      iw.loadURL(`file://${fixtures}/pages/window-open.html`)
     })
     it('separates the page context from the Electron/preload context with sandbox on', (done) => {
       ipcMain.once('isolated-sandbox-world', (event, data) => {
         assert.deepEqual(data, expectedContextData)
         done()
       })
-      w.loadURL(`file://${fixtures}/api/isolated.html`)
+      iw.loadURL(`file://${fixtures}/api/isolated.html`)
     })
-    it('recreates the contexts on reload with sandbox on', (done) => {
-      w.webContents.once('did-finish-load', () => {
-        ipcMain.once('isolated-sandbox-world', (event, data) => {
-          assert.deepEqual(data, expectedContextData)
-          done()
-        })
-        w.webContents.reload()
+    it('recreates the contexts on reload with sandbox on', async () => {
+      iw.loadURL(`file://${fixtures}/api/isolated.html`)
+      await emittedOnce(iw.webContents, 'did-finish-load')
+      iw.webContents.reload()
+      const [, data] = await emittedOnce(ipcMain, 'isolated-sandbox-world')
+      assert.deepEqual(data, expectedContextData)
+    })
+    it('supports fetch api', async () => {
+      const fetchWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
+        }
       })
-      w.loadURL(`file://${fixtures}/api/isolated.html`)
+      fetchWindow.loadURL('about:blank')
+      const [, error] = await emittedOnce(ipcMain, 'isolated-fetch-error')
+      fetchWindow.destroy()
+      assert.equal(error, 'Failed to fetch')
     })
   })
 
