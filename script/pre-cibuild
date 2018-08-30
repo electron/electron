@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-export LIMIT_OUTPUT_IGNORE_SEGFAULTS=1
