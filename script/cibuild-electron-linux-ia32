@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-export TARGET_ARCH=ia32
-
-script/cibuild-linux
