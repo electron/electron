@@ -123,6 +123,8 @@ gn-build-steps: &gn-build-steps
             (cd electron/spec && npm install)
             python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
           fi
+    - <<: *notify-slack-failure
+    - <<: *notify-slack-success
     - store_test_results:
         path: src/junit
     - store_artifacts:
@@ -199,6 +201,8 @@ gn-mac-build-steps: &gn-mac-build-steps
             (cd electron/spec && npm install)
             ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
           fi
+    - <<: *notify-slack-failure
+    - <<: *notify-slack-success
     - store_test_results:
         path: src/junit
     - store_artifacts:
@@ -239,6 +243,7 @@ jobs:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
       BUILD_FFMPEG: true
+      NIGHTLY_BUILD: true
     <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
@@ -269,6 +274,7 @@ jobs:
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
       BUILD_FFMPEG: true
+      NIGHTLY_BUILD: true
     <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
@@ -299,6 +305,7 @@ jobs:
       BUILD_FFMPEG: true
       BUILD_NATIVE_MKSNAPSHOT: true
       MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
+      NIGHTLY_BUILD: true
     <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
@@ -329,6 +336,7 @@ jobs:
       BUILD_FFMPEG: true
       BUILD_NATIVE_MKSNAPSHOT: true
       MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
+      NIGHTLY_BUILD: true
     <<: *gn-linux-build-machine
     <<: *gn-build-steps
 
@@ -336,6 +344,7 @@ jobs:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
       RUN_TESTS: true
+      NIGHTLY_BUILD: true
     <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
@@ -358,6 +367,7 @@ jobs:
       GN_CONFIG: //electron/build/args/release.gn
       RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
+      NIGHTLY_BUILD: true
     <<: *gn-mac-build-machine
     <<: *gn-mac-build-steps
 
