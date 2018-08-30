@@ -28,28 +28,6 @@ if sys.platform in ['win32', 'cygwin']:
   NPM += '.cmd'
 
 
-def get_host_arch():
-  """Returns the host architecture with a predictable string."""
-  host_arch = platform.machine()
-
-  # Convert machine type to format recognized by gyp.
-  if re.match(r'i.86', host_arch) or host_arch == 'i86pc':
-    host_arch = 'ia32'
-  elif host_arch in ['x86_64', 'amd64']:
-    host_arch = 'x64'
-  elif host_arch.startswith('arm'):
-    host_arch = 'arm'
-
-  # platform.machine is based on running kernel. It's possible to use 64-bit
-  # kernel with 32-bit userland, e.g. to give linker slightly more memory.
-  # Distinguish between different userland bitness by querying
-  # the python binary.
-  if host_arch == 'x64' and platform.architecture()[0] == '32bit':
-    host_arch = 'ia32'
-
-  return host_arch
-
-
 def tempdir(prefix=''):
   directory = tempfile.mkdtemp(prefix=prefix)
   atexit.register(shutil.rmtree, directory)
@@ -189,35 +167,6 @@ def execute_stdout(argv, env=os.environ, cwd=None):
     execute(argv, env, cwd)
 
 
-def electron_gyp():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
-  with open(gyp) as f:
-    obj = eval(f.read());
-    return obj['variables']
-
-def electron_features():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  gyp = os.path.join(SOURCE_ROOT, 'features.gypi')
-  with open(gyp) as f:
-    obj = eval(f.read());
-    return obj['variables']['variables']
-
-def get_electron_version():
-  return 'v' + electron_gyp()['version%']
-
-
-def parse_version(version):
-  if version[0] == 'v':
-    version = version[1:]
-
-  vs = version.split('.')
-  if len(vs) > 4:
-    return vs[0:4]
-  else:
-    return vs + ['0'] * (4 - len(vs))
-
-
 def boto_path_dirs():
   return [
     os.path.join(BOTO_DIR, 'build', 'lib'),
@@ -246,56 +195,6 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
 
   run_boto_script(access_key, secret_key, 's3put', *args)
 
-
-def import_vs_env(target_arch):
-  if sys.platform != 'win32':
-    return
-
-  if target_arch == 'ia32':
-    vs_arch = 'amd64_x86'
-  else:
-    vs_arch = 'x86_amd64'
-  env = get_vs_env('[15.0,16.0)', vs_arch)
-  os.environ.update(env)
-
-
-def set_clang_env(env):
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
-                          'Release+Asserts', 'bin')
-  env['CC']  = os.path.join(llvm_dir, 'clang')
-  env['CXX'] = os.path.join(llvm_dir, 'clang++')
-
-
-def update_electron_modules(dirname, target_arch, nodedir):
-  env = os.environ.copy()
-  version = get_electron_version()
-  env['npm_config_arch']    = target_arch
-  env['npm_config_target']  = version
-  env['npm_config_nodedir'] = nodedir
-  update_node_modules(dirname, env)
-  execute_stdout([NPM, 'rebuild'], env, dirname)
-
-
-def update_node_modules(dirname, env=None):
-  if env is None:
-    env = os.environ.copy()
-  if PLATFORM == 'linux':
-    # Use prebuilt clang for building native modules.
-    set_clang_env(env)
-    env['npm_config_clang'] = '1'
-  with scoped_cwd(dirname):
-    args = [NPM, 'install']
-    if is_verbose_mode():
-      args += ['--verbose']
-    # Ignore npm install errors when running in CI.
-    if os.environ.has_key('CI'):
-      try:
-        execute_stdout(args, env)
-      except subprocess.CalledProcessError:
-        pass
-    else:
-      execute_stdout(args, env)
 
 def add_exec_bit(filename):
   os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
