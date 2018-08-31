@@ -43,8 +43,8 @@ For more installation options and troubleshooting tips, see
 
 Use [`Electron Fiddle`](https://github.com/electron/fiddle)
 to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
-to try out different versions of Electron. It's specifically built to make the start of your journey with
-Electron a bit easier.
+to try out different versions of Electron. It's designed to make the start of your journey with
+Electron easier.
 
 Alternatively, clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
