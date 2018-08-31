@@ -107,7 +107,7 @@ gn-build-steps: &gn-build-steps
         name: Verify ffmpeg
         command: |
           if [ "$RUN_TESTS" != "false" ] && [ "$BUILD_FFMPEG" == "true" ]; then
-            python src/electron/script/verify-ffmpeg.py -c Default --source-root "$PWD/src" --ffmpeg-path "$PWD/src/out/ffmpeg"
+            python src/electron/script/verify-ffmpeg.py --build-dir out/Default --source-root "$PWD/src" --ffmpeg-path out/ffmpeg
           fi
     - run:
         name: Test
