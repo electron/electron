@@ -41,9 +41,10 @@ For more installation options and troubleshooting tips, see
 
 ## Quick start & Electron Fiddle
 
-Getting started with Electron is painless and easy. Use [`Electron Fiddle`](https://github.com/electron/fiddle)
+Use [`Electron Fiddle`](https://github.com/electron/fiddle)
 to build, run, and package small Electron experiments, see code examples for all of Electron's APIs, and
-to try out different versions of Electron.
+to try out different versions of Electron. It's specifically built to make the start of your journey with
+Electron a bit easier.
 
 Alternatively, clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
