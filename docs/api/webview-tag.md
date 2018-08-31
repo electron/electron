@@ -62,6 +62,20 @@ and displays a "loading..." message during the load time:
 </script>
 ```
 
+## Internal implementation
+
+Under the hood `webview` is implemented with [Out-of-Process iframes (OOPIFs)](https://www.chromium.org/developers/design-documents/oop-iframes).
+The `webview` tag is essentially a custom element using shadow DOM to wrap an
+`iframe` element inside it.
+
+So the behavior of `webview` is very similar to a cross-domain `iframe`, as
+examples:
+
+* When clicking into a `webview`, the page focus will move from the embedder
+  frame to `webview`.
+* You can not add keyboard event listeners to `webview`.
+* All reactions between the embedder frame and `webview` are asynchronous.
+
 ## CSS Styling Notes
 
 Please note that the `webview` tag's style uses `display:flex;` internally to
