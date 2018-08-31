@@ -1,3 +1,6 @@
-import("release.gn")
+import("all.gn")
+is_component_build = false
+is_component_ffmpeg = true
+is_official_build = true
 proprietary_codecs = false
 ffmpeg_branding = "Chromium"

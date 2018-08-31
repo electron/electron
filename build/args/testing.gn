@@ -5,4 +5,10 @@ is_component_ffmpeg = true
 is_official_build = false
 dcheck_always_on = true
 symbol_level = 1
-is_component_ffmpeg = true
+
+# This may be guarded behind is_chrome_branded alongside
+# proprietary_codecs https://webrtc-review.googlesource.com/c/src/+/36321,
+# explicitly override here to build OpenH264 encoder/FFmpeg decoder.
+# The initialization of the decoder depends on whether ffmpeg has
+# been built with H.264 support.
+rtc_use_h264 = proprietary_codecs
