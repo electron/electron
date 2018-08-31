@@ -4,7 +4,7 @@ const dirtyChai = require('dirty-chai')
 const {expect} = chai
 chai.use(dirtyChai)
 
-const {CallbacksRegistry} = require('electron')
+const CallbacksRegistry = require('../lib/renderer/callbacks-registry')
 
 describe('CallbacksRegistry module', () => {
   let registry = null
