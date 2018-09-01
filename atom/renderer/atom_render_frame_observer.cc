@@ -169,7 +169,8 @@ bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
 
 void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
                                                const std::string& channel,
-                                               const base::ListValue& args) {
+                                               const base::ListValue& args,
+                                               int32_t sender_id) {
   // Don't handle browser messages before document element is created.
   // When we receive a message from the browser, we try to transfer it
   // to a web page, and when we do that Blink creates an empty
@@ -182,21 +183,22 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
   if (!frame || !render_frame_->IsMainFrame())
     return;
 
-  EmitIPCEvent(frame, channel, args);
+  EmitIPCEvent(frame, channel, args, sender_id);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), channel, args);
+        EmitIPCEvent(child->ToWebLocalFrame(), channel, args, sender_id);
       }
   }
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
                                            const std::string& channel,
-                                           const base::ListValue& args) {
+                                           const base::ListValue& args,
+                                           int32_t sender_id) {
   if (!frame)
     return;
 
@@ -218,6 +220,7 @@ void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
     // Insert the Event object, event.sender is ipc.
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
     event.Set("sender", ipc);
+    event.Set("senderId", sender_id);
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }

@@ -45,7 +45,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
  protected:
   virtual void EmitIPCEvent(blink::WebLocalFrame* frame,
                             const std::string& channel,
-                            const base::ListValue& args);
+                            const base::ListValue& args,
+                            int32_t sender_id);
 
  private:
   bool ShouldNotifyClient(int world_id);
@@ -54,7 +55,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
   bool IsIsolatedWorld(int world_id);
   void OnBrowserMessage(bool send_to_all,
                         const std::string& channel,
-                        const base::ListValue& args);
+                        const base::ListValue& args,
+                        int32_t sender_id);
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
