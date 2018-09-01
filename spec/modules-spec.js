@@ -7,8 +7,7 @@ const {closeWindow} = require('./window-helpers')
 
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
-// (alexeykuzmin): [Ch67]: TODO: Enable the tests.
-xdescribe('modules support', () => {
+describe('modules support', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('third-party module', () => {
