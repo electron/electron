@@ -39,9 +39,14 @@ versioning. As of version 2.0.0, Electron follows semver, so you don't need `--s
 For more installation options and troubleshooting tips, see
 [installation](docs/tutorial/installation.md).
 
-## Quick start
+## Quick start & Electron Fiddle
 
-Clone and run the
+Use [`Electron Fiddle`](https://github.com/electron/fiddle)
+to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
+to try out different versions of Electron. It's designed to make the start of your journey with
+Electron easier.
+
+Alternatively, clone and run the
 [electron/electron-quick-start](https://github.com/electron/electron-quick-start)
 repository to see a minimal Electron app in action:
 
@@ -55,6 +60,7 @@ npm start
 ## Resources for learning Electron
 
 - [electronjs.org/docs](https://electronjs.org/docs) - all of Electron's documentation
+- [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - a very basic starter Electron app
 - [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - sample starter apps created by the community
 - [electron/simple-samples](https://github.com/electron/simple-samples) - small applications with ideas for taking them further
