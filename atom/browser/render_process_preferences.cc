@@ -53,7 +53,7 @@ void RenderProcessPreferences::UpdateCache() {
 
   cached_entries_.Clear();
   for (const auto& iter : entries_)
-    cached_entries_.Append(iter.second->CreateDeepCopy());
+    cached_entries_.Append(base::Value::ToUniquePtrValue(iter.second->Clone()));
   cache_needs_update_ = false;
 }
 
