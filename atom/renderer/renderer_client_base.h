@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "chrome/renderer/media/chrome_key_systems_provider.h"
 #include "content/public/renderer/content_renderer_client.h"
 #include "third_party/WebKit/public/web/WebLocalFrame.h"
 
@@ -49,9 +50,11 @@ class RendererClientBase : public content::ContentRendererClient {
   void AddSupportedKeySystems(
       std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems)
       override;
+  bool IsKeySystemsUpdateNeeded() override;
 
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
+  ChromeKeySystemsProvider key_systems_provider_;
   bool isolated_world_;
 
   // An increasing ID used for indentifying an V8 context in this process.

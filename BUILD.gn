@@ -1,12 +1,13 @@
-import("//build/config/locales.gni")
-import("//tools/grit/repack.gni")
-import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("build/asar.gni")
 import("build/npm.gni")
-import("//pdf/features.gni")
-import("//build/config/win/manifest.gni")
 import("electron_paks.gni")
+import("//build/config/locales.gni")
+import("//build/config/win/manifest.gni")
+import("//pdf/features.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
+import("//third_party/widevine/cdm/widevine.gni")
+import("//tools/grit/repack.gni")
+import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -186,14 +187,14 @@ asar("js2asar") {
     ]
   }
   if (enable_view_api) {
-     sources += [
+    sources += [
       "lib/browser/api/box-layout.js",
       "lib/browser/api/button.js",
       "lib/browser/api/label-button.js",
       "lib/browser/api/layout-manager.js",
       "lib/browser/api/text-field.js",
-     ]
-   }
+    ]
+  }
   outputs = [
     "$root_out_dir/resources/electron.asar",
   ]
@@ -224,7 +225,6 @@ static_library("electron_lib") {
     "//base",
     "//base:i18n",
     "//chrome/common:constants",
-    "//components/cdm/renderer",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
@@ -247,6 +247,7 @@ static_library("electron_lib") {
     "//third_party/leveldatabase",
     "//third_party/libyuv",
     "//third_party/webrtc_overrides:init_webrtc",
+    "//third_party/widevine/cdm:headers",
     "//ui/events:dom_keycode_converter",
     "//ui/gl",
     "//ui/views",
@@ -431,6 +432,18 @@ static_library("electron_lib") {
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
   }
+
+  if (enable_widevine) {
+    sources += [
+      "//chrome/common/widevine_cdm_constants.cc",
+      "//chrome/common/widevine_cdm_constants.h",
+      "//chrome/renderer/media/chrome_key_systems.cc",
+      "//chrome/renderer/media/chrome_key_systems.h",
+      "//chrome/renderer/media/chrome_key_systems_provider.cc",
+      "//chrome/renderer/media/chrome_key_systems_provider.h",
+    ]
+    deps += [ "//components/cdm/renderer" ]
+  }
 }
 
 electron_paks("packed_resources") {
@@ -526,7 +539,10 @@ if (is_mac) {
       deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
-    extra_substitutions = [ "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework", "ELECTRON_VERSION=$electron_version" ]
+    extra_substitutions = [
+      "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
+      "ELECTRON_VERSION=$electron_version",
+    ]
 
     include_dirs = [ "." ]
     sources = filenames_gypi.framework_sources

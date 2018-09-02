@@ -22,10 +22,15 @@
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
+#include "widevine_cdm_version.h"  // In SHARED_INTERMEDIATE_DIR.
 
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
+#if defined(WIDEVINE_CDM_AVAILABLE)
+#include "base/native_library.h"
+#include "base/strings/stringprintf.h"
 #include "chrome/common/widevine_cdm_constants.h"
-#endif
+#include "content/public/common/cdm_info.h"
+#include "media/base/video_codecs.h"
+#endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
 #if defined(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
@@ -36,6 +41,73 @@ namespace atom {
 
 namespace {
 
+#if defined(WIDEVINE_CDM_AVAILABLE)
+bool IsWidevineAvailable(base::FilePath* adapter_path,
+                         base::FilePath* cdm_path,
+                         std::vector<media::VideoCodec>* codecs_supported) {
+  static enum {
+    NOT_CHECKED,
+    FOUND,
+    NOT_FOUND,
+  } widevine_cdm_file_check = NOT_CHECKED;
+
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  *adapter_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
+  if (!adapter_path->empty()) {
+    *cdm_path = adapter_path->DirName().AppendASCII(
+        base::GetNativeLibraryName(kWidevineCdmLibraryName));
+    if (widevine_cdm_file_check == NOT_CHECKED) {
+      widevine_cdm_file_check =
+          (base::PathExists(*adapter_path) && base::PathExists(*cdm_path))
+              ? FOUND
+              : NOT_FOUND;
+    }
+    if (widevine_cdm_file_check == FOUND) {
+      // Add the supported codecs as if they came from the component manifest.
+      // This list must match the CDM that is being bundled with Chrome.
+      codecs_supported->push_back(media::VideoCodec::kCodecVP8);
+      codecs_supported->push_back(media::VideoCodec::kCodecVP9);
+#if BUILDFLAG(USE_PROPRIETARY_CODECS)
+      codecs_supported->push_back(media::VideoCodec::kCodecH264);
+#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void AddWidevineAdapterFromCommandLine(
+    base::CommandLine* command_line,
+    std::vector<content::PepperPluginInfo>* plugins) {
+  base::FilePath adapter_path;
+  base::FilePath cdm_path;
+  std::vector<media::VideoCodec> video_codecs_supported;
+  if (IsWidevineAvailable(&adapter_path, &cdm_path, &video_codecs_supported)) {
+    auto cdm_version_string =
+        command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
+    content::PepperPluginInfo info;
+    info.is_out_of_process = true;
+    info.path = adapter_path;
+    info.name = kWidevineCdmDisplayName;
+    info.description =
+        base::StringPrintf("%s (version: %s)", kWidevineCdmDescription,
+                           cdm_version_string.c_str());
+    info.version = cdm_version_string;
+    info.permissions = kWidevineCdmPluginPermissions;
+
+    content::WebPluginMimeType mime_type(kWidevineCdmPluginMimeType,
+                                         kWidevineCdmPluginExtension,
+                                         kWidevineCdmPluginMimeTypeDescription);
+    info.mime_types.push_back(mime_type);
+
+    plugins->push_back(info);
+  }
+}
+#endif  // defined(WIDEVINE_CDM_AVAILABLE)
+
+#if defined(ENABLE_PEPPER_FLASH)
 content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
                                                 const std::string& version) {
   content::PepperPluginInfo plugin;
@@ -75,29 +147,23 @@ content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
   return plugin;
 }
 
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
-content::PepperPluginInfo CreateWidevineCdmInfo(const base::FilePath& path,
-                                                const std::string& version) {
-  content::PepperPluginInfo widevine_cdm;
-  widevine_cdm.is_out_of_process = true;
-  widevine_cdm.path = path;
-  widevine_cdm.name = kWidevineCdmDisplayName;
-  widevine_cdm.description =
-      kWidevineCdmDescription + std::string(" (version: ") + version + ")";
-  widevine_cdm.version = version;
-  content::WebPluginMimeType widevine_cdm_mime_type(
-      kWidevineCdmPluginMimeType, kWidevineCdmPluginExtension,
-      kWidevineCdmPluginMimeTypeDescription);
+void AddPepperFlashFromCommandLine(
+    base::CommandLine* command_line,
+    std::vector<content::PepperPluginInfo>* plugins) {
+  base::FilePath flash_path =
+      command_line->GetSwitchValuePath(switches::kPpapiFlashPath);
+  if (flash_path.empty())
+    return;
 
-  widevine_cdm.mime_types.push_back(widevine_cdm_mime_type);
-  widevine_cdm.permissions = kWidevineCdmPluginPermissions;
+  auto flash_version =
+      command_line->GetSwitchValueASCII(switches::kPpapiFlashVersion);
 
-  return widevine_cdm;
+  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
-#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
+#endif  // defined(ENABLE_PEPPER_FLASH)
 
-#if defined(ENABLE_PDF_VIEWER)
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
+#if defined(ENABLE_PDF_VIEWER)
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
@@ -114,8 +180,8 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_ShutdownModule;
   pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
-}
 #endif  // defined(ENABLE_PDF_VIEWER)
+}
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
                                         const char* separator,
@@ -128,42 +194,6 @@ void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
 }
 
 }  // namespace
-
-void AddPepperFlashFromCommandLine(
-    std::vector<content::PepperPluginInfo>* plugins) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath flash_path =
-      command_line->GetSwitchValuePath(switches::kPpapiFlashPath);
-  if (flash_path.empty())
-    return;
-
-  auto flash_version =
-      command_line->GetSwitchValueASCII(switches::kPpapiFlashVersion);
-
-  plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
-}
-
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
-void AddWidevineCdmFromCommandLine(
-    std::vector<content::PepperPluginInfo>* plugins) {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath widevine_cdm_path =
-      command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
-  if (widevine_cdm_path.empty())
-    return;
-
-  if (!base::PathExists(widevine_cdm_path))
-    return;
-
-  auto widevine_cdm_version =
-      command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
-  if (widevine_cdm_version.empty())
-    return;
-
-  plugins->push_back(
-      CreateWidevineCdmInfo(widevine_cdm_path, widevine_cdm_version));
-}
-#endif  //  defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
 
 AtomContentClient::AtomContentClient() {}
 
@@ -200,45 +230,43 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
 
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
-  AddPepperFlashFromCommandLine(plugins);
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
-  AddWidevineCdmFromCommandLine(plugins);
-#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
-#if defined(ENABLE_PDF_VIEWER)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+#if defined(ENABLE_PEPPER_FLASH)
+  AddPepperFlashFromCommandLine(command_line, plugins);
+#endif  // defined(ENABLE_PEPPER_FLASH)
+#if defined(WIDEVINE_CDM_AVAILABLE)
+  AddWidevineAdapterFromCommandLine(command_line, plugins);
+#endif  // defined(WIDEVINE_CDM_AVAILABLE)
   ComputeBuiltInPlugins(plugins);
-#endif  // defined(ENABLE_PDF_VIEWER)
 }
 
 void AtomContentClient::AddContentDecryptionModules(
     std::vector<content::CdmInfo>* cdms,
     std::vector<media::CdmHostFilePath>* cdm_host_file_paths) {
-#if defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
-  auto command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath widevine_cdm_path =
-      command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
-  if (widevine_cdm_path.empty())
-    return;
+  if (cdms) {
+#if defined(WIDEVINE_CDM_AVAILABLE)
+    base::FilePath adapter_path;
+    base::FilePath cdm_path;
+    std::vector<media::VideoCodec> video_codecs_supported;
+    bool supports_persistent_license = false;
+    if (IsWidevineAvailable(&adapter_path, &cdm_path,
+                            &video_codecs_supported)) {
+      base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+      auto cdm_version_string =
+          command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
+      // CdmInfo needs |path| to be the actual Widevine library,
+      // not the adapter, so adjust as necessary. It will be in the
+      // same directory as the installed adapter.
+      const base::Version version(cdm_version_string);
+      DCHECK(version.IsValid());
 
-  if (!base::PathExists(widevine_cdm_path))
-    return;
-
-  auto widevine_cdm_version =
-      command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
-  if (widevine_cdm_version.empty())
-    return;
-
-  std::vector<media::VideoCodec> supported_video_codecs;
-  supported_video_codecs.push_back(media::VideoCodec::kCodecVP8);
-  supported_video_codecs.push_back(media::VideoCodec::kCodecVP9);
-#if BUILDFLAG(USE_PROPRIETARY_CODECS)
-  supported_video_codecs.push_back(media::VideoCodec::kCodecH264);
-#endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
-  content::CdmRegistry::GetInstance()->RegisterCdm(
-      content::CdmInfo(kWidevineCdmDisplayName, kWidevineCdmGuid,
-                       base::Version(widevine_cdm_version), widevine_cdm_path,
-                       kWidevineCdmFileSystemId, supported_video_codecs, false,
-                       kWidevineKeySystem, false));
-#endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
+      cdms->push_back(content::CdmInfo(
+          kWidevineCdmDisplayName, kWidevineCdmGuid, version, cdm_path,
+          kWidevineCdmFileSystemId, video_codecs_supported,
+          supports_persistent_license, kWidevineKeySystem, false));
+    }
+#endif  // defined(WIDEVINE_CDM_AVAILABLE)
+  }
 }
 
 }  // namespace atom
