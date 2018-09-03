@@ -1291,8 +1291,9 @@ describe('<webview> tag', function () {
 
       await domReadySignal
 
+      // If this test fails, check if webview.focus() still works.
       const focusSignal = waitForEvent(webview, 'focus')
-      webview.contentWindow.focus()
+      webview.focus()
 
       await focusSignal
     })
