@@ -101,22 +101,6 @@
             },
           ],
           'postbuilds': [
-            {
-              # This postbuid step is responsible for creating the following
-              # helpers:
-              #
-              # <(product_name) EH.app and <(product_name) NP.app are created
-              # from <(product_name).app.
-              #
-              # The EH helper is marked for an executable heap. The NP helper
-              # is marked for no PIE (ASLR).
-              'postbuild_name': 'Make More Helpers',
-              'action': [
-                'tools/mac/make_more_helpers.sh',
-                'Frameworks',
-                '<(product_name)',
-              ],
-            },
               # The application doesn't have real localizations, it just has
               # empty .lproj directories, which is enough to convince Cocoa
               # that Electron supports those languages.
