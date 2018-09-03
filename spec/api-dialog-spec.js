@@ -1,80 +1,80 @@
 const {expect} = require('chai')
 const {dialog} = require('electron').remote
 
-describe('dialog module', () => {
+describe.only('dialog module', () => {
   describe('showOpenDialog', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showOpenDialog({properties: false})
+        dialog.showOpenDialog({options: {properties: false}})
       }).to.throw(/Properties must be an array/)
 
       expect(() => {
-        dialog.showOpenDialog({title: 300})
-      }).to.throw(/Title must be a string/)
+        dialog.showOpenDialog({options: {title: 300}})
+      }).to.throw(/title must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({buttonLabel: []})
-      }).to.throw(/Button label must be a string/)
+        dialog.showOpenDialog({options: {buttonLabel: []}})
+      }).to.throw(/buttonLabel must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({defaultPath: {}})
-      }).to.throw(/Default path must be a string/)
+        dialog.showOpenDialog({options: {defaultPath: {}}})
+      }).to.throw(/defaultPath must be a string/)
 
       expect(() => {
-        dialog.showOpenDialog({message: {}})
-      }).to.throw(/Message must be a string/)
+        dialog.showOpenDialog({options: {message: {}}})
+      }).to.throw(/message must be a string/)
     })
   })
 
   describe('showSaveDialog', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showSaveDialog({title: 300})
-      }).to.throw(/Title must be a string/)
+        dialog.showSaveDialog({options: {title: 300}})
+      }).to.throw(/title must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({buttonLabel: []})
-      }).to.throw(/Button label must be a string/)
+        dialog.showSaveDialog({options: {buttonLabel: []}})
+      }).to.throw(/buttonLabel must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({defaultPath: {}})
-      }).to.throw(/Default path must be a string/)
+        dialog.showSaveDialog({options: {defaultPath: {}}})
+      }).to.throw(/defaultPath must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({message: {}})
-      }).to.throw(/Message must be a string/)
+        dialog.showSaveDialog({options: {message: {}}})
+      }).to.throw(/message must be a string/)
 
       expect(() => {
-        dialog.showSaveDialog({nameFieldLabel: {}})
-      }).to.throw(/Name field label must be a string/)
+        dialog.showSaveDialog({options: {nameFieldLabel: {}}})
+      }).to.throw(/nameFieldLabel must be a string/)
     })
   })
 
   describe('showMessageBox', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showMessageBox(undefined, {type: 'not-a-valid-type'})
+        dialog.showMessageBox({window: undefined, options: {type: 'not-a-valid-type'}})
       }).to.throw(/Invalid message box type/)
 
       expect(() => {
-        dialog.showMessageBox(null, {buttons: false})
-      }).to.throw(/Buttons must be an array/)
+        dialog.showMessageBox({window: null, options: {buttons: false}})
+      }).to.throw(/buttons must be an array/)
 
       expect(() => {
-        dialog.showMessageBox({title: 300})
-      }).to.throw(/Title must be a string/)
+        dialog.showMessageBox({options: {title: 300}})
+      }).to.throw(/title must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({message: []})
-      }).to.throw(/Message must be a string/)
+        dialog.showMessageBox({options: {message: []}})
+      }).to.throw(/message must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({detail: 3.14})
-      }).to.throw(/Detail must be a string/)
+        dialog.showMessageBox({options: {detail: 3.14}})
+      }).to.throw(/detail must be a string/)
 
       expect(() => {
-        dialog.showMessageBox({checkboxLabel: false})
-      }).to.throw(/checkboxLabel must be a string/)
+        dialog.showMessageBox({options: {checkboxLabel: false}})
+      }).to.throw(/checkboxLabe must be a string/)
     })
   })
 
@@ -101,11 +101,11 @@ describe('dialog module', () => {
       }).to.throw(/options must be an object/)
 
       expect(() => {
-        dialog.showCertificateTrustDialog({})
+        dialog.showCertificateTrustDialog({options: {}})
       }).to.throw(/certificate must be an object/)
 
       expect(() => {
-        dialog.showCertificateTrustDialog({certificate: {}, message: false})
+        dialog.showCertificateTrustDialog({options: {certificate: {}, message: false}})
       }).to.throw(/message must be a string/)
     })
   })
