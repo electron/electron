@@ -267,6 +267,12 @@ webview.addEventListener('dom-ready', () => {
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
+### `<webview>.downloadURL(url)`
+
+* `url` String
+
+Initiates a download of the resource at `url` without navigating.
+
 ### `<webview>.getURL()`
 
 Returns `String` - The URL of guest page.
@@ -278,6 +284,11 @@ Returns `String` - The title of guest page.
 ### `<webview>.isLoading()`
 
 Returns `Boolean` - Whether guest page is still loading resources.
+
+### `<webview>.isLoadingMainFrame()`
+
+Returns `Boolean` - Whether the main frame (and not just iframes or frames within it) is
+still loading.
 
 ### `<webview>.isWaitingForResponse()`
 
@@ -402,7 +413,7 @@ Set guest page muted.
 
 Returns `Boolean` - Whether guest page has been muted.
 
-#### `<webview>.isCurrentlyAudible()`
+### `<webview>.isCurrentlyAudible()`
 
 Returns `Boolean` - Whether audio is currently playing.
 
@@ -560,7 +571,38 @@ zoom percent divided by 100, so 300% = 3.0.
 
 Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively.
+limits of 300% and 50% of original size, respectively. The formula for this is
+`scale := 1.2 ^ level`.
+
+### `<webview>.getZoomFactor(callback)`
+
+* `callback` Function
+  * `zoomFactor` Number
+
+Sends a request to get current zoom factor, the `callback` will be called with
+`callback(zoomFactor)`.
+
+### `<webview>.getZoomLevel(callback)`
+
+* `callback` Function
+  * `zoomLevel` Number
+
+Sends a request to get current zoom level, the `callback` will be called with
+`callback(zoomLevel)`.
+
+### `<webview>.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum pinch-to-zoom level.
+
+### `<webview>.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
+
+* `minimumLevel` Number
+* `maximumLevel` Number
+
+Sets the maximum and minimum layout-based (i.e. non-visual) zoom level.
 
 ### `<webview>.showDefinitionForSelection()` _macOS_
 
