@@ -25,7 +25,7 @@ build_script:
   - cd src
   - gn gen out/Default "--args=import(\"//electron/build/args/%GN_CONFIG%.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/Default electron:electron_app
-  - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\")"
+  - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg third_party/ffmpeg
   - ninja -C out/Default electron:electron_dist_zip
 test_script:
