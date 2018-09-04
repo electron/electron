@@ -109,4 +109,4 @@ async function main () {
   if (filenames.length) callCpplint(filenames, args)
 }
 
-main()
+if (process.mainModule === module) main()
