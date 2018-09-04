@@ -87,9 +87,8 @@ const blacklist = new Set([
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 async function main () {
-  const isBootstrapped = fs.existsSync(LINTER_PATH)
-  if (!isBootstrapped) {
-    print('[INFO] Skipping cpplint, dependencies has not been bootstrapped')
+  if (!fs.existsSync(LINTER_PATH)) {
+    print('[INFO] Skipping cpplint, dependencies have not been bootstrapped')
     return
   }
 
