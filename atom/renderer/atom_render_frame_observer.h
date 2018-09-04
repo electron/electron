@@ -10,6 +10,7 @@
 #include "atom/renderer/renderer_client_base.h"
 #include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "ipc/ipc_platform_file.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace base {
@@ -57,6 +58,8 @@ class AtomRenderFrameObserver : public content::RenderFrameObserver {
                         const std::string& channel,
                         const base::ListValue& args,
                         int32_t sender_id);
+  void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
+                          const std::string& channel);
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;

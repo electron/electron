@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 
+#include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
@@ -43,6 +44,8 @@ class AtomBindings {
   static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,
                                           v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
+  static bool TakeHeapSnapshot(v8::Isolate* isolate,
+                               const base::FilePath& file_path);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

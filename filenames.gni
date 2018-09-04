@@ -486,6 +486,8 @@ filenames = {
     "atom/common/draggable_region.cc",
     "atom/common/draggable_region.h",
     "atom/common/google_api_key.h",
+    "atom/common/heap_snapshot.cc",
+    "atom/common/heap_snapshot.h",
     "atom/common/key_weak_map.h",
     "atom/common/keyboard_util.cc",
     "atom/common/keyboard_util.h",

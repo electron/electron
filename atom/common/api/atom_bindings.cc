@@ -11,12 +11,15 @@
 #include "atom/common/api/locker.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
+#include "atom/common/heap_snapshot.h"
+#include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/logging.h"
 #include "base/process/process_info.h"
 #include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
+#include "base/threading/thread_restrictions.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {
@@ -60,6 +63,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                            base::Unretained(metrics_.get())));
   dict.SetMethod("getIOCounters", &GetIOCounters);
+  dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::SetFdLimit);
 #endif
@@ -236,6 +240,17 @@ v8::Local<v8::Value> AtomBindings::GetIOCounters(v8::Isolate* isolate) {
   }
 
   return dict.GetHandle();
+}
+
+// static
+bool AtomBindings::TakeHeapSnapshot(v8::Isolate* isolate,
+                                    const base::FilePath& file_path) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  base::File file(file_path,
+                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+
+  return atom::TakeHeapSnapshot(isolate, &file);
 }
 
 }  // namespace atom

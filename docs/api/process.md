@@ -171,6 +171,14 @@ Returns `Object`:
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
 
+### `process.takeHeapSnapshot(filePath)`
+
+* `filePath` String - Path to the output file.
+
+Returns `Boolean` - Indicates whether the snapshot has been created successfully.
+
+Takes a V8 heap snapshot and saves it to `filePath`.
+
 ### `process.hang()`
 
 Causes the main thread of the current process hang.

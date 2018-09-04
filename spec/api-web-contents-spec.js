@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const fs = require('fs')
 const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
@@ -797,6 +798,55 @@ describe('webContents module', () => {
         })
       })
       w.loadURL('about:blank')
+    })
+  })
+
+  describe('takeHeapSnapshot()', () => {
+    it('works with sandboxed renderers', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      w.loadURL('about:blank')
+      await emittedOnce(w.webContents, 'did-finish-load')
+
+      const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
+
+      const cleanup = () => {
+        try {
+          fs.unlinkSync(filePath)
+        } catch (e) {
+          // ignore error
+        }
+      }
+
+      try {
+        await w.webContents.takeHeapSnapshot(filePath)
+        const stats = fs.statSync(filePath)
+        expect(stats.size).not.to.be.equal(0)
+      } finally {
+        cleanup()
+      }
+    })
+
+    it('fails with invalid file path', async () => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+
+      w.loadURL('about:blank')
+      await emittedOnce(w.webContents, 'did-finish-load')
+
+      const promise = w.webContents.takeHeapSnapshot('')
+      return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
     })
   })
 })
