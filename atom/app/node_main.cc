@@ -65,7 +65,7 @@ int NodeMain(int argc, char* argv[]) {
 
     // Enable support for v8 inspector.
     NodeDebugger node_debugger(env);
-    node_debugger.Start(gin_env.platform());
+    node_debugger.Start();
 
     mate::Dictionary process(gin_env.isolate(), env->process_object());
 #if defined(OS_WIN)
