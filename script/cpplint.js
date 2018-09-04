@@ -41,7 +41,8 @@ async function findChangedFiles (top) {
     process.exit(1)
   }
   const relativePaths = result.stdout.split(/\r\n|\r|\n/g)
-  return new Set(relativePaths.map(x => path.join(top, x)))
+  const absolutePaths = relativePaths.map(x => path.join(top, x))
+  return new Set(absolutePaths)
 }
 
 async function findFiles (top, test) {
