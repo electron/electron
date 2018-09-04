@@ -77,14 +77,19 @@ Whatever you choose, you will periodically have to bump the version in your `pac
 
 The process is as follows:
 
-1. All new major and minor releases lines begin with a `-beta.N` tag for `N >= 1`. At that point, the feature set is **locked**. That release line admits no further features, and focuses only on security and stability.
-e.g. `2.0.0-beta.1`.
-2. Bug fixes, regression fixes, and security patches can be admitted. Upon doing so, a new beta is released incrementing `N`.
-e.g. `2.0.0-beta.2`
-3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information.
-e.g. `2.0.0`.
-4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented accordingly
+1. All new major and minor releases lines begin with a beta series indicated by semver prerelease tags of `beta.N`, e.g. `2.0.0-beta.1`. After the first beta, subsequent beta releases must meet all of the following conditions:
+    1. The change is backwards API-compatible (deprecations are allowed)
+    2. The risk to meeting our stability timeline must be low.
+2. If allowed changes need to be made once a release is beta, they are applied and the prerelease tag is incremented, e.g. `2.0.0-beta.2`.
+3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information. e.g. `2.0.0`. After the first stable, all changes must be backwards-compatible bug or security fixes.
+4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented
 e.g. `2.0.1`.
+
+Specifically, the above means:
+
+1. Admitting non-breaking-API changes early in the beta cycle is okay, even if those changes have the potential to cause moderate side-affects
+2. Admitting feature-flagged changes, that do not otherwise alter existing code paths, at most points in the beta cycle is okay. Users can explicitly enable those flags in their apps.
+3. Admitting features of any sort very late in the beta cycle is 👎 without a very good reason.
 
 For each major and minor bump, you should expect to see something like the following:
 
@@ -125,12 +130,7 @@ Feature flags are a common practice in Chromium, and are well-established in the
 
 * it is enabled/disabled either at runtime, or build-time; we do not support the concept of a request-scoped feature flag
 * it completely segments new and old code paths; refactoring old code to support a new feature _violates_ the feature-flag contract
-* feature flags are eventually removed after the soft-branch is merged
-
-We reconcile flagged code with our versioning strategy as follows:
-
-1. we do not consider iterating on feature-flagged code in a stability branch; even judicious use of feature flags is not without risk
-2. you may break API contracts in feature-flagged code without bumping the major version. Flagged code does not adhere to semver
+* feature flags are eventually removed after the feature is released
 
 # Semantic Commits
 
