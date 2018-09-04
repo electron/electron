@@ -9,7 +9,6 @@ const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const LINTER_PATH = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
-const ROOTS = ['atom', 'brightray'].map(token => path.join(SOURCE_ROOT, token))
 
 function callCpplint (filenames, args) {
   if (args.verbose) console.log([LINTER_PATH, ...filenames].join(' '))
@@ -94,7 +93,8 @@ async function main () {
 
   let filenames = []
   const isCCFile = filename => filename.endsWith('.cc') || filename.endsWith('.h')
-  for (const root of ROOTS) {
+  const CC_ROOTS = ['atom', 'brightray'].map(x => path.join(SOURCE_ROOT, x))
+  for (const root of CC_ROOTS) {
     const files = await findFiles(root, isCCFile)
     filenames.push(...files)
   }
