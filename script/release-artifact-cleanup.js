@@ -19,8 +19,8 @@ github.authenticate({
   token: process.env.ELECTRON_GITHUB_TOKEN
 })
 
-function getLastBumpCommit () {
-  const data = execSync(`git log -n1 --grep "Bump v[0-9.]*" --format="format:{hash: %H, message: '%s'}"`)
+function getLastBumpCommit (tag) {
+  const data = execSync(`git log -n1 --grep "Bump ${tag}" --format="format:{hash: %H, message: '%s'}"`)
   return JSON.parse(data)
 }
 
@@ -38,7 +38,7 @@ async function getCurrentBranch (gitDir) {
 
 async function revertBumpCommit (tag) {
   const branch = getCurrentBranch()
-  const commitToRevert = getLastBumpCommit().hash
+  const commitToRevert = getLastBumpCommit(tag).hash
   await GitProcess.exec(['revert', commitToRevert], gitDir)
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
   if (pushDetails.exitCode === 0) {
@@ -100,7 +100,7 @@ async function cleanReleaseArtifacts () {
   }
 
   await deleteTag(tag, 'electron')
-  await revertBumpCommit()
+  await revertBumpCommit(tag)
 
   console.log('Failed release artifact cleanup complete')
 }
