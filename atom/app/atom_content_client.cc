@@ -22,7 +22,8 @@
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
-#include "widevine_cdm_version.h"  // In SHARED_INTERMEDIATE_DIR.
+// In SHARED_INTERMEDIATE_DIR.
+#include "widevine_cdm_version.h"  // NOLINT(build/include)
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "base/native_library.h"

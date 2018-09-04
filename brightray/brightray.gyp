@@ -123,11 +123,13 @@
                   '<(libchromiumcontent_dir)/libwebrtc_common.a',
                   '<(libchromiumcontent_dir)/libinit_webrtc.a',
                   '<(libchromiumcontent_dir)/libyuv.a',
-                  '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
                   '<(libchromiumcontent_dir)/libviz_service.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
+                  # chrome/renderer/media/chrome_key_systems
+                  '<(libchromiumcontent_dir)/libcdm_support.a',
+                  '<(libchromiumcontent_dir)/librenderer.a',
                   # Friends of libpdf.a:
                   # On Linux we have to use "--whole-archive" to include
                   # all symbols, otherwise there will be plenty of
@@ -223,6 +225,8 @@
                   '<(libchromiumcontent_dir)/libviz_service.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
+                  # chrome/renderer/media/chrome_key_systems
+                  '<(libchromiumcontent_dir)/libcdm_support.a',
                   # Friends of libpdf.a:
                   '<(libchromiumcontent_dir)/libpdf.a',
                   '<(libchromiumcontent_dir)/libppapi_cpp_objects.a',
@@ -362,6 +366,8 @@
                   '<(libchromiumcontent_dir)/viz_service.lib',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/power_save_blocker.lib',
+                  # chrome/renderer/media/chrome_key_systems
+                  '<(libchromiumcontent_dir)/cdm_support.lib',
                   # Friends of pdf.lib:
                   '<(libchromiumcontent_dir)/pdf.lib',
                   '<(libchromiumcontent_dir)/ppapi_cpp_objects.lib',
