@@ -36,9 +36,12 @@ function parseCommandLine () {
 
 async function findChangedFiles (top) {
   const result = await GitProcess.exec(['diff', '--name-only'], top)
-  if (result.exitCode === 0) return new Set(result.stdout.split(/\r\n|\r|\n/g).map(x => path.join(top, x)))
-  console.log('Failed to find changed files', GitProcess.parseError(result.stderr))
-  process.exit(1)
+  if (result.exitCode !== 0) {
+    console.log('Failed to find changed files', GitProcess.parseError(result.stderr))
+    process.exit(1)
+  }
+  const relativePaths = result.stdout.split(/\r\n|\r|\n/g)
+  return new Set(relativePaths.map(x => path.join(top, x)))
 }
 
 async function findFiles (top, test) {
