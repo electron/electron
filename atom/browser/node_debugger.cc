@@ -19,7 +19,7 @@ NodeDebugger::NodeDebugger(node::Environment* env) : env_(env) {}
 
 NodeDebugger::~NodeDebugger() {}
 
-void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
+void NodeDebugger::Start() {
   auto* inspector = env_->inspector_agent();
   if (inspector == nullptr)
     return;
@@ -45,8 +45,7 @@ void NodeDebugger::Start(node::MultiIsolatePlatform* platform) {
     process.Set("_breakFirstLine", true);
   }
 
-  inspector->Start(static_cast<node::NodePlatform*>(platform), nullptr,
-                   options);
+  inspector->Start(/* path */ nullptr, options);
   DCHECK(env_->inspector_agent()->IsStarted());
 }
 
