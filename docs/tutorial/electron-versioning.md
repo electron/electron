@@ -77,9 +77,9 @@ Whatever you choose, you will periodically have to bump the version in your `pac
 
 The process is as follows:
 
-1. All new major and minor releases lines begin with a beta series indicated by semver prerelease tags of `beta.N`, e.g. `2.0.0-beta.1`. Only backwards-compatible changes are admitted after the first beta.
+1. All new major and minor releases lines begin with a beta series indicated by semver prerelease tags of `beta.N`, e.g. `2.0.0-beta.1`. After the first beta, all changes must be backwards-compatible and unlikely to delay a stable release.
 2. If future backwards-compatible changes need to be made once a release is beta, they are applied and the prerelease tag is incremented, e.g. `2.0.0-beta.2`.
-3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information. e.g. `2.0.0`. Only backwards-compatible bug and security fixes are admitted after the first stable.
+3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information. e.g. `2.0.0`. After the first stable, all changes must be backwards-compatible bug or security fixes.
 4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented
 e.g. `2.0.1`.
 
