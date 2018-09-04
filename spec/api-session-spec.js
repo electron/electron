@@ -221,7 +221,7 @@ describe('session module', () => {
         assert.equal(count, 0)
         done()
       })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'localstorage.html'))
+      w.loadFile(path.join(fixtures, 'api', 'localstorage.html'))
       w.webContents.on('did-finish-load', () => {
         const options = {
           origin: 'file://',

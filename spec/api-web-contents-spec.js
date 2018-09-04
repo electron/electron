@@ -51,7 +51,7 @@ describe('webContents module', () => {
         done()
       })
 
-      w.loadURL(`file://${path.join(fixtures, 'pages', 'webview-zoom-factor.html')}`)
+      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
       w.webContents.openDevTools()
     })
   })
@@ -125,7 +125,7 @@ describe('webContents module', () => {
   // Disabled because flaky. See #13969
   xdescribe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'api', 'is-currently-audible.html')}`)
+      w.loadFile(path.join(fixtures, 'api', 'is-currently-audible.html'))
       w.show()
       await emittedOnce(w.webContents, 'did-finish-load')
 
@@ -150,7 +150,7 @@ describe('webContents module', () => {
 
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', (done) => {
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'key-events.html')}`)
+      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
       w.webContents.once('did-finish-load', () => {
         ipcMain.once('keydown', (event, key) => {
           assert.equal(key, 'b')
@@ -164,7 +164,7 @@ describe('webContents module', () => {
     })
 
     it('has the correct properties', (done) => {
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'base-page.html')}`)
+      w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
       w.webContents.once('did-finish-load', () => {
         const testBeforeInput = (opts) => {
           return new Promise((resolve, reject) => {
@@ -250,7 +250,7 @@ describe('webContents module', () => {
 
   describe('sendInputEvent(event)', () => {
     beforeEach((done) => {
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'key-events.html')}`)
+      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
       w.webContents.once('did-finish-load', () => done())
     })
 
@@ -342,7 +342,7 @@ describe('webContents module', () => {
   describe('startDrag({file, icon})', () => {
     it('throws errors for a missing file or a missing/empty icon', () => {
       assert.throws(() => {
-        w.webContents.startDrag({icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png')})
+        w.webContents.startDrag({icon: path.join(fixtures, 'assets', 'logo.png')})
       }, /Must specify either 'file' or 'files' option/)
 
       assert.throws(() => {
@@ -367,7 +367,7 @@ describe('webContents module', () => {
           done()
         })
         w.show()
-        w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'focus-web-contents.html')}`)
+        w.loadFile(path.join(fixtures, 'pages', 'focus-web-contents.html'))
       })
     })
   })
@@ -556,10 +556,10 @@ describe('webContents module', () => {
         })
       })
       ipcMain.once('temporary-zoom-set', (e, zoomLevel) => {
-        w2.loadURL(`file://${fixtures}/pages/c.html`)
+        w2.loadFile(path.join(fixtures, 'pages', 'c.html'))
         finalZoomLevel = zoomLevel
       })
-      w.loadURL(`file://${fixtures}/pages/webframe-zoom.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'webframe-zoom.html'))
     })
 
     it('cannot persist zoom level after navigation with webFrame', (done) => {
@@ -581,10 +581,10 @@ describe('webContents module', () => {
       })
       ipcMain.once('zoom-level-set', (e, zoomLevel) => {
         assert.equal(zoomLevel, 0.6)
-        w.loadURL(`file://${fixtures}/pages/d.html`)
+        w.loadFile(path.join(fixtures, 'pages', 'd.html'))
         initialNavigation = false
       })
-      w.loadURL(`file://${fixtures}/pages/c.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'c.html'))
     })
   })
 
@@ -611,20 +611,20 @@ describe('webContents module', () => {
       w.webContents.on('will-prevent-unload', (e) => {
         assert.fail('should not have fired')
       })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-undefined.html'))
     })
 
     it('emits if beforeunload returns false', (done) => {
       w.webContents.on('will-prevent-unload', () => {
         done()
       })
-      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
 
     it('supports calling preventDefault on will-prevent-unload events', (done) => {
       ipcRenderer.send('prevent-next-will-prevent-unload', w.webContents.id)
       w.once('closed', () => done())
-      w.loadURL('file://' + path.join(fixtures, 'api', 'close-beforeunload-false.html'))
+      w.loadFile(path.join(fixtures, 'api', 'close-beforeunload-false.html'))
     })
   })
 
@@ -708,13 +708,13 @@ describe('webContents module', () => {
         if (count === 0) {
           count += 1
           assert.equal(color, '#FFEEDD')
-          w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'base-page.html')}`)
+          w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
         } else if (count === 1) {
           assert.equal(color, null)
           done()
         }
       })
-      w.loadURL(`file://${path.join(__dirname, 'fixtures', 'pages', 'theme-color.html')}`)
+      w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'))
     })
   })
 
@@ -726,7 +726,7 @@ describe('webContents module', () => {
           done()
         }
       })
-      w.loadURL(`file://${fixtures}/pages/a.html`)
+      w.loadFile(path.join(fixtures, 'pages', 'a.html'))
     })
   })
 
