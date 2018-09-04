@@ -11,8 +11,6 @@ const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const LINTER_PATH = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
 const ROOTS = ['atom', 'brightray'].map(token => path.join(SOURCE_ROOT, token))
 
-const isBootstrapped = () => fs.existsSync(LINTER_PATH)
-
 function callCpplint (filenames, args) {
   if (args.verbose) console.log([LINTER_PATH, ...filenames].join(' '))
   try {
@@ -55,8 +53,6 @@ async function findFiles (top, test) {
   })
 }
 
-const isCCFile = filename => filename.endsWith('.cc') || filename.endsWith('.h')
-
 const blacklist = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
   ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
@@ -88,7 +84,8 @@ const blacklist = new Set([
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 async function main () {
-  if (!isBootstrapped()) {
+  const isBootstrapped = () => fs.existsSync(LINTER_PATH)
+  if (!isBootstrapped) {
     print('[INFO] Skipping cpplint, dependencies has not been bootstrapped')
     return
   }
@@ -96,6 +93,7 @@ async function main () {
   const args = parseCommandLine()
 
   let filenames = []
+  const isCCFile = filename => filename.endsWith('.cc') || filename.endsWith('.h')
   for (const root of ROOTS) {
     const files = await findFiles(root, isCCFile)
     filenames.push(...files)
