@@ -67,14 +67,10 @@ bool GetAppUserModelID(ScopedHString* app_id) {
 bool IsRunningInDesktopBridgeImpl() {
   if (IsWindows8OrGreater()) {
     // GetPackageFamilyName is not available on Windows 7
-    typedef HRESULT(WINAPI * GetPackageFamilyNameFuncPtr)(
-      HANDLE hProcess,
-      UINT32 *packageFamilyNameLength,
-      PWSTR  packageFamilyName);
+    using GetPackageFamilyNameFuncPtr = decltype(&GetPackageFamilyName);
 
-    static GetPackageFamilyNameFuncPtr get_package_family_namePtr =
-      NULL;
     static bool initialize_get_package_family_name = true;
+    static GetPackageFamilyNameFuncPtr get_package_family_namePtr = NULL;
 
     if (initialize_get_package_family_name) {
       initialize_get_package_family_name = false;
@@ -87,6 +83,10 @@ bool IsRunningInDesktopBridgeImpl() {
       get_package_family_namePtr =
           reinterpret_cast<GetPackageFamilyNameFuncPtr>(
               GetProcAddress(kernel32_base, "GetPackageFamilyName"));
+
+      if (!get_package_family_namePtr) {
+        return false;
+      }
     }
 
     UINT32 length;
@@ -94,6 +94,7 @@ bool IsRunningInDesktopBridgeImpl() {
     HANDLE proc = GetCurrentProcess();
     LONG result =
       (*get_package_family_namePtr)(proc, &length, packageFamilyName);
+
     return result == ERROR_SUCCESS;
   } else {
     return false;
