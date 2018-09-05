@@ -227,7 +227,11 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
-  AddChromeKeySystems(key_systems);
+  key_systems_provider_.AddSupportedKeySystems(key_systems);
+}
+
+bool RendererClientBase::IsKeySystemsUpdateNeeded() {
+  return key_systems_provider_.IsKeySystemsUpdateNeeded();
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
