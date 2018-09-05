@@ -754,6 +754,11 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
+void WebContents::OnAudioStateChanged(content::WebContents* web_contents,
+                                      bool audible) {
+  Emit("-audio-state-changed", audible);
+}
+
 void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.

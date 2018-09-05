@@ -122,19 +122,25 @@ describe('webContents module', () => {
     })
   })
 
-  // Disabled because flaky. See #13969
-  xdescribe('isCurrentlyAudible() API', () => {
+  describe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
-      w.loadFile(path.join(fixtures, 'api', 'is-currently-audible.html'))
-      w.show()
-      await emittedOnce(w.webContents, 'did-finish-load')
-
-      expect(w.webContents.isCurrentlyAudible()).to.be.false()
-
-      w.webContents.send('play')
-      await emittedOnce(ipcMain, 'playing')
-
-      expect(w.webContents.isCurrentlyAudible()).to.be.true()
+      const webContents = remote.getCurrentWebContents()
+      const context = new window.AudioContext()
+      // Start in suspended state, because of the
+      // new web audio api policy.
+      context.suspend()
+      const oscillator = context.createOscillator()
+      oscillator.connect(context.destination)
+      oscillator.start()
+      await context.resume()
+      const [, audible] = await emittedOnce(webContents, '-audio-state-changed')
+      assert(webContents.isCurrentlyAudible() === audible)
+      expect(webContents.isCurrentlyAudible()).to.be.true()
+      oscillator.stop()
+      await emittedOnce(webContents, '-audio-state-changed')
+      expect(webContents.isCurrentlyAudible()).to.be.false()
+      oscillator.disconnect()
+      context.close()
     })
   })
 
