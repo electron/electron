@@ -47,22 +47,14 @@ def main():
   if args.rebuild_native_modules or not os.path.isdir(spec_modules):
     rebuild_native_modules(args.verbose, config)
 
-  if sys.platform == 'darwin':
-    electron = os.path.join(SOURCE_ROOT, 'out', config,
-                              '{0}.app'.format(PRODUCT_NAME), 'Contents',
-                              'MacOS', PRODUCT_NAME)
-    resources_path = os.path.join(SOURCE_ROOT, 'out', config,
-                                   '{0}.app'.format(PRODUCT_NAME), 'Contents',
-                                   'Resources')
-  elif sys.platform == 'win32':
-    electron = os.path.join(SOURCE_ROOT, 'out', config,
-                              '{0}.exe'.format(PROJECT_NAME))
-    resources_path = os.path.join(SOURCE_ROOT, 'out', config)
-    if config != 'R':
-      os.environ['ELECTRON_SKIP_NATIVE_MODULE_TESTS'] = '1'
-  else:
-    electron = os.path.join(SOURCE_ROOT, 'out', config, PROJECT_NAME)
-    resources_path = os.path.join(SOURCE_ROOT, 'out', config)
+  electron = get_electron_path(args)
+  resources_path = get_resources_path(electron)
+  if args.verbose:
+    print('electron path: {0}'.format(electron))
+    print('resource path: {0}'.format(resources_path))
+
+  if config != 'R' and sys.platform == 'win32':
+    os.environ['ELECTRON_SKIP_NATIVE_MODULE_TESTS'] = '1'
 
   returncode = 0
   try:
@@ -84,7 +76,6 @@ def main():
       print f.read()
     rm_rf(output_to_file)
 
-
   return returncode
 
 
@@ -105,6 +96,9 @@ def parse_args():
   parser.add_argument('-g', '--grep',
                       help='Only run tests matching <pattern>',
                       metavar='pattern',
+                      required=False)
+  parser.add_argument('-e', '--electron',
+                      help='Path to Electron, e.g. "out/D/electron"',
                       required=False)
   parser.add_argument('-i', '--invert',
                       help='Inverts --grep matches',
@@ -144,6 +138,28 @@ def rebuild_native_modules(verbose, configuration):
   if verbose:
     args += ['--verbose']
   execute_stdout([sys.executable, script_path] + args)
+
+
+def get_electron_path(args):
+  if args.electron:
+    return os.path.abspath(args.electron)
+
+  configDir = os.path.join(SOURCE_ROOT, 'out', args.configuration)
+  if sys.platform == 'darwin':
+    return os.path.join(configDir, '{0}.app'.format(PRODUCT_NAME),
+                        'Contents', 'MacOS', PRODUCT_NAME)
+  elif sys.platform == 'win32':
+    return os.path.join(configDir, '{0}.exe'.format(PROJECT_NAME))
+  else:
+    return os.path.join(configDir, PROJECT_NAME)
+
+
+def get_resources_path(electron):
+  parent = os.path.dirname(electron)
+  if parent.endswith('MacOS'):
+    return os.path.abspath(os.path.join(parent, '..', 'Resources'))
+  return parent
+
 
 if __name__ == '__main__':
   sys.exit(main())
