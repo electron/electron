@@ -204,7 +204,7 @@ directory.
 Clone and run the code in this tutorial by using the
 [`electron/electron-quick-start`][quick-start] repository.
 
-**Note**: Running this requires [Git](https://git-scm.com).
+**Note**: Running this requires [Git](https://git-scm.com) and [npm](https://www.npmjs.com/).
 
 ```sh
 # Clone the repository
