@@ -69,6 +69,17 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
+void EmitNextTickTask(TopLevelWindow* emitter, const std::string& name) {
+  emitter->Emit(name);
+}
+
+void EmitNextTick(TopLevelWindow* emitter, const std::string& name) {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&EmitNextTickTask,
+                 emitter, name));
+}
+
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
@@ -163,11 +174,11 @@ void TopLevelWindow::OnWindowEndSession() {
 }
 
 void TopLevelWindow::OnWindowBlur() {
-  Emit("blur");
+  EmitNextTick(this, "blur");
 }
 
 void TopLevelWindow::OnWindowFocus() {
-  Emit("focus");
+  EmitNextTick(this, "focus");
 }
 
 void TopLevelWindow::OnWindowShow() {
