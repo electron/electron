@@ -69,15 +69,14 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
-void EmitNextTickTask(TopLevelWindow* emitter, const std::string& name) {
+void EmitNextTickTask(TopLevelWindow* emitter, base::StringPiece name) {
   emitter->Emit(name);
 }
 
-void EmitNextTick(TopLevelWindow* emitter, const std::string& name) {
+void EmitNextTick(TopLevelWindow* emitter, base::StringPiece name) {
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::Bind(&EmitNextTickTask,
-                 emitter, name));
+      base::BindOnce(&EmitNextTickTask, emitter, name));
 }
 
 }  // namespace
