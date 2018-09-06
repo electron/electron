@@ -222,6 +222,9 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
+  void EmitBlur();
+  void EmitFocus();
+
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
   MessageCallbackMap messages_callback_map_;

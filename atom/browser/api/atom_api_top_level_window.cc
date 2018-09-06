@@ -69,6 +69,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
+#if 0
 void EmitNextTickTask(TopLevelWindow* emitter, const std::string& name) {
   emitter->Emit(name);
 }
@@ -79,6 +80,7 @@ void EmitNextTick(TopLevelWindow* emitter, const std::string& name) {
       base::Bind(&EmitNextTickTask,
                  emitter, name));
 }
+#endif
 
 }  // namespace
 
@@ -173,12 +175,31 @@ void TopLevelWindow::OnWindowEndSession() {
   Emit("session-end");
 }
 
+void TopLevelWindow::EmitBlur() {
+  Emit("blur");
+}
+void TopLevelWindow::EmitFocus() {
+  Emit("focus");
+}
+
 void TopLevelWindow::OnWindowBlur() {
+#if 1
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&TopLevelWindow::EmitBlur, weak_factory_.GetWeakPtr()));
+#else
   EmitNextTick(this, "blur");
+#endif
 }
 
 void TopLevelWindow::OnWindowFocus() {
+#if 1
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&TopLevelWindow::EmitFocus, weak_factory_.GetWeakPtr()));
+#else
   EmitNextTick(this, "focus");
+#endif
 }
 
 void TopLevelWindow::OnWindowShow() {
