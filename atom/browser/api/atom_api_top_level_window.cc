@@ -972,7 +972,8 @@ void TopLevelWindow::EmitEvent(base::StringPiece eventName) {
 void TopLevelWindow::EmitEventSoon(base::StringPiece eventName) {
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&TopLevelWindow::EmitEvent, weak_factory_.GetWeakPtr(), eventName));
+      base::BindOnce(&TopLevelWindow::EmitEvent, weak_factory_.GetWeakPtr(),
+                     eventName));
 }
 
 // static
