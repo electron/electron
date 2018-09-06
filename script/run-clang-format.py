@@ -110,7 +110,8 @@ def run_clang_format_diff(args, file_name):
             invocation,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True)
+            universal_newlines=True,
+            shell = True)
     except OSError as exc:
         raise DiffError(str(exc))
     proc_stdout = proc.stdout
@@ -254,7 +255,8 @@ def main():
         popen = subprocess.Popen(
             ["git", "diff", "--name-only", "--cached"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
+            shell = True
         )
         for line in popen.stdout:
             file_name = line.rstrip()
