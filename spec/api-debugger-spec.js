@@ -3,7 +3,7 @@ const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
 const {closeWindow} = require('./window-helpers')
-const BrowserWindow = require('electron').remote.BrowserWindow
+const {BrowserWindow} = require('electron').remote
 
 const {expect} = chai
 chai.use(dirtyChai)
@@ -23,15 +23,16 @@ describe('debugger module', () => {
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
   describe('debugger.attach', () => {
-    it('fails when devtools is already open', done => {
+    it('succeeds when devtools is already open', done => {
       w.webContents.on('did-finish-load', () => {
         w.webContents.openDevTools()
         try {
           w.webContents.debugger.attach()
         } catch (err) {
-          expect(w.webContents.debugger.isAttached()).to.be.true()
-          done()
+          done(`unexpected error : ${err}`)
         }
+        expect(w.webContents.debugger.isAttached()).to.be.true()
+        done()
       })
       w.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'))
     })
@@ -144,8 +145,7 @@ describe('debugger module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable back.
-    xit('handles valid unicode characters in message', (done) => {
+    it('handles valid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
       } catch (err) {
@@ -174,8 +174,7 @@ describe('debugger module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Times out. Fix it and enable back.
-    xit('does not crash for invalid unicode characters in message', (done) => {
+    it('does not crash for invalid unicode characters in message', (done) => {
       try {
         w.webContents.debugger.attach()
       } catch (err) {
