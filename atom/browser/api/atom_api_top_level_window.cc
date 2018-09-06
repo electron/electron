@@ -69,6 +69,19 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate, void* val, int size) {
     return buffer.ToLocalChecked();
 }
 
+#if 0
+void EmitNextTickTask(TopLevelWindow* emitter, const std::string& name) {
+  emitter->Emit(name);
+}
+
+void EmitNextTick(TopLevelWindow* emitter, const std::string& name) {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::Bind(&EmitNextTickTask,
+                 emitter, name));
+}
+#endif
+
 }  // namespace
 
 TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
@@ -163,11 +176,11 @@ void TopLevelWindow::OnWindowEndSession() {
 }
 
 void TopLevelWindow::OnWindowBlur() {
-  Emit("blur");
+  EmitEventSoon("blur");
 }
 
 void TopLevelWindow::OnWindowFocus() {
-  Emit("focus");
+  EmitEventSoon("focus");
 }
 
 void TopLevelWindow::OnWindowShow() {
@@ -950,6 +963,16 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(weak_map_id());
+}
+
+void TopLevelWindow::EmitEvent(base::StringPiece eventName) {
+  Emit(eventName);
+}
+
+void TopLevelWindow::EmitEventSoon(base::StringPiece eventName) {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&TopLevelWindow::EmitEvent, weak_factory_.GetWeakPtr(), eventName));
 }
 
 // static
