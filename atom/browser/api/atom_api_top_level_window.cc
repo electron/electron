@@ -175,31 +175,12 @@ void TopLevelWindow::OnWindowEndSession() {
   Emit("session-end");
 }
 
-void TopLevelWindow::EmitBlur() {
-  Emit("blur");
-}
-void TopLevelWindow::EmitFocus() {
-  Emit("focus");
-}
-
 void TopLevelWindow::OnWindowBlur() {
-#if 1
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&TopLevelWindow::EmitBlur, weak_factory_.GetWeakPtr()));
-#else
-  EmitNextTick(this, "blur");
-#endif
+  EmitEventSoon("blur");
 }
 
 void TopLevelWindow::OnWindowFocus() {
-#if 1
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&TopLevelWindow::EmitFocus, weak_factory_.GetWeakPtr()));
-#else
-  EmitNextTick(this, "focus");
-#endif
+  EmitEventSoon("focus");
 }
 
 void TopLevelWindow::OnWindowShow() {
@@ -982,6 +963,16 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(weak_map_id());
+}
+
+void TopLevelWindow::EmitEvent(base::StringPiece eventName) {
+  Emit(eventName);
+}
+
+void TopLevelWindow::EmitEventSoon(base::StringPiece eventName) {
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&TopLevelWindow::EmitEvent, weak_factory_.GetWeakPtr(), eventName));
 }
 
 // static
