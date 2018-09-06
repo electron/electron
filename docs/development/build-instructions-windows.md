@@ -5,8 +5,8 @@ Follow the guidelines below for building Electron on Windows.
 ## Prerequisites
 
 * Windows 7 / Server 2008 R2 or higher
-* Visual Studio 2017 15.7.2 or higher - [download VS 2017 Community Edition for
-  free](https://www.visualstudio.com/vs/)
+* [Visual Studio 2017 15.4.5](https://web.archive.org/web/20180220131834/https://docs.microsoft.com/en-us/visualstudio/productinfo/installing-an-earlier-release-of-vs2017) - Electron 3-0-x specifically requires Visual Studion 15.4.5 to build and newer versions will not work.  You can [download VS 2017 15.4.5 Community Edition for
+  free](https://aka.ms/eam4b7).
 * [Python 2.7](http://www.python.org/download/releases/2.7/)
 * [Node.js](https://nodejs.org/download/)
 * [Git](http://git-scm.com)
