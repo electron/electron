@@ -129,7 +129,7 @@ describe('powerMonitor', () => {
     describe('powerMonitor.querySystemIdleState', () => {
       it('notify current system idle state', done => {
         powerMonitor.querySystemIdleState(1, idleState => {
-          expect(idleState).to.be.true()
+          expect(idleState).to.equal('idle')
           done()
         })
       })
