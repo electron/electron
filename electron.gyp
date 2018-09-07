@@ -288,6 +288,9 @@
 
         # Enables SkBitmap size 64 operations
         'SK_SUPPORT_LEGACY_SAFESIZE64',
+
+        # Enables widevine cdm support
+        'WIDEVINE_CDM_AVAILABLE',
       ],
       'sources': [
         '<@(lib_sources)',
