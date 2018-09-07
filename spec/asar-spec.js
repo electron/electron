@@ -11,7 +11,7 @@ const remote = require('electron').remote
 const ipcMain = remote.require('electron').ipcMain
 const BrowserWindow = remote.require('electron').BrowserWindow
 
-describe.only('asar package', function () {
+describe('asar package', function () {
   var fixtures = path.join(__dirname, 'fixtures')
 
   describe('node api', function () {
@@ -893,12 +893,8 @@ describe.only('asar package', function () {
         const originalFs = require('original-fs')
 
         for (const key in originalFs) {
-          if (originalFs[key][util.promisify.custom]) {
-            console.log(`Key is "${key}", type of "originalFs[key]"" is ${typeof originalFs[key]}`)
-            console.log(`Type of "fs[key]"" is "${typeof fs[key]}"`)
-            if (!fs[key][util.promisify.custom]) {
-              assert(false, `fs.${key}[util.promisify.custom] missing`)
-            }
+          if (originalFs[key][util.promisify.custom] && !fs[key][util.promisify.custom]) {
+            assert(false, `fs.${key}[util.promisify.custom] missing`)
           }
         }
       })
