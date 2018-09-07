@@ -1104,12 +1104,10 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   if (changed_widget != widget())
     return;
 
-  // Post the notification to next tick.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(active ? &NativeWindow::NotifyWindowFocus
-                        : &NativeWindow::NotifyWindowBlur,
-                 GetWeakPtr()));
+  if (active)
+    NativeWindow::NotifyWindowFocus();
+  else
+    NativeWindow::NotifyWindowBlur();
 
   // Hide menu bar when window is blured.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
