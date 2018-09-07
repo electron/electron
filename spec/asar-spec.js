@@ -1,5 +1,6 @@
 const assert = require('assert')
 const ChildProcess = require('child_process')
+const {expect} = require('chai')
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
@@ -891,10 +892,12 @@ describe('asar package', function () {
     describe('util.promisify', function () {
       it('can promisify all fs functions', function () {
         const originalFs = require('original-fs')
+        const {hasOwnProperty} = Object.prototype
 
-        for (const key in originalFs) {
-          if (originalFs[key][util.promisify.custom] && !fs[key][util.promisify.custom]) {
-            assert(false, `fs.${key}[util.promisify.custom] missing`)
+        for (const [propertyName, originalValue] of Object.entries(originalFs)) {
+          if (hasOwnProperty.call(originalValue, util.promisify.custom)) {
+            expect(fs).to.have.own.property(propertyName)
+                .that.has.own.property(util.promisify.custom)
           }
         }
       })
