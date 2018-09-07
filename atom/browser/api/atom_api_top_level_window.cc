@@ -952,17 +952,6 @@ void TopLevelWindow::RemoveFromParentChildWindows() {
   parent->child_windows_.Remove(weak_map_id());
 }
 
-void TopLevelWindow::EmitEvent(base::StringPiece eventName) {
-  Emit(eventName);
-}
-
-void TopLevelWindow::EmitEventSoon(base::StringPiece eventName) {
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::BindOnce(&TopLevelWindow::EmitEvent, weak_factory_.GetWeakPtr(),
-                     eventName));
-}
-
 // static
 mate::WrappableBase* TopLevelWindow::New(mate::Arguments* args) {
   mate::Dictionary options;

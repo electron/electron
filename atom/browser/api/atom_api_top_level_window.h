@@ -14,6 +14,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -222,8 +223,13 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
-  void EmitEvent(base::StringPiece name);
-  void EmitEventSoon(base::StringPiece name);
+  template<typename... Args>
+  void EmitEventSoon(base::StringPiece eventName) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::BindOnce(base::IgnoreResult(&TopLevelWindow::Emit<Args...>),
+                       weak_factory_.GetWeakPtr(), eventName));
+  }
 
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;
