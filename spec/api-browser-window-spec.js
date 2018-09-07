@@ -410,8 +410,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): [Ch66] Enable the test. Passes locally.
-  xdescribe('BrowserWindow.getFocusedWindow()', (done) => {
+  describe('BrowserWindow.getFocusedWindow()', (done) => {
     it('returns the opener window when dev tools window is focused', (done) => {
       w.show()
       w.webContents.once('devtools-focused', () => {
@@ -728,8 +727,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): [Ch66] Enable the test. Passes locally.
-  xdescribe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
+  describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
     before(function () {
       if (process.platform !== 'darwin') {
         this.skip()
@@ -1966,8 +1964,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // TODO(alexeykuzmin): [Ch66] Enable the tests. They pass locally.
-  xdescribe('document.visibilityState/hidden', () => {
+  describe('document.visibilityState/hidden', () => {
     beforeEach(() => { w.destroy() })
 
     function onVisibilityChange (callback) {
@@ -2571,7 +2568,6 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Enable the test. It passes locally.
     describe('kiosk state', () => {
       before(function () {
         // Only implemented on macOS.
@@ -2619,8 +2615,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    // TODO(alexeykuzmin): [Ch66] Enable the tests. They pass locally.
-    xdescribe('fullscreen state', () => {
+    describe('fullscreen state', () => {
       before(function () {
         // Only implemented on macOS.
         if (process.platform !== 'darwin') {
@@ -2768,8 +2763,7 @@ describe('BrowserWindow module', () => {
       }
     })
 
-    // TODO(alexeykuzmin): [Ch66] Enable the test. Fails on CI bots, passes locally.
-    xit('exits HTML fullscreen when window leaves fullscreen', (done) => {
+    it('exits HTML fullscreen when window leaves fullscreen', (done) => {
       w.destroy()
       w = new BrowserWindow()
       w.webContents.once('did-finish-load', () => {
