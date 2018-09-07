@@ -163,11 +163,11 @@ void TopLevelWindow::OnWindowEndSession() {
 }
 
 void TopLevelWindow::OnWindowBlur() {
-  Emit("blur");
+  EmitEventSoon("blur");
 }
 
 void TopLevelWindow::OnWindowFocus() {
-  Emit("focus");
+  EmitEventSoon("focus");
 }
 
 void TopLevelWindow::OnWindowShow() {
