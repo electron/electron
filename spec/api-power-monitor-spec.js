@@ -30,7 +30,9 @@ describe('powerMonitor', () => {
       reset = Promise.promisify(logindMock.Reset, {context: logindMock})
     })
 
-    after(reset)
+    after(async () => {
+      await reset()
+    })
   }
 
   (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
