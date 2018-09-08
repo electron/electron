@@ -648,6 +648,8 @@
       'chromium_src/chrome/common/widevine_cdm_constants.h',
       'chromium_src/chrome/renderer/media/chrome_key_systems.cc',
       'chromium_src/chrome/renderer/media/chrome_key_systems.h',
+      'chromium_src/chrome/renderer/media/chrome_key_systems_provider.cc',
+      'chromium_src/chrome/renderer/media/chrome_key_systems_provider.h',
       'chromium_src/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc',
       'chromium_src/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h',
       'chromium_src/chrome/renderer/pepper/pepper_flash_font_file_host.cc',
