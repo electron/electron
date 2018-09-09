@@ -19,7 +19,6 @@
 #include "base/process/process.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
@@ -227,11 +226,17 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
+#if defined(WIDEVINE_CDM_AVAILABLE)
   key_systems_provider_.AddSupportedKeySystems(key_systems);
+#endif
 }
 
 bool RendererClientBase::IsKeySystemsUpdateNeeded() {
+#if defined(WIDEVINE_CDM_AVAILABLE)
   return key_systems_provider_.IsKeySystemsUpdateNeeded();
+#else
+  return false;
+#endif
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(

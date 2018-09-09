@@ -8,9 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "chrome/renderer/media/chrome_key_systems_provider.h"
 #include "content/public/renderer/content_renderer_client.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+
+#if defined(WIDEVINE_CDM_AVAILABLE)
+#include "chrome/renderer/media/chrome_key_systems_provider.h"
+#endif
 
 namespace atom {
 
@@ -54,7 +57,9 @@ class RendererClientBase : public content::ContentRendererClient {
 
  private:
   std::unique_ptr<PreferencesManager> preferences_manager_;
+#if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
+#endif
   bool isolated_world_;
 
   // An increasing ID used for indentifying an V8 context in this process.
