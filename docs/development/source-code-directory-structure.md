@@ -46,9 +46,7 @@ Electron
 ├── native_mate/ - A fork of Chromium's gin library that makes it easier to marshal
 |                  types between C++ and JavaScript.
 ├── spec/ - Automatic tests.
-├── electron.gyp - Building rules of Electron.
-└── common.gypi - Compiler specific settings and building rules for other
-                  components like `node` and `breakpad`.
+└── BUILD.gn - Building rules of Electron.
 ```
 
 ## `/chromium_src`
@@ -68,7 +66,7 @@ libcc patches we maintain now.
 
 * **script** - Scripts used for development purpose like building, packaging,
   testing, etc.
-* **tools** - Helper scripts used by gyp files, unlike `script`, scripts put
+* **tools** - Helper scripts used by GN files, unlike `script`, scripts put
   here should never be invoked by users directly.
 * **vendor** - Source code of third party dependencies, we didn't use
   `third_party` as name because it would confuse it with the same directory in
@@ -78,7 +76,7 @@ libcc patches we maintain now.
 * **dist** - Temporary directory created by `script/create-dist.py` script
   when creating a distribution.
 * **external_binaries** - Downloaded binaries of third-party frameworks which
-  do not support building with `gyp`.
+  do not support building with `gn`.
 
 ## Keeping Git Submodules Up to Date
 
@@ -89,8 +87,8 @@ when running `git status`:
 ```sh
 $ git status
 
-	modified:   vendor/libchromiumcontent (new commits)
-	modified:   vendor/node (new commits)
+	modified:   vendor/depot_tools (new commits)
+	modified:   vendor/boto (new commits)
 ```
 
 To update these vendored dependencies, run the following command:
