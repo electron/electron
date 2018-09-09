@@ -1441,10 +1441,8 @@ describe('BrowserWindow module', () => {
           }
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
-        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open-external')
-        const pageUrl = 'file://' + htmlPath
         let popupWindow
-        w.loadURL(pageUrl)
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'window-open-external'})
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           assert.equal(url, 'http://www.google.com/#q=electron')
           assert.equal(options.width, 505)
@@ -1518,8 +1516,6 @@ describe('BrowserWindow module', () => {
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
 
-        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?verify-ipc-sender')
-        const pageUrl = 'file://' + htmlPath
         let childWc
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           childWc = options.webContents
@@ -1538,7 +1534,7 @@ describe('BrowserWindow module', () => {
           'parent-answer',
           'child-answer'
         ], done)
-        w.loadURL(pageUrl)
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'verify-ipc-sender'})
       })
 
       describe('event handling', () => {
@@ -1546,7 +1542,7 @@ describe('BrowserWindow module', () => {
           waitForEvents(w, [
             'page-title-updated'
           ], done)
-          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?window-events'))
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'window-events'})
         })
 
         it('works for stop events', (done) => {
@@ -1555,7 +1551,7 @@ describe('BrowserWindow module', () => {
             'did-fail-load',
             'did-stop-loading'
           ], done)
-          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-stop'))
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'webcontents-stop'})
         })
 
         it('works for web contents events', (done) => {
@@ -1569,7 +1565,7 @@ describe('BrowserWindow module', () => {
             'did-frame-finish-load',
             'dom-ready'
           ], done)
-          w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?webcontents-events'))
+          w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'webcontents-events'})
         })
       })
 
@@ -1640,7 +1636,7 @@ describe('BrowserWindow module', () => {
             sandbox: true
           }
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?allocate-memory'))
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'allocate-memory'})
         ipcMain.once('answer', function (event, {bytesBeforeOpen, bytesAfterOpen, bytesAfterClose}) {
           const memoryIncreaseByOpen = bytesAfterOpen - bytesBeforeOpen
           const memoryDecreaseByClose = bytesAfterOpen - bytesAfterClose
@@ -1663,7 +1659,7 @@ describe('BrowserWindow module', () => {
             sandbox: true
           }
         })
-        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?reload-remote'))
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'reload-remote'})
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello.js')
@@ -1698,7 +1694,7 @@ describe('BrowserWindow module', () => {
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
 
-        w.loadURL('file://' + path.join(fixtures, 'api', 'sandbox.html?reload-remote-child'))
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), {search: 'reload-remote-child'})
 
         ipcMain.on('get-remote-module-path', (event) => {
           event.returnValue = path.join(fixtures, 'module', 'hello-child.js')

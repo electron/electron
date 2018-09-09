@@ -1445,6 +1445,7 @@ describe('net module', () => {
       ipcRenderer.send('eval', `
         const {net} = require('electron')
         const http = require('http')
+        const url = require('url')
         const netRequest = net.request('${server.url}${netRequestUrl}')
         netRequest.on('response', function (netResponse) {
           const serverUrl = url.parse('${server.url}')

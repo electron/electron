@@ -8,7 +8,6 @@ const {Coverage} = require('electabul')
 
 const fs = require('fs')
 const path = require('path')
-const url = require('url')
 const util = require('util')
 const v8 = require('v8')
 
@@ -139,14 +138,12 @@ app.on('ready', function () {
       backgroundThrottling: false
     }
   })
-  window.loadURL(url.format({
-    pathname: path.join(__dirname, '/index.html'),
-    protocol: 'file',
+  window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
       invert: argv.invert ? 'true' : ''
     }
-  }))
+  })
   window.on('unresponsive', function () {
     var chosen = dialog.showMessageBox(window, {
       type: 'warning',
