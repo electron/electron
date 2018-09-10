@@ -96,8 +96,8 @@ void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
-  auto context_id = base::StringPrintf("%s-%d", renderer_client_id_.c_str(),
-                                       ++next_context_id_);
+  auto context_id = base::StringPrintf(
+      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
   v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
