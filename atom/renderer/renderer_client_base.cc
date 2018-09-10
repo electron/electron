@@ -16,13 +16,13 @@
 #include "atom/renderer/content_settings_observer.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/process/process.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
 #include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
@@ -50,14 +50,6 @@
 #include "chrome/renderer/pepper/pepper_helper.h"
 #endif  // defined(ENABLE_PEPPER_FLASH)
 
-// This is defined in later versions of Chromium, remove this if you see
-// compiler complaining duplicate defines.
-#if defined(OS_WIN) || defined(OS_FUCHSIA)
-#define CrPRIdPid "ld"
-#else
-#define CrPRIdPid "d"
-#endif
-
 namespace atom {
 
 namespace {
@@ -71,8 +63,8 @@ v8::Local<v8::Value> GetRenderProcessPreferences(
     return v8::Null(isolate);
 }
 
-std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
+                                               const char* switch_name) {
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
@@ -81,13 +73,21 @@ std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
-      ParseSchemesCLISwitch(switches::kStandardSchemes);
+      ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
     url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
+  // We rely on the unique process host id which is notified to the
+  // renderer process via command line switch from the content layer,
+  // if this switch is removed from the content layer for some reason,
+  // we should define our own.
+  DCHECK(command_line->HasSwitch(::switches::kRendererClientId));
+  renderer_client_id_ =
+      command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
 RendererClientBase::~RendererClientBase() {}
@@ -95,10 +95,9 @@ RendererClientBase::~RendererClientBase() {}
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processId}-${++next_context_id_}`)
-  std::string context_id = base::StringPrintf(
-      "%" CrPRIdPid "-%d", base::GetProcId(base::Process::Current().Handle()),
-      ++next_context_id_);
+  // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
+  auto context_id = base::StringPrintf("%s-%d", renderer_client_id_.c_str(),
+                                       ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
   v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
   v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
@@ -116,6 +115,8 @@ void RendererClientBase::AddRenderBindings(
 }
 
 void RendererClientBase::RenderThreadStarted() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
@@ -137,7 +138,7 @@ void RendererClientBase::RenderThreadStarted() {
 
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(switches::kSecureSchemes);
+      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
@@ -151,7 +152,6 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   base::string16 app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {

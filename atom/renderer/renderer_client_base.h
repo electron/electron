@@ -56,7 +56,7 @@ class RendererClientBase : public content::ContentRendererClient {
   std::unique_ptr<PreferencesManager> preferences_manager_;
   ChromeKeySystemsProvider key_systems_provider_;
   bool isolated_world_;
-
+  std::string renderer_client_id_;
   // An increasing ID used for indentifying an V8 context in this process.
   int next_context_id_ = 0;
 };
