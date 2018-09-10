@@ -438,8 +438,6 @@ static_library("electron_lib") {
 
   if (enable_widevine) {
     sources += [
-      "//chrome/common/widevine_cdm_constants.cc",
-      "//chrome/common/widevine_cdm_constants.h",
       "//chrome/renderer/media/chrome_key_systems.cc",
       "//chrome/renderer/media/chrome_key_systems.h",
       "//chrome/renderer/media/chrome_key_systems_provider.cc",
