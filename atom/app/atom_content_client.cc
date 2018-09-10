@@ -18,7 +18,6 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
-#include "media/media_buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
@@ -27,8 +26,6 @@
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
 #include "base/native_library.h"
-#include "base/strings/stringprintf.h"
-#include "chrome/common/widevine_cdm_constants.h"
 #include "content/public/common/cdm_info.h"
 #include "media/base/video_codecs.h"
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
@@ -43,8 +40,7 @@ namespace atom {
 namespace {
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
-bool IsWidevineAvailable(base::FilePath* adapter_path,
-                         base::FilePath* cdm_path,
+bool IsWidevineAvailable(base::FilePath* cdm_path,
                          std::vector<media::VideoCodec>* codecs_supported) {
   static enum {
     NOT_CHECKED,
@@ -52,59 +48,29 @@ bool IsWidevineAvailable(base::FilePath* adapter_path,
     NOT_FOUND,
   } widevine_cdm_file_check = NOT_CHECKED;
 
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  *adapter_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
-  if (!adapter_path->empty()) {
-    *cdm_path = adapter_path->DirName().AppendASCII(
-        base::GetNativeLibraryName(kWidevineCdmLibraryName));
-    if (widevine_cdm_file_check == NOT_CHECKED) {
-      widevine_cdm_file_check =
-          (base::PathExists(*adapter_path) && base::PathExists(*cdm_path))
-              ? FOUND
-              : NOT_FOUND;
+  if (widevine_cdm_file_check == NOT_CHECKED) {
+    base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+    *cdm_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
+    if (!cdm_path->empty()) {
+      *cdm_path = cdm_path->AppendASCII(
+          base::GetNativeLibraryName(kWidevineCdmLibraryName));
+      widevine_cdm_file_check = base::PathExists(*cdm_path) ? FOUND : NOT_FOUND;
     }
-    if (widevine_cdm_file_check == FOUND) {
-      // Add the supported codecs as if they came from the component manifest.
-      // This list must match the CDM that is being bundled with Chrome.
-      codecs_supported->push_back(media::VideoCodec::kCodecVP8);
-      codecs_supported->push_back(media::VideoCodec::kCodecVP9);
+  }
+
+  if (widevine_cdm_file_check == FOUND) {
+    // Add the supported codecs as if they came from the component manifest.
+    // This list must match the CDM that is being bundled with Chrome.
+    codecs_supported->push_back(media::VideoCodec::kCodecVP8);
+    codecs_supported->push_back(media::VideoCodec::kCodecVP9);
 #if BUILDFLAG(USE_PROPRIETARY_CODECS)
-      codecs_supported->push_back(media::VideoCodec::kCodecH264);
+    codecs_supported->push_back(media::VideoCodec::kCodecH264);
 #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
 
-      return true;
-    }
+    return true;
   }
 
   return false;
-}
-
-void AddWidevineAdapterFromCommandLine(
-    base::CommandLine* command_line,
-    std::vector<content::PepperPluginInfo>* plugins) {
-  base::FilePath adapter_path;
-  base::FilePath cdm_path;
-  std::vector<media::VideoCodec> video_codecs_supported;
-  if (IsWidevineAvailable(&adapter_path, &cdm_path, &video_codecs_supported)) {
-    auto cdm_version_string =
-        command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
-    content::PepperPluginInfo info;
-    info.is_out_of_process = true;
-    info.path = adapter_path;
-    info.name = kWidevineCdmDisplayName;
-    info.description =
-        base::StringPrintf("%s (version: %s)", kWidevineCdmDescription,
-                           cdm_version_string.c_str());
-    info.version = cdm_version_string;
-    info.permissions = kWidevineCdmPluginPermissions;
-
-    content::WebPluginMimeType mime_type(kWidevineCdmPluginMimeType,
-                                         kWidevineCdmPluginExtension,
-                                         kWidevineCdmPluginMimeTypeDescription);
-    info.mime_types.push_back(mime_type);
-
-    plugins->push_back(info);
-  }
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
@@ -235,9 +201,6 @@ void AtomContentClient::AddPepperPlugins(
 #if defined(ENABLE_PEPPER_FLASH)
   AddPepperFlashFromCommandLine(command_line, plugins);
 #endif  // defined(ENABLE_PEPPER_FLASH)
-#if defined(WIDEVINE_CDM_AVAILABLE)
-  AddWidevineAdapterFromCommandLine(command_line, plugins);
-#endif  // defined(WIDEVINE_CDM_AVAILABLE)
   ComputeBuiltInPlugins(plugins);
 }
 
@@ -246,12 +209,10 @@ void AtomContentClient::AddContentDecryptionModules(
     std::vector<media::CdmHostFilePath>* cdm_host_file_paths) {
   if (cdms) {
 #if defined(WIDEVINE_CDM_AVAILABLE)
-    base::FilePath adapter_path;
     base::FilePath cdm_path;
     std::vector<media::VideoCodec> video_codecs_supported;
     bool supports_persistent_license = false;
-    if (IsWidevineAvailable(&adapter_path, &cdm_path,
-                            &video_codecs_supported)) {
+    if (IsWidevineAvailable(&cdm_path, &video_codecs_supported)) {
       base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
       auto cdm_version_string =
           command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);

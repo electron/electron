@@ -170,9 +170,6 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
-  // This is required for widevine plugin detection provided during runtime.
-  blink::ResetPluginCache();
-
 #if defined(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
