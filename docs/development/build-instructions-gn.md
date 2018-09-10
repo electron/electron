@@ -26,7 +26,7 @@ try to download a Google-internal version that only Googlers have access to).
 
 ## Cached builds (optional step)
 
-### GIT_CACHE_PATH
+### GIT\_CACHE\_PATH
 
 If you plan on building Electron more than once, adding a git cache will
 speed up subsequent calls to `gclient`. To do this, set a `GIT_CACHE_PATH`
@@ -36,6 +36,16 @@ environment variable:
 $ export GIT_CACHE_PATH="${HOME}/.git_cache"
 $ mkdir -p "${GIT_CACHE_PATH}"
 # This will use about 16G.
+```
+
+> **NOTE**: the git cache will set the `origin` of the `src/electron`
+> repository to point to the local cache, instead of the upstream git
+> repository. This is undesirable when running `git push`—you probably want to
+> push to github, not your local cache. To fix this, from the `src/electron`
+> directory, run:
+
+```sh
+$ git remote set-url origin https://github.com/electron/electron
 ```
 
 ### sccache
