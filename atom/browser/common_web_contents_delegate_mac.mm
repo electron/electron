@@ -6,6 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/web_contents_preferences.h"
 #include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
@@ -27,15 +28,17 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  if (!ignore_menu_shortcuts_) {
-    // Send the event to the menu before sending it to the window
-    if (event.os_event.type == NSKeyDown &&
-        [[NSApp mainMenu] performKeyEquivalent:event.os_event])
-      return;
+  if (auto* web_preferences = WebContentsPreferences::From(source)) {
+    if (!web_preferences->IsEnabled("ignoreMenuShortcuts", false)) {
+      // Send the event to the menu before sending it to the window
+      if (event.os_event.type == NSKeyDown &&
+          [[NSApp mainMenu] performKeyEquivalent:event.os_event])
+        return;
 
-    if (event.os_event.window &&
-        [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
-      [event.os_event.window redispatchKeyEvent:event.os_event];
+      if (event.os_event.window &&
+          [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
+        [event.os_event.window redispatchKeyEvent:event.os_event];
+    }
   }
 }
 
