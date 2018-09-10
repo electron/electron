@@ -271,7 +271,7 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
 }
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
 }
 
@@ -354,17 +354,26 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
 
 void InspectableWebContentsImpl::AttachTo(
     scoped_refptr<content::DevToolsAgentHost> host) {
-  if (agent_host_.get())
-    Detach();
+  Detach();
   agent_host_ = std::move(host);
-  // Terminate existing debugging connections and start debugging.
-  agent_host_->ForceAttachClient(this);
+  // We could use ForceAttachClient here if problem arises with
+  // devtools multiple session support.
+  agent_host_->AttachClient(this);
 }
 
 void InspectableWebContentsImpl::Detach() {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DetachClient(this);
   agent_host_ = nullptr;
+}
+
+void InspectableWebContentsImpl::Reattach(
+    const DispatchCallback& callback) {
+  if (agent_host_) {
+    agent_host_->DetachClient(this);
+    agent_host_->AttachClient(this);
+  }
+  callback.Run(nullptr);
 }
 
 void InspectableWebContentsImpl::CallClientFunction(
@@ -620,7 +629,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     return;
   }
 
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DispatchProtocolMessage(this, message);
 }
 

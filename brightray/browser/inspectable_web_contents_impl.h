@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/devtools_contents_resizing_strategy.h"
-#include "brightray/browser/devtools_embedder_message_dispatcher.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -133,6 +133,14 @@ class InspectableWebContentsImpl
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
+  void Reattach(const DispatchCallback& callback) override;
+  void RecordEnumeratedHistogram(
+      const std::string& name,
+      int sample,
+      int boundary_value) override {}
+  void ReadyForTest() override {}
+  void SetOpenNewWindowForPopups(bool value) override {}
+  
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
