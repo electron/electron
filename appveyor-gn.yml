@@ -28,6 +28,7 @@ build_script:
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg third_party/ffmpeg
   - ninja -C out/Default electron:electron_dist_zip
+  - appveyor PushArtifact out/Default/dist.zip
 test_script:
   - if "%GN_CONFIG%"=="testing" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - ps: >-
@@ -44,6 +45,3 @@ test_script:
         echo "Skipping tests for $env:GN_CONFIG build"
       }
   - if "%GN_CONFIG%"=="testing" ( echo Running test suite & .\out\Default\electron.exe electron\spec --ci )
-artifacts:
-- path: src/out/Default/dist.zip
-  name: dist.zip
