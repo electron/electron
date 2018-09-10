@@ -9,17 +9,16 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/devtools_file_system_indexer.h"
+#include "base/memory/weak_ptr.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
 #endif
-
-using brightray::DevToolsFileSystemIndexer;
 
 namespace base {
 class SequencedTaskRunner;
@@ -188,6 +187,8 @@ class CommonWebContentsDelegate
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  base::WeakPtrFactory<CommonWebContentsDelegate> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

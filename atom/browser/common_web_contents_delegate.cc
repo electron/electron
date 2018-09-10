@@ -146,7 +146,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
-          base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})) {}
+          base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})),
+      weak_factory_(this) {}
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() {}
 
@@ -433,11 +434,12 @@ void CommonWebContentsDelegate::DevToolsIndexPath(
               file_system_path,
               base::Bind(
                   &CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated,
-                  base::Unretained(this), request_id, file_system_path),
+                  weak_factory_.GetWeakPtr(), request_id, file_system_path),
               base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingWorked,
-                         base::Unretained(this), request_id, file_system_path),
+                         weak_factory_.GetWeakPtr(), request_id,
+                         file_system_path),
               base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingDone,
-                         base::Unretained(this), request_id,
+                         weak_factory_.GetWeakPtr(), request_id,
                          file_system_path)));
 }
 
@@ -461,7 +463,7 @@ void CommonWebContentsDelegate::DevToolsSearchInPath(
   devtools_file_system_indexer_->SearchInPath(
       file_system_path, query,
       base::Bind(&CommonWebContentsDelegate::OnDevToolsSearchCompleted,
-                 base::Unretained(this), request_id, file_system_path));
+                 weak_factory_.GetWeakPtr(), request_id, file_system_path));
 }
 
 void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(

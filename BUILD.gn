@@ -213,6 +213,7 @@ static_library("electron_lib") {
   deps = [
     ":atom_js2c",
     "brightray",
+    "chromium_src:chrome",
     "native_mate",
     "//base",
     "//base:i18n",
@@ -220,7 +221,6 @@ static_library("electron_lib") {
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
-    "//components/security_state/content",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
