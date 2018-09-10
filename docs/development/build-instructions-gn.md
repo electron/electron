@@ -43,10 +43,10 @@ $ mkdir -p "${GIT_CACHE_PATH}"
 > repository. This is undesirable when running `git push`—you probably want to
 > push to github, not your local cache. To fix this, from the `src/electron`
 > directory, run:
->
-> ```sh
+
+```sh
 $ git remote set-url origin https://github.com/electron/electron
-> ```
+```
 
 ### sccache
 
