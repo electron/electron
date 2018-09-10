@@ -1455,7 +1455,7 @@ void WebContents::AddWorkSpace(mate::Arguments* args,
     args->ThrowError("path cannot be empty");
     return;
   }
-  DevToolsAddFileSystem(path);
+  DevToolsAddFileSystem(std::string(), path);
 }
 
 void WebContents::RemoveWorkSpace(mate::Arguments* args,

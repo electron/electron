@@ -19,7 +19,8 @@ class InspectableWebContentsDelegate {
   virtual void DevToolsAppendToFile(const std::string& url,
                                     const std::string& content) {}
   virtual void DevToolsRequestFileSystems() {}
-  virtual void DevToolsAddFileSystem(const base::FilePath& file_system_path) {}
+  virtual void DevToolsAddFileSystem(const std::string& type,
+                                     const base::FilePath& file_system_path) {}
   virtual void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) {}
   virtual void DevToolsIndexPath(int request_id,

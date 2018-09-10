@@ -109,7 +109,8 @@ class CommonWebContentsDelegate
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsRequestFileSystems() override;
-  void DevToolsAddFileSystem(const base::FilePath& path) override;
+  void DevToolsAddFileSystem(const std::string& type,
+                             const base::FilePath& file_system_path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
   void DevToolsIndexPath(int request_id,
