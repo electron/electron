@@ -11,6 +11,9 @@ machine-linux-2xlarge: &machine-linux-2xlarge
   <<: *docker-image
   resource_class: 2xlarge
 
+machine-machine: &machine-machine
+  machine: true
+
 machine-mac: &machine-mac
   macos:
     xcode: "8.3.3"
@@ -36,11 +39,13 @@ env-arm: &env-arm
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
   GN_EXTRA_ARGS: 'target_cpu = "arm"'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
+  ARM_DOCKER_IMAGE: electronbuilds/electronarm7:0.0.5
 
 env-arm64: &env-arm64
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
+  ARM_DOCKER_IMAGE: electronbuilds/electronarm64:0.0.6
 
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
@@ -247,6 +252,25 @@ step-electron-tests-run: &step-electron-tests-run
       export ELECTRON_OUT_DIR=Default
       (cd electron && npm run test -- --ci --enable-logging)
 
+step-run-arm-qemu-test: &step-run-arm-qemu-test
+  run:
+    name: Test in qemu
+    command: |
+      docker run --rm --privileged multiarch/qemu-user-static:register --reset
+      docker run -it \
+        --mount "type=bind,source=.,target=/workspace" \
+        --mount "type=bind,source=$PWD,target=/src" \
+        --rm \
+        "${ARM_DOCKER_IMAGE}" \
+        /bin/bash /src/project/tools/run-electron.sh \
+        | tee version.txt
+      if grep -q "$(script/get-version.py)" version.txt; then
+        echo "Versions match"
+      else
+        echo "Versions do not match"
+        exit 1
+      fi
+
 step-electron-tests-store-results: &step-electron-tests-store-results
   store_test_results:
     path: src/junit
@@ -390,6 +414,14 @@ steps-tests: &steps-tests
 
     - <<: *step-electron-tests-run
     - <<: *step-electron-tests-store-results
+
+steps-arm-tests: &steps-arm-tests
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-run-arm-qemu-test
 
 # Mac build are different in a few ways:
 # 1. We can't use save_cache/restore_cache on Mac,
@@ -595,6 +627,18 @@ jobs:
       <<: *env-ia32
     <<: *steps-tests
 
+  linux-arm-testing-tests:
+    <<: *machine-machine
+    environment:
+      <<: *env-arm
+    <<: *steps-arm-tests
+
+  linux-arm64-testing-tests:
+    <<: *machine-machine
+    environment:
+      <<: *env-arm64
+    <<: *steps-arm-tests
+
   osx-testing-tests:
     <<: *machine-mac
     <<: *steps-tests-mac
@@ -639,12 +683,18 @@ workflows:
       - linux-arm-testing:
           requires:
             - linux-arm-checkout
+      - linux-arm-testing-tests:
+          requires:
+            - linux-arm-testing
       - linux-arm64-debug:
           requires:
             - linux-arm64-checkout
       - linux-arm64-testing:
           requires:
             - linux-arm64-checkout
+      - linux-arm64-testing-tests:
+          requires:
+            - linux-arm64-testing
 
   build-mac-fork-prs:
     jobs:
