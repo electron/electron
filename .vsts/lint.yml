@@ -13,5 +13,6 @@ steps:
   name: Setup_depot_tools
 
 - bash: |
+
     npm install
     npm run lint
