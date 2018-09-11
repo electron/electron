@@ -88,7 +88,7 @@ const blacklist = new Set([
 
 async function main () {
   if (!fs.existsSync(LINTER_PATH)) {
-    print('[INFO] Skipping cpplint, dependencies have not been bootstrapped')
+    console.log('[INFO] Skipping cpplint, dependencies have not been bootstrapped')
     return
   }
 
