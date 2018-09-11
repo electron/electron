@@ -15,6 +15,7 @@
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
     "mocha-junit-reporter": "^1.17.0",
+    "mocha-multi-reporters": "^1.1.7",
     "multiparty": "^4.1.4",
     "q": "^1.5.1",
     "send": "^0.16.2",
