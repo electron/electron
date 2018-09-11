@@ -1396,7 +1396,9 @@ void WebContents::UnregisterServiceWorker(
 }
 
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
-  set_ignore_menu_shortcuts(ignore);
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  DCHECK(web_preferences);
+  web_preferences->dict()->SetBoolean("ignoreMenuShortcuts", ignore);
 }
 
 void WebContents::SetAudioMuted(bool muted) {
