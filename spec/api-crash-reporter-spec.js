@@ -64,12 +64,7 @@ describe('crashReporter module', () => {
 
         stopServer = startServer({
           callback (port) {
-            const crashUrl = url.format({
-              protocol: 'file',
-              pathname: path.join(fixtures, 'api', 'crash.html'),
-              search: '?port=' + port
-            })
-            w.loadURL(crashUrl)
+            w.loadFile(path.join(fixtures, 'api', 'crash.html'), {query: {port}})
           },
           processType: 'renderer',
           done: done
