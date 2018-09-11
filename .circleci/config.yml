@@ -19,7 +19,7 @@ notify-slack-success: &notify-slack-success
       fi
     when: on_success
 
-gn-build-steps: &gn-build-steps
+build-steps: &build-steps
   steps:
     - run:
         name: Setup depot tools
@@ -138,7 +138,7 @@ gn-build-steps: &gn-build-steps
     - store_artifacts:
         path: src/out/native_mksnapshot/mksnapshot
 
-gn-mac-build-steps: &gn-mac-build-steps
+mac-build-steps: &mac-build-steps
   steps:
     - run:
         name: Setup depot tools
@@ -210,64 +210,64 @@ gn-mac-build-steps: &gn-mac-build-steps
     - store_artifacts:
         path: src/out/Default/dist.zip
 
-gn-linux-build-machine: &gn-linux-build-machine
+linux-build-machine: &linux-build-machine
   docker:
     - image: electronbuilds/electron:0.0.8
   resource_class: 2xlarge
 
-gn-mac-build-machine: &gn-mac-build-machine
+mac-build-machine: &mac-build-machine
   macos:
     xcode: "8.3.3"
   resource_class: large
 
 version: 2
 jobs:
-  electron-gn-linux-x64-debug-fyi:
+  electron-linux-x64-debug:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-x64-testing-fyi:
+  electron-linux-x64-testing:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/testing.gn
       BUILD_FFMPEG: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-x64-release-fyi:
+  electron-linux-x64-release:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
       BUILD_FFMPEG: true
       NIGHTLY_BUILD: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-ia32-debug-fyi:
+  electron-linux-ia32-debug:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/debug.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-ia32-testing-fyi:
+  electron-linux-ia32-testing:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "x86"'
       NPM_CONFIG_ARCH: ia32
       BUILD_FFMPEG: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-ia32-release-fyi:
+  electron-linux-ia32-release:
     environment:
       DISPLAY: ':99.0'
       GN_CONFIG: //electron/build/args/release.gn
@@ -275,28 +275,28 @@ jobs:
       NPM_CONFIG_ARCH: ia32
       BUILD_FFMPEG: true
       NIGHTLY_BUILD: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm-debug-fyi:
+  electron-linux-arm-debug:
     environment:
       GN_CONFIG: //electron/build/args/debug.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm-testing-fyi:
+  electron-linux-arm-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm-release-fyi:
+  electron-linux-arm-release:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm"'
@@ -306,28 +306,28 @@ jobs:
       BUILD_NATIVE_MKSNAPSHOT: true
       MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
       NIGHTLY_BUILD: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm64-debug-fyi:
+  electron-linux-arm64-debug:
     environment:
       GN_CONFIG: //electron/build/args/debug.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm64-testing-fyi:
+  electron-linux-arm64-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       RUN_TESTS: false
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-linux-arm64-release-fyi:
+  electron-linux-arm64-release:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
       GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
@@ -337,76 +337,76 @@ jobs:
       BUILD_NATIVE_MKSNAPSHOT: true
       MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
       NIGHTLY_BUILD: true
-    <<: *gn-linux-build-machine
-    <<: *gn-build-steps
+    <<: *linux-build-machine
+    <<: *build-steps
 
-  electron-gn-osx-release-fyi:
+  electron-osx-release:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
       RUN_TESTS: true
       NIGHTLY_BUILD: true
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
-  electron-gn-osx-testing-fyi:
+  electron-osx-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       RUN_TESTS: true
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
-  electron-gn-osx-debug-fyi:
+  electron-osx-debug:
     environment:
       GN_CONFIG: //electron/build/args/debug.gn
       RUN_TESTS: false
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
-  electron-gn-mas-release-fyi:
+  electron-mas-release:
     environment:
       GN_CONFIG: //electron/build/args/release.gn
       RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
       NIGHTLY_BUILD: true
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
-  electron-gn-mas-testing-fyi:
+  electron-mas-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
-  electron-gn-mas-debug-fyi:
+  electron-mas-debug:
     environment:
       GN_CONFIG: //electron/build/args/debug.gn
       RUN_TESTS: false
       GN_EXTRA_ARGS: 'is_mas_build = true'
-    <<: *gn-mac-build-machine
-    <<: *gn-mac-build-steps
+    <<: *mac-build-machine
+    <<: *mac-build-steps
 
 workflows:
   version: 2
-  build-gn-linux:
+  build-linux:
     jobs:
-      - electron-gn-linux-x64-debug-fyi
-      - electron-gn-linux-x64-testing-fyi
-      - electron-gn-linux-ia32-debug-fyi
-      - electron-gn-linux-ia32-testing-fyi
-      - electron-gn-linux-arm-debug-fyi
-      - electron-gn-linux-arm-testing-fyi
-      - electron-gn-linux-arm64-debug-fyi
-      - electron-gn-linux-arm64-testing-fyi
-  build-gn-mac:
+      - electron-linux-x64-debug
+      - electron-linux-x64-testing
+      - electron-linux-ia32-debug
+      - electron-linux-ia32-testing
+      - electron-linux-arm-debug
+      - electron-linux-arm-testing
+      - electron-linux-arm64-debug
+      - electron-linux-arm64-testing
+  build-mac:
     jobs:
-      - electron-gn-mas-debug-fyi
-      - electron-gn-mas-testing-fyi
-      - electron-gn-osx-debug-fyi
-      - electron-gn-osx-testing-fyi
+      - electron-mas-debug
+      - electron-mas-testing
+      - electron-osx-debug
+      - electron-osx-testing
 
-  nightly-gn-release-test:
+  nightly-release-test:
     triggers:
       - schedule:
           cron: "0 0 * * *"
@@ -415,9 +415,9 @@ workflows:
               only:
                 - master
     jobs:
-      - electron-gn-linux-x64-release-fyi
-      - electron-gn-linux-ia32-release-fyi
-      - electron-gn-linux-arm-release-fyi
-      - electron-gn-linux-arm64-release-fyi
-      - electron-gn-mas-release-fyi
-      - electron-gn-osx-release-fyi
+      - electron-linux-x64-release
+      - electron-linux-ia32-release
+      - electron-linux-arm-release
+      - electron-linux-arm64-release
+      - electron-mas-release
+      - electron-osx-release
