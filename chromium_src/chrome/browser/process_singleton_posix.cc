@@ -1045,7 +1045,7 @@ bool ProcessSingleton::Create() {
 
   sock_ = sock;
 
-  if (BrowserThread::IsMessageLoopValid(BrowserThread::IO)) {
+  if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
     StartListeningOnSocket();
   } else {
     listen_on_ready_ = true;

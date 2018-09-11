@@ -49,9 +49,7 @@ app.getAppMetrics()
 
 // Deprecated
 const metrics = app.getAppMetrics()
-const {memory} = metrics[0]
-memory.privateBytes  // Deprecated property
-memory.sharedBytes  // Deprecated property
+const {memory} = metrics[0] // Deprecated property
 ```
 
 ## `BrowserWindow`
@@ -135,8 +133,6 @@ nativeImage.createFromBuffer(buffer, {
 ```js
 // Deprecated
 const info = process.getProcessMemoryInfo()
-const privateBytes = info.privateBytes // deprecated property
-const sharedBytes = info.sharedBytes // deprecated property
 ```
 
 ## `screen`

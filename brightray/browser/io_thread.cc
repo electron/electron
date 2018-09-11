@@ -5,7 +5,7 @@
 #include "brightray/browser/io_thread.h"
 
 #include "content/public/browser/browser_thread.h"
-#include "net/proxy_resolution/proxy_service.h"
+#include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -36,14 +36,12 @@ void IOThread::Init() {
   url_request_context_getter_->AddRef();
 
 #if defined(USE_NSS_CERTS)
-  net::SetMessageLoopForNSSHttpIO();
   net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
 #endif
 }
 
 void IOThread::CleanUp() {
 #if defined(USE_NSS_CERTS)
-  net::ShutdownNSSHttpIO();
   net::SetURLRequestContextForNSSHttpIO(nullptr);
 #endif
   // Explicitly release before the IO thread gets destroyed.

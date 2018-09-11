@@ -50,7 +50,7 @@ void RegisterStandardSchemes(const std::vector<std::string>& schemes,
   // Dynamically register the schemes.
   auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
   for (const std::string& scheme : schemes) {
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
     if (secure) {
       url::AddSecureScheme(scheme.c_str());
     }

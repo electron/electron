@@ -21,7 +21,7 @@
 #include "base/logging.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
-#include "ipc/ipc_features.h"
+#include "ipc/ipc_buildflags.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"

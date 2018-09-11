@@ -13,7 +13,7 @@
 #include "ipc/ipc_param_traits.h"
 #include "ipc/ipc_platform_file.h"
 #include "printing/backend/print_backend.h"
-#include "printing/features/features.h"
+#include "printing/buildflags/buildflags.h"
 #include "printing/page_range.h"
 #include "printing/pdf_render_settings.h"
 #include "printing/pwg_raster_settings.h"

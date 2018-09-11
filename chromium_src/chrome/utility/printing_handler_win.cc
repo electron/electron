@@ -161,6 +161,7 @@ bool PrintingHandlerWin::RenderPdfPageToMetafile(int page_number,
           pdf_rendering_settings_.area.y() - offset_y,
           pdf_rendering_settings_.area.width(),
           pdf_rendering_settings_.area.height(), true, false, true, true,
+          pdf_rendering_settings_.use_color,
           pdf_rendering_settings_.autorotate)) {
     return false;
   }

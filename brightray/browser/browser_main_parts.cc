@@ -29,6 +29,7 @@
 #include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "media/base/localized_strings.h"
@@ -181,8 +182,14 @@ void OverrideAppLogsPath() {
 
 void BrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  const auto enable_features =
+  auto enable_features =
       cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
+  // Node depends on SharedArrayBuffer support, which was temporarily disabled
+  // by https://chromium-review.googlesource.com/c/chromium/src/+/849429 (in
+  // M64) and reenabled by
+  // https://chromium-review.googlesource.com/c/chromium/src/+/1159358 (in
+  // M70). Once Electron upgrades to M70, we can remove this.
+  enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
   auto feature_list = std::make_unique<base::FeatureList>();

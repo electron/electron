@@ -232,7 +232,7 @@ static_library("electron_lib") {
     "//ppapi/shared_impl",
     "//printing",
     "//skia",
-    "//third_party/WebKit/public:blink",
+    "//third_party/blink/public:blink",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
     "//third_party/leveldatabase",
@@ -258,7 +258,7 @@ static_library("electron_lib") {
 
     # TODO(nornagon): replace usage of SchemeRegistry by an actually exported
     # API of blink, then remove this from the include_dirs.
-    "//third_party/WebKit/Source",
+    "//third_party/blink/renderer",
   ]
 
   defines = []
@@ -400,6 +400,7 @@ static_library("electron_lib") {
     ]
     deps += [
       "//components/viz/service",
+      "//services/viz/public/interfaces",
       "//ui/compositor",
     ]
   }
@@ -437,8 +438,6 @@ static_library("electron_lib") {
 
   if (enable_widevine) {
     sources += [
-      "//chrome/common/widevine_cdm_constants.cc",
-      "//chrome/common/widevine_cdm_constants.h",
       "//chrome/renderer/media/chrome_key_systems.cc",
       "//chrome/renderer/media/chrome_key_systems.h",
       "//chrome/renderer/media/chrome_key_systems_provider.cc",
@@ -763,8 +762,8 @@ group("blink_unittests") {
   testonly = true
 
   deps = [
-    "//third_party/WebKit/public:all_blink",
-    "//third_party/WebKit/public:test_support",
+    "//third_party/blink/public:all_blink",
+    "//third_party/blink/public:test_support",
   ]
 }
 
@@ -780,7 +779,6 @@ group("chromium_unittests") {
     "//device:device_unittests",
     "//gin:gin_unittests",
     "//gpu:gpu_unittests",
-    "//gpu/ipc/service:gpu_ipc_service_unittests",
     "//ipc:ipc_tests",
     "//media:media_unittests",
     "//media/capture:capture_unittests",

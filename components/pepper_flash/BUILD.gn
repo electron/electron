@@ -38,7 +38,7 @@ component("pepper_flash") {
   deps = [
     "//content/public/browser",
     "//content/public/renderer",
-    "//media:media_features",
+    "//media:media_buildflags",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/proxy:ipc",

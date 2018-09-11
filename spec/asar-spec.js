@@ -895,6 +895,12 @@ describe('asar package', function () {
         const {hasOwnProperty} = Object.prototype
 
         for (const [propertyName, originalValue] of Object.entries(originalFs)) {
+          // Some properties exist but have a value of `undefined` on some platforms.
+          // E.g. `fs.lchmod`, which in only available on MacOS, see
+          // https://nodejs.org/docs/latest-v10.x/api/fs.html#fs_fs_lchmod_path_mode_callback
+          // Also check for `null`s, `hasOwnProperty()` can't handle them.
+          if (typeof originalValue === 'undefined' || originalValue === null) continue
+
           if (hasOwnProperty.call(originalValue, util.promisify.custom)) {
             expect(fs).to.have.own.property(propertyName)
                 .that.has.own.property(util.promisify.custom)

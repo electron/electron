@@ -92,8 +92,8 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
-#include "third_party/WebKit/public/platform/WebInputEvent.h"
-#include "third_party/WebKit/public/web/WebFindOptions.h"
+#include "third_party/blink/public/platform/web_input_event.h"
+#include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -315,7 +315,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents), type_(type) {
   const mate::Dictionary options = mate::Dictionary::CreateEmpty(isolate);
   if (type == REMOTE) {
-    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+    web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+                                       false);
     Init(isolate);
     AttachAsUserData(web_contents);
     InitZoomController(web_contents, options);
@@ -456,7 +457,8 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   // Initialize zoom controller.
   InitZoomController(web_contents, options);
 
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent());
+  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+                                     false);
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -718,9 +720,12 @@ void WebContents::FindReply(content::WebContents* web_contents,
   Emit("found-in-page", result);
 }
 
-bool WebContents::CheckMediaAccessPermission(content::WebContents* web_contents,
-                                             const GURL& security_origin,
-                                             content::MediaStreamType type) {
+bool WebContents::CheckMediaAccessPermission(
+    content::RenderFrameHost* render_frame_host,
+    const GURL& security_origin,
+    content::MediaStreamType type) {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckMediaAccessPermission(security_origin, type);
@@ -1123,7 +1128,7 @@ void WebContents::LoadURL(const GURL& url, const mate::Dictionary& options) {
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent))
-    web_contents()->SetUserAgentOverride(user_agent);
+    web_contents()->SetUserAgentOverride(user_agent, false);
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -1233,7 +1238,7 @@ bool WebContents::IsCrashed() const {
 
 void WebContents::SetUserAgent(const std::string& user_agent,
                                mate::Arguments* args) {
-  web_contents()->SetUserAgentOverride(user_agent);
+  web_contents()->SetUserAgentOverride(user_agent, false);
 }
 
 std::string WebContents::GetUserAgent() {

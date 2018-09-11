@@ -26,8 +26,8 @@
 #include "chrome/common/chrome_utility_printing_messages.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
-#include "content/public/browser/utility_process_host.h"
-#include "content/public/browser/utility_process_host_client.h"
+#include "content/browser/utility_process_host.h"
+#include "content/browser/utility_process_host_client.h"
 #include "printing/emf_win.h"
 #include "printing/pdf_render_settings.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -421,6 +421,7 @@ PdfConverterUtilityProcessHostClient::~PdfConverterUtilityProcessHostClient() {}
 void PdfConverterUtilityProcessHostClient::Start(
     const scoped_refptr<base::RefCountedMemory>& data,
     const PdfConverter::StartCallback& start_callback) {
+  CHECK(false) << "Printing doesn't work yet.";
   if (!BrowserThread::CurrentlyOn(BrowserThread::IO)) {
     BrowserThread::PostTask(
         BrowserThread::IO, FROM_HERE,
@@ -435,9 +436,12 @@ void PdfConverterUtilityProcessHostClient::Start(
   // NOTE: This process _must_ be sandboxed, otherwise the pdf dll will load
   // gdiplus.dll, change how rendering happens, and not be able to correctly
   // generate when sent to a metafile DC.
+  /*
   utility_process_host_ = content::UtilityProcessHost::Create(
                               this, base::ThreadTaskRunnerHandle::Get())
                               ->AsWeakPtr();
+  */
+  utility_process_host_ = nullptr;
   utility_process_host_->SetName(GetName());
 
   base::PostTaskAndReplyWithResult(
@@ -546,7 +550,11 @@ void PdfConverterUtilityProcessHostClient::OnProcessLaunchFailed(
 
 bool PdfConverterUtilityProcessHostClient::Send(IPC::Message* msg) {
   if (utility_process_host_)
+#if 1
+    CHECK(false) << "Printing is broken.";
+#else
     return utility_process_host_->Send(msg);
+#endif
   delete msg;
   return false;
 }

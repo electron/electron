@@ -18,7 +18,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/media/chrome_key_systems.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
@@ -26,13 +25,13 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"  // NOLINT(build/include_alpha)
-#include "third_party/WebKit/public/web/WebFrameWidget.h"
-#include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebPluginParams.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
+#include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
+#include "third_party/blink/public/web/blink.h"
+#include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
+#include "third_party/blink/public/web/web_frame_widget.h"
+#include "third_party/blink/public/web/web_plugin_params.h"
+#include "third_party/blink/public/web/web_script_source.h"
+#include "third_party/blink/public/web/web_security_policy.h"
 
 #if defined(OS_MACOSX)
 #include "base/strings/sys_string_conversions.h"
@@ -78,7 +77,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
   // We rely on the unique process host id which is notified to the
@@ -171,9 +170,6 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
-  // This is required for widevine plugin detection provided during runtime.
-  blink::ResetPluginCache();
-
 #if defined(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
@@ -227,11 +223,17 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
+#if defined(WIDEVINE_CDM_AVAILABLE)
   key_systems_provider_.AddSupportedKeySystems(key_systems);
+#endif
 }
 
 bool RendererClientBase::IsKeySystemsUpdateNeeded() {
+#if defined(WIDEVINE_CDM_AVAILABLE)
   return key_systems_provider_.IsKeySystemsUpdateNeeded();
+#else
+  return false;
+#endif
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(
