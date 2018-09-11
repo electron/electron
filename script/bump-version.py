@@ -96,7 +96,7 @@ def main():
     return 0
 
   with scoped_cwd(SOURCE_ROOT):
-    update_electron_gyp(version, suffix)
+    update_version(version, suffix)
     update_win_rc(version, versions)
     update_version_h(versions, suffix)
     update_info_plist(version)
@@ -115,20 +115,9 @@ def increase_version(versions, index):
   return versions
 
 
-def update_electron_gyp(version, suffix):
-  assert False, "electron.gyp must not be used anymore. We build with GN now."
-
-  pattern = re.compile(" *'version%' *: *'[0-9.]+(-beta[0-9.]*)?(-dev)?"
-    + "(-nightly[0-9.]*)?'")
-  with open('electron.gyp', 'r') as f:
-    lines = f.readlines()
-
-  for i in range(0, len(lines)):
-    if pattern.match(lines[i]):
-      lines[i] = "    'version%': '{0}',\n".format(version + suffix)
-      with open('electron.gyp', 'w') as f:
-        f.write(''.join(lines))
-      return
+def update_version(version, suffix):
+  with open('VERSION', 'w') as f:
+    f.write(version + suffix)
 
 
 def update_win_rc(version, versions):

@@ -176,7 +176,10 @@ def electron_gyp():
     return obj['variables']
 
 def get_electron_version():
-  return 'v' + electron_gyp()['version%']
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  version_file = os.path.join(SOURCE_ROOT, 'VERSION')
+  with open(version_file) as f:
+    return 'v' + f.read().strip()
 
 def boto_path_dirs():
   return [

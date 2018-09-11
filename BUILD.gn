@@ -29,7 +29,6 @@ declare_args() {
   electron_product_name = "Electron"
   electron_company_name = "GitHub, Inc"
   electron_company_abbr = "github"
-  electron_version = "0.0.0-dev"
 
   enable_desktop_capturer = true
   enable_run_as_node = true
@@ -541,6 +540,8 @@ if (is_mac) {
       deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "atom/common/resources/mac/Info.plist"
+
+    electron_version = read_file("VERSION", "trim string")
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
@@ -883,12 +884,13 @@ group("licenses") {
   ]
 }
 
-action("electron_version") {
-  script = "build/write_version.py"
-  outputs = [
-    "$root_build_dir/version",
+copy("electron_version") {
+  sources = [
+    "VERSION"
   ]
-  args = rebase_path(outputs, root_build_dir) + [ electron_version ]
+  outputs = [
+    "$root_build_dir/version"
+  ]
 }
 
 dist_zip("electron_dist_zip") {
