@@ -24,12 +24,12 @@ if (is_linux) {
   }
 }
 
-declare_args() {
-  electron_project_name = "electron"
-  electron_product_name = "Electron"
-  electron_company_name = "GitHub, Inc"
-  electron_company_abbr = "github"
+branding = read_file("atom/app/BRANDING.json", "json")
+electron_project_name = branding.project_name
+electron_product_name = branding.product_name
+electron_mac_bundle_id = branding.mac_bundle_id
 
+declare_args() {
   enable_desktop_capturer = true
   enable_run_as_node = true
   enable_osr = false
@@ -456,11 +456,10 @@ electron_paks("packed_resources") {
 }
 
 if (is_mac) {
-  electron_framework_name = electron_product_name + " Framework"
-  electron_helper_name = electron_product_name + " Helper"
-  electron_login_helper_name = electron_product_name + " Login Helper"
+  electron_framework_name = "$electron_product_name Framework"
+  electron_helper_name = "$electron_product_name Helper"
+  electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
-  electron_mac_bundle_id = "com.$electron_company_abbr.$electron_project_name"
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [

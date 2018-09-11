@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 from lib.config import enable_verbose_mode
-from lib.util import electron_gyp, execute_stdout, rm_rf
+from lib.util import get_electron_branding, execute_stdout, rm_rf
 
 
 if sys.platform == 'linux2':
@@ -29,8 +29,8 @@ if sys.platform == 'linux2':
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
-PROJECT_NAME = electron_gyp()['project_name%']
-PRODUCT_NAME = electron_gyp()['product_name%']
+PROJECT_NAME = get_electron_branding()['project_name']
+PRODUCT_NAME = get_electron_branding()['product_name']
 
 
 def main():

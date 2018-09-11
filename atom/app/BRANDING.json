@@ -1,0 +1,5 @@
+{
+  "project_name": "Electron",
+  "product_name": "electron",
+  "mac_bundle_id": "com.github.Electron"
+}

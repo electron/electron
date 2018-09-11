@@ -4,7 +4,7 @@ import os
 import sys
 
 from lib.config import PLATFORM
-from lib.util import electron_gyp, execute, rm_rf
+from lib.util import get_electron_branding, execute, rm_rf
 
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -54,8 +54,8 @@ def main(destination):
 
 
 def get_names_from_gyp():
-  variables = electron_gyp()
-  return (variables['project_name%'], variables['product_name%'])
+  variables = get_electron_branding()
+  return (variables['project_name'], variables['product_name'])
 
 
 if __name__ == '__main__':
