@@ -8,7 +8,7 @@ An example of showing a dialog to select multiple files and directories:
 
 ```javascript
 const {dialog} = require('electron')
-console.log(dialog.showOpenDialog({options = {properties: ['openFile', 'openDirectory', 'multiSelections']}}))
+console.log(dialog.showOpenDialog({options: {properties: ['openFile', 'openDirectory', 'multiSelections']}}))
 ```
 
 The Dialog is opened from Electron's main thread. If you want to use the dialog

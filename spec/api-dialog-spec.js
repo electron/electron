@@ -1,7 +1,7 @@
 const {expect} = require('chai')
 const {dialog} = require('electron').remote
 
-describe.only('dialog module', () => {
+describe('dialog module', () => {
   describe('showOpenDialog', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
@@ -58,7 +58,7 @@ describe.only('dialog module', () => {
 
       expect(() => {
         dialog.showMessageBox({window: null, options: {buttons: false}})
-      }).to.throw(/buttons must be an array/)
+      }).to.throw(/Buttons must be an array/)
 
       expect(() => {
         dialog.showMessageBox({options: {title: 300}})
@@ -74,7 +74,7 @@ describe.only('dialog module', () => {
 
       expect(() => {
         dialog.showMessageBox({options: {checkboxLabel: false}})
-      }).to.throw(/checkboxLabe must be a string/)
+      }).to.throw(/checkboxLabel must be a string/)
     })
   })
 
@@ -98,10 +98,14 @@ describe.only('dialog module', () => {
     it('throws errors when the options are invalid', () => {
       expect(() => {
         dialog.showCertificateTrustDialog()
+      }).to.throw(/Insufficient number of arguments/)
+
+      expect(() => {
+        dialog.showCertificateTrustDialog({options: 300})
       }).to.throw(/options must be an object/)
 
       expect(() => {
-        dialog.showCertificateTrustDialog({options: {}})
+        dialog.showCertificateTrustDialog({options: {certificate: 300}})
       }).to.throw(/certificate must be an object/)
 
       expect(() => {
