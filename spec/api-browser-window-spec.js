@@ -211,15 +211,9 @@ describe('BrowserWindow module', () => {
       }, /Object has been destroyed/)
     })
     it('should not crash when destroying windows with pending events', (done) => {
-      let focusListener = (event, win) => win.id
-      app.on('browser-window-focus', focusListener)
-      const windowCount = 3
-      const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(defaultOptions))
-      windows.forEach(win => win.show())
-      windows.forEach(win => win.focus())
-      windows.forEach(win => win.destroy())
-      app.removeListener('browser-window-focus', focusListener)
-      done()
+      const responseEvent = 'destroy-test-completed'
+      ipcRenderer.on(responseEvent, () => done())
+      ipcRenderer.send('test-browserwindow-destroy', { responseEvent })
     })
   })
 
