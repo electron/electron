@@ -1,16 +1,11 @@
-resources:
-- repo: self
-phases:
-- phase: Build_Electron_via_GN
-  queue:
-    timeoutInMinutes: 180
+jobs:
+- job: Build_Electron_via_GN
+  timeoutInMinutes: 180
   steps:
   - bash: |
-      git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${AGENT_BUILDDIRECTORY}/depot_tools"
-      echo "##vso[task.setvariable variable=PATH]$PATH:${AGENT_BUILDDIRECTORY}/depot_tools"
-    name: Setup_depot_tools
-
-  - bash: |
+      export PATH="$PATH:/Users/electron/depot_tools"
+      echo "##vso[task.setvariable variable=PATH]$PATH"
+      echo $PATH
       export GIT_CACHE_PATH="/Users/electron/libcc_cache"
       set -ex
       gclient config \
@@ -26,29 +21,40 @@ phases:
       # better solution for checking out the commit to be built.
       (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
       gclient sync --with_branch_heads --with_tags
-    name: gclient_sync
+      cd src
+      export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
+      echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
+    displayName: 'gclient sync'
 
   - bash: |
       cd src
-      export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-      export SCCACHE_BINARY="`pwd`/electron/external_binaries/sccache"
-      # SCCACHE_AZURE_BLOB_CONTAINER and SCCACHE_AZURE_CONNECTION_STRING are expected to be set.
-      "$SCCACHE_BINARY" --start-server
-      echo "##vso[task.setvariable variable=SCCACHE_BINARY]$SCCACHE_BINARY"
-      echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]$CHROMIUM_BUILDTOOLS_PATH"
+      export SCCACHE_HELPER="`pwd`/electron/script/sccache-helper.py"
+      "$SCCACHE_HELPER" --start-server --aws-access-key "$(SCCACHE_AWS_ACCESS_KEY)" --aws-secret "$(SCCACHE_AWS_SECRET)"
+      export SCCACHE_WRAPPER="`pwd`/electron/external_binaries/sccache"
+      echo "##vso[task.setvariable variable=SCCACHE_WRAPPER]$SCCACHE_WRAPPER"
+      "$SCCACHE_WRAPPER" -s
       echo "GN gen for: $GN_CONFIG"
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_BINARY"'"'
-    name: GN_gen
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_WRAPPER"'"'" $GN_EXTRA_ARGS"
+    displayName: 'GN gen with sccache'
+    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
+      cd src
+      echo "GN gen for: $GN_CONFIG"
+      gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
+    displayName: 'GN gen without sccache'
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_app
-    name: Ninja_build
+    displayName: 'Ninja build app'
 
   - bash: |
-      "$SCCACHE_BINARY" -s
-      "$SCCACHE_BINARY" --stop-server
-    name: Check_sccache_stats
+      "$SCCACHE_WRAPPER" -s
+      "$SCCACHE_WRAPPER" --stop-server
+    displayName: 'Check sccache stats after build'
+    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       set +e
@@ -56,41 +62,40 @@ phases:
       ninja -C out/Default third_party/electron_node:headers
       export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
       (cd electron/spec && npm install)
-      ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
-    name: Test
-    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+      ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci
+    displayName: 'Test'
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_dist_zip
-    name: Build_dist_zip
-    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+    displayName: 'Build dist zip'
 
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
-      testResultsFiles: '**/test-*.xml'
-    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'), ne(variables['ELECTRON_RELEASE'], '1'))
+      testResultsFiles: '*.xml'
+      searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
+    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'), eq(variables['RUN_TESTS'], '1'))
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts
     inputs:
       PathtoPublish: '$(Build.SourcesDirectory)/out/Default/dist.zip'
       ArtifactName: dist.zip
-    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
       export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
-    name: Post_Slack_Notification_on_Failure
-    condition: failed()
+    displayName: 'Post Slack Notification on Failure'
+    condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
       export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
-    name: Post_Slack_Notification_on_Success
-    condition: succeeded()
+    displayName: 'Post Slack Notification on Success'
+    condition: and(succeeded(), eq(variables['NOTIFY_SLACK'], '1'))
