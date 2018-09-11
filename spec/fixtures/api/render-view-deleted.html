@@ -17,7 +17,7 @@
       }
 
       // This should trigger a dereference and a remote getURL call should fail
-      contents.emit('render-view-deleted', {}, '', contents.getOSProcessId())
+      contents.emit('render-view-deleted', {}, contents.getProcessId())
       try {
         contents.getURL()
         ipcRenderer.send('error-message', 'No error thrown')

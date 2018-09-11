@@ -56,7 +56,6 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
-#include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
@@ -777,8 +776,7 @@ void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted", render_view_host->GetProcess()->GetID(),
-       base::GetProcId(render_view_host->GetProcess()->GetHandle()));
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
