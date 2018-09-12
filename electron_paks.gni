@@ -141,11 +141,13 @@ template("electron_paks") {
     }
 
     source_patterns = [
+      "${root_gen_dir}/components/strings/components_strings_",
       "${root_gen_dir}/content/app/strings/content_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
     deps = [
+      "//components/strings:components_strings",
       "//content/app/strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ui_strings",

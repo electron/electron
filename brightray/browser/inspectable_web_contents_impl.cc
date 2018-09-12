@@ -271,7 +271,7 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
 }
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
 }
 
@@ -354,17 +354,25 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
 
 void InspectableWebContentsImpl::AttachTo(
     scoped_refptr<content::DevToolsAgentHost> host) {
-  if (agent_host_.get())
-    Detach();
+  Detach();
   agent_host_ = std::move(host);
-  // Terminate existing debugging connections and start debugging.
-  agent_host_->ForceAttachClient(this);
+  // We could use ForceAttachClient here if problem arises with
+  // devtools multiple session support.
+  agent_host_->AttachClient(this);
 }
 
 void InspectableWebContentsImpl::Detach() {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DetachClient(this);
   agent_host_ = nullptr;
+}
+
+void InspectableWebContentsImpl::Reattach(const DispatchCallback& callback) {
+  if (agent_host_) {
+    agent_host_->DetachClient(this);
+    agent_host_->AttachClient(this);
+  }
+  callback.Run(nullptr);
 }
 
 void InspectableWebContentsImpl::CallClientFunction(
@@ -528,11 +536,9 @@ void InspectableWebContentsImpl::RequestFileSystems() {
     delegate_->DevToolsRequestFileSystems();
 }
 
-void InspectableWebContentsImpl::AddFileSystem(
-    const std::string& file_system_path) {
+void InspectableWebContentsImpl::AddFileSystem(const std::string& type) {
   if (delegate_)
-    delegate_->DevToolsAddFileSystem(
-        base::FilePath::FromUTF8Unsafe(file_system_path));
+    delegate_->DevToolsAddFileSystem(type, base::FilePath());
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(
@@ -547,9 +553,11 @@ void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
 
 void InspectableWebContentsImpl::IndexPath(
     int request_id,
-    const std::string& file_system_path) {
+    const std::string& file_system_path,
+    const std::string& excluded_folders) {
   if (delegate_)
-    delegate_->DevToolsIndexPath(request_id, file_system_path);
+    delegate_->DevToolsIndexPath(request_id, file_system_path,
+                                 excluded_folders);
 }
 
 void InspectableWebContentsImpl::StopIndexing(int request_id) {
@@ -620,7 +628,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     return;
   }
 
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DispatchProtocolMessage(this, message);
 }
 
