@@ -52,3 +52,7 @@ compile_commands.json
 /npm/path.txt
 
 .npmrc
+
+# Generated API definitions
+electron-api.json
+electron.d.ts
