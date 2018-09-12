@@ -46,7 +46,7 @@ For more info, see the [Mac App Store Submission Guide].
 Before signing Windows builds, you must do the following:
 
 1. Get a Windows Authenticode code signing certificate
-2. Install Visual Studio 2015/2017 (to get the signing utility)
+2. Install Visual Studio 2015/2017 (to get the signing utility). This however is not required if you use Electron Builder to package your app as it will automatically install the tools needed to sign both 32 and 64 bit applications.
 
 You can get a code signing certificate from a lot of resellers, popular ones include:
 
