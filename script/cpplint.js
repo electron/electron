@@ -16,7 +16,7 @@ function callCpplint (filenames, args) {
       if (error) {
         console.warn(error)
       }
-      for (let line of stderr.split(/[\r\n]+/)) {
+      for (const line of stderr.split(/[\r\n]+/)) {
         if (!line.startsWith('Done processing ')) console.warn(line)
       }
     })
