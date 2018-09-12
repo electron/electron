@@ -19,6 +19,9 @@ function callCpplint (filenames, args) {
             console.warn(line)
           }
         }
+        if (error.message.includes('Command failed')) {
+          process.exit(1)
+        }
       }
     })
   } catch (e) {
