@@ -24,7 +24,14 @@ function findCppLint () {
 function callCpplint (linter, filenames, args) {
   if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
-    console.log(String(childProcess.execFileSync(linter, filenames, {cwd: SOURCE_ROOT})))
+    childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, (error, stdout, stderr) => {
+      if (error) {
+        console.warn(error)
+      }
+      for (let line of stderr.split(/[\r\n]+/)) {
+        if (!line.startsWith('Done processing ')) console.warn(line)
+      }
+    })
   } catch (e) {
     process.exit(1)
   }
