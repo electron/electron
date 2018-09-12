@@ -33,17 +33,6 @@ describe.only('deprecations', () => {
     expect(deprecations.getHandler()).to.be.a('function')
   })
 
-  it('returns a deprecation warning', () => {
-    const messages = []
-
-    deprecations.setHandler(message => {
-      messages.push(message)
-    })
-
-    deprecate.warn('old', 'new')
-    expect(messages).to.deep.equal([`'old' is deprecated. Use 'new' instead.`])
-  })
-
   it('renames a method', () => {
     expect(nativeImage.createFromDataUrl).to.be.undefined()
     expect(nativeImage.createFromDataURL).to.be.a('function')
