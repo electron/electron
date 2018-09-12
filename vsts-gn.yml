@@ -81,7 +81,7 @@ jobs:
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts
     inputs:
-      PathtoPublish: '$(Build.SourcesDirectory)/out/Default/dist.zip'
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
       ArtifactName: dist.zip
 
   - bash: |

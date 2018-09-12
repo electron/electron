@@ -367,10 +367,19 @@ workflows:
       - electron-linux-arm-testing
       - electron-linux-arm64-debug
       - electron-linux-arm64-testing
-  build-mac-prs:
+
+  build-mac-fork-prs:
     jobs:
-      - electron-mas-testing
-      - electron-osx-testing
+      - electron-mas-testing:
+          filters:
+            branches:
+              # only from forks
+              only: /^pull\/.*$/
+      - electron-osx-testing:
+          filters:
+            branches:
+              # only from forks
+              only: /^pull\/.*$/
 
   nightly-release-test:
     triggers:
