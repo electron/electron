@@ -8,12 +8,23 @@ const minimist = require('minimist')
 const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
-const LINTER_PATH = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
 
-function callCpplint (filenames, args) {
-  if (args.verbose) console.log([LINTER_PATH, ...filenames].join(' '))
+function findCppLint () {
+  const linterName = 'cpplint.py'
+
+  const isGNBuild = fs.existsSync(SOURCE_ROOT, '..', '..', '.gclient')
+  if (isGNBuild) return linterName // GN users have depot_tools in $PATH
+
+  const gypPath = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', linterName)
+  if (fs.existsSync(gypPath)) return gypPath
+
+  return undefined
+}
+
+function callCpplint (linter, filenames, args) {
+  if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
-    console.log(String(childProcess.execFileSync(LINTER_PATH, filenames, {cwd: SOURCE_ROOT})))
+    console.log(String(childProcess.execFileSync(linter, filenames, {cwd: SOURCE_ROOT})))
   } catch (e) {
     process.exit(1)
   }
@@ -87,8 +98,9 @@ const blacklist = new Set([
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 async function main () {
-  if (!fs.existsSync(LINTER_PATH)) {
-    console.log('[INFO] Skipping cpplint, dependencies have not been bootstrapped')
+  const linter = findCppLint()
+  if (!linter) {
+    console.log('[INFO] Skipping cpplint, unable to find linter')
     return
   }
 
@@ -109,7 +121,7 @@ async function main () {
     filenames = filenames.filter(x => whitelist.has(x))
   }
 
-  if (filenames.length) callCpplint(filenames, args)
+  if (filenames.length) callCpplint(linter, filenames, args)
 }
 
 if (process.mainModule === module) main()
