@@ -331,13 +331,18 @@ def get_next_nightly(v):
 def non_empty(thing):
   return thing.strip() != ''
 
+def beta_tag_compare(tag1, tag2):
+  p1 = parse_version(tag1)
+  p2 = parse_version(tag2)
+  return int(p1[3]) - int(p2[3])
+
 def get_next_beta(v):
   pv = clean_parse_version(v)
   tag_pattern = 'v' + pv[0] + '.' + pv[1] + '.' + pv[2] + '-beta.*'
-  tag_list = filter(
+  tag_list = sorted(filter(
     non_empty,
     execute(['git', 'tag', '--list', '-l', tag_pattern]).strip().split('\n')
-  )
+  ), cmp=beta_tag_compare)
   if len(tag_list) == 0:
     return make_version(pv[0] , pv[1],  pv[2], 'beta.1')
 
