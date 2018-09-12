@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/login_handler.h"
+
 #include <memory>
 #include <utility>
-
-#include "atom/browser/login_handler.h"
 
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/net_converter.h"

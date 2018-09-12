@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/ui/views/autofill_popup_view.h"
+
 #include <memory>
 
-#include "atom/browser/ui/views/autofill_popup_view.h"
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
 #include "cc/paint/skia_paint_canvas.h"

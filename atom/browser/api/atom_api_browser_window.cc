@@ -2,9 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <memory>
-
 #include "atom/browser/api/atom_api_browser_window.h"
+
+#include <memory>
 
 #include "atom/browser/browser.h"
 #include "atom/browser/unresponsive_suppressor.h"
