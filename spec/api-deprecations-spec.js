@@ -5,7 +5,7 @@ const {deprecations, deprecate, nativeImage} = require('electron')
 const {expect} = chai
 chai.use(dirtyChai)
 
-describe.only('deprecations', () => {
+describe('deprecations', () => {
   beforeEach(() => {
     deprecations.setHandler(null)
     process.throwDeprecation = true
