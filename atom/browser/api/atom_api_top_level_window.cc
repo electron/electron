@@ -142,6 +142,11 @@ void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
 }
 
 void TopLevelWindow::OnWindowClosed() {
+  // Invalidate weak ptrs before the Javascript object is destroyed,
+  // there might be some delayed emit events which shouldn't be
+  // triggered after this.
+  weak_factory_.InvalidateWeakPtrs();
+
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 

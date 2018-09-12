@@ -210,6 +210,11 @@ describe('BrowserWindow module', () => {
         contents.getId()
       }, /Object has been destroyed/)
     })
+    it('should not crash when destroying windows with pending events', (done) => {
+      const responseEvent = 'destroy-test-completed'
+      ipcRenderer.on(responseEvent, () => done())
+      ipcRenderer.send('test-browserwindow-destroy', { responseEvent })
+    })
   })
 
   describe('BrowserWindow.loadURL(url)', () => {

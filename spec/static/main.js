@@ -379,6 +379,26 @@ ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
   contents.loadURL(options.url)
 })
 
+ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
+  let focusListener = (event, win) => win.id
+  app.on('browser-window-focus', focusListener)
+  const windowCount = 3
+  const windowOptions = {
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      backgroundThrottling: false
+    }
+  }
+  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
+  windows.forEach(win => win.show())
+  windows.forEach(win => win.focus())
+  windows.forEach(win => win.destroy())
+  app.removeListener('browser-window-focus', focusListener)
+  event.sender.send(testOptions.responseEvent)
+})
+
 // Suspend listeners until the next event and then restore them
 const suspendListeners = (emitter, eventName, callback) => {
   const listeners = emitter.listeners(eventName)
