@@ -12,12 +12,16 @@ function callCpplint (filenames, args) {
   const linter = 'cpplint.py'
   if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
-    childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, (error, stdout, stderr) => {
+    childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, error => {
       if (error) {
-        console.warn(error)
-      }
-      for (const line of stderr.split(/[\r\n]+/)) {
-        if (!line.startsWith('Done processing ')) console.warn(line)
+        for (const line of error.message.split(/[\r\n]+/)) {
+          if (line.length && !line.startsWith('Done processing ')) {
+            console.warn(line)
+          }
+        }
+        if (error.message.includes('Command failed')) {
+          process.exit(1)
+        }
       }
     })
   } catch (e) {
@@ -41,7 +45,7 @@ function parseCommandLine () {
 }
 
 async function findChangedFiles (top) {
-  const result = await GitProcess.exec(['diff', '--name-only'], top)
+  const result = await GitProcess.exec(['diff', 'HEAD', '--name-only'], top)
   if (result.exitCode !== 0) {
     console.log('Failed to find changed files', GitProcess.parseError(result.stderr))
     process.exit(1)
