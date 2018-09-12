@@ -58,8 +58,9 @@ class RendererClientBase : public content::ContentRendererClient {
   ChromeKeySystemsProvider key_systems_provider_;
   bool isolated_world_;
 
+  std::string renderer_client_id_;
   // An increasing ID used for indentifying an V8 context in this process.
-  int next_context_id_ = 0;
+  int64_t next_context_id_ = 0;
 };
 
 }  // namespace atom
