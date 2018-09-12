@@ -343,14 +343,12 @@ jobs:
   electron-osx-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
-      RUN_TESTS: true
     <<: *mac-build-machine
     <<: *mac-build-steps
 
   electron-mas-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
-      RUN_TESTS: true
       GN_EXTRA_ARGS: 'is_mas_build = true'
     <<: *mac-build-machine
     <<: *mac-build-steps

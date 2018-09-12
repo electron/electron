@@ -5,7 +5,6 @@ jobs:
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
       echo "##vso[task.setvariable variable=PATH]$PATH"
-      echo $PATH
       export GIT_CACHE_PATH="/Users/electron/libcc_cache"
       set -ex
       gclient config \
@@ -24,52 +23,55 @@ jobs:
       cd src
       export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
       echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
-    displayName: 'gclient sync'
+    displayName: gclient sync
 
   - bash: |
       cd src
-      export SCCACHE_HELPER="`pwd`/electron/script/sccache-helper.py"
-      "$SCCACHE_HELPER" --start-server --aws-access-key "$(SCCACHE_AWS_ACCESS_KEY)" --aws-secret "$(SCCACHE_AWS_SECRET)"
-      export SCCACHE_WRAPPER="`pwd`/electron/external_binaries/sccache"
-      echo "##vso[task.setvariable variable=SCCACHE_WRAPPER]$SCCACHE_WRAPPER"
-      "$SCCACHE_WRAPPER" -s
+      export SCCACHE_BINARY="`pwd`/electron/external_binaries/sccache"
+      "$SCCACHE_BINARY" --start-server
+      echo "##vso[task.setvariable variable=SCCACHE_BINARY]$SCCACHE_BINARY"
+      "$SCCACHE_BINARY" -s
       echo "GN gen for: $GN_CONFIG"
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_WRAPPER"'"'" $GN_EXTRA_ARGS"
-    displayName: 'GN gen with sccache'
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_BINARY"'"'" $GN_EXTRA_ARGS"
+    env:
+      AWS_ACCESS_KEY_ID: $(SCCACHE_AWS_ACCESS_KEY)
+      AWS_SECRET_ACCESS_KEY: $(SCCACHE_AWS_SECRET)
+    displayName: GN gen with sccache
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       cd src
       echo "GN gen for: $GN_CONFIG"
       gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
-    displayName: 'GN gen without sccache'
+    displayName: GN gen without sccache
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_app
-    displayName: 'Ninja build app'
+    displayName: Ninja build app
 
   - bash: |
-      "$SCCACHE_WRAPPER" -s
-      "$SCCACHE_WRAPPER" --stop-server
-    displayName: 'Check sccache stats after build'
+      "$SCCACHE_BINARY" --stop-server
+    displayName: Check sccache stats after build
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
       set +e
       cd src
+      # Make sure there aren't any Electron processes left running from previous tests
+      killall Electron
       ninja -C out/Default third_party/electron_node:headers
       export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
       (cd electron/spec && npm install)
-      ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci
-    displayName: 'Test'
+      ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
+    displayName: Test
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_dist_zip
-    displayName: 'Build dist zip'
+    displayName: Build dist zip
 
   - task: PublishTestResults@2
     displayName: Publish Test Results
