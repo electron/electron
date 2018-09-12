@@ -30,9 +30,6 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 #if defined(OS_MACOSX)
   // Mac needs them too for scrollbar related images and for sandbox
   // profiles.
-#if !defined(DISABLE_NACL)
-      process_type == switches::kNaClLoaderProcess ||
-#endif
       process_type == switches::kPpapiPluginProcess ||
       process_type == switches::kPpapiBrokerProcess ||
       process_type == switches::kGpuProcess ||

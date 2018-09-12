@@ -16,10 +16,6 @@ static_library("brightray") {
 
   include_dirs = [ ".." ]
 
-  defines = [
-    "DISABLE_NACL=1",
-  ]
-
   if (is_linux) {
     deps += [ "//build/config/linux/gtk" ]
   }
