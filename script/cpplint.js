@@ -2,26 +2,14 @@
 
 const { GitProcess } = require('dugite')
 const childProcess = require('child_process')
-const fs = require('fs')
 const klaw = require('klaw')
 const minimist = require('minimist')
 const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 
-function findCppLint () {
-  const linterName = 'cpplint.py'
-
-  const isGNBuild = fs.existsSync(SOURCE_ROOT, '..', '..', '.gclient')
-  if (isGNBuild) return linterName // GN users have depot_tools in $PATH
-
-  const gypPath = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', linterName)
-  if (fs.existsSync(gypPath)) return gypPath
-
-  return undefined
-}
-
-function callCpplint (linter, filenames, args) {
+function callCpplint (filenames, args) {
+  const linter = 'cpplint.py'
   if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
     childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, (error, stdout, stderr) => {
@@ -105,12 +93,6 @@ const blacklist = new Set([
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 async function main () {
-  const linter = findCppLint()
-  if (!linter) {
-    console.log('[INFO] Skipping cpplint, unable to find linter')
-    return
-  }
-
   const args = parseCommandLine()
 
   let filenames = []
@@ -128,7 +110,7 @@ async function main () {
     filenames = filenames.filter(x => whitelist.has(x))
   }
 
-  if (filenames.length) callCpplint(linter, filenames, args)
+  if (filenames.length) callCpplint(filenames, args)
 }
 
 if (process.mainModule === module) main()
