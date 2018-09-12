@@ -86,7 +86,7 @@ namespace {
 bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to handle service worker.
-base::NoDestructor<std::string> g_custom_service_worker_schemes = "";
+base::NoDestructor<std::string> g_custom_service_worker_schemes;
 
 bool IsSameWebSite(content::BrowserContext* browser_context,
                    const GURL& src_url,
