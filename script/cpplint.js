@@ -2,18 +2,24 @@
 
 const { GitProcess } = require('dugite')
 const childProcess = require('child_process')
-const fs = require('fs')
 const klaw = require('klaw')
 const minimist = require('minimist')
 const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
-const LINTER_PATH = path.join(SOURCE_ROOT, 'vendor', 'depot_tools', 'cpplint.py')
 
 function callCpplint (filenames, args) {
-  if (args.verbose) console.log([LINTER_PATH, ...filenames].join(' '))
+  const linter = 'cpplint.py'
+  if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
-    console.log(String(childProcess.execFileSync(LINTER_PATH, filenames, {cwd: SOURCE_ROOT})))
+    childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, (error, stdout, stderr) => {
+      if (error) {
+        console.warn(error)
+      }
+      for (const line of stderr.split(/[\r\n]+/)) {
+        if (!line.startsWith('Done processing ')) console.warn(line)
+      }
+    })
   } catch (e) {
     process.exit(1)
   }
@@ -87,11 +93,6 @@ const blacklist = new Set([
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 async function main () {
-  if (!fs.existsSync(LINTER_PATH)) {
-    console.log('[INFO] Skipping cpplint, dependencies have not been bootstrapped')
-    return
-  }
-
   const args = parseCommandLine()
 
   let filenames = []
