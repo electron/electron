@@ -5,7 +5,7 @@ const {deprecations, deprecate, nativeImage} = require('electron')
 const {expect} = chai
 chai.use(dirtyChai)
 
-describe.only('deprecations', () => {
+describe('deprecations', () => {
   beforeEach(() => {
     deprecations.setHandler(null)
     process.throwDeprecation = true
@@ -70,7 +70,7 @@ describe.only('deprecations', () => {
 
     expect(() => {
       deprecate.removeProperty(o, 'iDontExist')
-    }).to.throw(/Cannot deprecate a property on an object which does not have that property/)
+    }).to.throw(/Cannot deprecate a property on an object which lacks that property/)
   })
 
   it('deprecates a property of an object', () => {
