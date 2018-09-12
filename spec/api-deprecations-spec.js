@@ -89,6 +89,21 @@ describe('deprecations', () => {
     expect(msg).to.include(prop)
   })
 
+  it('warns only once per item', () => {
+    const messages = []
+    deprecations.setHandler(message => { messages.push(message) })
+
+    const key = 'foo'
+    const val = 'bar'
+    let o = {[key]: val}
+    deprecate.removeProperty(o, key)
+
+    for (let i = 0; i < 3; ++i) {
+      expect(o[key]).to.equal(val)
+      expect(messages).to.have.length(1)
+    }
+  })
+
   it('warns if deprecated property is already set', () => {
     let msg
     deprecations.setHandler(m => { msg = m })
