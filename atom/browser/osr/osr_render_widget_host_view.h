@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 #define ATOM_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>

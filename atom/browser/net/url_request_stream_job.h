@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_
 
 #include <deque>
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/event_subscriber.h"

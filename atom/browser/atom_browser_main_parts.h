@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_MAIN_PARTS_H_
 
 #include <list>
+#include <memory>
 #include <string>
 
 #include "base/callback.h"

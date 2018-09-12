@@ -4,6 +4,9 @@
 
 #ifdef ENABLE_RUN_AS_NODE
 
+#include <memory>
+#include <utility>
+
 #include "atom/app/node_main.h"
 
 #include "atom/app/uv_task_runner.h"

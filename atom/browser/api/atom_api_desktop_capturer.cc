@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_desktop_capturer.h"
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 using base::PlatformThreadRef;

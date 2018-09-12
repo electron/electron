@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_BROWSER_H_
 #define ATOM_BROWSER_BROWSER_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

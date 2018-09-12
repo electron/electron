@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_X_EVENT_DISABLER_H_
 #define ATOM_BROWSER_UI_X_EVENT_DISABLER_H_
 
+#include <memory>
+
 #include "base/macros.h"
 #include "ui/events/event_rewriter.h"
 

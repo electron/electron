@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>

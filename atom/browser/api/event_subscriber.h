@@ -6,7 +6,9 @@
 #define ATOM_BROWSER_API_EVENT_SUBSCRIBER_H_
 
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/common/api/event_emitter_caller.h"
 #include "base/synchronization/lock.h"

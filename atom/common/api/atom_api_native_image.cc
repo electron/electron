@@ -4,7 +4,9 @@
 
 #include "atom/common/api/atom_api_native_image.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/asar/asar_util.h"

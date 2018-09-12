@@ -4,6 +4,7 @@
 
 #include "atom/browser/net/url_request_async_asar_job.h"
 
+#include <memory>
 #include <string>
 
 #include "atom/common/atom_constants.h"

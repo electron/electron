@@ -4,6 +4,7 @@
 
 #include "atom/browser/atom_permission_manager.h"
 
+#include <memory>
 #include <vector>
 
 #include "atom/browser/atom_browser_client.h"

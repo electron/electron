@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_OSR_OSR_VIEW_PROXY_H_
 #define ATOM_BROWSER_OSR_OSR_VIEW_PROXY_H_
 
+#include <memory>
 #include <set>
 
 #include "third_party/skia/include/core/SkBitmap.h"

@@ -4,6 +4,7 @@
 
 #include "atom/common/native_mate_converters/network_converter.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

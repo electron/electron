@@ -5,6 +5,8 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 
 #include <string>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "atom/common/native_mate_converters/gurl_converter.h"

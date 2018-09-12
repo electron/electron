@@ -5,6 +5,7 @@
 #include "atom/browser/atom_javascript_dialog_manager.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"

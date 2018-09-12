@@ -2,6 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/api/atom_api_cookies.h"
 
 #include "atom/browser/atom_browser_context.h"

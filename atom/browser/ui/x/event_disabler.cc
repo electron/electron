@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
+
 #include "atom/browser/ui/x/event_disabler.h"
 
 namespace atom {

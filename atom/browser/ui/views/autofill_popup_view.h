@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
 #define ATOM_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
 
+#include <memory>
+
 #include "atom/browser/ui/autofill_popup.h"
 
 #if defined(ENABLE_OSR)

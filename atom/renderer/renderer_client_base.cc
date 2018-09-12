@@ -4,6 +4,7 @@
 
 #include "atom/renderer/renderer_client_base.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 

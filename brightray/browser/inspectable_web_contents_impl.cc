@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
+#include <memory>
 #include <utility>
 
 #include "brightray/browser/inspectable_web_contents_impl.h"

@@ -9,6 +9,7 @@
 #error("This header can only be used when enable_pdf_viewer gyp flag is enabled")  // NOLINT
 #endif  // defined(ENABLE_PDF_VIEWER)
 
+#include <memory>
 #include <string>
 
 #include "base/macros.h"

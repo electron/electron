@@ -5,6 +5,7 @@
 #ifndef ATOM_RENDERER_RENDERER_CLIENT_BASE_H_
 #define ATOM_RENDERER_RENDERER_CLIENT_BASE_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

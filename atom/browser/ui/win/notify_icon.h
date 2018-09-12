@@ -9,6 +9,7 @@
 
 #include <shellapi.h>
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/ui/tray_icon.h"

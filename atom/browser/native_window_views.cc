@@ -9,6 +9,8 @@
 #include <wrl/client.h>
 #endif
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"

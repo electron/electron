@@ -5,7 +5,9 @@
 #include "atom/browser/api/atom_api_session.h"
 
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_cookies.h"

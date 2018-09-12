@@ -5,6 +5,8 @@
 #include "atom/browser/ui/webui/pdf_viewer_ui.h"
 
 #include <map>
+#include <memory>
+#include <utility>
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/loader/layered_resource_handler.h"

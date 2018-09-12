@@ -4,8 +4,10 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <memory>
 #include <set>
 #include <string>
+#include <utility>
 
 // We have problems with redefinition of ssize_t between node.h and
 // port_chromium.h, and the latter was introduced by leveldb.mojom.h.

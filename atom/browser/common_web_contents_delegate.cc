@@ -4,8 +4,10 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/atom_browser_context.h"

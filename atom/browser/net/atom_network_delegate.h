@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_NET_ATOM_NETWORK_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>

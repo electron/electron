@@ -8,6 +8,9 @@
 #include <shlobj.h>
 #endif
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_contents.h"

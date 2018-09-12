@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <memory>
+
 #include "atom/browser/ui/views/autofill_popup_view.h"
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
