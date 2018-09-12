@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/net/atom_network_delegate.h"
+
 #include <memory>
 #include <utility>
-
-#include "atom/browser/net/atom_network_delegate.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/login_handler.h"
