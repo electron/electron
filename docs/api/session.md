@@ -315,16 +315,20 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 
 * `handler` Function<Boolean> | null
   * `webContents` [WebContents](web-contents.md) - WebContents checking the permission.
-  * `permission` String - Enum of 'media'.
+  * `permission` String - Enum of 'media', 'midiSysex', 'notifications', 'geolocation', 'mediaKeySystem' or 'midi'.
   * `requestingOrigin` String - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `securityOrigin` String - The security orign of the `media` check.
     * `mediaType` String - The type of media access being requested, can be `video`,
-      `audio` or `unknown`
+      `audio` or `unknown`.  This property is only set on `media` checks.
 
 Sets the handler which can be used to respond to permission checks for the `session`.
 Returning `true` will allow the permission and `false` will reject it.
 To clear the handler, call `setPermissionCheckHandler(null)`.
+
+Please note not all syncronous permission checks are passed through this handler,
+for instance `Notification.granted` is not routed but `new Notification` will cause
+the `permissionRequestHandler` to be fired. 
 
 ```javascript
 const {session} = require('electron')

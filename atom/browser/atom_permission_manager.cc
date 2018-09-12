@@ -214,6 +214,7 @@ blink::mojom::PermissionStatus AtomPermissionManager::GetPermissionStatus(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
+  // TODO(MarshallOfSound): Investigate how we can emit this permission check on a session object
   return blink::mojom::PermissionStatus::GRANTED;
 }
 
@@ -245,9 +246,13 @@ bool AtomPermissionManager::CheckPermissionWithDetails(
 blink::mojom::PermissionStatus
 AtomPermissionManager::GetPermissionStatusForFrame(
     content::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* rfh,
     const GURL& requesting_origin) {
-  return blink::mojom::PermissionStatus::GRANTED;
+  base::DictionaryValue details;
+  bool granted = CheckPermissionWithDetails(permission, rfh, requesting_origin,
+                                            &details);
+  return granted ? blink::mojom::PermissionStatus::GRANTED
+                 : blink::mojom::PermissionStatus::DENIED;
 }
 
 }  // namespace atom
