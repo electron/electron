@@ -41,7 +41,7 @@ function parseCommandLine () {
 }
 
 async function findChangedFiles (top) {
-  const result = await GitProcess.exec(['diff', '--name-only'], top)
+  const result = await GitProcess.exec(['diff', 'HEAD', '--name-only'], top)
   if (result.exitCode !== 0) {
     console.log('Failed to find changed files', GitProcess.parseError(result.stderr))
     process.exit(1)
