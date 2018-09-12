@@ -367,8 +367,7 @@ void InspectableWebContentsImpl::Detach() {
   agent_host_ = nullptr;
 }
 
-void InspectableWebContentsImpl::Reattach(
-    const DispatchCallback& callback) {
+void InspectableWebContentsImpl::Reattach(const DispatchCallback& callback) {
   if (agent_host_) {
     agent_host_->DetachClient(this);
     agent_host_->AttachClient(this);
@@ -554,9 +553,11 @@ void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
 
 void InspectableWebContentsImpl::IndexPath(
     int request_id,
-    const std::string& file_system_path) {
+    const std::string& file_system_path,
+    const std::string& excluded_folders) {
   if (delegate_)
-    delegate_->DevToolsIndexPath(request_id, file_system_path);
+    delegate_->DevToolsIndexPath(request_id, file_system_path,
+                                 excluded_folders);
 }
 
 void InspectableWebContentsImpl::StopIndexing(int request_id) {

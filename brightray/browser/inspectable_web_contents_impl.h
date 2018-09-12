@@ -97,7 +97,8 @@ class InspectableWebContentsImpl
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override;
   void IndexPath(int index_request_id,
-                 const std::string& file_system_path) override;
+                 const std::string& file_system_path,
+                 const std::string& excluded_folders) override;
   void StopIndexing(int index_request_id) override;
   void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
@@ -134,13 +135,11 @@ class InspectableWebContentsImpl
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
   void Reattach(const DispatchCallback& callback) override;
-  void RecordEnumeratedHistogram(
-      const std::string& name,
-      int sample,
-      int boundary_value) override {}
+  void RecordEnumeratedHistogram(const std::string& name,
+                                 int sample,
+                                 int boundary_value) override {}
   void ReadyForTest() override {}
   void SetOpenNewWindowForPopups(bool value) override {}
-  
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);

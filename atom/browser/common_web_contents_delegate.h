@@ -114,7 +114,8 @@ class CommonWebContentsDelegate
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
   void DevToolsIndexPath(int request_id,
-                         const std::string& file_system_path) override;
+                         const std::string& file_system_path,
+                         const std::string& excluded_folders_message) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,

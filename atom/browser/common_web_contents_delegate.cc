@@ -16,6 +16,7 @@
 #include "atom/common/atom_constants.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -430,17 +431,29 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
 
 void CommonWebContentsDelegate::DevToolsIndexPath(
     int request_id,
-    const std::string& file_system_path) {
+    const std::string& file_system_path,
+    const std::string& excluded_folders_message) {
   if (!IsDevToolsFileSystemAdded(GetDevToolsWebContents(), file_system_path)) {
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
+  std::vector<std::string> excluded_folders;
+  std::unique_ptr<base::Value> parsed_excluded_folders =
+      base::JSONReader::Read(excluded_folders_message);
+  if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
+    const std::vector<base::Value>& folder_paths =
+        parsed_excluded_folders->GetList();
+    for (const base::Value& folder_path : folder_paths) {
+      if (folder_path.is_string())
+        excluded_folders.push_back(folder_path.GetString());
+    }
+  }
   devtools_indexing_jobs_[request_id] =
       scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
           devtools_file_system_indexer_->IndexPath(
-              file_system_path,
+              file_system_path, excluded_folders,
               base::Bind(
                   &CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated,
                   weak_factory_.GetWeakPtr(), request_id, file_system_path),
