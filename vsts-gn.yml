@@ -31,13 +31,13 @@ phases:
   - bash: |
       cd src
       export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-      export SCCACHE_WRAPPER="`pwd`/electron/external_binaries/sccache"
-      export SCCACHE_HELPER="`pwd`/libchromiumcontent/script/sccache"
-      "$SCCACHE_HELPER" --start-server --azure_container "$(SCCACHE_AZURE_BLOB_CONTAINER)" --azure_connection "$(SCCACHE_AZURE_CONNECTION_STRING)"
-      echo "##vso[task.setvariable variable=SCCACHE_WRAPPER]$SCCACHE_WRAPPER"
-      echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
+      export SCCACHE_BINARY="`pwd`/electron/external_binaries/sccache"
+      # SCCACHE_AZURE_BLOB_CONTAINER and SCCACHE_AZURE_CONNECTION_STRING are expected to be set.
+      "$SCCACHE_BINARY" --start-server
+      echo "##vso[task.setvariable variable=SCCACHE_BINARY]$SCCACHE_BINARY"
+      echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]$CHROMIUM_BUILDTOOLS_PATH"
       echo "GN gen for: $GN_CONFIG"
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_WRAPPER"'"'
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_BINARY"'"'
     name: GN_gen
 
   - bash: |
@@ -46,8 +46,8 @@ phases:
     name: Ninja_build
 
   - bash: |
-      "$SCCACHE_WRAPPER" -s
-      "$SCCACHE_WRAPPER" --stop-server
+      "$SCCACHE_BINARY" -s
+      "$SCCACHE_BINARY" --stop-server
     name: Check_sccache_stats
 
   - bash: |
