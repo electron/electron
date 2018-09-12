@@ -1,3 +1,5 @@
+'use strict'
+
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const {deprecations, deprecate, nativeImage} = require('electron')
