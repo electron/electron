@@ -2,7 +2,7 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const {deprecations, deprecate, nativeImage} = require('electron')
+const {deprecations, deprecate} = require('electron')
 
 const {expect} = chai
 chai.use(dirtyChai)
@@ -33,15 +33,6 @@ describe('deprecations', () => {
 
     deprecate.log('this is deprecated')
     expect(deprecations.getHandler()).to.be.a('function')
-  })
-
-  it('renames a method', () => {
-    expect(nativeImage.createFromDataUrl).to.be.undefined()
-    expect(nativeImage.createFromDataURL).to.be.a('function')
-
-    deprecate.alias(nativeImage, 'createFromDataUrl', 'createFromDataURL')
-
-    expect(nativeImage.createFromDataUrl).to.be.a('function')
   })
 
   it('renames a property', () => {
