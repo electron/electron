@@ -133,6 +133,7 @@ class InspectableWebContentsImpl
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
+  void Reattach(const DispatchCallback& callback) override;
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
