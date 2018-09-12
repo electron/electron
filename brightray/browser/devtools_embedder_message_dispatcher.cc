@@ -212,6 +212,7 @@ DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(
   d->RegisterHandler("connectionReady", &Delegate::ConnectionReady, delegate);
   d->RegisterHandler("registerExtensionsAPI", &Delegate::RegisterExtensionsAPI,
                      delegate);
+  d->RegisterHandlerWithCallback("reattach", &Delegate::Reattach, delegate);
   return d;
 }
 
