@@ -792,6 +792,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
+  InvalidateRect(GetAcceleratedWidget(), NULL, 1);
 #endif
 }
 
