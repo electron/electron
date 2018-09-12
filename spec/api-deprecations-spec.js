@@ -69,8 +69,8 @@ describe('deprecations', () => {
     const o = {}
 
     expect(() => {
-      deprecate.removeProperty(o, 'iDontExist')
-    }).to.throw(/Cannot deprecate a property on an object which lacks that property/)
+      deprecate.removeProperty(o, 'iDoNotExist')
+    }).to.throw(/iDoNotExist/)
   })
 
   it('deprecates a property of an object', () => {
