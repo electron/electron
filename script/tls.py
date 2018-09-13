@@ -13,7 +13,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 def check_tls(verbose):
   process = subprocess.Popen(
-    'node tls.js',
+    'node lib/tls',
     cwd=os.path.dirname(os.path.realpath(__file__)),
     shell=True,
     stdout=subprocess.PIPE,
