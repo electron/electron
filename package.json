@@ -25,7 +25,7 @@
     "recursive-readdir": "^2.2.2",
     "remark-cli": "^4.0.0",
     "remark-preset-lint-markdown-style-guide": "^2.1.1",
-    "request": "^2.68.0",
+    "request": "^2.88.0",
     "semver": "^5.5.0",
     "serve": "^6.5.8",
     "standard": "^10.0.0",
