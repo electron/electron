@@ -207,10 +207,6 @@ patches:
   description: null
 -
   author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: export_blink_webdisplayitemlist.patch
-  description: null
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
   file: statically_build_power_save_blocker.patch
   description: null
 -
@@ -261,14 +257,6 @@ patches:
   description: |
       v8_context_snapshot_generator is a build time executable.
       The patch adds the config.
-# -
-  # author: Tomas Rycl <torycl@microsoft.com>
-  # file: crashpad-disabled-windows.patch
-  # description: |
-      # On Windows Electron does not link Crashpad. This causes linking
-      # errors with Chromium where it is enabled by default.
-      # This patch will disable Crashpad in Chromium using fallback
-      # mechanism which uses Breakpad.
 -
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: boringssl_build_gn.patch
