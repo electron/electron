@@ -196,18 +196,19 @@ def update_info_plist(version):
 
 
 def update_package_json(version, suffix):
-  package_json = 'package.json'
-  with open(package_json, 'r') as f:
-    lines = f.readlines()
+  metadata_json_files = ['package.json', 'package-lock.json']
+  for json_file in metadata_json_files:
+    with open(json_file, 'r') as f:
+      lines = f.readlines()
 
-  for i in range(0, len(lines)):
-    line = lines[i];
-    if 'version' in line:
-      lines[i] = '  "version": "{0}",\n'.format(version + suffix)
-      break
+    for i in range(0, len(lines)):
+      line = lines[i];
+      if 'version' in line:
+        lines[i] = '  "version": "{0}",\n'.format(version + suffix)
+        break
 
-  with open(package_json, 'w') as f:
-    f.write(''.join(lines))
+    with open(json_file, 'w') as f:
+      f.write(''.join(lines))
 
 
 def tag_version(version, suffix):
