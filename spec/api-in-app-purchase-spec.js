@@ -3,17 +3,17 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
-const {remote} = require('electron')
+const { remote } = require('electron')
 
 describe('inAppPurchase module', function () {
   if (process.platform !== 'darwin') return
 
   this.timeout(3 * 60 * 1000)
 
-  const {inAppPurchase} = remote
+  const { inAppPurchase } = remote
 
   it('canMakePayments() does not throw', () => {
     expect(() => {

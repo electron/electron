@@ -22,10 +22,10 @@ let failureCount = 0
 const github = new GitHub({
   followRedirects: false
 })
-github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
+github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 async function getDraftRelease (version, skipValidation) {
-  let releaseInfo = await github.repos.getReleases({owner: 'electron', repo: targetRepo})
+  let releaseInfo = await github.repos.getReleases({ owner: 'electron', repo: targetRepo })
   let drafts
   let versionToCheck
   if (version) {

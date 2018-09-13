@@ -1,6 +1,6 @@
 (function () {
-  const {setImmediate} = require('timers')
-  const {ipcRenderer} = require('electron')
+  const { setImmediate } = require('timers')
+  const { ipcRenderer } = require('electron')
   window.ipcRenderer = ipcRenderer
   window.setImmediate = setImmediate
   window.require = require

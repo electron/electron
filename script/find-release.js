@@ -11,7 +11,7 @@ if (process.argv.length < 3) {
 const version = process.argv[2]
 
 async function findRelease () {
-  github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
+  github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
   let releases = await github.repos.getReleases({
     owner: 'electron',
     repo: version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'

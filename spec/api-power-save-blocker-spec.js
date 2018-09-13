@@ -1,8 +1,8 @@
-const {powerSaveBlocker} = require('electron').remote
+const { powerSaveBlocker } = require('electron').remote
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('powerSaveBlocker module', () => {

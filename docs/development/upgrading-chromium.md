@@ -144,7 +144,7 @@ codecs.
     <video style="display:none" src="http://www.quirksmode.org/html5/videos/big_buck_bunny.mp4" autoplay></video>
     <script>
       const video = document.querySelector('video')
-      video.addEventListener('error', ({target}) => {
+      video.addEventListener('error', ({ target }) => {
         if (target.error.code === target.error.MEDIA_ERR_SRC_NOT_SUPPORTED) {
           document.querySelector('#outcome').textContent = 'Not using proprietary codecs, video emitted source not supported error event.'
         } else {

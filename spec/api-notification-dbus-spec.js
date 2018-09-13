@@ -6,12 +6,12 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
-const {expect} = require('chai')
+const { expect } = require('chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const {remote} = require('electron')
-const {app} = remote.require('electron')
+const { remote } = require('electron')
+const { app } = remote.require('electron')
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
@@ -34,10 +34,10 @@ const skip = process.platform !== 'linux' ||
     const bus = dbus.sessionBus()
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
     const service = bus.getService(serviceName)
-    const getInterface = Promise.promisify(service.getInterface, {context: service})
+    const getInterface = Promise.promisify(service.getInterface, { context: service })
     mock = await getInterface(path, iface)
-    getCalls = Promise.promisify(mock.GetCalls, {context: mock})
-    reset = Promise.promisify(mock.Reset, {context: mock})
+    getCalls = Promise.promisify(mock.GetCalls, { context: mock })
+    reset = Promise.promisify(mock.Reset, { context: mock })
   })
 
   after(async () => {

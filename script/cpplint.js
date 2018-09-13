@@ -12,7 +12,7 @@ function callCpplint (filenames, args) {
   const linter = 'cpplint.py'
   if (args.verbose) console.log([linter, ...filenames].join(' '))
   try {
-    childProcess.execFile(linter, filenames, {cwd: SOURCE_ROOT}, error => {
+    childProcess.execFile(linter, filenames, { cwd: SOURCE_ROOT }, error => {
       if (error) {
         for (const line of error.message.split(/[\r\n]+/)) {
           if (line.length && !line.startsWith('Done processing ')) {

@@ -1,4 +1,4 @@
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 
 class Foo {
   set bar (value) {

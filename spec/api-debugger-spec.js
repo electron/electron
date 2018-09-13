@@ -2,10 +2,10 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
-const {closeWindow} = require('./window-helpers')
-const {BrowserWindow} = require('electron').remote
+const { closeWindow } = require('./window-helpers')
+const { BrowserWindow } = require('electron').remote
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('debugger module', () => {
@@ -119,7 +119,7 @@ describe('debugger module', () => {
         done()
       }
 
-      const params = {'expression': '4+2'}
+      const params = { 'expression': '4+2' }
       w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
     })
 
@@ -139,7 +139,7 @@ describe('debugger module', () => {
       }
       w.webContents.openDevTools()
       w.webContents.once('devtools-opened', () => {
-        const params = {'expression': '4+2'}
+        const params = { 'expression': '4+2' }
         w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
       })
     })

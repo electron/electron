@@ -8,13 +8,13 @@ An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-const {app, protocol} = require('electron')
+const { app, protocol } = require('electron')
 const path = require('path')
 
 app.on('ready', () => {
   protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback({path: path.normalize(`${__dirname}/${url}`)})
+    callback({ path: path.normalize(`${__dirname}/${url}`) })
   }, (error) => {
     if (error) console.error('Failed to register protocol')
   })
@@ -62,7 +62,7 @@ are disabled for non standard schemes. So in general if you want to register a
 custom protocol to replace the `http` protocol, you have to register it as a standard scheme:
 
 ```javascript
-const {app, protocol} = require('electron')
+const { app, protocol } = require('electron')
 
 protocol.registerStandardSchemes(['atom'])
 app.on('ready', () => {
@@ -99,7 +99,7 @@ going to be created with `scheme`. `completion` will be called with
 
 To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
-`callback({path: filePath})`.
+`callback({ path: filePath })`.
 
 When `callback` is called with nothing, a number, or an object that has an
 `error` property, the `request` will fail with the `error` number you
@@ -134,10 +134,10 @@ should be called with either a `Buffer` object or an object that has the `data`,
 Example:
 
 ```javascript
-const {protocol} = require('electron')
+const { protocol } = require('electron')
 
 protocol.registerBufferProtocol('atom', (request, callback) => {
-  callback({mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>')})
+  callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
 }, (error) => {
   if (error) console.error('Failed to register protocol')
 })
@@ -218,8 +218,8 @@ has the `data`, `statusCode`, and `headers` properties.
 Example:
 
 ```javascript
-const {protocol} = require('electron')
-const {PassThrough} = require('stream')
+const { protocol } = require('electron')
+const { PassThrough } = require('stream')
 
 function createStream (text) {
   const rv = new PassThrough() // PassThrough is also a Readable stream
@@ -245,7 +245,7 @@ It is possible to pass any object that implements the readable stream API (emits
 `data`/`end`/`error` events). For example, here's how a file could be returned:
 
 ```javascript
-const {protocol} = require('electron')
+const { protocol } = require('electron')
 const fs = require('fs')
 
 protocol.registerStreamProtocol('atom', (request, callback) => {

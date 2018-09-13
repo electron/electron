@@ -8,7 +8,7 @@ Chrome Developer Tools has a [special binding][rdp] available at JavaScript
 runtime that allows interacting with pages and instrumenting them.
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 let win = new BrowserWindow()
 
 try {

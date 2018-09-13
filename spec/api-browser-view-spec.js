@@ -2,12 +2,12 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {remote} = require('electron')
-const {BrowserView, BrowserWindow} = remote
+const { remote } = require('electron')
+const { BrowserView, BrowserWindow } = remote
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('BrowserView module', () => {

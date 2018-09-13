@@ -3,7 +3,7 @@ const ChildProcess = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const {ipcRenderer, remote} = require('electron')
+const { ipcRenderer, remote } = require('electron')
 
 const isCI = remote.getGlobal('isCi')
 
@@ -15,7 +15,7 @@ describe('node feature', () => {
       it('works in current process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', (msg) => {
-          assert.equal(msg, 'message')
+          assert.strictEqual(msg, 'message')
           done()
         })
         child.send('message')
@@ -25,7 +25,7 @@ describe('node feature', () => {
         const args = ['--expose_gc', '-test', '1']
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'process_args.js'), args)
         child.on('message', (msg) => {
-          assert.deepEqual(args, msg.slice(2))
+          assert.deepStrictEqual(args, msg.slice(2))
           done()
         })
         child.send('message')
@@ -34,7 +34,7 @@ describe('node feature', () => {
       it('works in forked process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'))
         child.on('message', (msg) => {
-          assert.equal(msg, 'message')
+          assert.strictEqual(msg, 'message')
           done()
         })
         child.send('message')
@@ -45,7 +45,7 @@ describe('node feature', () => {
           path: process.env['PATH']
         })
         child.on('message', (msg) => {
-          assert.equal(msg, 'message')
+          assert.strictEqual(msg, 'message')
           done()
         })
         child.send('message')
@@ -55,7 +55,7 @@ describe('node feature', () => {
         const fork = remote.require('child_process').fork
         const child = fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', (msg) => {
-          assert.equal(msg, 'message')
+          assert.strictEqual(msg, 'message')
           done()
         })
         child.send('message')
@@ -64,7 +64,7 @@ describe('node feature', () => {
       it('has String::localeCompare working in script', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'locale-compare.js'))
         child.on('message', (msg) => {
-          assert.deepEqual(msg, [0, -1, 1])
+          assert.deepStrictEqual(msg, [0, -1, 1])
           done()
         })
         child.send('message')
@@ -73,21 +73,21 @@ describe('node feature', () => {
       it('has setImmediate working in script', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'set-immediate.js'))
         child.on('message', (msg) => {
-          assert.equal(msg, 'ok')
+          assert.strictEqual(msg, 'ok')
           done()
         })
         child.send('message')
       })
 
       it('pipes stdio', (done) => {
-        const child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
+        const child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), { silent: true })
         let data = ''
         child.stdout.on('data', (chunk) => {
           data += String(chunk)
         })
         child.on('close', (code) => {
-          assert.equal(code, 0)
-          assert.equal(data, 'pipes stdio')
+          assert.strictEqual(code, 0)
+          assert.strictEqual(data, 'pipes stdio')
           done()
         })
       })
@@ -96,7 +96,7 @@ describe('node feature', () => {
         const source = "process.on('message', (message) => { process.send(message) })"
         const forked = ChildProcess.fork('--eval', [source])
         forked.once('message', (message) => {
-          assert.equal(message, 'hello')
+          assert.strictEqual(message, 'hello')
           done()
         })
         forked.send('hello')
@@ -122,7 +122,7 @@ describe('node feature', () => {
           output += data
         })
         child.stdout.on('close', () => {
-          assert.deepEqual(JSON.parse(output), {
+          assert.deepStrictEqual(JSON.parse(output), {
             processLog: process.platform === 'win32' ? 'function' : 'undefined',
             processType: 'undefined',
             window: 'undefined'
@@ -164,14 +164,14 @@ describe('node feature', () => {
     describe('error thrown in main process node context', () => {
       it('gets emitted as a process uncaughtException event', () => {
         const error = ipcRenderer.sendSync('handle-uncaught-exception', 'hello')
-        assert.equal(error, 'hello')
+        assert.strictEqual(error, 'hello')
       })
     })
 
     describe('promise rejection in main process node context', () => {
       it('gets emitted as a process unhandledRejection event', () => {
         const error = ipcRenderer.sendSync('handle-unhandled-rejection', 'hello')
-        assert.equal(error, 'hello')
+        assert.strictEqual(error, 'hello')
       })
     })
 
@@ -238,11 +238,11 @@ describe('node feature', () => {
         stdio: ['ipc']
       })
 
-      child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
+      child.on('message', ({ cmd, debuggerEnabled, secondSessionOpened, success }) => {
         if (cmd === 'assert') {
-          assert.equal(debuggerEnabled, true)
-          assert.equal(secondSessionOpened, true)
-          assert.equal(success, true)
+          assert.strictEqual(debuggerEnabled, true)
+          assert.strictEqual(secondSessionOpened, true)
+          assert.strictEqual(success, true)
           done()
         }
       })
@@ -291,10 +291,10 @@ describe('node feature', () => {
       const script = path.join(fixtures, 'module', 'create_socket.js')
       const child = ChildProcess.fork(script, [socketPath])
       child.on('exit', (code) => {
-        assert.equal(code, 0)
+        assert.strictEqual(code, 0)
         const client = require('net').connect(socketPath)
         client.on('error', (error) => {
-          assert.equal(error.code, 'ECONNREFUSED')
+          assert.strictEqual(error.code, 'ECONNREFUSED')
           done()
         })
       })
@@ -306,23 +306,23 @@ describe('node feature', () => {
       const p = document.createElement('p')
       p.innerText = '闲云潭影日悠悠，物换星移几度秋'
       const b = Buffer.from(p.innerText)
-      assert.equal(b.toString(), '闲云潭影日悠悠，物换星移几度秋')
-      assert.equal(Buffer.byteLength(p.innerText), 45)
+      assert.strictEqual(b.toString(), '闲云潭影日悠悠，物换星移几度秋')
+      assert.strictEqual(Buffer.byteLength(p.innerText), 45)
     })
 
     it('correctly parses external one-byte UTF8 string', () => {
       const p = document.createElement('p')
       p.innerText = 'Jøhänñéß'
       const b = Buffer.from(p.innerText)
-      assert.equal(b.toString(), 'Jøhänñéß')
-      assert.equal(Buffer.byteLength(p.innerText), 13)
+      assert.strictEqual(b.toString(), 'Jøhänñéß')
+      assert.strictEqual(Buffer.byteLength(p.innerText), 13)
     })
 
     it('does not crash when creating large Buffers', () => {
       let buffer = Buffer.from(new Array(4096).join(' '))
-      assert.equal(buffer.length, 4095)
+      assert.strictEqual(buffer.length, 4095)
       buffer = Buffer.from(new Array(4097).join(' '))
-      assert.equal(buffer.length, 4096)
+      assert.strictEqual(buffer.length, 4096)
     })
 
     it('does not crash for crypto operations', () => {
@@ -335,7 +335,7 @@ describe('node feature', () => {
         let input = Buffer.from(data, 'base64')
         let decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv)
         let result = Buffer.concat([decipher.update(input), decipher.final()])
-        assert.equal(cipherText, result)
+        assert.strictEqual(cipherText, result)
       }
     })
   })
@@ -361,7 +361,7 @@ describe('node feature', () => {
         return
       }
 
-      assert.equal(typeof process.stdout.isTTY, 'boolean')
+      assert.strictEqual(typeof process.stdout.isTTY, 'boolean')
     })
 
     it('should have isTTY undefined on Windows', function () {
@@ -371,7 +371,7 @@ describe('node feature', () => {
         return
       }
 
-      assert.equal(process.stdout.isTTY, undefined)
+      assert.strictEqual(process.stdout.isTTY, undefined)
     })
   })
 
@@ -383,7 +383,7 @@ describe('node feature', () => {
     })
 
     it('returns null when read from', () => {
-      assert.equal(process.stdin.read(), null)
+      assert.strictEqual(process.stdin.read(), null)
     })
   })
 

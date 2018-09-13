@@ -1,10 +1,10 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
-const {Notification} = require('electron').remote
+const { Notification } = require('electron').remote
 
 describe('Notification module', () => {
   it('inits, gets and sets basic string properties correctly', () => {
