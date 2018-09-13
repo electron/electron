@@ -1,0 +1,6 @@
+# For MAS build, we force defining "MAS_BUILD".
+config("mas_build") {
+  if (is_mas_build) {
+    defines = [ "MAS_BUILD" ]
+  }
+}

@@ -30,7 +30,7 @@ index 7d60dd920904..d2f2cbc99915 100644
    "//build/config/compiler:thin_archive",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
-+  "//libchromiumcontent/chromiumcontent/config:mas_build",
++  "//electron/build/config:mas_build",
  ]
  
  if (is_win) {
@@ -77,15 +77,3 @@ index 1f6bc13e087f..4630045ff554 100644
      # Component mode: dynamic CRT. Since the library is shared, it requires
      # exceptions or will give errors about things not matching, so keep
      # exceptions on.
-diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index bc9fe2cc2000..9173f6f0324c 100644
---- a/third_party/blink/renderer/platform/BUILD.gn
-+++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -134,6 +134,7 @@ action("instrumentation_probes") {
- }
- 
- executable("character_data_generator") {
-+  configs += [ "//libchromiumcontent/chromiumcontent/config:build_time_executable" ]
-   sources = [
-     "text/character_property_data_generator.cc",
-     "text/character_property_data_generator.h",

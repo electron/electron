@@ -62,15 +62,6 @@ index 494ba22f29..6071422d7d 100644
      defines += [ "USING_V8_SHARED" ]
    }
    if (v8_enable_v8_checks) {
-@@ -2674,6 +2674,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
- 
-     configs = [ ":internal_config" ]
- 
-+    configs += [ "//libchromiumcontent/chromiumcontent/config:build_time_executable" ]
-+
-     deps = [
-       ":v8_base",
-       ":v8_init",
 @@ -2667,7 +2697,7 @@ group("v8_fuzzers") {
    ]
  }

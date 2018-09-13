@@ -255,16 +255,6 @@ patches:
     in electron (and other applications). This patch provides a way to disable
     the redraw locking mechanism, which fixes these issues. The electron issue
     can be found at https://github.com/electron/electron/issues/1821
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: allow_chromiumcontent_to_depend_on_device_service.patch
-  description: By default we cannot depend on it, but we want to use it.
--
-  author: Nitish Sakhawalkar <nitsakh@icloud.com>
-  file: v8_context_snapshot_generator.patch
-  description: |
-      v8_context_snapshot_generator is a build time executable.
-      The patch adds the config.
 # -
   # author: Tomas Rycl <torycl@microsoft.com>
   # file: crashpad-disabled-windows.patch
