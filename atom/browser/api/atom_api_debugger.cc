@@ -4,7 +4,9 @@
 
 #include "atom/browser/api/atom_api_debugger.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/value_converter.h"

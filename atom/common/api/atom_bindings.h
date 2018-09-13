@@ -6,6 +6,7 @@
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
 #include <list>
+#include <memory>
 
 #include "base/macros.h"
 #include "base/process/process_metrics.h"

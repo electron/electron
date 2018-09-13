@@ -4,6 +4,9 @@
 
 #include "atom/browser/loader/layered_resource_handler.h"
 
+#include <memory>
+#include <utility>
+
 namespace atom {
 
 LayeredResourceHandler::LayeredResourceHandler(

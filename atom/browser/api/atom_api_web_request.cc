@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_web_request.h"
 
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_network_delegate.h"

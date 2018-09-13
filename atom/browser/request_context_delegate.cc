@@ -4,6 +4,9 @@
 
 #include "atom/browser/request_context_delegate.h"
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"

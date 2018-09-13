@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <string>
+#include <utility>
 
 #if defined(OS_LINUX)
 #include <glib.h>  // for g_setenv()

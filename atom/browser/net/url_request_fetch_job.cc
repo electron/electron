@@ -5,6 +5,7 @@
 #include "atom/browser/net/url_request_fetch_job.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/atom_api_session.h"

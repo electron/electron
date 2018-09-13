@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_ATOM_BLOB_READER_H_
 #define ATOM_BROWSER_ATOM_BLOB_READER_H_
 
+#include <memory>
 #include <string>
 
 #include "base/callback.h"

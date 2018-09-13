@@ -4,6 +4,8 @@
 
 #include "atom/browser/ui/x/event_disabler.h"
 
+#include <memory>
+
 namespace atom {
 
 EventDisabler::EventDisabler() {}

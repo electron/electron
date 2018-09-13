@@ -4,6 +4,9 @@
 
 #include "brightray/browser/browser_context.h"
 
+#include <memory>
+#include <utility>
+
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"

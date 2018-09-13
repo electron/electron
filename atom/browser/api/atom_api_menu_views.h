@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_API_ATOM_API_MENU_VIEWS_H_
 
 #include <map>
+#include <memory>
 
 #include "atom/browser/api/atom_api_menu.h"
 #include "base/memory/weak_ptr.h"

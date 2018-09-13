@@ -6,6 +6,7 @@
 #define BRIGHTRAY_BROWSER_BROWSER_CONTEXT_H_
 
 #include <map>
+#include <memory>
 #include <string>
 
 #include "base/memory/ref_counted.h"

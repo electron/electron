@@ -6,6 +6,9 @@
 
 #include "atom/app/node_main.h"
 
+#include <memory>
+#include <utility>
+
 #include "atom/app/uv_task_runner.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"

@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_browser_window.h"
 
+#include <memory>
+
 #include "atom/browser/browser.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "atom/browser/web_contents_preferences.h"

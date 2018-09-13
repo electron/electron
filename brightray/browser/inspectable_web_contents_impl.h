@@ -7,6 +7,7 @@
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 

@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_REQUEST_CONTEXT_DELEGATE_H_
 #define ATOM_BROWSER_REQUEST_CONTEXT_DELEGATE_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

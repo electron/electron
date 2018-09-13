@@ -30,8 +30,8 @@ namespace atom {
 
 namespace {
 
-const std::string kIpcKey = "ipcNative";
-const std::string kModuleCacheKey = "native-module-cache";
+const char kIpcKey[] = "ipcNative";
+const char kModuleCacheKey[] = "native-module-cache";
 
 bool IsDevTools(content::RenderFrame* render_frame) {
   return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(

@@ -5,6 +5,7 @@
 #include "brightray/browser/browser_client.h"
 
 #include "base/lazy_instance.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "brightray/browser/browser_context.h"
 #include "brightray/browser/browser_main_parts.h"
@@ -26,7 +27,8 @@ BrowserClient* g_browser_client;
 base::LazyInstance<std::string>::DestructorAtExit
     g_io_thread_application_locale = LAZY_INSTANCE_INITIALIZER;
 
-std::string g_application_locale;
+base::NoDestructor<std::string> g_application_locale;
+
 
 void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -45,7 +47,7 @@ void BrowserClient::SetApplicationLocale(const std::string& locale) {
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
   }
-  g_application_locale = locale;
+  *g_application_locale = locale;
 }
 
 BrowserClient* BrowserClient::Get() {
@@ -127,7 +129,7 @@ content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {
 std::string BrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
-  return g_application_locale;
+  return *g_application_locale;
 }
 
 }  // namespace brightray

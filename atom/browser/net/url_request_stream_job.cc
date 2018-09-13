@@ -2,11 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "atom/browser/net/url_request_stream_job.h"
+
 #include <algorithm>
+#include <memory>
 #include <ostream>
 #include <string>
+#include <utility>
 
-#include "atom/browser/net/url_request_stream_job.h"
 #include "atom/common/api/event_emitter_caller.h"
 #include "atom/common/atom_constants.h"
 #include "atom/common/native_mate_converters/net_converter.h"

@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/ui/views/autofill_popup_view.h"
+
+#include <memory>
+
 #include "base/bind.h"
 #include "base/i18n/rtl.h"
 #include "cc/paint/skia_paint_canvas.h"

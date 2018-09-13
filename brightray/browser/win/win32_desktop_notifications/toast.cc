@@ -9,6 +9,7 @@
 #include <uxtheme.h>
 #include <windowsx.h>
 #include <algorithm>
+#include <memory>
 
 #include "base/logging.h"
 #include "brightray/browser/win/win32_desktop_notifications/common.h"

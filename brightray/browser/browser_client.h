@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

@@ -4,6 +4,7 @@
 
 #include "atom/browser/net/url_request_string_job.h"
 
+#include <memory>
 #include <string>
 
 #include "atom/common/atom_constants.h"

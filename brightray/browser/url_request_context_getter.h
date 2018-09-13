@@ -5,6 +5,7 @@
 #ifndef BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 #define BRIGHTRAY_BROWSER_URL_REQUEST_CONTEXT_GETTER_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

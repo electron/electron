@@ -7,7 +7,9 @@
 #define ATOM_BROWSER_NET_ATOM_URL_REQUEST_H_
 
 #include <string>
+#include <memory>
 #include <vector>
+
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_context.h"
 #include "base/memory/ref_counted.h"

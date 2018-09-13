@@ -4,8 +4,10 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <memory>
 #include <set>
 #include <string>
+#include <utility>
 
 #include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/api/atom_api_debugger.h"

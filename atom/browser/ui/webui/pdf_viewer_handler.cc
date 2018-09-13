@@ -4,6 +4,9 @@
 
 #include "atom/browser/ui/webui/pdf_viewer_handler.h"
 
+#include <memory>
+#include <utility>
+
 #include "atom/common/atom_constants.h"
 #include "base/bind.h"
 #include "base/values.h"

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 

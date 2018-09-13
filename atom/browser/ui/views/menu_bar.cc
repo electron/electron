@@ -4,6 +4,8 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 
+#include <memory>
+
 #include "atom/browser/ui/views/menu_delegate.h"
 #include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"

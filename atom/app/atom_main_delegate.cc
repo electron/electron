@@ -5,6 +5,7 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include "atom/app/atom_content_client.h"

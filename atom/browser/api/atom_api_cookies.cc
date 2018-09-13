@@ -4,6 +4,9 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/request_context_delegate.h"
 #include "atom/common/native_mate_converters/callback.h"

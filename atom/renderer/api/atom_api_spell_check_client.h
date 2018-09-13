@@ -5,6 +5,7 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 

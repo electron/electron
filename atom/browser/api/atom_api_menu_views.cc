@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/atom_api_menu_views.h"
 
+#include <memory>
+
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/unresponsive_suppressor.h"
 #include "ui/display/screen.h"
