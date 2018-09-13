@@ -56,3 +56,6 @@ compile_commands.json
 # Generated API definitions
 electron-api.json
 electron.d.ts
+
+# Spec hash calculation
+spec/.hash

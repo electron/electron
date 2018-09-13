@@ -34,14 +34,10 @@ test_script:
   - ps: >-
       if ($env:GN_CONFIG -eq 'testing') {
         ninja -C out/Default third_party/electron_node:headers
-        $env:npm_config_nodedir="$pwd/out/Default/gen/node_headers"
-        $env:npm_config_msvs_version="2017"
         New-Item .\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
-        Push-Location; cd electron/spec
-        npm install
-        Pop-Location
       } else {
         echo "Skipping tests for $env:GN_CONFIG build"
       }
-  - if "%GN_CONFIG%"=="testing" ( echo Running test suite & .\out\Default\electron.exe electron\spec --ci )
+  - cd electron
+  - if "%GN_CONFIG%"=="testing" ( echo Running test suite & npm run test -- --ci )
