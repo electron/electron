@@ -119,9 +119,7 @@ build-steps: &build-steps
           if [ "$RUN_TESTS" != "false" ]; then
             cd src
             ninja -C out/Default third_party/electron_node:headers
-            export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
-            (cd electron/spec && npm install)
-            python electron/script/lib/dbus_mock.py ./out/Default/electron electron/spec --ci --enable-logging
+            (cd electron && npm run test -- --ci --enable-logging)
           fi
     - <<: *notify-slack-failure
     - <<: *notify-slack-success
@@ -197,9 +195,7 @@ mac-build-steps: &mac-build-steps
           if [ "$RUN_TESTS" != "false" ]; then
             cd src
             ninja -C out/Default third_party/electron_node:headers
-            export npm_config_nodedir="$PWD/out/Default/gen/node_headers"
-            (cd electron/spec && npm install)
-            ./out/Default/Electron.app/Contents/MacOS/Electron electron/spec --ci --enable-logging
+            (cd electron && npm run test -- --ci --enable-logging)
           fi
     - <<: *notify-slack-failure
     - <<: *notify-slack-success

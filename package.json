@@ -14,6 +14,7 @@
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.4",
     "electron-typescript-definitions": "^2.0.0",
+    "folder-hash": "^2.1.1",
     "github": "^9.2.0",
     "html-entities": "^1.2.1",
     "husky": "^0.14.3",
@@ -72,7 +73,7 @@
     "release": "node ./script/release.js",
     "repl": "python ./script/start.py --interactive",
     "start": "python ./script/start.py",
-    "test": "python ./script/test.py"
+    "test": "node ./script/spec-runner.js electron/spec"
   },
   "license": "MIT",
   "author": "Electron Community",

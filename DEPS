@@ -61,6 +61,15 @@ hooks = [
     'pattern': 'src/electron/package.json',
     'name': 'electron_npm_deps'
   },
+  {
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron/spec"); os.system("npm install")',
+    ],
+    'pattern': 'src/electron/spec/package.json',
+    'name': 'electron_spec_npm_deps'
+  },
 ]
 
 recursedeps = [
