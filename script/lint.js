@@ -40,16 +40,18 @@ const BLACKLIST = new Set([
   ['brightray', 'browser', 'win', 'win32_notification.h']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
-async function waitForChild (child) {
-  process.on('exit', () => { if (!child.killed) child.kill() })
-  const exitCode = await new Promise(resolve => child.on('exit', resolve))
-  if (exitCode !== 0) process.exit(1)
+// async function waitForChild (child) {
+//    process.on('exit', () => { if (!child.killed) child.kill() })
+//    const status = await new Promise(resolve => child.on('exit', resolve))
+//    if (status) process.exit(status)
+//  }
+
+function spawnAndCheckExitCode (cmd, args, opts) {
+  opts = Object.assign({ stdio: 'inherit' }, opts)
+  const status = childProcess.spawnSync(cmd, args, opts).status
+  if (status) process.exit(status)
 }
 
-async function spawnInherit (cmd, args, opts) {
-  opts = Object.assign({ stdio: 'inherit' }, opts)
-  waitForChild(childProcess.spawn(cmd, args, opts))
-}
 
 const LINTERS = [
   {
@@ -76,18 +78,18 @@ const LINTERS = [
       const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
       const args = ['--rcfile=' + rcfile, ...filenames]
       const env = Object.assign({PYTHONPATH: path.join(SOURCE_ROOT, 'script')}, process.env)
-      spawnInherit('pylint.py', args, {env})
+      spawnAndCheckExitCode('pylint.py', args, {env})
     }
   }, {
     key: 'javascript',
     roots: ['lib', 'script'].map(x => path.join(SOURCE_ROOT, x)),
     test: filename => filename.endsWith('.js'),
-    run: async (filenames) => spawnInherit(STANDARD, filenames, {cwd: SOURCE_ROOT})
+    run: async (filenames) => spawnAndCheckExitCode(STANDARD, filenames, {cwd: SOURCE_ROOT})
   }, {
     key: 'javascript',
     roots: ['spec'].map(x => path.join(SOURCE_ROOT, x)),
     test: filename => filename.endsWith('.js'),
-    run: async (filenames) => spawnInherit(STANDARD, filenames, {cwd: path.join(SOURCE_ROOT, 'spec')})
+    run: async (filenames) => spawnAndCheckExitCode(STANDARD, filenames, {cwd: path.join(SOURCE_ROOT, 'spec')})
   }
 ]
 
