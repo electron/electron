@@ -1,6 +1,8 @@
+'use strict'
+
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const {deprecations, deprecate, nativeImage} = require('electron')
+const {deprecations, deprecate} = require('electron')
 
 const {expect} = chai
 chai.use(dirtyChai)
@@ -33,76 +35,81 @@ describe('deprecations', () => {
     expect(deprecations.getHandler()).to.be.a('function')
   })
 
-  it('returns a deprecation warning', () => {
-    const messages = []
-
-    deprecations.setHandler(message => {
-      messages.push(message)
-    })
-
-    deprecate.warn('old', 'new')
-    expect(messages).to.deep.equal([`'old' is deprecated. Use 'new' instead.`])
-  })
-
-  it('renames a method', () => {
-    expect(nativeImage.createFromDataUrl).to.be.undefined()
-    expect(nativeImage.createFromDataURL).to.be.a('function')
-
-    deprecate.alias(nativeImage, 'createFromDataUrl', 'createFromDataURL')
-
-    expect(nativeImage.createFromDataUrl).to.be.a('function')
-  })
-
   it('renames a property', () => {
     let msg
-    deprecations.setHandler((m) => { msg = m })
+    deprecations.setHandler(m => { msg = m })
 
-    const oldPropertyName = 'dingyOldName'
-    const newPropertyName = 'shinyNewName'
+    const oldProp = 'dingyOldName'
+    const newProp = 'shinyNewName'
 
     let value = 0
-    let o = { [newPropertyName]: value }
-    expect(o).to.not.have.a.property(oldPropertyName)
-    expect(o).to.have.a.property(newPropertyName).that.is.a('number')
+    const o = {[newProp]: value}
+    expect(o).to.not.have.a.property(oldProp)
+    expect(o).to.have.a.property(newProp).that.is.a('number')
 
-    deprecate.renameProperty(o, oldPropertyName, newPropertyName)
-    o[oldPropertyName] = ++value
+    deprecate.renameProperty(o, oldProp, newProp)
+    o[oldProp] = ++value
 
     expect(msg).to.be.a('string')
-    expect(msg).to.include(oldPropertyName)
-    expect(msg).to.include(newPropertyName)
+    expect(msg).to.include(oldProp)
+    expect(msg).to.include(newProp)
 
-    expect(o).to.have.a.property(newPropertyName).that.is.equal(value)
-    expect(o).to.have.a.property(oldPropertyName).that.is.equal(value)
+    expect(o).to.have.a.property(newProp).that.is.equal(value)
+    expect(o).to.have.a.property(oldProp).that.is.equal(value)
+  })
+
+  it('doesn\'t deprecate a property not on an object', () => {
+    const o = {}
+
+    expect(() => {
+      deprecate.removeProperty(o, 'iDoNotExist')
+    }).to.throw(/iDoNotExist/)
   })
 
   it('deprecates a property of an object', () => {
     let msg
     deprecations.setHandler(m => { msg = m })
 
-    const propertyName = 'itMustGo'
-    const o = { [propertyName]: 0 }
+    const prop = 'itMustGo'
+    let o = {[prop]: 0}
 
-    deprecate.removeProperty(o, propertyName)
+    deprecate.removeProperty(o, prop)
 
+    const temp = o[prop]
+
+    expect(temp).to.equal(0)
     expect(msg).to.be.a('string')
-    expect(msg).to.include(propertyName)
+    expect(msg).to.include(prop)
+  })
+
+  it('warns only once per item', () => {
+    const messages = []
+    deprecations.setHandler(message => { messages.push(message) })
+
+    const key = 'foo'
+    const val = 'bar'
+    let o = {[key]: val}
+    deprecate.removeProperty(o, key)
+
+    for (let i = 0; i < 3; ++i) {
+      expect(o[key]).to.equal(val)
+      expect(messages).to.have.length(1)
+    }
   })
 
   it('warns if deprecated property is already set', () => {
     let msg
-    deprecations.setHandler((m) => { msg = m })
+    deprecations.setHandler(m => { msg = m })
 
-    const oldPropertyName = 'dingyOldName'
-    const newPropertyName = 'shinyNewName'
-    const value = 0
+    const oldProp = 'dingyOldName'
+    const newProp = 'shinyNewName'
 
-    let o = { [oldPropertyName]: value }
-    deprecate.renameProperty(o, oldPropertyName, newPropertyName)
+    let o = {[oldProp]: 0}
+    deprecate.renameProperty(o, oldProp, newProp)
 
     expect(msg).to.be.a('string')
-    expect(msg).to.include(oldPropertyName)
-    expect(msg).to.include(newPropertyName)
+    expect(msg).to.include(oldProp)
+    expect(msg).to.include(newProp)
   })
 
   it('throws an exception if no deprecation handler is specified', () => {
