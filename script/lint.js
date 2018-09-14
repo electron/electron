@@ -144,14 +144,16 @@ async function findMatchingFiles (top, test) {
 
 async function findFiles (args, linter) {
   let filenames = []
-  let whitelist = []
+  let whitelist
 
-  // maybe remove unchanged files
+  // build the whitelist
   if (args.changed) {
     whitelist = await findChangedFiles(SOURCE_ROOT)
     if (!whitelist.length) {
       return filenames
     }
+  } else {
+    whitelist = new Set()
   }
 
   // accumulate the raw list of files
@@ -163,8 +165,8 @@ async function findFiles (args, linter) {
   // remove blacklisted files
   filenames = filenames.filter(x => !BLACKLIST.has(x))
 
-  // maybe remove unchanged files
-  if (args.changed) {
+  // if a whitelist exists, remove anything not in it
+  if (whitelist.length) {
     filenames = filenames.filter(x => whitelist.has(x))
   }
 
