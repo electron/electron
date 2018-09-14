@@ -5,7 +5,6 @@ const childProcess = require('child_process')
 const klaw = require('klaw')
 const minimist = require('minimist')
 const path = require('path')
-const pluralize = require('pluralize')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
 const STANDARD = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
@@ -40,64 +39,53 @@ const BLACKLIST = new Set([
   ['brightray', 'browser', 'win', 'win32_notification.h']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
-// async function waitForChild (child) {
-//    process.on('exit', () => { if (!child.killed) child.kill() })
-//    const status = await new Promise(resolve => child.on('exit', resolve))
-//    if (status) process.exit(status)
-//  }
-
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = Object.assign({ stdio: 'inherit' }, opts)
   const status = childProcess.spawnSync(cmd, args, opts).status
   if (status) process.exit(status)
 }
 
-
-const LINTERS = [
-  {
-    key: 'c++',
-    roots: ['atom', 'brightray'].map(x => path.join(SOURCE_ROOT, x)),
-    test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
-    run: async filenames => {
-      const child = childProcess.spawn('cpplint.py', filenames)
-      // cpplint dumps EVERYTHING to stderr, so filter out everything but the warnings
-      child.stderr.setEncoding('utf8').on('data', data => {
-        for (const line of data.split(/[\r\n]+/)) {
-          if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
-            console.warn(line)
-          }
-        }
-      })
-      waitForChild(child)
+const LINTERS = [ {
+  key: 'c++',
+  roots: ['atom', 'brightray'],
+  test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
+  run: filenames => {
+    const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
+    // cpplint.py writes EVERYTHING to stderr, including status messages
+    for (const line of result.stderr.split(/[\r\n]+/)) {
+      if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
+        console.warn(line)
+      }
     }
-  }, {
-    key: 'python',
-    roots: ['script'].map(x => path.join(SOURCE_ROOT, x)),
-    test: filename => filename.endsWith('.py'),
-    run: async (filenames) => {
-      const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
-      const args = ['--rcfile=' + rcfile, ...filenames]
-      const env = Object.assign({PYTHONPATH: path.join(SOURCE_ROOT, 'script')}, process.env)
-      spawnAndCheckExitCode('pylint.py', args, {env})
-    }
-  }, {
-    key: 'javascript',
-    roots: ['lib', 'script'].map(x => path.join(SOURCE_ROOT, x)),
-    test: filename => filename.endsWith('.js'),
-    run: async (filenames) => spawnAndCheckExitCode(STANDARD, filenames, {cwd: SOURCE_ROOT})
-  }, {
-    key: 'javascript',
-    roots: ['spec'].map(x => path.join(SOURCE_ROOT, x)),
-    test: filename => filename.endsWith('.js'),
-    run: async (filenames) => spawnAndCheckExitCode(STANDARD, filenames, {cwd: path.join(SOURCE_ROOT, 'spec')})
+    if (result.status) process.exit(result.status)
   }
-]
+}, {
+  key: 'python',
+  roots: ['script'],
+  test: filename => filename.endsWith('.py'),
+  run: filenames => {
+    const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
+    const args = ['--rcfile=' + rcfile, ...filenames]
+    const env = Object.assign({ PYTHONPATH: path.join(SOURCE_ROOT, 'script') }, process.env)
+    spawnAndCheckExitCode('pylint.py', args, { env })
+  }
+}, {
+  key: 'javascript',
+  roots: ['lib', 'script'],
+  test: filename => filename.endsWith('.js'),
+  run: filenames => spawnAndCheckExitCode(STANDARD, filenames, { cwd: SOURCE_ROOT })
+}, {
+  key: 'javascript',
+  roots: ['spec'],
+  test: filename => filename.endsWith('.js'),
+  run: filenames => spawnAndCheckExitCode(STANDARD, filenames, { cwd: path.join(SOURCE_ROOT, 'spec') })
+}]
 
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['c++', 'javascript', 'python', 'help', 'changed'],
-    alias: {'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h'},
+    boolean: [ 'c++', 'javascript', 'python', 'help', 'changed' ],
+    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h' },
     unknown: arg => { help = true }
   })
   if (help || opts.help) {
@@ -145,7 +133,7 @@ async function findFiles (args, linter) {
 
   // accumulate the raw list of files
   for (const root of linter.roots) {
-    const files = await findMatchingFiles(root, linter.test)
+    const files = await findMatchingFiles(path.join(SOURCE_ROOT, root), linter.test)
     filenames.push(...files)
   }
 
@@ -173,8 +161,8 @@ async function main () {
   for (const linter of linters) {
     const filenames = await findFiles(args, linter)
     if (filenames.length) {
-      console.log(`linting ${filenames.length} ${linter.key} ${pluralize('file', filenames.length)}`)
-      await linter.run(filenames)
+      console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`)
+      linter.run(filenames)
     }
   }
 }
