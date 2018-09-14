@@ -1,4 +1,4 @@
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.on('ready', () => {
   process.stdout.write(app.getLocale())

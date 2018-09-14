@@ -1,0 +1,48 @@
+diff --git a/ui/gl/gpu_switching_manager.cc b/ui/gl/gpu_switching_manager.cc
+index be7156465809..cee3b1af3dc5 100644
+--- a/ui/gl/gpu_switching_manager.cc
++++ b/ui/gl/gpu_switching_manager.cc
+@@ -4,6 +4,12 @@
+ 
+ #include "ui/gl/gpu_switching_manager.h"
+ 
++namespace {
++
++bool g_use_transparent = false;
++
++}  // namespace
++
+ namespace ui {
+ 
+ // static
+@@ -11,6 +17,16 @@ GpuSwitchingManager* GpuSwitchingManager::GetInstance() {
+   return base::Singleton<GpuSwitchingManager>::get();
+ }
+ 
++// static
++void GpuSwitchingManager::SetTransparent(bool transparent) {
++  g_use_transparent = transparent;
++}
++
++// static
++bool GpuSwitchingManager::UseTransparent() {
++  return g_use_transparent;
++}
++
+ GpuSwitchingManager::GpuSwitchingManager() {}
+ 
+ GpuSwitchingManager::~GpuSwitchingManager() {}
+diff --git a/ui/gl/gpu_switching_manager.h b/ui/gl/gpu_switching_manager.h
+index 4308bbed9398..a7cafcfccdff 100644
+--- a/ui/gl/gpu_switching_manager.h
++++ b/ui/gl/gpu_switching_manager.h
+@@ -18,6 +18,9 @@ class GL_EXPORT GpuSwitchingManager {
+   // Getter for the singleton. This will return NULL on failure.
+   static GpuSwitchingManager* GetInstance();
+ 
++  static void SetTransparent(bool transparent);
++  static bool UseTransparent();
++
+   void AddObserver(GpuSwitchingObserver* observer);
+   void RemoveObserver(GpuSwitchingObserver* observer);
+ 

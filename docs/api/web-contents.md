@@ -11,9 +11,9 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 
-let win = new BrowserWindow({width: 800, height: 1500})
+let win = new BrowserWindow({ width: 800, height: 1500 })
 win.loadURL('http://github.com')
 
 let contents = win.webContents
@@ -25,7 +25,7 @@ console.log(contents)
 These methods can be accessed from the `webContents` module:
 
 ```javascript
-const {webContents} = require('electron')
+const { webContents } = require('electron')
 console.log(webContents)
 ```
 
@@ -140,7 +140,7 @@ instance, failing to do so may result in unexpected behavior. For example:
 ```javascript
 myBrowserWindow.webContents.on('new-window', (event, url) => {
   event.preventDefault()
-  const win = new BrowserWindow({show: false})
+  const win = new BrowserWindow({ show: false })
   win.once('ready-to-show', () => win.show())
   win.loadURL(url)
   event.newGuest = win
@@ -240,8 +240,8 @@ Calling `event.preventDefault()` will ignore the `beforeunload` event handler
 and allow the page to be unloaded.
 
 ```javascript
-const {BrowserWindow, dialog} = require('electron')
-const win = new BrowserWindow({width: 800, height: 600})
+const { BrowserWindow, dialog } = require('electron')
+const win = new BrowserWindow({ width: 800, height: 600 })
 win.webContents.on('will-prevent-unload', (event) => {
   const choice = dialog.showMessageBox(win, {
     type: 'question',
@@ -312,9 +312,9 @@ To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore-experimental):
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 
-let win = new BrowserWindow({width: 800, height: 600})
+let win = new BrowserWindow({ width: 800, height: 600 })
 
 win.webContents.on('before-input-event', (event, input) => {
   // For example, only enable application menu keyboard shortcuts when
@@ -535,13 +535,13 @@ first available device will be selected. `callback` should be called with
 cancel the request.
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 
 let win = null
 app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600})
+  win = new BrowserWindow({ width: 800, height: 600 })
   win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault()
     let result = deviceList.find((device) => {
@@ -568,9 +568,9 @@ Emitted when a new frame is generated. Only the dirty area is passed in the
 buffer.
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 
-let win = new BrowserWindow({webPreferences: {offscreen: true}})
+let win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
   // updateBitmap(dirty, image.getBitmap())
 })
@@ -642,8 +642,8 @@ e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
 ```javascript
-const {webContents} = require('electron')
-const options = {extraHeaders: 'pragma: no-cache\n'}
+const { webContents } = require('electron')
+const options = { extraHeaders: 'pragma: no-cache\n' }
 webContents.loadURL('https://github.com', options)
 ```
 
@@ -685,8 +685,8 @@ Initiates a download of the resource at `url` without navigating. The
 Returns `String` - The URL of the current web page.
 
 ```javascript
-const {BrowserWindow} = require('electron')
-let win = new BrowserWindow({width: 800, height: 600})
+const { BrowserWindow } = require('electron')
+let win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('http://github.com')
 
 let currentURL = win.webContents.getURL()
@@ -979,7 +979,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
-const {webContents} = require('electron')
+const { webContents } = require('electron')
 webContents.on('found-in-page', (event, result) => {
   if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
 })
@@ -1037,7 +1037,7 @@ the system's default printer if `deviceName` is empty and the default settings
 for printing.
 
 Calling `window.print()` in web page is equivalent to calling
-`webContents.print({silent: false, printBackground: false, deviceName: ''})`.
+`webContents.print({ silent: false, printBackground: false, deviceName: '' })`.
 
 Use `page-break-before: always; ` CSS style to force to print to a new page.
 
@@ -1080,10 +1080,10 @@ Use `page-break-before: always; ` CSS style to force to print to a new page.
 An example of `webContents.printToPDF`:
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 const fs = require('fs')
 
-let win = new BrowserWindow({width: 800, height: 600})
+let win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('http://github.com')
 
 win.webContents.on('did-finish-load', () => {
@@ -1106,7 +1106,7 @@ Adds the specified path to DevTools workspace. Must be used after DevTools
 creation:
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 let win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
   win.webContents.addWorkSpace(__dirname)
@@ -1167,7 +1167,7 @@ An example of showing devtools in a `<webview>` tag:
 An example of showing devtools in a `BrowserWindow`:
 
 ```js
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 
 let win = null
 let devtools = null
@@ -1177,7 +1177,7 @@ app.once('ready', () => {
   devtools = new BrowserWindow()
   win.loadURL('https://github.com')
   win.webContents.setDevToolsWebContents(devtools.webContents)
-  win.webContents.openDevTools({mode: 'detach'})
+  win.webContents.openDevTools({ mode: 'detach' })
 })
 ```
 
@@ -1236,11 +1236,11 @@ An example of sending messages from the main process to the renderer process:
 
 ```javascript
 // In the main process.
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 let win = null
 
 app.on('ready', () => {
-  win = new BrowserWindow({width: 800, height: 600})
+  win = new BrowserWindow({ width: 800, height: 600 })
   win.loadURL(`file://${__dirname}/index.html`)
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('ping', 'whoooooooh!')
@@ -1270,7 +1270,7 @@ app.on('ready', () => {
     * `mobile` - Mobile screen type.
   * `screenSize` [Size](structures/size.md) - Set the emulated screen size (screenPosition == mobile).
   * `viewPosition` [Point](structures/point.md) - Position the view on the screen
-      (screenPosition == mobile) (default: `{x: 0, y: 0}`).
+      (screenPosition == mobile) (default: `{ x: 0, y: 0 }`).
   * `deviceScaleFactor` Integer - Set the device scale factor (if zero defaults to
       original device scale factor) (default: `0`).
   * `viewSize` [Size](structures/size.md) - Set the emulated view size (empty means no override)
@@ -1373,7 +1373,7 @@ the cursor when dragging.
 Returns `Boolean` - true if the process of saving page has been initiated successfully.
 
 ```javascript
-const {BrowserWindow} = require('electron')
+const { BrowserWindow } = require('electron')
 let win = new BrowserWindow()
 
 win.loadURL('https://github.com')

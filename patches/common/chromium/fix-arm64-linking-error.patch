@@ -1,0 +1,13 @@
+diff --git a/skia/BUILD.gn b/skia/BUILD.gn
+index c0477a6fe82d..3a020f2e2006 100644
+--- a/skia/BUILD.gn
++++ b/skia/BUILD.gn
+@@ -125,7 +125,7 @@ config("skia_library_config") {
+ 
+   defines = []
+ 
+-  if (!is_ios && !use_system_freetype) {
++  if (!is_ios && (is_win || is_mac)) {
+     defines += [ "SK_FREETYPE_MINIMUM_RUNTIME_VERSION=(((FREETYPE_MAJOR) * 0x01000000) | ((FREETYPE_MINOR) * 0x00010000) | ((FREETYPE_PATCH) * 0x00000100))" ]
+   }
+ 

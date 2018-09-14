@@ -10,7 +10,7 @@
  */
 const waitForEvent = (target, eventName) => {
   return new Promise(resolve => {
-    target.addEventListener(eventName, resolve, {once: true})
+    target.addEventListener(eventName, resolve, { once: true })
   })
 }
 

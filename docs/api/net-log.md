@@ -5,7 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 ```javascript
-const {netLog} = require('electron')
+const { netLog } = require('electron')
 console.log('Start recording net-logs')
 netLog.startLogging('/path/to/net-log')
 // After some network events

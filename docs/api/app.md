@@ -8,7 +8,7 @@ The following example shows how to quit the application when the last window is
 closed:
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 app.on('window-all-closed', () => {
   app.quit()
 })
@@ -268,7 +268,7 @@ certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
   if (url === 'https://github.com') {
@@ -300,7 +300,7 @@ and `callback` can be called with an entry filtered from the list. Using
 certificate from the store.
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
   event.preventDefault()
@@ -335,7 +335,7 @@ should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.on('login', (event, webContents, request, authInfo, callback) => {
   event.preventDefault()
@@ -375,7 +375,7 @@ Returns:
 Emitted when Electron has created a new `session`.
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.on('session-created', (event, session) => {
   console.log(session)
@@ -448,9 +448,9 @@ An example of restarting current instance immediately and adding a new command
 line argument to the new instance:
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
-app.relaunch({args: process.argv.slice(1).concat(['--relaunch'])})
+app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) })
 app.exit(0)
 ```
 
@@ -712,7 +712,7 @@ items can be obtained using `app.getJumpListSettings()`.
 Here's a very simple example of creating a custom Jump List:
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.setJumpList([
   {
@@ -798,7 +798,7 @@ An example of activating the window of primary instance when a second instance
 starts:
 
 ```javascript
-const {app} = require('electron')
+const { app } = require('electron')
 let myWindow = null
 
 const gotTheLock = app.requestSingleInstanceLock()

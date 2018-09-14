@@ -1,0 +1,48 @@
+diff --git a/components/crash/core/common/BUILD.gn b/components/crash/core/common/BUILD.gn
+index 4f67529f5c9a..a41bdf709d99 100644
+--- a/components/crash/core/common/BUILD.gn
++++ b/components/crash/core/common/BUILD.gn
+@@ -13,7 +13,7 @@ group("common") {
+   }
+ }
+ 
+-use_crashpad = is_mac || is_win
++use_crashpad = is_mac
+ use_stubs = is_fuchsia
+ 
+ # Crashpad's annotation system can store data on a per-module basis (i.e.,
+@@ -128,7 +128,7 @@ source_set("unit_tests") {
+     sources += [ "objc_zombie_unittest.mm" ]
+   }
+ 
+-  if (!is_mac && !is_win && !is_fuchsia) {
++  if (!is_mac && !is_fuchsia) {
+     include_dirs = [ "//third_party/breakpad/breakpad/src/" ]
+     sources += [ "crash_key_breakpad_unittest.cc" ]
+   }
+diff --git a/components/crash/core/common/crash_key.h b/components/crash/core/common/crash_key.h
+index 951c7e941962..bdf6bb40e1fb 100644
+--- a/components/crash/core/common/crash_key.h
++++ b/components/crash/core/common/crash_key.h
+@@ -19,7 +19,7 @@
+ // Annotation interface. Because not all platforms use Crashpad yet, a
+ // source-compatible interface is provided on top of the older Breakpad
+ // storage mechanism.
+-#if (defined(OS_MACOSX) && !defined(OS_IOS)) || defined(OS_WIN)
++#if (defined(OS_MACOSX) && !defined(OS_IOS))
+ #define USE_CRASHPAD_ANNOTATION 1
+ #endif
+ 
+diff --git a/components/crash/core/common/crash_key_breakpad.cc b/components/crash/core/common/crash_key_breakpad.cc
+index 0351e01fa18f..1c355bd89844 100644
+--- a/components/crash/core/common/crash_key_breakpad.cc
++++ b/components/crash/core/common/crash_key_breakpad.cc
+@@ -15,7 +15,7 @@
+ #include "components/crash/core/common/crash_key_base_support.h"
+ #include "components/crash/core/common/crash_key_internal.h"
+ 
+-#if defined(OS_MACOSX) || defined(OS_IOS) || defined(OS_WIN)
++#if defined(OS_MACOSX) || defined(OS_IOS)
+ #error "This file should not be used when Crashpad is available, nor on iOS."
+ #endif
+ 

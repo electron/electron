@@ -1,0 +1,13 @@
+diff --git a/third_party/widevine/cdm/widevine.gni b/third_party/widevine/cdm/widevine.gni
+index 82a93622585a..cbd10bed9f3b 100644
+--- a/third_party/widevine/cdm/widevine.gni
++++ b/third_party/widevine/cdm/widevine.gni
+@@ -7,7 +7,7 @@ import("//media/media_options.gni")
+ 
+ declare_args() {
+   # Allow Widevine key system support in Chromium.
+-  enable_widevine = false
++  enable_widevine = is_mac || is_win
+ }
+ 
+ enable_widevine_cdm_host_verification =

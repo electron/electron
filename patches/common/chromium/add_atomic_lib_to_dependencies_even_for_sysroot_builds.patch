@@ -1,0 +1,13 @@
+diff --git a/base/BUILD.gn b/base/BUILD.gn
+index b674e703617d..5a7a11d816cf 100644
+--- a/base/BUILD.gn
++++ b/base/BUILD.gn
+@@ -1131,7 +1131,7 @@ component("base") {
+   # Needed for <atomic> if using newer C++ library than sysroot, except if
+   # building inside the cros_sdk environment - use host_toolchain as a
+   # more robust check for this.
+-  if (!use_sysroot && (is_android || (is_linux && !is_chromecast)) &&
++  if ((is_android || (is_linux && !is_chromecast)) &&
+       host_toolchain != "//build/toolchain/cros:host") {
+     libs = [ "atomic" ]
+   }

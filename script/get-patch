@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+
+"""Retrieves commit contents in a patch format.
+
+Check README.md for usage examples or run it with `-h` argument to get an interface reference.
+"""
+
+import argparse
+import os
+import sys
+
+from lib.git import get_patch as git_get_patch
+
+
+def parse_args():
+  parser = argparse.ArgumentParser(
+      description='Get a commit contents in a patch format.')
+
+  parser.add_argument('-c', '--commit', nargs='+', required=True,
+                      help='Commit hash(es).')
+  parser.add_argument('-f', '--filename', nargs='*', required=False,
+                      help='Filename(s) for a patch file(s). Defaults to something like {0}.'
+                      .format(get_default_patch_file_name(
+                          '4b825dc642cb6eb9a060e54bf8d69288fbee4904')))
+  parser.add_argument('-o', '--output-dir', required=False,
+                      help='Folder to save the patch in. Defaults to a current folder.')
+  parser.add_argument('-r', '--repo', required=True,
+                      help='Path to a repository root folder.')
+
+  args = parser.parse_args()
+
+  # Additional rules
+  if args.filename is not None and (len(args.commit) != len(args.filename)):
+    parser.error("Number of filenames ({0}) must be equal to number of commits ({1})."
+        .format(len(args.filename), len(args.commit)))
+
+  return args
+
+
+def get_default_patch_file_name(commit_hash):
+  template = 'backport_{commit_hash}.patch'
+
+  number_of_hash_characters_to_preserve = 8
+  commit_hash_string = commit_hash[:number_of_hash_characters_to_preserve+1]
+
+  patch_file_name = template.format(
+      commit_hash=commit_hash_string)
+
+  return patch_file_name
+
+
+def get_output_path(output_dir, output_filename, commit_hash):
+  if (output_dir is None) and (output_filename is None):
+    return None
+
+  # Use current dir as a default.
+  if output_dir is None:
+    output_dir = '.'
+
+  # Use the default filename if it's not provided.
+  if output_filename is None:
+    output_filename = get_default_patch_file_name(commit_hash)
+
+  output_path = os.path.join(output_dir, output_filename)
+  return output_path
+
+
+def save_to_file(data, file_path):
+  with open(file_path, 'w') as f:
+    f.write(data)
+
+
+def process_patch(repo, commit_hash, output_path=None):
+  patch_contents = git_get_patch(repo, commit_hash)
+
+  if output_path is None:
+    sys.stdout.write(patch_contents)
+  else:
+    save_to_file(data=patch_contents, file_path=output_path)
+
+
+def main():
+  args = parse_args()
+
+  commits = args.commit
+  filenames = args.filename
+
+  # (alexeykuzmin): Ugly hack alert.
+  if filenames is None:
+    filenames = [None] * len(commits)
+
+  for (commit, filename) in zip(commits, filenames):
+    output_path = get_output_path(args.output_dir, filename,
+                                  commit_hash=commit)
+    process_patch(args.repo, commit, output_path)
+
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())

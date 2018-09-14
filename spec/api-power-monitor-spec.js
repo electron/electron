@@ -11,7 +11,7 @@ const dirtyChai = require('dirty-chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
@@ -24,11 +24,11 @@ xdescribe('powerMonitor', () => {
     before(async () => {
       const systemBus = dbus.systemBus()
       const loginService = systemBus.getService('org.freedesktop.login1')
-      const getInterface = Promise.promisify(loginService.getInterface, {context: loginService})
+      const getInterface = Promise.promisify(loginService.getInterface, { context: loginService })
       logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-      getCalls = Promise.promisify(logindMock.GetCalls, {context: logindMock})
-      emitSignal = Promise.promisify(logindMock.EmitSignal, {context: logindMock})
-      reset = Promise.promisify(logindMock.Reset, {context: logindMock})
+      getCalls = Promise.promisify(logindMock.GetCalls, { context: logindMock })
+      emitSignal = Promise.promisify(logindMock.EmitSignal, { context: logindMock })
+      reset = Promise.promisify(logindMock.Reset, { context: logindMock })
     })
 
     after(reset)
@@ -54,10 +54,10 @@ xdescribe('powerMonitor', () => {
       expect(calls).to.be.an('array').that.has.lengthOf(1)
       expect(calls[0].slice(1)).to.deep.equal([
         'Inhibit', [
-          [[{type: 's', child: []}], ['sleep']],
-          [[{type: 's', child: []}], ['electron']],
-          [[{type: 's', child: []}], ['Application cleanup before suspend']],
-          [[{type: 's', child: []}], ['delay']]
+          [[{ type: 's', child: [] }], ['sleep']],
+          [[{ type: 's', child: [] }], ['electron']],
+          [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+          [[{ type: 's', child: [] }], ['delay']]
         ]
       ])
     })
@@ -81,10 +81,10 @@ xdescribe('powerMonitor', () => {
           expect(calls).to.be.an('array').that.has.lengthOf(2)
           expect(calls[1].slice(1)).to.deep.equal([
             'Inhibit', [
-              [[{type: 's', child: []}], ['sleep']],
-              [[{type: 's', child: []}], ['electron']],
-              [[{type: 's', child: []}], ['Application cleanup before suspend']],
-              [[{type: 's', child: []}], ['delay']]
+              [[{ type: 's', child: [] }], ['sleep']],
+              [[{ type: 's', child: [] }], ['electron']],
+              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
+              [[{ type: 's', child: [] }], ['delay']]
             ]
           ])
         })
@@ -103,10 +103,10 @@ xdescribe('powerMonitor', () => {
         expect(calls).to.be.an('array').that.has.lengthOf(3)
         expect(calls[2].slice(1)).to.deep.equal([
           'Inhibit', [
-            [[{type: 's', child: []}], ['shutdown']],
-            [[{type: 's', child: []}], ['electron']],
-            [[{type: 's', child: []}], ['Ensure a clean shutdown']],
-            [[{type: 's', child: []}], ['delay']]
+            [[{ type: 's', child: [] }], ['shutdown']],
+            [[{ type: 's', child: [] }], ['electron']],
+            [[{ type: 's', child: [] }], ['Ensure a clean shutdown']],
+            [[{ type: 's', child: [] }], ['delay']]
           ]
         ])
       })

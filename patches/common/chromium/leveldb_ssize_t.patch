@@ -1,0 +1,16 @@
+﻿diff --git a/third_party/leveldatabase/port/port_chromium.h b/third_party/leveldatabase/port/port_chromium.h
+index a7c449eba19c..acbce7efd582 100644
+--- a/third_party/leveldatabase/port/port_chromium.h
++++ b/third_party/leveldatabase/port/port_chromium.h
+@@ -26,7 +26,11 @@
+ #endif
+ 
+ #if defined(OS_WIN)
++#  if !defined(_SSIZE_T_) && !defined(_SSIZE_T_DEFINED)
+ typedef SSIZE_T ssize_t;
++#  define _SSIZE_T_
++#  define _SSIZE_T_DEFINED
++#  endif
+ #endif
+ 
+ namespace leveldb {

@@ -752,7 +752,7 @@ Fired when the guest page attempts to open a new browser window.
 The following example code opens the new url in system's default browser.
 
 ```javascript
-const {shell} = require('electron')
+const { shell } = require('electron')
 const webview = document.querySelector('webview')
 
 webview.addEventListener('new-window', (e) => {
@@ -844,7 +844,7 @@ webview.send('ping')
 
 ```javascript
 // In guest page.
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 ipcRenderer.on('ping', () => {
   ipcRenderer.sendToHost('pong')
 })

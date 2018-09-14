@@ -1,0 +1,6 @@
+repo: src/third_party/skia
+patches:
+-
+  author: Ales Pergl <alpergl@microsoft.com>
+  file: dcheck.patch
+  description: null

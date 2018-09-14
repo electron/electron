@@ -1,0 +1,13 @@
+diff --git a/src/common/debug.h b/src/common/debug.h
+index 0108ff655..57fbc5ac5 100644
+--- a/src/common/debug.h
++++ b/src/common/debug.h
+@@ -190,7 +190,7 @@ std::ostream &FmtHexInt(std::ostream &os, T value)
+ 
+ #define ANGLE_EMPTY_STATEMENT for (;;) break
+ #if !defined(NDEBUG) || defined(ANGLE_ENABLE_RELEASE_ASSERTS)
+-#define ANGLE_ENABLE_ASSERTS
++// #define ANGLE_ENABLE_ASSERTS
+ #endif
+ 
+ #define WARN() ANGLE_LOG(WARN)

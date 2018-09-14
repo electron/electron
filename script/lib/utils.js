@@ -1,4 +1,4 @@
-const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Default'
+const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 const path = require('path')
 

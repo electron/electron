@@ -1,0 +1,115 @@
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 018534073da1..48f3d0e7343b 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -1759,6 +1759,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+   std::string unique_name;
+   frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
+ 
++  if (params.view && params.delegate_view) {
++    view_.reset(params.view);
++    render_view_host_delegate_view_ = params.delegate_view;
++  }
++
++  if (!view_) {
+   WebContentsViewDelegate* delegate =
+       GetContentClient()->browser()->GetWebContentsViewDelegate(this);
+ 
+@@ -1774,6 +1780,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+           &render_view_host_delegate_view_);
+     }
+   }
++  }  //  !view_
+   CHECK(render_view_host_delegate_view_);
+   CHECK(view_.get());
+ 
+diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
+index 699570cc1390..454830098cb9 100644
+--- a/content/browser/web_contents/web_contents_view_guest.cc
++++ b/content/browser/web_contents/web_contents_view_guest.cc
+@@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
+ 
+ void WebContentsViewGuest::OnGuestAttached(WebContentsView* parent_view) {
+ #if defined(USE_AURA)
++  if (!platform_view_->GetNativeView())
++    return;
+   // In aura, ScreenPositionClient doesn't work properly if we do
+   // not have the native view associated with this WebContentsViewGuest in the
+   // view hierarchy. We add this view as embedder's child here.
+   // This would go in WebContentsViewGuest::CreateView, but that is too early to
+   // access embedder_web_contents(). Therefore, we do it here.
+   if (!base::FeatureList::IsEnabled(features::kMash))
+-    parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
++    if (parent_view->GetNativeView() != platform_view_->GetNativeView())
++      parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
+ #endif  // defined(USE_AURA)
+ }
+ 
+ void WebContentsViewGuest::OnGuestDetached(WebContentsView* old_parent_view) {
+ #if defined(USE_AURA)
++  if (!platform_view_->GetNativeView())
++    return;
+   if (!base::FeatureList::IsEnabled(features::kMash)) {
+-    old_parent_view->GetNativeView()->RemoveChild(
+-        platform_view_->GetNativeView());
++    if (old_parent_view->GetNativeView() != platform_view_->GetNativeView())
++      old_parent_view->GetNativeView()->RemoveChild(
++          platform_view_->GetNativeView());
+   }
+ #endif  // defined(USE_AURA)
+ }
+@@ -146,11 +152,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
+         render_widget_host->GetView());
+   }
+ 
++  RenderWidgetHost* embedder_render_widget_host =
++    guest_->embedder_web_contents()->GetRenderViewHost()->GetWidget();
++  RenderWidgetHostViewBase* embedder_render_widget_host_view =
++      static_cast<RenderWidgetHostViewBase*>(
++        embedder_render_widget_host->GetView());
+   RenderWidgetHostViewBase* platform_widget =
+-      platform_view_->CreateViewForWidget(render_widget_host, true);
+-
+-  return RenderWidgetHostViewGuest::Create(render_widget_host, guest_,
+-                                           platform_widget->GetWeakPtr());
++      embedder_render_widget_host_view->CreateViewForWidget(
++        render_widget_host,
++        embedder_render_widget_host,
++        platform_view_.get());
++  RenderWidgetHostViewGuest* guest_view = RenderWidgetHostViewGuest::Create(
++    render_widget_host, guest_, platform_widget->GetWeakPtr());
++  platform_widget->InitAsGuest(embedder_render_widget_host->GetView(),
++                               guest_view);
++
++  return guest_view;
+ }
+ 
+ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index a13db5f4dd61..621124decfdc 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -69,9 +69,12 @@ class BrowserPluginGuestDelegate;
+ class InterstitialPage;
+ class RenderFrameHost;
+ class RenderViewHost;
++class RenderViewHostDelegateView;
+ class RenderWidgetHost;
+ class RenderWidgetHostView;
++class RenderWidgetHostViewBase;
+ class WebContentsDelegate;
++class WebContentsView;
+ struct CustomContextMenuContext;
+ struct DropData;
+ struct Manifest;
+@@ -172,6 +175,10 @@ class WebContents : public PageNavigator,
+     // navigation requires a dedicated or privileged process, such as a WebUI.
+     bool initialize_renderer;
+ 
++    // Optionally specify the view and delegate view.
++    content::WebContentsView* view = nullptr;
++    content::RenderViewHostDelegateView* delegate_view = nullptr;
++
+     // Sandboxing flags set on the new WebContents.
+     blink::WebSandboxFlags starting_sandbox_flags;
+   };

@@ -1,4 +1,4 @@
-const {ipcRenderer, webFrame} = require('electron')
+const { ipcRenderer, webFrame } = require('electron')
 
 window.foo = 3
 

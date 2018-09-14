@@ -1,0 +1,12 @@
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index bf4b1d0..a3b72c4 100644
+@@ -995,7 +996,8 @@
+
+ void Widget::OnSizeConstraintsChanged() {
+   native_widget_->OnSizeConstraintsChanged();
+-  non_client_view_->SizeConstraintsChanged();
++  if (non_client_view_)
++    non_client_view_->SizeConstraintsChanged();
+ }
+
+ void Widget::OnOwnerClosing() {}

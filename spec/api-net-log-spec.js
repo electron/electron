@@ -5,13 +5,13 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 const ChildProcess = require('child_process')
-const {remote} = require('electron')
-const {netLog} = remote
+const { remote } = require('electron')
+const { netLog } = remote
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 const isCI = remote.getGlobal('isCi')
 

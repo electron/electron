@@ -1,0 +1,91 @@
+diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
+index a73442a5476c..6cd7ae78b814 100644
+--- a/chrome/browser/ssl/security_state_tab_helper.cc
++++ b/chrome/browser/ssl/security_state_tab_helper.cc
+@@ -10,15 +10,21 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/safe_browsing/safe_browsing_service.h"
+ #include "chrome/browser/safe_browsing/ui_manager.h"
++#endif
+ #include "components/prefs/pref_service.h"
++#if 0
+ #include "components/safe_browsing/features.h"
++#endif
+ #include "components/security_state/content/content_utils.h"
+ #include "components/ssl_config/ssl_config_prefs.h"
++#if 0
+ #include "components/toolbar/toolbar_field_trial.h"
++#endif
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/navigation_entry.h"
+ #include "content/public/browser/navigation_handle.h"
+@@ -37,7 +43,7 @@
+ #include "chrome/browser/chromeos/policy/policy_cert_service_factory.h"
+ #endif  // defined(OS_CHROMEOS)
+ 
+-#if defined(SAFE_BROWSING_DB_LOCAL)
++#if 0
+ #include "chrome/browser/safe_browsing/chrome_password_protection_service.h"
+ #endif
+ 
+@@ -59,7 +65,9 @@ void RecordSecurityLevel(const security_state::SecurityInfo& security_info) {
+ 
+ DEFINE_WEB_CONTENTS_USER_DATA_KEY(SecurityStateTabHelper);
+ 
++#if 0
+ using safe_browsing::SafeBrowsingUIManager;
++#endif
+ 
+ SecurityStateTabHelper::SecurityStateTabHelper(
+     content::WebContents* web_contents)
+@@ -67,8 +75,11 @@ SecurityStateTabHelper::SecurityStateTabHelper(
+       logged_http_warning_on_current_navigation_(false),
+       is_incognito_(false) {
+   content::BrowserContext* context = web_contents->GetBrowserContext();
+-  if (context->IsOffTheRecord() &&
+-      !Profile::FromBrowserContext(context)->IsGuestSession()) {
++  if (context->IsOffTheRecord()
++#if 0
++      && !Profile::FromBrowserContext(context)->IsGuestSession()
++#endif
++  ) {
+     is_incognito_ = true;
+   }
+ }
+@@ -150,6 +161,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+     UMA_HISTOGRAM_BOOLEAN("interstitial.ssl.visited_site_after_warning", true);
+   }
+ 
++#if 0
+   // Security indicator UI study (https://crbug.com/803501): Show a message in
+   // the console to reduce developer confusion about the experimental UI
+   // treatments for HTTPS pages with EV certificates.
+@@ -177,6 +189,7 @@ void SecurityStateTabHelper::DidFinishNavigation(
+           "Validation is still valid.");
+     }
+   }
++#endif
+ }
+ 
+ void SecurityStateTabHelper::DidChangeVisibleSecurityState() {
+@@ -250,6 +263,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+       web_contents()->GetController().GetVisibleEntry();
+   if (!entry)
+     return security_state::MALICIOUS_CONTENT_STATUS_NONE;
++#if 0
+   safe_browsing::SafeBrowsingService* sb_service =
+       g_browser_process->safe_browsing_service();
+   if (!sb_service)
+@@ -301,6 +315,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+         break;
+     }
+   }
++#endif
+   return security_state::MALICIOUS_CONTENT_STATUS_NONE;
+ }
+ 

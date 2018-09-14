@@ -5,7 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 ```javascript
-const {systemPreferences} = require('electron')
+const { systemPreferences } = require('electron')
 console.log(systemPreferences.isDarkMode())
 ```
 
@@ -185,8 +185,8 @@ An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
-const {BrowserWindow, systemPreferences} = require('electron')
-let browserOptions = {width: 1000, height: 800}
+const { BrowserWindow, systemPreferences } = require('electron')
+let browserOptions = { width: 1000, height: 800 }
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {

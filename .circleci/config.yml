@@ -119,6 +119,7 @@ build-steps: &build-steps
           if [ "$RUN_TESTS" != "false" ]; then
             cd src
             ninja -C out/Default third_party/electron_node:headers
+            export ELECTRON_OUT_DIR=Default
             (cd electron && npm run test -- --ci --enable-logging)
           fi
     - <<: *notify-slack-failure
@@ -195,6 +196,7 @@ mac-build-steps: &mac-build-steps
           if [ "$RUN_TESTS" != "false" ]; then
             cd src
             ninja -C out/Default third_party/electron_node:headers
+            export ELECTRON_OUT_DIR=Default
             (cd electron && npm run test -- --ci --enable-logging)
           fi
     - <<: *notify-slack-failure

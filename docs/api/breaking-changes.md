@@ -49,17 +49,17 @@ app.getAppMetrics()
 
 // Deprecated
 const metrics = app.getAppMetrics()
-const {memory} = metrics[0] // Deprecated property
+const { memory } = metrics[0] // Deprecated property
 ```
 
 ## `BrowserWindow`
 
 ```js
 // Deprecated
-let optionsA = {webPreferences: {blinkFeatures: ''}}
+let optionsA = { webPreferences: { blinkFeatures: '' } }
 let windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
+let optionsB = { webPreferences: { enableBlinkFeatures: '' } }
 let windowB = new BrowserWindow(optionsB)
 
 // Deprecated
@@ -175,9 +175,9 @@ tray.setHighlightMode('off')
 
 ```js
 // Deprecated
-webContents.openDevTools({detach: true})
+webContents.openDevTools({ detach: true })
 // Replace with
-webContents.openDevTools({mode: 'detach'})
+webContents.openDevTools({ mode: 'detach' })
 
 // Removed
 webContents.setSize(options)
@@ -190,12 +190,12 @@ webContents.setSize(options)
 // Deprecated
 webFrame.registerURLSchemeAsSecure('app')
 // Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
+protocol.registerStandardSchemes(['app'], { secure: true })
 
 // Deprecated
-webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
+webFrame.registerURLSchemeAsPrivileged('app', { secure: true })
 // Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
+protocol.registerStandardSchemes(['app'], { secure: true })
 ```
 
 ## `<webview>`
@@ -232,10 +232,10 @@ The following list includes the breaking API changes made in Electron 2.0.
 
 ```js
 // Deprecated
-let optionsA = {titleBarStyle: 'hidden-inset'}
+let optionsA = { titleBarStyle: 'hidden-inset' }
 let windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = {titleBarStyle: 'hiddenInset'}
+let optionsB = { titleBarStyle: 'hiddenInset' }
 let windowB = new BrowserWindow(optionsB)
 ```
 
@@ -245,7 +245,7 @@ let windowB = new BrowserWindow(optionsB)
 // Removed
 menu.popup(browserWindow, 100, 200, 2)
 // Replaced with
-menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
+menu.popup(browserWindow, { x: 100, y: 200, positioningItem: 2 })
 ```
 
 ## `nativeImage`

@@ -1,0 +1,46 @@
+diff --git a/crypto/nss_util.cc b/crypto/nss_util.cc
+index a0e7f61fab0c..fac728a729fb 100644
+--- a/crypto/nss_util.cc
++++ b/crypto/nss_util.cc
+@@ -623,13 +623,16 @@ class NSSInitSingleton {
+ 
+     EnsureNSPRInit();
+ 
+-    // We *must* have NSS >= 3.26 at compile time.
+-    static_assert((NSS_VMAJOR == 3 && NSS_VMINOR >= 26) || (NSS_VMAJOR > 3),
+-                  "nss version check failed");
++    // We *must* have NSS >= 3.14.3.
++    static_assert(
++        (NSS_VMAJOR == 3 && NSS_VMINOR == 14 && NSS_VPATCH >= 3) ||
++        (NSS_VMAJOR == 3 && NSS_VMINOR > 14) ||
++        (NSS_VMAJOR > 3),
++        "nss version check failed");
+     // Also check the run-time NSS version.
+     // NSS_VersionCheck is a >= check, not strict equality.
+-    if (!NSS_VersionCheck("3.26")) {
+-      LOG(FATAL) << "NSS_VersionCheck(\"3.26\") failed. NSS >= 3.26 is "
++    if (!NSS_VersionCheck("3.14.3")) {
++      LOG(FATAL) << "NSS_VersionCheck(\"3.14.3\") failed. NSS >= 3.14.3 is "
+                     "required. Please upgrade to the latest NSS, and if you "
+                     "still get this error, contact your distribution "
+                     "maintainer.";
+diff --git a/crypto/scoped_test_nss_db.cc b/crypto/scoped_test_nss_db.cc
+index 03470c130371..b334109e0342 100644
+--- a/crypto/scoped_test_nss_db.cc
++++ b/crypto/scoped_test_nss_db.cc
+@@ -44,6 +44,15 @@ ScopedTestNSSDB::~ScopedTestNSSDB() {
+     CERT_DestroyCertList(cert_list);
+   }
+ 
++  // Don't close when NSS is < 3.15.1, because it would require an additional
++  // sleep for 1 second after closing the database, due to
++  // http://bugzil.la/875601.
++  if (!NSS_VersionCheck("3.15.1")) {
++    LOG(ERROR) << "NSS version is < 3.15.1, test DB will not be closed.";
++    temp_dir_.Take();
++    return;
++  }
++
+   // NSS is allowed to do IO on the current thread since dispatching
+   // to a dedicated thread would still have the affect of blocking
+   // the current thread, due to NSS's internal locking requirements

@@ -2,9 +2,9 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const {deprecations, deprecate} = require('electron')
+const { deprecations, deprecate } = require('electron')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('deprecations', () => {
@@ -43,7 +43,7 @@ describe('deprecations', () => {
     const newProp = 'shinyNewName'
 
     let value = 0
-    const o = {[newProp]: value}
+    const o = { [newProp]: value }
     expect(o).to.not.have.a.property(oldProp)
     expect(o).to.have.a.property(newProp).that.is.a('number')
 
@@ -71,7 +71,7 @@ describe('deprecations', () => {
     deprecations.setHandler(m => { msg = m })
 
     const prop = 'itMustGo'
-    let o = {[prop]: 0}
+    let o = { [prop]: 0 }
 
     deprecate.removeProperty(o, prop)
 
@@ -88,7 +88,7 @@ describe('deprecations', () => {
 
     const key = 'foo'
     const val = 'bar'
-    let o = {[key]: val}
+    let o = { [key]: val }
     deprecate.removeProperty(o, key)
 
     for (let i = 0; i < 3; ++i) {
@@ -104,7 +104,7 @@ describe('deprecations', () => {
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
 
-    let o = {[oldProp]: 0}
+    let o = { [oldProp]: 0 }
     deprecate.renameProperty(o, oldProp, newProp)
 
     expect(msg).to.be.a('string')

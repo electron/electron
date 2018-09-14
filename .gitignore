@@ -41,6 +41,7 @@
 /vendor/python_26/
 /vendor/native_mksnapshot
 /vendor/LICENSES.chromium.html
+/vendor/pyyaml
 node_modules/
 SHASUMS256.txt
 **/yarn.lock

@@ -1,0 +1,70 @@
+diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
+index f84934bfd712..63bce16a9d06 100644
+--- a/gin/array_buffer.cc
++++ b/gin/array_buffer.cc
+@@ -43,6 +43,10 @@ void* ArrayBufferAllocator::AllocateUninitialized(size_t length) {
+   return malloc(length);
+ }
+
++void* ArrayBufferAllocator::Realloc(void* data, size_t length) {
++  return realloc(data, length);
++}
++
+ void ArrayBufferAllocator::Free(void* data, size_t length) {
+   free(data);
+ }
+diff --git a/gin/array_buffer.h b/gin/array_buffer.h
+index 2aef366ac819..c037808a9bb3 100644
+--- a/gin/array_buffer.h
++++ b/gin/array_buffer.h
+@@ -21,6 +21,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+  public:
+   void* Allocate(size_t length) override;
+   void* AllocateUninitialized(size_t length) override;
++  void* Realloc(void* data, size_t length) override;
+   void Free(void* data, size_t length) override;
+
+   GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
+diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
+index 053babce1051..e33d6d4ceb5a 100644
+--- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
++++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
+@@ -121,6 +121,11 @@ void* ArrayBufferContents::AllocateMemoryOrNull(size_t size,
+   return AllocateMemoryWithFlags(size, policy, base::PartitionAllocReturnNull);
+ }
+ 
++void* ArrayBufferContents::Realloc(void* data, size_t size) {
++  return Partitions::ArrayBufferPartition()->Realloc(data, size,
++      WTF_HEAP_PROFILER_TYPE_NAME(ArrayBufferContents));
++}
++
+ void ArrayBufferContents::FreeMemory(void* data) {
+   Partitions::ArrayBufferPartition()->Free(data);
+ }
+diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
+index 809229caa872..6248ad32d6b0 100644
+--- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
++++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
+@@ -178,6 +178,7 @@ class WTF_EXPORT ArrayBufferContents {
+   void CopyTo(ArrayBufferContents& other);
+ 
+   static void* AllocateMemoryOrNull(size_t, InitializationPolicy);
++  static void* Realloc(void* data, size_t);
+   static void FreeMemory(void*);
+   static DataHandle CreateDataHandle(size_t, InitializationPolicy);
+   static void Initialize(
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+index cf2762ede559..f065b5ebafb8 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+@@ -555,6 +555,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+         size, WTF::ArrayBufferContents::kDontInitialize);
+   }
+ 
++  void* Realloc(void* data, size_t size) override {
++    return WTF::ArrayBufferContents::Realloc(data, size);
++  }
++
+   void Free(void* data, size_t size) override {
+     WTF::ArrayBufferContents::FreeMemory(data);
+   }

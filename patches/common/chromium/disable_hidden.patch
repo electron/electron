@@ -1,0 +1,28 @@
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 77c870b8a075..f1c4076788c5 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -664,6 +664,9 @@ void RenderWidgetHostImpl::WasHidden() {
+   if (is_hidden_)
+     return;
+ 
++  if (disable_hidden_)
++    return;
++
+   RejectMouseLockOrUnlockIfNecessary();
+ 
+   TRACE_EVENT0("renderer_host", "RenderWidgetHostImpl::WasHidden");
+diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
+index b6aa99e..ef4fa35 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.h
++++ b/content/browser/renderer_host/render_widget_host_impl.h
+@@ -124,6 +124,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl : public RenderWidgetHost,
+   // RenderWidgetHostImpl.
+   static RenderWidgetHostImpl* From(RenderWidgetHost* rwh);
+ 
++  // Electron: Prevents the widget from getting hidden.
++  bool disable_hidden_ = false;
++
+   void set_hung_renderer_delay(const base::TimeDelta& delay) {
+     hung_renderer_delay_ = delay;
+   }

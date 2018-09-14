@@ -1,4 +1,4 @@
-const {expect} = require('chai')
+const { expect } = require('chai')
 
 describe('process module', () => {
   describe('process.getCreationTime()', () => {

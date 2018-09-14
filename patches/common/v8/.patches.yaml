@@ -1,0 +1,87 @@
+repo: src/v8
+patches:
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: add_realloc.patch
+  description: |
+    Blink overrides ArrayBuffer's allocator with its own one, while Node simply
+    uses malloc and free, so we need to use v8's allocator in Node. As part of the
+    10.6.0 upgrade, we needed to make SerializerDelegate accept an allocator
+    argument in its constructor, and override ReallocateBufferMemory and
+    FreeBufferMemory to use the allocator. We cannot simply allocate and then memcpy
+    when we override ReallocateBufferMemory, so we therefore need to implement
+    Realloc on the v8 side.
+-
+  author: Ales Pergl <alpergl@microsoft.com>
+  file: build_gn.patch
+  description: null
+-
+  author: Cheng Zhao <zcbenz@gmail.com>
+  file: array_buffer.patch
+  description: null
+-
+  author: Cheng Zhao <zcbenz@gmail.com>
+  file: ostreams.patch
+  description: null
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: export_platform.patch
+  description: |
+    v8::Platform::SystemClockTimeMillis must be exported so that node::NodePlatform can call it
+-
+  author: Ales Pergl <alpergl@microsoft.com>
+  file: dcheck.patch
+  description: null
+-
+  author: Nitish Sakhawalkar <nitsakh@icloud.com>
+  file: disable-warning-win.patch
+  description:
+    Disable unit test windows build warning
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: backport_39d546a.patch
+  description: Node 10.0.0 needs it.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: backport_ff0a97933.patch
+  description: Node 10.2.0 needs it.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: backport_9fb02b526.patch
+  description: Node 10.2.0 needs it.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: backport_23652c5f.patch
+  description: Node 10.2.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: backport_91ddb65d.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_6989b3f6d7.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_a440efb27f.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_5dd3395.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: backport_aa6ce3e.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_b20faff.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_acc336c.patch
+  description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: cherry-pick_70c4340.patch
+  description: Node 10.6.0 needs it.

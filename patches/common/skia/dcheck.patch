@@ -1,0 +1,13 @@
+diff --git a/include/core/SkPostConfig.h b/include/core/SkPostConfig.h
+index c34397cde6..5a55535eeb 100644
+--- a/include/core/SkPostConfig.h
++++ b/include/core/SkPostConfig.h
+@@ -18,7 +18,7 @@
+     #ifdef NDEBUG
+         #define SK_RELEASE
+     #else
+-        #define SK_DEBUG
++        #define SK_RELEASE
+     #endif
+ #endif
+ 

@@ -1,0 +1,125 @@
+diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon.h b/chrome/browser/ui/libgtkui/app_indicator_icon.h
+index 7815fbb..f17a5c5 100644
+--- a/chrome/browser/ui/libgtkui/app_indicator_icon.h
++++ b/chrome/browser/ui/libgtkui/app_indicator_icon.h
+@@ -12,6 +12,7 @@
+ #include "base/memory/weak_ptr.h"
+ #include "base/nix/xdg_util.h"
+ #include "chrome/browser/ui/libgtkui/gtk_signal.h"
++#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
+ #include "ui/views/linux_ui/status_icon_linux.h"
+ 
+ typedef struct _AppIndicator AppIndicator;
+@@ -31,7 +32,7 @@ namespace libgtkui {
+ class AppIndicatorIconMenu;
+ 
+ // Status icon implementation which uses libappindicator.
+-class AppIndicatorIcon : public views::StatusIconLinux {
++class LIBGTKUI_EXPORT AppIndicatorIcon : public views::StatusIconLinux {
+  public:
+   // The id uniquely identifies the new status icon from other chrome status
+   // icons.
+diff --git a/chrome/browser/ui/libgtkui/gtk_status_icon.h b/chrome/browser/ui/libgtkui/gtk_status_icon.h
+index e4e0da4..af02871 100644
+--- a/chrome/browser/ui/libgtkui/gtk_status_icon.h
++++ b/chrome/browser/ui/libgtkui/gtk_status_icon.h
+@@ -10,6 +10,7 @@
+ #include "base/macros.h"
+ #include "base/strings/string16.h"
+ #include "chrome/browser/ui/libgtkui/gtk_signal.h"
++#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
+ #include "ui/base/glib/glib_integers.h"
+ #include "ui/base/glib/glib_signal.h"
+ #include "ui/views/linux_ui/status_icon_linux.h"
+@@ -29,7 +30,7 @@ class AppIndicatorIconMenu;
+ 
+ // Status icon implementation which uses the system tray X11 spec (via
+ // GtkStatusIcon).
+-class Gtk2StatusIcon : public views::StatusIconLinux {
++class LIBGTKUI_EXPORT Gtk2StatusIcon : public views::StatusIconLinux {
+  public:
+   Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
+   ~Gtk2StatusIcon() override;
+diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
+index 665ec57..4ccb088 100644
+--- a/chrome/browser/ui/libgtkui/gtk_util.h
++++ b/chrome/browser/ui/libgtkui/gtk_util.h
+@@ -11,6 +11,7 @@
+ #include "ui/base/glib/scoped_gobject.h"
+ #include "ui/native_theme/native_theme.h"
+ #include "ui/views/window/frame_buttons.h"
++#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
+ 
+ namespace aura {
+ class Window;
+@@ -51,10 +52,10 @@ SkColor NormalURLColor(SkColor foreground);
+ // saturation than to look exactly like the foreground color.
+ SkColor SelectedURLColor(SkColor foreground, SkColor background);
+ 
+-void GtkInitFromCommandLine(const base::CommandLine& command_line);
++LIBGTKUI_EXPORT void GtkInitFromCommandLine(const base::CommandLine& command_line);
+ 
+ // Returns the name of the ".desktop" file associated with our running process.
+-std::string GetDesktopName(base::Environment* env);
++LIBGTKUI_EXPORT std::string GetDesktopName(base::Environment* env);
+ 
+ guint GetGdkKeyCodeForAccelerator(const ui::Accelerator& accelerator);
+ 
+@@ -69,7 +70,7 @@ void TurnButtonBlue(GtkWidget* button);
+ 
+ // Sets |dialog| as transient for |parent|, which will keep it on top and center
+ // it above |parent|. Do nothing if |parent| is nullptr.
+-void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
++LIBGTKUI_EXPORT void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
+ 
+ // Gets the transient parent aura window for |dialog|.
+ aura::Window* GetAuraTransientParent(GtkWidget* dialog);
+diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
+index e05fbe9..3afca9a 100644
+--- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
++++ b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
+@@ -7,6 +7,7 @@
+ 
+ #include <stdint.h>
+ 
++#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ 
+ typedef struct _GdkColor GdkColor;
+@@ -41,7 +42,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
+ // Convert and copy a SkBitmap to a GdkPixbuf. NOTE: this uses BGRAToRGBA, so
+ // it is an expensive operation.  The returned GdkPixbuf will have a refcount of
+ // 1, and the caller is responsible for unrefing it when done.
+-GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap);
++LIBGTKUI_EXPORT GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap);
+ 
+ }  // namespace libgtkui
+ 
+diff --git a/chrome/browser/ui/libgtkui/unity_service.h b/chrome/browser/ui/libgtkui/unity_service.h
+index 8d67e14..95fbb27 100644
+--- a/chrome/browser/ui/libgtkui/unity_service.h
++++ b/chrome/browser/ui/libgtkui/unity_service.h
+@@ -5,18 +5,20 @@
+ #ifndef CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
+ #define CHROME_BROWSER_UI_LIBGTKUI_UNITY_SERVICE_H_
+ 
++#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
++
+ namespace unity {
+ 
+ // Returns whether unity is currently running.
+-bool IsRunning();
++LIBGTKUI_EXPORT bool IsRunning();
+ 
+ // If unity is running, sets the download counter in the dock icon. Any value
+ // other than 0 displays the badge.
+-void SetDownloadCount(int count);
++LIBGTKUI_EXPORT void SetDownloadCount(int count);
+ 
+ // If unity is running, sets the download progress bar in the dock icon. Any
+ // value between 0.0 and 1.0 (exclusive) shows the progress bar.
+-void SetProgressFraction(float percentage);
++LIBGTKUI_EXPORT void SetProgressFraction(float percentage);
+ 
+ }  // namespace unity
+ 

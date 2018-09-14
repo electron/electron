@@ -1,0 +1,17 @@
+cdiff --git a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
+index aedc832..8c26681 100644
+--- a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
++++ b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
+@@ -94,8 +94,10 @@ v8::Local<v8::Function> V8ObjectConstructor::CreateInterfaceObject(
+     bool get_prototype_value =
+         interface_object->Get(context, V8AtomicString(isolate, "prototype"))
+             .ToLocal(&prototype_value);
+-    CHECK(get_prototype_value);
+-    CHECK(prototype_value->IsObject());
++    // CHECK(get_prototype_value);
++    // CHECK(prototype_value->IsObject());
++    if (!get_prototype_value || !prototype_value->IsObject())
++      return v8::Local<v8::Function>();
+ 
+     prototype_object = prototype_value.As<v8::Object>();
+     if (prototype_object->InternalFieldCount() ==

@@ -1,0 +1,138 @@
+diff --git a/content/browser/frame_host/render_frame_host_delegate.cc b/content/browser/frame_host/render_frame_host_delegate.cc
+index 4d0a8ea553c5..0fac0b22ff2f 100644
+--- a/content/browser/frame_host/render_frame_host_delegate.cc
++++ b/content/browser/frame_host/render_frame_host_delegate.cc
+@@ -89,8 +89,10 @@ bool RenderFrameHostDelegate::ShouldRouteMessageEvent(
+ }
+ 
+ std::unique_ptr<WebUIImpl>
+-RenderFrameHostDelegate::CreateWebUIForRenderFrameHost(const GURL& url) {
+-  return nullptr;
++RenderFrameHostDelegate::CreateWebUIForRenderFrameHost(
++    const GURL& url,
++    const std::string& frame_name) {
++  return nullptr;
+ }
+ 
+ bool RenderFrameHostDelegate::ShouldAllowRunningInsecureContent(
+diff --git a/content/browser/frame_host/render_frame_host_delegate.h b/content/browser/frame_host/render_frame_host_delegate.h
+index 197b64b49fd6..2e94b03c4f44 100644
+--- a/content/browser/frame_host/render_frame_host_delegate.h
++++ b/content/browser/frame_host/render_frame_host_delegate.h
+@@ -234,7 +234,8 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
+   // Creates a WebUI object for a frame navigating to |url|. If no WebUI
+   // applies, returns null.
+   virtual std::unique_ptr<WebUIImpl> CreateWebUIForRenderFrameHost(
+-      const GURL& url);
++      const GURL& url,
++      const std::string& frame_name);
+ 
+   // Called by |frame| to notify that it has received an update on focused
+   // element. |bounds_in_root_view| is the rectangle containing the element that
+diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
+index 1f566ef1f437..bb2f59d62315 100644
+--- a/content/browser/frame_host/render_frame_host_impl.cc
++++ b/content/browser/frame_host/render_frame_host_impl.cc
+@@ -20,6 +20,7 @@
+ #include "base/process/kill.h"
+ #include "base/task_scheduler/post_task.h"
+ #include "base/time/time.h"
++#include "base/unguessable_token.h"
+ #include "build/build_config.h"
+ #include "cc/base/switches.h"
+ #include "content/browser/accessibility/browser_accessibility_manager.h"
+@@ -3468,8 +3514,23 @@ bool RenderFrameHostImpl::UpdatePendingWebUI(const GURL& dest_url,
+       DCHECK(web_ui_);
+       should_reuse_web_ui_ = true;
+     } else {
++      // Give the frame a name if it does not already have one.
++      // The reason is web ui code base the frame look up on the frame name.
++      std::string frame_name = GetFrameName();
++      if (frame_name.empty() && !frame_tree_node_->IsMainFrame()) {
++        frame_name = base::StringPrintf("frame_%i", frame_tree_node_->frame_tree_node_id());
++        frame_tree_node_->SetFrameName(
++            frame_name, frame_name + base::UnguessableToken::Create().ToString());
++      }
++
++      // If the web ui is in subframes, the parent frame bindings does not have the web ui binding,
++      // so we reset the bindings for the subframes.
++      if (!frame_tree_node_->IsMainFrame() && new_web_ui_type != WebUI::kNoWebUI) {
++        entry_bindings = NavigationEntryImpl::kInvalidBindings;
++      }
++
+       // Otherwise create a new pending WebUI.
+-      pending_web_ui_ = delegate_->CreateWebUIForRenderFrameHost(dest_url);
++      pending_web_ui_ = delegate_->CreateWebUIForRenderFrameHost(dest_url, frame_name);
+       DCHECK(pending_web_ui_);
+       pending_web_ui_type_ = new_web_ui_type;
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index f985ea2bceab..779cfd79312d 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -768,6 +768,25 @@ RenderFrameHostManager* WebContentsImpl::GetRenderManagerForTesting() {
+   return GetRenderManager();
+ }
+
++void SendMessageToFrameTreeWebUIs(RenderFrameHostImpl* parent_frame_host,
++                                  const IPC::Message& message,
++                                  int& dispatch_count) {
++  // Get the web ui or the pending one if it's not yet commited.
++  WebUIImpl* web_ui = parent_frame_host->web_ui()
++      ? parent_frame_host->web_ui()
++      : parent_frame_host->pending_web_ui();
++  if (web_ui && web_ui->OnMessageReceived(message, parent_frame_host)) {
++    ++dispatch_count;
++  }
++
++  size_t child_count = parent_frame_host->frame_tree_node()->child_count();
++  for (size_t i = 0; i < child_count; ++i) {
++    RenderFrameHostImpl* sub_frame_host =
++        parent_frame_host->frame_tree_node()->child_at(i)->current_frame_host();
++    SendMessageToFrameTreeWebUIs(sub_frame_host, message, dispatch_count);
++  }
++}
++
+ bool WebContentsImpl::OnMessageReceived(RenderViewHostImpl* render_view_host,
+                                         const IPC::Message& message) {
+   for (auto& observer : observers_) {
+@@ -809,9 +828,10 @@ bool WebContentsImpl::OnMessageReceived(RenderViewHostImpl* render_view_host,
+
+ bool WebContentsImpl::OnMessageReceived(RenderFrameHostImpl* render_frame_host,
+                                         const IPC::Message& message) {
+-  {
+-    WebUIImpl* web_ui = render_frame_host->web_ui();
+-    if (web_ui && web_ui->OnMessageReceived(message, render_frame_host))
++  int dispatch_count = 0;
++  if (render_frame_host) {
++    SendMessageToFrameTreeWebUIs(render_frame_host, message, dispatch_count);
++    if (dispatch_count > 0)
+       return true;
+   }
+
+@@ -5021,8 +5043,9 @@ NavigationControllerImpl& WebContentsImpl::GetControllerForRenderManager() {
+ }
+ 
+ std::unique_ptr<WebUIImpl> WebContentsImpl::CreateWebUIForRenderFrameHost(
+-    const GURL& url) {
+-  return CreateWebUI(url);
++    const GURL& url,
++    const std::string& frame_name) {
++  return CreateWebUI(url/*, frame_name*/);
+ }
+ 
+ NavigationEntry*
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 84a01a83c72a..49d0a4b547c2 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -534,7 +534,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+       SiteInstance* source_site_instance) const override;
+   void EnsureOpenerProxiesExist(RenderFrameHost* source_rfh) override;
+   std::unique_ptr<WebUIImpl> CreateWebUIForRenderFrameHost(
+-      const GURL& url) override;
++      const GURL& url,
++      const std::string& frame_name) override;
+   void SetFocusedFrame(FrameTreeNode* node, SiteInstance* source) override;
+   void DidCallFocus() override;
+   RenderFrameHost* GetFocusedFrameIncludingInnerWebContents() override;

@@ -16,7 +16,7 @@ using the [`register`](global-shortcut.md#globalshortcutregisteraccelerator-call
 method, i.e.
 
 ```javascript
-const {app, globalShortcut} = require('electron')
+const { app, globalShortcut } = require('electron')
 
 app.on('ready', () => {
   // Register a 'CommandOrControl+Y' shortcut listener.
