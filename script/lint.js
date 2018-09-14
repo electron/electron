@@ -69,8 +69,7 @@ const LINTERS = [
         if (!stdout.length && !stderr.length) {
           return
         }
-        console.warn(stdout)
-        console.warn(stderr)
+        console.warn(stdout, stderr)
         process.exit(1)
       })
     }
@@ -98,9 +97,7 @@ const LINTERS = [
         if (!error) {
           return
         }
-        console.warn(error)
         console.warn(stdout)
-        console.warn(stderr)
         process.exit(1)
       })
     }
