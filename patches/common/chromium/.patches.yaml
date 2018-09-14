@@ -219,10 +219,6 @@ patches:
   description: null
 -
   author: deepak1556 <hop2deep@gmail.com>
-  file: disable-recursive-surface-sync.patch
-  description: null
--
-  author: deepak1556 <hop2deep@gmail.com>
   file: blink-worker-enable-csp-in-file-scheme.patch
   description: null
 -
