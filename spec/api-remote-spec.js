@@ -3,6 +3,7 @@
 const assert = require('assert')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
+const { resolveGetters } = require('./assert-helpers')
 
 const { remote } = require('electron')
 
@@ -280,7 +281,7 @@ describe('remote module', () => {
 
     it('supports instanceof Int8Array', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual(printName.typedArray('Int8Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Int8Array', values)], values)
 
       const int8values = new Int8Array(values)
       assert.deepStrictEqual(printName.typedArray('Int8Array', int8values), int8values)
@@ -289,7 +290,7 @@ describe('remote module', () => {
 
     it('supports instanceof Uint8Array', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual(printName.typedArray('Uint8Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Uint8Array', values)], values)
 
       const uint8values = new Uint8Array(values)
       assert.deepStrictEqual(printName.typedArray('Uint8Array', uint8values), uint8values)
@@ -298,7 +299,7 @@ describe('remote module', () => {
 
     it('supports instanceof Uint8ClampedArray', () => {
       const values = [1, 2, 3, 4]
-      assert.deepStrictEqual(printName.typedArray('Uint8ClampedArray', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Uint8ClampedArray', values)], values)
 
       const uint8values = new Uint8ClampedArray(values)
       assert.deepStrictEqual(printName.typedArray('Uint8ClampedArray', uint8values), uint8values)
@@ -307,7 +308,7 @@ describe('remote module', () => {
 
     it('supports instanceof Int16Array', () => {
       const values = [0x1234, 0x2345, 0x3456, 0x4567]
-      assert.deepStrictEqual(printName.typedArray('Int16Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Int16Array', values)], values)
 
       const int16values = new Int16Array(values)
       assert.deepStrictEqual(printName.typedArray('Int16Array', int16values), int16values)
@@ -316,7 +317,7 @@ describe('remote module', () => {
 
     it('supports instanceof Uint16Array', () => {
       const values = [0x1234, 0x2345, 0x3456, 0x4567]
-      assert.deepStrictEqual(printName.typedArray('Uint16Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Uint16Array', values)], values)
 
       const uint16values = new Uint16Array(values)
       assert.deepStrictEqual(printName.typedArray('Uint16Array', uint16values), uint16values)
@@ -325,7 +326,7 @@ describe('remote module', () => {
 
     it('supports instanceof Int32Array', () => {
       const values = [0x12345678, 0x23456789]
-      assert.deepStrictEqual(printName.typedArray('Int32Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Int32Array', values)], values)
 
       const int32values = new Int32Array(values)
       assert.deepStrictEqual(printName.typedArray('Int32Array', int32values), int32values)
@@ -334,7 +335,7 @@ describe('remote module', () => {
 
     it('supports instanceof Uint32Array', () => {
       const values = [0x12345678, 0x23456789]
-      assert.deepStrictEqual(printName.typedArray('Uint32Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Uint32Array', values)], values)
 
       const uint32values = new Uint32Array(values)
       assert.deepStrictEqual(printName.typedArray('Uint32Array', uint32values), uint32values)
@@ -343,7 +344,7 @@ describe('remote module', () => {
 
     it('supports instanceof Float32Array', () => {
       const values = [0.5, 1.0, 1.5]
-      assert.deepStrictEqual(printName.typedArray('Float32Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Float32Array', values)], values)
 
       const float32values = new Float32Array()
       assert.deepStrictEqual(printName.typedArray('Float32Array', float32values), float32values)
@@ -352,7 +353,7 @@ describe('remote module', () => {
 
     it('supports instanceof Float64Array', () => {
       const values = [0.5, 1.0, 1.5]
-      assert.deepStrictEqual(printName.typedArray('Float64Array', values), values)
+      assert.deepStrictEqual([...printName.typedArray('Float64Array', values)], values)
 
       const float64values = new Float64Array([0.5, 1.0, 1.5])
       assert.deepStrictEqual(printName.typedArray('Float64Array', float64values), float64values)
@@ -480,7 +481,7 @@ describe('remote module', () => {
         throwFunction(err)
       } catch (error) {
         assert.ok(error.from)
-        assert.deepStrictEqual(error.cause, err)
+        assert.deepStrictEqual(error.cause, ...resolveGetters(err))
       }
     })
   })
