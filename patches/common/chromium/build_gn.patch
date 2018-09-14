@@ -55,19 +55,6 @@ index 9a10137aa405..bb33e5450eaa 100644
  
      # Work-around for http://openradar.appspot.com/20356002
      if (is_mac) {
-diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
-index 1f6bc13e087f..4630045ff554 100644
---- a/build/config/win/BUILD.gn
-+++ b/build/config/win/BUILD.gn
-@@ -314,7 +314,7 @@ config("cfi_linker") {
- # See https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx for a reference of
- # what each value does.
- config("default_crt") {
--  if (is_component_build) {
-+  if (is_component_build || (is_electron_build && !is_electron_gn_build)) {
-     # Component mode: dynamic CRT. Since the library is shared, it requires
-     # exceptions or will give errors about things not matching, so keep
-     # exceptions on.
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
 index bc9fe2cc2000..9173f6f0324c 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
