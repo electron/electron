@@ -8,6 +8,7 @@ const path = require('path')
 const pluralize = require('pluralize')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
+const STANDARD = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
 
 const BLACKLIST = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
@@ -39,24 +40,33 @@ const BLACKLIST = new Set([
   ['brightray', 'browser', 'win', 'win32_notification.h']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
+async function waitForChild (child) {
+  process.on('exit', () => { if (!child.killed) child.kill() })
+  const exitCode = await new Promise(resolve => child.on('exit', resolve))
+  if (exitCode !== 0) process.exit(1)
+}
+
+async function spawnInherit (cmd, args, opts) {
+  opts = Object.assign({ stdio: 'inherit' }, opts)
+  waitForChild(childProcess.spawn(cmd, args, opts))
+}
+
 const LINTERS = [
   {
     key: 'c++',
     roots: ['atom', 'brightray'].map(x => path.join(SOURCE_ROOT, x)),
     test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
-    run: async (filenames) => {
-      childProcess.execFile('cpplint.py', filenames, {}, (error, stdout, stderr) => {
-        // cpplint writes warnings, errors, AND status messages to stderr.
-        // prune out the status messages:
-        for (const line of stderr.split(/[\r\n]+/)) {
+    run: async filenames => {
+      const child = childProcess.spawn('cpplint.py', filenames)
+      // cpplint dumps EVERYTHING to stderr, so filter out everything but the warnings
+      child.stderr.setEncoding('utf8').on('data', data => {
+        for (const line of data.split(/[\r\n]+/)) {
           if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
             console.warn(line)
           }
         }
-        if (error || stderr.includes('Command failed')) {
-          process.exit(1)
-        }
       })
+      waitForChild(child)
     }
   }, {
     key: 'python',
@@ -66,42 +76,18 @@ const LINTERS = [
       const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
       const args = ['--rcfile=' + rcfile, ...filenames]
       const env = Object.assign({PYTHONPATH: path.join(SOURCE_ROOT, 'script')}, process.env)
-      childProcess.execFile('pylint.py', args, { env }, (unused, stdout, stderr) => {
-        if (!stdout.length && !stderr.length) { // pylint is quiet on success
-          return
-        }
-        console.warn(stdout, stderr)
-        process.exit(1)
-      })
+      spawnInherit('pylint.py', args, {env})
     }
   }, {
     key: 'javascript',
     roots: ['lib', 'script'].map(x => path.join(SOURCE_ROOT, x)),
     test: filename => filename.endsWith('.js'),
-    run: async (filenames) => {
-      const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
-      childProcess.execFile(cmd, filenames, { cwd: SOURCE_ROOT }, (error, stdout, stderr) => {
-        if (!error) { // standard is quiet on success
-          return
-        }
-        console.warn(stdout)
-        process.exit(1)
-      })
-    }
+    run: async (filenames) => spawnInherit(STANDARD, filenames, {cwd: SOURCE_ROOT})
   }, {
     key: 'javascript',
     roots: ['spec'].map(x => path.join(SOURCE_ROOT, x)),
     test: filename => filename.endsWith('.js'),
-    run: async (filenames) => {
-      const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
-      childProcess.execFile(cmd, filenames, { cwd: path.join(SOURCE_ROOT, 'spec') }, (error, stdout, stderr) => {
-        if (!error) { // standard is quiet on success
-          return
-        }
-        console.warn(stdout)
-        process.exit(1)
-      })
-    }
+    run: async (filenames) => spawnInherit(STANDARD, filenames, {cwd: path.join(SOURCE_ROOT, 'spec')})
   }
 ]
 
