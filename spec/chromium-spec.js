@@ -7,6 +7,7 @@ const url = require('url')
 const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { closeWindow } = require('./window-helpers')
+const { resolveGetters } = require('./assert-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
@@ -457,8 +458,8 @@ describe('chromium feature', () => {
       w.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
       w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
         assert.strictEqual(options.show, false)
-        assert.deepStrictEqual(options.foo, {
-          bar: null,
+        assert.deepStrictEqual(...resolveGetters(options.foo, {
+          bar: undefined,
           baz: {
             hello: {
               world: true
@@ -469,7 +470,7 @@ describe('chromium feature', () => {
               world: true
             }
           }
-        })
+        }))
         done()
       })
     })
@@ -614,7 +615,7 @@ describe('chromium feature', () => {
 
     it('does nothing when origin of current window does not match opener', (done) => {
       listener = (event) => {
-        assert.strictEqual(event.data, undefined)
+        assert.strictEqual(event.data, null)
         done()
       }
       window.addEventListener('message', listener)

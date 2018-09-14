@@ -334,7 +334,7 @@ describe('node feature', () => {
         let iv = Buffer.from('0'.repeat(32), 'hex')
         let input = Buffer.from(data, 'base64')
         let decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv)
-        let result = Buffer.concat([decipher.update(input), decipher.final()])
+        let result = Buffer.concat([decipher.update(input), decipher.final()]).toString('utf8')
         assert.strictEqual(cipherText, result)
       }
     })
