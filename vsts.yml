@@ -62,6 +62,7 @@ jobs:
       # Make sure there aren't any Electron processes left running from previous tests
       killall Electron
       ninja -C out/Default third_party/electron_node:headers
+      export ELECTRON_OUT_DIR=Default
       (cd electron && npm run test -- --ci --enable-logging)
     displayName: Test
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
