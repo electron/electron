@@ -230,10 +230,6 @@ patches:
   file: blink-worker-enable-csp-in-file-scheme.patch
   description: null
 -
-  author: Cheng Zhao <zcbenz@gmail.com>
-  file: fix-arm64-linking-error.patch
-  description: Do not use system freetype for arm64
--
   author: Heilig Benedek <benecene@gmail.com>
   file: disable-redraw-lock.patch
   description:  |
