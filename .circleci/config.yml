@@ -1,34 +1,221 @@
-notify-slack-failure: &notify-slack-failure
+# Build machines configs.
+machine-linux: &machine-linux
+  docker:
+    - image: electronbuilds/electron:0.0.8
+  resource_class: 2xlarge
+
+machine-mac: &machine-mac
+  macos:
+    xcode: "8.3.3"
+
+# Build configurations options.
+env-debug-build: &env-debug-build
+  GN_CONFIG: //electron/build/args/debug.gn
+
+env-testing-build: &env-testing-build
+  GN_CONFIG: //electron/build/args/testing.gn
+
+env-release-build: &env-release-build
+  GN_CONFIG: //electron/build/args/release.gn
+  BUILD_NATIVE_MKSNAPSHOT: false  # ARM(64) builds will redefine it.
+  NOTIFY_SLACK: true
+
+# Build targets options.
+env-ia32: &env-ia32
+  GN_EXTRA_ARGS: 'target_cpu = "x86"'
+  NPM_CONFIG_ARCH: ia32
+
+env-arm: &env-arm
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+  GN_EXTRA_ARGS: 'target_cpu = "arm"'
+  MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
+
+env-arm64: &env-arm64
+  GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+  GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
+  MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
+
+# Individual (shared) steps.
+step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
-    name: Send a slack notification on failure
+    name: Send a Slack notification on failure
     command: |
-      if [ "$NIGHTLY_BUILD" == "true" ]; then
+      if [ "$NOTIFY_SLACK" == "true" ]; then
         export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
     when: on_fail
-notify-slack-success: &notify-slack-success
+
+step-maybe-notify-slack-success: &step-maybe-notify-slack-success
   run:
-    name: Send a slack notification on success
+    name: Send a Slack notification on success
     command: |
-      if [ "$NIGHTLY_BUILD" == "true" ]; then
+      if [ "$NOTIFY_SLACK" == "true" ]; then
         export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
     when: on_success
 
-build-steps: &build-steps
+step-add-depot-tools-to-path: &step-add-depot-tools-to-path
+  run:
+    name: Add depot tools to PATH
+    command: echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+
+step-setup-env-for-build: &step-setup-env-for-build
+  run:
+    name: Setup Environment Variables
+    command: |
+      # To find `gn` executable.
+      echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
+
+      # https://github.com/mozilla/sccache
+      SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
+      echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+
+step-electron-gn-gen: &step-electron-gn-gen
+  run:
+    name: Electron GN gen
+    command: |
+      cd src
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+
+step-electron-build: &step-electron-build
+  run:
+    name: Electron build
+    command: |
+      cd src
+      ninja -C out/Default electron
+
+step-electron-dist-build: &step-electron-dist-build
+  run:
+    name: Build dist.zip
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_dist_zip
+
+step-electron-dist-store: &step-electron-dist-store
+  store_artifacts:
+    path: src/out/Default/dist.zip
+    destination: dist.zip
+
+step-nodejs-headers-build: &step-nodejs-headers-build
+  run:
+    name: Build Node.js headers
+    command: |
+      cd src
+      ninja -C out/Default third_party/electron_node:headers
+
+step-persist-data-for-tests: &step-persist-data-for-tests
+  persist_to_workspace:
+    root: .
+    paths:
+      # To run `gn args` for that dir.
+      - src/out/Default/args.gn
+      - src/out/Default/build.ninja
+
+      # Build artifacts
+      - src/out/Default/dist.zip
+      - src/out/Default/gen/node_headers
+      - src/out/ffmpeg/libffmpeg.so
+
+step-electron-dist-unzip: &step-electron-dist-unzip
+  run:
+    name: Unzip dist.zip
+    command: |
+      cd src/out/Default
+      # -o  overwrite files WITHOUT prompting
+      # TODO(alexeykuzmin): Remove '-o' when it's no longer needed.
+      unzip -o dist.zip
+
+step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
+  run:
+    name: ffmpeg GN gen
+    command: |
+      cd src
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+
+step-ffmpeg-build: &step-ffmpeg-build
+  run:
+    name: Non proprietary ffmpeg build
+    command: |
+      cd src
+      ninja -C out/ffmpeg third_party/ffmpeg
+
+step-ffmpeg-store: &step-ffmpeg-store
+  store_artifacts:
+    path: src/out/ffmpeg/libffmpeg.so
+    destination: libffmpeg.so
+
+step-verify-ffmpeg: &step-verify-ffmpeg
+  run:
+    name: Verify ffmpeg
+    command: |
+      cd src
+      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+
+step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
+  run:
+    name: native mksnapshot GN gen
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
+        cd src
+        gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
+      fi
+
+step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
+  run:
+    name: native mksnapshot (arm/arm64) build
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
+        cd src
+        ninja -C out/native_mksnapshot v8:mksnapshot
+      fi
+
+step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
+  store_artifacts:
+    path: src/out/native_mksnapshot/mksnapshot
+    destination: mksnapshot
+
+step-setup-for-headless-testing: &step-setup-for-headless-testing
+  run:
+    name: Setup for headless testing
+    command: sh -e /etc/init.d/xvfb start
+
+step-electron-tests-run: &step-electron-tests-run
+  run:
+    name: Run Electron tests
+    environment:
+      DISPLAY: ':99.0'
+      MOCHA_REPORTER: mocha-multi-reporters
+      MOCHA_FILE: junit/test-results.xml
+      MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+      ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+    command: |
+      cd src
+      export ELECTRON_OUT_DIR=Default
+      (cd electron && npm run test -- --ci --enable-logging)
+
+step-electron-tests-store-results: &step-electron-tests-store-results
+  store_test_results:
+    path: src/junit
+
+step-show-sccache-stats: &step-show-sccache-stats
+  run:
+    name: Check sccache stats after build
+    command: $SCCACHE_PATH -s
+
+# Lists of steps.
+steps-checkout: &steps-checkout
   steps:
-    - run:
-        name: Setup depot tools
-        command: |
-          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
-          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
     - checkout:
         path: src/electron
+    - run:
+        name: Get depot tools
+        command: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+    - <<: *step-add-depot-tools-to-path
     - restore_cache:
         paths:
           - ~/.gclient-cache
@@ -38,6 +225,11 @@ build-steps: &build-steps
     - run:
         name: Gclient sync
         command: |
+          # CircleCI does not support interpolation when setting environment variables.
+          # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
+          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
+          source $BASH_ENV
+
           gclient config \
             --name "src/electron" \
             --unmanaged \
@@ -50,94 +242,104 @@ build-steps: &build-steps
           - ~/.gclient-cache
         key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
     - run:
-        name: GN gen
+        name: Remove some unused data to avoid storing it in the workspace
         command: |
-          cd src
-          SCCACHE_PATH="$PWD/electron/external_binaries/sccache"
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
-          echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"'            >> $BASH_ENV
-          source $BASH_ENV
-          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-    - run:
-        name: Ninja build
-        command: |
-          cd src
-          ninja -C out/Default electron:electron_app
-    - run:
-        name: ffmpeg GN gen
-        command: |
-          if [ "$BUILD_FFMPEG" == "true" ]; then
-            cd src
-            gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-          fi
-    - run:
-        name: Non proprietary ffmpeg build
-        command: |
-          if [ "$BUILD_FFMPEG" == "true" ]; then
-            cd src
-            ninja -C out/ffmpeg third_party/ffmpeg
-          fi
-    - run:
-        name: native mksnapshot GN gen
-        command: |
-          if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
-            cd src
-            gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-          fi
-    - run:
-        name: native mksnapshot (arm/arm64) build
-        command: |
-          if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
-            cd src
-            ninja -C out/native_mksnapshot v8:mksnapshot
-          fi
-    - run:
-        name: Build dist.zip
-        command: |
-          cd src
-          ninja -C out/Default electron:electron_dist_zip
-    - run:
-        name: Check sccache stats after build
-        command: $SCCACHE_WRAPPER -s
-    - run:
-        name: Setup for headless testing
-        command: |
-          sh -e /etc/init.d/xvfb start
-    - run:
-        name: Verify ffmpeg
-        command: |
-          if [ "$RUN_TESTS" != "false" ] && [ "$BUILD_FFMPEG" == "true" ]; then
-            python src/electron/script/verify-ffmpeg.py --build-dir out/Default --source-root "$PWD/src" --ffmpeg-path out/ffmpeg
-          fi
-    - run:
-        name: Test
-        environment:
-          MOCHA_REPORTER: mocha-multi-reporters
-          MOCHA_FILE: junit/test-results.xml
-          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
-          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        command: |
-          if [ "$RUN_TESTS" != "false" ]; then
-            cd src
-            ninja -C out/Default third_party/electron_node:headers
-            export ELECTRON_OUT_DIR=Default
-            (cd electron && npm run test -- --ci --enable-logging)
-          fi
-    - <<: *notify-slack-failure
-    - <<: *notify-slack-success
-    - store_test_results:
-        path: src/junit
-    - store_artifacts:
-        path: src/junit
-    - store_artifacts:
-        path: src/out/Default/dist.zip
-    - store_artifacts:
-        path: src/out/ffmpeg/libffmpeg.dylib
-    - store_artifacts:
-        path: src/out/ffmpeg/libffmpeg.so
-    - store_artifacts:
-        path: src/out/native_mksnapshot/mksnapshot
+          rm -rf src/android_webview
+          rm -rf src/ios
+          rm -rf src/third_party/WebKit/LayoutTests
+    - persist_to_workspace:
+        root: .
+        paths:
+          - depot_tools
+          - src
 
+steps-debug-build: &steps-debug-build
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-add-depot-tools-to-path
+    - <<: *step-setup-env-for-build
+
+    # Electron app
+    - <<: *step-electron-gn-gen
+    - <<: *step-electron-build
+
+    - <<: *step-show-sccache-stats
+
+steps-testing-build: &steps-testing-build
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-add-depot-tools-to-path
+    - <<: *step-setup-env-for-build
+
+    # Electron app
+    - <<: *step-electron-gn-gen
+    - <<: *step-electron-build
+    - <<: *step-electron-dist-build
+    - <<: *step-electron-dist-store
+
+    # ffmpeg
+    - <<: *step-ffmpeg-gn-gen
+    - <<: *step-ffmpeg-build
+    - <<: *step-ffmpeg-store
+
+    # Node.js headers
+    - <<: *step-nodejs-headers-build
+
+    - <<: *step-show-sccache-stats
+
+    # Save all data needed for a further tests run.
+    - <<: *step-persist-data-for-tests
+
+steps-release-build: &steps-release-build
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-add-depot-tools-to-path
+    - <<: *step-setup-env-for-build
+
+    # Electron app
+    - <<: *step-electron-gn-gen
+    - <<: *step-electron-build
+    - <<: *step-electron-dist-build
+    - <<: *step-electron-dist-store
+
+    # ffmpeg
+    - <<: *step-ffmpeg-gn-gen
+    - <<: *step-ffmpeg-build
+    - <<: *step-ffmpeg-store
+
+    # native mksnapshot
+    - <<: *step-maybe-native-mksnapshot-gn-gen
+    - <<: *step-maybe-native-mksnapshot-build
+    - <<: *step-maybe-native-mksnapshot-store
+
+    # Node.js headers
+    - <<: *step-nodejs-headers-build
+
+    - <<: *step-show-sccache-stats
+
+    # Save all data needed for a further tests run.
+    - <<: *step-persist-data-for-tests
+
+    - <<: *step-maybe-notify-slack-failure
+    - <<: *step-maybe-notify-slack-success
+
+steps-tests: &steps-tests
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-add-depot-tools-to-path
+    - <<: *step-electron-dist-unzip
+    - <<: *step-setup-for-headless-testing
+
+    - <<: *step-verify-ffmpeg
+
+    - <<: *step-electron-tests-run
+    - <<: *step-electron-tests-store-results
+
+# TODO(alexeykuzmin): Use shared build steps defined above for Mac builds.
 mac-build-steps: &mac-build-steps
   steps:
     - run:
@@ -201,8 +403,8 @@ mac-build-steps: &mac-build-steps
             export ELECTRON_OUT_DIR=Default
             (cd electron && npm run test -- --ci --enable-logging)
           fi
-    - <<: *notify-slack-failure
-    - <<: *notify-slack-success
+    - <<: *step-maybe-notify-slack-failure
+    - <<: *step-maybe-notify-slack-success
     - store_test_results:
         path: src/junit
     - store_artifacts:
@@ -210,161 +412,184 @@ mac-build-steps: &mac-build-steps
     - store_artifacts:
         path: src/out/Default/dist.zip
 
-linux-build-machine: &linux-build-machine
-  docker:
-    - image: electronbuilds/electron:0.0.8
-  resource_class: 2xlarge
-
-mac-build-machine: &mac-build-machine
-  macos:
-    xcode: "8.3.3"
-  resource_class: large
-
+# List of all jobs.
 version: 2
 jobs:
-  electron-linux-x64-debug:
-    environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/debug.gn
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+  # Layer 1: Checkout.
+  linux-checkout:
+    <<: *machine-linux
+    <<: *steps-checkout
 
-  electron-linux-x64-testing:
+  linux-arm-checkout:
+    <<: *machine-linux
     environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/testing.gn
-      BUILD_FFMPEG: true
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-arm
+    <<: *steps-checkout
 
-  electron-linux-x64-release:
+  linux-arm64-checkout:
+    <<: *machine-linux
     environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/release.gn
-      BUILD_FFMPEG: true
-      NIGHTLY_BUILD: true
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-arm64
+    <<: *steps-checkout
 
-  electron-linux-ia32-debug:
+  # Layer 2: Builds.
+  linux-x64-debug:
+    <<: *machine-linux
     environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/debug.gn
-      GN_EXTRA_ARGS: 'target_cpu = "x86"'
-      NPM_CONFIG_ARCH: ia32
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-debug-build
+    <<: *steps-debug-build
 
-  electron-linux-ia32-testing:
+  linux-x64-testing:
+    <<: *machine-linux
     environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/testing.gn
-      GN_EXTRA_ARGS: 'target_cpu = "x86"'
-      NPM_CONFIG_ARCH: ia32
-      BUILD_FFMPEG: true
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-testing-build
+    <<: *steps-testing-build
 
-  electron-linux-ia32-release:
+  linux-x64-release:
+    <<: *machine-linux
     environment:
-      DISPLAY: ':99.0'
-      GN_CONFIG: //electron/build/args/release.gn
-      GN_EXTRA_ARGS: 'target_cpu = "x86"'
-      NPM_CONFIG_ARCH: ia32
-      BUILD_FFMPEG: true
-      NIGHTLY_BUILD: true
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-release-build
+    <<: *steps-release-build
 
-  electron-linux-arm-debug:
+  linux-ia32-debug:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/debug.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm"'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-ia32
+      <<: *env-debug-build
+    <<: *steps-debug-build
 
-  electron-linux-arm-testing:
+  linux-ia32-testing:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/testing.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm"'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-ia32
+      <<: *env-testing-build
+    <<: *steps-testing-build
 
-  electron-linux-arm-release:
+  linux-ia32-release:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/release.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm"'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
-      RUN_TESTS: false
-      BUILD_FFMPEG: true
+      <<: *env-ia32
+      <<: *env-release-build
+    <<: *steps-release-build
+
+  linux-arm-debug:
+    <<: *machine-linux
+    environment:
+      <<: *env-arm
+      <<: *env-debug-build
+    <<: *steps-debug-build
+
+  linux-arm-testing:
+    <<: *machine-linux
+    environment:
+      <<: *env-arm
+      <<: *env-testing-build
+    <<: *steps-testing-build
+
+  linux-arm-release:
+    <<: *machine-linux
+    environment:
+      <<: *env-arm
+      <<: *env-release-build
       BUILD_NATIVE_MKSNAPSHOT: true
-      MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
-      NIGHTLY_BUILD: true
-    <<: *linux-build-machine
-    <<: *build-steps
+    <<: *steps-release-build
 
-  electron-linux-arm64-debug:
+  linux-arm64-debug:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/debug.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-arm64
+      <<: *env-debug-build
+    <<: *steps-debug-build
 
-  electron-linux-arm64-testing:
+  linux-arm64-testing:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/testing.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      RUN_TESTS: false
-    <<: *linux-build-machine
-    <<: *build-steps
+      <<: *env-arm64
+      <<: *env-testing-build
+    <<: *steps-testing-build
 
-  electron-linux-arm64-release:
+  linux-arm64-release:
+    <<: *machine-linux
     environment:
-      GN_CONFIG: //electron/build/args/release.gn
-      GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      RUN_TESTS: false
-      BUILD_FFMPEG: true
+      <<: *env-arm64
+      <<: *env-release-build
       BUILD_NATIVE_MKSNAPSHOT: true
-      MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
-      NIGHTLY_BUILD: true
-    <<: *linux-build-machine
-    <<: *build-steps
+    <<: *steps-release-build
 
+  # Layer 3: Tests.
+  linux-x64-testing-tests:
+    <<: *machine-linux
+    <<: *steps-tests
+
+  linux-x64-release-tests:
+    <<: *machine-linux
+    <<: *steps-tests
+
+  linux-ia32-testing-tests:
+    <<: *machine-linux
+    environment:
+      <<: *env-ia32
+    <<: *steps-tests
+
+  linux-ia32-release-tests:
+    <<: *machine-linux
+    environment:
+      <<: *env-ia32
+    <<: *steps-tests
+
+  # Mac builds.
+  # TODO(alexeykuzmin): Use shared configs for them too.
   electron-osx-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
-    <<: *mac-build-machine
+    <<: *machine-mac
     <<: *mac-build-steps
 
   electron-mas-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
       GN_EXTRA_ARGS: 'is_mas_build = true'
-    <<: *mac-build-machine
+    <<: *machine-mac
     <<: *mac-build-steps
 
 workflows:
   version: 2
   build-linux:
     jobs:
-      - electron-linux-x64-debug
-      - electron-linux-x64-testing
-      - electron-linux-ia32-debug
-      - electron-linux-ia32-testing
-      - electron-linux-arm-debug
-      - electron-linux-arm-testing
-      - electron-linux-arm64-debug
-      - electron-linux-arm64-testing
+      - linux-checkout
+      - linux-arm-checkout
+      - linux-arm64-checkout
+
+      - linux-x64-debug:
+          requires:
+            - linux-checkout
+      - linux-x64-testing:
+          requires:
+            - linux-checkout
+      - linux-x64-testing-tests:
+          requires:
+            - linux-x64-testing
+      - linux-ia32-debug:
+          requires:
+            - linux-checkout
+      - linux-ia32-testing:
+          requires:
+            - linux-checkout
+      - linux-ia32-testing-tests:
+          requires:
+            - linux-ia32-testing
+      - linux-arm-debug:
+          requires:
+            - linux-arm-checkout
+      - linux-arm-testing:
+          requires:
+            - linux-arm-checkout
+      - linux-arm64-debug:
+          requires:
+            - linux-arm64-checkout
+      - linux-arm64-testing:
+          requires:
+            - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
@@ -388,7 +613,25 @@ workflows:
               only:
                 - master
     jobs:
-      - electron-linux-x64-release
-      - electron-linux-ia32-release
-      - electron-linux-arm-release
-      - electron-linux-arm64-release
+      - linux-checkout
+      - linux-arm-checkout
+      - linux-arm64-checkout
+
+      - linux-x64-release:
+          requires:
+            - linux-checkout
+      - linux-x64-release-tests:
+          requires:
+            - linux-x64-release
+      - linux-ia32-release:
+          requires:
+            - linux-checkout
+      - linux-ia32-release-tests:
+          requires:
+            - linux-ia32-release
+      - linux-arm-release:
+          requires:
+            - linux-arm-checkout
+      - linux-arm64-release:
+          requires:
+            - linux-arm64-checkout
