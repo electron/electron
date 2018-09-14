@@ -1,5 +1,5 @@
 diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
-index a526d47e7786..946df3cd513c 100644
+index 286c791613ba..55b5499a1cb2 100644
 --- a/build/toolchain/win/BUILD.gn
 +++ b/build/toolchain/win/BUILD.gn
 @@ -6,6 +6,7 @@ import("//build/config/clang/clang.gni")
@@ -24,17 +24,17 @@ index a526d47e7786..946df3cd513c 100644
 +  }
  }
  
- if (disable_goma) {
-@@ -389,7 +396,7 @@ if (target_os == "win" &&
-   msvc_toolchain("win_clang_" + target_cpu) {
-     environment = "environment." + target_cpu
+ # Copy the VS runtime DLL for the default toolchain to the root build directory
+@@ -381,7 +388,7 @@ if (win_build_host_cpu != "x64") {
+   msvc_toolchain("win_clang_" + win_build_host_cpu) {
+     environment = "environment." + win_build_host_cpu
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)
 -    cl = "${goma_prefix}$prefix/${clang_cl}"
 +    cl = "${clang_prefix}$prefix/${clang_cl}"
-     sys_include_flags = "${target_cpu_toolchain_data.include_flags_imsvc}"
+     sys_include_flags = "${build_cpu_toolchain_data.include_flags_imsvc}"
  
      toolchain_args = {
-@@ -431,7 +438,7 @@ template("win_x64_toolchains") {
+@@ -422,7 +429,7 @@ template("win_x64_toolchains") {
    msvc_toolchain("win_clang_" + target_name) {
      environment = "environment.x64"
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)

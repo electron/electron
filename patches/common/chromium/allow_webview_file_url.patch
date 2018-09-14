@@ -1,13 +1,13 @@
 diff --git a/content/browser/loader/resource_dispatcher_host_impl.cc b/content/browser/loader/resource_dispatcher_host_impl.cc
-index 0c57d20..0916ed0 100644
+index 1c1fb59e02c8..86b87e294336 100644
 --- a/content/browser/loader/resource_dispatcher_host_impl.cc
 +++ b/content/browser/loader/resource_dispatcher_host_impl.cc
-@@ -1870,6 +1870,8 @@ void ResourceDispatcherHostImpl::BeginNavigationRequest(
+@@ -1597,6 +1597,8 @@ void ResourceDispatcherHostImpl::BeginNavigationRequest(
        !policy->IsWebSafeScheme(info.common_params.url.scheme()) &&
        !is_external_protocol;
  
 +  non_web_url_in_guest = false;
 +
-   if (is_shutdown_ || non_web_url_in_guest ||
-       (delegate_ && !delegate_->ShouldBeginRequest(
-           info.common_params.method,
+   if (is_shutdown_ || non_web_url_in_guest) {
+     url_loader_client->OnComplete(
+         network::URLLoaderCompletionStatus(net::ERR_ABORTED));

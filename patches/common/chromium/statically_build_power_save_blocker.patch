@@ -1,5 +1,5 @@
 diff --git a/services/device/wake_lock/power_save_blocker/BUILD.gn b/services/device/wake_lock/power_save_blocker/BUILD.gn
-index e04629ca1a93..299e6efd75f9 100644
+index dfce90f6b791..a2f7f776f4d8 100644
 --- a/services/device/wake_lock/power_save_blocker/BUILD.gn
 +++ b/services/device/wake_lock/power_save_blocker/BUILD.gn
 @@ -9,7 +9,7 @@ if (is_android) {

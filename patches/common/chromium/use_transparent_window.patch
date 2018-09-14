@@ -1,5 +1,5 @@
 diff --git a/ui/gl/gpu_switching_manager.cc b/ui/gl/gpu_switching_manager.cc
-index be7156465809..cee3b1af3dc5 100644
+index be7156465809..4529866b0864 100644
 --- a/ui/gl/gpu_switching_manager.cc
 +++ b/ui/gl/gpu_switching_manager.cc
 @@ -4,6 +4,12 @@

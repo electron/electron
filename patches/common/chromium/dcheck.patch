@@ -1,8 +1,8 @@
 diff --git a/base/logging.h b/base/logging.h
-index 582fb89868cd..24d3e82232b6 100644
+index 29960599a5c6..7352201e7b66 100644
 --- a/base/logging.h
 +++ b/base/logging.h
-@@ -850,7 +850,7 @@ const LogSeverity LOG_DCHECK = LOG_INFO;
+@@ -874,7 +874,7 @@ const LogSeverity LOG_DCHECK = LOG_FATAL;
  
  #else  // !(defined(_PREFAST_) && defined(OS_WIN))
  
@@ -12,7 +12,7 @@ index 582fb89868cd..24d3e82232b6 100644
  #define DCHECK(condition)                                           \
    LAZY_STREAM(LOG_STREAM(DCHECK), !ANALYZER_ASSUME_TRUE(condition)) \
 diff --git a/base/memory/weak_ptr.cc b/base/memory/weak_ptr.cc
-index 8879651e6da7..33fe8948a063 100644
+index d2a7d89e5667..def40703ea25 100644
 --- a/base/memory/weak_ptr.cc
 +++ b/base/memory/weak_ptr.cc
 @@ -23,8 +23,8 @@ void WeakReference::Flag::Invalidate() {
@@ -27,10 +27,10 @@ index 8879651e6da7..33fe8948a063 100644
  }
  
 diff --git a/base/process/kill_win.cc b/base/process/kill_win.cc
-index 6a0038e2c00d..dd00dfb3e5d0 100644
+index 7a664429bcd3..26f49dc3d1e7 100644
 --- a/base/process/kill_win.cc
 +++ b/base/process/kill_win.cc
-@@ -45,7 +45,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
+@@ -23,7 +23,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
    DWORD tmp_exit_code = 0;
  
    if (!::GetExitCodeProcess(handle, &tmp_exit_code)) {
@@ -39,11 +39,29 @@ index 6a0038e2c00d..dd00dfb3e5d0 100644
  
      // This really is a random number.  We haven't received any
      // information about the exit code, presumably because this
+diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
+index 18ef58a725c3..239f319c8b4c 100644
+--- a/base/process/process_metrics_win.cc
++++ b/base/process/process_metrics_win.cc
+@@ -153,10 +153,9 @@ bool ProcessMetrics::GetIOCounters(IoCounters* io_counters) const {
+ ProcessMetrics::ProcessMetrics(ProcessHandle process) {
+   if (process) {
+     HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
+-    BOOL result = ::DuplicateHandle(::GetCurrentProcess(), process,
+-                                    ::GetCurrentProcess(), &duplicate_handle,
+-                                    PROCESS_QUERY_INFORMATION, FALSE, 0);
+-    DPCHECK(result);
++    ::DuplicateHandle(::GetCurrentProcess(), process,
++                      ::GetCurrentProcess(), &duplicate_handle,
++                      PROCESS_QUERY_INFORMATION, FALSE, 0);
+     process_.Set(duplicate_handle);
+   }
+ }
 diff --git a/components/viz/service/display/program_binding.h b/components/viz/service/display/program_binding.h
-index 70f1ff97b1ac..d1abd804e988 100644
+index 8b28c57f854e..a0e7056af23f 100644
 --- a/components/viz/service/display/program_binding.h
 +++ b/components/viz/service/display/program_binding.h
-@@ -416,7 +416,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
+@@ -433,7 +433,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
      if (!ProgramBindingBase::Init(context_provider->ContextGL(),
                                    vertex_shader_.GetShaderString(),
                                    fragment_shader_.GetShaderString())) {
@@ -52,8 +70,8 @@ index 70f1ff97b1ac..d1abd804e988 100644
        return;
      }
  
-@@ -428,7 +428,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
-
+@@ -445,7 +445,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
+ 
      // Link after binding uniforms
      if (!Link(context_provider->ContextGL())) {
 -      DCHECK(IsContextLost(context_provider->ContextGL()));
@@ -61,11 +79,26 @@ index 70f1ff97b1ac..d1abd804e988 100644
        return;
      }
  
+diff --git a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
+index 9d84f91109a3..5e252917bc0f 100644
+--- a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
++++ b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
+@@ -63,7 +63,9 @@ base::LazyInstance<ServerSharedBitmapManager>::DestructorAtExit
+ ServerSharedBitmapManager::ServerSharedBitmapManager() = default;
+ 
+ ServerSharedBitmapManager::~ServerSharedBitmapManager() {
+-  DCHECK(handle_map_.empty());
++  // FIXME(alexeykuzmin): Gets constantly triggered on Windows CI.
++  // Backporting https://chromium-review.googlesource.com/802574 should help.
++  // DCHECK(handle_map_.empty());
+ }
+ 
+ ServerSharedBitmapManager* ServerSharedBitmapManager::current() {
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
-index ff1d3fcb6eba..ad6578f645d4 100644
+index 74ff6b4286c2..02bf1c55d86f 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
 +++ b/content/browser/frame_host/navigation_controller_impl.cc
-@@ -1079,8 +1079,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1083,8 +1083,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -78,7 +111,7 @@ index ff1d3fcb6eba..ad6578f645d4 100644
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1301,7 +1303,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1305,7 +1307,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -91,10 +124,10 @@ index ff1d3fcb6eba..ad6578f645d4 100644
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 346765edaef9..a30e87bfcda6 100644
+index cd755cbc3f2c..321a12f74202 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -2072,8 +2073,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
+@@ -2345,8 +2345,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
    }
  
    enabled_bindings_ |= bindings_flags;
@@ -108,10 +141,10 @@ index 346765edaef9..a30e87bfcda6 100644
    if (render_frame_created_) {
      if (!frame_bindings_control_)
 diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-index 8ee84cdafbde..c7ad6fa8c75f 100644
+index d86576cc36ac..5b4ae0732914 100644
 --- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-@@ -618,8 +618,8 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -650,8 +650,8 @@ void ExtractUnderlines(NSAttributedString* string,
    if (EventIsReservedBySystem(theEvent))
      return;
  
@@ -135,6 +168,19 @@ index f3c68fab3de6..b8609daf3ef9 100644
      return;
    }
  
+diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
+index ca47b2d09693..b4b6ce96209b 100644
+--- a/third_party/blink/renderer/core/dom/node.cc
++++ b/third_party/blink/renderer/core/dom/node.cc
+@@ -2535,7 +2535,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
+ 
+ HTMLSlotElement* Node::AssignedSlot() const {
+   // assignedSlot doesn't need to call updateDistribution().
+-  DCHECK(!IsPseudoElement());
++  // DCHECK(!IsPseudoElement());
+   if (ShadowRoot* root = V1ShadowRootOfParent())
+     return root->AssignedSlotFor(*this);
+   return nullptr;
 diff --git a/third_party/blink/renderer/core/loader/BUILD.gn b/third_party/blink/renderer/core/loader/BUILD.gn
 index 82f6e8bc9d33..ccad95d61a4a 100644
 --- a/third_party/blink/renderer/core/loader/BUILD.gn
@@ -151,19 +197,6 @@ index 82f6e8bc9d33..ccad95d61a4a 100644
 +    defines += [ "ELECTRON_NO_DCHECK" ]
 +  }
  }
-diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
-index 922a2561bcef..e31fa34f98ea 100644
---- a/third_party/blink/renderer/core/dom/node.cc
-+++ b/third_party/blink/renderer/core/dom/node.cc
-@@ -2435,7 +2435,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
- 
- HTMLSlotElement* Node::AssignedSlot() const {
-   // assignedSlot doesn't need to call updateDistribution().
--  DCHECK(!IsPseudoElement());
-+  // DCHECK(!IsPseudoElement());
-   if (ShadowRoot* root = V1ShadowRootOfParent())
-     return root->AssignedSlotFor(*this);
-   return nullptr;
 diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
 index 158d81ca9ba2..1b6aafecadef 100644
 --- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
@@ -193,26 +226,11 @@ index 158d81ca9ba2..1b6aafecadef 100644
      DCHECK(IsStatic() || verifier_.OnDeref(ref_count_))
          << AsciiForDebugging() << " " << CurrentThread();
  #endif
-diff --git a/url/BUILD.gn b/url/BUILD.gn
-index 82eb115ae666..b4806804cdbf 100644
---- a/url/BUILD.gn
-+++ b/url/BUILD.gn
-@@ -96,6 +96,10 @@ component("url") {
-     ]
-     deps += [ "//third_party/icu" ]
-   }
-+
-+  if (is_electron_build) {
-+    defines += [ "ELECTRON_NO_DCHECK" ]
-+  }
- }
- 
- if (is_android) {
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 674b0e9a909c..a1bff6e40f56 100644
+index e49dd8c81270..9e61c901cd2d 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -886,9 +886,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+@@ -905,9 +905,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
  }
  
  void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
@@ -224,49 +242,21 @@ index 674b0e9a909c..a1bff6e40f56 100644
      FreeData(format, handle);
    }
  }
- diff --git a/third_party/WebKit/Source/core/animation/ElementAnimations.cpp b/third_party/WebKit/Source/core/animation/ElementAnimations.cpp
- index 60b8123cd818..dc719dd31dbf 100644
- --- a/third_party/WebKit/Source/core/animation/ElementAnimations.cpp
- +++ b/third_party/WebKit/Source/core/animation/ElementAnimations.cpp
- @@ -108,7 +108,7 @@ void ElementAnimations::UpdateBaseComputedStyle(
-      base_computed_style_ = nullptr;
-      return;
-    }
- -#if DCHECK_IS_ON()
- +#if 0
-    if (base_computed_style_ && computed_style)
-      DCHECK(*base_computed_style_ == *computed_style);
-  #endif
-diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
-index faabdbf63a2a..ba56e4cd994c 100644
---- a/base/process/process_metrics_win.cc
-+++ b/base/process/process_metrics_win.cc
-@@ -179,10 +179,9 @@ bool ProcessMetrics::GetIOCounters(IoCounters* io_counters) const {
- ProcessMetrics::ProcessMetrics(ProcessHandle process) : last_system_time_(0) {
-   if (process) {
-     HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
--    BOOL result = ::DuplicateHandle(::GetCurrentProcess(), process,
--                                    ::GetCurrentProcess(), &duplicate_handle,
--                                    PROCESS_QUERY_INFORMATION, FALSE, 0);
--    DPCHECK(result);
-+    ::DuplicateHandle(::GetCurrentProcess(), process,
-+                      ::GetCurrentProcess(), &duplicate_handle,
-+                      PROCESS_QUERY_INFORMATION, FALSE, 0);
-     process_.Set(duplicate_handle);
+diff --git a/url/BUILD.gn b/url/BUILD.gn
+index c4deb10db9ca..ecc068d7447a 100644
+--- a/url/BUILD.gn
++++ b/url/BUILD.gn
+@@ -98,6 +98,10 @@ component("url") {
+     ]
+     deps += [ "//third_party/icu" ]
    }
- }
-diff --git a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-index 9477a5aa45f9..895425c8c6cc 100644
---- a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-+++ b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-@@ -69,7 +69,9 @@ base::LazyInstance<ServerSharedBitmapManager>::DestructorAtExit
- ServerSharedBitmapManager::ServerSharedBitmapManager() = default;
- 
- ServerSharedBitmapManager::~ServerSharedBitmapManager() {
--  DCHECK(handle_map_.empty());
-+  // FIXME(alexeykuzmin): Gets constantly triggered on Windows CI.
-+  // Backporting https://chromium-review.googlesource.com/802574 should help.
-+  // DCHECK(handle_map_.empty());
++
++  if (is_electron_build) {
++    defines += [ "ELECTRON_NO_DCHECK" ]
++  }
  }
  
- ServerSharedBitmapManager* ServerSharedBitmapManager::current() {
+ if (is_android) {
+-- 
+2.17.0
+

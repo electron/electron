@@ -1,8 +1,8 @@
 diff --git a/content/browser/compositor/gpu_process_transport_factory.cc b/content/browser/compositor/gpu_process_transport_factory.cc
-index 7b9fc4114c52..bdbbf93f6f0d 100644
+index e679dbb02a81..d90a276fc0e1 100644
 --- a/content/browser/compositor/gpu_process_transport_factory.cc
 +++ b/content/browser/compositor/gpu_process_transport_factory.cc
-@@ -495,9 +495,19 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
+@@ -507,10 +507,20 @@ void GpuProcessTransportFactory::EstablishedGpuChannel(
          // surfaces as they are not following the correct mode.
          DisableGpuCompositing(compositor.get());
        }
@@ -13,18 +13,20 @@ index 7b9fc4114c52..bdbbf93f6f0d 100644
 +            compositor.get());
 +      }
 +      if (!output_device) {
-+        output_device = CreateSoftwareOutputDevice(compositor->widget());
++        output_device = CreateSoftwareOutputDevice(compositor->widget(),
++                                                   compositor->task_runner());
 +      }
 +
        display_output_surface =
            std::make_unique<SoftwareBrowserCompositorOutputSurface>(
--              CreateSoftwareOutputDevice(compositor->widget()),
+-              CreateSoftwareOutputDevice(compositor->widget(),
+-                                         compositor->task_runner()),
 +              std::move(output_device),
-               std::move(vsync_callback), compositor->task_runner());
+               std::move(vsync_callback));
      } else {
        DCHECK(context_provider);
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index d842aa55175b..2c2131774b71 100644
+index eb250697ebd6..36be87675e9a 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -24,6 +24,7 @@
@@ -35,7 +37,7 @@ index d842aa55175b..2c2131774b71 100644
  #include "third_party/skia/include/core/SkColor.h"
  #include "third_party/skia/include/core/SkMatrix44.h"
  #include "ui/compositor/compositor_animation_observer.h"
-@@ -182,6 +183,15 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -183,6 +184,15 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual void RemoveObserver(ContextFactoryObserver* observer) = 0;
  };
  
@@ -51,7 +53,7 @@ index d842aa55175b..2c2131774b71 100644
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -221,6 +231,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -222,6 +232,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -61,7 +63,7 @@ index d842aa55175b..2c2131774b71 100644
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -426,6 +439,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -447,6 +460,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    ui::ContextFactory* context_factory_;
    ui::ContextFactoryPrivate* context_factory_private_;
  

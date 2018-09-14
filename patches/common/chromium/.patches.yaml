@@ -452,9 +452,7 @@ patches:
 -
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: crashpad_http_status.patch
-  description: |
-    Accept all HTTP codes in [200, 300) as successful, instead of just 200.
-    For example HockeyApp responds with 202.
+  description: backport of crashpad f540abb506
 -
   author: Jeremy Apthorp <jeremya@chromium.org>
   file: backport_cd7154e0bb5.patch

@@ -1,8 +1,8 @@
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 018534073da1..48f3d0e7343b 100644
+index 6ae9bf2f9c6a..6ed6ece96d0f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -1759,6 +1759,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1845,6 +1845,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -15,7 +15,7 @@ index 018534073da1..48f3d0e7343b 100644
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -1774,6 +1780,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1860,6 +1866,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -24,7 +24,7 @@ index 018534073da1..48f3d0e7343b 100644
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 699570cc1390..454830098cb9 100644
+index 699570cc1390..63e60667fa7d 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -58,7 +58,7 @@ index 699570cc1390..454830098cb9 100644
    }
  #endif  // defined(USE_AURA)
  }
-@@ -146,11 +152,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
+@@ -144,11 +150,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
          render_widget_host->GetView());
    }
  
@@ -86,10 +86,10 @@ index 699570cc1390..454830098cb9 100644
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index a13db5f4dd61..621124decfdc 100644
+index dee5814a247c..7690ce8d404b 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -69,9 +69,12 @@ class BrowserPluginGuestDelegate;
+@@ -74,9 +74,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -101,10 +101,10 @@ index a13db5f4dd61..621124decfdc 100644
 +class WebContentsView;
  struct CustomContextMenuContext;
  struct DropData;
- struct Manifest;
-@@ -172,6 +175,10 @@ class WebContents : public PageNavigator,
-     // navigation requires a dedicated or privileged process, such as a WebUI.
-     bool initialize_renderer;
+ struct MHTMLGenerationParams;
+@@ -213,6 +216,10 @@ class WebContents : public PageNavigator,
+       kInitializeAndWarmupRendererProcess,
+     } desired_renderer_state;
  
 +    // Optionally specify the view and delegate view.
 +    content::WebContentsView* view = nullptr;

@@ -1,5 +1,5 @@
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 9e38ee0e592b..bd54ce154b13 100644
+index 93a97ff2803f..02c469e930a1 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -12,7 +12,7 @@ index 9e38ee0e592b..bd54ce154b13 100644
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -539,6 +542,7 @@ default_compiler_configs = [
+@@ -527,6 +531,7 @@ default_compiler_configs = [
    "//build/config/compiler:thin_archive",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
@@ -21,10 +21,10 @@ index 9e38ee0e592b..bd54ce154b13 100644
  
  if (is_win) {
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 9a10137aa405..bb33e5450eaa 100644
+index 83337d52e4b9..8ec56ca46c74 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -579,10 +579,13 @@ config("compiler") {
+@@ -636,10 +636,13 @@ config("compiler") {
        ldflags += [ "-Wl,--lto-O0" ]
      }
  
