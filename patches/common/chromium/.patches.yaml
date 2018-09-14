@@ -466,3 +466,9 @@ patches:
     Fix conflict between leveldb & node's definition of ssize_t on
     Windows by preventing leveldb from re-defining the type if it's
     already defined.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: exclude-a-few-test-files-from-build.patch
+  description: |
+    Compilation of those files fails with the Chromium 67.
+    Remove the patch during the Chromium 68 upgrade.
