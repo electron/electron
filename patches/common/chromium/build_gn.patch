@@ -55,15 +55,3 @@ index 9a10137aa405..bb33e5450eaa 100644
  
      # Work-around for http://openradar.appspot.com/20356002
      if (is_mac) {
-diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index bc9fe2cc2000..9173f6f0324c 100644
---- a/third_party/blink/renderer/platform/BUILD.gn
-+++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -134,6 +134,7 @@ action("instrumentation_probes") {
- }
- 
- executable("character_data_generator") {
-+  configs += [ "//electron/build/config:build_time_executable" ]
-   sources = [
-     "text/character_property_data_generator.cc",
-     "text/character_property_data_generator.h",
