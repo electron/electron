@@ -1,8 +1,8 @@
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 97a5393d40b4..04f88dd2ea15 100644
+index 5686e6a06d6f..4798d7e36bec 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -303,10 +303,6 @@ void LocalFrame::Detach(FrameDetachType type) {
+@@ -382,10 +382,6 @@ void LocalFrame::Detach(FrameDetachType type) {
    }
    CHECK(!view_ || !view_->IsAttached());
  
@@ -13,7 +13,7 @@ index 97a5393d40b4..04f88dd2ea15 100644
    if (!Client())
      return;
  
-@@ -316,6 +312,10 @@ void LocalFrame::Detach(FrameDetachType type) {
+@@ -403,6 +399,10 @@ void LocalFrame::Detach(FrameDetachType type) {
    // Notify ScriptController that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetScriptController().ClearForClose();

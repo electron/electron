@@ -1,8 +1,8 @@
 diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
-index a76e926a8681..c43839a01211 100644
+index 801d7a9b8e03..7b54f8dceb36 100644
 --- a/build/toolchain/win/tool_wrapper.py
 +++ b/build/toolchain/win/tool_wrapper.py
-@@ -258,7 +258,11 @@ class WinTool(object):
+@@ -254,7 +254,11 @@ class WinTool(object):
        if rc_exe_exit_code == 0:
          import filecmp
          # Strip "/fo" prefix.

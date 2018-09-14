@@ -1,5 +1,5 @@
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index f3033337199b..856bc8f0b143 100644
+index c0cf00b5da05..992827ca6782 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
 @@ -14,7 +14,9 @@
@@ -12,7 +12,7 @@ index f3033337199b..856bc8f0b143 100644
  #include "components/cdm/renderer/external_clear_key_key_system_properties.h"
  #include "components/cdm/renderer/widevine_key_system_properties.h"
  #include "content/public/renderer/render_thread.h"
-@@ -140,12 +142,14 @@ static void AddExternalClearKey(
+@@ -142,12 +144,14 @@ static void AddExternalClearKey(
  #if defined(WIDEVINE_CDM_AVAILABLE)
  // Returns persistent-license session support.
  EmeSessionTypeSupport GetPersistentLicenseSupport(bool supported_by_the_cdm) {

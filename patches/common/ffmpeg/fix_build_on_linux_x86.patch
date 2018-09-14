@@ -1,13 +1,13 @@
 diff --git a/BUILD.gn b/BUILD.gn
-index ff09111634..fa7712a3a3 100755
+index 494d33fc04..249f3700f3 100755
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -247,7 +247,7 @@ target(link_target_type, "ffmpeg_internal") {
-     # On POSIX x86, sanitizers will fail to compiler the H264 CABAC code due to
-     # insufficient registers unless we disable EBP usage. crbug.com/786760
-     if (target_cpu == "x86") {
--      if (using_sanitizer) {
-+      if (using_sanitizer || is_electron_build) {
-         defines += [ "HAVE_EBP_AVAILABLE=0" ]
-       } else {
-         defines += [ "HAVE_EBP_AVAILABLE=1" ]
+@@ -239,7 +239,7 @@ target(link_target_type, "ffmpeg_internal") {
+   # Windows builds can't compile without EBP because we can't omit frame
+   # pointers like we do on posix.
+   if (target_cpu == "x86") {
+-    if (using_sanitizer || is_win) {
++    if (using_sanitizer || is_win || is_electron_build) {
+       defines += [ "HAVE_EBP_AVAILABLE=0" ]
+     } else {
+       defines += [ "HAVE_EBP_AVAILABLE=1" ]

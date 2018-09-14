@@ -1,6 +1,30 @@
 repo: src/v8
 patches:
 -
+  author: null
+  file: node_v8_patches.patch
+  description: |
+    Patches that node applies to v8.
+    Generated with
+
+      $ cd third_party/electron_node
+      $ CURRENT_NODE_VERSION=vX.Y.Z
+      # Find the last commit with the message "deps: update V8 to <some version>"
+      # This commit corresponds to node resetting V8 to its pristine upstream
+      # state at the stated version.
+      $ LAST_V8_UPDATE="$(git log --grep='^deps: update V8' --format='%H' -1 deps/v8)"
+      # This creates a patch file containing all changes in deps/v8 from
+      # $LAST_V8_UPDATE up to the current node version, formatted in a way that
+      # it will apply cleanly to the V8 repository (i.e. with `deps/v8`
+      # stripped off the path and excluding the v8/gypfiles directory, which
+      # isn't present in V8.
+      $ git format-patch \
+          --relative=deps/v8 \
+          $LAST_V8_UPDATE..$CURRENT_NODE_VERSION \
+          deps/v8 \
+          ':(exclude)deps/v8/gypfiles' \
+          --stdout
+-
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: add_realloc.patch
   description: |
@@ -37,54 +61,6 @@ patches:
   file: disable-warning-win.patch
   description:
     Disable unit test windows build warning
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_39d546a.patch
-  description: Node 10.0.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_ff0a97933.patch
-  description: Node 10.2.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_9fb02b526.patch
-  description: Node 10.2.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_23652c5f.patch
-  description: Node 10.2.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: backport_91ddb65d.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_6989b3f6d7.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_a440efb27f.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_5dd3395.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: backport_aa6ce3e.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_b20faff.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_acc336c.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_70c4340.patch
-  description: Node 10.6.0 needs it.
 -
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: expose_mksnapshot.patch

@@ -1,54 +1,79 @@
-From 800aa10d300af0f3fe162ae586b6b1ebe0566ab4 Mon Sep 17 00:00:00 2001
-From: Catalin Fratila <catalinf@microsoft.com>
-Date: Fri, 19 May 2017 09:28:53 +0200
-Subject: [PATCH] Handle everything not in [200, 300) as error. For example
- HockeyApp responds with 202.
-
-(cherry picked from commit f7c320766756a8aaa45ccbcff2945053d9f7e109)
-(cherry picked from commit 1875fddc7e671b14d8b54068301d9648d12e9dc2)
-(cherry picked from commit 670fb453b0c3d6ae0a0d5923f68df02464337617)
----
- third_party/crashpad/crashpad/util/net/http_transport_libcurl.cc | 2 +-
- third_party/crashpad/crashpad/util/net/http_transport_mac.mm     | 2 +-
- third_party/crashpad/crashpad/util/net/http_transport_win.cc     | 2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/third_party/crashpad/crashpad/util/net/http_transport_libcurl.cc b/third_party/crashpad/crashpad/util/net/http_transport_libcurl.cc
-index c16a593..0e262b0 100644
---- a/third_party/crashpad/crashpad/util/net/http_transport_libcurl.cc
-+++ b/third_party/crashpad/crashpad/util/net/http_transport_libcurl.cc
-@@ -338,7 +338,7 @@ bool HTTPTransportLibcurl::ExecuteSynchronously(std::string* response_body) {
-     return false;
-   }
+diff --git a/third_party/crashpad/crashpad/util/net/http_transport.h b/third_party/crashpad/crashpad/util/net/http_transport.h
+index f91a556..acd4e44 100644
+--- a/third_party/crashpad/crashpad/util/net/http_transport.h
++++ b/third_party/crashpad/crashpad/util/net/http_transport.h
+@@ -90,7 +90,7 @@
+   //!     if the response body is not required.
+   //!
+   //! \return Whether or not the request was successful, defined as returning
+-  //!     a HTTP status 200 (OK) code.
++  //!     a HTTP status code in the range 200-203 (inclusive).
+   virtual bool ExecuteSynchronously(std::string* response_body) = 0;
  
--  if (status != 200) {
-+  if (status < 200 || status >= 300) {
-     LOG(ERROR) << base::StringPrintf("HTTP status %ld", status);
-     return false;
-   }
+  protected:
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm b/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
-index 8d5f78c..a6434c2 100644
+index 8d5f78c..a433bb3 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
-@@ -293,7 +293,7 @@ static void Unschedule(CFReadStreamRef stream,
+@@ -293,7 +293,7 @@
        return false;
      }
      NSInteger http_status = [http_response statusCode];
 -    if (http_status != 200) {
-+    if (http_status < 200 || http_status >= 300) {
++    if (http_status < 200 || http_status > 203) {
        LOG(ERROR) << base::StringPrintf("HTTP status %ld",
                                         implicit_cast<long>(http_status));
        return false;
+diff --git a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
+index f0e2dc1..34d8dee 100644
+--- a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
++++ b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
+@@ -457,10 +457,18 @@
+     LOG(ERROR) << "ReadLine";
+     return false;
+   }
+-  static constexpr const char kHttp10[] = "HTTP/1.0 200 ";
+-  static constexpr const char kHttp11[] = "HTTP/1.1 200 ";
+-  return StartsWith(response_line, kHttp10, strlen(kHttp10)) ||
+-         StartsWith(response_line, kHttp11, strlen(kHttp11));
++  static constexpr const char kHttp10[] = "HTTP/1.0 ";
++  static constexpr const char kHttp11[] = "HTTP/1.1 ";
++  if (!(StartsWith(response_line, kHttp10, strlen(kHttp10)) ||
++        StartsWith(response_line, kHttp11, strlen(kHttp11))) ||
++      response_line.size() < strlen(kHttp10) + 3 ||
++      response_line.at(strlen(kHttp10) + 3) != ' ') {
++    return false;
++  }
++  unsigned int http_status = 0;
++  return base::StringToUint(response_line.substr(strlen(kHttp10), 3),
++                            &http_status) &&
++         http_status >= 200 && http_status <= 203;
+ }
+ 
+ bool ReadResponseHeaders(int sock, HTTPHeaders* headers) {
+diff --git a/third_party/crashpad/crashpad/util/net/http_transport_test.cc b/third_party/crashpad/crashpad/util/net/http_transport_test.cc
+index 7b5f41d..d73dc99 100644
+--- a/third_party/crashpad/crashpad/util/net/http_transport_test.cc
++++ b/third_party/crashpad/crashpad/util/net/http_transport_test.cc
+@@ -137,7 +137,7 @@
+ 
+     std::string response_body;
+     bool success = transport->ExecuteSynchronously(&response_body);
+-    if (response_code_ == 200) {
++    if (response_code_ >= 200 && response_code_ <= 203) {
+       EXPECT_TRUE(success);
+       std::string expect_response_body = random_string + "\r\n";
+       EXPECT_EQ(response_body, expect_response_body);
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_win.cc b/third_party/crashpad/crashpad/util/net/http_transport_win.cc
-index 18d343c..40c3061 100644
+index 18d343c..2919bc1 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_win.cc
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_win.cc
-@@ -375,7 +375,7 @@ bool HTTPTransportWin::ExecuteSynchronously(std::string* response_body) {
+@@ -375,7 +375,7 @@
      return false;
    }
  
 -  if (status_code != 200) {
-+  if (status_code < 200 || status_code >= 300) {
++  if (status_code < 200 || status_code > 203) {
      LOG(ERROR) << base::StringPrintf("HTTP status %lu", status_code);
      return false;
    }

@@ -1,17 +1,8 @@
-From d322e351554a4fa1fbaf529769416041031f07e9 Mon Sep 17 00:00:00 2001
-From: Jeremy Apthorp <jeremya@chromium.org>
-Date: Mon, 6 Aug 2018 13:02:53 -0700
-Subject: fix: [mas] don't call private api AudioDeviceDuck
-
----
- media/audio/mac/audio_low_latency_input_mac.cc | 4 ++++
- 1 file changed, 4 insertions(+)
-
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 173167b54dfb..1c0fda354d03 100644
+index 53586b888d82..c1d750dbf32d 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
-@@ -28,12 +28,14 @@
+@@ -31,19 +31,23 @@
  
  namespace {
  extern "C" {
@@ -25,23 +16,16 @@ index 173167b54dfb..1c0fda354d03 100644
 +#endif
  }
  
- }  // namespace
-@@ -604,6 +606,7 @@ bool AUAudioInputStream::OpenVoiceProcessingAU() {
-     return false;
-   }
- 
+ void UndoDucking(AudioDeviceID output_device_id) {
 +#ifndef MAS_BUILD
    if (AudioDeviceDuck != nullptr) {
-     // Undo the ducking.
-     // Obtain the AudioDeviceID of the default output AudioDevice.
-@@ -619,6 +622,7 @@ bool AUAudioInputStream::OpenVoiceProcessingAU() {
-       AudioDeviceDuck(output_device, 1.0, nullptr, 0.5);
-     }
+     // Ramp the volume back up over half a second.
+     AudioDeviceDuck(output_device_id, 1.0, nullptr, 0.5);
    }
 +#endif
- 
-   return true;
  }
+ 
+ }  // namespace
 -- 
 2.17.0
 

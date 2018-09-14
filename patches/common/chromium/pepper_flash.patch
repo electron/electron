@@ -38,7 +38,7 @@ index f4f1741a8ecf..103238cdd53f 100644
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/render_process_host.h"
 @@ -57,6 +59,7 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
-      RenderProcessHost::FromID(render_process_id_);
+       RenderProcessHost::FromID(render_process_id_);
    if (!render_process_host)
      return PP_ERROR_FAILED;
 +#if 0
@@ -125,7 +125,7 @@ index 1c1844a9eb71..2c9834b11d34 100644
  device::mojom::WakeLock* PepperFlashBrowserHost::GetWakeLock() {
    // Here is a lazy binding, and will not reconnect after connection error.
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
-index ff0b687a51b6..ab6d96cbe9f8 100644
+index 154120ce5156..5152fd847c01 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.h
 @@ -23,9 +23,11 @@ namespace content {
@@ -140,7 +140,7 @@ index ff0b687a51b6..ab6d96cbe9f8 100644
  
  class GURL;
  
-@@ -51,15 +53,19 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+@@ -49,15 +51,19 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
        const base::Time& t);
    int32_t OnGetLocalDataRestrictions(ppapi::host::HostMessageContext* context);
  
@@ -160,7 +160,7 @@ index ff0b687a51b6..ab6d96cbe9f8 100644
    int render_process_id_;
  
    // Requests a wake lock to prevent going to sleep, and a timer to cancel it
-@@ -67,8 +73,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
+@@ -65,8 +71,10 @@ class PepperFlashBrowserHost : public ppapi::host::ResourceHost {
    device::mojom::WakeLockPtr wake_lock_;
    base::DelayTimer delay_timer_;
  
@@ -227,7 +227,7 @@ index e267746783bd..bc84b44ceb27 100644
  }
 +#endif
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
-index faa83c9d32e5..bbae9c21b59a 100644
+index aa4433cccff4..d9630fdf6b87 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.h
 @@ -11,7 +11,9 @@
@@ -240,7 +240,7 @@ index faa83c9d32e5..bbae9c21b59a 100644
  #include "ppapi/host/host_message_context.h"
  #include "ppapi/host/resource_host.h"
  
-@@ -50,7 +52,9 @@ class PepperFlashDRMHost : public ppapi::host::ResourceHost {
+@@ -49,7 +51,9 @@ class PepperFlashDRMHost : public ppapi::host::ResourceHost {
                     const std::string& id,
                     int32_t result);
  
@@ -251,7 +251,7 @@ index faa83c9d32e5..bbae9c21b59a 100644
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 5599a2d3d62f..532c7290cc36 100644
+index 5599a2d3d62f..84e12cf5d273 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -7,16 +7,20 @@
@@ -328,8 +328,8 @@ index 5599a2d3d62f..532c7290cc36 100644
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
        break;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
--       return OpenCrxFileSystem(context);
-+       return PP_ERROR_NOTSUPPORTED;
+-      return OpenCrxFileSystem(context);
++      return PP_ERROR_NOTSUPPORTED;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_PLUGINPRIVATE:
        return OpenPluginPrivateFileSystem(context);
    }

@@ -1,8 +1,8 @@
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 0bfe29512050..81439f7ab8f7 100644
+index 39831f1902c6..fddb013aa122 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
-@@ -170,6 +170,9 @@ class CORE_EXPORT File final : public Blob {
+@@ -168,6 +168,9 @@ class CORE_EXPORT File final : public Blob {
    }
    const String& name() const { return name_; }
  
@@ -13,7 +13,7 @@ index 0bfe29512050..81439f7ab8f7 100644
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
    long long lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
-index df954bc8f818..4683b2853bb4 100644
+index a74beceda3e7..7196fd5f5f9e 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
 +++ b/third_party/blink/renderer/core/fileapi/file.idl
 @@ -32,6 +32,7 @@

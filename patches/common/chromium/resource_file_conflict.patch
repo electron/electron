@@ -1,8 +1,8 @@
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 4304cc82494f..01588f173b16 100644
+index 395d16c7cef2..66d81de66f01 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1663,6 +1663,11 @@ if (is_chrome_branded && !is_android) {
+@@ -1652,6 +1652,11 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -14,7 +14,7 @@ index 4304cc82494f..01588f173b16 100644
  chrome_paks("packed_resources") {
    if (is_mac) {
      output_dir = "$root_gen_dir/repack"
-@@ -1684,6 +1689,7 @@ chrome_paks("packed_resources") {
+@@ -1673,6 +1678,7 @@ chrome_paks("packed_resources") {
      ]
    }
  }

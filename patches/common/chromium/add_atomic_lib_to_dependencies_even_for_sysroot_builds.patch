@@ -1,8 +1,8 @@
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b674e703617d..5a7a11d816cf 100644
+index 943412faefd7..c505df950b2b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1131,7 +1131,7 @@ component("base") {
+@@ -1217,7 +1217,7 @@ jumbo_component("base") {
    # Needed for <atomic> if using newer C++ library than sysroot, except if
    # building inside the cros_sdk environment - use host_toolchain as a
    # more robust check for this.

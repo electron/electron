@@ -1,21 +1,21 @@
 diff --git a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-index 5d5bead..f2ac4d8 100644
+index c3f4641e8525..dd50ff1c2557 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
 +++ b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-@@ -339,7 +339,7 @@ void MouseWheelEventQueue::SendScrollBegin(
+@@ -362,7 +362,8 @@ void MouseWheelEventQueue::SendScrollBegin(
           (synthetic && !needs_scroll_begin_when_scroll_latching_disabled_) ||
           needs_scroll_begin_when_scroll_latching_disabled_);
  
--  DCHECK(!scroll_in_progress_);
-+  // DCHECK(!scroll_in_progress_);
-   scroll_in_progress_ = true;
+-  DCHECK(!client_->IsWheelScrollInProgress());
++  // DCHECK(!client_->IsWheelScrollInProgress());
  
    WebGestureEvent scroll_begin(gesture_update);
+   scroll_begin.SetType(WebInputEvent::kGestureScrollBegin);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 97ca37d843be..fdc4a3f90c64 100644
+index 9b930b8acd1d..f3d356f86f15 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1230,8 +1238,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
+@@ -1263,8 +1263,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
      // GSB and GSU events instead of sending them to the renderer and continues
      // to progress the fling. So, the renderer doesn't receive two GSB events
      // without any GSE in between.

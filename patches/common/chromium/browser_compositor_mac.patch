@@ -1,8 +1,8 @@
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index 7426062f7381..bd5cd2fcd230 100644
+index bc9eba153a6a..5200f79afd05 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
-@@ -54,10 +54,13 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient {
+@@ -59,6 +59,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
    // These will not return nullptr until Destroy is called.
    DelegatedFrameHost* GetDelegatedFrameHost();
  
@@ -11,16 +11,19 @@ index 7426062f7381..bd5cd2fcd230 100644
    // Ensure that the currect compositor frame be cleared (even if it is
    // potentially visible).
    void ClearCompositorFrame();
+@@ -69,6 +71,7 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
+   // no valid frame is available.
+   const gfx::CALayerParams* GetLastCALayerParams() const;
  
 +  ui::Compositor* GetCompositor();
    gfx::AcceleratedWidget GetAcceleratedWidget();
    void DidCreateNewRendererCompositorFrameSink(
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 7fcc24c15c37..7c31977b20f9 100644
+index 3d12a1126a0d..7a60368b2c8a 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -208,6 +208,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
+@@ -240,6 +240,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
      g_spare_recyclable_compositors.Get().clear();
  }
  
