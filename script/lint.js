@@ -46,7 +46,8 @@ const LINTERS = [
     test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
     run: async (filenames) => {
       childProcess.execFile('cpplint.py', filenames, {}, (error, stdout, stderr) => {
-        // (cpplint writes _everything_ to stderr, even status messages)
+        // cpplint writes warnings, errors, AND status messages to stderr.
+        // prune out the status messages:
         for (const line of stderr.split(/[\r\n]+/)) {
           if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
             console.warn(line)
@@ -63,10 +64,10 @@ const LINTERS = [
     test: filename => filename.endsWith('.py'),
     run: async (filenames) => {
       const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
-      const args = [ '--rcfile=' + rcfile, ...filenames ]
+      const args = ['--rcfile=' + rcfile, ...filenames]
       const env = Object.assign({PYTHONPATH: path.join(SOURCE_ROOT, 'script')}, process.env)
       childProcess.execFile('pylint.py', args, { env }, (unused, stdout, stderr) => {
-        if (!stdout.length && !stderr.length) {
+        if (!stdout.length && !stderr.length) { // pylint is quiet on success
           return
         }
         console.warn(stdout, stderr)
@@ -80,7 +81,7 @@ const LINTERS = [
     run: async (filenames) => {
       const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
       childProcess.execFile(cmd, filenames, { cwd: SOURCE_ROOT }, (error, stdout, stderr) => {
-        if (!error) {
+        if (!error) { // standard is quiet on success
           return
         }
         console.warn(stdout)
@@ -94,7 +95,7 @@ const LINTERS = [
     run: async (filenames) => {
       const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
       childProcess.execFile(cmd, filenames, { cwd: path.join(SOURCE_ROOT, 'spec') }, (error, stdout, stderr) => {
-        if (!error) {
+        if (!error) { // standard is quiet on success
           return
         }
         console.warn(stdout)
@@ -108,7 +109,7 @@ function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
     boolean: ['c++', 'javascript', 'python', 'help', 'changed'],
-    alias: { 'c++': [ 'cc', 'cpp', 'cxx' ], javascript: [ 'js', 'es' ], python: 'py', changed: 'c', help: 'h' },
+    alias: {'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h'},
     unknown: arg => { help = true }
   })
   if (help || opts.help) {
