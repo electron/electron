@@ -38,34 +38,6 @@ patches:
   description:
     Disable unit test windows build warning
 -
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_39d546a.patch
-  description: Node 10.0.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_ff0a97933.patch
-  description: Node 10.2.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_9fb02b526.patch
-  description: Node 10.2.0 needs it.
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_23652c5f.patch
-  description: Node 10.2.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: backport_91ddb65d.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_6989b3f6d7.patch
-  description: Node 10.6.0 needs it.
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: cherry-pick_a440efb27f.patch
-  description: Node 10.6.0 needs it.
--
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: cherry-pick_5dd3395.patch
   description: Node 10.6.0 needs it.

@@ -1,8 +1,8 @@
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b2d1e63..bc2cf9a 100644
+index 11bf320311bb..27f087d4f706 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4562,6 +4562,11 @@ void WebContentsImpl::NotifyViewSwapped(RenderViewHost* old_host,
+@@ -4725,6 +4725,11 @@ void WebContentsImpl::NotifyViewSwapped(RenderViewHost* old_host,
    for (auto& observer : observers_)
      observer.RenderViewHostChanged(old_host, new_host);
  

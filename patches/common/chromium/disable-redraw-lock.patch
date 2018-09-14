@@ -1,11 +1,11 @@
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index c8fb7eecb9c8..3d995aa331b1 100644
+index cadeb2322620..3c5d1afbdfee 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -251,6 +251,10 @@ const int kSynthesizedMouseMessagesTimeDifference = 500;
-
+@@ -256,6 +256,10 @@ const int kSynthesizedMouseMessagesTimeDifference = 500;
+ 
  }  // namespace
-
+ 
 +bool HWNDMessageHandlerDelegate::HasNativeFrame() const {
 +  return false;
 +}
@@ -13,7 +13,7 @@ index c8fb7eecb9c8..3d995aa331b1 100644
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -302,6 +306,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -307,6 +311,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
                       ::IsWindow(hwnd_) &&
@@ -21,38 +21,38 @@ index c8fb7eecb9c8..3d995aa331b1 100644
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -903,6 +908,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
+@@ -898,6 +903,10 @@ bool HWNDMessageHandler::HasChildRenderingWindow() {
        hwnd());
  }
-
+ 
 +bool HWNDMessageHandler::HasNativeFrame() {
 +  return delegate_->HasNativeFrame();
 +}
 +
  ////////////////////////////////////////////////////////////////////////////////
  // HWNDMessageHandler, gfx::WindowImpl overrides:
-
+ 
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 5d5765c1928e..d77991cfa737 100644
+index 5afb32aa043c..3d17f29dff9a 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -227,6 +227,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -177,6 +177,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    typedef std::set<DWORD> TouchIDs;
    enum class DwmFrameState { OFF, ON };
-
+ 
 +  bool HasNativeFrame();
 +
    // Overridden from WindowImpl:
    HICON GetDefaultWindowIcon() const override;
    HICON GetSmallWindowIcon() const override;
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index d13f807e4a75..877189d63616 100644
+index 1b2d98a85738..dd080180aebd 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
 @@ -46,6 +46,8 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // True if the widget associated with this window has a non-client view.
    virtual bool HasNonClientView() const = 0;
-
+ 
 +  virtual bool HasNativeFrame() const;
 +
    // Returns who we want to be drawing the frame. Either the system (Windows)

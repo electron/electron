@@ -51,14 +51,14 @@ index 58f09950d844..53500a0853a6 100755
  class Error(Exception):
    pass
 diff --git a/build/linux/sysroot_scripts/sysroots.json b/build/linux/sysroot_scripts/sysroots.json
-index 48a1d36f0609..91ef1417a1bf 100644
+index e79b69b764b1..91ef1417a1bf 100644
 --- a/build/linux/sysroot_scripts/sysroots.json
 +++ b/build/linux/sysroot_scripts/sysroots.json
 @@ -1,38 +1,38 @@
  {
 -    "sid_amd64": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "85ac8d5e0f6cff99fc323fd3d29cb73e2aa970e2",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "4e7db513b0faeea8fb410f70c9909e8736f5c0ab",
 -        "SysrootDir": "debian_sid_amd64-sysroot",
 -        "Tarball": "debian_sid_amd64_sysroot.tar.xz"
 +    "stretch_amd64": {
@@ -68,8 +68,8 @@ index 48a1d36f0609..91ef1417a1bf 100644
 +        "Tarball": "debian_stretch_amd64_sysroot.tgz"
      },
 -    "sid_arm": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "ed31924757f11885a21793dc4b928d07ab25740c",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "b2165ab47ab9c4cc780db53ace1b08607d68ae31",
 -        "SysrootDir": "debian_sid_arm-sysroot",
 -        "Tarball": "debian_sid_arm_sysroot.tar.xz"
 +    "stretch_arm": {
@@ -79,8 +79,8 @@ index 48a1d36f0609..91ef1417a1bf 100644
 +        "Tarball": "debian_stretch_arm_sysroot.tgz"
      },
 -    "sid_arm64": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "b9447285e58c5260bd9fa2737d1f0d1f82156738",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "37dfa5f22e2c0e847cee34f9848eb31230c33d35",
 -        "SysrootDir": "debian_sid_arm64-sysroot",
 -        "Tarball": "debian_sid_arm64_sysroot.tar.xz"
 +    "stretch_arm64": {
@@ -90,8 +90,8 @@ index 48a1d36f0609..91ef1417a1bf 100644
 +        "Tarball": "debian_stretch_arm64_sysroot.tgz"
      },
 -    "sid_i386": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "f09856d93f39e8df84ffd9c04881f44e6cbc0508",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "b8639749e2b561a7462d7e7978ca74ee4044bdab",
 -        "SysrootDir": "debian_sid_i386-sysroot",
 -        "Tarball": "debian_sid_i386_sysroot.tar.xz"
 +    "stretch_i386": {
@@ -101,8 +101,8 @@ index 48a1d36f0609..91ef1417a1bf 100644
 +        "Tarball": "debian_stretch_i386_sysroot.tgz"
      },
 -    "sid_mips": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "90586b566b567b2bcf49e7fd112f0c8189bbd07b",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "baaf37cdcbcf251fb9a4ccaf8b479722ae61fe49",
 -        "SysrootDir": "debian_sid_mips-sysroot",
 -        "Tarball": "debian_sid_mips_sysroot.tar.xz"
 +    "stretch_mips": {
@@ -112,8 +112,8 @@ index 48a1d36f0609..91ef1417a1bf 100644
 +        "Tarball": "debian_stretch_mips_sysroot.tgz"
      },
 -    "sid_mips64el": {
--        "Revision": "15b7efb900d75f7316c6e713e80f87b9904791b1",
--        "Sha1Sum": "f90c3b81485ffebb283afddb1a72bc61e14c593d",
+-        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
+-        "Sha1Sum": "bbfe1a513b849921cfcf78865faec8fc03f93b3d",
 -        "SysrootDir": "debian_sid_mips64el-sysroot",
 -        "Tarball": "debian_sid_mips64el_sysroot.tar.xz"
 -    }

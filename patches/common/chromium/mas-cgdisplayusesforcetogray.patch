@@ -1,14 +1,11 @@
-From 82d0ef64e22c69c0435608276149977d2811a3f7 Mon Sep 17 00:00:00 2001
+From 0680698be349b3619561c65eb072d9880e405fae Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
-Date: Mon, 6 Aug 2018 10:58:46 -0700
-Subject: fix: [mas] remove usage of CGDisplayUsesForceToGray
+Date: Fri, 14 Sep 2018 09:53:11 -0700
+Subject: apply patch: mas-cgdisplayusesforcetogray
 
----
- ui/display/mac/screen_mac.mm | 10 ++++++++++
- 1 file changed, 10 insertions(+)
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 4850c795480e..ec34b25a6fe8 100644
+index be4f343bcd44..84fd3ec23cfa 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -106,7 +106,17 @@ Display BuildDisplayForScreen(NSScreen* screen) {

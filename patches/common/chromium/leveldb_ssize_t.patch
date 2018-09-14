@@ -1,4 +1,4 @@
-﻿diff --git a/third_party/leveldatabase/port/port_chromium.h b/third_party/leveldatabase/port/port_chromium.h
+diff --git a/third_party/leveldatabase/port/port_chromium.h b/third_party/leveldatabase/port/port_chromium.h
 index a7c449eba19c..acbce7efd582 100644
 --- a/third_party/leveldatabase/port/port_chromium.h
 +++ b/third_party/leveldatabase/port/port_chromium.h

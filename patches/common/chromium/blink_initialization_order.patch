@@ -1,8 +1,8 @@
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 33d958fb31ae..47efe62650aa 100644
+index 5c00e3e935b2..43f882eb0883 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -170,11 +170,11 @@ void LocalWindowProxy::Initialize() {
+@@ -171,11 +171,11 @@ void LocalWindowProxy::Initialize() {
                   GetFrame()->IsMainFrame());
      MainThreadDebugger::Instance()->ContextCreated(script_state_.get(),
                                                     GetFrame(), origin);

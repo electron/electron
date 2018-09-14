@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon.h b/chrome/browser/ui/libgtkui/app_indicator_icon.h
-index 7815fbb..f17a5c5 100644
+index 7815fbb2cea8..f17a5c59e64b 100644
 --- a/chrome/browser/ui/libgtkui/app_indicator_icon.h
 +++ b/chrome/browser/ui/libgtkui/app_indicator_icon.h
 @@ -12,6 +12,7 @@
@@ -20,7 +20,7 @@ index 7815fbb..f17a5c5 100644
    // The id uniquely identifies the new status icon from other chrome status
    // icons.
 diff --git a/chrome/browser/ui/libgtkui/gtk_status_icon.h b/chrome/browser/ui/libgtkui/gtk_status_icon.h
-index e4e0da4..af02871 100644
+index e4e0da40981c..af028715ada9 100644
 --- a/chrome/browser/ui/libgtkui/gtk_status_icon.h
 +++ b/chrome/browser/ui/libgtkui/gtk_status_icon.h
 @@ -10,6 +10,7 @@
@@ -41,7 +41,7 @@ index e4e0da4..af02871 100644
    Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
    ~Gtk2StatusIcon() override;
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index 665ec57..4ccb088 100644
+index 665ec57c09d5..4ccb08807fb4 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -75,7 +75,7 @@ index 665ec57..4ccb088 100644
  // Gets the transient parent aura window for |dialog|.
  aura::Window* GetAuraTransientParent(GtkWidget* dialog);
 diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-index e05fbe9..3afca9a 100644
+index e05fbe9d8b2f..3afca9a72ab6 100644
 --- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 +++ b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 @@ -7,6 +7,7 @@
@@ -96,7 +96,7 @@ index e05fbe9..3afca9a 100644
  }  // namespace libgtkui
  
 diff --git a/chrome/browser/ui/libgtkui/unity_service.h b/chrome/browser/ui/libgtkui/unity_service.h
-index 8d67e14..95fbb27 100644
+index 8d67e1460837..95fbb27b6a81 100644
 --- a/chrome/browser/ui/libgtkui/unity_service.h
 +++ b/chrome/browser/ui/libgtkui/unity_service.h
 @@ -5,18 +5,20 @@

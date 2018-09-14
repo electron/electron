@@ -1,8 +1,8 @@
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 56402d477ca3..8ab11bd18783 100644
+index 076d137eb7cf..c10c3b0be66b 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -116,9 +116,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -119,9 +119,10 @@ IsolateHolder::~IsolateHolder() {
  void IsolateHolder::Initialize(ScriptMode mode,
                                 V8ExtrasMode v8_extras_mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -30,7 +30,7 @@ index 2509aca609f9..94003c6031cf 100644
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 02d4b1cd6521..ec6d51d7e5d8 100644
+index be2b9149e440..816e56aa4f6b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -236,12 +236,14 @@ LoadV8FileResult MapOpenedFile(const OpenedFileMap::mapped_type& file_region,
@@ -51,7 +51,7 @@ index 02d4b1cd6521..ec6d51d7e5d8 100644
    if (base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
      static const char optimize[] = "--opt";
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index f0a7c5e0fb68..df4ab4f3e4b9 100644
+index 6f3265ba4d06..29f28bebbdcd 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -21,7 +21,8 @@ class GIN_EXPORT V8Initializer {

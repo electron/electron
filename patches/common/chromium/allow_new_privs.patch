@@ -1,8 +1,8 @@
 diff --git a/base/process/launch.h b/base/process/launch.h
-index 20b76fc..9db73bf 100644
+index b4530b755a23..d6f02d9ab2e3 100644
 --- a/base/process/launch.h
 +++ b/base/process/launch.h
-@@ -147,7 +147,7 @@ struct BASE_EXPORT LaunchOptions {
+@@ -176,7 +176,7 @@ struct BASE_EXPORT LaunchOptions {
  
    // By default, child processes will have the PR_SET_NO_NEW_PRIVS bit set. If
    // true, then this bit will not be set in the new child process.

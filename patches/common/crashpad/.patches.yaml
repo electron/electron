@@ -4,5 +4,4 @@ patches:
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: http_status.patch
   description: |
-    Accept all HTTP codes in [200, 300) as successful, instead of just 200.
-    For example HockeyApp responds with 202.
+    Backport of f540abb506.

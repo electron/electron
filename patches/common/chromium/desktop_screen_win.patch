@@ -1,5 +1,5 @@
 diff --git a/ui/views/widget/desktop_aura/desktop_screen_win.cc b/ui/views/widget/desktop_aura/desktop_screen_win.cc
-index f772f64..7d13f9f 100644
+index f772f64d656e..7d13f9f81b6c 100644
 --- a/ui/views/widget/desktop_aura/desktop_screen_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_screen_win.cc
 @@ -32,6 +32,8 @@ display::Display DesktopScreenWin::GetDisplayMatching(

@@ -1,25 +1,16 @@
-From 9fb1ac04b1a3e7ec53e27cf1f413469d04360d1e Mon Sep 17 00:00:00 2001
-From: Jeremy Apthorp <jeremya@chromium.org>
-Date: Mon, 6 Aug 2018 17:11:14 -0700
-Subject: fix: [mas] remove usage of _CFIsObjC
-
----
- base/mac/foundation_util.mm | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index aec8c0f6398c..6a6dfc272d45 100644
+index 15fc15ba307e..7ca4e0ec5ca8 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
-@@ -25,7 +25,6 @@
- extern "C" {
+@@ -26,7 +26,6 @@ CFTypeID SecKeyGetTypeID();
+ #if !defined(OS_IOS)
  CFTypeID SecACLGetTypeID();
  CFTypeID SecTrustedApplicationGetTypeID();
 -Boolean _CFIsObjC(CFTypeID typeID, CFTypeRef obj);
- }  // extern "C"
  #endif
+ }  // extern "C"
  
-@@ -323,8 +322,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
+@@ -325,8 +324,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -29,7 +20,7 @@ index aec8c0f6398c..6a6dfc272d45 100644
    return ns_val;
  }
  
-@@ -392,9 +390,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
+@@ -394,9 +392,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
      return (CTFontRef)(cf_val);
    }
  

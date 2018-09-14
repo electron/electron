@@ -1,5 +1,5 @@
 diff --git a/modules/desktop_capture/mac/screen_capturer_mac.mm b/modules/desktop_capture/mac/screen_capturer_mac.mm
-index df18777226..6a1e3da6ab 100644
+index ae6c47cfa3..4d05f6c223 100644
 --- a/modules/desktop_capture/mac/screen_capturer_mac.mm
 +++ b/modules/desktop_capture/mac/screen_capturer_mac.mm
 @@ -16,6 +16,7 @@
@@ -8,9 +8,9 @@ index df18777226..6a1e3da6ab 100644
  #include "rtc_base/logging.h"
 +#include "rtc_base/synchronization/rw_lock_wrapper.h"
  #include "rtc_base/timeutils.h"
+ #include "rtc_base/trace_event.h"
  #include "sdk/objc/Framework/Classes/Common/scoped_cftyperef.h"
- 
-@@ -28,18 +29,31 @@ namespace webrtc {
+@@ -29,18 +30,31 @@ namespace webrtc {
  // destroy itself once it's done.
  class DisplayStreamManager {
   public:
@@ -50,7 +50,7 @@ index df18777226..6a1e3da6ab 100644
      RTC_CHECK(unique_id <= unique_id_generator_);
      DisplayStreamWrapper wrapper;
      wrapper.stream = stream;
-@@ -47,6 +61,7 @@ class DisplayStreamManager {
+@@ -48,6 +62,7 @@ class DisplayStreamManager {
    }
  
    void UnregisterActiveStreams() {
@@ -58,7 +58,7 @@ index df18777226..6a1e3da6ab 100644
      for (auto& pair : display_stream_wrappers_) {
        DisplayStreamWrapper& wrapper = pair.second;
        if (wrapper.active) {
-@@ -61,12 +76,23 @@ class DisplayStreamManager {
+@@ -62,12 +77,23 @@ class DisplayStreamManager {
    void PrepareForSelfDestruction() {
      ready_for_self_destruction_ = true;
  
@@ -84,7 +84,7 @@ index df18777226..6a1e3da6ab 100644
  
   private:
    struct DisplayStreamWrapper {
-@@ -81,6 +107,7 @@ class DisplayStreamManager {
+@@ -82,6 +108,7 @@ class DisplayStreamManager {
    std::map<int, DisplayStreamWrapper> display_stream_wrappers_;
    int unique_id_generator_ = 0;
    bool ready_for_self_destruction_ = false;
@@ -92,7 +92,7 @@ index df18777226..6a1e3da6ab 100644
  };
  
  namespace {
-@@ -507,8 +534,6 @@ bool ScreenCapturerMac::RegisterRefreshAndMoveHandlers() {
+@@ -521,8 +548,6 @@ bool ScreenCapturerMac::RegisterRefreshAndMoveHandlers() {
          return;
        }
  
@@ -101,15 +101,15 @@ index df18777226..6a1e3da6ab 100644
        // Only pay attention to frame updates.
        if (status != kCGDisplayStreamFrameStatusFrameComplete) return;
  
-@@ -518,7 +543,12 @@ bool ScreenCapturerMac::RegisterRefreshAndMoveHandlers() {
+@@ -532,7 +557,12 @@ bool ScreenCapturerMac::RegisterRefreshAndMoveHandlers() {
        if (count != 0) {
          // According to CGDisplayStream.h, it's safe to call
          // CGDisplayStreamStop() from within the callback.
--        ScreenRefresh(count, rects, display_origin);
+-        ScreenRefresh(display_id, count, rects, display_origin, frame_surface);
 +        manager->GetLock()->AcquireLockShared();
 +        bool screen_capturer_mac_invalidated = manager->ShouldIgnoreUpdates();
 +        if (!screen_capturer_mac_invalidated) {
-+          ScreenRefresh(count, rects, display_origin);
++          ScreenRefresh(display_id, count, rects, display_origin, frame_surface);
 +        }
 +        manager->GetLock()->ReleaseLockShared();
        }

@@ -1,8 +1,8 @@
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 6850cd460b1d..6d652cca59b4 100644
+index 63b5d47b4069..5c48741a3fc7 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -102,17 +102,16 @@ void ScopedClipboardWriter::WriteImage(const SkBitmap& bitmap) {
+@@ -103,17 +103,16 @@ void ScopedClipboardWriter::WriteImage(const SkBitmap& bitmap) {
    objects_[Clipboard::CBF_SMBITMAP] = parameters;
  }
  
@@ -25,7 +25,7 @@ index 6850cd460b1d..6d652cca59b4 100644
  
    Clipboard::ObjectMapParams parameters;
    parameters.push_back(format_parameter);
-@@ -121,6 +121,13 @@ void ScopedClipboardWriter::WritePickledData(
+@@ -121,6 +120,13 @@ void ScopedClipboardWriter::WritePickledData(
    objects_[Clipboard::CBF_DATA] = parameters;
  }
  
@@ -40,10 +40,10 @@ index 6850cd460b1d..6d652cca59b4 100644
    objects_.clear();
    bitmap_.reset();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index a7e064561ca9..d5a1b76bc6a7 100644
+index bb889c9dd484..bf6cafd9c55a 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
-@@ -61,6 +61,11 @@ class UI_BASE_EXPORT ScopedClipboardWriter {
+@@ -57,6 +57,11 @@ class UI_BASE_EXPORT ScopedClipboardWriter {
    // Used by WebKit to determine whether WebKit wrote the clipboard last
    void WriteWebSmartPaste();
  
