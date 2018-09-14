@@ -136,10 +136,6 @@ patches:
   file: frame_host_manager.patch
   description: null
 -
-  author: Tony Ganch <tonyganch@gmail.com>
-  file: latency_info.patch
-  description: null
--
   author: Cheng Zhao <zcbenz@gmail.com>
   file: net_url_request_job.patch
   description: null
