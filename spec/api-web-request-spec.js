@@ -225,7 +225,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         assert.strictEqual(details.statusLine, 'HTTP/1.1 200 OK')
         assert.strictEqual(details.statusCode, 200)
-        assert.strictEqual(details.responseHeaders['Custom'], 'Header')
+        assert.deepStrictEqual(details.responseHeaders['Custom'], ['Header'])
         callback({})
       })
       $.ajax({
@@ -314,7 +314,7 @@ describe('webRequest module', () => {
         assert.strictEqual(typeof details.fromCache, 'boolean')
         assert.strictEqual(details.statusLine, 'HTTP/1.1 200 OK')
         assert.strictEqual(details.statusCode, 200)
-        assert.strictEqual(details.responseHeaders['Custom'], 'Header')
+        assert.deepStrictEqual(details.responseHeaders['Custom'], ['Header'])
       })
       $.ajax({
         url: defaultURL,
