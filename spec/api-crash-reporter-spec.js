@@ -425,16 +425,16 @@ const startServer = ({ callback, processType, done }) => {
       if (error) throw error
       if (called) return
       called = true
-      assert.strictEqual(fields.prod, 'Electron')
-      assert.strictEqual(fields.ver, process.versions.electron)
-      assert.strictEqual(fields.process_type, processType)
-      assert.strictEqual(fields.platform, process.platform)
-      assert.strictEqual(fields.extra1, 'extra1')
-      assert.strictEqual(fields.extra2, 'extra2')
+      assert.deepStrictEqual(String(fields.prod), 'Electron')
+      assert.strictEqual(String(fields.ver), process.versions.electron)
+      assert.strictEqual(String(fields.process_type), processType)
+      assert.strictEqual(String(fields.platform), process.platform)
+      assert.strictEqual(String(fields.extra1), 'extra1')
+      assert.strictEqual(String(fields.extra2), 'extra2')
       assert.strictEqual(fields.extra3, undefined)
-      assert.strictEqual(fields._productName, 'Zombies')
-      assert.strictEqual(fields._companyName, 'Umbrella Corporation')
-      assert.strictEqual(fields._version, app.getVersion())
+      assert.strictEqual(String(fields._productName), 'Zombies')
+      assert.strictEqual(String(fields._companyName), 'Umbrella Corporation')
+      assert.strictEqual(String(fields._version), app.getVersion())
 
       const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
       res.end(reportId, () => {
