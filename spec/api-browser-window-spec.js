@@ -1014,7 +1014,7 @@ describe('BrowserWindow module', () => {
 
     it('returns undefined if not attached', () => {
       w.setBrowserView(null)
-      assert.strictEqual(BrowserWindow.fromBrowserView(bv), undefined)
+      assert.strictEqual(BrowserWindow.fromBrowserView(bv), null)
     })
   })
 

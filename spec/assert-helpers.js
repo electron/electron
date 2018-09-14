@@ -3,5 +3,5 @@ function resolverGetters (...args) {
 }
 
 module.exports = {
-  resolverGetters,
+  resolverGetters
 }
