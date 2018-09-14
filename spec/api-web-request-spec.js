@@ -109,7 +109,7 @@ describe('webRequest module', () => {
         assert.strictEqual(details.method, 'POST')
         assert.strictEqual(details.uploadData.length, 1)
         const data = qs.parse(details.uploadData[0].bytes.toString())
-        assert.deepStrictEqual(data, postData)
+        assert.deepStrictEqual({ ...data }, postData)
         callback({ cancel: true })
       })
       $.ajax({

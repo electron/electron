@@ -753,7 +753,7 @@ describe('protocol module', () => {
           type: 'POST',
           data: postData,
           success: (data) => {
-            assert.deepStrictEqual(qs.parse(data), postData)
+            assert.deepStrictEqual({ ...qs.parse(data) }, postData)
             done()
           },
           error: (xhr, errorType, error) => done(error)
@@ -836,7 +836,7 @@ describe('protocol module', () => {
             type: 'POST',
             data: postData,
             success: (data) => {
-              assert.deepStrictEqual(qs.parse(data), postData)
+              assert.deepStrictEqual({ ...qs.parse(data) }, postData)
               done()
             },
             error: (xhr, errorType, error) => done(error)
@@ -900,7 +900,7 @@ describe('protocol module', () => {
           type: 'POST',
           data: postData,
           success: (data) => {
-            assert.deepStrictEqual(qs.parse(data), postData)
+            assert.deepStrictEqual({ ...qs.parse(data) }, postData)
             done()
           },
           error: (xhr, errorType, error) => {
