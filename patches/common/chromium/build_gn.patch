@@ -1,16 +1,3 @@
-diff --git a/.gn b/.gn
-index 50a8a2fe9f1e..66ced79f1627 100644
---- a/.gn
-+++ b/.gn
-@@ -259,4 +259,8 @@ exec_script_whitelist =
-       # Not gypi-to-gn.
-       "//google_apis/BUILD.gn",
-       "//printing/BUILD.gn",
-+      # While electron transitions to GN, we use gypi_to_gn to synchronize
-+      # file lists
-+      "//electron/BUILD.gn",
-+      "//electron/brightray/BUILD.gn",
-     ]
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
 index 9e38ee0e592b..bd54ce154b13 100644
 --- a/build/config/BUILDCONFIG.gn
