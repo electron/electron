@@ -148,10 +148,6 @@ patches:
   file: out_of_process_instance.patch
   description: null
 -
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: protobuf_build_gn.patch
-  description: null
--
   author: null
   file: render_widget_host_view_base.patch
   description: null
