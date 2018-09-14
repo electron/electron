@@ -1,0 +1,60 @@
+diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
+index 53f767a0bddb..661466b779e8 100644
+--- a/build/toolchain/win/BUILD.gn
++++ b/build/toolchain/win/BUILD.gn
+@@ -176,6 +176,12 @@ template("msvc_toolchain") {
+       ]
+ 
+       command = "$env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
++
++      if (is_electron_build && !is_component_build) {
++        pdbdir = "{{target_out_dir}}"
++        pdbname = "{{label_name}}_c.pdb"
++        command = "$python_path $tool_wrapper_path cl-wrapper $env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}} $pdbdir \"$pdbname\""
++      }
+     }
+ 
+     tool("cxx") {
+@@ -192,6 +198,12 @@ template("msvc_toolchain") {
+       ]
+ 
+       command = "$env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
++
++      if (is_electron_build && !is_component_build) {
++        pdbdir = "{{target_out_dir}}"
++        pdbname = "{{label_name}}_cc.pdb"
++        command = "$python_path $tool_wrapper_path cl-wrapper $env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}} $pdbdir \"$pdbname\""
++      }
+     }
+ 
+     tool("rc") {
+diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
+index 3a81368f3469..7c5ef1ea5db4 100644
+--- a/build/toolchain/win/tool_wrapper.py
++++ b/build/toolchain/win/tool_wrapper.py
+@@ -315,6 +315,25 @@ class WinTool(object):
+     dirname = dirname[0] if dirname else None
+     return subprocess.call(args, shell=True, env=env, cwd=dirname)
+ 
++  def ExecClWrapper(self, *args):
++    """Invokes cl.exe to compile a C/C++ source file."""
++    args = list(args)
++    # Incorporate the PDB output dir into the PDB name to ensure the PDB name
++    # is unique (see https://github.com/electron/libchromiumcontent/issues/287)
++    pdb_name = args.pop()
++    pdb_dir = args.pop()
++    pdb_filename = '%s/%s_%s' % (pdb_dir, pdb_dir.replace('/', '_'), pdb_name)
++    # On Windows when args is a sequence instead of a single string
++    # subprocess.call() will use subprocess.list2cmdline() to convert the
++    # sequence to a string. Unfortunately the double-quote escaping done by
++    # subprocess.list2cmdline() mangles the /Fd"path/to/some.pdb" arg to
++    # /Fd\"path/to/some.pdb\", and cl.exe then fails to parse the PDB filename
++    # correctly. To work around this we use subprocess.list2cmdline()
++    # (even though it's not part of the public API) to construct most of the
++    # command line, and then append the /Fd flag.
++    pdb_flag = '/Fd"%s"' % pdb_filename
++    cmdline = '%s %s' % (subprocess.list2cmdline(args), pdb_flag)
++    return subprocess.call(cmdline, shell=False)
+ 
+ if __name__ == '__main__':
+   sys.exit(main(sys.argv[1:]))

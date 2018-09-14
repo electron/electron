@@ -1,0 +1,13 @@
+diff --git a/chrome/installer/mini_installer/BUILD.gn b/chrome/installer/mini_installer/BUILD.gn
+index c44f8a110599..2d48cf1ade70 100644
+--- a/chrome/installer/mini_installer/BUILD.gn
++++ b/chrome/installer/mini_installer/BUILD.gn
+@@ -331,7 +331,7 @@ if (is_win) {
+     testonly = true
+     data_deps = [
+       ":mini_installer",
+-      ":next_version_mini_installer",
++      # ":next_version_mini_installer",
+     ]
+   }
+ }

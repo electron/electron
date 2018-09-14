@@ -1,0 +1,153 @@
+diff --git a/src/log.cc b/src/log.cc
+index e50b00a320..832ef7519d 100644
+--- a/src/log.cc
++++ b/src/log.cc
+@@ -2023,7 +2023,7 @@ void ExistingCodeLogger::LogCodeObject(Object* object) {
+       break;
+     case AbstractCode::BUILTIN:
+       if (Code::cast(object)->is_interpreter_trampoline_builtin() &&
+-          Code::cast(object) ==
++          Code::cast(object) !=
+               *BUILTIN_CODE(isolate_, InterpreterEntryTrampoline)) {
+         return;
+       }
+diff --git a/test/cctest/test-log.cc b/test/cctest/test-log.cc
+index c7864034c9..767541d4a3 100644
+--- a/test/cctest/test-log.cc
++++ b/test/cctest/test-log.cc
+@@ -36,6 +36,9 @@
+
+ #include <unordered_set>
+ #include <vector>
++// The C++ style guide recommends using <re2> instead of <regex>. However, the
++// former isn't available in V8.
++#include <regex>  // NOLINT(build/c++11)
+ #include "src/api.h"
+ #include "src/log-utils.h"
+ #include "src/log.h"
+@@ -257,30 +260,41 @@ class TestCodeEventHandler : public v8::CodeEventHandler {
+   explicit TestCodeEventHandler(v8::Isolate* isolate)
+       : v8::CodeEventHandler(isolate) {}
+
+-  const char* FindLine(const char* prefix, const char* suffix = nullptr,
+-                       const char* start = nullptr) {
+-    if (!log_.length()) return NULL;
+-    const char* c_log = log_.c_str();
+-    if (start == nullptr) start = c_log;
+-    const char* end = c_log + log_.length();
+-    return FindLogLine(start, end, prefix, suffix);
++  size_t CountLines(std::string prefix, std::string suffix = std::string()) {
++    if (!log_.length()) return 0;
++
++    std::regex expression("(^|\\n)" + prefix + ".*" + suffix + "(?=\\n|$)");
++
++    size_t match_count(std::distance(
++        std::sregex_iterator(log_.begin(), log_.end(), expression),
++        std::sregex_iterator()));
++
++    return match_count;
+   }
+
+   void Handle(v8::CodeEvent* code_event) override {
+-    const char* code_type =
+-        v8::CodeEvent::GetCodeEventTypeName(code_event->GetCodeType());
+-    char function_name[1000];
+-    strncpy(function_name, code_type, 1000);
+-    function_name[strlen(code_type)] = ' ';
+-    code_event->GetFunctionName()->WriteUtf8(
+-        function_name + strlen(code_type) + 1, 1000);
+-    function_name[strlen(function_name) + 1] = '\0';
+-    function_name[strlen(function_name)] = '\n';
+-
+-    log_ += std::string(function_name);
++    std::string log_line = "";
++    log_line += v8::CodeEvent::GetCodeEventTypeName(code_event->GetCodeType());
++    log_line += " ";
++    log_line += FormatName(code_event);
++    log_line += "\n";
++    log_ += log_line;
+   }
+
+  private:
++  std::string FormatName(v8::CodeEvent* code_event) {
++    std::string name = std::string(code_event->GetComment());
++    if (name.empty()) {
++      v8::Local<v8::String> functionName = code_event->GetFunctionName();
++      std::string buffer(functionName->Utf8Length() + 1, 0);
++      functionName->WriteUtf8(&buffer[0], functionName->Utf8Length() + 1);
++      // Sanitize name, removing unwanted \0 resulted from WriteUtf8
++      name = std::string(buffer.c_str());
++    }
++
++    return name;
++  }
++
+   std::string log_;
+ };
+
+@@ -854,21 +868,24 @@ TEST(ExternalCodeEventListener) {
+         "testCodeEventListenerBeforeStart('1', 1);";
+     CompileRun(source_text_before_start);
+
+-    CHECK_NULL(code_event_handler.FindLine("LazyCompile",
+-                                           "testCodeEventListenerBeforeStart"));
++    CHECK_EQ(code_event_handler.CountLines("LazyCompile",
++                                           "testCodeEventListenerBeforeStart"),
++             0);
+
+     code_event_handler.Enable();
+
+-    CHECK_NOT_NULL(code_event_handler.FindLine(
+-        "LazyCompile", "testCodeEventListenerBeforeStart"));
++    CHECK_GE(code_event_handler.CountLines("LazyCompile",
++                                           "testCodeEventListenerBeforeStart"),
++             1);
+
+     const char* source_text_after_start =
+         "function testCodeEventListenerAfterStart(a,b) { return a + b };"
+         "testCodeEventListenerAfterStart('1', 1);";
+     CompileRun(source_text_after_start);
+
+-    CHECK_NOT_NULL(code_event_handler.FindLine(
+-        "LazyCompile", "testCodeEventListenerAfterStart"));
++    CHECK_GE(code_event_handler.CountLines("LazyCompile",
++                                           "testCodeEventListenerAfterStart"),
++             1);
+
+     context->Exit();
+   }
+@@ -897,21 +914,28 @@ TEST(ExternalCodeEventListenerWithInterpretedFramesNativeStack) {
+         "testCodeEventListenerBeforeStart('1', 1);";
+     CompileRun(source_text_before_start);
+
+-    CHECK_NULL(code_event_handler.FindLine("InterpretedFunction",
+-                                           "testCodeEventListenerBeforeStart"));
++    CHECK_EQ(code_event_handler.CountLines("InterpretedFunction",
++                                           "testCodeEventListenerBeforeStart"),
++             0);
+
+     code_event_handler.Enable();
+
+-    CHECK_NOT_NULL(code_event_handler.FindLine(
+-        "InterpretedFunction", "testCodeEventListenerBeforeStart"));
++    CHECK_GE(code_event_handler.CountLines("InterpretedFunction",
++                                           "testCodeEventListenerBeforeStart"),
++             1);
+
+     const char* source_text_after_start =
+         "function testCodeEventListenerAfterStart(a,b) { return a + b };"
+         "testCodeEventListenerAfterStart('1', 1);";
+     CompileRun(source_text_after_start);
+
+-    CHECK_NOT_NULL(code_event_handler.FindLine(
+-        "InterpretedFunction", "testCodeEventListenerAfterStart"));
++    CHECK_GE(code_event_handler.CountLines("InterpretedFunction",
++                                           "testCodeEventListenerAfterStart"),
++             1);
++
++    CHECK_EQ(
++        code_event_handler.CountLines("Builtin", "InterpreterEntryTrampoline"),
++        1);
+
+     context->Exit();
+   }

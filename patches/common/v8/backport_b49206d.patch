@@ -1,0 +1,284 @@
+diff --git a/src/isolate.cc b/src/isolate.cc
+index 38506bfc25..37a5578763 100644
+--- a/src/isolate.cc
++++ b/src/isolate.cc
+@@ -8,6 +8,7 @@
+ 
+ #include <fstream>  // NOLINT(readability/streams)
+ #include <sstream>
++#include <unordered_map>
+ 
+ #include "src/api.h"
+ #include "src/assembler-inl.h"
+@@ -136,8 +137,6 @@ void ThreadLocalTop::Free() {
+ base::Thread::LocalStorageKey Isolate::isolate_key_;
+ base::Thread::LocalStorageKey Isolate::thread_id_key_;
+ base::Thread::LocalStorageKey Isolate::per_isolate_thread_data_key_;
+-base::LazyMutex Isolate::thread_data_table_mutex_ = LAZY_MUTEX_INITIALIZER;
+-Isolate::ThreadDataTable* Isolate::thread_data_table_ = nullptr;
+ base::Atomic32 Isolate::isolate_counter_ = 0;
+ #if DEBUG
+ base::Atomic32 Isolate::isolate_key_created_ = 0;
+@@ -148,13 +147,13 @@ Isolate::PerIsolateThreadData*
+   ThreadId thread_id = ThreadId::Current();
+   PerIsolateThreadData* per_thread = nullptr;
+   {
+-    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-    per_thread = thread_data_table_->Lookup(this, thread_id);
++    base::LockGuard<base::Mutex> lock_guard(&thread_data_table_mutex_);
++    per_thread = thread_data_table_.Lookup(thread_id);
+     if (per_thread == nullptr) {
+       per_thread = new PerIsolateThreadData(this, thread_id);
+-      thread_data_table_->Insert(per_thread);
++      thread_data_table_.Insert(per_thread);
+     }
+-    DCHECK(thread_data_table_->Lookup(this, thread_id) == per_thread);
++    DCHECK(thread_data_table_.Lookup(thread_id) == per_thread);
+   }
+   return per_thread;
+ }
+@@ -165,12 +164,11 @@ void Isolate::DiscardPerThreadDataForThisThread() {
+   if (thread_id_int) {
+     ThreadId thread_id = ThreadId(thread_id_int);
+     DCHECK(!thread_manager_->mutex_owner_.Equals(thread_id));
+-    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-    PerIsolateThreadData* per_thread =
+-        thread_data_table_->Lookup(this, thread_id);
++    base::LockGuard<base::Mutex> lock_guard(&thread_data_table_mutex_);
++    PerIsolateThreadData* per_thread = thread_data_table_.Lookup(thread_id);
+     if (per_thread) {
+       DCHECK(!per_thread->thread_state_);
+-      thread_data_table_->Remove(per_thread);
++      thread_data_table_.Remove(per_thread);
+     }
+   }
+ }
+@@ -186,23 +184,20 @@ Isolate::PerIsolateThreadData* Isolate::FindPerThreadDataForThread(
+     ThreadId thread_id) {
+   PerIsolateThreadData* per_thread = nullptr;
+   {
+-    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-    per_thread = thread_data_table_->Lookup(this, thread_id);
++    base::LockGuard<base::Mutex> lock_guard(&thread_data_table_mutex_);
++    per_thread = thread_data_table_.Lookup(thread_id);
+   }
+   return per_thread;
+ }
+ 
+ 
+ void Isolate::InitializeOncePerProcess() {
+-  base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-  CHECK_NULL(thread_data_table_);
+   isolate_key_ = base::Thread::CreateThreadLocalKey();
+ #if DEBUG
+   base::Relaxed_Store(&isolate_key_created_, 1);
+ #endif
+   thread_id_key_ = base::Thread::CreateThreadLocalKey();
+   per_isolate_thread_data_key_ = base::Thread::CreateThreadLocalKey();
+-  thread_data_table_ = new Isolate::ThreadDataTable();
+ }
+ 
+ Address Isolate::get_address_from_id(IsolateAddressId id) {
+@@ -2240,14 +2235,9 @@ char* Isolate::RestoreThread(char* from) {
+   return from + sizeof(ThreadLocalTop);
+ }
+ 
+-Isolate::ThreadDataTable::ThreadDataTable() : list_(nullptr) {}
++Isolate::ThreadDataTable::ThreadDataTable() : table_() {}
+ 
+-Isolate::ThreadDataTable::~ThreadDataTable() {
+-  // TODO(svenpanne) The assertion below would fire if an embedder does not
+-  // cleanly dispose all Isolates before disposing v8, so we are conservative
+-  // and leave it out for now.
+-  // DCHECK_NULL(list_);
+-}
++Isolate::ThreadDataTable::~ThreadDataTable() {}
+ 
+ void Isolate::ReleaseManagedObjects() {
+   Isolate::ManagedObjectFinalizer* current =
+@@ -2294,40 +2284,30 @@ Isolate::PerIsolateThreadData::~PerIsolateThreadData() {
+ #endif
+ }
+ 
+-
+-Isolate::PerIsolateThreadData*
+-    Isolate::ThreadDataTable::Lookup(Isolate* isolate,
+-                                     ThreadId thread_id) {
+-  for (PerIsolateThreadData* data = list_; data != nullptr;
+-       data = data->next_) {
+-    if (data->Matches(isolate, thread_id)) return data;
+-  }
+-  return nullptr;
++Isolate::PerIsolateThreadData* Isolate::ThreadDataTable::Lookup(
++    ThreadId thread_id) {
++  auto t = table_.find(thread_id);
++  if (t == table_.end()) return nullptr;
++  return t->second;
+ }
+ 
+ 
+ void Isolate::ThreadDataTable::Insert(Isolate::PerIsolateThreadData* data) {
+-  if (list_ != nullptr) list_->prev_ = data;
+-  data->next_ = list_;
+-  list_ = data;
++  bool inserted = table_.insert(std::make_pair(data->thread_id_, data)).second;
++  CHECK(inserted);
+ }
+ 
+ 
+ void Isolate::ThreadDataTable::Remove(PerIsolateThreadData* data) {
+-  if (list_ == data) list_ = data->next_;
+-  if (data->next_ != nullptr) data->next_->prev_ = data->prev_;
+-  if (data->prev_ != nullptr) data->prev_->next_ = data->next_;
++  table_.erase(data->thread_id_);
+   delete data;
+ }
+ 
+-
+-void Isolate::ThreadDataTable::RemoveAllThreads(Isolate* isolate) {
+-  PerIsolateThreadData* data = list_;
+-  while (data != nullptr) {
+-    PerIsolateThreadData* next = data->next_;
+-    if (data->isolate() == isolate) Remove(data);
+-    data = next;
++void Isolate::ThreadDataTable::RemoveAllThreads() {
++  for (auto& x : table_) {
++    delete x.second;
+   }
++  table_.clear();
+ }
+ 
+ 
+@@ -2502,10 +2482,6 @@ Isolate::Isolate(bool enable_serializer)
+       cancelable_task_manager_(new CancelableTaskManager()),
+       abort_on_uncaught_exception_callback_(nullptr),
+       total_regexp_code_generated_(0) {
+-  {
+-    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-    CHECK(thread_data_table_);
+-  }
+   id_ = base::Relaxed_AtomicIncrement(&isolate_counter_, 1);
+   TRACE_ISOLATE(constructor);
+ 
+@@ -2563,8 +2539,8 @@ void Isolate::TearDown() {
+   Deinit();
+ 
+   {
+-    base::LockGuard<base::Mutex> lock_guard(thread_data_table_mutex_.Pointer());
+-    thread_data_table_->RemoveAllThreads(this);
++    base::LockGuard<base::Mutex> lock_guard(&thread_data_table_mutex_);
++    thread_data_table_.RemoveAllThreads();
+   }
+ 
+ #ifdef DEBUG
+@@ -2578,12 +2554,6 @@ void Isolate::TearDown() {
+ }
+ 
+ 
+-void Isolate::GlobalTearDown() {
+-  delete thread_data_table_;
+-  thread_data_table_ = nullptr;
+-}
+-
+-
+ void Isolate::ClearSerializerData() {
+   delete external_reference_table_;
+   external_reference_table_ = nullptr;
+diff --git a/src/isolate.h b/src/isolate.h
+index 5538992af1..40135ef324 100644
+--- a/src/isolate.h
++++ b/src/isolate.h
+@@ -8,6 +8,7 @@
+ #include <cstddef>
+ #include <memory>
+ #include <queue>
++#include <unordered_map>
+ #include <vector>
+ 
+ #include "include/v8.h"
+@@ -247,6 +248,8 @@ class ThreadId {
+     return *this;
+   }
+ 
++  bool operator==(const ThreadId& other) const { return Equals(other); }
++
+   // Returns ThreadId for current thread.
+   static ThreadId Current() { return ThreadId(GetCurrentThreadId()); }
+ 
+@@ -287,7 +290,6 @@ class ThreadId {
+   friend class Isolate;
+ };
+ 
+-
+ #define FIELD_ACCESSOR(type, name)                 \
+   inline void set_##name(type v) { name##_ = v; }  \
+   inline type name() const { return name##_; }
+@@ -550,8 +552,6 @@ class Isolate {
+ 
+   void ReleaseManagedObjects();
+ 
+-  static void GlobalTearDown();
+-
+   void ClearSerializerData();
+ 
+   // Find the PerThread for this particular (isolate, thread) combination
+@@ -1371,20 +1371,24 @@ class Isolate {
+   void* embedder_data_[Internals::kNumIsolateDataSlots];
+   Heap heap_;
+ 
+-  // The per-process lock should be acquired before the ThreadDataTable is
+-  // modified.
+   class ThreadDataTable {
+    public:
+     ThreadDataTable();
+     ~ThreadDataTable();
+ 
+-    PerIsolateThreadData* Lookup(Isolate* isolate, ThreadId thread_id);
++    PerIsolateThreadData* Lookup(ThreadId thread_id);
+     void Insert(PerIsolateThreadData* data);
+     void Remove(PerIsolateThreadData* data);
+-    void RemoveAllThreads(Isolate* isolate);
++    void RemoveAllThreads();
+ 
+    private:
+-    PerIsolateThreadData* list_;
++    struct Hasher {
++      std::size_t operator()(const ThreadId& t) const {
++        return std::hash<int>()(t.ToInteger());
++      }
++    };
++
++    std::unordered_map<ThreadId, PerIsolateThreadData*, Hasher> table_;
+   };
+ 
+   // These items form a stack synchronously with threads Enter'ing and Exit'ing
+@@ -1412,12 +1416,15 @@ class Isolate {
+     DISALLOW_COPY_AND_ASSIGN(EntryStackItem);
+   };
+ 
+-  static base::LazyMutex thread_data_table_mutex_;
++  // TODO(kenton@cloudflare.com): This mutex can be removed if
++  // thread_data_table_ is always accessed under the isolate lock. I do not
++  // know if this is the case, so I'm preserving it for now.
++  base::Mutex thread_data_table_mutex_;
+ 
+   static base::Thread::LocalStorageKey per_isolate_thread_data_key_;
+   static base::Thread::LocalStorageKey isolate_key_;
+   static base::Thread::LocalStorageKey thread_id_key_;
+-  static ThreadDataTable* thread_data_table_;
++  ThreadDataTable thread_data_table_;
+ 
+   // A global counter for all generated Isolates, might overflow.
+   static base::Atomic32 isolate_counter_;
+diff --git a/src/v8.cc b/src/v8.cc
+index ab4918efec..d3b4c471a4 100644
+--- a/src/v8.cc
++++ b/src/v8.cc
+@@ -49,7 +49,6 @@ void V8::TearDown() {
+   Bootstrapper::TearDownExtensions();
+   ElementsAccessor::TearDown();
+   RegisteredExtension::UnregisterAll();
+-  Isolate::GlobalTearDown();
+   sampler::Sampler::TearDown();
+   FlagList::ResetAllFlags();  // Frees memory held by string arguments.
+ }

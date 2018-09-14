@@ -1,0 +1,1008 @@
+From 29409d7906f3e434562c492493e7299a64ac0608 Mon Sep 17 00:00:00 2001
+From: Sigurd Schneider <sigurds@chromium.org>
+Date: Thu, 26 Apr 2018 18:54:18 +0200
+Subject: [PATCH] Version 6.7.288.19 (cherry-pick)
+
+Merged a2126f027128df6144d83db09cd841799c6b73dd
+
+Reland "[builtins] Separate species protectors for Array, TypedArray, Promise"
+
+TBR=bmeurer@chromium.org, hablich@chromium.org
+
+Bug: chromium:835347
+Cq-Include-Trybots: luci.chromium.try:linux_chromium_rel_ng
+Change-Id: Id2ff04fb9e923ae6532d8800c2d9c770cfd945a9
+Reviewed-on: https://chromium-review.googlesource.com/1030553
+Reviewed-by: Sigurd Schneider <sigurds@chromium.org>
+Cr-Commit-Position: refs/branch-heads/6.7@{#36}
+Cr-Branched-From: 8457e810efd34381448d51d93f50079cf1f6a812-refs/heads/6.7.288@{#2}
+Cr-Branched-From: e921be5c4f2c6407936bde750992dedbf47c1016-refs/heads/master@{#52547}
+(cherry picked from commit 2eb23a17cc9af7fb9c7a64d0c9c794772642d77d)
+---
+ src/builtins/builtins-array-gen.cc                 |  6 +-
+ src/builtins/builtins-array.cc                     |  4 +-
+ src/builtins/builtins-promise-gen.cc               |  4 +-
+ src/builtins/builtins-typedarray-gen.cc            |  2 +-
+ src/code-stub-assembler.cc                         | 20 ++++-
+ src/code-stub-assembler.h                          | 94 ++++++++++++----------
+ src/compiler/js-call-reducer.cc                    | 24 +++---
+ src/heap/heap.h                                    |  8 +-
+ src/heap/setup-heap-internal.cc                    | 10 ++-
+ src/isolate-inl.h                                  | 16 +++-
+ src/isolate.cc                                     | 27 +++++--
+ src/isolate.h                                      |  8 +-
+ src/lookup.cc                                      | 64 ++++++++++-----
+ src/objects.cc                                     |  2 +-
+ src/runtime/runtime-array.cc                       |  2 +-
+ src/runtime/runtime-test.cc                        | 17 +++-
+ src/runtime/runtime.h                              |  4 +-
+ test/cctest/test-typedarrays.cc                    |  6 +-
+ .../es6/array-species-constructor-accessor.js      |  2 +-
+ .../es6/array-species-constructor-delete.js        |  2 +-
+ test/mjsunit/es6/array-species-constructor.js      |  2 +-
+ test/mjsunit/es6/array-species-delete.js           |  2 +-
+ test/mjsunit/es6/array-species-modified.js         |  2 +-
+ .../es6/array-species-parent-constructor.js        |  2 +-
+ test/mjsunit/es6/array-species-proto.js            |  2 +-
+ test/mjsunit/harmony/regexp-named-captures.js      | 22 ++---
+ test/mjsunit/keyed-store-generic.js                |  4 +-
+ tools/v8heapconst.py                               | 57 ++++++-------
+ 28 files changed, 263 insertions(+), 152 deletions(-)
+
+diff --git a/src/builtins/builtins-array-gen.cc b/src/builtins/builtins-array-gen.cc
+index 52a6222882..e44f6cddcc 100644
+--- a/src/builtins/builtins-array-gen.cc
++++ b/src/builtins/builtins-array-gen.cc
+@@ -807,7 +807,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
+     GotoIfNot(IsPrototypeInitialArrayPrototype(context(), original_map),
+               &runtime);
+ 
+-    Node* species_protector = SpeciesProtectorConstant();
++    Node* species_protector = ArraySpeciesProtectorConstant();
+     Node* value =
+         LoadObjectField(species_protector, PropertyCell::kValueOffset);
+     TNode<Smi> const protector_invalid =
+@@ -853,7 +853,7 @@ Node* ArrayBuiltinsAssembler::FindProcessor(Node* k_value, Node* k) {
+     GotoIfNot(IsPrototypeInitialArrayPrototype(context(), original_map),
+               &runtime);
+ 
+-    Node* species_protector = SpeciesProtectorConstant();
++    Node* species_protector = ArraySpeciesProtectorConstant();
+     Node* value =
+         LoadObjectField(species_protector, PropertyCell::kValueOffset);
+     Node* const protector_invalid = SmiConstant(Isolate::kProtectorInvalid);
+@@ -1146,7 +1146,7 @@ class ArrayPrototypeSliceCodeStubAssembler : public CodeStubAssembler {
+ 
+     GotoIf(IsNoElementsProtectorCellInvalid(), slow);
+ 
+-    GotoIf(IsSpeciesProtectorCellInvalid(), slow);
++    GotoIf(IsArraySpeciesProtectorCellInvalid(), slow);
+ 
+     // Bailout if receiver has slow elements.
+     Node* elements_kind = LoadMapElementsKind(map);
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 7e3f948cbe..15a77e5eae 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -248,7 +248,7 @@ BUILTIN(ArraySplice) {
+           // If this is a subclass of Array, then call out to JS.
+           !Handle<JSArray>::cast(receiver)->HasArrayPrototype(isolate) ||
+           // If anything with @@species has been messed with, call out to JS.
+-          !isolate->IsSpeciesLookupChainIntact())) {
++          !isolate->IsArraySpeciesLookupChainIntact())) {
+     return CallJsIntrinsic(isolate, isolate->array_splice(), args);
+   }
+   Handle<JSArray> array = Handle<JSArray>::cast(receiver);
+@@ -1118,7 +1118,7 @@ BUILTIN(ArrayConcat) {
+   // Avoid a real species read to avoid extra lookups to the array constructor
+   if (V8_LIKELY(receiver->IsJSArray() &&
+                 Handle<JSArray>::cast(receiver)->HasArrayPrototype(isolate) &&
+-                isolate->IsSpeciesLookupChainIntact())) {
++                isolate->IsArraySpeciesLookupChainIntact())) {
+     if (Fast_ArrayConcat(isolate, &args).ToHandle(&result_array)) {
+       return *result_array;
+     }
+diff --git a/src/builtins/builtins-promise-gen.cc b/src/builtins/builtins-promise-gen.cc
+index 032d0ef100..4d61f3eada 100644
+--- a/src/builtins/builtins-promise-gen.cc
++++ b/src/builtins/builtins-promise-gen.cc
+@@ -536,7 +536,7 @@ void PromiseBuiltinsAssembler::BranchIfPromiseSpeciesLookupChainIntact(
+   GotoIfForceSlowPath(if_slow);
+   GotoIfNot(WordEqual(LoadMapPrototype(promise_map), promise_prototype),
+             if_slow);
+-  Branch(IsSpeciesProtectorCellInvalid(), if_slow, if_fast);
++  Branch(IsPromiseSpeciesProtectorCellInvalid(), if_slow, if_fast);
+ }
+ 
+ void PromiseBuiltinsAssembler::BranchIfPromiseThenLookupChainIntact(
+@@ -1174,7 +1174,7 @@ TF_BUILTIN(PromiseResolve, PromiseBuiltinsAssembler) {
+       LoadContextElement(native_context, Context::PROMISE_FUNCTION_INDEX);
+   GotoIfNot(WordEqual(LoadMapPrototype(value_map), promise_prototype),
+             &if_slow_constructor);
+-  GotoIf(IsSpeciesProtectorCellInvalid(), &if_slow_constructor);
++  GotoIf(IsPromiseSpeciesProtectorCellInvalid(), &if_slow_constructor);
+ 
+   // If the {constructor} is the Promise function, we just immediately
+   // return the {value} here and don't bother wrapping it into a
+diff --git a/src/builtins/builtins-typedarray-gen.cc b/src/builtins/builtins-typedarray-gen.cc
+index 2a4f23b003..2316c7e8ca 100644
+--- a/src/builtins/builtins-typedarray-gen.cc
++++ b/src/builtins/builtins-typedarray-gen.cc
+@@ -829,7 +829,7 @@ TNode<Object> TypedArrayBuiltinsAssembler::TypedArraySpeciesConstructor(
+   var_constructor = default_constructor;
+   Node* map = LoadMap(exemplar);
+   GotoIfNot(IsPrototypeTypedArrayPrototype(context, map), &slow);
+-  Branch(IsSpeciesProtectorCellInvalid(), &slow, &done);
++  Branch(IsTypedArraySpeciesProtectorCellInvalid(), &slow, &done);
+ 
+   BIND(&slow);
+   var_constructor =
+diff --git a/src/code-stub-assembler.cc b/src/code-stub-assembler.cc
+index d3c81d0e81..f1ac210ce7 100644
+--- a/src/code-stub-assembler.cc
++++ b/src/code-stub-assembler.cc
+@@ -997,7 +997,7 @@ void CodeStubAssembler::BranchIfFastJSArray(Node* object, Node* context,
+ void CodeStubAssembler::BranchIfFastJSArrayForCopy(Node* object, Node* context,
+                                                    Label* if_true,
+                                                    Label* if_false) {
+-  GotoIf(IsSpeciesProtectorCellInvalid(), if_false);
++  GotoIf(IsArraySpeciesProtectorCellInvalid(), if_false);
+   BranchIfFastJSArray(object, context, if_true, if_false);
+ }
+ 
+@@ -4354,9 +4354,23 @@ Node* CodeStubAssembler::IsPromiseThenProtectorCellInvalid() {
+   return WordEqual(cell_value, invalid);
+ }
+ 
+-Node* CodeStubAssembler::IsSpeciesProtectorCellInvalid() {
++Node* CodeStubAssembler::IsArraySpeciesProtectorCellInvalid() {
+   Node* invalid = SmiConstant(Isolate::kProtectorInvalid);
+-  Node* cell = LoadRoot(Heap::kSpeciesProtectorRootIndex);
++  Node* cell = LoadRoot(Heap::kArraySpeciesProtectorRootIndex);
++  Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
++  return WordEqual(cell_value, invalid);
++}
++
++Node* CodeStubAssembler::IsTypedArraySpeciesProtectorCellInvalid() {
++  Node* invalid = SmiConstant(Isolate::kProtectorInvalid);
++  Node* cell = LoadRoot(Heap::kTypedArraySpeciesProtectorRootIndex);
++  Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
++  return WordEqual(cell_value, invalid);
++}
++
++Node* CodeStubAssembler::IsPromiseSpeciesProtectorCellInvalid() {
++  Node* invalid = SmiConstant(Isolate::kProtectorInvalid);
++  Node* cell = LoadRoot(Heap::kPromiseSpeciesProtectorRootIndex);
+   Node* cell_value = LoadObjectField(cell, PropertyCell::kValueOffset);
+   return WordEqual(cell_value, invalid);
+ }
+diff --git a/src/code-stub-assembler.h b/src/code-stub-assembler.h
+index 8fca0b667f..47394a56ae 100644
+--- a/src/code-stub-assembler.h
++++ b/src/code-stub-assembler.h
+@@ -22,48 +22,54 @@ class StubCache;
+ 
+ enum class PrimitiveType { kBoolean, kNumber, kString, kSymbol };
+ 
+-#define HEAP_CONSTANT_LIST(V)                                                 \
+-  V(AccessorInfoMap, accessor_info_map, AccessorInfoMap)                      \
+-  V(AccessorPairMap, accessor_pair_map, AccessorPairMap)                      \
+-  V(AllocationSiteMap, allocation_site_map, AllocationSiteMap)                \
+-  V(BooleanMap, boolean_map, BooleanMap)                                      \
+-  V(CodeMap, code_map, CodeMap)                                               \
+-  V(EmptyPropertyDictionary, empty_property_dictionary,                       \
+-    EmptyPropertyDictionary)                                                  \
+-  V(EmptyFixedArray, empty_fixed_array, EmptyFixedArray)                      \
+-  V(EmptySlowElementDictionary, empty_slow_element_dictionary,                \
+-    EmptySlowElementDictionary)                                               \
+-  V(empty_string, empty_string, EmptyString)                                  \
+-  V(EmptyWeakCell, empty_weak_cell, EmptyWeakCell)                            \
+-  V(FalseValue, false_value, False)                                           \
+-  V(FeedbackVectorMap, feedback_vector_map, FeedbackVectorMap)                \
+-  V(FixedArrayMap, fixed_array_map, FixedArrayMap)                            \
+-  V(FixedCOWArrayMap, fixed_cow_array_map, FixedCOWArrayMap)                  \
+-  V(FixedDoubleArrayMap, fixed_double_array_map, FixedDoubleArrayMap)         \
+-  V(FunctionTemplateInfoMap, function_template_info_map,                      \
+-    FunctionTemplateInfoMap)                                                  \
+-  V(GlobalPropertyCellMap, global_property_cell_map, PropertyCellMap)         \
+-  V(has_instance_symbol, has_instance_symbol, HasInstanceSymbol)              \
+-  V(HeapNumberMap, heap_number_map, HeapNumberMap)                            \
+-  V(length_string, length_string, LengthString)                               \
+-  V(ManyClosuresCellMap, many_closures_cell_map, ManyClosuresCellMap)         \
+-  V(MetaMap, meta_map, MetaMap)                                               \
+-  V(MinusZeroValue, minus_zero_value, MinusZero)                              \
+-  V(MutableHeapNumberMap, mutable_heap_number_map, MutableHeapNumberMap)      \
+-  V(NanValue, nan_value, Nan)                                                 \
+-  V(NoClosuresCellMap, no_closures_cell_map, NoClosuresCellMap)               \
+-  V(NullValue, null_value, Null)                                              \
+-  V(OneClosureCellMap, one_closure_cell_map, OneClosureCellMap)               \
+-  V(prototype_string, prototype_string, PrototypeString)                      \
+-  V(SpeciesProtector, species_protector, SpeciesProtector)                    \
+-  V(StoreHandler0Map, store_handler0_map, StoreHandler0Map)                   \
+-  V(SymbolMap, symbol_map, SymbolMap)                                         \
+-  V(TheHoleValue, the_hole_value, TheHole)                                    \
+-  V(TrueValue, true_value, True)                                              \
+-  V(Tuple2Map, tuple2_map, Tuple2Map)                                         \
+-  V(Tuple3Map, tuple3_map, Tuple3Map)                                         \
+-  V(UndefinedValue, undefined_value, Undefined)                               \
+-  V(WeakCellMap, weak_cell_map, WeakCellMap)                                  \
++#define HEAP_CONSTANT_LIST(V)                                              \
++  V(AccessorInfoMap, accessor_info_map, AccessorInfoMap)                   \
++  V(AccessorPairMap, accessor_pair_map, AccessorPairMap)                   \
++  V(AllocationSiteMap, allocation_site_map, AllocationSiteMap)             \
++  V(BooleanMap, boolean_map, BooleanMap)                                   \
++  V(CodeMap, code_map, CodeMap)                                            \
++  V(EmptyPropertyDictionary, empty_property_dictionary,                    \
++    EmptyPropertyDictionary)                                               \
++  V(EmptyFixedArray, empty_fixed_array, EmptyFixedArray)                   \
++  V(EmptySlowElementDictionary, empty_slow_element_dictionary,             \
++    EmptySlowElementDictionary)                                            \
++  V(empty_string, empty_string, EmptyString)                               \
++  V(EmptyWeakCell, empty_weak_cell, EmptyWeakCell)                         \
++  V(FalseValue, false_value, False)                                        \
++  V(FeedbackVectorMap, feedback_vector_map, FeedbackVectorMap)             \
++  V(FixedArrayMap, fixed_array_map, FixedArrayMap)                         \
++  V(FixedCOWArrayMap, fixed_cow_array_map, FixedCOWArrayMap)               \
++  V(FixedDoubleArrayMap, fixed_double_array_map, FixedDoubleArrayMap)      \
++  V(FunctionTemplateInfoMap, function_template_info_map,                   \
++    FunctionTemplateInfoMap)                                               \
++  V(GlobalPropertyCellMap, global_property_cell_map, PropertyCellMap)      \
++  V(has_instance_symbol, has_instance_symbol, HasInstanceSymbol)           \
++  V(HeapNumberMap, heap_number_map, HeapNumberMap)                         \
++  V(iterator_symbol, iterator_symbol, IteratorSymbol)                      \
++  V(length_string, length_string, LengthString)                            \
++  V(ManyClosuresCellMap, many_closures_cell_map, ManyClosuresCellMap)      \
++  V(MetaMap, meta_map, MetaMap)                                            \
++  V(MinusZeroValue, minus_zero_value, MinusZero)                           \
++  V(MutableHeapNumberMap, mutable_heap_number_map, MutableHeapNumberMap)   \
++  V(NanValue, nan_value, Nan)                                              \
++  V(NoClosuresCellMap, no_closures_cell_map, NoClosuresCellMap)            \
++  V(NullValue, null_value, Null)                                           \
++  V(OneClosureCellMap, one_closure_cell_map, OneClosureCellMap)            \
++  V(prototype_string, prototype_string, PrototypeString)                   \
++  V(ArraySpeciesProtector, array_species_protector, ArraySpeciesProtector) \
++  V(TypedArraySpeciesProtector, typed_array_species_protector,             \
++    TypedArraySpeciesProtector)                                            \
++  V(PromiseSpeciesProtector, promise_species_protector,                    \
++    PromiseSpeciesProtector)                                               \
++  V(StoreHandler0Map, store_handler0_map, StoreHandler0Map)                \
++  V(SymbolMap, symbol_map, SymbolMap)                                      \
++  V(TheHoleValue, the_hole_value, TheHole)                                 \
++  V(TransitionArrayMap, transition_array_map, TransitionArrayMap)          \
++  V(TrueValue, true_value, True)                                           \
++  V(Tuple2Map, tuple2_map, Tuple2Map)                                      \
++  V(Tuple3Map, tuple3_map, Tuple3Map)                                      \
++  V(UndefinedValue, undefined_value, Undefined)                            \
++  V(WeakCellMap, weak_cell_map, WeakCellMap)                               \
+   V(SharedFunctionInfoMap, shared_function_info_map, SharedFunctionInfoMap)
+ 
+ // Returned from IteratorBuiltinsAssembler::GetIterator(). Struct is declared
+@@ -1187,7 +1193,9 @@ class V8_EXPORT_PRIVATE CodeStubAssembler : public compiler::CodeAssembler {
+   }
+ 
+   Node* IsPromiseThenProtectorCellInvalid();
+-  Node* IsSpeciesProtectorCellInvalid();
++  Node* IsArraySpeciesProtectorCellInvalid();
++  Node* IsTypedArraySpeciesProtectorCellInvalid();
++  Node* IsPromiseSpeciesProtectorCellInvalid();
+ 
+   // True iff |object| is a Smi or a HeapNumber.
+   Node* IsNumber(Node* object);
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 417191c680..66ef88e650 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -1453,7 +1453,7 @@ Reduction JSCallReducer::ReduceArrayMap(Node* node,
+   if (result == NodeProperties::kNoReceiverMaps) return NoChange();
+ 
+   // Ensure that any changes to the Array species constructor cause deopt.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsArraySpeciesLookupChainIntact()) return NoChange();
+ 
+   const ElementsKind kind = receiver_maps[0]->elements_kind();
+ 
+@@ -1464,7 +1464,7 @@ Reduction JSCallReducer::ReduceArrayMap(Node* node,
+     if (receiver_map->elements_kind() != kind) return NoChange();
+   }
+ 
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->array_species_protector());
+ 
+   Handle<JSFunction> handle_constructor(
+       JSFunction::cast(
+@@ -1653,7 +1653,7 @@ Reduction JSCallReducer::ReduceArrayFilter(Node* node,
+   if (result == NodeProperties::kNoReceiverMaps) return NoChange();
+ 
+   // And ensure that any changes to the Array species constructor cause deopt.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsArraySpeciesLookupChainIntact()) return NoChange();
+ 
+   const ElementsKind kind = receiver_maps[0]->elements_kind();
+   // The output array is packed (filter doesn't visit holes).
+@@ -1668,7 +1668,7 @@ Reduction JSCallReducer::ReduceArrayFilter(Node* node,
+     if (receiver_map->elements_kind() != kind) return NoChange();
+   }
+ 
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->array_species_protector());
+ 
+   Handle<Map> initial_map(
+       Map::cast(native_context()->GetInitialJSArrayMap(packed_kind)));
+@@ -2245,7 +2245,7 @@ Reduction JSCallReducer::ReduceArrayEvery(Node* node,
+   if (result == NodeProperties::kNoReceiverMaps) return NoChange();
+ 
+   // And ensure that any changes to the Array species constructor cause deopt.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsArraySpeciesLookupChainIntact()) return NoChange();
+ 
+   const ElementsKind kind = receiver_maps[0]->elements_kind();
+ 
+@@ -2256,7 +2256,7 @@ Reduction JSCallReducer::ReduceArrayEvery(Node* node,
+     if (receiver_map->elements_kind() != kind) return NoChange();
+   }
+ 
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->array_species_protector());
+ 
+   // If we have unreliable maps, we need a map check.
+   if (result == NodeProperties::kUnreliableReceiverMaps) {
+@@ -2465,7 +2465,7 @@ Reduction JSCallReducer::ReduceArraySome(Node* node,
+   if (result == NodeProperties::kNoReceiverMaps) return NoChange();
+ 
+   // And ensure that any changes to the Array species constructor cause deopt.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsArraySpeciesLookupChainIntact()) return NoChange();
+ 
+   if (receiver_maps.size() == 0) return NoChange();
+ 
+@@ -2478,7 +2478,7 @@ Reduction JSCallReducer::ReduceArraySome(Node* node,
+     if (receiver_map->elements_kind() != kind) return NoChange();
+   }
+ 
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->array_species_protector());
+ 
+   Node* k = jsgraph()->ZeroConstant();
+ 
+@@ -4997,7 +4997,7 @@ Reduction JSCallReducer::ReducePromisePrototypeFinally(Node* node) {
+   // lookup of "constructor" on JSPromise instances, whoch [[Prototype]] is
+   // the initial %PromisePrototype%, and the Symbol.species lookup on the
+   // %PromisePrototype%.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsPromiseSpeciesLookupChainIntact()) return NoChange();
+ 
+   // Check if we know something about {receiver} already.
+   ZoneHandleSet<Map> receiver_maps;
+@@ -5018,7 +5018,7 @@ Reduction JSCallReducer::ReducePromisePrototypeFinally(Node* node) {
+   // Add a code dependency on the necessary protectors.
+   dependencies()->AssumePropertyCell(factory()->promise_hook_protector());
+   dependencies()->AssumePropertyCell(factory()->promise_then_protector());
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->promise_species_protector());
+ 
+   // If the {receiver_maps} aren't reliable, we need to repeat the
+   // map check here, guarded by the CALL_IC.
+@@ -5144,7 +5144,7 @@ Reduction JSCallReducer::ReducePromisePrototypeThen(Node* node) {
+   // guards the "constructor" lookup on all JSPromise instances and the
+   // initial Promise.prototype, as well as the  Symbol.species lookup on
+   // the Promise constructor.
+-  if (!isolate()->IsSpeciesLookupChainIntact()) return NoChange();
++  if (!isolate()->IsPromiseSpeciesLookupChainIntact()) return NoChange();
+ 
+   // Check if we know something about {receiver} already.
+   ZoneHandleSet<Map> receiver_maps;
+@@ -5166,7 +5166,7 @@ Reduction JSCallReducer::ReducePromisePrototypeThen(Node* node) {
+ 
+   // Add a code dependency on the necessary protectors.
+   dependencies()->AssumePropertyCell(factory()->promise_hook_protector());
+-  dependencies()->AssumePropertyCell(factory()->species_protector());
++  dependencies()->AssumePropertyCell(factory()->promise_species_protector());
+ 
+   // If the {receiver_maps} aren't reliable, we need to repeat the
+   // map check here, guarded by the CALL_IC.
+diff --git a/src/heap/heap.h b/src/heap/heap.h
+index 63bcfb2990..2bb2efc1be 100644
+--- a/src/heap/heap.h
++++ b/src/heap/heap.h
+@@ -213,7 +213,9 @@ using v8::MemoryPressureLevel;
+   V(Cell, array_constructor_protector, ArrayConstructorProtector)              \
+   V(PropertyCell, no_elements_protector, NoElementsProtector)                  \
+   V(Cell, is_concat_spreadable_protector, IsConcatSpreadableProtector)         \
+-  V(PropertyCell, species_protector, SpeciesProtector)                         \
++  V(PropertyCell, array_species_protector, ArraySpeciesProtector)              \
++  V(PropertyCell, typed_array_species_protector, TypedArraySpeciesProtector)   \
++  V(PropertyCell, promise_species_protector, PromiseSpeciesProtector)          \
+   V(Cell, string_length_protector, StringLengthProtector)                      \
+   V(Cell, fast_array_iteration_protector, FastArrayIterationProtector)         \
+   V(PropertyCell, array_iterator_protector, ArrayIteratorProtector)            \
+@@ -378,7 +380,9 @@ using v8::MemoryPressureLevel;
+   V(SloppyArgumentsElementsMap)         \
+   V(SmallOrderedHashMapMap)             \
+   V(SmallOrderedHashSetMap)             \
+-  V(SpeciesProtector)                   \
++  V(ArraySpeciesProtector)              \
++  V(TypedArraySpeciesProtector)         \
++  V(PromiseSpeciesProtector)            \
+   V(StaleRegister)                      \
+   V(StringLengthProtector)              \
+   V(StringTableMap)                     \
+diff --git a/src/heap/setup-heap-internal.cc b/src/heap/setup-heap-internal.cc
+index 8a7aca1694..f854594daa 100644
+--- a/src/heap/setup-heap-internal.cc
++++ b/src/heap/setup-heap-internal.cc
+@@ -633,7 +633,15 @@ void Heap::CreateInitialObjects() {
+ 
+   cell = factory->NewPropertyCell(factory->empty_string());
+   cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
+-  set_species_protector(*cell);
++  set_array_species_protector(*cell);
++
++  cell = factory->NewPropertyCell(factory->empty_string());
++  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
++  set_typed_array_species_protector(*cell);
++
++  cell = factory->NewPropertyCell(factory->empty_string());
++  cell->set_value(Smi::FromInt(Isolate::kProtectorValid));
++  set_promise_species_protector(*cell);
+ 
+   Handle<Cell> string_length_overflow_cell = factory->NewCell(
+       handle(Smi::FromInt(Isolate::kProtectorValid), isolate()));
+diff --git a/src/isolate-inl.h b/src/isolate-inl.h
+index 9da1aa4110..7b4df21ad3 100644
+--- a/src/isolate-inl.h
++++ b/src/isolate-inl.h
+@@ -131,7 +131,7 @@ bool Isolate::IsArrayConstructorIntact() {
+   return array_constructor_cell->value() == Smi::FromInt(kProtectorValid);
+ }
+ 
+-bool Isolate::IsSpeciesLookupChainIntact() {
++bool Isolate::IsArraySpeciesLookupChainIntact() {
+   // Note: It would be nice to have debug checks to make sure that the
+   // species protector is accurate, but this would be hard to do for most of
+   // what the protector stands for:
+@@ -144,7 +144,19 @@ bool Isolate::IsSpeciesLookupChainIntact() {
+   // done here. In place, there are mjsunit tests harmony/array-species* which
+   // ensure that behavior is correct in various invalid protector cases.
+ 
+-  PropertyCell* species_cell = heap()->species_protector();
++  PropertyCell* species_cell = heap()->array_species_protector();
++  return species_cell->value()->IsSmi() &&
++         Smi::ToInt(species_cell->value()) == kProtectorValid;
++}
++
++bool Isolate::IsTypedArraySpeciesLookupChainIntact() {
++  PropertyCell* species_cell = heap()->typed_array_species_protector();
++  return species_cell->value()->IsSmi() &&
++         Smi::ToInt(species_cell->value()) == kProtectorValid;
++}
++
++bool Isolate::IsPromiseSpeciesLookupChainIntact() {
++  PropertyCell* species_cell = heap()->promise_species_protector();
+   return species_cell->value()->IsSmi() &&
+          Smi::ToInt(species_cell->value()) == kProtectorValid;
+ }
+diff --git a/src/isolate.cc b/src/isolate.cc
+index 21d932efea..7ed8e045b1 100644
+--- a/src/isolate.cc
++++ b/src/isolate.cc
+@@ -3512,11 +3512,28 @@ void Isolate::InvalidateArrayConstructorProtector() {
+   DCHECK(!IsArrayConstructorIntact());
+ }
+ 
+-void Isolate::InvalidateSpeciesProtector() {
+-  DCHECK(factory()->species_protector()->value()->IsSmi());
+-  DCHECK(IsSpeciesLookupChainIntact());
+-  factory()->species_protector()->set_value(Smi::FromInt(kProtectorInvalid));
+-  DCHECK(!IsSpeciesLookupChainIntact());
++void Isolate::InvalidateArraySpeciesProtector() {
++  DCHECK(factory()->array_species_protector()->value()->IsSmi());
++  DCHECK(IsArraySpeciesLookupChainIntact());
++  factory()->array_species_protector()->set_value(
++      Smi::FromInt(kProtectorInvalid));
++  DCHECK(!IsArraySpeciesLookupChainIntact());
++}
++
++void Isolate::InvalidateTypedArraySpeciesProtector() {
++  DCHECK(factory()->typed_array_species_protector()->value()->IsSmi());
++  DCHECK(IsTypedArraySpeciesLookupChainIntact());
++  factory()->typed_array_species_protector()->set_value(
++      Smi::FromInt(kProtectorInvalid));
++  DCHECK(!IsTypedArraySpeciesLookupChainIntact());
++}
++
++void Isolate::InvalidatePromiseSpeciesProtector() {
++  DCHECK(factory()->promise_species_protector()->value()->IsSmi());
++  DCHECK(IsPromiseSpeciesLookupChainIntact());
++  factory()->promise_species_protector()->set_value(
++      Smi::FromInt(kProtectorInvalid));
++  DCHECK(!IsPromiseSpeciesLookupChainIntact());
+ }
+ 
+ void Isolate::InvalidateStringLengthOverflowProtector() {
+diff --git a/src/isolate.h b/src/isolate.h
+index 3f03e65fea..61814f6605 100644
+--- a/src/isolate.h
++++ b/src/isolate.h
+@@ -1076,7 +1076,9 @@ class Isolate {
+   bool IsNoElementsProtectorIntact(Context* context);
+   bool IsNoElementsProtectorIntact();
+ 
+-  inline bool IsSpeciesLookupChainIntact();
++  inline bool IsArraySpeciesLookupChainIntact();
++  inline bool IsTypedArraySpeciesLookupChainIntact();
++  inline bool IsPromiseSpeciesLookupChainIntact();
+   bool IsIsConcatSpreadableLookupChainIntact();
+   bool IsIsConcatSpreadableLookupChainIntact(JSReceiver* receiver);
+   inline bool IsStringLengthOverflowIntact();
+@@ -1112,7 +1114,9 @@ class Isolate {
+     UpdateNoElementsProtectorOnSetElement(object);
+   }
+   void InvalidateArrayConstructorProtector();
+-  void InvalidateSpeciesProtector();
++  void InvalidateArraySpeciesProtector();
++  void InvalidateTypedArraySpeciesProtector();
++  void InvalidatePromiseSpeciesProtector();
+   void InvalidateIsConcatSpreadableProtector();
+   void InvalidateStringLengthOverflowProtector();
+   void InvalidateArrayIteratorProtector();
+diff --git a/src/lookup.cc b/src/lookup.cc
+index 58ad9318dd..6de87cbbe9 100644
+--- a/src/lookup.cc
++++ b/src/lookup.cc
+@@ -260,14 +260,27 @@ void LookupIterator::InternalUpdateProtector() {
+   if (isolate_->bootstrapper()->IsActive()) return;
+ 
+   if (*name_ == heap()->constructor_string()) {
+-    if (!isolate_->IsSpeciesLookupChainIntact()) return;
++    if (!isolate_->IsArraySpeciesLookupChainIntact() &&
++        !isolate_->IsTypedArraySpeciesLookupChainIntact() &&
++        !isolate_->IsPromiseSpeciesLookupChainIntact())
++      return;
+     // Setting the constructor property could change an instance's @@species
+-    if (holder_->IsJSArray() || holder_->IsJSPromise() ||
+-        holder_->IsJSTypedArray()) {
++    if (holder_->IsJSArray()) {
++      if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
+       isolate_->CountUsage(
+           v8::Isolate::UseCounterFeature::kArrayInstanceConstructorModified);
+-      isolate_->InvalidateSpeciesProtector();
+-    } else if (holder_->map()->is_prototype_map()) {
++      isolate_->InvalidateArraySpeciesProtector();
++      return;
++    } else if (holder_->IsJSPromise()) {
++      if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
++      isolate_->InvalidatePromiseSpeciesProtector();
++      return;
++    } else if (holder_->IsJSTypedArray()) {
++      if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
++      isolate_->InvalidateTypedArraySpeciesProtector();
++      return;
++    }
++    if (holder_->map()->is_prototype_map()) {
+       DisallowHeapAllocation no_gc;
+       // Setting the constructor of Array.prototype, Promise.prototype or
+       // %TypedArray%.prototype of any realm also needs to invalidate the
+@@ -276,26 +289,41 @@ void LookupIterator::InternalUpdateProtector() {
+       // have different prototypes for each type, and their parent prototype is
+       // pointing the same TYPED_ARRAY_PROTOTYPE.
+       if (isolate_->IsInAnyContext(*holder_,
+-                                   Context::INITIAL_ARRAY_PROTOTYPE_INDEX) ||
+-          isolate_->IsInAnyContext(*holder_,
+-                                   Context::PROMISE_PROTOTYPE_INDEX) ||
+-          isolate_->IsInAnyContext(holder_->map()->prototype(),
+-                                   Context::TYPED_ARRAY_PROTOTYPE_INDEX)) {
+-        isolate_->CountUsage(v8::Isolate::UseCounterFeature::
+-                                 kArrayPrototypeConstructorModified);
+-        isolate_->InvalidateSpeciesProtector();
++                                   Context::INITIAL_ARRAY_PROTOTYPE_INDEX)) {
++        if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
++        isolate_->CountUsage(
++            v8::Isolate::UseCounterFeature::kArrayPrototypeConstructorModified);
++        isolate_->InvalidateArraySpeciesProtector();
++      } else if (isolate_->IsInAnyContext(*holder_,
++                                          Context::PROMISE_PROTOTYPE_INDEX)) {
++        if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
++        isolate_->InvalidatePromiseSpeciesProtector();
++      } else if (isolate_->IsInAnyContext(
++                     holder_->map()->prototype(),
++                     Context::TYPED_ARRAY_PROTOTYPE_INDEX)) {
++        if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
++        isolate_->InvalidateTypedArraySpeciesProtector();
+       }
+     }
+   } else if (*name_ == heap()->species_symbol()) {
+-    if (!isolate_->IsSpeciesLookupChainIntact()) return;
++    if (!isolate_->IsArraySpeciesLookupChainIntact() &&
++        !isolate_->IsTypedArraySpeciesLookupChainIntact() &&
++        !isolate_->IsPromiseSpeciesLookupChainIntact())
++      return;
+     // Setting the Symbol.species property of any Array, Promise or TypedArray
+     // constructor invalidates the @@species protector
+-    if (isolate_->IsInAnyContext(*holder_, Context::ARRAY_FUNCTION_INDEX) ||
+-        isolate_->IsInAnyContext(*holder_, Context::PROMISE_FUNCTION_INDEX) ||
+-        IsTypedArrayFunctionInAnyContext(isolate_, *holder_)) {
++    if (isolate_->IsInAnyContext(*holder_, Context::ARRAY_FUNCTION_INDEX)) {
++      if (!isolate_->IsArraySpeciesLookupChainIntact()) return;
+       isolate_->CountUsage(
+           v8::Isolate::UseCounterFeature::kArraySpeciesModified);
+-      isolate_->InvalidateSpeciesProtector();
++      isolate_->InvalidateArraySpeciesProtector();
++    } else if (isolate_->IsInAnyContext(*holder_,
++                                        Context::PROMISE_FUNCTION_INDEX)) {
++      if (!isolate_->IsPromiseSpeciesLookupChainIntact()) return;
++      isolate_->InvalidatePromiseSpeciesProtector();
++    } else if (IsTypedArrayFunctionInAnyContext(isolate_, *holder_)) {
++      if (!isolate_->IsTypedArraySpeciesLookupChainIntact()) return;
++      isolate_->InvalidateTypedArraySpeciesProtector();
+     }
+   } else if (*name_ == heap()->is_concat_spreadable_symbol()) {
+     if (!isolate_->IsIsConcatSpreadableLookupChainIntact()) return;
+diff --git a/src/objects.cc b/src/objects.cc
+index 9e80224d93..b2c2274fcd 100644
+--- a/src/objects.cc
++++ b/src/objects.cc
+@@ -2366,7 +2366,7 @@ MaybeHandle<Object> Object::ArraySpeciesConstructor(
+   Handle<Object> default_species = isolate->array_function();
+   if (original_array->IsJSArray() &&
+       Handle<JSArray>::cast(original_array)->HasArrayPrototype(isolate) &&
+-      isolate->IsSpeciesLookupChainIntact()) {
++      isolate->IsArraySpeciesLookupChainIntact()) {
+     return default_species;
+   }
+   Handle<Object> constructor = isolate->factory()->undefined_value();
+diff --git a/src/runtime/runtime-array.cc b/src/runtime/runtime-array.cc
+index 648606a274..f2f824ab21 100644
+--- a/src/runtime/runtime-array.cc
++++ b/src/runtime/runtime-array.cc
+@@ -391,7 +391,7 @@ RUNTIME_FUNCTION(Runtime_TrySliceSimpleNonFastElements) {
+   // implementation.
+   if (receiver->IsJSArray()) {
+     // This "fastish" path must make sure the destination array is a JSArray.
+-    if (!isolate->IsSpeciesLookupChainIntact() ||
++    if (!isolate->IsArraySpeciesLookupChainIntact() ||
+         !JSArray::cast(*receiver)->HasArrayPrototype(isolate)) {
+       return Smi::FromInt(0);
+     }
+diff --git a/src/runtime/runtime-test.cc b/src/runtime/runtime-test.cc
+index 6b2f3467fc..6192747ab2 100644
+--- a/src/runtime/runtime-test.cc
++++ b/src/runtime/runtime-test.cc
+@@ -839,11 +839,24 @@ TYPED_ARRAYS(FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION)
+ 
+ #undef FIXED_TYPED_ARRAYS_CHECK_RUNTIME_FUNCTION
+ 
++RUNTIME_FUNCTION(Runtime_ArraySpeciesProtector) {
++  SealHandleScope shs(isolate);
++  DCHECK_EQ(0, args.length());
++  return isolate->heap()->ToBoolean(isolate->IsArraySpeciesLookupChainIntact());
++}
+ 
+-RUNTIME_FUNCTION(Runtime_SpeciesProtector) {
++RUNTIME_FUNCTION(Runtime_TypedArraySpeciesProtector) {
+   SealHandleScope shs(isolate);
+   DCHECK_EQ(0, args.length());
+-  return isolate->heap()->ToBoolean(isolate->IsSpeciesLookupChainIntact());
++  return isolate->heap()->ToBoolean(
++      isolate->IsTypedArraySpeciesLookupChainIntact());
++}
++
++RUNTIME_FUNCTION(Runtime_PromiseSpeciesProtector) {
++  SealHandleScope shs(isolate);
++  DCHECK_EQ(0, args.length());
++  return isolate->heap()->ToBoolean(
++      isolate->IsPromiseSpeciesLookupChainIntact());
+ }
+ 
+ // Take a compiled wasm module, serialize it and copy the buffer into an array
+diff --git a/src/runtime/runtime.h b/src/runtime/runtime.h
+index 2bfd280803..b196da83b5 100644
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -587,7 +587,9 @@ namespace internal {
+   F(SetForceSlowPath, 1, 1)                   \
+   F(SetWasmCompileControls, 2, 1)             \
+   F(SetWasmInstantiateControls, 0, 1)         \
+-  F(SpeciesProtector, 0, 1)                   \
++  F(ArraySpeciesProtector, 0, 1)              \
++  F(TypedArraySpeciesProtector, 0, 1)         \
++  F(PromiseSpeciesProtector, 0, 1)            \
+   F(SystemBreak, 0, 1)                        \
+   F(TraceEnter, 0, 1)                         \
+   F(TraceExit, 1, 1)                          \
+diff --git a/test/cctest/test-typedarrays.cc b/test/cctest/test-typedarrays.cc
+index 7ec9197b65..bab6e0f2f6 100644
+--- a/test/cctest/test-typedarrays.cc
++++ b/test/cctest/test-typedarrays.cc
+@@ -117,12 +117,12 @@ void TestSpeciesProtector(char* code,
+ 
+       v8::internal::Isolate* i_isolate =
+           reinterpret_cast<v8::internal::Isolate*>(isolate);
+-      CHECK(i_isolate->IsSpeciesLookupChainIntact());
++      CHECK(i_isolate->IsTypedArraySpeciesLookupChainIntact());
+       CompileRun(code);
+       if (invalidates_species_protector) {
+-        CHECK(!i_isolate->IsSpeciesLookupChainIntact());
++        CHECK(!i_isolate->IsTypedArraySpeciesLookupChainIntact());
+       } else {
+-        CHECK(i_isolate->IsSpeciesLookupChainIntact());
++        CHECK(i_isolate->IsTypedArraySpeciesLookupChainIntact());
+       }
+ 
+       v8::Local<v8::Value> my_typed_array = CompileRun("MyTypedArray");
+diff --git a/test/mjsunit/es6/array-species-constructor-accessor.js b/test/mjsunit/es6/array-species-constructor-accessor.js
+index 7ebf328a8a..7185d98b58 100644
+--- a/test/mjsunit/es6/array-species-constructor-accessor.js
++++ b/test/mjsunit/es6/array-species-constructor-accessor.js
+@@ -18,7 +18,7 @@ assertEquals(1, x.concat([1])[0]);
+ class MyArray extends Array { }
+ 
+ Object.defineProperty(x, 'constructor', {get() { return MyArray; }});
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-constructor-delete.js b/test/mjsunit/es6/array-species-constructor-delete.js
+index fff22a2a8c..3b85d52565 100644
+--- a/test/mjsunit/es6/array-species-constructor-delete.js
++++ b/test/mjsunit/es6/array-species-constructor-delete.js
+@@ -19,7 +19,7 @@ class MyArray extends Array { }
+ 
+ Object.prototype.constructor = MyArray;
+ delete Array.prototype.constructor;
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-constructor.js b/test/mjsunit/es6/array-species-constructor.js
+index 0d888f46ee..07e897d458 100644
+--- a/test/mjsunit/es6/array-species-constructor.js
++++ b/test/mjsunit/es6/array-species-constructor.js
+@@ -18,7 +18,7 @@ assertEquals(1, x.concat([1])[0]);
+ class MyArray extends Array { }
+ 
+ x.constructor = MyArray;
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-delete.js b/test/mjsunit/es6/array-species-delete.js
+index 16a2fa26f9..2f0f50a1b2 100644
+--- a/test/mjsunit/es6/array-species-delete.js
++++ b/test/mjsunit/es6/array-species-delete.js
+@@ -19,7 +19,7 @@ class MyArray extends Array { }
+ 
+ Object.prototype[Symbol.species] = MyArray;
+ delete Array[Symbol.species];
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-modified.js b/test/mjsunit/es6/array-species-modified.js
+index 58feb31669..d5a707997a 100644
+--- a/test/mjsunit/es6/array-species-modified.js
++++ b/test/mjsunit/es6/array-species-modified.js
+@@ -18,7 +18,7 @@ assertEquals(1, x.concat([1])[0]);
+ class MyArray extends Array { }
+ 
+ Object.defineProperty(Array, Symbol.species, {value: MyArray});
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-parent-constructor.js b/test/mjsunit/es6/array-species-parent-constructor.js
+index b4fb1d56e3..8a861fb05d 100644
+--- a/test/mjsunit/es6/array-species-parent-constructor.js
++++ b/test/mjsunit/es6/array-species-parent-constructor.js
+@@ -18,7 +18,7 @@ assertEquals(1, x.concat([1])[0]);
+ class MyArray extends Array { }
+ 
+ Array.prototype.constructor = MyArray;
+-assertFalse(%SpeciesProtector());
++assertFalse(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/es6/array-species-proto.js b/test/mjsunit/es6/array-species-proto.js
+index 6b55881cd6..d8e2ae5ddd 100644
+--- a/test/mjsunit/es6/array-species-proto.js
++++ b/test/mjsunit/es6/array-species-proto.js
+@@ -18,7 +18,7 @@ assertEquals(1, x.concat([1])[0]);
+ class MyArray extends Array { }
+ 
+ x.__proto__ = MyArray.prototype;
+-assertTrue(%SpeciesProtector());
++assertTrue(%ArraySpeciesProtector());
+ 
+ assertEquals(MyArray, x.map(()=>{}).constructor);
+ assertEquals(MyArray, x.filter(()=>{}).constructor);
+diff --git a/test/mjsunit/harmony/regexp-named-captures.js b/test/mjsunit/harmony/regexp-named-captures.js
+index 72041b99bf..aab8393392 100644
+--- a/test/mjsunit/harmony/regexp-named-captures.js
++++ b/test/mjsunit/harmony/regexp-named-captures.js
+@@ -425,7 +425,7 @@ function toSlowMode(re) {
+ {
+   const re = /./;
+   const result = re.exec("a");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertTrue(result.hasOwnProperty('groups'));
+   assertArrayEquals(["a"], result);
+@@ -433,7 +433,7 @@ function toSlowMode(re) {
+   assertEquals(undefined, result.groups);
+ 
+   Array.prototype.groups = { a: "b" };
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals("$<a>", "a".replace(re, "$<a>"));
+   Array.prototype.groups = undefined;
+ }
+@@ -441,7 +441,7 @@ function toSlowMode(re) {
+ {
+   const re = toSlowMode(/./);
+   const result = re.exec("a");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertTrue(result.hasOwnProperty('groups'));
+   assertArrayEquals(["a"], result);
+@@ -449,7 +449,7 @@ function toSlowMode(re) {
+   assertEquals(undefined, result.groups);
+ 
+   Array.prototype.groups = { a: "b" };
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals("$<a>", "a".replace(re, "$<a>"));
+   Array.prototype.groups = undefined;
+ }
+@@ -457,7 +457,7 @@ function toSlowMode(re) {
+ {
+   const re = /(?<a>a).|(?<x>x)/;
+   const result = re.exec("ab");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertTrue(result.hasOwnProperty('groups'));
+   assertArrayEquals(["ab", "a", undefined], result);
+@@ -467,7 +467,7 @@ function toSlowMode(re) {
+   // a is a matched named capture, b is an unmatched named capture, and z
+   // is not a named capture.
+   Array.prototype.groups = { a: "b", x: "y", z: "z" };
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals("a", "ab".replace(re, "$<a>"));
+   assertEquals("", "ab".replace(re, "$<x>"));
+   assertEquals("", "ab".replace(re, "$<z>"));
+@@ -477,7 +477,7 @@ function toSlowMode(re) {
+ {
+   const re = toSlowMode(/(?<a>a).|(?<x>x)/);
+   const result = re.exec("ab");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertTrue(result.hasOwnProperty('groups'));
+   assertArrayEquals(["ab", "a", undefined], result);
+@@ -487,7 +487,7 @@ function toSlowMode(re) {
+   // a is a matched named capture, b is an unmatched named capture, and z
+   // is not a named capture.
+   Array.prototype.groups = { a: "b", x: "y", z: "z" };
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals("a", "ab".replace(re, "$<a>"));
+   assertEquals("", "ab".replace(re, "$<x>"));
+   assertEquals("", "ab".replace(re, "$<z>"));
+@@ -506,13 +506,13 @@ function toSlowMode(re) {
+ 
+   const re = new FakeRegExp();
+   const result = re.exec("ab");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertFalse(result.hasOwnProperty('groups'));
+ 
+   Array.prototype.groups = { a: "b" };
+   Array.prototype.groups.__proto__.b = "c";
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals("b", "ab".replace(re, "$<a>"));
+   assertEquals("c", "ab".replace(re, "$<b>"));
+   Array.prototype.groups = undefined;
+@@ -531,7 +531,7 @@ function toSlowMode(re) {
+ 
+   const re = new FakeRegExp();
+   const result = re.exec("ab");
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   assertEquals(result.__proto__, Array.prototype);
+   assertTrue(result.hasOwnProperty('groups'));
+   assertEquals({ a: "b" }, result.groups);
+diff --git a/test/mjsunit/keyed-store-generic.js b/test/mjsunit/keyed-store-generic.js
+index c2c48dd96d..e5d6ab41f2 100644
+--- a/test/mjsunit/keyed-store-generic.js
++++ b/test/mjsunit/keyed-store-generic.js
+@@ -16,7 +16,7 @@ f("make it generic", 0, 0);
+ 
+ (function TestSpeciesProtector() {
+   function MyArray() {}
+-  assertTrue(%SpeciesProtector());
++  assertTrue(%ArraySpeciesProtector());
+   f(Array.prototype, "constructor", MyArray);
+-  assertFalse(%SpeciesProtector());
++  assertFalse(%ArraySpeciesProtector());
+ })();
+diff --git a/tools/v8heapconst.py b/tools/v8heapconst.py
+index 5659cdd03c..b4a98dcc11 100644
+--- a/tools/v8heapconst.py
++++ b/tools/v8heapconst.py
+@@ -322,34 +322,35 @@ KNOWN_OBJECTS = {
+   ("OLD_SPACE", 0x02519): "TerminationException",
+   ("OLD_SPACE", 0x02579): "OptimizedOut",
+   ("OLD_SPACE", 0x025d1): "StaleRegister",
+-  ("OLD_SPACE", 0x02651): "EmptyByteArray",
+-  ("OLD_SPACE", 0x02661): "EmptyFixedUint8Array",
+-  ("OLD_SPACE", 0x02681): "EmptyFixedInt8Array",
+-  ("OLD_SPACE", 0x026a1): "EmptyFixedUint16Array",
+-  ("OLD_SPACE", 0x026c1): "EmptyFixedInt16Array",
+-  ("OLD_SPACE", 0x026e1): "EmptyFixedUint32Array",
+-  ("OLD_SPACE", 0x02701): "EmptyFixedInt32Array",
+-  ("OLD_SPACE", 0x02721): "EmptyFixedFloat32Array",
+-  ("OLD_SPACE", 0x02741): "EmptyFixedFloat64Array",
+-  ("OLD_SPACE", 0x02761): "EmptyFixedUint8ClampedArray",
+-  ("OLD_SPACE", 0x027c1): "EmptyScript",
+-  ("OLD_SPACE", 0x02849): "ManyClosuresCell",
+-  ("OLD_SPACE", 0x02859): "EmptySloppyArgumentsElements",
+-  ("OLD_SPACE", 0x02879): "EmptySlowElementDictionary",
+-  ("OLD_SPACE", 0x028c1): "EmptyOrderedHashMap",
+-  ("OLD_SPACE", 0x028e9): "EmptyOrderedHashSet",
+-  ("OLD_SPACE", 0x02911): "EmptyPropertyCell",
+-  ("OLD_SPACE", 0x02939): "EmptyWeakCell",
+-  ("OLD_SPACE", 0x029a9): "NoElementsProtector",
+-  ("OLD_SPACE", 0x029d1): "IsConcatSpreadableProtector",
+-  ("OLD_SPACE", 0x029e1): "SpeciesProtector",
+-  ("OLD_SPACE", 0x02a09): "StringLengthProtector",
+-  ("OLD_SPACE", 0x02a19): "FastArrayIterationProtector",
+-  ("OLD_SPACE", 0x02a29): "ArrayIteratorProtector",
+-  ("OLD_SPACE", 0x02a51): "ArrayBufferNeuteringProtector",
+-  ("OLD_SPACE", 0x02ac9): "InfinityValue",
+-  ("OLD_SPACE", 0x02ad9): "MinusZeroValue",
+-  ("OLD_SPACE", 0x02ae9): "MinusInfinityValue",
++  ("OLD_SPACE", 0x02661): "EmptyByteArray",
++  ("OLD_SPACE", 0x02681): "EmptyFixedUint8Array",
++  ("OLD_SPACE", 0x026a1): "EmptyFixedInt8Array",
++  ("OLD_SPACE", 0x026c1): "EmptyFixedUint16Array",
++  ("OLD_SPACE", 0x026e1): "EmptyFixedInt16Array",
++  ("OLD_SPACE", 0x02701): "EmptyFixedUint32Array",
++  ("OLD_SPACE", 0x02721): "EmptyFixedInt32Array",
++  ("OLD_SPACE", 0x02741): "EmptyFixedFloat32Array",
++  ("OLD_SPACE", 0x02761): "EmptyFixedFloat64Array",
++  ("OLD_SPACE", 0x02781): "EmptyFixedUint8ClampedArray",
++  ("OLD_SPACE", 0x027e1): "EmptyScript",
++  ("OLD_SPACE", 0x02879): "ManyClosuresCell",
++  ("OLD_SPACE", 0x02889): "EmptySloppyArgumentsElements",
++  ("OLD_SPACE", 0x028a9): "EmptySlowElementDictionary",
++  ("OLD_SPACE", 0x028f1): "EmptyOrderedHashMap",
++  ("OLD_SPACE", 0x02919): "EmptyOrderedHashSet",
++  ("OLD_SPACE", 0x02951): "EmptyPropertyCell",
++  ("OLD_SPACE", 0x02979): "EmptyWeakCell",
++  ("OLD_SPACE", 0x029e9): "NoElementsProtector",
++  ("OLD_SPACE", 0x02a11): "IsConcatSpreadableProtector",
++  ("OLD_SPACE", 0x02a21): "ArraySpeciesProtector",
++  ("OLD_SPACE", 0x02a49): "TypedArraySpeciesProtector",
++  ("OLD_SPACE", 0x02a71): "PromiseSpeciesProtector",
++  ("OLD_SPACE", 0x02a99): "StringLengthProtector",
++  ("OLD_SPACE", 0x02aa9): "ArrayIteratorProtector",
++  ("OLD_SPACE", 0x02ad1): "ArrayBufferNeuteringProtector",
++  ("OLD_SPACE", 0x02b59): "InfinityValue",
++  ("OLD_SPACE", 0x02b69): "MinusZeroValue",
++  ("OLD_SPACE", 0x02b79): "MinusInfinityValue",
+ }
+ 
+ # List of known V8 Frame Markers.
+-- 
+2.11.0 (Apple Git-81)
+

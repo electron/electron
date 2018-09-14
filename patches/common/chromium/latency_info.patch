@@ -1,0 +1,101 @@
+diff --git a/ui/latency/BUILD.gn b/ui/latency/BUILD.gn
+index 2aeebd991ae3..27cacb8748c4 100644
+--- a/ui/latency/BUILD.gn
++++ b/ui/latency/BUILD.gn
+@@ -5,7 +5,7 @@
+ import("//build/config/jumbo.gni")
+ import("//testing/test.gni")
+ 
+-jumbo_source_set("latency") {
++component("latency") {
+   sources = [
+     "fixed_point.cc",
+     "fixed_point.h",
+@@ -18,6 +18,7 @@ jumbo_source_set("latency") {
+     "latency_tracker.h",
+     "stream_analyzer.cc",
+     "stream_analyzer.h",
++    "ui_latency_export.h",
+     "windowed_analyzer.cc",
+     "windowed_analyzer.h",
+   ]
+@@ -22,6 +23,8 @@ jumbo_source_set("latency") {
+   public_deps = [
+     "//services/metrics/public/cpp:metrics_cpp",
+   ]
++
++  defines = [ "UI_LATENCY_IMPLEMENTATION" ]
+ }
+ 
+ jumbo_source_set("test_support") {
+diff --git a/ui/latency/latency_info.h b/ui/latency/latency_info.h
+index d9d390861562..7b1aa99e8a9c 100644
+--- a/ui/latency/latency_info.h
++++ b/ui/latency/latency_info.h
+@@ -16,6 +16,7 @@
+ #include "base/time/time.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "ui/gfx/geometry/point_f.h"
++#include "ui/latency/ui_latency_export.h"
+ 
+ #if !defined(OS_IOS)
+ #include "ipc/ipc_param_traits.h"  // nogncheck
+@@ -114,7 +115,7 @@ enum SourceEventType {
+   SOURCE_EVENT_TYPE_LAST = OTHER,
+ };
+ 
+-class LatencyInfo {
++class UI_LATENCY_EXPORT LatencyInfo {
+  public:
+   struct LatencyComponent {
+     // Nondecreasing number that can be used to determine what events happened
+diff --git a/ui/latency/latency_tracker.h b/ui/latency/latency_tracker.h
+index 24397fc4ba6d..ad943fa7ccf7 100644
+--- a/ui/latency/latency_tracker.h
++++ b/ui/latency/latency_tracker.h
+@@ -8,12 +8,13 @@
+ #include "base/macros.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "ui/latency/latency_info.h"
++#include "ui/latency/ui_latency_export.h"
+ 
+ namespace ui {
+ 
+ // Utility class for tracking the latency of events. Relies on LatencyInfo
+ // components logged by content::RenderWidgetHostLatencyTracker.
+-class LatencyTracker {
++class UI_LATENCY_EXPORT LatencyTracker {
+  public:
+   explicit LatencyTracker(bool metric_sampling,
+                           ukm::SourceId ukm_source_id = ukm::kInvalidSourceId);
+diff --git a/ui/latency/ui_latency_export.h b/ui/latency/ui_latency_export.h
+new file mode 100644
+index 0000000..f24ee91
+--- /dev/null
++++ b/ui/latency/ui_latency_export.h
+@@ -0,0 +1,25 @@
++#ifndef UI_LATENCY_UI_LATENCY_EXPORT_H_
++#define UI_LATENCY_UI_LATENCY_EXPORT_H_
++
++#if defined(COMPONENT_BUILD)
++#if defined(WIN32)
++
++#if defined(UI_LATENCY_IMPLEMENTATION)
++#define UI_LATENCY_EXPORT __declspec(dllexport)
++#else
++#define UI_LATENCY_EXPORT __declspec(dllimport)
++#endif  // defined(UI_LATENCY_IMPLEMENTATION)
++
++#else  // defined(WIN32)
++#if defined(UI_LATENCY_IMPLEMENTATION)
++#define UI_LATENCY_EXPORT __attribute__((visibility("default")))
++#else
++#define UI_LATENCY_EXPORT
++#endif
++#endif
++
++#else  // defined(COMPONENT_BUILD)
++#define UI_LATENCY_EXPORT
++#endif
++
++#endif  // UI_LATENCY_UI_LATENCY_EXPORT_H_

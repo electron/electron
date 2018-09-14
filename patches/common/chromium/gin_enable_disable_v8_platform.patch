@@ -1,0 +1,66 @@
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index 56402d477ca3..8ab11bd18783 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -116,9 +116,10 @@ IsolateHolder::~IsolateHolder() {
+ void IsolateHolder::Initialize(ScriptMode mode,
+                                V8ExtrasMode v8_extras_mode,
+                                v8::ArrayBuffer::Allocator* allocator,
+-                               const intptr_t* reference_table) {
++                               const intptr_t* reference_table,
++                               bool create_v8_platform) {
+   CHECK(allocator);
+-  V8Initializer::Initialize(mode, v8_extras_mode);
++  V8Initializer::Initialize(mode, v8_extras_mode, create_v8_platform);
+   g_array_buffer_allocator = allocator;
+   g_reference_table = reference_table;
+ }
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 2509aca609f9..94003c6031cf 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -84,7 +84,8 @@ class GIN_EXPORT IsolateHolder {
+   static void Initialize(ScriptMode mode,
+                          V8ExtrasMode v8_extras_mode,
+                          v8::ArrayBuffer::Allocator* allocator,
+-                         const intptr_t* reference_table = nullptr);
++                         const intptr_t* reference_table = nullptr,
++                         bool create_v8_platform = true);
+ 
+   v8::Isolate* isolate() { return isolate_; }
+ 
+diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
+index 02d4b1cd6521..ec6d51d7e5d8 100644
+--- a/gin/v8_initializer.cc
++++ b/gin/v8_initializer.cc
+@@ -236,12 +236,14 @@ LoadV8FileResult MapOpenedFile(const OpenedFileMap::mapped_type& file_region,
+ 
+ // static
+ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+-                               IsolateHolder::V8ExtrasMode v8_extras_mode) {
++                               IsolateHolder::V8ExtrasMode v8_extras_mode,
++                               bool create_v8_platform) {
+   static bool v8_is_initialized = false;
+   if (v8_is_initialized)
+     return;
+ 
+-  v8::V8::InitializePlatform(V8Platform::Get());
++  if (create_v8_platform)
++    v8::V8::InitializePlatform(V8Platform::Get());
+ 
+   if (base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
+     static const char optimize[] = "--opt";
+diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
+index f0a7c5e0fb68..df4ab4f3e4b9 100644
+--- a/gin/v8_initializer.h
++++ b/gin/v8_initializer.h
+@@ -21,7 +21,8 @@ class GIN_EXPORT V8Initializer {
+  public:
+   // This should be called by IsolateHolder::Initialize().
+   static void Initialize(IsolateHolder::ScriptMode mode,
+-                         IsolateHolder::V8ExtrasMode v8_extras_mode);
++                         IsolateHolder::V8ExtrasMode v8_extras_mode,
++                         bool create_v8_platform = true);
+ 
+   // Get address and size information for currently loaded snapshot.
+   // If no snapshot is loaded, the return values are null for addresses

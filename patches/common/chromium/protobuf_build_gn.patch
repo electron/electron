@@ -1,0 +1,16 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 067416ed38f4..9fa07961c5b8 100644
+--- a/third_party/protobuf/BUILD.gn
++++ b/third_party/protobuf/BUILD.gn
+@@ -599,6 +599,11 @@ if (current_toolchain == host_toolchain) {
+ 
+     configs -= [ "//build/config/compiler:chromium_code" ]
+     configs += [ "//build/config/compiler:no_chromium_code" ]
++    if (is_win) {
++      # https://crbug.com/703251
++      configs -= [ "//build/config/win:default_incremental_linking" ]
++      configs += [ "//build/config/win:no_incremental_linking" ]
++    }
+ 
+     cflags = protobuf_lite_cflags
+ 

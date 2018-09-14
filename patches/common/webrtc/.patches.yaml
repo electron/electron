@@ -1,0 +1,15 @@
+repo: src/third_party/webrtc
+patches:
+-
+  author: null
+  file: webrtc-desktop_capturer_mac.patch
+  description: null
+-
+  author: null
+  file: webrtc-rwlock_null.patch
+  description: null
+-
+  author: Nitish Sakhawalkar <nitsakh@icloud.com>
+  file: disable-warning-win.patch
+  description:
+    Disable windows warning

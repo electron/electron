@@ -1,0 +1,13 @@
+diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc b/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc
+index 91674b9..8a4c391 100644
+--- a/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc
++++ b/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc
+@@ -116,7 +116,7 @@ void AppIndicatorIconMenu::OnMenuItemActivated(GtkWidget* menu_item) {
+     return;
+ 
+   // The menu item can still be activated by hotkeys even if it is disabled.
+-  if (menu_model_->IsEnabledAt(id))
++  if (model->IsEnabledAt(id))
+     ExecuteCommand(model, id);
+ }
+ 

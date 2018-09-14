@@ -1,0 +1,30 @@
+diff --git a/src/api.cc b/src/api.cc
+index b46d376837..a97b38d00a 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -10217,6 +10217,10 @@ const char* CodeEvent::GetCodeEventTypeName(CodeEventType code_event_type) {
+       CODE_EVENTS_LIST(V)
+ #undef V
+   }
++  // The execution should never pass here
++  UNREACHABLE();
++  // NOTE(mmarchini): Workaround to fix a compiler failure on GCC 4.9
++  return "Unknown";
+ }
+
+ CodeEventHandler::CodeEventHandler(Isolate* isolate) {
+diff --git a/src/log.cc b/src/log.cc
+index d1673715e5..f70acbd54d 100644
+--- a/src/log.cc
++++ b/src/log.cc
+@@ -59,6 +59,10 @@ static v8::CodeEventType GetCodeEventTypeForTag(
+       TAGS_LIST(V)
+ #undef V
+   }
++  // The execution should never pass here
++  UNREACHABLE();
++  // NOTE(mmarchini): Workaround to fix a compiler failure on GCC 4.9
++  return v8::CodeEventType::kUnknownType;
+ }
+ #define CALL_CODE_EVENT_HANDLER(Call) \
+   if (listener_) {                    \

@@ -1,0 +1,28 @@
+diff --git a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
+index 5d5bead..f2ac4d8 100644
+--- a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
++++ b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
+@@ -339,7 +339,7 @@ void MouseWheelEventQueue::SendScrollBegin(
+          (synthetic && !needs_scroll_begin_when_scroll_latching_disabled_) ||
+          needs_scroll_begin_when_scroll_latching_disabled_);
+ 
+-  DCHECK(!scroll_in_progress_);
++  // DCHECK(!scroll_in_progress_);
+   scroll_in_progress_ = true;
+ 
+   WebGestureEvent scroll_begin(gesture_update);
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 97ca37d843be..fdc4a3f90c64 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -1230,8 +1238,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
+     // GSB and GSU events instead of sending them to the renderer and continues
+     // to progress the fling. So, the renderer doesn't receive two GSB events
+     // without any GSE in between.
+-    DCHECK(!is_in_gesture_scroll_[gesture_event.SourceDevice()] ||
+-           FlingCancellationIsDeferred());
++    // DCHECK(!is_in_gesture_scroll_[gesture_event.SourceDevice()] ||
++    //        FlingCancellationIsDeferred());
+     is_in_gesture_scroll_[gesture_event.SourceDevice()] = true;
+   } else if (gesture_event.GetType() ==
+              blink::WebInputEvent::kGestureScrollEnd) {
