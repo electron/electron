@@ -3,13 +3,13 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
-const {remote} = require('electron')
-const {ipcMain, BrowserWindow} = remote
+const { remote } = require('electron')
+const { ipcMain, BrowserWindow } = remote
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures')

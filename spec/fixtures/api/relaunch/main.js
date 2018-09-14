@@ -1,4 +1,4 @@
-const {app} = require('electron')
+const { app } = require('electron')
 const net = require('net')
 
 const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch'
@@ -18,6 +18,6 @@ app.once('ready', () => {
   })
 
   if (lastArg !== '--second') {
-    app.relaunch({args: process.argv.slice(1).concat('--second')})
+    app.relaunch({ args: process.argv.slice(1).concat('--second') })
   }
 })

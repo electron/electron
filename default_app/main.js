@@ -1,4 +1,4 @@
-const {app, dialog, shell, Menu} = require('electron')
+const { app, dialog, shell, Menu } = require('electron')
 
 const fs = require('fs')
 const Module = require('module')

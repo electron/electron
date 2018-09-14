@@ -14,7 +14,7 @@ const circleCIJobs = [
   'electron-linux-arm',
   'electron-linux-arm64',
   'electron-linux-ia32',
-//  'electron-linux-mips64el',
+  //  'electron-linux-mips64el',
   'electron-linux-x64'
 ]
 

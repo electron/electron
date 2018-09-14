@@ -4,6 +4,7 @@ image: libcc-20-vs2017-15.7.4
 environment:
   GIT_CACHE_PATH: C:\Users\electron\libcc_cache
   DISABLE_CRASH_REPORTER_TESTS: true
+  ELECTRON_OUT_DIR: Default
 build_script:
   - ps: >-
       if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {

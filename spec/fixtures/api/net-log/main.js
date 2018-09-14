@@ -1,4 +1,4 @@
-const {app, net, netLog} = require('electron')
+const { app, net, netLog } = require('electron')
 
 function request () {
   return new Promise((resolve) => {

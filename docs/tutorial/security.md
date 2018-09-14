@@ -361,10 +361,10 @@ which can be set using Electron's
 handler:
 
 ```javascript
-const {session} = require('electron')
+const { session } = require('electron')
 
 session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-  callback({responseHeaders: `default-src 'none'`})
+  callback({ responseHeaders: `default-src 'none'` })
 })
 ```
 

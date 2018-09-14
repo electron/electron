@@ -1,11 +1,11 @@
 'use strict'
 
-const {expect} = require('chai')
+const { expect } = require('chai')
 const path = require('path')
 
-const {remote} = require('electron')
-const {ipcMain, BrowserWindow} = remote
-const {closeWindow} = require('./window-helpers')
+const { remote } = require('electron')
+const { ipcMain, BrowserWindow } = remote
+const { closeWindow } = require('./window-helpers')
 
 describe('BrowserWindow with affinity module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -30,14 +30,14 @@ describe('BrowserWindow with affinity module', () => {
     let mAffinityWindow
     before(done => {
       createWindowWithWebPrefs({ affinity: myAffinityName })
-      .then((w) => {
-        mAffinityWindow = w
-        done()
-      })
+        .then((w) => {
+          mAffinityWindow = w
+          done()
+        })
     })
 
     after(done => {
-      closeWindow(mAffinityWindow, {assertSingleWindow: false}).then(() => {
+      closeWindow(mAffinityWindow, { assertSingleWindow: false }).then(() => {
         mAffinityWindow = null
         done()
       })
@@ -45,46 +45,46 @@ describe('BrowserWindow with affinity module', () => {
 
     it('should have a different process id than a default window', done => {
       createWindowWithWebPrefs({})
-      .then(w => {
-        const affinityID = mAffinityWindow.webContents.getOSProcessId()
-        const wcID = w.webContents.getOSProcessId()
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
 
-        expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
-      })
+          expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
     })
 
     it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, done => {
       createWindowWithWebPrefs({ affinity: anotherAffinityName })
-      .then(w => {
-        const affinityID = mAffinityWindow.webContents.getOSProcessId()
-        const wcID = w.webContents.getOSProcessId()
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
 
-        expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
-      })
+          expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
     })
 
     it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, done => {
       createWindowWithWebPrefs({ affinity: myAffinityName })
-      .then(w => {
-        const affinityID = mAffinityWindow.webContents.getOSProcessId()
-        const wcID = w.webContents.getOSProcessId()
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
 
-        expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
-      })
+          expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
     })
 
     it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, done => {
       createWindowWithWebPrefs({ affinity: myAffinityNameUpper })
-      .then(w => {
-        const affinityID = mAffinityWindow.webContents.getOSProcessId()
-        const wcID = w.webContents.getOSProcessId()
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
 
-        expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-        closeWindow(w, {assertSingleWindow: false}).then(() => { done() })
-      })
+          expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
     })
   })
 
@@ -117,7 +117,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: false
         })
       ]).then(args => {
-        closeWindow(args[1], {assertSingleWindow: false}).then(() => { done() })
+        closeWindow(args[1], { assertSingleWindow: false }).then(() => { done() })
       })
     })
     it('disables node integration when first window is false', done => {
@@ -141,8 +141,8 @@ describe('BrowserWindow with affinity module', () => {
         ])
       }).then(ws => {
         return Promise.all([
-          closeWindow(ws[1], {assertSingleWindow: false}),
-          closeWindow(ws[2], {assertSingleWindow: false})
+          closeWindow(ws[1], { assertSingleWindow: false }),
+          closeWindow(ws[2], { assertSingleWindow: false })
         ])
       }).then(() => { done() })
     })
@@ -156,7 +156,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: true
         })
       ]).then(args => {
-        closeWindow(args[1], {assertSingleWindow: false}).then(() => { done() })
+        closeWindow(args[1], { assertSingleWindow: false }).then(() => { done() })
       })
     })
 
@@ -181,8 +181,8 @@ describe('BrowserWindow with affinity module', () => {
         ])
       }).then(ws => {
         return Promise.all([
-          closeWindow(ws[1], {assertSingleWindow: false}),
-          closeWindow(ws[2], {assertSingleWindow: false})
+          closeWindow(ws[1], { assertSingleWindow: false }),
+          closeWindow(ws[2], { assertSingleWindow: false })
         ])
       }).then(() => { done() })
     })

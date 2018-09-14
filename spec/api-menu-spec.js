@@ -1,12 +1,12 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {ipcRenderer, remote} = require('electron')
-const {BrowserWindow, Menu, MenuItem} = remote
-const {sortMenuItems} = require('../lib/browser/api/menu-utils')
-const {closeWindow} = require('./window-helpers')
+const { ipcRenderer, remote } = require('electron')
+const { BrowserWindow, Menu, MenuItem } = remote
+const { sortMenuItems } = require('../lib/browser/api/menu-utils')
+const { closeWindow } = require('./window-helpers')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('Menu module', () => {
@@ -22,7 +22,7 @@ describe('Menu module', () => {
     })
 
     it('does not modify the specified template', () => {
-      const template = [{label: 'text', submenu: [{label: 'sub'}]}]
+      const template = [{ label: 'text', submenu: [{ label: 'sub' }] }]
       const result = ipcRenderer.sendSync('eval', `const template = [{label: 'text', submenu: [{label: 'sub'}]}]\nrequire('electron').Menu.buildFromTemplate(template)\ntemplate`)
       expect(result).to.deep.equal(template)
     })
@@ -596,9 +596,9 @@ describe('Menu module', () => {
   describe('Menu.insert', () => {
     it('should store item in @items by its index', () => {
       const menu = Menu.buildFromTemplate([
-        {label: '1'},
-        {label: '2'},
-        {label: '3'}
+        { label: '1' },
+        { label: '2' },
+        { label: '3' }
       ])
 
       const item = new MenuItem({ label: 'inserted' })
@@ -614,9 +614,9 @@ describe('Menu module', () => {
   describe('Menu.append', () => {
     it('should add the item to the end of the menu', () => {
       const menu = Menu.buildFromTemplate([
-        {label: '1'},
-        {label: '2'},
-        {label: '3'}
+        { label: '1' },
+        { label: '2' },
+        { label: '3' }
       ])
 
       const item = new MenuItem({ label: 'inserted' })
@@ -634,11 +634,11 @@ describe('Menu module', () => {
     let menu
 
     beforeEach(() => {
-      w = new BrowserWindow({show: false, width: 200, height: 200})
+      w = new BrowserWindow({ show: false, width: 200, height: 200 })
       menu = Menu.buildFromTemplate([
-        {label: '1'},
-        {label: '2'},
-        {label: '3'}
+        { label: '1' },
+        { label: '2' },
+        { label: '3' }
       ])
     })
 
@@ -662,17 +662,17 @@ describe('Menu module', () => {
 
     it('should emit menu-will-show event', (done) => {
       menu.on('menu-will-show', () => { done() })
-      menu.popup({window: w})
+      menu.popup({ window: w })
     })
 
     it('should emit menu-will-close event', (done) => {
       menu.on('menu-will-close', () => { done() })
-      menu.popup({window: w})
+      menu.popup({ window: w })
       menu.closePopup()
     })
 
     it('returns immediately', () => {
-      const input = {window: w, x: 100, y: 101}
+      const input = { window: w, x: 100, y: 101 }
       const output = menu.popup(input)
       expect(output.x).to.equal(input.x)
       expect(output.y).to.equal(input.y)
@@ -680,7 +680,7 @@ describe('Menu module', () => {
     })
 
     it('works without a given BrowserWindow and options', () => {
-      const {browserWindow, x, y} = menu.popup({x: 100, y: 101})
+      const { browserWindow, x, y } = menu.popup({ x: 100, y: 101 })
 
       expect(browserWindow.constructor.name).to.equal('BrowserWindow')
       expect(x).to.equal(100)
@@ -688,7 +688,7 @@ describe('Menu module', () => {
     })
 
     it('works with a given BrowserWindow, options and callback', (done) => {
-      const {x, y} = menu.popup({
+      const { x, y } = menu.popup({
         window: w,
         x: 100,
         y: 101,
@@ -701,7 +701,7 @@ describe('Menu module', () => {
     })
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
-      menu.popup({window: w, callback: () => done()})
+      menu.popup({ window: w, callback: () => done() })
       menu.closePopup()
     })
   })
@@ -709,8 +709,8 @@ describe('Menu module', () => {
   describe('Menu.setApplicationMenu', () => {
     it('sets a menu', () => {
       const menu = Menu.buildFromTemplate([
-        {label: '1'},
-        {label: '2'}
+        { label: '1' },
+        { label: '2' }
       ])
 
       Menu.setApplicationMenu(menu)

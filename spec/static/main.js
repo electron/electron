@@ -2,9 +2,9 @@
 process.throwDeprecation = false
 
 const electron = require('electron')
-const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
+const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
 
-const {Coverage} = require('electabul')
+const { Coverage } = require('electabul')
 
 const fs = require('fs')
 const path = require('path')
@@ -19,7 +19,7 @@ var argv = require('yargs')
 
 var window = null
 
- // will be used by crash-reporter spec.
+// will be used by crash-reporter spec.
 process.port = 0
 process.crashServicePid = 0
 
@@ -276,7 +276,7 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
     }
   }
   foo.baz2 = foo.baz
-  const window = new BrowserWindow({show: false, foo: foo})
+  const window = new BrowserWindow({ show: false, foo: foo })
   event.returnValue = window.id
 })
 
@@ -323,7 +323,7 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     console.warn = (message) => {
       warningMessage = message
     }
-    contents.emit(eventName, {sender: contents})
+    contents.emit(eventName, { sender: contents })
   } finally {
     console.warn = consoleWarn
   }

@@ -4,13 +4,13 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
-const {ipcRenderer, remote} = require('electron')
-const {ipcMain, webContents, BrowserWindow} = remote
+const { ipcRenderer, remote } = require('electron')
+const { ipcMain, webContents, BrowserWindow } = remote
 
 describe('ipc renderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
@@ -69,7 +69,7 @@ describe('ipc renderer module', () => {
     })
 
     it('does not crash on external objects (regression)', done => {
-      const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
       const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
       request.on('error', () => {})
       ipcRenderer.once('message', (event, requestValue, externalStreamValue) => {
@@ -83,9 +83,9 @@ describe('ipc renderer module', () => {
     })
 
     it('can send objects that both reference the same object', done => {
-      const child = {hello: 'world'}
-      const foo = {name: 'foo', child: child}
-      const bar = {name: 'bar', child: child}
+      const child = { hello: 'world' }
+      const foo = { name: 'foo', child: child }
+      const bar = { name: 'bar', child: child }
       const array = [foo, bar]
 
       ipcRenderer.once('message', (event, arrayValue, fooValue, barValue, childValue) => {
@@ -102,7 +102,7 @@ describe('ipc renderer module', () => {
       const array = [5]
       array.push(array)
 
-      const child = {hello: 'world'}
+      const child = { hello: 'world' }
       child.child = child
 
       ipcRenderer.once('message', (event, arrayValue, childValue) => {

@@ -1,11 +1,11 @@
 const path = require('path')
-const {remote} = require('electron')
-const {Buffer} = window
+const { remote } = require('electron')
+const { Buffer } = window
 
 delete window.Buffer
 delete global.Buffer
 
 // Test that remote.js doesn't use Buffer global
-remote.require(path.join(__dirname, 'print_name.js')).echo(new Buffer('bar'))
+remote.require(path.join(__dirname, 'print_name.js')).echo(Buffer.from('bar'))
 
-window.test = new Buffer('buffer')
+window.test = Buffer.from('buffer')

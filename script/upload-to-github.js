@@ -2,7 +2,7 @@ if (!process.env.CI) require('dotenv-safe').load()
 
 const GitHub = require('github')
 const github = new GitHub()
-github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
+github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId')

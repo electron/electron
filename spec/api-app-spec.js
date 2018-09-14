@@ -6,12 +6,12 @@ const https = require('https')
 const net = require('net')
 const fs = require('fs')
 const path = require('path')
-const {ipcRenderer, remote} = require('electron')
-const {emittedOnce} = require('./events-helpers')
-const {closeWindow} = require('./window-helpers')
+const { ipcRenderer, remote } = require('electron')
+const { emittedOnce } = require('./events-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {expect} = chai
-const {app, BrowserWindow, Menu, ipcMain} = remote
+const { expect } = chai
+const { app, BrowserWindow, Menu, ipcMain } = remote
 
 const isCI = remote.getGlobal('isCi')
 
@@ -273,7 +273,7 @@ describe('app module', () => {
     })
 
     it('sets the current activity', () => {
-      app.setUserActivity('com.electron.testActivity', {testData: '123'})
+      app.setUserActivity('com.electron.testActivity', { testData: '123' })
       expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity')
     })
   })
@@ -431,17 +431,17 @@ describe('app module', () => {
     })
 
     beforeEach(() => {
-      app.setLoginItemSettings({openAtLogin: false})
-      app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
+      app.setLoginItemSettings({ openAtLogin: false })
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs })
     })
 
     afterEach(() => {
-      app.setLoginItemSettings({openAtLogin: false})
-      app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
+      app.setLoginItemSettings({ openAtLogin: false })
+      app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs })
     })
 
     it('returns the login item status of the app', done => {
-      app.setLoginItemSettings({openAtLogin: true})
+      app.setLoginItemSettings({ openAtLogin: true })
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: false,
@@ -450,7 +450,7 @@ describe('app module', () => {
         restoreState: false
       })
 
-      app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
@@ -481,7 +481,7 @@ describe('app module', () => {
         return
       }
 
-      app.setLoginItemSettings({openAtLogin: true, path: updateExe, args: processStartArgs})
+      app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs })
 
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
       expect(app.getLoginItemSettings({
@@ -786,7 +786,7 @@ describe('app module', () => {
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0')
 
       const types = []
-      for (const {pid, type, cpu} of appMetrics) {
+      for (const { pid, type, cpu } of appMetrics) {
         expect(pid).to.be.above(0, 'pid is not > 0')
         expect(type).to.be.a('string').that.is.not.empty()
 
