@@ -20,7 +20,7 @@ index 0c004fd4..6c849b5b 100644
  }
  
 +int SSL_get_tlsext_status_type(SSL *ssl) {
-+  if (ssl->ocsp_stapling_enabled) {
++  if (ssl->config->ocsp_stapling_enabled) {
 +    return TLSEXT_STATUSTYPE_ocsp;
 +  }
 +
