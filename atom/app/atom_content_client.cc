@@ -40,8 +40,11 @@ namespace atom {
 namespace {
 
 #if defined(WIDEVINE_CDM_AVAILABLE)
-bool IsWidevineAvailable(base::FilePath* cdm_path,
-                         std::vector<media::VideoCodec>* codecs_supported) {
+bool IsWidevineAvailable(
+    base::FilePath* cdm_path,
+    std::vector<media::VideoCodec>* codecs_supported,
+    bool* supports_persistent_license,
+    base::flat_set<media::EncryptionMode>* modes_supported) {
   static enum {
     NOT_CHECKED,
     FOUND,
@@ -66,6 +69,16 @@ bool IsWidevineAvailable(base::FilePath* cdm_path,
 #if BUILDFLAG(USE_PROPRIETARY_CODECS)
     codecs_supported->push_back(media::VideoCodec::kCodecH264);
 #endif  // BUILDFLAG(USE_PROPRIETARY_CODECS)
+
+// TODO(crbug.com/767941): Push persistent-license support info here once
+// we check in a new CDM that supports it on Linux.
+#if defined(OS_CHROMEOS)
+    *supports_persistent_license = true;
+#else
+    *supports_persistent_license = false;
+#endif  // defined(OS_CHROMEOS)
+
+    modes_supported->insert(media::EncryptionMode::kCenc);
 
     return true;
   }
@@ -212,7 +225,10 @@ void AtomContentClient::AddContentDecryptionModules(
     base::FilePath cdm_path;
     std::vector<media::VideoCodec> video_codecs_supported;
     bool supports_persistent_license = false;
-    if (IsWidevineAvailable(&cdm_path, &video_codecs_supported)) {
+    base::flat_set<media::EncryptionMode> encryption_modes_supported;
+    if (IsWidevineAvailable(&cdm_path, &video_codecs_supported,
+                            &supports_persistent_license,
+                            &encryption_modes_supported)) {
       base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
       auto cdm_version_string =
           command_line->GetSwitchValueASCII(switches::kWidevineCdmVersion);
@@ -225,7 +241,8 @@ void AtomContentClient::AddContentDecryptionModules(
       cdms->push_back(content::CdmInfo(
           kWidevineCdmDisplayName, kWidevineCdmGuid, version, cdm_path,
           kWidevineCdmFileSystemId, video_codecs_supported,
-          supports_persistent_license, kWidevineKeySystem, false));
+          supports_persistent_license, encryption_modes_supported,
+          kWidevineKeySystem, false));
     }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
   }
