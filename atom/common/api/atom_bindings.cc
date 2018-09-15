@@ -61,7 +61,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
                                            base::Unretained(metrics_.get())));
   dict.SetMethod("getIOCounters", &GetIOCounters);
 #if defined(OS_POSIX)
-  dict.SetMethod("setFdLimit", &base::SetFdLimit);
+  dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
 #endif
   dict.SetMethod("activateUvLoop", base::Bind(&AtomBindings::ActivateUVLoop,
                                               base::Unretained(this)));
