@@ -9,6 +9,8 @@ source_set("chrome") {
   sources = [
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/common/secure_origin_whitelist.cc",
+    "//chrome/common/secure_origin_whitelist.h",
   ]
   public_deps = [ "//content/public/browser" ]
   deps = [ "//components/security_state/content" ]
