@@ -49,6 +49,7 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
@@ -1157,7 +1158,7 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   }
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(::switches::kNoSandbox)) {
+  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
 #if defined(OS_WIN)
     const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
 #else
