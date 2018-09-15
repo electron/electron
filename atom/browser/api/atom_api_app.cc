@@ -837,7 +837,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   base::FilePath path;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::Get(key, &path);
+    succeed = base::PathService::Get(key, &path);
   if (!succeed)
     args->ThrowError("Failed to get '" + name + "' path");
   return path;
@@ -854,7 +854,8 @@ void App::SetPath(mate::Arguments* args,
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    succeed =
+        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
     args->ThrowError("Failed to set path");
 }
@@ -886,7 +887,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  base::PathService::Get(brightray::DIR_USER_DATA, &user_dir);
 
   auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
 
@@ -935,7 +936,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
 
   if (exec_path.empty()) {
     base::FilePath current_exe_path;
-    PathService::Get(base::FILE_EXE, &current_exe_path);
+    base::PathService::Get(base::FILE_EXE, &current_exe_path);
     argv.push_back(current_exe_path.value());
   } else {
     argv.push_back(exec_path.value());
