@@ -1686,8 +1686,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
-    base::MessageLoop::ScopedNestableTaskAllower allow(
-        base::MessageLoop::current());
+    base::MessageLoop::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     args->ThrowError("Must specify either 'file' or 'files' option");
