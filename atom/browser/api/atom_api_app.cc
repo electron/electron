@@ -785,13 +785,15 @@ void App::BrowserChildProcessHostDisconnected(
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessCrashed(const content::ChildProcessData& data,
-                                     int exit_code) {
+void App::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessKilled(const content::ChildProcessData& data,
-                                    int exit_code) {
+void App::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
