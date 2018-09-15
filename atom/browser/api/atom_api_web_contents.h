@@ -226,6 +226,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
+                                   const blink::WebFullscreenOptions& options,
                                    bool allowed);
 
   // Create window with the given disposition.
@@ -317,8 +318,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
-  void EnterFullscreenModeForTab(content::WebContents* source,
-                                 const GURL& origin) override;
+  void EnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::WebFullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
