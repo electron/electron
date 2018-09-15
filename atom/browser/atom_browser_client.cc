@@ -311,7 +311,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Make sure we're about to launch a known executable
   {
     base::FilePath child_path;
-    PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
 
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);

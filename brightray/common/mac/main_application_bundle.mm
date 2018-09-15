@@ -26,7 +26,7 @@ bool HasMainProcessKey() {
 base::FilePath MainApplicationBundlePath() {
   // Start out with the path to the running executable.
   base::FilePath path;
-  PathService::Get(base::FILE_EXE, &path);
+  base::PathService::Get(base::FILE_EXE, &path);
 
   // Up to Contents.
   if (!HasMainProcessKey() &&

@@ -86,7 +86,7 @@ base::CommandLine::StringVector GetArgv() {
 
 base::FilePath::StringType GetExecPath() {
   base::FilePath path;
-  PathService::Get(base::FILE_EXE, &path);
+  base::PathService::Get(base::FILE_EXE, &path);
   return path.value();
 }
 

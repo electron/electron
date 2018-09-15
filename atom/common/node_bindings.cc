@@ -135,7 +135,7 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
 base::FilePath GetResourcesPath(bool is_browser) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
-  PathService::Get(base::FILE_EXE, &exec_path);
+  base::PathService::Get(base::FILE_EXE, &exec_path);
 
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
@@ -284,7 +284,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     process.Set("_noBrowserGlobals", resources_path);
   // The path to helper app.
   base::FilePath helper_exec_path;
-  PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
   return env;
