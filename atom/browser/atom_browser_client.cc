@@ -16,6 +16,7 @@
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
@@ -611,6 +612,14 @@ bool AtomBrowserClient::HandleExternalProtocol(
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
                      has_user_gesture));
   return true;
+}
+
+std::vector<std::unique_ptr<content::NavigationThrottle>>
+AtomBrowserClient::CreateThrottlesForNavigation(
+    content::NavigationHandle* handle) {
+  std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
+  throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
+  return throttles;
 }
 
 }  // namespace atom

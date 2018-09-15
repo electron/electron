@@ -266,6 +266,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
     observers_.RemoveObserver(obs);
   }
 
+  bool EmitNavigationEvent(const std::string& event,
+                           content::NavigationHandle* navigation_handle);
+
  protected:
   WebContents(v8::Isolate* isolate,
               content::WebContents* web_contents,
@@ -365,6 +368,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidStartNavigation(
+      content::NavigationHandle* navigation_handle) override;
+  void DidRedirectNavigation(
       content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
