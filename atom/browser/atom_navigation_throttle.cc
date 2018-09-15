@@ -24,14 +24,14 @@ AtomNavigationThrottle::WillRedirectRequest() {
   auto* handle = navigation_handle();
   auto* contents = handle->GetWebContents();
   if (!contents) {
-    DCHECK(false);  // This should be unreachable
+    NOTREACHED();
     return PROCEED;
   }
 
   auto api_contents =
       atom::api::WebContents::CreateFrom(v8::Isolate::GetCurrent(), contents);
   if (api_contents.IsEmpty()) {
-    DCHECK(false);  // This should be unreachable
+    NOTREACHED();
     return PROCEED;
   }
 

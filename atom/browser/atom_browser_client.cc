@@ -618,7 +618,7 @@ std::vector<std::unique_ptr<content::NavigationThrottle>>
 AtomBrowserClient::CreateThrottlesForNavigation(
     content::NavigationHandle* handle) {
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
-  throttles.push_back(base::WrapUnique(new AtomNavigationThrottle(handle)));
+  throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
   return throttles;
 }
 
