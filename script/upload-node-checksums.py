@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 import shutil
+import sys
 import tempfile
 
 from lib.config import s3_config
@@ -95,5 +96,4 @@ def copy_files(source_files, output_dir):
     shutil.copy2(source_file, output_path)
 
 if __name__ == '__main__':
-  import sys
   sys.exit(main())

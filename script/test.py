@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import argparse
+import atexit
 import os
 import shutil
 import subprocess
 import sys
 
 from lib.config import enable_verbose_mode
+import lib.dbus_mock
 from lib.util import electron_gyp, execute_stdout, rm_rf
 
 
@@ -17,8 +19,6 @@ if sys.platform == 'linux2':
     # while also setting DBUS_SYSTEM_BUS_ADDRESS environment variable, which
     # will be picked up by electron.
     try:
-        import lib.dbus_mock
-        import atexit
         lib.dbus_mock.start()
         atexit.register(lib.dbus_mock.stop)
     except ImportError:
