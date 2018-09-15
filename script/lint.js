@@ -7,7 +7,6 @@ const minimist = require('minimist')
 const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
-const STANDARD = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'standard')
 
 const BLACKLIST = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
@@ -36,7 +35,8 @@ const BLACKLIST = new Set([
   ['brightray', 'browser', 'win', 'win32_desktop_notifications',
     'desktop_notification_controller.h'],
   ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'toast.h'],
-  ['brightray', 'browser', 'win', 'win32_notification.h']
+  ['brightray', 'browser', 'win', 'win32_notification.h'],
+  ['spec', 'static', 'jquery-2.0.3.min.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
 function spawnAndCheckExitCode (cmd, args, opts) {
@@ -49,7 +49,7 @@ const LINTERS = [ {
   key: 'c++',
   roots: ['atom', 'brightray'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
-  run: filenames => {
+  run: (opts, filenames) => {
     const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
     // cpplint.py writes EVERYTHING to stderr, including status messages
     for (const line of result.stderr.split(/[\r\n]+/)) {
@@ -63,7 +63,7 @@ const LINTERS = [ {
   key: 'python',
   roots: ['script'],
   test: filename => filename.endsWith('.py'),
-  run: filenames => {
+  run: (opts, filenames) => {
     const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
     const args = ['--rcfile=' + rcfile, ...filenames]
     const env = Object.assign({ PYTHONPATH: path.join(SOURCE_ROOT, 'script') }, process.env)
@@ -71,25 +71,25 @@ const LINTERS = [ {
   }
 }, {
   key: 'javascript',
-  roots: ['lib', 'script'],
+  roots: ['lib', 'spec', 'script', 'default_app'],
   test: filename => filename.endsWith('.js'),
-  run: filenames => spawnAndCheckExitCode(STANDARD, filenames, { cwd: SOURCE_ROOT })
-}, {
-  key: 'javascript',
-  roots: ['spec'],
-  test: filename => filename.endsWith('.js'),
-  run: filenames => spawnAndCheckExitCode(STANDARD, filenames, { cwd: path.join(SOURCE_ROOT, 'spec') })
+  run: (opts, filenames) => {
+    const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
+    const args = [ '--cache', ...filenames ]
+    if (opts.fix) args.unshift('--fix')
+    spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT })
+  }
 }]
 
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'javascript', 'python', 'help', 'changed' ],
-    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h' },
+    boolean: [ 'c++', 'javascript', 'python', 'help', 'changed', 'fix', 'verbose' ],
+    alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })
   if (help || opts.help) {
-    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help]')
+    console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix]')
     process.exit(0)
   }
   return opts
@@ -149,20 +149,20 @@ async function findFiles (args, linter) {
 }
 
 async function main () {
-  const args = parseCommandLine()
+  const opts = parseCommandLine()
 
   // no mode specified? run 'em all
-  if (!args['c++'] && !args.javascript && !args.python) {
-    args['c++'] = args.javascript = args.python = true
+  if (!opts['c++'] && !opts.javascript && !opts.python) {
+    opts['c++'] = opts.javascript = opts.python = true
   }
 
-  const linters = LINTERS.filter(x => args[x.key])
+  const linters = LINTERS.filter(x => opts[x.key])
 
   for (const linter of linters) {
-    const filenames = await findFiles(args, linter)
+    const filenames = await findFiles(opts, linter)
     if (filenames.length) {
-      console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`)
-      linter.run(filenames)
+      if (opts.verbose) { console.log(`linting ${filenames.length} ${linter.key} ${filenames.length === 1 ? 'file' : 'files'}`) }
+      linter.run(opts, filenames)
     }
   }
 }
