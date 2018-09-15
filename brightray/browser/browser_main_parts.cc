@@ -215,7 +215,7 @@ int BrowserMainParts::PreEarlyInitialization() {
   ui::SetX11ErrorHandlers(nullptr, nullptr);
 #endif
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return service_manager::RESULT_CODE_NORMAL_EXIT;
 }
 
 void BrowserMainParts::ToolkitInitialized() {
