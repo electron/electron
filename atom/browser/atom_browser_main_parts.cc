@@ -114,14 +114,14 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 
 int AtomBrowserMainParts::PreEarlyInitialization() {
   const int result = brightray::BrowserMainParts::PreEarlyInitialization();
-  if (result != content::RESULT_CODE_NORMAL_EXIT)
+  if (result != service_manager::RESULT_CODE_NORMAL_EXIT)
     return result;
 
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return service_manager::RESULT_CODE_NORMAL_EXIT;
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
