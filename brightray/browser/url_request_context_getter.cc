@@ -18,6 +18,7 @@
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net_log.h"
 #include "brightray/common/switches.h"
+#include "components/certificate_transparency/ct_known_logs.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cookie_store_factory.h"
@@ -25,7 +26,6 @@
 #include "content/public/browser/resource_context.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
-#include "net/cert/ct_known_logs.h"
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/ct_policy_enforcer.h"
 #include "net/cert/multi_log_ct_verifier.h"
@@ -61,6 +61,29 @@
 #include "url/url_constants.h"
 
 using content::BrowserThread;
+
+namespace {
+
+std::vector<scoped_refptr<const net::CTLogVerifier>>
+CreateLogVerifiersForKnownLogs() {
+  std::vector<scoped_refptr<const net::CTLogVerifier>> verifiers;
+
+  for (const auto& log : certificate_transparency::GetKnownLogs()) {
+    scoped_refptr<const net::CTLogVerifier> log_verifier =
+        net::CTLogVerifier::Create(
+            base::StringPiece(log.log_key, log.log_key_length), log.log_name,
+            log.log_dns_domain);
+    // Make sure no null logs enter verifiers. Parsing of all statically
+    // configured logs should always succeed, unless there has been binary or
+    // memory corruption.
+    CHECK(log_verifier);
+    verifiers.push_back(std::move(log_verifier));
+  }
+
+  return verifiers;
+}
+
+}  // namespace
 
 namespace brightray {
 
@@ -347,11 +370,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         new net::HttpServerPropertiesImpl);
     storage_->set_http_server_properties(std::move(server_properties));
 
+    // FIXME(jeremy): decide what to do about certificate transparency.
     std::unique_ptr<net::MultiLogCTVerifier> ct_verifier =
         std::make_unique<net::MultiLogCTVerifier>();
-    ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
+    ct_verifier->AddLogs(CreateLogVerifiersForKnownLogs());
     storage_->set_cert_transparency_verifier(std::move(ct_verifier));
-    storage_->set_ct_policy_enforcer(std::make_unique<net::CTPolicyEnforcer>());
+    storage_->set_ct_policy_enforcer(
+        std::make_unique<net::DefaultCTPolicyEnforcer>());
 
     net::HttpNetworkSession::Params network_session_params;
     network_session_params.ignore_certificate_errors = false;
