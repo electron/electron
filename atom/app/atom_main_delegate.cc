@@ -145,7 +145,7 @@ void AtomMainDelegate::PreSandboxStartup() {
           service_manager::switches::kDisableSetuidSandbox);
     } else {
       // Disable renderer sandbox for most of node's functions.
-      command_line->AppendSwitch(::switches::kNoSandbox);
+      command_line->AppendSwitch(service_manager::switches::kNoSandbox);
     }
   }
 
@@ -168,7 +168,7 @@ AtomMainDelegate::CreateContentRendererClient() {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kEnableSandbox) ||
       !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ::switches::kNoSandbox)) {
+          service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);
