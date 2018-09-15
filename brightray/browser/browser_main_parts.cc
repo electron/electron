@@ -95,12 +95,12 @@ const int kWaitForUIThreadSeconds = 10;
 
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
-  if (PathService::Get(DIR_APP_DATA, &path))
+  if (base::PathService::Get(DIR_APP_DATA, &path))
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
-  PathService::Override(DIR_APP_DATA, path);
+  base::PathService::Override(DIR_APP_DATA, path);
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
@@ -173,10 +173,10 @@ BrowserMainParts::~BrowserMainParts() {}
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
   base::FilePath path;
-  if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
+  if (base::PathService::Get(brightray::DIR_APP_DATA, &path)) {
     path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    PathService::Override(DIR_APP_LOGS, path);
+    base::PathService::Override(DIR_APP_LOGS, path);
   }
 }
 #endif
