@@ -24,9 +24,9 @@ class Patch:
   def apply(self, reverse=False, commit=False, index=False):
     # Add the change to index only if we're going to commit it later.
     add_to_index = index or commit
-    patch_applied = git.apply_patches(self.repo_path, self.file_path,
-                                      directory=self.paths_prefix,
-                                      index=add_to_index, reverse=reverse)
+    patch_applied = git.apply_patch(self.repo_path, self.file_path,
+                                    directory=self.paths_prefix,
+                                    index=add_to_index, reverse=reverse)
 
     if not patch_applied:
       return False
