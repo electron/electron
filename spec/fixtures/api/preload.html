@@ -1,9 +1,16 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-if (!window.test)
-  window.test = 'window'
-require('electron').ipcRenderer.send('answer', window.test);
+const send = () => {
+  if (!window.test)
+    window.test = 'window'
+  require('electron').ipcRenderer.send('answer', window.test);
+}
+if (window.delayed) {
+  window.addEventListener('load', send)
+} else {
+  send()
+}
 </script>
 </body>
 </html>
