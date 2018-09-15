@@ -27,19 +27,5 @@
   },
   "optionalDependencies": {
     "runas": "3.x"
-  },
-  "standard": {
-    "env": {
-      "browser": true,
-      "mocha": true,
-      "jquery": true,
-      "serviceworker": true
-    },
-    "globals": [
-      "Bindings",
-      "Components",
-      "UI",
-      "WebView"
-    ]
   }
 }

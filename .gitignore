@@ -60,3 +60,6 @@ electron.d.ts
 
 # Spec hash calculation
 spec/.hash
+
+# Eslint Cache
+.eslintcache

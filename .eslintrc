@@ -1,0 +1,6 @@
+{
+  "extends": "standard",
+  "env": {
+    "browser": true
+  }
+}

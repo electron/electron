@@ -14,6 +14,8 @@
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.4",
     "electron-typescript-definitions": "^2.0.0",
+    "eslint": "^5.6.0",
+    "eslint-config-standard": "^12.0.0",
     "folder-hash": "^2.1.1",
     "github": "^9.2.0",
     "html-entities": "^1.2.1",
@@ -29,20 +31,9 @@
     "request": "^2.88.0",
     "semver": "^5.5.0",
     "serve": "^6.5.8",
-    "standard": "^12.0.0",
     "standard-markdown": "^5.0.0",
     "sumchecker": "^2.0.2",
     "temp": "^0.8.3"
-  },
-  "standard": {
-    "ignore": [
-      "/out",
-      "/spec",
-      "/vendor"
-    ],
-    "env": {
-      "browser": true
-    }
   },
   "private": true,
   "scripts": {
@@ -52,7 +43,7 @@
     "check-tls": "python ./script/tls.py",
     "clang-format": "find atom/ brightray/ chromium_src/ -iname *.h -o -iname *.cc -o -iname *.mm | xargs clang-format -i",
     "lint": "npm run lint:js && npm run lint:cpp && npm run lint:clang-format && npm run lint:py && npm run lint:docs",
-    "lint:js": "standard && cd spec && standard",
+    "lint:js": "eslint . --cache",
     "lint:clang-format": "python script/run-clang-format.py -r -c atom/ chromium_src/ brightray/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:cpp": "node ./script/cpplint.js",
     "lint:py": "python ./script/pylint.py",
