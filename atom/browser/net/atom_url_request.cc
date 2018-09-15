@@ -105,7 +105,8 @@ void AtomURLRequest::DoInitialize(
 
   redirect_policy_ = redirect_policy;
   request_context_getter_ = request_context_getter;
-  request_context_getter_->AddObserver(this);
+  // FIXME(jeremy): the observer API is deprecated and marked private
+  // request_context_getter_->AddObserver(this);
   auto* context = request_context_getter_->GetURLRequestContext();
   if (!context) {
     // Called after shutdown.
@@ -132,7 +133,8 @@ void AtomURLRequest::DoTerminate() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
   request_.reset();
   if (request_context_getter_) {
-    request_context_getter_->RemoveObserver(this);
+    // FIXME(jeremy): the observer API is deprecated and marked private
+    // request_context_getter_->RemoveObserver(this);
     request_context_getter_ = nullptr;
   }
 }
