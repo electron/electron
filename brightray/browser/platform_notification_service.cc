@@ -54,7 +54,7 @@ class NotificationDelegateImpl final : public brightray::NotificationDelegate {
 
   void NotificationClosed() override {
     content::NotificationEventDispatcher::GetInstance()
-        ->DispatchNonPersistentCloseEvent(notification_id_);
+        ->DispatchNonPersistentCloseEvent(notification_id_, base::DoNothing());
   }
 
   void NotificationDisplayed() override {
