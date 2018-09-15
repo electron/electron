@@ -188,8 +188,7 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
       FROM_HERE, base::Bind(&PrintJob::Quit, quit_factory_.GetWeakPtr()),
       timeout);
 
-  base::MessageLoop::ScopedNestableTaskAllower allow(
-      base::MessageLoop::current());
+  base::MessageLoop::ScopedNestableTaskAllower allow;
   base::RunLoop().Run();
 
   return true;
