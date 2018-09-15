@@ -6,6 +6,7 @@ static_library("brightray") {
     "//base:base_static",
     "//components/network_session_configurator/common",
     "//components/prefs",
+    "//components/certificate_transparency",
     "//content/public/browser",
     "//content/shell:resources",
     "//net:extras",
