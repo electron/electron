@@ -396,7 +396,7 @@ void ClearAuthCacheInIO(
             options.origin, options.realm, options.auth_scheme,
             net::AuthCredentials(options.username, options.password));
       } else {
-        auth_cache->ClearEntriesAddedWithin(base::TimeDelta::Max());
+        auth_cache->ClearAllEntries();
       }
     } else if (options.type == "clientCertificate") {
       auto* client_auth_cache = network_session->ssl_client_auth_cache();
