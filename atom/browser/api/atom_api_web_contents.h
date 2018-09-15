@@ -352,8 +352,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::BluetoothChooser::EventHandler& handler) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
-  void OnAudioStateChanged(content::WebContents* web_contents,
-                           bool audible) override;
+  void OnAudioStateChanged(bool audible) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;

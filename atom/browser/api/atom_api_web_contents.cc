@@ -760,8 +760,7 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::OnAudioStateChanged(content::WebContents* web_contents,
-                                      bool audible) {
+void WebContents::OnAudioStateChanged(bool audible) {
   Emit("-audio-state-changed", audible);
 }
 
