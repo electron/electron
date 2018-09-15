@@ -16,6 +16,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
+#include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
@@ -845,7 +846,8 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-void WebContents::DidStartNavigation(
+bool WebContents::EmitNavigationEvent(
+    const std::string& event,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -866,8 +868,18 @@ void WebContents::DidStartNavigation(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  Emit("did-start-navigation", url, is_same_document, is_main_frame,
-       frame_process_id, frame_routing_id);
+  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
+              frame_routing_id);
+}
+
+void WebContents::DidStartNavigation(
+    content::NavigationHandle* navigation_handle) {
+  EmitNavigationEvent("did-start-navigation", navigation_handle);
+}
+
+void WebContents::DidRedirectNavigation(
+    content::NavigationHandle* navigation_handle) {
+  EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
 void WebContents::DidFinishNavigation(

@@ -1,0 +1,4 @@
+vendor
+node_modules
+spec/node_modules
+spec/static

@@ -112,8 +112,9 @@ build-steps: &build-steps
     - run:
         name: Test
         environment:
-          MOCHA_REPORTER: mocha-junit-reporter
+          MOCHA_REPORTER: mocha-multi-reporters
           MOCHA_FILE: junit/test-results.xml
+          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           if [ "$RUN_TESTS" != "false" ]; then
@@ -189,8 +190,9 @@ mac-build-steps: &mac-build-steps
     - run:
         name: Test
         environment:
-          MOCHA_REPORTER: mocha-junit-reporter
+          MOCHA_REPORTER: mocha-multi-reporters
           MOCHA_FILE: junit/test-results.xml
+          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           if [ "$RUN_TESTS" != "false" ]; then
@@ -338,49 +340,15 @@ jobs:
     <<: *linux-build-machine
     <<: *build-steps
 
-  electron-osx-release:
-    environment:
-      GN_CONFIG: //electron/build/args/release.gn
-      RUN_TESTS: true
-      NIGHTLY_BUILD: true
-    <<: *mac-build-machine
-    <<: *mac-build-steps
-
   electron-osx-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
-      RUN_TESTS: true
-    <<: *mac-build-machine
-    <<: *mac-build-steps
-
-  electron-osx-debug:
-    environment:
-      GN_CONFIG: //electron/build/args/debug.gn
-      RUN_TESTS: false
-    <<: *mac-build-machine
-    <<: *mac-build-steps
-
-  electron-mas-release:
-    environment:
-      GN_CONFIG: //electron/build/args/release.gn
-      RUN_TESTS: true
-      GN_EXTRA_ARGS: 'is_mas_build = true'
-      NIGHTLY_BUILD: true
     <<: *mac-build-machine
     <<: *mac-build-steps
 
   electron-mas-testing:
     environment:
       GN_CONFIG: //electron/build/args/testing.gn
-      RUN_TESTS: true
-      GN_EXTRA_ARGS: 'is_mas_build = true'
-    <<: *mac-build-machine
-    <<: *mac-build-steps
-
-  electron-mas-debug:
-    environment:
-      GN_CONFIG: //electron/build/args/debug.gn
-      RUN_TESTS: false
       GN_EXTRA_ARGS: 'is_mas_build = true'
     <<: *mac-build-machine
     <<: *mac-build-steps
@@ -397,12 +365,19 @@ workflows:
       - electron-linux-arm-testing
       - electron-linux-arm64-debug
       - electron-linux-arm64-testing
-  build-mac:
+
+  build-mac-fork-prs:
     jobs:
-      - electron-mas-debug
-      - electron-mas-testing
-      - electron-osx-debug
-      - electron-osx-testing
+      - electron-mas-testing:
+          filters:
+            branches:
+              # only from forks
+              only: /^pull\/.*$/
+      - electron-osx-testing:
+          filters:
+            branches:
+              # only from forks
+              only: /^pull\/.*$/
 
   nightly-release-test:
     triggers:
@@ -417,5 +392,3 @@ workflows:
       - electron-linux-ia32-release
       - electron-linux-arm-release
       - electron-linux-arm64-release
-      - electron-mas-release
-      - electron-osx-release

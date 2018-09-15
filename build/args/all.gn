@@ -1,5 +1,4 @@
 is_electron_build = true
-is_electron_gn_build = true
 use_jumbo_build = true
 root_extra_deps = [ "//electron" ]
 
