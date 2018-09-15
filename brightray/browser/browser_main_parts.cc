@@ -137,7 +137,7 @@ int BrowserX11IOErrorHandler(Display* d) {
   g_in_x11_io_error_handler = true;
   LOG(ERROR) << "X IO error received (X server probably went away)";
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+      FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
 
   return 0;
 }
