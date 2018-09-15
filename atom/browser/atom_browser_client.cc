@@ -550,7 +550,8 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
 }
 
 void AtomBrowserClient::RenderProcessReady(content::RenderProcessHost* host) {
-  render_process_host_pids_[host->GetID()] = base::GetProcId(host->GetHandle());
+  render_process_host_pids_[host->GetID()] =
+      base::GetProcId(host->GetProcess().Handle());
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessReady(host);
   }
