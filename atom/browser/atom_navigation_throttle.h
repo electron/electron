@@ -16,7 +16,7 @@ class AtomNavigationThrottle : public content::NavigationThrottle {
 
   AtomNavigationThrottle::ThrottleCheckResult WillRedirectRequest() override;
 
-  const char* GetNameForLogging() override { return "AtomNavigationThrottle"; }
+  const char* GetNameForLogging() override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AtomNavigationThrottle);

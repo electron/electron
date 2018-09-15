@@ -15,6 +15,10 @@ AtomNavigationThrottle::AtomNavigationThrottle(
 
 AtomNavigationThrottle::~AtomNavigationThrottle() {}
 
+const char* AtomNavigationThrottle::GetNameForLogging() {
+  return "AtomNavigationThrottle";
+}
+
 content::NavigationThrottle::ThrottleCheckResult
 AtomNavigationThrottle::WillRedirectRequest() {
   auto* handle = navigation_handle();
