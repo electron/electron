@@ -139,7 +139,7 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, &source, 1);
+  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, source);
 }
 
 bool AtomRenderFrameObserver::IsMainWorld(int world_id) {
