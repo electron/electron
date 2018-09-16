@@ -1,8 +1,6 @@
 import os
 import sys
 
-import yaml
-
 from lib import git
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(
@@ -10,7 +8,7 @@ SOURCE_ROOT = os.path.abspath(os.path.dirname(
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYYAML_LIB_DIR = os.path.join(VENDOR_DIR, 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
-
+import yaml  #pylint: disable=wrong-import-position,wrong-import-order
 
 class Patch:
   def __init__(self, file_path, repo_path, paths_prefix=None,
