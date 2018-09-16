@@ -7,7 +7,7 @@ import sys
 
 from dbusmock import DBusTestCase
 
-from config import is_verbose_mode
+from lib.config import is_verbose_mode
 
 def stop():
     DBusTestCase.stop_dbus(DBusTestCase.system_bus_pid)

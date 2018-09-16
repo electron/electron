@@ -3,7 +3,7 @@
 import os
 import sys
 
-import git
+from lib import git
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(
                 os.path.dirname(os.path.dirname(__file__))))

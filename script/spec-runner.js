@@ -41,7 +41,7 @@ getSpecHash().then(([currentSpecHash, currentSpecInstallHash]) => {
   let exe = path.resolve(BASE, utils.getElectronExec())
   const args = process.argv.slice(2)
   if (process.platform === 'linux') {
-    args.unshift(path.resolve(__dirname, 'lib/dbus_mock.py'), exe)
+    args.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
     exe = 'python'
   }
   const child = cp.spawn(exe, args, {
