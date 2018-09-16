@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Git helper functions.
 
 Everything here should be project agnostic: it shouldn't rely on project's

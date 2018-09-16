@@ -1,10 +1,13 @@
+#!/usr/bin/env python
+
 import atexit
 import os
 import subprocess
 import sys
 
-from config import is_verbose_mode
 from dbusmock import DBusTestCase
+
+from config import is_verbose_mode
 
 def stop():
     DBusTestCase.stop_dbus(DBusTestCase.system_bus_pid)
@@ -22,6 +25,7 @@ def start():
 if __name__ == '__main__':
     start()
     try:
+        print(sys.argv)
         subprocess.check_call(sys.argv[1:])
     finally:
         stop()

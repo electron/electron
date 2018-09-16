@@ -1,7 +1,9 @@
+#!/usr/bin/env python
+
 import os
 import sys
 
-from lib import git
+import git
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(
                 os.path.dirname(os.path.dirname(__file__))))
