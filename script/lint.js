@@ -52,9 +52,11 @@ const LINTERS = [ {
   run: (opts, filenames) => {
     const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
     // cpplint.py writes EVERYTHING to stderr, including status messages
-    for (const line of result.stderr.split(/[\r\n]+/)) {
-      if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
-        console.warn(line)
+    if (result.stderr) {
+      for (const line of result.stderr.split(/[\r\n]+/)) {
+        if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
+          console.warn(line)
+        }
       }
     }
     if (result.status) process.exit(result.status)
