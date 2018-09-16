@@ -3,9 +3,8 @@ import os
 import subprocess
 import sys
 
+from config import is_verbose_mode
 from dbusmock import DBusTestCase
-
-from lib.config import is_verbose_mode
 
 def stop():
     DBusTestCase.stop_dbus(DBusTestCase.system_bus_pid)

@@ -3,7 +3,7 @@
 import subprocess
 import sys
 
-from lib.util import scoped_cwd
+from util import scoped_cwd
 
 
 class GNProject:

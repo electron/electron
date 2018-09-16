@@ -7,7 +7,7 @@ structure, or make assumptions about the passed arguments or calls' outcomes.
 import os
 import subprocess
 
-from lib.util import scoped_cwd
+from util import scoped_cwd
 
 
 def is_repo_root(path):

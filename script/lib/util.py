@@ -17,8 +17,8 @@ import urllib2
 import os
 import zipfile
 
-from lib.config import is_verbose_mode, PLATFORM
-from lib.env_util import get_vs_env
+from config import is_verbose_mode, PLATFORM
+from env_util import get_vs_env
 
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
