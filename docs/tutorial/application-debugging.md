@@ -13,7 +13,8 @@ can open them programmatically by calling the `openDevTools()` API on the
 `webContents` of the instance:
 
 ```javascript
-const { BrowserWindow } = require('electron')
+const { remote } = require('electron')
+const { BrowserWindow } = remote
 
 let win = new BrowserWindow()
 win.webContents.openDevTools()
