@@ -3,7 +3,7 @@
 import subprocess
 import sys
 
-from util import scoped_cwd
+from lib.util import scoped_cwd
 
 
 class GNProject:
@@ -18,7 +18,8 @@ class GNProject:
 
   def run(self, command_name, command_args):
     with scoped_cwd(self.out_dir):
-      complete_args = [self._get_executable_name(), command_name, '.'] + command_args
+      complete_args = [self._get_executable_name(), command_name, '.'] + \
+                      command_args
       return subprocess.check_output(complete_args)
 
   def args(self):

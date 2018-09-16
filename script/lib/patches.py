@@ -1,17 +1,20 @@
+#!/usr/bin/env python
+
 import os
 import sys
 
-import git
+from lib import git
 
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+SOURCE_ROOT = os.path.abspath(os.path.dirname(
+                os.path.dirname(os.path.dirname(__file__))))
 VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
 PYYAML_LIB_DIR = os.path.join(VENDOR_DIR, 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
-import yaml
-
+import yaml  #pylint: disable=wrong-import-position,wrong-import-order
 
 class Patch:
-  def __init__(self, file_path, repo_path, paths_prefix=None, author='Anonymous <anonymous@electronjs.org>', description=None):
+  def __init__(self, file_path, repo_path, paths_prefix=None,
+               author='Anonymous <anonymous@electronjs.org>', description=None):
     self.author = author
     self.description = description
     self.file_path = file_path
@@ -21,14 +24,17 @@ class Patch:
   def apply(self, reverse=False, commit=False, index=False):
     # Add the change to index only if we're going to commit it later.
     add_to_index = index or commit
-    patch_applied = git.apply(self.repo_path, self.file_path, directory=self.paths_prefix, index=add_to_index, reverse=reverse)
+    patch_applied = git.apply_patch(self.repo_path, self.file_path,
+                                    directory=self.paths_prefix,
+                                    index=add_to_index, reverse=reverse)
 
     if not patch_applied:
       return False
 
     if commit:
       message = self.__get_commit_message(reverse)
-      patch_committed = git.commit(self.repo_path, author=self.author, message=message)
+      patch_committed = git.commit(self.repo_path, author=self.author,
+                                   message=message)
       return patch_committed
 
     return True
@@ -72,7 +78,8 @@ class PatchesList:
       # Applying all commits takes about 10 minutes (!) on a fast dev machine.
       # Instead of it we are going only to add all changes to the index
       # and commit them all at once later.
-      applied_successfully = patch.apply(reverse=reverse, index=commit, commit=False)
+      applied_successfully = patch.apply(reverse=reverse, index=commit,
+                                         commit=False)
 
       if not applied_successfully:
         all_patches_applied = False
@@ -133,7 +140,8 @@ class PatchesConfig:
     if raw_data['description'] is not None:
       description += '\n\n' + raw_data['description']
 
-    return Patch(absolute_file_path, repo_path, paths_prefix=paths_prefix, author=author, description=description)
+    return Patch(absolute_file_path, repo_path, paths_prefix=paths_prefix,
+                 author=author, description=description)
 
   def __create_patches_list(self):
     config_contents = self.__parse()
@@ -154,7 +162,8 @@ class PatchesConfig:
     patches_data = config_contents['patches']
     base_directory = os.path.abspath(os.path.dirname(self.path))
 
-    patches = [self.__create_patch(data, base_directory, absolute_repo_path, paths_prefix) for data in patches_data]
+    patches = [self.__create_patch(data, base_directory, absolute_repo_path,
+                                   paths_prefix) for data in patches_data]
     patches_list = PatchesList(repo_path=absolute_repo_path, patches=patches)
     return patches_list
 

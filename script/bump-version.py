@@ -80,7 +80,7 @@ def main():
   else:
     raise Exception("Invalid current version: " + curr_version)
 
-  if args.new_version == None and args.bump == None and args.stable == False:
+  if args.new_version is None and args.bump is None and not args.stable:
     parser.print_help()
     return 1
 

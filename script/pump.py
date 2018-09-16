@@ -62,11 +62,11 @@ GRAMMAR:
        EXPRESSION has Python syntax.
 """
 
-__author__ = 'wan@google.com (Zhanyong Wan)'
-
 import os
 import re
 import sys
+
+__author__ = 'wan@google.com (Zhanyong Wan)'
 
 
 TOKEN_TABLE = [
