@@ -13,6 +13,7 @@ steps:
   name: Setup_depot_tools
 
 - bash: |
-    export PATH="$PATH:{AGENT_BUILDDIRECTORY}/third_party/depot_tools"
+    export PATH="$PATH:${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
+    echo "##vso[task.setvariable variable=PATH]$PATH"
     npm install
     npm run lint
