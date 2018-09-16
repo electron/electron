@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 
-import lib.git as git
+from lib import git
 from lib.patches import PatchesConfig
 
 

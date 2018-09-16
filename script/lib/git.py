@@ -1,13 +1,15 @@
+#!/usr/bin/env python
+
 """Git helper functions.
 
-Everything in here should be project agnostic, shouldn't rely on project's structure,
-and make any assumptions about the passed arguments or calls outcomes.
+Everything here should be project agnostic: it shouldn't rely on project's
+structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
 import os
 import subprocess
 
-from util import scoped_cwd
+from lib.util import scoped_cwd
 
 
 def is_repo_root(path):
@@ -40,7 +42,7 @@ def get_repo_root(path):
   return get_repo_root(parent_path)
 
 
-def apply(repo, patch_path, directory=None, index=False, reverse=False):
+def apply_patch(repo, patch_path, directory=None, index=False, reverse=False):
   args = ['git', 'apply',
           '--ignore-space-change',
           '--ignore-whitespace',
@@ -64,7 +66,7 @@ def get_patch(repo, commit_hash):
   args = ['git', 'diff-tree',
           '-p',
           commit_hash,
-          '--'  # Explicitly tell Git that `commit_hash` is a revision, not a path.
+          '--'  # Explicitly tell Git `commit_hash` is a revision, not a path.
           ]
 
   with scoped_cwd(repo):

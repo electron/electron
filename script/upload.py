@@ -210,5 +210,4 @@ def get_release(version):
   return release
 
 if __name__ == '__main__':
-  import sys
   sys.exit(main())

@@ -17,8 +17,8 @@ import urllib2
 import os
 import zipfile
 
-from config import is_verbose_mode, PLATFORM
-from env_util import get_vs_env
+from lib.config import is_verbose_mode, PLATFORM
+from lib.env_util import get_vs_env
 
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
@@ -142,11 +142,14 @@ def safe_mkdir(path):
       raise
 
 
-def execute(argv, env=os.environ, cwd=None):
+def execute(argv, env=None, cwd=None):
+  if env is None:
+    env = os.environ
   if is_verbose_mode():
     print ' '.join(argv)
   try:
-    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env, cwd=cwd)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT,
+                                     env=env, cwd=cwd)
     if is_verbose_mode():
       print output
     return output
@@ -155,7 +158,9 @@ def execute(argv, env=os.environ, cwd=None):
     raise e
 
 
-def execute_stdout(argv, env=os.environ, cwd=None):
+def execute_stdout(argv, env=None, cwd=None):
+  if env is None:
+    env = os.environ
   if is_verbose_mode():
     print ' '.join(argv)
     try:
@@ -210,6 +215,16 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
 def add_exec_bit(filename):
   os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
 
+def parse_version(version):
+  if version[0] == 'v':
+    version = version[1:]
+
+  vs = version.split('.')
+  if len(vs) > 4:
+    return vs[0:4]
+  else:
+    return vs + ['0'] * (4 - len(vs))
+
 def clean_parse_version(v):
   return parse_version(v.split("-")[0])        
 
@@ -230,7 +245,7 @@ def get_last_major():
 
 def get_next_nightly(v):
   pv = clean_parse_version(v)
-  major = pv[0]; minor = pv[1]; patch = pv[2]
+  (major, minor, patch) = pv[0:3]
 
   if (is_stable(v)):
     patch = str(int(pv[2]) + 1)
@@ -266,15 +281,16 @@ def get_next_beta(v):
 
 def get_next_stable_from_pre(v):
   pv = clean_parse_version(v)
-  major = pv[0]; minor = pv[1]; patch = pv[2]
+  (major, minor, patch) = pv[0:3]
   return make_version(major, minor, patch)
 
 def get_next_stable_from_stable(v):
   pv = clean_parse_version(v)
-  major = pv[0]; minor = pv[1]; patch = pv[2]
+  (major, minor, patch) = pv[0:3]
   return make_version(major, minor, str(int(patch) + 1))
 
 def make_version(major, minor, patch, pre = None):
   if pre is None:
     return major + '.' + minor + '.' + patch
   return major + "." + minor + "." + patch + '-' + pre
+

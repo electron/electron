@@ -16,9 +16,10 @@ def validate_pair(ob):
     return True
 
 
-def consume(iter):
+def consume(iterator):
   try:
-    while True: next(iter)
+    while True:
+      next(iterator)
   except StopIteration:
     pass
 
@@ -36,11 +37,11 @@ def get_environment_from_batch_command(env_cmd, initial=None):
   if not isinstance(env_cmd, (list, tuple)):
     env_cmd = [env_cmd]
   # Construct the command that will alter the environment.
-  env_cmd = subprocess.list2cmdline(env_cmd)
+  cmd = subprocess.list2cmdline(env_cmd)
   # Create a tag so we can tell in the output when the proc is done.
   tag = 'END OF BATCH COMMAND'
   # Construct a cmd.exe command to do accomplish this.
-  cmd = 'cmd.exe /s /c "{env_cmd} && echo "{tag}" && set"'.format(**vars())
+  cmd = 'cmd.exe /s /c "{cmd} && echo "{tag}" && set"'.format(**locals())
   # Launch the process.
   proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=initial)
   # Parse the output sent to stdout.
@@ -63,10 +64,11 @@ def get_vs_location(vs_version):
     """
     Returns the location of the VS building environment.
 
-    The vs_version can be strings like "[15.0,16.0)", meaning 2017, but not the next version.
+    The vs_version can be strings like "[15.0,16.0)", meaning 2017,
+    but not the next version.
     """
 
-    # vswhere can't handle spaces, like "[15.0, 16.0)" should become "[15.0,16.0)"
+    # vswhere can't handle spaces. "[15.0, 16.0)" should become "[15.0,16.0)"
     vs_version = vs_version.replace(" ", "")
 
     program_files = os.environ.get('ProgramFiles(x86)')
@@ -86,10 +88,10 @@ def get_vs_env(vs_version, arch):
   """
   Returns the env object for VS building environment.
 
-  vs_version is the version of Visual Studio to use.  See get_vs_location for
-  more details.
-  The arch has to be one of "x86", "amd64", "arm", "x86_amd64", "x86_arm", "amd64_x86",
-  "amd64_arm", i.e. the args passed to vcvarsall.bat.
+  vs_version is the version of Visual Studio to use.
+  See get_vs_location for more details.
+  The arch must be one of "x86", "amd64", "arm", "x86_amd64", "x86_arm",
+  "amd64_x86", "amd64_arm", i.e. the args passed to vcvarsall.bat.
   """
 
   location = get_vs_location(vs_version)
