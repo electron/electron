@@ -25,7 +25,6 @@ def start():
 if __name__ == '__main__':
     start()
     try:
-        print(sys.argv)
         subprocess.check_call(sys.argv[1:])
     finally:
         stop()
