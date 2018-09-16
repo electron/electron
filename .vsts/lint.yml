@@ -8,7 +8,7 @@ pool:
 
 steps:
 - bash: |
-    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${AGENT_BUILDDIRECTORY}/depot_tools"
+    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
     echo "##vso[task.setvariable variable=PATH]$PATH:${AGENT_BUILDDIRECTORY}/depot_tools"
   name: Setup_depot_tools
 
