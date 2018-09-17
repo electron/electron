@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/request_context_delegate.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -257,10 +256,6 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
   Init(isolate);
-  cookie_change_subscription_ =
-      browser_context->GetRequestContextDelegate()
-          ->RegisterCookieChangeCallback(
-              base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
 }
 
 Cookies::~Cookies() {}

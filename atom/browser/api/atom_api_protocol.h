@@ -102,7 +102,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
                         mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto* getter = browser_context_->GetRequestContext();
+    auto* getter = static_cast<URLRequestContextGetter*>(
+        browser_context_->GetRequestContext());
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::RegisterProtocolInIO<RequestJob>,
@@ -111,7 +112,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   }
   template <typename RequestJob>
   static ProtocolError RegisterProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
@@ -130,14 +131,14 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Unregister the protocol handler that handles |scheme|.
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   static ProtocolError UnregisterProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Whether the protocol has handler registered.
   void IsProtocolHandled(const std::string& scheme,
                          const BooleanCallback& callback);
   static bool IsProtocolHandledInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Replace the protocol handler with a new one.
@@ -147,7 +148,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
                          mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto* getter = browser_context_->GetRequestContext();
+    auto* getter = static_cast<URLRequestContextGetter*>(
+        browser_context_->GetRequestContext());
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::InterceptProtocolInIO<RequestJob>,
@@ -156,7 +158,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   }
   template <typename RequestJob>
   static ProtocolError InterceptProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
@@ -177,7 +179,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Restore the |scheme| to its original protocol handler.
   void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
   static ProtocolError UninterceptProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Convert error code to JS exception and call the callback.

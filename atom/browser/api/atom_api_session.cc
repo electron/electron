@@ -48,6 +48,8 @@
 #include "net/dns/host_cache.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
+#include "net/http/http_cache.h"
+#include "net/http/http_transaction_factory.h"
 #include "net/proxy_resolution/proxy_config_service_fixed.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
@@ -447,7 +449,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
 }
 
 void SetDevToolsNetworkEmulationClientIdInIO(
-    brightray::URLRequestContextGetter* url_request_context_getter,
+    net::URLRequestContextGetter* url_request_context_getter,
     const std::string& client_id) {
   if (!url_request_context_getter)
     return;
@@ -686,7 +688,7 @@ void Session::SetUserAgent(const std::string& user_agent,
   std::string accept_lang = g_browser_process->GetApplicationLocale();
   args->GetNext(&accept_lang);
 
-  scoped_refptr<brightray::URLRequestContextGetter> getter(
+  scoped_refptr<net::URLRequestContextGetter> getter(
       browser_context_->GetRequestContext());
   getter->GetNetworkTaskRunner()->PostTask(
       FROM_HERE,
