@@ -591,6 +591,9 @@ void NativeWindowViews::SetResizable(bool resizable) {
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
+      if (maximizable_) {
+        SetMaximizable(resizable)
+      }
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
       resizable_ = false;
