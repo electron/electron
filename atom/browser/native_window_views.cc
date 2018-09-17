@@ -592,7 +592,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
       if (maximizable_) {
-        SetMaximizable(resizable)
+        SetMaximizable(resizable);
       }
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
