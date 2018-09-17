@@ -35,6 +35,9 @@ env-arm64: &env-arm64
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
 
+env-mas: &env-mas
+  GN_EXTRA_ARGS: 'is_mas_build = true'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -58,10 +61,32 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
       fi
     when: on_success
 
-step-add-depot-tools-to-path: &step-add-depot-tools-to-path
+step-checkout-electron: &step-checkout-electron
+  checkout:
+    path: src/electron
+
+step-depot-tools-get: &step-depot-tools-get
+  run:
+    name: Get depot tools
+    command: |
+      git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+
+step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
     name: Add depot tools to PATH
     command: echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
+
+step-gclient-sync: &step-gclient-sync
+  run:
+    name: Gclient sync
+    command: |
+      gclient config \
+        --name "src/electron" \
+        --unmanaged \
+        $GCLIENT_EXTRA_ARGS \
+        "$CIRCLE_REPOSITORY_URL"
+
+      gclient sync --with_branch_heads --with_tags
 
 step-setup-env-for-build: &step-setup-env-for-build
   run:
@@ -73,6 +98,15 @@ step-setup-env-for-build: &step-setup-env-for-build
       # https://github.com/mozilla/sccache
       SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
       echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+
+step-install-nodejs-on-mac: &step-install-nodejs-on-mac
+  run:
+    name: Install Node.js 10 on MacOS
+    command: |
+      if [ "`uname`" == "Darwin" ]; then
+        brew update
+        brew install node@10
+      fi
 
 step-electron-gn-gen: &step-electron-gn-gen
   run:
@@ -118,13 +152,14 @@ step-persist-data-for-tests: &step-persist-data-for-tests
   persist_to_workspace:
     root: .
     paths:
-      # To run `gn args` for that dir.
+      # To run `gn args` for that dir from the "verify-ffmpeg" script.
       - src/out/Default/args.gn
       - src/out/Default/build.ninja
 
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/gen/node_headers
+      - src/out/ffmpeg/libffmpeg.dylib
       - src/out/ffmpeg/libffmpeg.so
 
 step-electron-dist-unzip: &step-electron-dist-unzip
@@ -188,7 +223,8 @@ step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
 step-setup-for-headless-testing: &step-setup-for-headless-testing
   run:
     name: Setup for headless testing
-    command: sh -e /etc/init.d/xvfb start
+    command: |
+      sh -e /etc/init.d/xvfb start
 
 step-electron-tests-run: &step-electron-tests-run
   run:
@@ -216,13 +252,10 @@ step-show-sccache-stats: &step-show-sccache-stats
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
-    - checkout:
-        path: src/electron
-    - run:
-        name: Get depot tools
-        command: |
-          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-checkout-electron
+    - <<: *step-depot-tools-get
+    - <<: *step-depot-tools-add-to-path
+
     - restore_cache:
         paths:
           - ~/.gclient-cache
@@ -230,24 +263,17 @@ steps-checkout: &steps-checkout
           - v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
           - v1-gclient-cache-{{ arch }}-
     - run:
-        name: Gclient sync
+        name: Set GIT_CACHE_PATH to make gclient to use the cache
         command: |
           # CircleCI does not support interpolation when setting environment variables.
           # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
           echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
-          source $BASH_ENV
-
-          gclient config \
-            --name "src/electron" \
-            --unmanaged \
-            $GCLIENT_EXTRA_ARGS \
-            "$CIRCLE_REPOSITORY_URL"
-
-          gclient sync --with_branch_heads --with_tags
+    - <<: *step-gclient-sync
     - save_cache:
         paths:
           - ~/.gclient-cache
         key: v1-gclient-cache-{{ arch }}-{{ checksum "src/electron/DEPS" }}
+
     - run:
         name: Remove some unused data to avoid storing it in the workspace
         command: |
@@ -264,7 +290,7 @@ steps-debug-build: &steps-debug-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-depot-tools-add-to-path
     - <<: *step-setup-env-for-build
 
     # Electron app
@@ -277,7 +303,7 @@ steps-testing-build: &steps-testing-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-depot-tools-add-to-path
     - <<: *step-setup-env-for-build
 
     # Electron app
@@ -303,7 +329,7 @@ steps-release-build: &steps-release-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-depot-tools-add-to-path
     - <<: *step-setup-env-for-build
 
     # Electron app
@@ -337,7 +363,7 @@ steps-native-tests: &steps-native-tests
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-depot-tools-add-to-path
     - <<: *step-setup-env-for-build
 
     - <<: *step-electron-gn-gen
@@ -349,7 +375,7 @@ steps-tests: &steps-tests
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-add-depot-tools-to-path
+    - <<: *step-depot-tools-add-to-path
     - <<: *step-electron-dist-unzip
     - <<: *step-setup-for-headless-testing
 
@@ -358,78 +384,64 @@ steps-tests: &steps-tests
     - <<: *step-electron-tests-run
     - <<: *step-electron-tests-store-results
 
-# TODO(alexeykuzmin): Use shared build steps defined above for Mac builds.
-mac-build-steps: &mac-build-steps
+# Mac build are different in a few ways:
+# 1. We can't use save_cache/restore_cache on Mac,
+#   unpacking with `tar` fails with "Attempt to write to an empty file" error.
+# 2. We don't use a shared checkout job because persist_to_workspace
+#   and attach_workspace take too much time, more than the checkout itself.
+steps-build-mac: &steps-build-mac
   steps:
-    - run:
-        name: Setup depot tools
-        command: |
-          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-          echo 'export PATH="$PATH:'"$PWD"'/depot_tools"' >> $BASH_ENV
-          echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
-    - run:
-        name: Install Node.js 10 on MacOS
-        command: |
-          echo 'Installing Node.js 10 for MacOS'
-          brew update
-          brew install node@10
-          brew install gnu-tar
-          echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> $BASH_ENV
-    - checkout:
-        path: src/electron
-    - run:
-        name: Gclient sync
-        command: |
-          gclient config \
-            --name "src/electron" \
-            --unmanaged \
-            $GCLIENT_EXTRA_ARGS \
-            "$CIRCLE_REPOSITORY_URL"
-          gclient sync --with_branch_heads --with_tags
-    - run:
-        name: GN gen
-        command: |
-          cd src
-          SCCACHE_PATH="$PWD/electron/external_binaries/sccache"
-          echo 'export SCCACHE_WRAPPER="'"$SCCACHE_PATH"'"' >> $BASH_ENV
-          echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/buildtools"' >> $BASH_ENV
-          source $BASH_ENV
-          gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-    - run:
-        name: Ninja build
-        command: |
-          cd src
-          ninja -C out/Default electron:electron_app
-    - run:
-        name: Build dist.zip
-        command: |
-          cd src
-          ninja -C out/Default electron:electron_dist_zip
-    - run:
-        name: Check sccache stats after build
-        command: $SCCACHE_WRAPPER -s
-    - run:
-        name: Test
-        environment:
-          MOCHA_REPORTER: mocha-multi-reporters
-          MOCHA_FILE: junit/test-results.xml
-          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
-          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        command: |
-          if [ "$RUN_TESTS" != "false" ]; then
-            cd src
-            ninja -C out/Default third_party/electron_node:headers
-            export ELECTRON_OUT_DIR=Default
-            (cd electron && npm run test -- --ci --enable-logging)
-          fi
-    - <<: *step-maybe-notify-slack-failure
-    - <<: *step-maybe-notify-slack-success
-    - store_test_results:
-        path: src/junit
-    - store_artifacts:
-        path: src/junit
-    - store_artifacts:
-        path: src/out/Default/dist.zip
+    - <<: *step-checkout-electron
+    - <<: *step-depot-tools-get
+    - <<: *step-depot-tools-add-to-path
+    - <<: *step-install-nodejs-on-mac
+    - <<: *step-gclient-sync
+    - <<: *step-setup-env-for-build
+
+    # Electron app
+    - <<: *step-electron-gn-gen
+    - <<: *step-electron-build
+    - <<: *step-electron-dist-build
+    - <<: *step-electron-dist-store
+
+    # ffmpeg
+    - <<: *step-ffmpeg-gn-gen
+    - <<: *step-ffmpeg-build
+    - <<: *step-ffmpeg-store
+
+    # It would be better to verify ffmpeg as a part of a test job,
+    # but it requires `gn` to run, and it's complicated
+    # to store all gn's dependencies and configs.
+    - <<: *step-verify-ffmpeg
+
+    # Node.js headers for tests
+    - <<: *step-nodejs-headers-build
+
+    - <<: *step-show-sccache-stats
+
+    - persist_to_workspace:
+        root: .
+        paths:
+          - src/electron
+
+    # Save all data needed for a further tests run.
+    - <<: *step-persist-data-for-tests
+
+steps-tests-mac: &steps-tests-mac
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-depot-tools-add-to-path
+    - <<: *step-electron-dist-unzip
+    - <<: *step-install-nodejs-on-mac
+
+    - <<: *step-electron-tests-run
+    - <<: *step-electron-tests-store-results
+
+filter-only-prs-from-forks: &filter-only-prs-from-forks
+  filters:
+    branches:
+      only: /^pull\/.*$/
 
 # List of all jobs.
 version: 2
@@ -535,6 +547,19 @@ jobs:
       BUILD_NATIVE_MKSNAPSHOT: true
     <<: *steps-release-build
 
+  osx-testing:
+    <<: *machine-mac
+    environment:
+      <<: *env-testing-build
+    <<: *steps-build-mac
+
+  mas-testing:
+    <<: *machine-mac
+    environment:
+      <<: *env-mas
+      <<: *env-testing-build
+    <<: *steps-build-mac
+
   # Layer 3: Tests.
   linux-x64-native-tests-fyi:
     <<: *machine-linux
@@ -562,20 +587,13 @@ jobs:
       <<: *env-ia32
     <<: *steps-tests
 
-  # Mac builds.
-  # TODO(alexeykuzmin): Use shared configs for them too.
-  electron-osx-testing:
-    environment:
-      GN_CONFIG: //electron/build/args/testing.gn
+  osx-testing-tests:
     <<: *machine-mac
-    <<: *mac-build-steps
+    <<: *steps-tests-mac
 
-  electron-mas-testing:
-    environment:
-      GN_CONFIG: //electron/build/args/testing.gn
-      GN_EXTRA_ARGS: 'is_mas_build = true'
+  mas-testing-tests:
     <<: *machine-mac
-    <<: *mac-build-steps
+    <<: *steps-tests-mac
 
 workflows:
   version: 2
@@ -622,16 +640,19 @@ workflows:
 
   build-mac-fork-prs:
     jobs:
-      - electron-mas-testing:
-          filters:
-            branches:
-              # only from forks
-              only: /^pull\/.*$/
-      - electron-osx-testing:
-          filters:
-            branches:
-              # only from forks
-              only: /^pull\/.*$/
+      - osx-testing:
+         <<: *filter-only-prs-from-forks
+      - osx-testing-tests:
+          <<: *filter-only-prs-from-forks
+          requires:
+            - osx-testing
+
+      - mas-testing:
+          <<: *filter-only-prs-from-forks
+      - mas-testing-tests:
+          <<: *filter-only-prs-from-forks
+          requires:
+            - mas-testing
 
   nightly-release-test:
     triggers:
