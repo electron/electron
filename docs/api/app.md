@@ -428,8 +428,8 @@ and `will-quit` events will not be emitted.
 ### `app.relaunch([options])`
 
 * `options` Object (optional)
-  * `args` String[] (optional)
-  * `execPath` String (optional)
+  * `args` string[] (optional)
+  * `execPath` string (optional)
 
 Relaunches the app when current instance exits.
 
@@ -456,7 +456,7 @@ app.exit(0)
 
 ### `app.isReady()`
 
-Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
+Returns `boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
 ### `app.whenReady()`
 
@@ -480,13 +480,13 @@ them.
 
 ### `app.getAppPath()`
 
-Returns `String` - The current application directory.
+Returns `string` - The current application directory.
 
 ### `app.getPath(name)`
 
-* `name` String
+* `name` string
 
-Returns `String` - A path to a special directory or file associated with `name`. On
+Returns `string` - A path to a special directory or file associated with `name`. On
 failure an `Error` is thrown.
 
 You can request the following paths by the name:
@@ -512,9 +512,9 @@ You can request the following paths by the name:
 
 ### `app.getFileIcon(path[, options], callback)`
 
-* `path` String
+* `path` string
 * `options` Object (optional)
-  * `size` String
+  * `size` string
     * `small` - 16x16
     * `normal` - 32x32
     * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
@@ -534,8 +534,8 @@ mime type.
 
 ### `app.setPath(name, path)`
 
-* `name` String
-* `path` String
+* `name` string
+* `path` string
 
 Overrides the `path` to a special directory or file associated with `name`. If
 the path specifies a directory that does not exist, the directory will be
@@ -549,13 +549,13 @@ directory. If you want to change this location, you have to override the
 
 ### `app.getVersion()`
 
-Returns `String` - The version of the loaded application. If no version is found in the
+Returns `string` - The version of the loaded application. If no version is found in the
 application's `package.json` file, the version of the current bundle or
 executable is returned.
 
 ### `app.getName()`
 
-Returns `String` - The current application's name, which is the name in the application's
+Returns `string` - The current application's name, which is the name in the application's
 `package.json` file.
 
 Usually the `name` field of `package.json` is a short lowercased name, according
@@ -565,13 +565,13 @@ preferred over `name` by Electron.
 
 ### `app.setName(name)`
 
-* `name` String
+* `name` string
 
 Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns `String` - The current application locale. Possible return values are documented [here](locales.md).
+Returns `string` - The current application locale. Possible return values are documented [here](locales.md).
 
 To set the locale, you'll want to use a command line switch at app startup, which may be found [here](https://github.com/electron/electron/blob/master/docs/api/chrome-command-line-switches.md).
 
@@ -582,7 +582,7 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
-* `path` String
+* `path` string
 
 Adds `path` to the recent documents list.
 
@@ -595,13 +595,13 @@ Clears the recent documents list.
 
 ### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
-* `protocol` String - The name of your protocol, without `://`. If you want your
+* `protocol` string - The name of your protocol, without `://`. If you want your
   app to handle `electron://` links, call this method with `electron` as the
   parameter.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `path` string (optional) _Windows_ - Defaults to `process.execPath`
+* `args` string[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 This method sets the current executable as the default handler for a protocol
 (aka URI scheme). It allows you to integrate your app deeper into the operating
@@ -621,11 +621,11 @@ The API uses the Windows Registry and LSSetDefaultHandlerForURLScheme internally
 
 ### `app.removeAsDefaultProtocolClient(protocol[, path, args])` _macOS_ _Windows_
 
-* `protocol` String - The name of your protocol, without `://`.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `protocol` string - The name of your protocol, without `://`.
+* `path` string (optional) _Windows_ - Defaults to `process.execPath`
+* `args` string[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 This method checks if the current executable as the default handler for a
 protocol (aka URI scheme). If so, it will remove the app as the default handler.
@@ -633,11 +633,11 @@ protocol (aka URI scheme). If so, it will remove the app as the default handler.
 
 ### `app.isDefaultProtocolClient(protocol[, path, args])`
 
-* `protocol` String - The name of your protocol, without `://`.
-* `path` String (optional) _Windows_ - Defaults to `process.execPath`
-* `args` String[] (optional) _Windows_ - Defaults to an empty array
+* `protocol` string - The name of your protocol, without `://`.
+* `path` string (optional) _Windows_ - Defaults to `process.execPath`
+* `args` string[] (optional) _Windows_ - Defaults to an empty array
 
-Returns `Boolean`
+Returns `boolean`
 
 This method checks if the current executable is the default handler for a protocol
 (aka URI scheme). If so, it will return true. Otherwise, it will return false.
@@ -658,7 +658,7 @@ Adds `tasks` to the [Tasks][tasks] category of the JumpList on Windows.
 
 `tasks` is an array of [`Task`](structures/task.md) objects.
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 **Note:** If you'd like to customize the Jump List even more use
 `app.setJumpList(categories)` instead.
@@ -771,7 +771,7 @@ app.setJumpList([
 
 ### `app.requestSingleInstanceLock()`
 
-Returns `Boolean`
+Returns `boolean`
 
 This method makes your application a Single Instance Application - instead of
 allowing multiple instances of your app to run, this will ensure that only a
@@ -822,7 +822,7 @@ if (!gotTheLock) {
 
 ### `app.hasSingleInstanceLock()`
 
-Returns `Boolean`
+Returns `boolean`
 
 This method returns whether or not this instance of your app is currently
 holding the single instance lock.  You can request the lock with
@@ -836,10 +836,10 @@ allow multiple instances of the application to once again run side by side.
 
 ### `app.setUserActivity(type, userInfo[, webpageURL])` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` string - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
-* `webpageURL` String (optional) - The webpage to load in a browser if no suitable app is
+* `webpageURL` string (optional) - The webpage to load in a browser if no suitable app is
   installed on the resuming device. The scheme must be `http` or `https`.
 
 Creates an `NSUserActivity` and sets it as the current activity. The activity
@@ -847,18 +847,18 @@ is eligible for [Handoff][handoff] to another device afterward.
 
 ### `app.getCurrentActivityType()` _macOS_
 
-Returns `String` - The type of the currently running activity.
+Returns `string` - The type of the currently running activity.
 
 ### `app.invalidateCurrentActivity()` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` string - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 
 Invalidates the current [Handoff][handoff] user activity.
 
 ### `app.updateCurrentActivity(type, userInfo)` _macOS_
 
-* `type` String - Uniquely identifies the activity. Maps to
+* `type` string - Uniquely identifies the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - App-specific state to store for use by another device.
 
@@ -867,15 +867,15 @@ Updates the current activity if its type matches `type`, merging the entries fro
 
 ### `app.setAppUserModelId(id)` _Windows_
 
-* `id` String
+* `id` string
 
 Changes the [Application User Model ID][app-user-model-id] to `id`.
 
 ### `app.importCertificate(options, callback)` _LINUX_
 
 * `options` Object
-  * `certificate` String - Path for the pkcs12 file.
-  * `password` String - Passphrase for the certificate.
+  * `certificate` string - Path for the pkcs12 file.
+  * `password` string - Passphrase for the certificate.
 * `callback` Function
   * `result` Integer - Result of import.
 
@@ -909,7 +909,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 
 * `count` Integer
 
-Returns `Boolean` - Whether the call succeeded.
+Returns `boolean` - Whether the call succeeded.
 
 Sets the counter badge for current app. Setting the count to `0` will hide the
 badge.
@@ -925,14 +925,14 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.isUnityRunning()` _Linux_
 
-Returns `Boolean` - Whether the current desktop environment is Unity launcher.
+Returns `boolean` - Whether the current desktop environment is Unity launcher.
 
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
-  * `path` String (optional) _Windows_ - The executable path to compare against.
+  * `path` string (optional) _Windows_ - The executable path to compare against.
     Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to compare
+  * `args` string[] (optional) _Windows_ - The command-line arguments to compare
     against. Defaults to an empty array.
 
 If you provided `path` and `args` options to `app.setLoginItemSettings` then you
@@ -940,15 +940,15 @@ need to pass the same arguments here for `openAtLogin` to be set correctly.
 
 Returns `Object`:
 
-* `openAtLogin` Boolean - `true` if the app is set to open at login.
-* `openAsHidden` Boolean _macOS_ - `true` if the app is set to open as hidden at login.
+* `openAtLogin` boolean - `true` if the app is set to open at login.
+* `openAsHidden` boolean _macOS_ - `true` if the app is set to open as hidden at login.
   This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAtLogin` Boolean _macOS_ - `true` if the app was opened at login
+* `wasOpenedAtLogin` boolean _macOS_ - `true` if the app was opened at login
   automatically. This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAsHidden` Boolean _macOS_ - `true` if the app was opened as a hidden login
+* `wasOpenedAsHidden` boolean _macOS_ - `true` if the app was opened as a hidden login
   item. This indicates that the app should not open any windows at startup.
   This setting is not available on [MAS builds][mas-builds].
-* `restoreState` Boolean _macOS_ - `true` if the app was opened as a login item that
+* `restoreState` boolean _macOS_ - `true` if the app was opened as a login item that
   should restore the state from the previous session. This indicates that the
   app should restore the windows that were open the last time the app was
   closed. This setting is not available on [MAS builds][mas-builds].
@@ -956,15 +956,15 @@ Returns `Object`:
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
 * `settings` Object
-  * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
+  * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
+  * `openAsHidden` boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
     `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
-  * `path` String (optional) _Windows_ - The executable to launch at login.
+  * `path` string (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
+  * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
     the executable. Defaults to an empty array. Take care to wrap paths in
     quotes.
 
@@ -991,7 +991,7 @@ app.setLoginItemSettings({
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns `Boolean` - `true` if Chrome's accessibility support is enabled,
+Returns `boolean` - `true` if Chrome's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
@@ -999,7 +999,7 @@ details.
 
 ### `app.setAccessibilitySupportEnabled(enabled)` _macOS_ _Windows_
 
-* `enabled` Boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
+* `enabled` boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
 
 Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. https://www.chromium.org/developers/design-documents/accessibility for more
 details. Disabled by default.
@@ -1009,18 +1009,18 @@ details. Disabled by default.
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
-  * `applicationName` String (optional) - The app's name.
-  * `applicationVersion` String (optional) - The app's version.
-  * `copyright` String (optional) - Copyright information.
-  * `credits` String (optional) - Credit information.
-  * `version` String (optional) - The app's build version number.
+  * `applicationName` string (optional) - The app's name.
+  * `applicationVersion` string (optional) - The app's version.
+  * `copyright` string (optional) - Copyright information.
+  * `credits` string (optional) - Credit information.
+  * `version` string (optional) - The app's build version number.
 
 Set the about panel options. This will override the values defined in the app's
 `.plist` file. See the [Apple docs][about-panel-options] for more details.
 
 ### `app.startAccessingSecurityScopedResource(bookmarkData)` _macOS (mas)_
 
-* `bookmarkData` String - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
+* `bookmarkData` string - The base64 encoded security scoped bookmark data returned by the `dialog.showOpenDialog` or `dialog.showSaveDialog` methods.
 
 Returns `Function` - This function **must** be called once you have finished accessing the security scoped file. If you do not remember to stop accessing the bookmark, [kernel resources will be leaked](https://developer.apple.com/reference/foundation/nsurl/1417051-startaccessingsecurityscopedreso?language=objc) and your app will lose its ability to reach outside the sandbox completely, until your app is restarted.
 
@@ -1037,8 +1037,8 @@ Start accessing a security scoped resource. With this method Electron applicatio
 
 ### `app.commandLine.appendSwitch(switch[, value])`
 
-* `switch` String - A command-line switch
-* `value` String (optional) - A value for the given switch
+* `switch` string - A command-line switch
+* `value` string (optional) - A value for the given switch
 
 Append a switch (with optional `value`) to Chromium's command line.
 
@@ -1047,7 +1047,7 @@ to control some low-level Chromium behaviors.
 
 ### `app.commandLine.appendArgument(value)`
 
-* `value` String - The argument to append to the command line
+* `value` string - The argument to append to the command line
 
 Append an argument to Chromium's command line. The argument will be quoted
 correctly.
@@ -1062,12 +1062,12 @@ This method can only be called before app is ready.
 
 ### `app.isInApplicationsFolder()` _macOS_
 
-Returns `Boolean` - Whether the application is currently running from the
+Returns `boolean` - Whether the application is currently running from the
 systems Application folder. Use in combination with `app.moveToApplicationsFolder()`
 
 ### `app.moveToApplicationsFolder()` _macOS_
 
-Returns `Boolean` - Whether the move was successful. Please note that if
+Returns `boolean` - Whether the move was successful. Please note that if
 the move is successful your application will quit and relaunch.
 
 No confirmation dialog will be presented by default, if you wish to allow
@@ -1082,7 +1082,7 @@ you exactly what went wrong
 
 ### `app.dock.bounce([type])` _macOS_
 
-* `type` String (optional) - Can be `critical` or `informational`. The default is
+* `type` string (optional) - Can be `critical` or `informational`. The default is
  `informational`
 
 When `critical` is passed, the dock icon will bounce until either the
@@ -1102,19 +1102,19 @@ Cancel the bounce of `id`.
 
 ### `app.dock.downloadFinished(filePath)` _macOS_
 
-* `filePath` String
+* `filePath` string
 
 Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 ### `app.dock.setBadge(text)` _macOS_
 
-* `text` String
+* `text` string
 
 Sets the string to be displayed in the dock’s badging area.
 
 ### `app.dock.getBadge()` _macOS_
 
-Returns `String` - The badge string of the dock.
+Returns `string` - The badge string of the dock.
 
 ### `app.dock.hide()` _macOS_
 
@@ -1126,7 +1126,7 @@ Shows the dock icon.
 
 ### `app.dock.isVisible()` _macOS_
 
-Returns `Boolean` - Whether the dock icon is visible.
+Returns `boolean` - Whether the dock icon is visible.
 The `app.dock.show()` call is asynchronous so this method might not
 return true immediately after that call.
 
@@ -1138,7 +1138,7 @@ Sets the application's [dock menu][dock-menu].
 
 ### `app.dock.setIcon(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | String)
+* `image` ([NativeImage](native-image.md) | string)
 
 Sets the `image` associated with this dock icon.
 
@@ -1146,7 +1146,7 @@ Sets the `image` associated with this dock icon.
 
 ### `app.isPackaged`
 
-A `Boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
+A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
 [dock-menu]:https://developer.apple.com/macos/human-interface-guidelines/menus/dock-menus/
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
