@@ -222,6 +222,7 @@ static_library("electron_lib") {
     "//base",
     "//base:i18n",
     "//chrome/common:constants",
+    "//chrome/test/chromedriver",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
@@ -497,14 +498,10 @@ if (is_mac) {
     ]
   }
 
-  if (!is_component_build) {
+  if (is_component_ffmpeg) {
     bundle_data("electron_framework_libraries") {
-      sources = []
-      public_deps = []
-      if (is_component_ffmpeg) {
-        sources += [ "$root_out_dir/libffmpeg.dylib" ]
-        public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
-      }
+      sources =  [ "$root_out_dir/libffmpeg.dylib" ]
+      public_deps = [ "//third_party/ffmpeg:ffmpeg" ]
       outputs = [
         "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
       ]
@@ -531,7 +528,7 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
-    framework_contents = [ "Resources" ]
+    framework_contents = [ "Resources", "Libraries" ]
     public_deps = [
       ":electron_lib",
     ]

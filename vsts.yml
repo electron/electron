@@ -52,6 +52,13 @@ jobs:
     displayName: Ninja build app
 
   - bash: |
+      cd src
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      ninja -C out/ffmpeg third_party/ffmpeg
+    displayName: Non proprietary ffmpeg build
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
       "$SCCACHE_BINARY" --stop-server
     displayName: Check sccache stats after build
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))

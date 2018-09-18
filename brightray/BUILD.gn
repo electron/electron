@@ -7,7 +7,7 @@ static_library("brightray") {
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//content/public/browser",
-    "//content/shell:resources",
+    "//content/shell:copy_shell_resources",
     "//net:extras",
     "//net:net_with_v8",
     "//skia",

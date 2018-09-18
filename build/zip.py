@@ -10,6 +10,27 @@ LINUX_BINARIES_TO_STRIP = [
   'libnode.so'
 ]
 
+EXTENSIONS_TO_SKIP = [
+  '.pdb'
+]
+
+PATHS_TO_SKIP = [
+  'angledata',
+  'swiftshader',
+  'resources/inspector'
+]
+
+def skip_path(dep):
+  should_skip = False
+  for path in PATHS_TO_SKIP:
+    if dep.startswith(path):
+      print 'Skipping: '+dep
+      should_skip = True
+  for extension in EXTENSIONS_TO_SKIP:
+    if dep.endswith(extension):
+      print 'Skipping: '+dep
+      should_skip = True
+
 def strip_binaries(target_cpu, dep):
   for binary in LINUX_BINARIES_TO_STRIP:
     if dep.endswith(binary):
@@ -48,6 +69,8 @@ def main(argv):
       for dep in dist_files:
         if target_os == 'linux':
             strip_binaries(target_cpu, dep)
+        if skip_path(dep):
+          continue
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
             for file in files:
