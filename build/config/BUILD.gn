@@ -17,6 +17,7 @@ config("build_time_executable") {
     }
   }
 }
+
 # For MAS build, we force defining "MAS_BUILD".
 config("mas_build") {
   if (is_mas_build) {
