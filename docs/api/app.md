@@ -454,7 +454,7 @@ app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) })
 app.exit(0)
 ```
 
-### `app.isReady()`
+### `app.isReadyApiChange()`
 
 Returns `Boolean` - `true` if Electron has finished initializing, `false` otherwise.
 
