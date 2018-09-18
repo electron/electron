@@ -13,7 +13,7 @@
     "dugite": "^1.45.0",
     "electabul": "~0.0.4",
     "electron-docs-linter": "^2.3.4",
-    "electron-typescript-definitions": "^2.0.0",
+    "electron-typescript-definitions": "^2.0.1",
     "eslint": "^5.6.0",
     "eslint-config-standard": "^12.0.0",
     "eslint-plugin-mocha": "^5.2.0",

@@ -250,6 +250,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
 
+  bool TakeHeapSnapshot(const base::FilePath& file_path,
+                        const std::string& channel);
+
   // Properties.
   int32_t ID() const;
   v8::Local<v8::Value> Session(v8::Isolate* isolate);

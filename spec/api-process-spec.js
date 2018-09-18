@@ -1,3 +1,7 @@
+const { remote } = require('electron')
+const fs = require('fs')
+const path = require('path')
+
 const { expect } = require('chai')
 
 describe('process module', () => {
@@ -65,6 +69,34 @@ describe('process module', () => {
       expect(heapStats.mallocedMemory).to.be.a('number')
       expect(heapStats.peakMallocedMemory).to.be.a('number')
       expect(heapStats.doesZapGarbage).to.be.a('boolean')
+    })
+  })
+
+  describe('process.takeHeapSnapshot()', () => {
+    it('returns true on success', () => {
+      const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
+
+      const cleanup = () => {
+        try {
+          fs.unlinkSync(filePath)
+        } catch (e) {
+          // ignore error
+        }
+      }
+
+      try {
+        const success = process.takeHeapSnapshot(filePath)
+        expect(success).to.be.true()
+        const stats = fs.statSync(filePath)
+        expect(stats.size).not.to.be.equal(0)
+      } finally {
+        cleanup()
+      }
+    })
+
+    it('returns false on failure', () => {
+      const success = process.takeHeapSnapshot('')
+      expect(success).to.be.false()
     })
   })
 })

@@ -50,6 +50,7 @@
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -1985,6 +1986,24 @@ void WebContents::GrantOriginAccess(const GURL& url) {
       url::Origin::Create(url));
 }
 
+bool WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
+                                   const std::string& channel) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  base::File file(file_path,
+                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  if (!file.IsValid())
+    return false;
+
+  auto* frame_host = web_contents()->GetMainFrame();
+  if (!frame_host)
+    return false;
+
+  return frame_host->Send(new AtomFrameMsg_TakeHeapSnapshot(
+      frame_host->GetRoutingID(),
+      IPC::TakePlatformFileForTransit(std::move(file)), channel));
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
@@ -2081,6 +2100,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
+      .SetMethod("_takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
