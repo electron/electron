@@ -37,8 +37,7 @@ class TtsDispatcher : public blink::WebSpeechSynthesizer,
 
   // blink::WebSpeechSynthesizer implementation.
   void UpdateVoiceList() override;
-  void Speak(const blink::WebSpeechSynthesisUtterance& utterance)
-      override;
+  void Speak(const blink::WebSpeechSynthesisUtterance& utterance) override;
   void Pause() override;
   void Resume() override;
   void Cancel() override;

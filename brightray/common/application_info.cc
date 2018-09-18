@@ -1,5 +1,5 @@
-#include "base/no_destructor.h"
 #include "brightray/common/application_info.h"
+#include "base/no_destructor.h"
 
 namespace brightray {
 

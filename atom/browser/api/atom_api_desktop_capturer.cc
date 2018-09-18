@@ -65,7 +65,7 @@ void StartHandlingTask(bool capture_window,
                        atom::api::DesktopCapturer* cap) {
 #if defined(OS_WIN)
   if (content::desktop_capture::CreateDesktopCaptureOptions()
-      .allow_directx_capturer()) {
+          .allow_directx_capturer()) {
     // DxgiDuplicatorController should be alive in this scope according to
     // screen_capturer_win.cc.
     auto duplicator = webrtc::DxgiDuplicatorController::Instance();

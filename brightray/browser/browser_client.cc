@@ -29,7 +29,6 @@ base::LazyInstance<std::string>::DestructorAtExit
 
 base::NoDestructor<std::string> g_application_locale;
 
-
 void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
   g_io_thread_application_locale.Get() = locale;

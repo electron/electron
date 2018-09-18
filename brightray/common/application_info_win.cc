@@ -2,9 +2,9 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include <VersionHelpers.h>
 #include <appmodel.h>
 #include <shlobj.h>
-#include <VersionHelpers.h>
 
 #include <memory>
 
@@ -93,7 +93,7 @@ bool IsRunningInDesktopBridgeImpl() {
     wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
     HANDLE proc = GetCurrentProcess();
     LONG result =
-      (*get_package_family_namePtr)(proc, &length, packageFamilyName);
+        (*get_package_family_namePtr)(proc, &length, packageFamilyName);
 
     return result == ERROR_SUCCESS;
   } else {
