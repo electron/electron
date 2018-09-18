@@ -38,10 +38,10 @@ bool GetUserMediaDirectory(const std::string& xdg_name,
   *result = GetXDGUserDirectory(xdg_name.c_str(), fallback_name.c_str());
 
   base::FilePath home;
-  PathService::Get(base::DIR_HOME, &home);
+  base::PathService::Get(base::DIR_HOME, &home);
   if (*result != home) {
     base::FilePath desktop;
-    if (!PathService::Get(base::DIR_USER_DESKTOP, &desktop))
+    if (!base::PathService::Get(base::DIR_USER_DESKTOP, &desktop))
       return false;
     if (*result != desktop) {
       return true;
@@ -88,7 +88,7 @@ void GetUserCacheDirectory(const base::FilePath& profile_dir,
   std::unique_ptr<base::Environment> env(base::Environment::Create());
 
   base::FilePath cache_dir;
-  if (!PathService::Get(base::DIR_CACHE, &cache_dir))
+  if (!base::PathService::Get(base::DIR_CACHE, &cache_dir))
     return;
   base::FilePath config_dir(
       GetXDGDirectory(env.get(), kXdgConfigHomeEnvVar, kDotConfigDir));
@@ -106,7 +106,7 @@ bool GetUserDocumentsDirectory(base::FilePath* result) {
 
 bool GetUserDownloadsDirectorySafe(base::FilePath* result) {
   base::FilePath home;
-  PathService::Get(base::DIR_HOME, &home);
+  base::PathService::Get(base::DIR_HOME, &home);
   *result = home.Append(kDownloadsDir);
   return true;
 }
