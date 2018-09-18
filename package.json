@@ -49,6 +49,7 @@
     "lint:clang-format": "python script/run-clang-format.py -r -c atom/ chromium_src/ brightray/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:cpp": "./script/lint.js --cc",
     "lint:py": "./script/lint.js --py",
+    "lint:gn": "./script/lint.js --gn",
     "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links",
     "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
     "lint:js-in-markdown": "standard-markdown docs",
