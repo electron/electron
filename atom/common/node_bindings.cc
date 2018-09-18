@@ -216,7 +216,11 @@ void NodeBindings::Initialize() {
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   // NOTE: If you change this line, please ping @codebytere or @MarshallOfSound
-  node::Init(nullptr, nullptr, nullptr, nullptr);
+  int argc = 0;
+  int exec_argc = 0;
+  const char** argv = nullptr;
+  const char** exec_argv = nullptr;
+  node::Init(&argc, argv, &exec_argc, &exec_argv);
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
