@@ -247,7 +247,7 @@ The Electron account's credentials are kept by GitHub.
 "Electron - NPM" for the URL "https://www.npmjs.com/login".
 ```sh
 $ npm login
-Username: electron
+Username: electron-nightly
 Password:
 Email: (this IS public) electron@github.com
 ```
@@ -255,7 +255,7 @@ Email: (this IS public) electron@github.com
 Publish the release to npm.
 ```sh
 $ npm whoami
-electron
+electron-nightly
 $ npm run publish-to-npm
 ```
 
