@@ -2,7 +2,7 @@ diff --git a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc b/co
 index c3f4641e8525..dd50ff1c2557 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
 +++ b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-@@ -362,7 +362,8 @@ void MouseWheelEventQueue::SendScrollBegin(
+@@ -362,7 +362,7 @@ void MouseWheelEventQueue::SendScrollBegin(
           (synthetic && !needs_scroll_begin_when_scroll_latching_disabled_) ||
           needs_scroll_begin_when_scroll_latching_disabled_);
  
