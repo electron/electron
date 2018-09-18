@@ -107,6 +107,13 @@ step-nodejs-headers-build: &step-nodejs-headers-build
       cd src
       ninja -C out/Default third_party/electron_node:headers
 
+step-native-tests-build: &step-native-tests-build
+  run:
+    name: Native tests build
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_tests
+
 step-persist-data-for-tests: &step-persist-data-for-tests
   persist_to_workspace:
     root: .
@@ -326,6 +333,18 @@ steps-release-build: &steps-release-build
     - <<: *step-maybe-notify-slack-failure
     - <<: *step-maybe-notify-slack-success
 
+steps-native-tests: &steps-native-tests
+  steps:
+    - attach_workspace:
+        at: .
+    - <<: *step-add-depot-tools-to-path
+    - <<: *step-setup-env-for-build
+
+    - <<: *step-electron-gn-gen
+    - <<: *step-native-tests-build
+
+    # TODO(alexeykuzmin): Run the tests. It can be extremely parallelized!
+
 steps-tests: &steps-tests
   steps:
     - attach_workspace:
@@ -517,6 +536,12 @@ jobs:
     <<: *steps-release-build
 
   # Layer 3: Tests.
+  linux-x64-native-tests-fyi:
+    <<: *machine-linux
+    environment:
+      <<: *env-testing-build
+    <<: *steps-native-tests
+
   linux-x64-testing-tests:
     <<: *machine-linux
     <<: *steps-tests
@@ -559,6 +584,10 @@ workflows:
       - linux-checkout
       - linux-arm-checkout
       - linux-arm64-checkout
+
+      - linux-x64-native-tests-fyi:
+          requires:
+            - linux-checkout
 
       - linux-x64-debug:
           requires:
