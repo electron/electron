@@ -36,9 +36,6 @@ async function getNewVersion (dryRun) {
   }
   let bumpScript = path.join(__dirname, 'bump-version.py')
   let scriptArgs = [bumpScript, '--bump', versionType]
-  if (args.stable) {
-    scriptArgs.push('--stable')
-  }
   if (dryRun) {
     scriptArgs.push('--dry-run')
   }
