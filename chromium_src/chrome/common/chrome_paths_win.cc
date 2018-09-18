@@ -40,7 +40,7 @@ bool GetUserDirectory(int csidl_folder, base::FilePath* result) {
 }  // namespace
 
 bool GetDefaultUserDataDirectory(base::FilePath* result) {
-  return PathService::Get(base::DIR_LOCAL_APP_DATA, result);
+  return base::PathService::Get(base::DIR_LOCAL_APP_DATA, result);
 }
 
 void GetUserCacheDirectory(const base::FilePath& profile_dir,

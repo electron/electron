@@ -51,7 +51,7 @@ void LoadResourceBundle(const std::string& locale) {
   pak_dir =
       base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
-  PathService::Get(base::DIR_MODULE, &pak_dir);
+  base::PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
 
   ui::ResourceBundle::InitSharedInstanceWithLocale(
