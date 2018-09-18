@@ -11,6 +11,7 @@
 #include "atom/browser/atom_download_manager_delegate.h"
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/cookie_change_notifier.h"
 #include "atom/browser/special_storage_policy.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
@@ -114,6 +115,8 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   // Initialize Pref Registry.
   InitPrefs();
+
+  cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -175,6 +178,10 @@ net::URLRequestContextGetter* AtomBrowserContext::CreateMediaRequestContext() {
 
 net::URLRequestContextGetter* AtomBrowserContext::GetRequestContext() {
   return GetDefaultStoragePartition(this)->GetURLRequestContext();
+}
+
+network::mojom::NetworkContextPtr AtomBrowserContext::GetNetworkContext() {
+  return io_handle_->GetNetworkContext();
 }
 
 base::FilePath AtomBrowserContext::GetPath() const {

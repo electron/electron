@@ -56,10 +56,12 @@ class Cookies : public mate::TrackableObject<Cookies> {
   void Set(const base::DictionaryValue& details, const SetCallback& callback);
   void FlushStore(const base::Closure& callback);
 
-  // AtomBrowserContext::RegisterCookieChangeCallback subscription:
+  // CookieChangeNotifier subscription:
   void OnCookieChanged(const CookieDetails*);
 
  private:
+  std::unique_ptr<base::CallbackList<void(const CookieDetails*)>::Subscription>
+      cookie_change_subscription_;
   scoped_refptr<AtomBrowserContext> browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(Cookies);

@@ -518,6 +518,15 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
+network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
+    content::BrowserContext* browser_context,
+    bool in_memory,
+    const base::FilePath& relative_partition_path) {
+  if (!browser_context)
+    return nullptr;
+  return static_cast<AtomBrowserContext*>(browser_context)->GetNetworkContext();
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
   v8::V8::Initialize();  // Init V8 before creating main parts.

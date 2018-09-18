@@ -61,6 +61,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
         content::URLRequestInterceptorScopedVector protocol_interceptors);
     content::ResourceContext* GetResourceContext() const;
     scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter() const;
+    network::mojom::NetworkContextPtr GetNetworkContext();
 
     void ShutdownOnUIThread();
 
@@ -71,6 +72,12 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     scoped_refptr<URLRequestContextGetter> main_request_context_getter_;
     std::unique_ptr<ResourceContext> resource_context_;
     base::WeakPtr<AtomBrowserContext> browser_context_;
+    // This is a NetworkContext interface that uses URLRequestContextGetter
+    // NetworkContext, ownership is passed to StoragePartition when
+    // CreateMainNetworkContext is called.
+    mutable network::mojom::NetworkContextPtr main_network_context_;
+    // Request corresponding to |main_network_context_|. Ownership
+    // is passed to network service.
     mutable network::mojom::NetworkContextRequest main_network_context_request_;
     mutable network::mojom::NetworkContextParamsPtr
         main_network_context_params_;

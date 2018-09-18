@@ -29,6 +29,7 @@ class AtomBlobReader;
 class AtomBrowserContext;
 class AtomDownloadManagerDelegate;
 class AtomPermissionManager;
+class CookieChangeNotifier;
 class RequestContextDelegate;
 class SpecialStoragePolicy;
 class WebViewManager;
@@ -55,6 +56,7 @@ class AtomBrowserContext
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   AtomBlobReader* GetBlobReader();
+  network::mojom::NetworkContextPtr GetNetworkContext();
 
   // Get the request context, if there is none, create it.
   net::URLRequestContextGetter* GetRequestContext();
@@ -89,6 +91,9 @@ class AtomBrowserContext
       content::URLRequestInterceptorScopedVector request_interceptors) override;
   net::URLRequestContextGetter* CreateMediaRequestContext() override;
 
+  CookieChangeNotifier* cookie_change_notifier() const {
+    return cookie_change_notifier_.get();
+  }
   PrefService* prefs() { return prefs_.get(); }
 
  protected:
@@ -132,6 +137,7 @@ class AtomBrowserContext
   // on the UI thread and deletes itself on the IO thread.
   URLRequestContextGetter::Handle* io_handle_;
 
+  std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;

@@ -26,6 +26,7 @@
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/resource_context.h"
+#include "mojo/public/cpp/bindings/associated_interface_ptr.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/cert_verifier.h"
 #include "net/cert/ct_known_logs.h"
@@ -153,6 +154,14 @@ URLRequestContextGetter::Handle::GetMainRequestContextGetter() const {
   return main_request_context_getter_;
 }
 
+network::mojom::NetworkContextPtr
+URLRequestContextGetter::Handle::GetNetworkContext() {
+  if (!main_network_context_) {
+    main_network_context_request_ = mojo::MakeRequest(&main_network_context_);
+  }
+  return std::move(main_network_context_);
+}
+
 void URLRequestContextGetter::Handle::LazyInitialize() const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (initialized_)
@@ -163,6 +172,9 @@ void URLRequestContextGetter::Handle::LazyInitialize() const {
       browser_context_->GetPath(), browser_context_->GetUserAgent(),
       browser_context_->IsOffTheRecord(), browser_context_->CanUseHttpCache(),
       browser_context_->GetMaxCacheSize());
+  if (!main_network_context_request_.is_pending()) {
+    main_network_context_request_ = mojo::MakeRequest(&main_network_context_);
+  }
   content::BrowserContext::EnsureResourceContextInitialized(
       browser_context_.get());
 }

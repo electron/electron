@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/cookie_change_notifier.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
@@ -58,20 +59,21 @@ struct Converter<net::CanonicalCookie> {
 };
 
 template <>
-struct Converter<net::CookieChangeCause> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::CookieChangeCause& val) {
+struct Converter<network::mojom::CookieChangeCause> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const network::mojom::CookieChangeCause& val) {
     switch (val) {
-      case net::CookieChangeCause::INSERTED:
-      case net::CookieChangeCause::EXPLICIT:
+      case network::mojom::CookieChangeCause::INSERTED:
+      case network::mojom::CookieChangeCause::EXPLICIT:
         return mate::StringToV8(isolate, "explicit");
-      case net::CookieChangeCause::OVERWRITE:
+      case network::mojom::CookieChangeCause::OVERWRITE:
         return mate::StringToV8(isolate, "overwrite");
-      case net::CookieChangeCause::EXPIRED:
+      case network::mojom::CookieChangeCause::EXPIRED:
         return mate::StringToV8(isolate, "expired");
-      case net::CookieChangeCause::EVICTED:
+      case network::mojom::CookieChangeCause::EVICTED:
         return mate::StringToV8(isolate, "evicted");
-      case net::CookieChangeCause::EXPIRED_OVERWRITE:
+      case network::mojom::CookieChangeCause::EXPIRED_OVERWRITE:
         return mate::StringToV8(isolate, "expired-overwrite");
       default:
         return mate::StringToV8(isolate, "unknown");
@@ -255,6 +257,9 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
+  cookie_change_subscription_ =
+      browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
+          base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
   Init(isolate);
 }
 
