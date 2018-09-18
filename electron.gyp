@@ -289,6 +289,9 @@
         # Enables SkBitmap size 64 operations
         'SK_SUPPORT_LEGACY_SAFESIZE64',
 
+        # Enables flash support
+        'ENABLE_PEPPER_FLASH',
+
         # Enables widevine cdm support
         'WIDEVINE_CDM_AVAILABLE',
       ],
