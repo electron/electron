@@ -59,7 +59,10 @@ const LINTERS = [ {
         }
       }
     }
-    if (result.status) process.exit(result.status)
+    if (result.status) {
+      if (opts.fix) spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
+      process.exit(result.status)
+    }
   }
 }, {
   key: 'python',
@@ -98,7 +101,7 @@ function parseCommandLine () {
 }
 
 async function findChangedFiles (top) {
-  const result = await GitProcess.exec(['diff', 'HEAD', '--name-only'], top)
+  const result = await GitProcess.exec(['diff', '--name-only', '--cached'], top)
   if (result.exitCode !== 0) {
     console.log('Failed to find changed files', GitProcess.parseError(result.stderr))
     process.exit(1)
