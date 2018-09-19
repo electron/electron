@@ -4,7 +4,9 @@
 
 #include "atom/browser/api/atom_api_power_monitor.h"
 
-#include "Wtsapi32.h"
+#include <windows.h>
+#include <wtsapi32.h>
+
 #include "base/win/wrapped_window_proc.h"
 #include "ui/base/win/shell.h"
 #include "ui/gfx/win/hwnd_util.h"

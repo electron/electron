@@ -281,6 +281,12 @@ static_library("electron_lib") {
       "*\bwin_*.cc",
     ]
   }
+  if (!is_posix) {
+    extra_source_filters += [
+      "*_posix.cc",
+      "*_posix.h",
+    ]
+  }
   if (is_mac) {
     extra_source_filters += [
       "*_views.cc",

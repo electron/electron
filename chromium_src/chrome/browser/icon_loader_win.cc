@@ -4,8 +4,9 @@
 
 #include "chrome/browser/icon_loader.h"
 
-#include <shellapi.h>
 #include <windows.h>
+
+#include <shellapi.h>
 
 #include "base/bind.h"
 #include "base/message_loop/message_loop.h"
