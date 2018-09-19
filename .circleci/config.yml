@@ -1,7 +1,14 @@
 # Build machines configs.
-machine-linux: &machine-linux
+docker-image: &docker-image
   docker:
     - image: electronbuilds/electron:0.0.8
+
+machine-linux-medium: &machine-linux-medium
+  <<: *docker-image
+  resource_class: medium
+
+machine-linux-2xlarge: &machine-linux-2xlarge
+  <<: *docker-image
   resource_class: 2xlarge
 
 machine-mac: &machine-mac
@@ -449,77 +456,77 @@ version: 2
 jobs:
   # Layer 1: Checkout.
   linux-checkout:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     <<: *steps-checkout
 
   linux-arm-checkout:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
     <<: *steps-checkout
 
   linux-arm64-checkout:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
     <<: *steps-checkout
 
   # Layer 2: Builds.
   linux-x64-debug:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-debug-build
     <<: *steps-debug-build
 
   linux-x64-testing:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
     <<: *steps-testing-build
 
   linux-x64-release:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-release-build
     <<: *steps-release-build
 
   linux-ia32-debug:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-debug-build
     <<: *steps-debug-build
 
   linux-ia32-testing:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-testing-build
     <<: *steps-testing-build
 
   linux-ia32-release:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-release-build
     <<: *steps-release-build
 
   linux-arm-debug:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-debug-build
     <<: *steps-debug-build
 
   linux-arm-testing:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-testing-build
     <<: *steps-testing-build
 
   linux-arm-release:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-release-build
@@ -527,21 +534,21 @@ jobs:
     <<: *steps-release-build
 
   linux-arm64-debug:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-debug-build
     <<: *steps-debug-build
 
   linux-arm64-testing:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-testing-build
     <<: *steps-testing-build
 
   linux-arm64-release:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-release-build
@@ -563,27 +570,27 @@ jobs:
 
   # Layer 3: Tests.
   linux-x64-native-tests-fyi:
-    <<: *machine-linux
+    <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
-    <<: *machine-linux
+    <<: *machine-linux-medium
     <<: *steps-tests
 
   linux-x64-release-tests:
-    <<: *machine-linux
+    <<: *machine-linux-medium
     <<: *steps-tests
 
   linux-ia32-testing-tests:
-    <<: *machine-linux
+    <<: *machine-linux-medium
     environment:
       <<: *env-ia32
     <<: *steps-tests
 
   linux-ia32-release-tests:
-    <<: *machine-linux
+    <<: *machine-linux-medium
     environment:
       <<: *env-ia32
     <<: *steps-tests
