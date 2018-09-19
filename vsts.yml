@@ -53,6 +53,7 @@ jobs:
     displayName: Ninja build app
 
   - bash: |
+      cd src
       ninja -C out/Default third_party/electron_node:headers
     displayName: Build Node.js headers
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
@@ -78,24 +79,21 @@ jobs:
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/args.gn'
       ArtifactName: Default
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - task: PublishBuildArtifacts@1
     displayName: Publish build.ninja
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/build.ninja'
       ArtifactName: Default
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Node.js headers
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/gen/node_headers'
       ArtifactName: node_headers
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish non proprietary ffmpeg
-    inputs:
-      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/ffmpeg/libffmpeg.dylib'
-      ArtifactName: ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
 - job: Test_Electron_Build
   displayName: Test
@@ -122,12 +120,6 @@ jobs:
       artifactName: node_headers
       downloadPath: '$(System.DefaultWorkingDirectory)/src/out/Default/gen'
 
-  - task: DownloadBuildArtifacts@0
-    displayName: 'Download non proprietary ffmpeg'
-    inputs:
-      artifactName: ffmpeg
-      downloadPath: '$(System.DefaultWorkingDirectory)/src/out/Default/gen'
-      
   - bash: |
       set +e
       cd src
