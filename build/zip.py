@@ -21,15 +21,12 @@ PATHS_TO_SKIP = [
 ]
 
 def skip_path(dep):
-  should_skip = False
-  for path in PATHS_TO_SKIP:
-    if dep.startswith(path):
-      print 'Skipping: '+dep
-      should_skip = True
-  for extension in EXTENSIONS_TO_SKIP:
-    if dep.endswith(extension):
-      print 'Skipping: '+dep
-      should_skip = True
+    should_skip = (
+        any(dep.startswith(path) for path in PATHS_TO_SKIP) or
+        any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP))
+    if should_skip:
+      print("Skipping {}".format(dep))
+    return should_skip
 
 def strip_binaries(target_cpu, dep):
   for binary in LINUX_BINARIES_TO_STRIP:
