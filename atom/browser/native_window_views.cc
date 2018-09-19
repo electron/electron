@@ -591,9 +591,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
-      if (maximizable_) {
-        SetMaximizable(resizable);
-      }
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
       resizable_ = false;
@@ -606,7 +603,8 @@ void NativeWindowViews::SetResizable(bool resizable) {
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
-
+  if (maximizable_)
+    SetMaximizable(maximizable_);
   resizable_ = resizable;
 }
 
