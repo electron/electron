@@ -5,6 +5,7 @@
 #include "chrome/browser/icon_loader.h"
 
 #include <windows.h>
+
 #include <shellapi.h>
 
 #include "base/bind.h"

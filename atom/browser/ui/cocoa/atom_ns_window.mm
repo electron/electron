@@ -224,17 +224,21 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 // Custom window button methods
 
-- (BOOL)windowShouldClose:(id)sender { return YES; }
+- (BOOL)windowShouldClose:(id)sender {
+  return YES;
+}
 
 - (void)performClose:(id)sender {
   if (shell_->title_bar_style() ==
       atom::NativeWindowMac::CUSTOM_BUTTONS_ON_HOVER) {
     [[self delegate] windowShouldClose:self];
   } else if (shell_->IsSimpleFullScreen()) {
-    if([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
-        if(![[self delegate] windowShouldClose:self]) return;
-    } else if([self respondsToSelector:@selector(windowShouldClose:)]) {
-        if(![self windowShouldClose:self]) return;
+    if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
+      if (![[self delegate] windowShouldClose:self])
+        return;
+    } else if ([self respondsToSelector:@selector(windowShouldClose:)]) {
+      if (![self windowShouldClose:self])
+        return;
     }
     [self close];
   } else {

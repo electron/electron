@@ -4,8 +4,8 @@
 
 #include "atom/common/native_mate_converters/net_converter.h"
 
-#include <string>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 

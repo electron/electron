@@ -24,8 +24,8 @@
 
 #if defined(OS_WIN)
 #include "chrome/browser/printing/pdf_to_emf_converter.h"
-#include "printing/pdf_render_settings.h"
 #include "printing/metafile.h"
+#include "printing/pdf_render_settings.h"
 #endif
 
 using base::TimeDelta;
@@ -264,8 +264,8 @@ void PrintJob::StartPdfToEmfConversion(
       std::make_unique<PdfConversionState>(page_size, content_area);
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
-      content_area, gfx::Point(0, 0), gfx::Size(kPrinterDpi, kPrinterDpi), /*autorotate=*/true,
-      settings_.color() == COLOR,
+      content_area, gfx::Point(0, 0), gfx::Size(kPrinterDpi, kPrinterDpi),
+      /*autorotate=*/true, settings_.color() == COLOR,
       print_text_with_gdi ? PdfRenderSettings::Mode::GDI_TEXT
                           : PdfRenderSettings::Mode::NORMAL);
   pdf_conversion_state_->Start(
@@ -313,8 +313,8 @@ void PrintJob::StartPdfToPostScriptConversion(
       std::make_unique<PdfConversionState>(gfx::Size(), gfx::Rect());
   const int kPrinterDpi = settings().dpi();
   PdfRenderSettings settings(
-      content_area, physical_offsets, gfx::Size(kPrinterDpi, kPrinterDpi), true /* autorotate? */,
-      settings_.color() == COLOR,
+      content_area, physical_offsets, gfx::Size(kPrinterDpi, kPrinterDpi),
+      true /* autorotate? */, settings_.color() == COLOR,
       ps_level2 ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3);
   pdf_conversion_state_->Start(
@@ -466,6 +466,8 @@ PrintedDocument* JobEventDetails::document() const {
 }
 
 #if defined(OS_WIN)
-PrintedPage* JobEventDetails::page() const { return page_.get(); }
+PrintedPage* JobEventDetails::page() const {
+  return page_.get();
+}
 #endif
 }  // namespace printing

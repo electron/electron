@@ -28,8 +28,8 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       process_type == switches::kZygoteProcess ||
 #endif
 #if defined(OS_MACOSX)
-  // Mac needs them too for scrollbar related images and for sandbox
-  // profiles.
+      // Mac needs them too for scrollbar related images and for sandbox
+      // profiles.
       process_type == switches::kPpapiPluginProcess ||
       process_type == switches::kPpapiBrokerProcess ||
       process_type == switches::kGpuProcess ||
@@ -61,9 +61,10 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
 #if defined(ENABLE_PDF_VIEWER)
-  NOTIMPLEMENTED() << "Hi, whoever's fixing PDF support! Thanks! The pdf "
-    "viewer resources haven't been ported over to the GN build yet, so "
-    "you'll probably need to change this bit of code.";
+  NOTIMPLEMENTED()
+      << "Hi, whoever's fixing PDF support! Thanks! The pdf "
+         "viewer resources haven't been ported over to the GN build yet, so "
+         "you'll probably need to change this bit of code.";
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
       ui::GetSupportedScaleFactors()[0]);

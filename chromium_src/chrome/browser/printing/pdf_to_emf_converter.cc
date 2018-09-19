@@ -24,10 +24,10 @@
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/common/chrome_utility_printing_messages.h"
-#include "content/public/browser/browser_thread.h"
-#include "content/public/browser/child_process_data.h"
 #include "content/browser/utility_process_host.h"
 #include "content/browser/utility_process_host_client.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/child_process_data.h"
 #include "printing/emf_win.h"
 #include "printing/pdf_render_settings.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -39,8 +39,8 @@ namespace printing {
 namespace {
 
 void CloseFileOnBlockingTaskRunner(base::File temp_file) {
-base::AssertBlockingAllowed();
-temp_file.Close();
+  base::AssertBlockingAllowed();
+  temp_file.Close();
 }
 
 class PdfConverterImpl;

@@ -40,7 +40,7 @@ HBITMAP CopyBitmap(HBITMAP bitmap) {
 }
 
 const TCHAR DesktopNotificationController::class_name_[] =
-      TEXT("DesktopNotificationController");
+    TEXT("DesktopNotificationController");
 
 HINSTANCE DesktopNotificationController::RegisterWndClasses() {
   // We keep a static `module` variable which serves a dual purpose:
@@ -365,7 +365,7 @@ void DesktopNotificationController::DestroyToast(ToastInstance& inst) {
 
 DesktopNotificationController::Notification::Notification() = default;
 DesktopNotificationController::Notification::Notification(
-  const DesktopNotificationController::Notification&) = default;
+    const DesktopNotificationController::Notification&) = default;
 
 DesktopNotificationController::Notification::Notification(
     const shared_ptr<NotificationData>& data)
