@@ -140,6 +140,18 @@ step-electron-dist-store: &step-electron-dist-store
     path: src/out/Default/dist.zip
     destination: dist.zip
 
+step-electron-chromedriver-build: &step-electron-chromedriver-build
+  run:
+    name: Build chromedriver.zip
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_chromedriver_zip
+
+step-electron-chromedriver-store: &step-electron-chromedriver-store
+  store_artifacts:
+    path: src/out/Default/chromedriver.zip
+    destination: chromedriver.zip
+
 step-nodejs-headers-build: &step-nodejs-headers-build
   run:
     name: Build Node.js headers
@@ -272,6 +284,10 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-dist-build
     - *step-electron-dist-store
 
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
+
     # Node.js headers
     - *step-nodejs-headers-build
 
@@ -388,6 +404,10 @@ steps-build-mac: &steps-build-mac
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
+
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
 
     # ffmpeg
     - *step-ffmpeg-gn-gen

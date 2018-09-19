@@ -222,7 +222,6 @@ static_library("electron_lib") {
     "//base",
     "//base:i18n",
     "//chrome/common:constants",
-    "//chrome/test/chromedriver",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
@@ -498,10 +497,14 @@ if (is_mac) {
     ]
   }
 
-  if (is_component_ffmpeg) {
+  if (!is_component_build) {
     bundle_data("electron_framework_libraries") {
-      sources =  [ "$root_out_dir/libffmpeg.dylib" ]
-      public_deps = [ "//third_party/ffmpeg:ffmpeg" ]
+      sources = []
+      public_deps = []
+      if (is_component_ffmpeg) {
+        sources += [ "$root_out_dir/libffmpeg.dylib" ]
+        public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
+      }
       outputs = [
         "{{bundle_contents_dir}}/Libraries/{{source_file_part}}",
       ]
@@ -903,12 +906,23 @@ dist_zip("electron_dist_zip") {
   ]
 }
 
+
 dist_zip("electron_ffmpeg_zip") {
   data_deps = [
     "//third_party/ffmpeg",
   ]
   outputs = [
     "$root_build_dir/ffmpeg.zip",
+  ]
+}
+
+dist_zip("electron_chromedriver_zip") {
+  data_deps = [
+    "//chrome/test/chromedriver",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/chromedriver.zip",
   ]
 }
 

@@ -78,6 +78,11 @@ jobs:
       ninja -C out/Default electron:electron_dist_zip
     displayName: Build dist zip
 
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_chromedriver_zip
+    displayName: Build chromedriver and zip
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
@@ -89,7 +94,13 @@ jobs:
     displayName: Publish Build Artifacts
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
-      ArtifactName: dist.zip
+      ArtifactName: dist
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
+      ArtifactName: dist
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
