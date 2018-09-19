@@ -47,7 +47,8 @@ def main():
   try:
     test_path = os.path.join(SOURCE_ROOT, 'spec', 'fixtures',
         'no-proprietary-codecs.js')
-    subprocess.check_call([electron, test_path] + sys.argv[1:])
+    cmd = [electron, '--enable-logging', test_path] + sys.argv[1:]
+    subprocess.check_call(cmd)
   except subprocess.CalledProcessError as e:
     returncode = e.returncode
   except KeyboardInterrupt:
