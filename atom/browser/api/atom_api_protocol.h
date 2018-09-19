@@ -116,8 +116,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = request_context_getter->job_factory();
     if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
@@ -162,8 +161,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = request_context_getter->job_factory();
     if (!job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;
     // It is possible a protocol is handled but can not be intercepted.

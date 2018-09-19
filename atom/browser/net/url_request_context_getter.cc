@@ -8,12 +8,15 @@
 #include <memory>
 #include <utility>
 
+#include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/net/about_protocol_handler.h"
+#include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/net/atom_network_delegate.h"
+#include "atom/browser/net/atom_url_request_job_factory.h"
+#include "atom/browser/net/http_protocol_handler.h"
 #include "base/command_line.h"
-#include "base/memory/ptr_util.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
 #include "brightray/browser/browser_client.h"
@@ -22,13 +25,10 @@
 #include "brightray/common/switches.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/cookie_store_factory.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/resource_context.h"
-#include "mojo/public/cpp/bindings/associated_interface_ptr.h"
 #include "net/base/host_mapping_rules.h"
-#include "net/cert/cert_verifier.h"
 #include "net/cert/ct_known_logs.h"
 #include "net/cert/ct_log_verifier.h"
 #include "net/cert/multi_log_ct_verifier.h"
@@ -38,18 +38,16 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_auth_scheme.h"
 #include "net/http/http_transaction_factory.h"
-#include "net/log/net_log.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/data_protocol_handler.h"
-#include "net/url_request/file_protocol_handler.h"
+#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
+#include "net/url_request/url_request_job_factory_impl.h"
 #include "services/network/ignore_errors_cert_verifier.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/network_switches.h"
@@ -76,6 +74,7 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           brightray::BrowserClient::Get()->GetApplicationLocale());
+  network_context_params->allow_gssapi_library_load = true;
   if (!in_memory) {
     network_context_params->http_cache_path =
         base_path.Append(FILE_PATH_LITERAL("Cache"));
@@ -89,12 +88,47 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
   }
-  network_context_params->enable_data_url_support = true;
-  network_context_params->enable_file_url_support = true;
-#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
-  network_context_params->enable_ftp_url_support = true;
-#endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
   return network_context_params;
+}
+
+std::unique_ptr<AtomURLRequestJobFactory> CreateURLRequestJobFactory(
+    content::ProtocolHandlerMap* protocol_handlers,
+    net::URLRequestContext* url_request_context) {
+  auto job_factory = std::make_unique<AtomURLRequestJobFactory>();
+  for (auto& protocol_handler : *protocol_handlers) {
+    job_factory->SetProtocolHandler(protocol_handler.first,
+                                    std::move(protocol_handler.second));
+  }
+  protocol_handlers->clear();
+
+  job_factory->SetProtocolHandler(url::kAboutScheme,
+                                  std::make_unique<AboutProtocolHandler>());
+  job_factory->SetProtocolHandler(url::kDataScheme,
+                                  std::unique_ptr<net::DataProtocolHandler>());
+  job_factory->SetProtocolHandler(
+      url::kFileScheme,
+      std::make_unique<asar::AsarProtocolHandler>(
+          base::CreateTaskRunnerWithTraits(
+              {base::MayBlock(), base::TaskPriority::USER_BLOCKING,
+               base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN})));
+  job_factory->SetProtocolHandler(
+      url::kHttpScheme,
+      std::make_unique<HttpProtocolHandler>(url::kHttpScheme));
+  job_factory->SetProtocolHandler(
+      url::kHttpsScheme,
+      std::make_unique<HttpProtocolHandler>(url::kHttpsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWsScheme, std::make_unique<HttpProtocolHandler>(url::kWsScheme));
+  job_factory->SetProtocolHandler(
+      url::kWssScheme, std::make_unique<HttpProtocolHandler>(url::kWssScheme));
+
+#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
+  auto* host_resolver = url_request_context->host_resolver();
+  job_factory->SetProtocolHandler(
+      url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
+#endif
+
+  return job_factory;
 }
 
 }  // namespace
@@ -221,6 +255,7 @@ void URLRequestContextGetter::NotifyContextShuttingDown(
   resource_context.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
   main_network_context_.reset();
+  top_job_factory_.reset();
   ct_delegate_.reset();
 }
 
@@ -230,7 +265,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (context_shutting_down_)
     return nullptr;
 
-  if (!main_network_context_) {
+  if (!main_request_context_) {
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
@@ -248,12 +283,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         network::IgnoreErrorsCertVerifier::MakeWhitelist(spki_list));
     builder->SetCertVerifier(std::move(cert_verifier));
 
-    for (auto& protocol_handler : protocol_handlers_) {
-      builder->SetProtocolHandler(protocol_handler.first,
-                                  std::move(protocol_handler.second));
-    }
-    protocol_handlers_.clear();
-    builder->SetInterceptors(std::move(protocol_interceptors_));
     builder->SetCreateHttpTransactionFactoryCallback(
         base::BindOnce(&content::CreateDevToolsNetworkTransactionFactory));
 
@@ -327,6 +356,31 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     net::TransportSecurityState* transport_security_state =
         main_request_context_->transport_security_state();
     transport_security_state->SetRequireCTDelegate(ct_delegate_.get());
+
+    auto* cookie_monster =
+        static_cast<net::CookieMonster*>(main_request_context_->cookie_store());
+    std::vector<std::string> cookie_schemes(
+        {url::kHttpScheme, url::kHttpsScheme, url::kWsScheme, url::kWssScheme});
+    const auto& custom_standard_schemes = atom::api::GetStandardSchemes();
+    cookie_schemes.insert(cookie_schemes.end(), custom_standard_schemes.begin(),
+                          custom_standard_schemes.end());
+    cookie_monster->SetCookieableSchemes(cookie_schemes);
+
+    top_job_factory_ =
+        CreateURLRequestJobFactory(&protocol_handlers_, main_request_context_);
+    std::unique_ptr<net::URLRequestJobFactory> inner_job_factory(
+        new net::URLRequestJobFactoryImpl);
+    if (!protocol_interceptors_.empty()) {
+      // Set up interceptors in the reverse order.
+      for (auto it = protocol_interceptors_.rbegin();
+           it != protocol_interceptors_.rend(); ++it) {
+        inner_job_factory.reset(new net::URLRequestInterceptingJobFactory(
+            std::move(inner_job_factory), std::move(*it)));
+      }
+      protocol_interceptors_.clear();
+    }
+    top_job_factory_->Chain(std::move(inner_job_factory));
+    main_request_context_->set_job_factory(top_job_factory_.get());
 
     context_handle_->resource_context_->request_context_ =
         main_request_context_;

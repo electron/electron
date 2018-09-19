@@ -71,7 +71,9 @@ void AtomBrowserContextDeleter::Destruct(
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
-    : storage_policy_(new SpecialStoragePolicy), weak_factory_(this) {
+    : storage_policy_(new SpecialStoragePolicy),
+      in_memory_(in_memory),
+      weak_factory_(this) {
   // Construct user agent string.
   Browser* browser = Browser::Get();
   std::string name = RemoveWhitespace(browser->GetName());
@@ -306,8 +308,9 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
     bool in_memory,
     const base::DictionaryValue& options) {
   PartitionKey key(partition, in_memory);
-  if (browser_context_map_[key].get())
-    return WrapRefCounted(browser_context_map_[key].get());
+  auto* browser_context = browser_context_map_[key].get();
+  if (browser_context)
+    return browser_context;
 
   return new AtomBrowserContext(partition, in_memory, options);
 }

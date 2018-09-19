@@ -24,13 +24,10 @@ class NetLog;
 class RequireCTDelegate;
 }  // namespace brightray
 
-namespace net {
-class URLRequestJobFactory;
-}  // namespace net
-
 namespace atom {
 
 class AtomBrowserContext;
+class AtomURLRequestJobFactory;
 class ResourceContext;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
@@ -40,11 +37,13 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   scoped_refptr<base::SingleThreadTaskRunner> GetNetworkTaskRunner()
       const override;
 
-  net::URLRequestJobFactory* job_factory() const { return nullptr; }
-
   // Discard reference to URLRequestContext and inform observers to
   // shutdown. Must be called only on IO thread.
   void NotifyContextShuttingDown(std::unique_ptr<ResourceContext>);
+
+  AtomURLRequestJobFactory* job_factory() const {
+    return top_job_factory_.get();
+  }
 
  private:
   friend class AtomBrowserContext;
@@ -98,6 +97,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 #endif
 
   std::unique_ptr<brightray::RequireCTDelegate> ct_delegate_;
+  std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
   std::unique_ptr<network::mojom::NetworkContext> main_network_context_;
 
   brightray::NetLog* net_log_;
