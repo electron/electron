@@ -37,7 +37,7 @@ async function getCurrentBranch (gitDir) {
 }
 
 async function revertBumpCommit (tag) {
-  const branch = getCurrentBranch()
+  const branch = await getCurrentBranch()
   const commitToRevert = getLastBumpCommit(tag).hash
   await GitProcess.exec(['revert', commitToRevert], gitDir)
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
