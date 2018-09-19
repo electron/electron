@@ -59,7 +59,10 @@ const LINTERS = [ {
         }
       }
     }
-    if (result.status) process.exit(result.status)
+    if (result.status) {
+      if (opts.fix) spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
+      process.exit(result.status)
+    }
   }
 }, {
   key: 'python',
