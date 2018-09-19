@@ -255,8 +255,7 @@ def main():
         popen = subprocess.Popen(
             ["git", "diff", "--name-only", "--cached"],
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell = True
+            stderr=subprocess.STDOUT
         )
         for line in popen.stdout:
             file_name = line.rstrip()
