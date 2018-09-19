@@ -259,9 +259,9 @@ step-show-sccache-stats: &step-show-sccache-stats
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
-    - <<: *step-checkout-electron
-    - <<: *step-depot-tools-get
-    - <<: *step-depot-tools-add-to-path
+    - *step-checkout-electron
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
 
     - restore_cache:
         paths:
@@ -275,7 +275,7 @@ steps-checkout: &steps-checkout
           # CircleCI does not support interpolation when setting environment variables.
           # https://circleci.com/docs/2.0/env-vars/#setting-an-environment-variable-in-a-shell-command
           echo 'export GIT_CACHE_PATH="$HOME/.gclient-cache"' >> $BASH_ENV
-    - <<: *step-gclient-sync
+    - *step-gclient-sync
     - save_cache:
         paths:
           - ~/.gclient-cache
@@ -297,84 +297,84 @@ steps-debug-build: &steps-debug-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-setup-env-for-build
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
 
     # Electron app
-    - <<: *step-electron-gn-gen
-    - <<: *step-electron-build
+    - *step-electron-gn-gen
+    - *step-electron-build
 
-    - <<: *step-show-sccache-stats
+    - *step-show-sccache-stats
 
 steps-testing-build: &steps-testing-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-setup-env-for-build
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
 
     # Electron app
-    - <<: *step-electron-gn-gen
-    - <<: *step-electron-build
-    - <<: *step-electron-dist-build
-    - <<: *step-electron-dist-store
+    - *step-electron-gn-gen
+    - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
 
     # ffmpeg
-    - <<: *step-ffmpeg-gn-gen
-    - <<: *step-ffmpeg-build
-    - <<: *step-ffmpeg-store
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
 
     # Node.js headers
-    - <<: *step-nodejs-headers-build
+    - *step-nodejs-headers-build
 
-    - <<: *step-show-sccache-stats
+    - *step-show-sccache-stats
 
     # Save all data needed for a further tests run.
-    - <<: *step-persist-data-for-tests
+    - *step-persist-data-for-tests
 
 steps-release-build: &steps-release-build
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-setup-env-for-build
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
 
     # Electron app
-    - <<: *step-electron-gn-gen
-    - <<: *step-electron-build
-    - <<: *step-electron-dist-build
-    - <<: *step-electron-dist-store
+    - *step-electron-gn-gen
+    - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
 
     # ffmpeg
-    - <<: *step-ffmpeg-gn-gen
-    - <<: *step-ffmpeg-build
-    - <<: *step-ffmpeg-store
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
 
     # native mksnapshot
-    - <<: *step-maybe-native-mksnapshot-gn-gen
-    - <<: *step-maybe-native-mksnapshot-build
-    - <<: *step-maybe-native-mksnapshot-store
+    - *step-maybe-native-mksnapshot-gn-gen
+    - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-store
 
     # Node.js headers
-    - <<: *step-nodejs-headers-build
+    - *step-nodejs-headers-build
 
-    - <<: *step-show-sccache-stats
+    - *step-show-sccache-stats
 
     # Save all data needed for a further tests run.
-    - <<: *step-persist-data-for-tests
+    - *step-persist-data-for-tests
 
-    - <<: *step-maybe-notify-slack-failure
-    - <<: *step-maybe-notify-slack-success
+    - *step-maybe-notify-slack-failure
+    - *step-maybe-notify-slack-success
 
 steps-native-tests: &steps-native-tests
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-setup-env-for-build
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
 
-    - <<: *step-electron-gn-gen
-    - <<: *step-native-tests-build
+    - *step-electron-gn-gen
+    - *step-native-tests-build
 
     # TODO(alexeykuzmin): Run the tests. It can be extremely parallelized!
 
@@ -382,14 +382,14 @@ steps-tests: &steps-tests
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-electron-dist-unzip
-    - <<: *step-setup-for-headless-testing
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-for-headless-testing
 
-    - <<: *step-verify-ffmpeg
+    - *step-verify-ffmpeg
 
-    - <<: *step-electron-tests-run
-    - <<: *step-electron-tests-store-results
+    - *step-electron-tests-run
+    - *step-electron-tests-store-results
 
 # Mac build are different in a few ways:
 # 1. We can't use save_cache/restore_cache on Mac,
@@ -398,34 +398,34 @@ steps-tests: &steps-tests
 #   and attach_workspace take too much time, more than the checkout itself.
 steps-build-mac: &steps-build-mac
   steps:
-    - <<: *step-checkout-electron
-    - <<: *step-depot-tools-get
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-install-nodejs-on-mac
-    - <<: *step-gclient-sync
-    - <<: *step-setup-env-for-build
+    - *step-checkout-electron
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-install-nodejs-on-mac
+    - *step-gclient-sync
+    - *step-setup-env-for-build
 
     # Electron app
-    - <<: *step-electron-gn-gen
-    - <<: *step-electron-build
-    - <<: *step-electron-dist-build
-    - <<: *step-electron-dist-store
+    - *step-electron-gn-gen
+    - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
 
     # ffmpeg
-    - <<: *step-ffmpeg-gn-gen
-    - <<: *step-ffmpeg-build
-    - <<: *step-ffmpeg-store
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
 
     # It would be better to verify ffmpeg as a part of a test job,
     # but it requires `gn` to run, and it's complicated
     # to store all gn's dependencies and configs.
     # FIXME(alexeykuzmin): Enable the next step back.
-    # - <<: *step-verify-ffmpeg
+    # - *step-verify-ffmpeg
 
     # Node.js headers for tests
-    - <<: *step-nodejs-headers-build
+    - *step-nodejs-headers-build
 
-    - <<: *step-show-sccache-stats
+    - *step-show-sccache-stats
 
     - persist_to_workspace:
         root: .
@@ -433,18 +433,18 @@ steps-build-mac: &steps-build-mac
           - src/electron
 
     # Save all data needed for a further tests run.
-    - <<: *step-persist-data-for-tests
+    - *step-persist-data-for-tests
 
 steps-tests-mac: &steps-tests-mac
   steps:
     - attach_workspace:
         at: .
-    - <<: *step-depot-tools-add-to-path
-    - <<: *step-electron-dist-unzip
-    - <<: *step-install-nodejs-on-mac
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-install-nodejs-on-mac
 
-    - <<: *step-electron-tests-run
-    - <<: *step-electron-tests-store-results
+    - *step-electron-tests-run
+    - *step-electron-tests-store-results
 
 filter-only-prs-from-forks: &filter-only-prs-from-forks
   filters:
