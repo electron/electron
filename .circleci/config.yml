@@ -399,8 +399,7 @@ steps-build-mac: &steps-build-mac
     # It would be better to verify ffmpeg as a part of a test job,
     # but it requires `gn` to run, and it's complicated
     # to store all gn's dependencies and configs.
-    # FIXME(alexeykuzmin): Enable the next step back.
-    # - *step-verify-ffmpeg
+    - <<: *step-verify-ffmpeg
 
     # Node.js headers for tests
     - *step-nodejs-headers-build
