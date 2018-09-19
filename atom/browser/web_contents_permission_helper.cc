@@ -105,20 +105,20 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 
   base::DictionaryValue details;
   std::unique_ptr<base::ListValue> media_types(new base::ListValue);
-  if (request.audio_type
-      == content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
+  if (request.audio_type ==
+      content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
     media_types->AppendString("audio");
   }
-  if (request.video_type
-      == content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
+  if (request.video_type ==
+      content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
     media_types->AppendString("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback,
-                    false, &details);
+  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback, false,
+                    &details);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(

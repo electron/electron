@@ -150,8 +150,7 @@ static HRESULT ShowFileDialog(IFileDialog* dialog,
   return dialog->Show(parent_window);
 }
 
-static void ApplySettings(IFileDialog* dialog,
-                          const DialogSettings& settings) {
+static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   std::wstring file_part;
 
   if (!IsDirectory(settings.default_path))
@@ -271,7 +270,7 @@ bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
     return false;
 
   file_save_dialog->SetOptions(FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST |
-                        FOS_OVERWRITEPROMPT);
+                               FOS_OVERWRITEPROMPT);
   ApplySettings(file_save_dialog, settings);
   hr = ShowFileDialog(file_save_dialog, settings);
 

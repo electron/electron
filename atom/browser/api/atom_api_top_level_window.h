@@ -223,7 +223,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
-  template<typename... Args>
+  template <typename... Args>
   void EmitEventSoon(base::StringPiece eventName) {
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
