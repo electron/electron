@@ -110,8 +110,7 @@ def run_clang_format_diff(args, file_name):
             invocation,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
-            shell = True)
+            universal_newlines=True)
     except OSError as exc:
         raise DiffError(str(exc))
     proc_stdout = proc.stdout
