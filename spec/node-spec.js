@@ -1,5 +1,6 @@
 const assert = require('assert')
 const ChildProcess = require('child_process')
+const { expect } = require('chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -11,7 +12,9 @@ describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
   describe('child_process', () => {
+
     describe('child_process.fork', () => {
+
       it('works in current process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
         child.on('message', (msg) => {
@@ -206,10 +209,10 @@ describe('node feature', () => {
   })
 
   describe('inspector', () => {
-    let child
+    let child = null
 
     afterEach(() => {
-      if (child != null) child.kill()
+      if (child !== null) child.kill()
     })
 
     it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
@@ -356,8 +359,7 @@ describe('node feature', () => {
 
     it('should have isTTY defined on Mac and Linux', function () {
       if (isCI || process.platform === 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
+        this.skip()
         return
       }
 
@@ -366,8 +368,7 @@ describe('node feature', () => {
 
     it('should have isTTY undefined on Windows', function () {
       if (isCI || process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
+        this.skip()
         return
       }
 
@@ -393,17 +394,23 @@ describe('node feature', () => {
     })
   })
 
-  describe('vm.createContext', () => {
+  describe('vm.runInNewContext', () => {
     it('should not crash', () => {
       require('vm').runInNewContext('')
     })
   })
 
   it('includes the electron version in process.versions', () => {
-    assert(/^\d+\.\d+\.\d+(\S*)?$/.test(process.versions.electron))
+    expect(process.versions)
+      .to.have.own.property('electron')
+      .that.is.a('string')
+      .and.matches(/^\d+\.\d+\.\d+(\S*)?$/)
   })
 
   it('includes the chrome version in process.versions', () => {
-    assert(/^\d+\.\d+\.\d+\.\d+$/.test(process.versions.chrome))
+    expect(process.versions)
+      .to.have.own.property('chrome')
+      .that.is.a('string')
+      .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
   })
 })
