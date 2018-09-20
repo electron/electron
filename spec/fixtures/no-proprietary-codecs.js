@@ -17,6 +17,11 @@ app.once('ready', () => {
     show: false
   })
 
+  window.webContents.on('crashed', (event, killed) => {
+    console.log(`WebContents crashed (killed=${killed})`)
+    app.exit(1)
+  })
+
   window.loadFile(path.resolve(__dirname, 'asar', 'video.asar', 'index.html'))
 
   ipcMain.on('asar-video', (event, message, error) => {
