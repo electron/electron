@@ -71,5 +71,5 @@
     "replacements": {
       "@electron/internal/(.+)": "./lib/$1"
     }
-}
+  }
 }
