@@ -24,7 +24,6 @@ env-testing-build: &env-testing-build
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
-  BUILD_NATIVE_MKSNAPSHOT: false  # ARM(64) builds will redefine it.
   NOTIFY_SLACK: true
 
 # Build targets options.
@@ -202,29 +201,6 @@ step-verify-ffmpeg: &step-verify-ffmpeg
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
-step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
-  run:
-    name: native mksnapshot GN gen
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
-        cd src
-        gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-      fi
-
-step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
-  run:
-    name: native mksnapshot (arm/arm64) build
-    command: |
-      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "true" ]; then
-        cd src
-        ninja -C out/native_mksnapshot v8:mksnapshot
-      fi
-
-step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
-  store_artifacts:
-    path: src/out/native_mksnapshot/mksnapshot
-    destination: mksnapshot
-
 step-setup-for-headless-testing: &step-setup-for-headless-testing
   run:
     name: Setup for headless testing
@@ -338,11 +314,6 @@ steps-release-build: &steps-release-build
     - *step-electron-dist-build
     - *step-electron-dist-store
 
-    # native mksnapshot
-    - *step-maybe-native-mksnapshot-gn-gen
-    - *step-maybe-native-mksnapshot-build
-    - *step-maybe-native-mksnapshot-store
-
     # Node.js headers
     - *step-nodejs-headers-build
 
@@ -353,6 +324,27 @@ steps-release-build: &steps-release-build
 
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
+
+steps-mksnapshot-build: &steps-mksnapshot-build
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+
+    - run:
+        name: native mksnapshot GN gen
+        command: |
+          cd src
+          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
+    - run:
+        name: native mksnapshot (arm/arm64) build
+        command: |
+          cd src
+          ninja -C out/native_mksnapshot v8:mksnapshot
+    - store_artifacts:
+        path: src/out/native_mksnapshot/mksnapshot
+        destination: mksnapshot
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -559,8 +551,13 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-release-build
-      BUILD_NATIVE_MKSNAPSHOT: true
     <<: *steps-release-build
+
+  linux-arm-mksnapshot:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm
+    <<: *steps-mksnapshot-build
 
   linux-arm64-debug:
     <<: *machine-linux-2xlarge
@@ -587,8 +584,13 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-release-build
-      BUILD_NATIVE_MKSNAPSHOT: true
     <<: *steps-release-build
+
+  linux-arm64-mksnapshot:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm64
+    <<: *steps-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac
@@ -757,6 +759,12 @@ workflows:
       - linux-arm-release:
           requires:
             - linux-arm-checkout
+      - linux-arm-mksnapshot:
+          requires:
+            - linux-arm-checkout
       - linux-arm64-release:
+          requires:
+            - linux-arm64-checkout
+      - linux-arm64-mksnapshot:
           requires:
             - linux-arm64-checkout
