@@ -198,6 +198,7 @@ static_library("electron_lib") {
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing",
+    "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/boringssl",

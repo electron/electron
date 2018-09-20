@@ -16,18 +16,25 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "brightray/browser/net_log.h"
-#include "brightray/common/switches.h"
+#include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_switches.h"
+#include "chrome/common/pref_names.h"
 #include "components/network_session_configurator/common/network_switches.h"
+#include "components/prefs/value_map_pref_store.h"
+#include "components/proxy_config/proxy_config_dictionary.h"
+#include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/resource_context.h"
+#include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/ct_known_logs.h"
 #include "net/cert/ct_log_verifier.h"
@@ -44,7 +51,6 @@
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/data_protocol_handler.h"
-#include "net/url_request/ftp_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_intercepting_job_factory.h"
 #include "net/url_request/url_request_job_factory_impl.h"
@@ -53,6 +59,10 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "services/network/url_request_context_builder_mojo.h"
 #include "url/url_constants.h"
+
+#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
+#include "net/url_request/ftp_protocol_handler.h"
+#endif
 
 using content::BrowserThread;
 
@@ -75,6 +85,9 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
       net::HttpUtil::GenerateAcceptLanguageHeader(
           brightray::BrowserClient::Get()->GetApplicationLocale());
   network_context_params->allow_gssapi_library_load = true;
+  network_context_params->enable_data_url_support = false;
+  network_context_params->proxy_resolver_factory =
+      ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
   if (!in_memory) {
     network_context_params->http_cache_path =
         base_path.Append(FILE_PATH_LITERAL("Cache"));
@@ -91,10 +104,10 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   return network_context_params;
 }
 
-std::unique_ptr<AtomURLRequestJobFactory> CreateURLRequestJobFactory(
+void SetupAtomURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
-    net::URLRequestContext* url_request_context) {
-  auto job_factory = std::make_unique<AtomURLRequestJobFactory>();
+    net::URLRequestContext* url_request_context,
+    AtomURLRequestJobFactory* job_factory) {
   for (auto& protocol_handler : *protocol_handlers) {
     job_factory->SetProtocolHandler(protocol_handler.first,
                                     std::move(protocol_handler.second));
@@ -104,7 +117,7 @@ std::unique_ptr<AtomURLRequestJobFactory> CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(url::kAboutScheme,
                                   std::make_unique<AboutProtocolHandler>());
   job_factory->SetProtocolHandler(url::kDataScheme,
-                                  std::unique_ptr<net::DataProtocolHandler>());
+                                  std::make_unique<net::DataProtocolHandler>());
   job_factory->SetProtocolHandler(
       url::kFileScheme,
       std::make_unique<asar::AsarProtocolHandler>(
@@ -127,8 +140,39 @@ std::unique_ptr<AtomURLRequestJobFactory> CreateURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
 #endif
+}
 
-  return job_factory;
+void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store) {
+  if (!pref_store)
+    return;
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  if (command_line->HasSwitch(::switches::kNoProxyServer)) {
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         ProxyConfigDictionary::CreateDirect(),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  } else if (command_line->HasSwitch(::switches::kProxyPacUrl)) {
+    std::string pac_script_url =
+        command_line->GetSwitchValueASCII(::switches::kProxyPacUrl);
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         ProxyConfigDictionary::CreatePacScript(
+                             pac_script_url, false /* pac_mandatory */),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  } else if (command_line->HasSwitch(::switches::kProxyAutoDetect)) {
+    pref_store->SetValue(proxy_config::prefs::kProxy,
+                         ProxyConfigDictionary::CreateAutoDetect(),
+                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  } else if (command_line->HasSwitch(::switches::kProxyServer)) {
+    std::string proxy_server =
+        command_line->GetSwitchValueASCII(::switches::kProxyServer);
+    std::string bypass_list =
+        command_line->GetSwitchValueASCII(::switches::kProxyBypassList);
+    pref_store->SetValue(
+        proxy_config::prefs::kProxy,
+        ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list),
+        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  }
 }
 
 }  // namespace
@@ -177,6 +221,7 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
     content::URLRequestInterceptorScopedVector protocol_interceptors) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!main_request_context_getter_.get());
+  LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
       brightray::BrowserClient::Get()->GetNetLog(), this, protocol_handlers,
       std::move(protocol_interceptors));
@@ -206,6 +251,12 @@ void URLRequestContextGetter::Handle::LazyInitialize() const {
       browser_context_->GetPath(), browser_context_->GetUserAgent(),
       browser_context_->IsOffTheRecord(), browser_context_->CanUseHttpCache(),
       browser_context_->GetMaxCacheSize());
+
+  browser_context_->proxy_config_monitor()->AddToNetworkContextParams(
+      main_network_context_params_.get());
+
+  ApplyProxyModeFromCommandLine(browser_context_->in_memory_pref_store());
+
   if (!main_network_context_request_.is_pending()) {
     main_network_context_request_ = mojo::MakeRequest(&main_network_context_);
   }
@@ -299,16 +350,15 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     net::HttpAuthPreferences auth_preferences;
     // --auth-server-whitelist
-    if (command_line.HasSwitch(brightray::switches::kAuthServerWhitelist)) {
-      auth_preferences.SetServerWhitelist(command_line.GetSwitchValueASCII(
-          brightray::switches::kAuthServerWhitelist));
+    if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
+      auth_preferences.SetServerWhitelist(
+          command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
     }
 
     // --auth-negotiate-delegate-whitelist
-    if (command_line.HasSwitch(
-            brightray::switches::kAuthNegotiateDelegateWhitelist)) {
+    if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
       auth_preferences.SetDelegateWhitelist(command_line.GetSwitchValueASCII(
-          brightray::switches::kAuthNegotiateDelegateWhitelist));
+          switches::kAuthNegotiateDelegateWhitelist));
     }
     auto http_auth_handler_factory =
         net::HttpAuthHandlerRegistryFactory::CreateDefault(host_resolver.get());
@@ -322,31 +372,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
     builder->set_ct_verifier(std::move(ct_verifier));
 
-    // --proxy-server
-    if (command_line.HasSwitch(brightray::switches::kNoProxyServer)) {
-      builder->set_proxy_resolution_service(
-          net::ProxyResolutionService::CreateDirect());
-    } else if (command_line.HasSwitch(brightray::switches::kProxyServer)) {
-      net::ProxyConfig proxy_config;
-      proxy_config.proxy_rules().ParseFromString(
-          command_line.GetSwitchValueASCII(brightray::switches::kProxyServer));
-      proxy_config.proxy_rules().bypass_rules.ParseFromString(
-          command_line.GetSwitchValueASCII(
-              brightray::switches::kProxyBypassList));
-      builder->set_proxy_resolution_service(
-          net::ProxyResolutionService::CreateFixed(
-              net::ProxyConfigWithAnnotation(proxy_config,
-                                             NO_TRAFFIC_ANNOTATION_YET)));
-    } else if (command_line.HasSwitch(brightray::switches::kProxyPacUrl)) {
-      auto proxy_config = net::ProxyConfig::CreateFromCustomPacURL(GURL(
-          command_line.GetSwitchValueASCII(brightray::switches::kProxyPacUrl)));
-      proxy_config.set_pac_mandatory(true);
-      builder->set_proxy_resolution_service(
-          net::ProxyResolutionService::CreateFixed(
-              net::ProxyConfigWithAnnotation(proxy_config,
-                                             NO_TRAFFIC_ANNOTATION_YET)));
-    }
-
     main_network_context_ =
         content::GetNetworkServiceImpl()->CreateNetworkContextWithBuilder(
             std::move(context_handle_->main_network_context_request_),
@@ -357,6 +382,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
         main_request_context_->transport_security_state();
     transport_security_state->SetRequireCTDelegate(ct_delegate_.get());
 
+    // Add custom standard schemes to cookie schemes.
     auto* cookie_monster =
         static_cast<net::CookieMonster*>(main_request_context_->cookie_store());
     std::vector<std::string> cookie_schemes(
@@ -366,8 +392,10 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                           custom_standard_schemes.end());
     cookie_monster->SetCookieableSchemes(cookie_schemes);
 
-    top_job_factory_ =
-        CreateURLRequestJobFactory(&protocol_handlers_, main_request_context_);
+    // Setup handlers for custom job factory.
+    top_job_factory_.reset(new AtomURLRequestJobFactory);
+    SetupAtomURLRequestJobFactory(&protocol_handlers_, main_request_context_,
+                                  top_job_factory_.get());
     std::unique_ptr<net::URLRequestJobFactory> inner_job_factory(
         new net::URLRequestJobFactoryImpl);
     if (!protocol_interceptors_.empty()) {

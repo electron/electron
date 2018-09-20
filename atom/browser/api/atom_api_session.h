@@ -10,6 +10,7 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
+#include "atom/browser/net/resolve_proxy_helper.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
@@ -39,8 +40,6 @@ namespace api {
 class Session : public mate::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
-  using ResolveProxyCallback = base::Callback<void(std::string)>;
-
   enum class CacheAction {
     CLEAR,
     STATS,
@@ -63,12 +62,13 @@ class Session : public mate::TrackableObject<Session>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods.
-  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
+  void ResolveProxy(const GURL& url,
+                    const ResolveProxyHelper::ResolveProxyCallback& callback);
   template <CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
-  void SetProxy(const net::ProxyConfig& config, const base::Closure& callback);
+  void SetProxy(const mate::Dictionary& options, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();

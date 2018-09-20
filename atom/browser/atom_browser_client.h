@@ -116,6 +116,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
       content::BrowserContext* browser_context,
       bool in_memory,
       const base::FilePath& relative_partition_path) override;
+  void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

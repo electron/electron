@@ -12,6 +12,8 @@
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/cookie_change_notifier.h"
+#include "atom/browser/net/resolve_proxy_helper.h"
+#include "atom/browser/pref_store_delegate.h"
 #include "atom/browser/special_storage_policy.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
@@ -33,6 +35,9 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
+#include "components/prefs/value_map_pref_store.h"
+#include "components/proxy_config/pref_proxy_config_tracker_impl.h"
+#include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
@@ -71,7 +76,8 @@ void AtomBrowserContextDeleter::Destruct(
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
-    : storage_policy_(new SpecialStoragePolicy),
+    : in_memory_pref_store_(nullptr),
+      storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
   // Construct user agent string.
@@ -110,14 +116,14 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   content::BrowserContext::Initialize(this, path_);
 
-  io_handle_ = new URLRequestContextGetter::Handle(weak_factory_.GetWeakPtr());
-
   browser_context_map_[PartitionKey(partition, in_memory)] =
       weak_factory_.GetWeakPtr();
 
   // Initialize Pref Registry.
   InitPrefs();
 
+  proxy_config_monitor_ = std::make_unique<ProxyConfigMonitor>(prefs_.get());
+  io_handle_ = new URLRequestContextGetter::Handle(weak_factory_.GetWeakPtr());
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 }
 
@@ -157,8 +163,12 @@ void AtomBrowserContext::InitPrefs() {
   brightray::InspectableWebContentsImpl::RegisterPrefs(registry.get());
   brightray::MediaDeviceIDSalt::RegisterPrefs(registry.get());
   brightray::ZoomLevelDelegate::RegisterPrefs(registry.get());
+  PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
 
-  prefs_ = prefs_factory.Create(registry.get());
+  prefs_ = prefs_factory.Create(
+      registry.get(),
+      std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
+  prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
 }
 
 void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
@@ -300,6 +310,13 @@ AtomBrowserContext::CreateMediaRequestContextForStoragePartition(
     bool in_memory) {
   NOTREACHED();
   return nullptr;
+}
+
+ResolveProxyHelper* AtomBrowserContext::GetResolveProxyHelper() {
+  if (!resolve_proxy_helper_) {
+    resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
+  }
+  return resolve_proxy_helper_.get();
 }
 
 // static

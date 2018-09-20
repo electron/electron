@@ -57,6 +57,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
@@ -527,9 +528,14 @@ network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
   return static_cast<AtomBrowserContext*>(browser_context)->GetNetworkContext();
 }
 
+void AtomBrowserClient::RegisterOutOfProcessServices(
+    OutOfProcessServiceMap* services) {
+  (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
+      base::ASCIIToUTF16("V8 Proxy Resolver");
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
     const content::MainFunctionParams&) {
-  v8::V8::Initialize();  // Init V8 before creating main parts.
   return new AtomBrowserMainParts;
 }
 

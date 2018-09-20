@@ -216,6 +216,13 @@ const char kDiskCacheSize[] = "disk-cache-size";
 // Ignore the limit of 6 connections per host.
 const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
 
+// Whitelist containing servers for which Integrated Authentication is enabled.
+const char kAuthServerWhitelist[] = "auth-server-whitelist";
+
+// Whitelist containing servers for which Kerberos delegation is allowed.
+const char kAuthNegotiateDelegateWhitelist[] =
+    "auth-negotiate-delegate-whitelist";
+
 }  // namespace switches
 
 }  // namespace atom

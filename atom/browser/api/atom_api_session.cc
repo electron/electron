@@ -31,12 +31,14 @@
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
+#include "components/prefs/value_map_pref_store.h"
+#include "components/proxy_config/proxy_config_dictionary.h"
+#include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
@@ -50,10 +52,6 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_transaction_factory.h"
-#include "net/proxy_resolution/proxy_config_service_fixed.h"
-#include "net/proxy_resolution/proxy_config_with_annotation.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
-#include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -186,37 +184,6 @@ struct Converter<ClearAuthCacheOptions> {
 };
 
 template <>
-struct Converter<net::ProxyConfig> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     net::ProxyConfig* out) {
-    std::string proxy_rules, proxy_bypass_rules;
-    GURL pac_url;
-    mate::Dictionary options;
-    // Fallback to previous API when passed String.
-    // https://git.io/vuhjj
-    if (ConvertFromV8(isolate, val, &proxy_rules)) {
-      pac_url = GURL(proxy_rules);  // Assume it is PAC script if it is URL.
-    } else if (ConvertFromV8(isolate, val, &options)) {
-      options.Get("pacScript", &pac_url);
-      options.Get("proxyRules", &proxy_rules);
-      options.Get("proxyBypassRules", &proxy_bypass_rules);
-    } else {
-      return false;
-    }
-
-    // pacScript takes precedence over proxyRules.
-    if (!pac_url.is_empty() && pac_url.is_valid()) {
-      out->set_pac_url(pac_url);
-    } else {
-      out->proxy_rules().ParseFromString(proxy_rules);
-      out->proxy_rules().bypass_rules.ParseFromString(proxy_bypass_rules);
-    }
-    return true;
-  }
-};
-
-template <>
 struct Converter<atom::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    atom::VerifyRequestParams val) {
@@ -241,56 +208,6 @@ const char kPersistPrefix[] = "persist:";
 
 // Referenced session objects.
 std::map<uint32_t, v8::Global<v8::Object>> g_sessions;
-
-class ResolveProxyHelper {
- public:
-  ResolveProxyHelper(AtomBrowserContext* browser_context,
-                     const GURL& url,
-                     const Session::ResolveProxyCallback& callback)
-      : callback_(callback),
-        original_thread_(base::ThreadTaskRunnerHandle::Get()) {
-    scoped_refptr<net::URLRequestContextGetter> context_getter =
-        browser_context->GetRequestContext();
-    context_getter->GetNetworkTaskRunner()->PostTask(
-        FROM_HERE, base::BindOnce(&ResolveProxyHelper::ResolveProxy,
-                                  base::Unretained(this), context_getter, url));
-  }
-
-  void OnResolveProxyCompleted(int result) {
-    std::string proxy;
-    if (result == net::OK)
-      proxy = proxy_info_.ToPacString();
-    original_thread_->PostTask(FROM_HERE, base::BindOnce(callback_, proxy));
-    delete this;
-  }
-
- private:
-  void ResolveProxy(scoped_refptr<net::URLRequestContextGetter> context_getter,
-                    const GURL& url) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
-
-    net::ProxyResolutionService* proxy_service =
-        context_getter->GetURLRequestContext()->proxy_resolution_service();
-    net::CompletionCallback completion_callback = base::Bind(
-        &ResolveProxyHelper::OnResolveProxyCompleted, base::Unretained(this));
-
-    // Start the request.
-    int result = proxy_service->ResolveProxy(url, "GET", &proxy_info_,
-                                             completion_callback, &pac_req_,
-                                             nullptr, net::NetLogWithSource());
-
-    // Completed synchronously.
-    if (result != net::ERR_IO_PENDING)
-      completion_callback.Run(result);
-  }
-
-  Session::ResolveProxyCallback callback_;
-  net::ProxyInfo proxy_info_;
-  net::ProxyResolutionService::Request* pac_req_;
-  scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
-
-  DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
-};
 
 // Runs the callback in UI thread.
 void RunCallbackInUI(const base::Callback<void()>& callback) {
@@ -347,19 +264,6 @@ void DoCacheActionInIO(
   int rv = http_cache->GetBackend(backend_ptr, on_get_backend);
   if (rv != net::ERR_IO_PENDING)
     on_get_backend.Run(net::OK);
-}
-
-void SetProxyInIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                  const net::ProxyConfig& config,
-                  const base::Closure& callback) {
-  auto* proxy_service =
-      getter->GetURLRequestContext()->proxy_resolution_service();
-  proxy_service->ResetConfigService(
-      base::WrapUnique(new net::ProxyConfigServiceFixed(
-          net::ProxyConfigWithAnnotation(config, NO_TRAFFIC_ANNOTATION_YET))));
-  // Refetches and applies the new pac script if provided.
-  proxy_service->ForceReloadProxyConfig();
-  RunCallbackInUI(callback);
 }
 
 void SetCertVerifyProcInIO(
@@ -520,8 +424,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   }
 }
 
-void Session::ResolveProxy(const GURL& url, ResolveProxyCallback callback) {
-  new ResolveProxyHelper(browser_context(), url, callback);
+void Session::ResolveProxy(
+    const GURL& url,
+    const ResolveProxyHelper::ResolveProxyCallback& callback) {
+  browser_context_->GetResolveProxyHelper()->ResolveProxy(url, callback);
 }
 
 template <Session::CacheAction action>
@@ -559,13 +465,34 @@ void Session::FlushStorageData() {
   storage_partition->Flush();
 }
 
-void Session::SetProxy(const net::ProxyConfig& config,
+void Session::SetProxy(const mate::Dictionary& options,
                        const base::Closure& callback) {
-  auto* getter = browser_context_->GetRequestContext();
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&SetProxyInIO, base::RetainedRef(getter), config,
-                     callback));
+  if (!browser_context_->in_memory_pref_store()) {
+    callback.Run();
+    return;
+  }
+
+  std::string proxy_rules, bypass_list, pac_url;
+
+  options.Get("pacScript", &pac_url);
+  options.Get("proxyRules", &proxy_rules);
+  options.Get("proxyBypassRules", &bypass_list);
+
+  // pacScript takes precedence over proxyRules.
+  if (!pac_url.empty()) {
+    browser_context_->in_memory_pref_store()->SetValue(
+        proxy_config::prefs::kProxy,
+        ProxyConfigDictionary::CreatePacScript(pac_url,
+                                               true /* pac_mandatory */),
+        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  } else {
+    browser_context_->in_memory_pref_store()->SetValue(
+        proxy_config::prefs::kProxy,
+        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list),
+        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
+  }
+
+  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, callback);
 }
 
 void Session::SetDownloadPath(const base::FilePath& path) {

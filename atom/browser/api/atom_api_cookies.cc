@@ -257,10 +257,10 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 
 Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
     : browser_context_(browser_context) {
+  Init(isolate);
   cookie_change_subscription_ =
       browser_context_->cookie_change_notifier()->RegisterCookieChangeCallback(
           base::Bind(&Cookies::OnCookieChanged, base::Unretained(this)));
-  Init(isolate);
 }
 
 Cookies::~Cookies() {}

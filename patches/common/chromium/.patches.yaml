@@ -490,3 +490,8 @@ patches:
     See https://github.com/electron/electron/issues/14327
     (Android specific changes and changes in some test files
     have been removed from the diff.)
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: proxy_config_monitor.patch
+  description: |
+    Allow monitoring proxy config changes for a pref service.
