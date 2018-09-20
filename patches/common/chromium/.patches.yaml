@@ -442,8 +442,8 @@ patches:
   author: Aleksei Kuzmin <alkuzmin@microsoft.com>
   file: exclude-a-few-test-files-from-build.patch
   description: |
-    Compilation of those files fails with the Chromium 67.
-    Remove the patch during the Chromium 68 upgrade.
+    Compilation of those files fails with the Chromium 68.
+    Remove the patch during the Chromium 69 upgrade.
 -
   author: deepak1556 <hop2deep@gmail.com>
   file: disable_extensions_gn.patch
