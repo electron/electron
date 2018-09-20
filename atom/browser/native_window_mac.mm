@@ -1296,10 +1296,16 @@ void NativeWindowMac::AddContentViewLayers() {
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
   if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
-    base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
-    [background_layer
-        setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
-    [[window_ contentView] setLayer:background_layer];
+    // For normal window, we need to explicitly set layer for contentView to
+    // make setBackgroundColor work correctly.
+    // There is no need to do so for frameless window, and doing so would make
+    // titleBarStyle stop working.
+    if (has_frame()) {
+      base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+      [background_layer
+          setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
+      [[window_ contentView] setLayer:background_layer];
+    }
     [[window_ contentView] setWantsLayer:YES];
   }
 
