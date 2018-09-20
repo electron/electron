@@ -902,6 +902,15 @@ dist_zip("electron_dist_zip") {
   ]
 }
 
+dist_zip("electron_ffmpeg_zip") {
+  data_deps = [
+    "//third_party/ffmpeg",
+  ]
+  outputs = [
+    "$root_build_dir/ffmpeg.zip",
+  ]
+}
+
 group("electron") {
   deps = [
     ":electron_app",
