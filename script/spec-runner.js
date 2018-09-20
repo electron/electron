@@ -26,7 +26,8 @@ getSpecHash().then(([currentSpecHash, currentSpecInstallHash]) => {
         npm_config_nodedir: path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`),
         npm_config_msvs_version: '2017'
       }),
-      cwd: path.resolve(__dirname, '../spec')
+      cwd: path.resolve(__dirname, '../spec'),
+      stdio: 'inherit'
     })
     if (out.status !== 0) {
       console.error('Failed to npm install in the spec folder')
