@@ -94,6 +94,8 @@ npm_action("atom_browserify_sandbox") {
     "./lib/sandboxed_renderer/api/exports/path.js:path",
     "-r",
     "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
+    "-t",
+    "aliasify"
   ]
 
   inputs = [
@@ -129,6 +131,8 @@ npm_action("atom_browserify_isolated") {
 
   script = "browserify"
   args = inputs + [
+           "-t",
+           "aliasify",
            "-o",
            rebase_path(outputs[0]),
          ]

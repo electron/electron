@@ -4,6 +4,7 @@
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
+    "aliasify": "^2.1.0",
     "asar": "^0.11.0",
     "browserify": "^13.1.0",
     "check-for-leaks": "^1.0.2",
@@ -65,5 +66,10 @@
   "author": "Electron Community",
   "keywords": [
     "electron"
-  ]
+  ],
+  "aliasify": {
+    "replacements": {
+      "@electron/internal/(.+)": "./lib/$1"
+    }
+}
 }
