@@ -323,15 +323,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     builder->set_network_delegate(std::make_unique<AtomNetworkDelegate>());
 
     ct_delegate_.reset(new brightray::RequireCTDelegate);
-    std::unique_ptr<net::CertVerifier> cert_verifier =
-        std::make_unique<AtomCertVerifier>(ct_delegate_.get());
-    auto spki_list = base::SplitString(
-        command_line.GetSwitchValueASCII(
-            network::switches::kIgnoreCertificateErrorsSPKIList),
-        ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
-    cert_verifier = std::make_unique<network::IgnoreErrorsCertVerifier>(
-        std::move(cert_verifier),
-        network::IgnoreErrorsCertVerifier::MakeWhitelist(spki_list));
+    auto cert_verifier = std::make_unique<AtomCertVerifier>(ct_delegate_.get());
     builder->SetCertVerifier(std::move(cert_verifier));
 
     builder->SetCreateHttpTransactionFactoryCallback(
