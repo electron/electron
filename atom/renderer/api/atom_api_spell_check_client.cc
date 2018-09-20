@@ -188,7 +188,7 @@ void SpellCheckClient::SpellCheckText() {
 void SpellCheckClient::OnSpellCheckDone(
     const std::vector<base::string16>& misspelt_words) {
   std::vector<blink::WebTextCheckingResult> results;
-  const auto& completion_handler = pending_request_param_->completion();
+  auto* const completion_handler = pending_request_param_->completion();
 
   auto& word_map = pending_request_param_->wordmap();
 
