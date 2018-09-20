@@ -166,8 +166,6 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/gen/node_headers
-      - src/out/ffmpeg/libffmpeg.dylib
-      - src/out/ffmpeg/libffmpeg.so
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -319,11 +317,6 @@ steps-testing-build: &steps-testing-build
     - *step-electron-dist-build
     - *step-electron-dist-store
 
-    # ffmpeg
-    - *step-ffmpeg-gn-gen
-    - *step-ffmpeg-build
-    - *step-ffmpeg-store
-
     # Node.js headers
     - *step-nodejs-headers-build
 
@@ -345,11 +338,6 @@ steps-release-build: &steps-release-build
     - *step-electron-dist-build
     - *step-electron-dist-store
 
-    # ffmpeg
-    - *step-ffmpeg-gn-gen
-    - *step-ffmpeg-build
-    - *step-ffmpeg-store
-
     # native mksnapshot
     - *step-maybe-native-mksnapshot-gn-gen
     - *step-maybe-native-mksnapshot-build
@@ -366,6 +354,22 @@ steps-release-build: &steps-release-build
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
 
+steps-ffmpeg-build: &steps-ffmpeg-build
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
+
+    - persist_to_workspace:
+        root: .
+        paths:
+          - src/out/ffmpeg/libffmpeg.so
+
 steps-native-tests: &steps-native-tests
   steps:
     - attach_workspace:
@@ -378,7 +382,7 @@ steps-native-tests: &steps-native-tests
 
     # TODO(alexeykuzmin): Run the tests. It can be extremely parallelized!
 
-steps-tests: &steps-tests
+steps-verify-ffmpeg: &steps-verify-ffmpeg
   steps:
     - attach_workspace:
         at: .
@@ -387,6 +391,14 @@ steps-tests: &steps-tests
     - *step-setup-for-headless-testing
 
     - *step-verify-ffmpeg
+
+steps-tests: &steps-tests
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-for-headless-testing
 
     - *step-electron-tests-run
     - *step-electron-tests-store-results
@@ -484,6 +496,11 @@ jobs:
       <<: *env-testing-build
     <<: *steps-testing-build
 
+  linux-x64-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+    <<: *steps-ffmpeg-build
+
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
@@ -503,6 +520,12 @@ jobs:
       <<: *env-ia32
       <<: *env-testing-build
     <<: *steps-testing-build
+
+  linux-ia32-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+    <<: *steps-ffmpeg-build
 
   linux-ia32-release:
     <<: *machine-linux-2xlarge
@@ -525,6 +548,12 @@ jobs:
       <<: *env-testing-build
     <<: *steps-testing-build
 
+  linux-arm-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm
+    <<: *steps-ffmpeg-build
+
   linux-arm-release:
     <<: *machine-linux-2xlarge
     environment:
@@ -546,6 +575,12 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
     <<: *steps-testing-build
+
+  linux-arm64-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm64
+    <<: *steps-ffmpeg-build
 
   linux-arm64-release:
     <<: *machine-linux-2xlarge
@@ -579,6 +614,10 @@ jobs:
     <<: *machine-linux-medium
     <<: *steps-tests
 
+  linux-x64-testing-verify-ffmpeg:
+    <<: *machine-linux-medium
+    <<: *steps-verify-ffmpeg
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     <<: *steps-tests
@@ -588,6 +627,12 @@ jobs:
     environment:
       <<: *env-ia32
     <<: *steps-tests
+
+  linux-ia32-testing-verify-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+    <<: *steps-verify-ffmpeg
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
@@ -624,6 +669,14 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
+      - linux-x64-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-x64-testing-verify-ffmpeg:
+          requires:
+            - linux-x64-testing
+            - linux-x64-ffmpeg
+
       - linux-ia32-debug:
           requires:
             - linux-checkout
@@ -633,18 +686,32 @@ workflows:
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
+      - linux-ia32-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-ia32-testing-verify-ffmpeg:
+          requires:
+            - linux-ia32-testing
+            - linux-ia32-ffmpeg
+
       - linux-arm-debug:
           requires:
             - linux-arm-checkout
       - linux-arm-testing:
           requires:
             - linux-arm-checkout
+      - linux-arm-ffmpeg:
+           requires:
+             - linux-arm-checkout
       - linux-arm64-debug:
           requires:
             - linux-arm64-checkout
       - linux-arm64-testing:
           requires:
             - linux-arm64-checkout
+      - linux-arm64-ffmpeg:
+           requires:
+             - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
