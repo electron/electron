@@ -1,6 +1,7 @@
 jobs:
 - job: Build_Electron_via_GN
-  timeoutInMinutes: 180
+  displayName: Build Electron via GN
+  timeoutInMinutes: 120
   steps:
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
@@ -53,6 +54,12 @@ jobs:
 
   - bash: |
       cd src
+      ninja -C out/Default third_party/electron_node:headers
+    displayName: Build Node.js headers for testing
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
+      cd src
       gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
       ninja -C out/ffmpeg third_party/ffmpeg
     displayName: Non proprietary ffmpeg build
@@ -65,16 +72,6 @@ jobs:
 
   - bash: |
       cd src
-      # Make sure there aren't any Electron processes left running from previous tests
-      killall Electron
-      ninja -C out/Default third_party/electron_node:headers
-      export ELECTRON_OUT_DIR=Default
-      (cd electron && npm run test -- --ci --enable-logging)
-    displayName: Test
-    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
-
-  - bash: |
-      cd src
       ninja -C out/Default electron:electron_dist_zip
     displayName: Build dist zip
 
@@ -83,24 +80,109 @@ jobs:
       ninja -C out/Default electron:electron_chromedriver_zip
     displayName: Build chromedriver and zip
 
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (application zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (chromedriver.zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish gn args for ffmpeg testing
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/args.gn'
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish build.ninja for ffmpeg testing
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/build.ninja'
+      ArtifactName: Default
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish libffmpeg.dylib for testing
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/ffmpeg/libffmpeg.dylib'
+      ArtifactName: ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Node.js headers for testing
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/gen/node_headers'
+      ArtifactName: node_headers
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+- job: Test_Electron_Build
+  displayName: Test
+  dependsOn: Build_Electron_via_GN
+  condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+  timeoutInMinutes: 30
+  steps:
+  - bash: |
+      set -ex
+      mkdir -p src/out/Default/gen
+      mkdir -p src/out/ffmpeg
+      git clone https://github.com/electron/electron src/electron
+      (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
+    displayName: Checkout Electron
+
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download files needed for testing'
+    inputs:
+      artifactName: Default
+      downloadPath: '$(System.DefaultWorkingDirectory)/src/out'
+
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download ffmpeg.dylib for testing'
+    inputs:
+      artifactName: ffmpeg
+      downloadPath: '$(System.DefaultWorkingDirectory)/src/out/ffmpeg'
+
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download Node.js headers'
+    inputs:
+      artifactName: node_headers
+      downloadPath: '$(System.DefaultWorkingDirectory)/src/out/Default/gen'
+
+  - bash: |
+      cd src/out/Default
+      unzip dist.zip
+    displayName: Unzip Electron app
+
+  - bash: |
+      set +e
+      killall Electron
+    displayName: Make sure Electron isn't running from previous tests
+
+  - bash: |
+      cd src
+      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+    displayName: Verify non proprietary ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 5
+
+  - bash: |
+      cd src
+      ninja -C out/Default third_party/electron_node:headers
+      export ELECTRON_OUT_DIR=Default
+      (cd electron && npm run test -- --ci --enable-logging)
+    displayName: Run Electron test suite
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 10
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
       testResultsFiles: '*.xml'
       searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
-    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'), eq(variables['RUN_TESTS'], '1'))
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Build Artifacts
-    inputs:
-      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
-      ArtifactName: dist
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Build Artifacts
-    inputs:
-      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
-      ArtifactName: dist
+    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
