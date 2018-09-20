@@ -2,6 +2,7 @@
 
 const { GitProcess } = require('dugite')
 const childProcess = require('child_process')
+const fs = require('fs')
 const klaw = require('klaw')
 const minimist = require('minimist')
 const path = require('path')
@@ -77,6 +78,7 @@ const LINTERS = [ {
 }, {
   key: 'javascript',
   roots: ['lib', 'spec', 'script', 'default_app'],
+  ignoreRoots: ['spec/node_modules'],
   test: filename => filename.endsWith('.js'),
   run: (opts, filenames) => {
     const cmd = path.join(SOURCE_ROOT, 'node_modules', '.bin', 'eslint')
@@ -142,6 +144,14 @@ async function findFiles (args, linter) {
     filenames.push(...files)
   }
 
+  for (const ignoreRoot of (linter.ignoreRoots) || []) {
+    const ignorePath = path.join(SOURCE_ROOT, ignoreRoot)
+    if (!fs.existsSync(ignorePath)) continue
+
+    const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test))
+    filenames = filenames.filter(fileName => !ignoreFiles.has(fileName))
+  }
+
   // remove blacklisted files
   filenames = filenames.filter(x => !BLACKLIST.has(x))
 
@@ -173,5 +183,8 @@ async function main () {
 }
 
 if (process.mainModule === module) {
-  main()
+  main().catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
 }
