@@ -45,7 +45,6 @@ patches:
       base/memory/weak_ptr.cc
       base/process/kill_win.cc
       components/viz/service/display/program_binding.h
-      components/viz/service/display_embedder/server_shared_bitmap_manager.cc
       content/browser/frame_host/navigation_controller_impl.cc
       content/browser/frame_host/render_frame_host_impl.cc
       content/browser/renderer_host/render_widget_host_view_mac.mm
@@ -473,3 +472,13 @@ patches:
   description: |
     Expose URLRequestContextGetter::{Add,Remove}Observer.
     This patch should be removed once we switch to using the net service (cc @robo)
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: backport_7167a9eac.patch
+  description: |
+    "viz: Remove the global ServerSharedBitmapManager."
+    https://chromium-review.googlesource.com/802574
+    Landed in 69.0.3447.0.
+    See https://github.com/electron/electron/issues/14327
+    (Android specific changes and changes in some test files
+    have been removed from the diff.)

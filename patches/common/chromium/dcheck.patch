@@ -79,21 +79,6 @@ index 8b28c57f854e..a0e7056af23f 100644
        return;
      }
  
-diff --git a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-index 9d84f91109a3..5e252917bc0f 100644
---- a/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-+++ b/components/viz/service/display_embedder/server_shared_bitmap_manager.cc
-@@ -63,7 +63,9 @@ base::LazyInstance<ServerSharedBitmapManager>::DestructorAtExit
- ServerSharedBitmapManager::ServerSharedBitmapManager() = default;
- 
- ServerSharedBitmapManager::~ServerSharedBitmapManager() {
--  DCHECK(handle_map_.empty());
-+  // FIXME(alexeykuzmin): Gets constantly triggered on Windows CI.
-+  // Backporting https://chromium-review.googlesource.com/802574 should help.
-+  // DCHECK(handle_map_.empty());
- }
- 
- ServerSharedBitmapManager* ServerSharedBitmapManager::current() {
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
 index 74ff6b4286c2..02bf1c55d86f 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
