@@ -107,11 +107,11 @@ def run_clang_format_diff(args, file_name):
     invocation = [args.clang_format_executable, file_name]
     try:
         proc = subprocess.Popen(
-            invocation,
+            ' '.join(invocation),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
-            shell = True)
+            shell=True)
     except OSError as exc:
         raise DiffError(str(exc))
     proc_stdout = proc.stdout
@@ -253,10 +253,10 @@ def main():
     parse_files = []
     if args.changed:
         popen = subprocess.Popen(
-            ["git", "diff", "--name-only", "--cached"],
+            'git diff --name-only --cached',
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            shell = True
+            shell=True
         )
         for line in popen.stdout:
             file_name = line.rstrip()
