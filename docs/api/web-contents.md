@@ -838,7 +838,7 @@ Injects CSS into the current web page.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
-Returns `Promise` - A promise that resolves with the result of the executed code
+Returns `Promise<any>` - A promise that resolves with the result of the executed code
 or is rejected if the result of the code is a rejected promise.
 
 Evaluates `code` in page.
@@ -1501,7 +1501,7 @@ be compared to the `frameProcessId` passed by frame specific navigation events
 
 * `filePath` String - Path to the output file.
 
-Returns `Promise` - Indicates whether the snapshot has been created successfully.
+Returns `Promise<void>` - Indicates whether the snapshot has been created successfully.
 
 Takes a V8 heap snapshot and saves it to `filePath`.
 
