@@ -189,11 +189,6 @@ step-ffmpeg-build: &step-ffmpeg-build
       cd src
       ninja -C out/ffmpeg third_party/ffmpeg
 
-step-ffmpeg-store: &step-ffmpeg-store
-  store_artifacts:
-    path: src/out/ffmpeg/libffmpeg.so
-    destination: libffmpeg.so
-
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
     name: Verify ffmpeg
@@ -201,29 +196,13 @@ step-verify-ffmpeg: &step-verify-ffmpeg
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
-step-setup-for-headless-testing: &step-setup-for-headless-testing
+step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
     name: Setup for headless testing
     command: |
-      sh -e /etc/init.d/xvfb start
-
-step-electron-tests-run: &step-electron-tests-run
-  run:
-    name: Run Electron tests
-    environment:
-      DISPLAY: ':99.0'
-      MOCHA_REPORTER: mocha-multi-reporters
-      MOCHA_FILE: junit/test-results.xml
-      MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
-      ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-    command: |
-      cd src
-      export ELECTRON_OUT_DIR=Default
-      (cd electron && npm run test -- --ci --enable-logging)
-
-step-electron-tests-store-results: &step-electron-tests-store-results
-  store_test_results:
-    path: src/junit
+      if [ "`uname`" != "Darwin" ]; then
+        sh -e /etc/init.d/xvfb start
+      fi
 
 step-show-sccache-stats: &step-show-sccache-stats
   run:
@@ -267,7 +246,7 @@ steps-checkout: &steps-checkout
           - depot_tools
           - src
 
-steps-debug-build: &steps-debug-build
+steps-electron-build: &steps-electron-build
   steps:
     - attach_workspace:
         at: .
@@ -280,28 +259,7 @@ steps-debug-build: &steps-debug-build
 
     - *step-show-sccache-stats
 
-steps-testing-build: &steps-testing-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
-
-    # Electron app
-    - *step-electron-gn-gen
-    - *step-electron-build
-    - *step-electron-dist-build
-    - *step-electron-dist-store
-
-    # Node.js headers
-    - *step-nodejs-headers-build
-
-    - *step-show-sccache-stats
-
-    # Save all data needed for a further tests run.
-    - *step-persist-data-for-tests
-
-steps-release-build: &steps-release-build
+steps-electron-build-for-tests: &steps-electron-build-for-tests
   steps:
     - attach_workspace:
         at: .
@@ -355,8 +313,10 @@ steps-ffmpeg-build: &steps-ffmpeg-build
 
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
-    - *step-ffmpeg-store
 
+    - store_artifacts:
+        path: src/out/ffmpeg/libffmpeg.so
+        destination: libffmpeg.so
     - persist_to_workspace:
         root: .
         paths:
@@ -380,7 +340,7 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
         at: .
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
-    - *step-setup-for-headless-testing
+    - *step-setup-linux-for-headless-testing
 
     - *step-verify-ffmpeg
 
@@ -390,10 +350,24 @@ steps-tests: &steps-tests
         at: .
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
-    - *step-setup-for-headless-testing
+    - *step-setup-linux-for-headless-testing
+    - *step-install-nodejs-on-mac
 
-    - *step-electron-tests-run
-    - *step-electron-tests-store-results
+    - run:
+        name: Run Electron tests
+        environment:
+          DISPLAY: ':99.0'
+          MOCHA_REPORTER: mocha-multi-reporters
+          MOCHA_FILE: junit/test-results.xml
+          MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+          ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        command: |
+          cd src
+          export ELECTRON_OUT_DIR=Default
+          (cd electron && npm run test -- --ci --enable-logging)
+
+    - store_test_results:
+        path: src/junit
 
 # Mac build are different in a few ways:
 # 1. We can't use save_cache/restore_cache on Mac,
@@ -418,7 +392,9 @@ steps-build-mac: &steps-build-mac
     # ffmpeg
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
-    - *step-ffmpeg-store
+    - store_artifacts:
+        path: src/out/ffmpeg/libffmpeg.dylib
+        destination: libffmpeg.dylib
 
     # It would be better to verify ffmpeg as a part of a test job,
     # but it requires `gn` to run, and it's complicated
@@ -438,17 +414,6 @@ steps-build-mac: &steps-build-mac
 
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
-
-steps-tests-mac: &steps-tests-mac
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-electron-dist-unzip
-    - *step-install-nodejs-on-mac
-
-    - *step-electron-tests-run
-    - *step-electron-tests-store-results
 
 filter-only-prs-from-forks: &filter-only-prs-from-forks
   filters:
@@ -480,13 +445,13 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-debug-build
-    <<: *steps-debug-build
+    <<: *steps-electron-build
 
   linux-x64-testing:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
-    <<: *steps-testing-build
+    <<: *steps-electron-build-for-tests
 
   linux-x64-ffmpeg:
     <<: *machine-linux-medium
@@ -497,21 +462,21 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-release-build
-    <<: *steps-release-build
+    <<: *steps-electron-build-for-tests
 
   linux-ia32-debug:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-debug-build
-    <<: *steps-debug-build
+    <<: *steps-electron-build
 
   linux-ia32-testing:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-testing-build
-    <<: *steps-testing-build
+    <<: *steps-electron-build-for-tests
 
   linux-ia32-ffmpeg:
     <<: *machine-linux-medium
@@ -524,21 +489,21 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-release-build
-    <<: *steps-release-build
+    <<: *steps-electron-build-for-tests
 
   linux-arm-debug:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-debug-build
-    <<: *steps-debug-build
+    <<: *steps-electron-build
 
   linux-arm-testing:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-testing-build
-    <<: *steps-testing-build
+    <<: *steps-electron-build-for-tests
 
   linux-arm-ffmpeg:
     <<: *machine-linux-medium
@@ -551,7 +516,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-release-build
-    <<: *steps-release-build
+    <<: *steps-electron-build-for-tests
 
   linux-arm-mksnapshot:
     <<: *machine-linux-medium
@@ -564,14 +529,14 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-debug-build
-    <<: *steps-debug-build
+    <<: *steps-electron-build
 
   linux-arm64-testing:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-testing-build
-    <<: *steps-testing-build
+    <<: *steps-electron-build-for-tests
 
   linux-arm64-ffmpeg:
     <<: *machine-linux-medium
@@ -584,7 +549,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-release-build
-    <<: *steps-release-build
+    <<: *steps-electron-build-for-tests
 
   linux-arm64-mksnapshot:
     <<: *machine-linux-medium
@@ -644,11 +609,11 @@ jobs:
 
   osx-testing-tests:
     <<: *machine-mac
-    <<: *steps-tests-mac
+    <<: *steps-tests
 
   mas-testing-tests:
     <<: *machine-mac
-    <<: *steps-tests-mac
+    <<: *steps-tests
 
 workflows:
   version: 2
@@ -705,6 +670,7 @@ workflows:
       - linux-arm-ffmpeg:
            requires:
              - linux-arm-checkout
+
       - linux-arm64-debug:
           requires:
             - linux-arm64-checkout
@@ -739,6 +705,7 @@ workflows:
             branches:
               only:
                 - master
+                - chromium-upgrade/*
     jobs:
       - linux-checkout
       - linux-arm-checkout
@@ -750,18 +717,21 @@ workflows:
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
+
       - linux-ia32-release:
           requires:
             - linux-checkout
       - linux-ia32-release-tests:
           requires:
             - linux-ia32-release
+
       - linux-arm-release:
           requires:
             - linux-arm-checkout
       - linux-arm-mksnapshot:
           requires:
             - linux-arm-checkout
+
       - linux-arm64-release:
           requires:
             - linux-arm64-checkout
