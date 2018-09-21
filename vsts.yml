@@ -106,10 +106,17 @@ jobs:
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - task: PublishBuildArtifacts@1
-    displayName: Publish libffmpeg.dylib for testing
+    displayName: Publish libffmpeg.dylib for ffmpeg testing
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/ffmpeg/libffmpeg.dylib'
       ArtifactName: ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish buildtools for ffmpeg testing
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/buildtools'
+      ArtifactName: buildtools
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - task: PublishBuildArtifacts@1
@@ -143,10 +150,16 @@ jobs:
       downloadPath: '$(System.DefaultWorkingDirectory)/src/out'
 
   - task: DownloadBuildArtifacts@0
-    displayName: 'Download ffmpeg.dylib for testing'
+    displayName: 'Download ffmpeg.dylib for testing ffmpeg'
     inputs:
       artifactName: ffmpeg
       downloadPath: '$(System.DefaultWorkingDirectory)/src/out'
+
+  - task: DownloadBuildArtifacts@0
+    displayName: 'Download buildtools for testing ffmpeg'
+    inputs:
+      artifactName: buildtools
+      downloadPath: '$(System.DefaultWorkingDirectory)/src'
 
   - task: DownloadBuildArtifacts@0
     displayName: 'Download Node.js headers'
