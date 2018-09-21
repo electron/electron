@@ -136,10 +136,10 @@
         inspectable_web_contents->GetDevToolsWebContents();
     auto devToolsView = devToolsWebContents->GetNativeView();
 
-    auto styleMask = NSTitledWindowMask | NSClosableWindowMask |
-                     NSMiniaturizableWindowMask | NSResizableWindowMask |
+    auto styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                     NSMiniaturizableWindowMask | NSWindowStyleMaskResizable |
                      NSTexturedBackgroundWindowMask |
-                     NSUnifiedTitleAndToolbarWindowMask;
+                     NSWindowStyleMaskUnifiedTitleAndToolbar;
     devtools_window_.reset([[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)
                   styleMask:styleMask
