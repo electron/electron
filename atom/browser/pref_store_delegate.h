@@ -9,6 +9,7 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "components/prefs/persistent_pref_store.h"
 #include "components/prefs/pref_value_store.h"
 
 namespace atom {

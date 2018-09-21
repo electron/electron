@@ -32,6 +32,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -49,16 +50,19 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "device/geolocation/public/cpp/location_provider.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/grit/electron_resources.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/resource/resource_bundle.h"
 #include "v8/include/v8.h"
 
 #if defined(USE_NSS_CERTS)
@@ -532,6 +536,23 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
     OutOfProcessServiceMap* services) {
   (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
       base::ASCIIToUTF16("V8 Proxy Resolver");
+}
+
+std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
+    base::StringPiece name) {
+  ui::ResourceBundle& rb = ui::ResourceBundle::GetSharedInstance();
+  int id = -1;
+  if (name == content::mojom::kBrowserServiceName)
+    id = IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY;
+  else if (name == content::mojom::kPackagedServicesServiceName)
+    id = IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY;
+
+  if (id == -1)
+    return nullptr;
+
+  base::StringPiece manifest_contents =
+      rb.GetRawDataResourceForScale(id, ui::ScaleFactor::SCALE_FACTOR_NONE);
+  return base::JSONReader::Read(manifest_contents);
 }
 
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
