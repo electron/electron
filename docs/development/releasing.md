@@ -244,8 +244,7 @@ Activating .npmrc "electron"
 ```
 
 The Electron account's credentials are kept by GitHub in  a password manager.
-You'll also need to have access to an authenticator 2FA app with the appropriate
-OTP generator code to log in.
+You'll also need to have access to an 2FA authenticator app with the appropriate OTP generator code to log in.
 ```sh
 $ npm login
 Username: electron-nightly
@@ -253,7 +252,7 @@ Password: <This can be found under NPM Electron Nightly on LastPass>
 Email: (this IS public) electron@github.com
 ```
 
-Publish the release to npm.
+Publish the release to npm. Before running this you'll need to have set `ELECTRON_NPM_OTP` as an environment variable using a code from the aforementioned 2FA authenticator app.
 ```sh
 $ npm whoami
 electron-nightly
@@ -327,7 +326,7 @@ git checkout vX.Y.Z
 gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
 
 # To compile for specific arch, instead set
-gn gen out/Release-<TARGET_ARCH> --args='... target_cpu = "[arm|x64|ia32]"'
+gn gen out/Release-<TARGET_ARCH> --args='import(\"//electron/build/args/release.gn\") target_cpu = "[arm|x64|ia32]"'
 
 # Build by running ninja with the electron target
 ninja -C out/Release electron
