@@ -52,7 +52,6 @@ class Promise {
 
  private:
   v8::Local<v8::Promise::Resolver> GetInner() const {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     return resolver_.Get(isolate());
   }
 
