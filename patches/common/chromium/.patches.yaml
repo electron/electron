@@ -449,3 +449,9 @@ patches:
   file: disable_extensions_gn.patch
   description: |
     Fix build files generation when chrome extensions are disabled.
+-
+  author: Jeremy Apthorp <nornagon@nornagon.net>
+  file: crashpad_http_status.patch
+  description: |
+    Accept all HTTP codes in [200, 300) as successful, instead of just 200.
+    For example HockeyApp responds with 202.
