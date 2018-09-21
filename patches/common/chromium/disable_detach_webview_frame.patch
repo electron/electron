@@ -1,8 +1,19 @@
+From 4d1fb504c014998e2cc80b63db3a820dd73adbec Mon Sep 17 00:00:00 2001
+From: zcbenz <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:27 -0700
+Subject: disable_detach_webview_frame.patch
+
+Don't detach the frame for webview, we will manage the WebContents
+manually.
+This is part of the fixes for https://github.com/electron/electron/issues/14211.
+We should revisit this bug after upgrading to newer versions of Chrome,
+this patch was introduced in Chrome 66.
+
 diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
-index 838bc1e20c30..2aa16fbf19fc 100644
+index b06a4b9242d3..b7793aaa094a 100644
 --- a/content/browser/frame_host/render_frame_proxy_host.cc
 +++ b/content/browser/frame_host/render_frame_proxy_host.cc
-@@ -260,6 +260,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
+@@ -286,6 +286,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
  
  void RenderFrameProxyHost::OnDetach() {
    if (frame_tree_node_->render_manager()->ForInnerDelegate()) {
@@ -15,3 +26,6 @@ index 838bc1e20c30..2aa16fbf19fc 100644
      // Only main frame proxy can detach for inner WebContents.
      DCHECK(frame_tree_node_->IsMainFrame());
      frame_tree_node_->render_manager()->RemoveOuterDelegateFrame();
+-- 
+2.17.0
+

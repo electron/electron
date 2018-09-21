@@ -1,3 +1,9 @@
+From a99c5f94fd02a391cde00aedfd613937cb72d558 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:47:22 -0700
+Subject: statically_build_power_save_blocker.patch
+
+
 diff --git a/services/device/wake_lock/power_save_blocker/BUILD.gn b/services/device/wake_lock/power_save_blocker/BUILD.gn
 index dfce90f6b791..a2f7f776f4d8 100644
 --- a/services/device/wake_lock/power_save_blocker/BUILD.gn
@@ -19,3 +25,6 @@ index dfce90f6b791..a2f7f776f4d8 100644
    ]
  
    sources = [
+-- 
+2.17.0
+

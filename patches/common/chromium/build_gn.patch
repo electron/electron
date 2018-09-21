@@ -1,5 +1,11 @@
+From aca453bd9e35003bc70adfc77a576492f05c5954 Mon Sep 17 00:00:00 2001
+From: Ales Pergl <alpergl@microsoft.com>
+Date: Thu, 20 Sep 2018 17:44:29 -0700
+Subject: build_gn.patch
+
+
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 93a97ff2803f..02c469e930a1 100644
+index fcc00ee0e49f..3232a0360e94 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
@@ -12,7 +18,7 @@ index 93a97ff2803f..02c469e930a1 100644
    # Set to enable the official build level of optimization. This has nothing
    # to do with branding, but enables an additional level of optimization above
    # release (!is_debug). This might be better expressed as a tri-state
-@@ -527,6 +531,7 @@ default_compiler_configs = [
+@@ -536,6 +539,7 @@ default_compiler_configs = [
    "//build/config/compiler:thin_archive",
    "//build/config/coverage:default_coverage",
    "//build/config/sanitizers:default_sanitizer_flags",
@@ -21,24 +27,28 @@ index 93a97ff2803f..02c469e930a1 100644
  
  if (is_win) {
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 83337d52e4b9..8ec56ca46c74 100644
+index 959a59231746..48f1285c4657 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -636,10 +636,13 @@ config("compiler") {
-       ldflags += [ "-Wl,--lto-O0" ]
-     }
+@@ -634,12 +634,12 @@ config("compiler") {
  
--    cflags += [ "-fwhole-program-vtables" ]
--    if (!is_win) {
--      ldflags += [ "-fwhole-program-vtables" ]
+     # TODO(pcc): Re-enable this flag on Android. This will require libc++ to be
+     # built with ThinLTO (see https://crbug.com/767901) as well as the GVR shim.
+-    if (!is_android) {
+-      cflags += [ "-fwhole-program-vtables" ]
+-      if (!is_win) {
+-        ldflags += [ "-fwhole-program-vtables" ]
+-      }
 -    }
-+    # -fwhole-program-vtables doesn't work well in Electron right now, as it's
-+    # not a single binary and the optimizations break interfaces used across
-+    # binary boundaries.
-+    # cflags += [ "-fwhole-program-vtables" ]
-+    # if (!is_win) {
-+    #  ldflags += [ "-fwhole-program-vtables" ]
-+    #}
++    # if (!is_android) {
++    #   cflags += [ "-fwhole-program-vtables" ]
++    #   if (!is_win) {
++    #     ldflags += [ "-fwhole-program-vtables" ]
++    #   }
++    # }
  
      # Work-around for http://openradar.appspot.com/20356002
      if (is_mac) {
+-- 
+2.17.0
+

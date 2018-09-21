@@ -1,3 +1,9 @@
+From 808f3b08bf415b980b6e47573ca178c333c9c344 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:50 -0700
+Subject: use_transparent_window.patch
+
+
 diff --git a/ui/gl/gpu_switching_manager.cc b/ui/gl/gpu_switching_manager.cc
 index be7156465809..4529866b0864 100644
 --- a/ui/gl/gpu_switching_manager.cc
@@ -46,3 +52,6 @@ index 4308bbed9398..a7cafcfccdff 100644
    void AddObserver(GpuSwitchingObserver* observer);
    void RemoveObserver(GpuSwitchingObserver* observer);
  
+-- 
+2.17.0
+

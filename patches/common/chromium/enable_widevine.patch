@@ -1,3 +1,12 @@
+From 40198545a62b90741d1adf0e1f61e1fb43b4b73a Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:50:03 -0700
+Subject: enable_widevine.patch
+
+Turns `enable_widevine` flag on by default on Mac and Windows.
+Electron needs that flag to be enabled on those paltforms,
+but there's no way to conditionally set it during a `gn gen` call.
+
 diff --git a/third_party/widevine/cdm/widevine.gni b/third_party/widevine/cdm/widevine.gni
 index 82a93622585a..cbd10bed9f3b 100644
 --- a/third_party/widevine/cdm/widevine.gni
@@ -11,3 +20,6 @@ index 82a93622585a..cbd10bed9f3b 100644
  }
  
  enable_widevine_cdm_host_verification =
+-- 
+2.17.0
+

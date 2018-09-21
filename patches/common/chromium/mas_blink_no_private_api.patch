@@ -1,53 +1,15 @@
-diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-index dc115581a0e1..3466cfd86e9f 100644
---- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-+++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-@@ -42,6 +42,7 @@
- 
- // The methods in this file are specific to the Mac OS X platform.
- 
-+#ifndef MAS_BUILD
- // Forward declare Mac SPIs.
- extern "C" {
- void _NSDrawCarbonThemeBezel(NSRect frame, BOOL enabled, BOOL flipped);
-@@ -51,6 +52,7 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
-                                BOOL flipped,
-                                BOOL always_yes);
- }
-+#endif
- 
- namespace blink {
- 
-@@ -73,10 +75,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
-   // behavior change while remaining a fragile solution.
-   // https://bugs.chromium.org/p/chromium/issues/detail?id=658085#c3
-   if (!use_ns_text_field_cell) {
-+#ifndef MAS_BUILD
-     _NSDrawCarbonThemeBezel(
-         CGRect(r),
-         LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
-         YES);
-+#endif
-     return false;
-   }
- 
-@@ -162,10 +166,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
-                                     const PaintInfo& paint_info,
-                                     const IntRect& r) {
-   LocalCurrentGraphicsContext local_context(paint_info.context, r);
-+#ifndef MAS_BUILD
-   _NSDrawCarbonThemeListBox(
-       CGRect(r),
-       LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
-       YES, YES);
-+#endif
-   return false;
- }
- 
-diff --git a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
-index 98dea7c4c3c9..44b4ae940dc5 100644
---- a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
-+++ b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
+From b75117921e735e5d892a7320e1ebec84a2c2fd1a Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:49 -0700
+Subject: mas_blink_no_private_api.patch
+
+Guard usages in chromium code of private Mac APIs by MAS_BUILD, so they can
+be excluded for people who want to submit their apps to the Mac App store.
+
+diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
+index 94afefcee81b..2ec7f04c7182 100644
+--- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm
++++ b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 @@ -27,6 +27,7 @@
  
  namespace blink {
@@ -110,3 +72,52 @@ index 98dea7c4c3c9..44b4ae940dc5 100644
  }
  
  }  // namespace blink
+diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
+index 7a1260db0a13..bf9cf7046e2f 100644
+--- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
++++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
+@@ -42,6 +42,7 @@
+ 
+ // The methods in this file are specific to the Mac OS X platform.
+ 
++#ifndef MAS_BUILD
+ // Forward declare Mac SPIs.
+ extern "C" {
+ void _NSDrawCarbonThemeBezel(NSRect frame, BOOL enabled, BOOL flipped);
+@@ -51,6 +52,7 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
+                                BOOL flipped,
+                                BOOL always_yes);
+ }
++#endif
+ 
+ namespace blink {
+ 
+@@ -73,10 +75,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
+   // behavior change while remaining a fragile solution.
+   // https://bugs.chromium.org/p/chromium/issues/detail?id=658085#c3
+   if (!use_ns_text_field_cell) {
++#ifndef MAS_BUILD
+     _NSDrawCarbonThemeBezel(
+         CGRect(r),
+         LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
+         YES);
++#endif
+     return false;
+   }
+ 
+@@ -162,10 +166,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
+                                     const PaintInfo& paint_info,
+                                     const IntRect& r) {
+   LocalCurrentGraphicsContext local_context(paint_info.context, r);
++#ifndef MAS_BUILD
+   _NSDrawCarbonThemeListBox(
+       CGRect(r),
+       LayoutTheme::IsEnabled(node) && !LayoutTheme::IsReadOnlyControl(node),
+       YES, YES);
++#endif
+   return false;
+ }
+ 
+-- 
+2.17.0
+

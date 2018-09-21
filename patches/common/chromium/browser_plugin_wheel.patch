@@ -1,8 +1,14 @@
+From 4032ed30d0df7f78fde3da3725f8aa3759493e4c Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:45:21 -0700
+Subject: browser_plugin_wheel.patch
+
+
 diff --git a/content/renderer/browser_plugin/browser_plugin.cc b/content/renderer/browser_plugin/browser_plugin.cc
-index d64895137a73..c42dd6ddf172 100644
+index 4d8251069ae9..fbd5cc809962 100644
 --- a/content/renderer/browser_plugin/browser_plugin.cc
 +++ b/content/renderer/browser_plugin/browser_plugin.cc
-@@ -642,15 +642,11 @@ blink::WebInputEventResult BrowserPlugin::HandleInputEvent(
+@@ -656,15 +656,11 @@ blink::WebInputEventResult BrowserPlugin::HandleInputEvent(
  
    DCHECK(!blink::WebInputEvent::IsTouchEventType(event.GetType()));
  
@@ -23,3 +29,6 @@ index d64895137a73..c42dd6ddf172 100644
  
    if (blink::WebInputEvent::IsGestureEventType(event.GetType())) {
      auto gesture_event = static_cast<const blink::WebGestureEvent&>(event);
+-- 
+2.17.0
+

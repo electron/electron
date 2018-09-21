@@ -1,8 +1,14 @@
+From 3a68808c9e49e9a249ee9056015e30543747cd00 Mon Sep 17 00:00:00 2001
+From: Ales Pergl <alpergl@microsoft.com>
+Date: Thu, 20 Sep 2018 17:44:49 -0700
+Subject: allow_new_privs.patch
+
+
 diff --git a/base/process/launch.h b/base/process/launch.h
-index b4530b755a23..d6f02d9ab2e3 100644
+index 7a2def2ef436..50afeaf5553a 100644
 --- a/base/process/launch.h
 +++ b/base/process/launch.h
-@@ -176,7 +176,7 @@ struct BASE_EXPORT LaunchOptions {
+@@ -180,7 +180,7 @@ struct BASE_EXPORT LaunchOptions {
  
    // By default, child processes will have the PR_SET_NO_NEW_PRIVS bit set. If
    // true, then this bit will not be set in the new child process.
@@ -11,3 +17,6 @@ index b4530b755a23..d6f02d9ab2e3 100644
  
    // Sets parent process death signal to SIGKILL.
    bool kill_on_parent_death = false;
+-- 
+2.17.0
+

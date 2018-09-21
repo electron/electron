@@ -1,8 +1,14 @@
+From d822ef159744a681bee4f1ca8e1a7776a76e6d5e Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:12 -0700
+Subject: worker_context_will_destroy.patch
+
+
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6dd2589d653a..48bb1dbe9750 100644
+index a2dc7a811e75..5cbfe0e0bef3 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -380,6 +380,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -377,6 +377,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -15,10 +21,10 @@ index 6dd2589d653a..48bb1dbe9750 100644
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index c82360f146d1..e0a90a8a6881 100644
+index 46931503ec2b..1c2ae4550384 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -1251,6 +1251,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -1108,6 +1108,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -32,22 +38,22 @@ index c82360f146d1..e0a90a8a6881 100644
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index ecb5ce6d6aa0..dffe3bca1a34 100644
+index bebcd933b8ce..49d981cc18ea 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -204,6 +204,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -201,6 +201,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
 +  void WorkerContextWillDestroy(const v8::Local<v8::Context>& worker) override;
  
-   // Set the PlatformEventObserverBase in |platform_event_observers_| associated
-   // with |type| to |observer|. If there was already an observer associated to
+   // Disables the WebSandboxSupport implementation for testing.
+   // Tests that do not set up a full sandbox environment should call
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 920d161a1b81..f97250ea984e 100644
+index 12ada20ec3a3..0e1555e5a3c9 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -616,6 +616,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -626,6 +626,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -56,10 +62,10 @@ index 920d161a1b81..f97250ea984e 100644
      return false;
    }
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 7cf818b56c13..7e6e1191c399 100644
+index 6b4a2ce05520..2ba97d5ec53a 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -517,6 +517,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -514,6 +514,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
        SetExitCode(ExitCode::kGracefullyTerminated);
    }
  
@@ -69,8 +75,8 @@ index 7cf818b56c13..7e6e1191c399 100644
 +        GlobalScope()->ScriptController()->GetContext());
 +  }
 +
-   inspector_task_runner_->Dispose();
    GetWorkerReportingProxy().WillDestroyWorkerGlobalScope();
+ 
    probe::AllAsyncTasksCanceled(GlobalScope());
 -- 
 2.17.0

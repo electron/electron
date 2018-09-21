@@ -1,5 +1,11 @@
+From 4b6fd85950701d177879f3a239b19f08c9ff3a66 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:14 -0700
+Subject: browser_compositor_mac.patch
+
+
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index bc9eba153a6a..5200f79afd05 100644
+index 46be85eea4b5..4c816b7021f8 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
 @@ -59,6 +59,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
@@ -16,15 +22,15 @@ index bc9eba153a6a..5200f79afd05 100644
    const gfx::CALayerParams* GetLastCALayerParams() const;
  
 +  ui::Compositor* GetCompositor();
-   gfx::AcceleratedWidget GetAcceleratedWidget();
    void DidCreateNewRendererCompositorFrameSink(
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
+   void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 3d12a1126a0d..7a60368b2c8a 100644
+index 92afcc779106..42bd6fd7c169 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -240,6 +240,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
-     g_spare_recyclable_compositors.Get().clear();
+@@ -81,6 +81,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
+   DCHECK_EQ(1u, num_erased);
  }
  
 +ui::Compositor* BrowserCompositorMac::GetCompositor() {
@@ -33,6 +39,9 @@ index 3d12a1126a0d..7a60368b2c8a 100644
 +  return nullptr;
 +}
 +
- gfx::AcceleratedWidget BrowserCompositorMac::GetAcceleratedWidget() {
-   if (recyclable_compositor_) {
-     return recyclable_compositor_->accelerated_widget_mac()
+ DelegatedFrameHost* BrowserCompositorMac::GetDelegatedFrameHost() {
+   DCHECK(delegated_frame_host_);
+   return delegated_frame_host_.get();
+-- 
+2.17.0
+

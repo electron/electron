@@ -1,13 +1,22 @@
+From e686584a3758c1954f31e107746b40c6a63ad776 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:47:36 -0700
+Subject: add_atomic_lib_to_dependencies_even_for_sysroot_builds.patch
+
+
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 943412faefd7..c505df950b2b 100644
+index 7fb93868d6e0..53c5744953da 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1217,7 +1217,7 @@ jumbo_component("base") {
+@@ -1248,7 +1248,7 @@ jumbo_component("base") {
    # Needed for <atomic> if using newer C++ library than sysroot, except if
    # building inside the cros_sdk environment - use host_toolchain as a
    # more robust check for this.
 -  if (!use_sysroot && (is_android || (is_linux && !is_chromecast)) &&
 +  if ((is_android || (is_linux && !is_chromecast)) &&
        host_toolchain != "//build/toolchain/cros:host") {
-     libs = [ "atomic" ]
+     libs += [ "atomic" ]
    }
+-- 
+2.17.0
+
