@@ -8,12 +8,57 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
+#include "native_mate/object_template_builder.h"
 #include "net/base/mac/url_conversions.h"
+
+namespace mate {
+template <>
+struct Converter<NSAppearance*> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     NSAppearance** out) {
+    if (val->IsNull()) {
+      *out = nil;
+      return true;
+    }
+
+    std::string name;
+    if (!mate::ConvertFromV8(isolate, val, &name)) {
+      return false;
+    }
+
+    if (name == "light") {
+      *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+      return true;
+    } else if (name == "dark") {
+      *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+      return true;
+    }
+
+    return false;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, NSAppearance* val) {
+    if (val == nil) {
+      return v8::Null(isolate);
+    }
+    if (val.name == NSAppearanceNameAqua) {
+      return mate::ConvertToV8(isolate, "light");
+    }
+    if (val.name == NSAppearanceNameDarkAqua) {
+      return mate::ConvertToV8(isolate, "dark");
+    }
+
+    return mate::ConvertToV8(isolate, "unknown");
+  }
+};
+}  // namespace mate
 
 namespace atom {
 
@@ -321,6 +366,35 @@ bool SystemPreferences::IsDarkMode() {
 
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
   return [NSEvent isSwipeTrackingFromScrollEventsEnabled];
+}
+
+v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
+    v8::Isolate* isolate) {
+  if (@available(macOS 10.14, *)) {
+    return mate::ConvertToV8(
+        isolate, [NSApplication sharedApplication].effectiveAppearance);
+  }
+  return v8::Null(isolate);
+}
+
+v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
+    v8::Isolate* isolate) {
+  if (@available(macOS 10.14, *)) {
+    return mate::ConvertToV8(isolate,
+                             [NSApplication sharedApplication].appearance);
+  }
+  return v8::Null(isolate);
+}
+
+void SystemPreferences::SetAppLevelAppearance(mate::Arguments* args) {
+  if (@available(macOS 10.14, *)) {
+    NSAppearance* appearance;
+    if (args->GetNext(&appearance)) {
+      [[NSApplication sharedApplication] setAppearance:appearance];
+    } else {
+      args->ThrowError("Invalid app appearance provided as first argument");
+    }
+  }
 }
 
 }  // namespace api
