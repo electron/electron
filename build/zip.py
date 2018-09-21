@@ -15,15 +15,17 @@ EXTENSIONS_TO_SKIP = [
 ]
 
 PATHS_TO_SKIP = [
-  'angledata',
-  'swiftshader',
-  'resources/inspector'
+  'angledata', #Skipping because it is an output of //ui/gl that we don't need
+  'swiftshader', #Skipping because it is an output of //ui/gl that we don't need
+  'resources/inspector' 
 ]
 
 def skip_path(dep):
   should_skip = (
     any(dep.startswith(path) for path in PATHS_TO_SKIP) or
     any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP))
+  if should_skip:
+    print("Skipping {}".format(dep))
   return should_skip
 
 def strip_binaries(target_cpu, dep):
@@ -69,7 +71,10 @@ def main(argv):
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
             for file in files:
-              z.write(os.path.join(root, file))
+              file_path = os.path.join(root, file)
+              if skip_path(file_path):
+                continue
+              z.write(file_path)
         else:
           z.write(dep)
 
