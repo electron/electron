@@ -941,17 +941,14 @@ group("electron") {
 
 group("electron_content_manifest_overlays") {
   deps = [
-    ":electron_content_packaged_services_manifest_overlay",
     ":electron_content_browser_manifest_overlay",
+    ":electron_content_packaged_services_manifest_overlay",
   ]
 }
 
 service_manifest("electron_content_packaged_services_manifest_overlay") {
-  source =
-      "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
-  packaged_services = [
-    "//services/proxy_resolver:proxy_resolver_manifest",
-  ]
+  source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
+  packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
 }
 
 service_manifest("electron_content_browser_manifest_overlay") {
