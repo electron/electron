@@ -23,6 +23,7 @@
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/network_session_configurator/common/network_switches.h"
@@ -90,14 +91,14 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
   if (!in_memory) {
     network_context_params->http_cache_path =
-        base_path.Append(FILE_PATH_LITERAL("Cache"));
+        base_path.Append(chrome::kCacheDirname);
     network_context_params->http_cache_max_size = max_cache_size;
     network_context_params->http_server_properties_path =
-        base_path.Append(FILE_PATH_LITERAL("Network Persistent State"));
+        base_path.Append(chrome::kNetworkPersistentStateFilename);
     network_context_params->cookie_path =
-        base_path.Append(FILE_PATH_LITERAL("Cookies"));
+        base_path.Append(chrome::kCookieFilename);
     network_context_params->channel_id_path =
-        base_path.Append(FILE_PATH_LITERAL("Origin Bound Certs"));
+        base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
   }
