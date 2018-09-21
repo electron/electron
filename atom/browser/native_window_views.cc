@@ -603,8 +603,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
-  if (maximizable_)
-    SetMaximizable(maximizable_);
+  SetMaximizable(maximizable_);
   resizable_ = resizable;
 }
 
