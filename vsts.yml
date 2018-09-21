@@ -112,6 +112,11 @@ jobs:
       ArtifactName: ffmpeg
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
+  - bash: |
+      cd src
+      find -L buildtools -type l -exec rm -- {} +
+    displayName: Remove broken symlinks from buildtools
+
   - task: PublishBuildArtifacts@1
     displayName: Publish buildtools for ffmpeg testing
     inputs:
