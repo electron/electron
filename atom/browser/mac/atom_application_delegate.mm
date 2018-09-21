@@ -37,6 +37,10 @@ static base::mac::ScopedObjCClassSwizzler* g_swizzle_imk_input_session;
 @end
 #endif  // BUILDFLAG(USE_ALLOCATOR_SHIM)
 
+// NOTE(jeremy): this forward declaration once we're building against macOS
+// 10.14.
+@protocol NSUserActivityRestoring;
+
 @implementation AtomApplicationDelegate
 
 - (void)setApplicationDockMenu:(atom::AtomMenuModel*)model {
