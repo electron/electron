@@ -1,5 +1,11 @@
+From e1c45d50622aaa4fcfab05ff69f4ddf79eab0bdd Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:44:41 -0700
+Subject: accelerator.patch
+
+
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index a6756c20f22c..53529588af27 100644
+index 7e55ef366ac8..5e460ed5d66d 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -20,7 +26,7 @@ index a6756c20f22c..53529588af27 100644
  
  namespace ui {
  
-@@ -145,7 +144,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -139,7 +138,17 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
  
@@ -36,7 +42,7 @@ index a6756c20f22c..53529588af27 100644
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -154,17 +161,20 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -148,17 +157,20 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -67,7 +73,7 @@ index a6756c20f22c..53529588af27 100644
  #endif
    }
  
-@@ -221,15 +231,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -215,15 +227,12 @@ base::string16 Accelerator::GetShortcutText() const {
  
  base::string16 Accelerator::ApplyLongFormModifiers(
      base::string16 shortcut) const {
@@ -84,7 +90,7 @@ index a6756c20f22c..53529588af27 100644
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
  
    if (IsCmdDown()) {
-@@ -249,14 +256,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
+@@ -243,14 +252,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
      base::string16 shortcut) const {
    const base::char16 kCommandSymbol[] = {0x2318, 0};
    const base::char16 kCtrlSymbol[] = {0x2303, 0};
@@ -99,3 +105,6 @@ index a6756c20f22c..53529588af27 100644
    parts.push_back(base::string16(IsCmdDown() ? kCommandSymbol : kNoSymbol));
    parts.push_back(shortcut);
    return base::StrCat(parts);
+-- 
+2.17.0
+

@@ -1,8 +1,16 @@
+From 63fb1abe3afa2b19ac0640b462658e6f286b3c6c Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:13 -0700
+Subject: chrome_key_systems.patch
+
+Disable persiste licence support check for widevine cdm,
+as its not supported in the current version of chrome.
+
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index c0cf00b5da05..992827ca6782 100644
+index 5c38d0b1ce7c..4ffaf2a3301e 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
-@@ -14,7 +14,9 @@
+@@ -15,7 +15,9 @@
  #include "base/strings/string_split.h"
  #include "base/strings/utf_string_conversions.h"
  #include "build/build_config.h"
@@ -12,10 +20,10 @@ index c0cf00b5da05..992827ca6782 100644
  #include "components/cdm/renderer/external_clear_key_key_system_properties.h"
  #include "components/cdm/renderer/widevine_key_system_properties.h"
  #include "content/public/renderer/render_thread.h"
-@@ -142,12 +144,14 @@ static void AddExternalClearKey(
- #if defined(WIDEVINE_CDM_AVAILABLE)
+@@ -185,12 +187,14 @@ static SupportedCodecs GetSupportedCodecs(
  // Returns persistent-license session support.
- EmeSessionTypeSupport GetPersistentLicenseSupport(bool supported_by_the_cdm) {
+ static EmeSessionTypeSupport GetPersistentLicenseSupport(
+     bool supported_by_the_cdm) {
 +#if 0
    // Do not support persistent-license if the process cannot persist data.
    // TODO(crbug.com/457487): Have a better plan on this. See bug for details.
@@ -27,3 +35,6 @@ index c0cf00b5da05..992827ca6782 100644
  
    if (!supported_by_the_cdm) {
      DVLOG(2) << __func__ << ": Not supported by the CDM.";
+-- 
+2.17.0
+

@@ -1,8 +1,14 @@
+From 624474e13fd8533e9e1f69e3d9b2d551c8fb807a Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:47 -0700
+Subject: disable_hidden.patch
+
+
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 213f32e0891f..60cfacdcf9fc 100644
+index 9ab96c3f933b..28879dc5e9bb 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -668,6 +668,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -712,6 +712,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -13,10 +19,10 @@ index 213f32e0891f..60cfacdcf9fc 100644
  
    TRACE_EVENT0("renderer_host", "RenderWidgetHostImpl::WasHidden");
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 316385180c60..afce0525e89d 100644
+index 4af5870e7c40..f2e19fe92e56 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -149,6 +149,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -154,6 +154,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    // RenderWidgetHostImpl.
    static RenderWidgetHostImpl* From(RenderWidgetHost* rwh);
  
@@ -26,3 +32,6 @@ index 316385180c60..afce0525e89d 100644
    void set_hung_renderer_delay(const base::TimeDelta& delay) {
      hung_renderer_delay_ = delay;
    }
+-- 
+2.17.0
+

@@ -1,8 +1,14 @@
+From 4730f77f43c648f6168db58897b4569326a75627 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:59 -0700
+Subject: frame_host_manager.patch
+
+
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index b682235b0f87..0c88f4bf86b6 100644
+index 872e4609c94f..a59676004f24 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1912,6 +1912,18 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1960,6 +1960,18 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    bool was_server_redirect = request.navigation_handle() &&
                               request.navigation_handle()->WasServerRedirect();
  
@@ -21,7 +27,7 @@ index b682235b0f87..0c88f4bf86b6 100644
    if (frame_tree_node_->IsMainFrame()) {
      // Renderer-initiated main frame navigations that may require a
      // SiteInstance swap are sent to the browser via the OpenURL IPC and are
-@@ -1931,6 +1943,19 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1979,6 +1991,19 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                 request.common_params().url));
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -41,7 +47,7 @@ index b682235b0f87..0c88f4bf86b6 100644
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -1942,18 +1967,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1990,18 +2015,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -62,10 +68,10 @@ index b682235b0f87..0c88f4bf86b6 100644
        request.state() == NavigationRequest::FAILED,
        request.restore_type() != RestoreType::NONE, request.is_view_source(),
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3ca627448e33..7d0c9ed7e1af 100644
+index 3be31602689c..2c22cb1cfe0d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -186,6 +186,15 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -196,6 +196,15 @@ class CONTENT_EXPORT ContentBrowserClient {
   public:
    virtual ~ContentBrowserClient() {}
  
@@ -81,3 +87,6 @@ index 3ca627448e33..7d0c9ed7e1af 100644
    // Allows the embedder to set any number of custom BrowserMainParts
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
+-- 
+2.17.0
+

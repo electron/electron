@@ -1,8 +1,16 @@
+From 6b31ce372295634832d0c2aa28534c8f4cc885f3 Mon Sep 17 00:00:00 2001
+From: Zac Walker <zac.walker@microsoft.com>
+Date: Thu, 20 Sep 2018 17:49:55 -0700
+Subject: ignore_rc_check.patch
+
+Dont compare RC.exe and RC.py output.
+FIXME: It has to be reverted once the script is fixed.
+
 diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
-index 801d7a9b8e03..7b54f8dceb36 100644
+index ee21eb4b194b..ab98a033a61c 100644
 --- a/build/toolchain/win/tool_wrapper.py
 +++ b/build/toolchain/win/tool_wrapper.py
-@@ -254,7 +254,11 @@ class WinTool(object):
+@@ -231,7 +231,11 @@ class WinTool(object):
        if rc_exe_exit_code == 0:
          import filecmp
          # Strip "/fo" prefix.
@@ -15,3 +23,6 @@ index 801d7a9b8e03..7b54f8dceb36 100644
      return rc_exe_exit_code
  
    def ExecActionWrapper(self, arch, rspfile, *dirname):
+-- 
+2.17.0
+

@@ -1,3 +1,15 @@
+From 47f675c132ac4d4234f14f0c1ffb7aea407a60f7 Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:46:43 -0700
+Subject: thread_capabilities.patch
+
+Chromium automatically drops all capabilities of renderer threads in
+Linux, which may cause issues in a context like Electron, where the main
+and renderer threads are supposed to keep inherited permissions over the
+system.
+
+See https://github.com/atom/electron/issues/3666
+
 diff --git a/sandbox/linux/services/credentials.cc b/sandbox/linux/services/credentials.cc
 index ad0714a7f5ed..1406e1d53f2f 100644
 --- a/sandbox/linux/services/credentials.cc
@@ -13,3 +25,6 @@ index ad0714a7f5ed..1406e1d53f2f 100644
    return 0;
  }
  
+-- 
+2.17.0
+

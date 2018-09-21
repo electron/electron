@@ -1,17 +1,17 @@
 diff --git a/BUILD.gn b/BUILD.gn
-index 456a318c1c..283bce15f0 100644
+index 443694d880..d0ba5ed04e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -195,7 +195,7 @@ config("internal_config") {
-     "$target_gen_dir",
-   ]
+@@ -212,7 +212,7 @@ config("internal_config") {
+ 
+   defines = []
  
 -  if (is_component_build) {
 +  if (is_component_build || is_electron_build) {
-     defines = [ "BUILDING_V8_SHARED" ]
+     defines += [ "BUILDING_V8_SHARED" ]
    }
  }
-@@ -2674,6 +2674,8 @@ if (current_toolchain == v8_snapshot_toolchain) {
+@@ -3138,6 +3138,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
  
      configs = [ ":internal_config" ]
  

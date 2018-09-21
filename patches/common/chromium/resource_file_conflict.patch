@@ -1,8 +1,18 @@
+From a6b7144643673ce4e04f377f4321a4f750f8ffe4 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:48:59 -0700
+Subject: resource_file_conflict.patch
+
+Resolve conflict between //chrome's .pak files and //electron's. The paths
+that chrome code hardcodes require that we generate resources at these
+paths, but GN throws errors if there are multiple targets that generate the
+same files.
+
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 395d16c7cef2..66d81de66f01 100644
+index a47af42a5a5a..db8311121e75 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -1652,6 +1652,11 @@ if (is_chrome_branded && !is_android) {
+@@ -1640,6 +1640,11 @@ if (is_chrome_branded && !is_android) {
    }
  }
  
@@ -14,7 +24,7 @@ index 395d16c7cef2..66d81de66f01 100644
  chrome_paks("packed_resources") {
    if (is_mac) {
      output_dir = "$root_gen_dir/repack"
-@@ -1673,6 +1678,7 @@ chrome_paks("packed_resources") {
+@@ -1661,6 +1666,7 @@ chrome_paks("packed_resources") {
      ]
    }
  }
@@ -22,3 +32,6 @@ index 395d16c7cef2..66d81de66f01 100644
  
  repack("browser_tests_pak") {
    sources = [
+-- 
+2.17.0
+

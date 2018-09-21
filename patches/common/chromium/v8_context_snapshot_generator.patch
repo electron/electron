@@ -1,8 +1,16 @@
+From e51d8c2a477d55c279c5935c02dab83ef34f3392 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Thu, 20 Sep 2018 17:47:58 -0700
+Subject: v8_context_snapshot_generator.patch
+
+v8_context_snapshot_generator is a build time executable.
+The patch adds the config.
+
 diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUILD.gn
-index d6691a527f25..000105b86f53 100644
+index b119ec095c7b..47df8af5ef68 100644
 --- a/tools/v8_context_snapshot/BUILD.gn
 +++ b/tools/v8_context_snapshot/BUILD.gn
-@@ -105,6 +105,7 @@ if (use_v8_context_snapshot) {
+@@ -114,6 +114,7 @@ if (use_v8_context_snapshot) {
      configs += [
        "//v8:external_startup_data",
        ":disable_icf",
@@ -10,3 +18,6 @@ index d6691a527f25..000105b86f53 100644
      ]
    }
  }
+-- 
+2.17.0
+

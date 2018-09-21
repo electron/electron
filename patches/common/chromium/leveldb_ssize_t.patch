@@ -1,3 +1,12 @@
+From 070bbbe44c20c52f5e12b04b01fc101a42633119 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <jeremya@chromium.org>
+Date: Thu, 20 Sep 2018 17:50:38 -0700
+Subject: leveldb_ssize_t.patch
+
+Fix conflict between leveldb & node's definition of ssize_t on
+Windows by preventing leveldb from re-defining the type if it's
+already defined.
+
 diff --git a/third_party/leveldatabase/port/port_chromium.h b/third_party/leveldatabase/port/port_chromium.h
 index a7c449eba19c..acbce7efd582 100644
 --- a/third_party/leveldatabase/port/port_chromium.h
@@ -14,3 +23,6 @@ index a7c449eba19c..acbce7efd582 100644
  #endif
  
  namespace leveldb {
+-- 
+2.17.0
+

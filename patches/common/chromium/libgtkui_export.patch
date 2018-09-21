@@ -1,3 +1,10 @@
+From 4eacd7975250d8954e461f880d6bb97dcb4b003d Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:48:31 -0700
+Subject: libgtkui_export.patch
+
+Export libgtkui symbols for the GN component build.
+
 diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon.h b/chrome/browser/ui/libgtkui/app_indicator_icon.h
 index 7815fbb2cea8..f17a5c59e64b 100644
 --- a/chrome/browser/ui/libgtkui/app_indicator_icon.h
@@ -41,7 +48,7 @@ index e4e0da40981c..af028715ada9 100644
    Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
    ~Gtk2StatusIcon() override;
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index 665ec57c09d5..4ccb08807fb4 100644
+index d9f245070249..56cce5fa3e0b 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -52,7 +59,7 @@ index 665ec57c09d5..4ccb08807fb4 100644
  
  namespace aura {
  class Window;
-@@ -51,10 +52,10 @@ SkColor NormalURLColor(SkColor foreground);
+@@ -55,10 +56,10 @@ SkColor NormalURLColor(SkColor foreground);
  // saturation than to look exactly like the foreground color.
  SkColor SelectedURLColor(SkColor foreground, SkColor background);
  
@@ -65,7 +72,7 @@ index 665ec57c09d5..4ccb08807fb4 100644
  
  guint GetGdkKeyCodeForAccelerator(const ui::Accelerator& accelerator);
  
-@@ -69,7 +70,7 @@ void TurnButtonBlue(GtkWidget* button);
+@@ -73,7 +74,7 @@ void TurnButtonBlue(GtkWidget* button);
  
  // Sets |dialog| as transient for |parent|, which will keep it on top and center
  // it above |parent|. Do nothing if |parent| is nullptr.
@@ -74,15 +81,6 @@ index 665ec57c09d5..4ccb08807fb4 100644
  
  // Gets the transient parent aura window for |dialog|.
  aura::Window* GetAuraTransientParent(GtkWidget* dialog);
-@@ -190,7 +190,7 @@ void RenderBackground(const gfx::Size& size,
- // Renders a background from the style context created by
- // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
- // returns the average color.
--SkColor GetBgColor(const std::string& css_selector);
-+LIBGTKUI_EXPORT SkColor GetBgColor(const std::string& css_selector);
- 
- // Renders the border from the style context created by
- // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
 diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 index e05fbe9d8b2f..3afca9a72ab6 100644
 --- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
@@ -132,3 +130,6 @@ index 8d67e1460837..95fbb27b6a81 100644
  
  }  // namespace unity
  
+-- 
+2.17.0
+

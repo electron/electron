@@ -1,3 +1,9 @@
+From acf81b764b448b2979792e5d3d97f248030b49bc Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:44:52 -0700
+Subject: app_indicator_icon_menu.patch
+
+
 diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc b/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc
 index 40399a35f8d2..1d3a0da948dc 100644
 --- a/chrome/browser/ui/libgtkui/app_indicator_icon_menu.cc
@@ -11,3 +17,6 @@ index 40399a35f8d2..1d3a0da948dc 100644
      ExecuteCommand(model, id);
  }
  
+-- 
+2.17.0
+

@@ -1,8 +1,23 @@
+From 791d604902bb958ca62522ce3a50aa496c3f713b Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:03 -0700
+Subject: blink_local_frame.patch
+
+According to electron/electron#3699, it is unreliable to use |unload|
+event for process.exit('exit'), so we have to do that in
+willReleaseScriptContext.
+
+However Chromium then disallowed scripting in willReleaseScriptContext
+in https://codereview.chromium.org/1657583002, and crash will happen
+when there is code doing that.
+
+This patch reverts the change to fix the crash in Electron.
+
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 5686e6a06d6f..4798d7e36bec 100644
+index 52810bba03b0..65575d432df5 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -382,10 +382,6 @@ void LocalFrame::Detach(FrameDetachType type) {
+@@ -392,10 +392,6 @@ void LocalFrame::Detach(FrameDetachType type) {
    }
    CHECK(!view_ || !view_->IsAttached());
  
@@ -13,7 +28,7 @@ index 5686e6a06d6f..4798d7e36bec 100644
    if (!Client())
      return;
  
-@@ -403,6 +399,10 @@ void LocalFrame::Detach(FrameDetachType type) {
+@@ -413,6 +409,10 @@ void LocalFrame::Detach(FrameDetachType type) {
    // Notify ScriptController that the frame is closing, since its cleanup ends
    // up calling back to LocalFrameClient via WindowProxy.
    GetScriptController().ClearForClose();
@@ -24,3 +39,6 @@ index 5686e6a06d6f..4798d7e36bec 100644
  
    // TODO(crbug.com/729196): Trace why LocalFrameView::DetachFromLayout crashes.
    CHECK(!view_->IsAttached());
+-- 
+2.17.0
+

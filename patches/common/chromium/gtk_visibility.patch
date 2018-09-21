@@ -1,3 +1,10 @@
+From cac9e74e69a7f46b9e1f7b719b17e9a7167d3836 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:48:38 -0700
+Subject: gtk_visibility.patch
+
+Allow electron and brightray to depend on GTK in the GN build.
+
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
 index deae4d3455a8..fd5d906b98b0 100644
 --- a/build/config/linux/gtk/BUILD.gn
@@ -11,3 +18,6 @@ index deae4d3455a8..fd5d906b98b0 100644
      "//examples:peerconnection_client",
      "//gpu/gles2_conform_support:gles2_conform_test_windowless",
      "//remoting/host",
+-- 
+2.17.0
+
