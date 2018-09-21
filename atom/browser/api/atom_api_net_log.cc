@@ -6,13 +6,15 @@
 
 #include <utility>
 
-#include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
-#include "base/callback.h"
-#include "content/public/common/content_switches.h"
+#include "base/command_line.h"
+#include "components/net_log/chrome_net_log.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
+#include "net/url_request/url_request_context_getter.h"
 
 #include "atom/common/node_includes.h"
 
@@ -23,10 +25,16 @@ namespace api {
 NetLog::NetLog(v8::Isolate* isolate) {
   Init(isolate);
 
-  net_log_ = atom::AtomBrowserClient::Get()->GetNetLog();
+  net_log_writer_ =
+      atom::AtomBrowserMainParts::Get()->net_log()->net_export_file_writer();
+  net_log_writer_->Initialize(content::BrowserThread::GetTaskRunnerForThread(
+      content::BrowserThread::IO));
+  net_log_writer_->AddObserver(this);
 }
 
-NetLog::~NetLog() {}
+NetLog::~NetLog() {
+  net_log_writer_->RemoveObserver(this);
+}
 
 // static
 v8::Local<v8::Value> NetLog::Create(v8::Isolate* isolate) {
@@ -40,22 +48,58 @@ void NetLog::StartLogging(mate::Arguments* args) {
     return;
   }
 
-  net_log_->StartDynamicLogging(log_path);
+  // TODO(deepak1556): Provide more flexibility to this module
+  // by allowing customizations on the capturing options.
+  net_log_writer_->StartNetLog(
+      log_path, net::NetLogCaptureMode::Default(),
+      net_log::NetExportFileWriter::kNoLimit /* file size limit */,
+      base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
+      std::string(), {} /* URLRequestContextGetter list */);
 }
 
 bool NetLog::IsCurrentlyLogging() {
-  return net_log_->IsDynamicLogging();
+  const base::Value* current_log_state =
+      net_log_state_->FindKeyOfType("state", base::Value::Type::STRING);
+  if (current_log_state && current_log_state->GetString() == "LOGGING")
+    return true;
+
+  return false;
 }
 
-base::FilePath::StringType NetLog::GetCurrentlyLoggingPath() {
-  return net_log_->GetDynamicLoggingPath().value();
+std::string NetLog::GetCurrentlyLoggingPath() {
+  // Net log exporter has a default path which will be used
+  // when no log path is provided, but since we don't allow
+  // net log capture without user provided file path, this
+  // check is completely safe.
+  if (IsCurrentlyLogging()) {
+    const base::Value* current_log_path =
+        net_log_state_->FindKeyOfType("file", base::Value::Type::STRING);
+    if (current_log_path)
+      return current_log_path->GetString();
+  }
+
+  return std::string();
 }
 
 void NetLog::StopLogging(mate::Arguments* args) {
-  base::OnceClosure callback;
-  args->GetNext(&callback);
+  args->GetNext(&stop_callback_);
+  if (IsCurrentlyLogging()) {
+    net_log_writer_->StopNetLog(nullptr, nullptr);
+  } else {
+    std::move(stop_callback_).Run();
+  }
+}
 
-  net_log_->StopDynamicLogging(std::move(callback));
+void NetLog::OnNewState(const base::DictionaryValue& state) {
+  net_log_state_ = state.CreateDeepCopy();
+
+  if (stop_callback_.is_null())
+    return;
+
+  const auto* current_log_state =
+      state.FindKeyOfType("state", base::Value::Type::STRING);
+  if (current_log_state && current_log_state->GetString() == "STOPPING_LOG")
+    std::move(stop_callback_).Run();
 }
 
 // static

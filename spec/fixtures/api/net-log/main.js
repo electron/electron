@@ -1,5 +1,7 @@
 const { app, net, netLog } = require('electron')
 
+app.commandLine.appendSwitch('log-net-log', process.env.TEST_DUMP_FILE)
+
 function request () {
   return new Promise((resolve) => {
     const req = net.request(process.env.TEST_REQUEST_URL)
@@ -19,8 +21,8 @@ function stopLogging () {
 }
 
 app.on('ready', async () => {
-  if (process.env.TEST_DUMP_FILE) {
-    netLog.startLogging(process.env.TEST_DUMP_FILE)
+  if (process.env.TEST_DUMP_FILE_DYNAMIC) {
+    netLog.startLogging(process.env.TEST_DUMP_FILE_DYNAMIC)
   }
 
   await request()

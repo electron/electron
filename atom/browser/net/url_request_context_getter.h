@@ -20,9 +20,12 @@
 #endif
 
 namespace brightray {
-class NetLog;
 class RequireCTDelegate;
 }  // namespace brightray
+
+namespace net {
+class NetLog;
+}
 
 namespace atom {
 
@@ -86,7 +89,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   };
 
   URLRequestContextGetter(
-      brightray::NetLog* net_log,
+      net::NetLog* net_log,
       URLRequestContextGetter::Handle* context_handle,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
@@ -100,7 +103,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
   std::unique_ptr<network::mojom::NetworkContext> main_network_context_;
 
-  brightray::NetLog* net_log_;
+  net::NetLog* net_log_;
   URLRequestContextGetter::Handle* context_handle_;
   net::URLRequestContext* main_request_context_;
   content::ProtocolHandlerMap protocol_handlers_;

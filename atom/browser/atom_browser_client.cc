@@ -21,6 +21,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/io_thread.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -40,6 +41,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
+#include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_frame_host.h"
@@ -555,9 +557,13 @@ std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
   return base::JSONReader::Read(manifest_contents);
 }
 
+net::NetLog* AtomBrowserClient::GetNetLog() {
+  return AtomBrowserMainParts::Get()->net_log();
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
-    const content::MainFunctionParams&) {
-  return new AtomBrowserMainParts;
+    const content::MainFunctionParams& params) {
+  return new AtomBrowserMainParts(params);
 }
 
 void AtomBrowserClient::WebNotificationAllowed(

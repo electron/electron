@@ -2,8 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "brightray/browser/io_thread.h"
+#include "atom/browser/io_thread.h"
 
+#include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/url_request/url_request_context.h"
@@ -16,9 +17,9 @@
 
 using content::BrowserThread;
 
-namespace brightray {
+namespace atom {
 
-IOThread::IOThread() {
+IOThread::IOThread(net_log::ChromeNetLog* net_log) : net_log_(net_log) {
   BrowserThread::SetIOThreadDelegate(this);
 }
 
@@ -47,6 +48,9 @@ void IOThread::CleanUp() {
   // Explicitly release before the IO thread gets destroyed.
   url_request_context_getter_->Release();
   url_request_context_.reset();
+
+  if (net_log_)
+    net_log_->ShutDownBeforeTaskScheduler();
 }
 
-}  // namespace brightray
+}  // namespace atom

@@ -13,6 +13,7 @@
 #include "base/timer/timer.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/common/main_function_params.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 
 class BrowserProcess;
@@ -23,10 +24,15 @@ class ViewsDelegate;
 }
 #endif
 
+namespace net_log {
+class ChromeNetLog;
+}
+
 namespace atom {
 
 class AtomBindings;
 class Browser;
+class IOThread;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
@@ -39,7 +45,7 @@ class ViewsDelegateMac;
 
 class AtomBrowserMainParts : public brightray::BrowserMainParts {
  public:
-  AtomBrowserMainParts();
+  explicit AtomBrowserMainParts(const content::MainFunctionParams& params);
   ~AtomBrowserMainParts() override;
 
   static AtomBrowserMainParts* Get();
@@ -60,6 +66,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   device::mojom::GeolocationControl* GetGeolocationControl();
 
   Browser* browser() { return browser_.get(); }
+  IOThread* io_thread() const { return io_thread_.get(); }
+  net_log::ChromeNetLog* net_log() { return net_log_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -74,6 +82,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #if defined(OS_MACOSX)
   void PreMainMessageLoopStart() override;
 #endif
+  void PostDestroyThreads() override;
 
  private:
 #if defined(OS_POSIX)
@@ -108,6 +117,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<NodeDebugger> node_debugger_;
+  std::unique_ptr<IOThread> io_thread_;
+  std::unique_ptr<net_log::ChromeNetLog> net_log_;
 
   base::Timer gc_timer_;
 
@@ -115,6 +126,8 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::list<base::OnceClosure> destructors_;
 
   device::mojom::GeolocationControlPtr geolocation_control_;
+
+  const content::MainFunctionParams main_function_params_;
 
   static AtomBrowserMainParts* self_;
 

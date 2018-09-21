@@ -12,6 +12,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
@@ -20,11 +21,14 @@
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/net/chrome_net_log_helper.h"
+#include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/constants.mojom.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -61,12 +65,14 @@ void Erase(T* container, typename T::iterator iter) {
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
-AtomBrowserMainParts::AtomBrowserMainParts()
+AtomBrowserMainParts::AtomBrowserMainParts(
+    const content::MainFunctionParams& params)
     : fake_browser_process_(new BrowserProcess),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),
-      gc_timer_(true, true) {
+      gc_timer_(true, true),
+      main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
   // Register extension scheme as web safe scheme.
@@ -178,7 +184,28 @@ int AtomBrowserMainParts::PreCreateThreads() {
   ui::InitIdleMonitor();
 #endif
 
+  net_log_ = std::make_unique<net_log::ChromeNetLog>();
+  auto& command_line = main_function_params_.command_line;
+  // start net log trace if --log-net-log is passed in the command line.
+  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
+    base::FilePath log_file =
+        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
+    if (!log_file.empty()) {
+      net_log_->StartWritingToFile(
+          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          command_line.GetCommandLineString(), std::string());
+    }
+  }
+
+  // Manage global state of net and other IO thread related.
+  io_thread_ = std::make_unique<IOThread>(net_log_.get());
+
   return result;
+}
+
+void AtomBrowserMainParts::PostDestroyThreads() {
+  brightray::BrowserMainParts::PostDestroyThreads();
+  io_thread_.reset();
 }
 
 void AtomBrowserMainParts::ToolkitInitialized() {

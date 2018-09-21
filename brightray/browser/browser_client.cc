@@ -107,10 +107,6 @@ void BrowserClient::GetAdditionalWebUISchemes(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
-NetLog* BrowserClient::GetNetLog() {
-  return &net_log_;
-}
-
 base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
   // ~/Downloads
   base::FilePath path;

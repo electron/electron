@@ -22,7 +22,6 @@
 #include "base/task_scheduler/post_task.h"
 #include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/require_ct_delegate.h"
-#include "brightray/browser/net_log.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -45,6 +44,7 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_auth_scheme.h"
 #include "net/http/http_transaction_factory.h"
+#include "net/log/net_log.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
@@ -281,11 +281,12 @@ void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
 }
 
 URLRequestContextGetter::URLRequestContextGetter(
-    brightray::NetLog* net_log,
+    net::NetLog* net_log,
     URLRequestContextGetter::Handle* context_handle,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
-    : context_handle_(context_handle),
+    : net_log_(net_log),
+      context_handle_(context_handle),
       main_request_context_(nullptr),
       protocol_interceptors_(std::move(protocol_interceptors)),
       context_shutting_down_(false) {

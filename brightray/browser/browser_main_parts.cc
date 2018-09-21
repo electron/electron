@@ -318,9 +318,6 @@ int BrowserMainParts::PreCreateThreads() {
   BrowserClient::SetApplicationLocale(
       l10n_util::GetApplicationLocale(custom_locale_));
 
-  // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>();
-
   return 0;
 }
 
@@ -329,8 +326,6 @@ void BrowserMainParts::PostDestroyThreads() {
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
 #endif
-
-  io_thread_.reset();
 }
 
 }  // namespace brightray

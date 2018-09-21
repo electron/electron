@@ -242,6 +242,8 @@ filenames = {
     "atom/browser/common_web_contents_delegate.h",
     "atom/browser/cookie_change_notifier.cc",
     "atom/browser/cookie_change_notifier.h",
+    "atom/browser/io_thread.cc",
+    "atom/browser/io_thread.h",
     "atom/browser/javascript_environment.cc",
     "atom/browser/javascript_environment.h",
     "atom/browser/lib/bluetooth_chooser.cc",
