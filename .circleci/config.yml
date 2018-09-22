@@ -147,13 +147,6 @@ step-nodejs-headers-build: &step-nodejs-headers-build
       cd src
       ninja -C out/Default third_party/electron_node:headers
 
-step-native-tests-build: &step-native-tests-build
-  run:
-    name: Native tests build
-    command: |
-      cd src
-      ninja -C out/Default electron:electron_tests
-
 step-persist-data-for-tests: &step-persist-data-for-tests
   persist_to_workspace:
     root: .
@@ -330,9 +323,34 @@ steps-native-tests: &steps-native-tests
     - *step-setup-env-for-build
 
     - *step-electron-gn-gen
-    - *step-native-tests-build
-
-    # TODO(alexeykuzmin): Run the tests. It can be extremely parallelized!
+    - run:
+        name: List native tests
+        command: |
+          cd src
+          python electron/script/native-tests.py list \
+            --config electron/script/tests.yml > testslist.txt
+    # TODO(alexeykuzmin): Build only a subset of all tests.
+    - run:
+        name: Build native tests
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_tests
+    # TODO(alexeykuzmin): Run only a subset of all tests.
+    # --binary $(circleci tests split testslist.txt)
+    - run:
+        name: Run native tests
+        command: |
+          cd src
+          mkdir tests_results
+          python electron/script/native-tests.py run \
+            --config electron/script/tests.yml \
+            --tests-dir out/Default \
+            --output-dir tests_results
+    - store_artifacts:
+        path: src/tests_results
+        destination: results
+    - store_test_results:
+        path: src/tests_results
 
 steps-verify-ffmpeg: &steps-verify-ffmpeg
   steps:
@@ -571,11 +589,13 @@ jobs:
     <<: *steps-build-mac
 
   # Layer 3: Tests.
-  linux-x64-native-tests-fyi:
+  linux-x64-native-tests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
     <<: *steps-native-tests
+    # TODO(alexeykuzmin): Use parallelism.
+    # parallelism: 4  # https://xkcd.com/221/
 
   linux-x64-testing-tests:
     <<: *machine-linux-medium
@@ -622,10 +642,6 @@ workflows:
       - linux-checkout
       - linux-arm-checkout
       - linux-arm64-checkout
-
-      - linux-x64-native-tests-fyi:
-          requires:
-            - linux-checkout
 
       - linux-x64-debug:
           requires:
@@ -710,6 +726,10 @@ workflows:
       - linux-checkout
       - linux-arm-checkout
       - linux-arm64-checkout
+
+      - linux-x64-native-tests:
+          requires:
+            - linux-checkout
 
       - linux-x64-release:
           requires:
