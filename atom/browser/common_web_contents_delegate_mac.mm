@@ -28,18 +28,20 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
-  if (auto* web_preferences = WebContentsPreferences::From(source)) {
-    if (!web_preferences->IsEnabled("ignoreMenuShortcuts", false)) {
-      // Send the event to the menu before sending it to the window
-      if (event.os_event.type == NSKeyDown &&
-          [[NSApp mainMenu] performKeyEquivalent:event.os_event])
-        return;
+  // Check if the webContents has preferences and to ignore shortcuts
+  auto* web_preferences = WebContentsPreferences::From(source);
+  if (web_preferences &&
+      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+    return;
 
-      if (event.os_event.window &&
-          [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
-        [event.os_event.window redispatchKeyEvent:event.os_event];
-    }
-  }
+  // Send the event to the menu before sending it to the window
+  if (event.os_event.type == NSKeyDown &&
+      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
+    return;
+
+  if (event.os_event.window &&
+      [event.os_event.window isKindOfClass:[EventDispatchingWindow class]])
+    [event.os_event.window redispatchKeyEvent:event.os_event];
 }
 
 }  // namespace atom
