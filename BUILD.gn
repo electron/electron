@@ -705,7 +705,8 @@ if (is_mac) {
     }
 
     if (!is_mac) {
-      data += [ "$root_out_dir/resources" ]
+      data += [ "$root_out_dir/resources/default_app.asar" ]
+      data += [ "$root_out_dir/resources/electron.asar" ]
     }
 
     public_deps = [

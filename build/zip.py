@@ -17,7 +17,6 @@ EXTENSIONS_TO_SKIP = [
 PATHS_TO_SKIP = [
   'angledata', #Skipping because it is an output of //ui/gl that we don't need
   'swiftshader', #Skipping because it is an output of //ui/gl that we don't need
-  'resources/inspector' 
 ]
 
 def skip_path(dep):
@@ -71,10 +70,7 @@ def main(argv):
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
             for file in files:
-              file_path = os.path.join(root, file)
-              if skip_path(file_path):
-                continue
-              z.write(file_path)
+              z.write(os.path.join(root, file))
         else:
           z.write(dep)
 
