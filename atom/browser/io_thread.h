@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/macros.h"
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/browser_thread_delegate.h"
 
 namespace net {
@@ -27,7 +28,7 @@ class IOThread : public content::BrowserThreadDelegate {
   ~IOThread() override;
 
   net::URLRequestContextGetter* GetRequestContext() {
-    return url_request_context_getter_;
+    return url_request_context_getter_.get();
   }
 
  protected:
@@ -40,7 +41,7 @@ class IOThread : public content::BrowserThreadDelegate {
   // threads during shutdown, but is used most frequently on the IOThread.
   net_log::ChromeNetLog* net_log_;
   std::unique_ptr<net::URLRequestContext> url_request_context_;
-  net::URLRequestContextGetter* url_request_context_getter_;
+  scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };

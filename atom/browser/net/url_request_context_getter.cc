@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "atom/browser/api/atom_api_protocol.h"
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
@@ -20,7 +21,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
-#include "brightray/browser/browser_client.h"
 #include "brightray/browser/net/require_ct_delegate.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_constants.h"
@@ -209,8 +209,8 @@ URLRequestContextGetter::Handle::Handle(
 
 URLRequestContextGetter::Handle::~Handle() {}
 
-content::ResourceContext* URLRequestContextGetter::Handle::GetResourceContext()
-    const {
+content::ResourceContext*
+URLRequestContextGetter::Handle::GetResourceContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   LazyInitialize();
   return resource_context_.get();
@@ -224,13 +224,13 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
   DCHECK(!main_request_context_getter_.get());
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
-      brightray::BrowserClient::Get()->GetNetLog(), this, protocol_handlers,
+      AtomBrowserClient::Get()->GetNetLog(), this, protocol_handlers,
       std::move(protocol_interceptors));
   return main_request_context_getter_;
 }
 
 scoped_refptr<URLRequestContextGetter>
-URLRequestContextGetter::Handle::GetMainRequestContextGetter() const {
+URLRequestContextGetter::Handle::GetMainRequestContextGetter() {
   return main_request_context_getter_;
 }
 
@@ -242,7 +242,7 @@ URLRequestContextGetter::Handle::GetNetworkContext() {
   return std::move(main_network_context_);
 }
 
-void URLRequestContextGetter::Handle::LazyInitialize() const {
+void URLRequestContextGetter::Handle::LazyInitialize() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (initialized_)
     return;
@@ -288,7 +288,7 @@ URLRequestContextGetter::URLRequestContextGetter(
     content::URLRequestInterceptorScopedVector protocol_interceptors)
     : net_log_(net_log),
       context_handle_(context_handle),
-      main_request_context_(nullptr),
+      url_request_context_(nullptr),
       protocol_interceptors_(std::move(protocol_interceptors)),
       context_shutting_down_(false) {
   // Must first be created on the UI thread.
@@ -307,7 +307,7 @@ void URLRequestContextGetter::NotifyContextShuttingDown(
   context_shutting_down_ = true;
   resource_context.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
-  main_network_context_.reset();
+  network_context_.reset();
   top_job_factory_.reset();
   ct_delegate_.reset();
 }
@@ -318,7 +318,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (context_shutting_down_)
     return nullptr;
 
-  if (!main_request_context_) {
+  if (!url_request_context_) {
     auto& command_line = *base::CommandLine::ForCurrentProcess();
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
@@ -366,19 +366,19 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
     builder->set_ct_verifier(std::move(ct_verifier));
 
-    main_network_context_ =
+    network_context_ =
         content::GetNetworkServiceImpl()->CreateNetworkContextWithBuilder(
             std::move(context_handle_->main_network_context_request_),
             std::move(context_handle_->main_network_context_params_),
-            std::move(builder), &main_request_context_);
+            std::move(builder), &url_request_context_);
 
     net::TransportSecurityState* transport_security_state =
-        main_request_context_->transport_security_state();
+        url_request_context_->transport_security_state();
     transport_security_state->SetRequireCTDelegate(ct_delegate_.get());
 
     // Add custom standard schemes to cookie schemes.
     auto* cookie_monster =
-        static_cast<net::CookieMonster*>(main_request_context_->cookie_store());
+        static_cast<net::CookieMonster*>(url_request_context_->cookie_store());
     std::vector<std::string> cookie_schemes(
         {url::kHttpScheme, url::kHttpsScheme, url::kWsScheme, url::kWssScheme});
     const auto& custom_standard_schemes = atom::api::GetStandardSchemes();
@@ -388,7 +388,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     // Setup handlers for custom job factory.
     top_job_factory_.reset(new AtomURLRequestJobFactory);
-    SetupAtomURLRequestJobFactory(&protocol_handlers_, main_request_context_,
+    SetupAtomURLRequestJobFactory(&protocol_handlers_, url_request_context_,
                                   top_job_factory_.get());
     std::unique_ptr<net::URLRequestJobFactory> inner_job_factory(
         new net::URLRequestJobFactoryImpl);
@@ -402,13 +402,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       protocol_interceptors_.clear();
     }
     top_job_factory_->Chain(std::move(inner_job_factory));
-    main_request_context_->set_job_factory(top_job_factory_.get());
+    url_request_context_->set_job_factory(top_job_factory_.get());
 
-    context_handle_->resource_context_->request_context_ =
-        main_request_context_;
+    context_handle_->resource_context_->request_context_ = url_request_context_;
   }
 
-  return main_request_context_;
+  return url_request_context_;
 }
 
 scoped_refptr<base::SingleThreadTaskRunner>

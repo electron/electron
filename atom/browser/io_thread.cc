@@ -15,6 +15,11 @@
 #include "net/cert_net/nss_ocsp.h"
 #endif
 
+#if defined(OS_LINUX) || defined(OS_MACOSX)
+#include "net/cert/cert_net_fetcher.h"
+#include "net/cert_net/cert_net_fetcher_impl.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -29,15 +34,31 @@ IOThread::~IOThread() {
 
 void IOThread::Init() {
   net::URLRequestContextBuilder builder;
+  // TODO(deepak1556): We need to respoect user proxy configurations,
+  // the following initialization has to happen before any request
+  // contexts are utilized by the io thread, so that proper cert validation
+  // take place, solutions:
+  // 1) Use the request context from default partition, but since
+  //    an app can completely run on a custom session without ever creating
+  //    the default session, we will have to force create the default session
+  //    in those scenarios.
+  // 2) Add a new api on app module that sets the proxy configuration
+  //    for the global requests, like the cert fetchers below and
+  //    geolocation requests.
+  // 3) There is also ongoing work in upstream which will eventually allow
+  //    localizing these global fetchers to their own URLRequestContexts.
   builder.set_proxy_resolution_service(
       net::ProxyResolutionService::CreateDirect());
   url_request_context_ = builder.Build();
   url_request_context_getter_ = new net::TrivialURLRequestContextGetter(
       url_request_context_.get(), base::ThreadTaskRunnerHandle::Get());
-  url_request_context_getter_->AddRef();
 
 #if defined(USE_NSS_CERTS)
   net::SetURLRequestContextForNSSHttpIO(url_request_context_.get());
+#endif
+#if defined(OS_LINUX) || defined(OS_MACOSX)
+  net::SetGlobalCertNetFetcher(
+      net::CreateCertNetFetcher(url_request_context_.get()));
 #endif
 }
 
@@ -45,8 +66,10 @@ void IOThread::CleanUp() {
 #if defined(USE_NSS_CERTS)
   net::SetURLRequestContextForNSSHttpIO(nullptr);
 #endif
+#if defined(OS_LINUX) || defined(OS_MACOSX)
+  net::ShutdownGlobalCertNetFetcher();
+#endif
   // Explicitly release before the IO thread gets destroyed.
-  url_request_context_getter_->Release();
   url_request_context_.reset();
 
   if (net_log_)

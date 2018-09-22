@@ -61,15 +61,15 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     scoped_refptr<URLRequestContextGetter> CreateMainRequestContextGetter(
         content::ProtocolHandlerMap* protocol_handlers,
         content::URLRequestInterceptorScopedVector protocol_interceptors);
-    content::ResourceContext* GetResourceContext() const;
-    scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter() const;
+    content::ResourceContext* GetResourceContext();
+    scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter();
     network::mojom::NetworkContextPtr GetNetworkContext();
 
     void ShutdownOnUIThread();
 
    private:
     friend class URLRequestContextGetter;
-    void LazyInitialize() const;
+    void LazyInitialize();
 
     scoped_refptr<URLRequestContextGetter> main_request_context_getter_;
     std::unique_ptr<ResourceContext> resource_context_;
@@ -77,13 +77,12 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     // This is a NetworkContext interface that uses URLRequestContextGetter
     // NetworkContext, ownership is passed to StoragePartition when
     // CreateMainNetworkContext is called.
-    mutable network::mojom::NetworkContextPtr main_network_context_;
+    network::mojom::NetworkContextPtr main_network_context_;
     // Request corresponding to |main_network_context_|. Ownership
     // is passed to network service.
-    mutable network::mojom::NetworkContextRequest main_network_context_request_;
-    mutable network::mojom::NetworkContextParamsPtr
-        main_network_context_params_;
-    mutable bool initialized_;
+    network::mojom::NetworkContextRequest main_network_context_request_;
+    network::mojom::NetworkContextParamsPtr main_network_context_params_;
+    bool initialized_;
 
     DISALLOW_COPY_AND_ASSIGN(Handle);
   };
@@ -101,11 +100,11 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   std::unique_ptr<brightray::RequireCTDelegate> ct_delegate_;
   std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
-  std::unique_ptr<network::mojom::NetworkContext> main_network_context_;
+  std::unique_ptr<network::mojom::NetworkContext> network_context_;
 
   net::NetLog* net_log_;
   URLRequestContextGetter::Handle* context_handle_;
-  net::URLRequestContext* main_request_context_;
+  net::URLRequestContext* url_request_context_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
   bool context_shutting_down_;
