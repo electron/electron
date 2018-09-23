@@ -76,18 +76,14 @@ with an array of misspelt words when complete.
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
-const {webFrame} = require('electron')
+const { webFrame } = require('electron')
 const spellChecker = require('spellchecker')
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
     setTimeout(() => {
-      let misspeltWords = []
-      for (let word of words) {
-        if (spellChecker.isMisspelled(word)) {
-          misspeltWords.push(word)
-        }
-      }
-      callback(misspeltWords)
+      const spellchecker = require('spellchecker')
+      const misspelled = words.filter(x => spellchecker.isMisspelled(x))
+      callback(misspelled)
     }, 0)
   }
 })
