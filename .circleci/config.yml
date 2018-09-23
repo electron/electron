@@ -705,7 +705,7 @@ workflows:
             branches:
               only:
                 - master
-                - chromium-upgrade/*
+                - /chromium\-upgrade\/[0-9]+/
     jobs:
       - linux-checkout
       - linux-arm-checkout
