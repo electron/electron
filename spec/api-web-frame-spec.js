@@ -155,7 +155,7 @@ describe('webFrame module', function () {
     const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')
     const inputText = 'spleling test '
     for (const keyCode of inputText) {
-      w.webContents.sendInputEvent({type: 'char', keyCode})
+      w.webContents.sendInputEvent({ type: 'char', keyCode })
     }
     const [, words, callback] = await spellCheckerFeedback
 
