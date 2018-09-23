@@ -71,6 +71,7 @@ void IOThread::CleanUp() {
 #endif
   // Explicitly release before the IO thread gets destroyed.
   url_request_context_.reset();
+  url_request_context_getter_ = nullptr;
 
   if (net_log_)
     net_log_->ShutDownBeforeTaskScheduler();

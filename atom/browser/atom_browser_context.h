@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "atom/browser/net/url_request_context_getter.h"
-#include "base/memory/scoped_refptr.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "brightray/browser/media/media_device_id_salt.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
@@ -36,13 +36,8 @@ class ResolveProxyHelper;
 class SpecialStoragePolicy;
 class WebViewManager;
 
-struct AtomBrowserContextDeleter {
-  static void Destruct(const AtomBrowserContext* browser_context);
-};
-
 class AtomBrowserContext
-    : public base::RefCountedThreadSafe<AtomBrowserContext,
-                                        AtomBrowserContextDeleter>,
+    : public base::RefCountedDeleteOnSequence<AtomBrowserContext>,
       public content::BrowserContext {
  public:
   // Get or create the BrowserContext according to its |partition| and
@@ -106,6 +101,9 @@ class AtomBrowserContext
   ValueMapPrefStore* in_memory_pref_store() const {
     return in_memory_pref_store_;
   }
+  base::WeakPtr<AtomBrowserContext> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
  protected:
   AtomBrowserContext(const std::string& partition,
@@ -114,13 +112,11 @@ class AtomBrowserContext
   ~AtomBrowserContext() override;
 
  private:
-  friend class base::RefCountedThreadSafe<AtomBrowserContext,
-                                          AtomBrowserContextDeleter>;
+  friend class base::RefCountedDeleteOnSequence<AtomBrowserContext>;
   friend class base::DeleteHelper<AtomBrowserContext>;
-  friend struct AtomBrowserContextDeleter;
 
+  // Initialize pref registry.
   void InitPrefs();
-  void OnDestruct() const;
 
   // partition_id => browser_context
   struct PartitionKey {

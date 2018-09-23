@@ -298,7 +298,11 @@ URLRequestContextGetter::URLRequestContextGetter(
     std::swap(protocol_handlers_, *protocol_handlers);
 }
 
-URLRequestContextGetter::~URLRequestContextGetter() {}
+URLRequestContextGetter::~URLRequestContextGetter() {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  // NotifyContextShuttingDown should have been called.
+  DCHECK(context_shutting_down_);
+}
 
 void URLRequestContextGetter::NotifyContextShuttingDown(
     std::unique_ptr<ResourceContext> resource_context) {
@@ -307,9 +311,6 @@ void URLRequestContextGetter::NotifyContextShuttingDown(
   context_shutting_down_ = true;
   resource_context.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
-  network_context_.reset();
-  top_job_factory_.reset();
-  ct_delegate_.reset();
 }
 
 net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {

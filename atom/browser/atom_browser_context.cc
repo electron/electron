@@ -24,6 +24,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
@@ -67,16 +68,12 @@ std::string MakePartitionName(const std::string& input) {
 // static
 AtomBrowserContext::BrowserContextMap AtomBrowserContext::browser_context_map_;
 
-// static
-void AtomBrowserContextDeleter::Destruct(
-    const AtomBrowserContext* browser_context) {
-  browser_context->OnDestruct();
-}
-
 AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
-    : in_memory_pref_store_(nullptr),
+    : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
+          base::SequencedTaskRunnerHandle::Get()),
+      in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
@@ -116,9 +113,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
 
   content::BrowserContext::Initialize(this, path_);
 
-  browser_context_map_[PartitionKey(partition, in_memory)] =
-      weak_factory_.GetWeakPtr();
-
   // Initialize Pref Registry.
   InitPrefs();
 
@@ -132,14 +126,6 @@ AtomBrowserContext::~AtomBrowserContext() {
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
   io_handle_->ShutdownOnUIThread();
-}
-
-void AtomBrowserContext::OnDestruct() const {
-  if (BrowserThread::CurrentlyOn(BrowserThread::UI)) {
-    delete this;
-  } else {
-    BrowserThread::DeleteSoon(BrowserThread::UI, FROM_HERE, this);
-  }
 }
 
 void AtomBrowserContext::InitPrefs() {
@@ -327,9 +313,11 @@ scoped_refptr<AtomBrowserContext> AtomBrowserContext::From(
   PartitionKey key(partition, in_memory);
   auto* browser_context = browser_context_map_[key].get();
   if (browser_context)
-    return browser_context;
+    return scoped_refptr<AtomBrowserContext>(browser_context);
 
-  return new AtomBrowserContext(partition, in_memory, options);
+  auto* new_context = new AtomBrowserContext(partition, in_memory, options);
+  browser_context_map_[key] = new_context->GetWeakPtr();
+  return scoped_refptr<AtomBrowserContext>(new_context);
 }
 
 }  // namespace atom
