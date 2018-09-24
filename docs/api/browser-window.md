@@ -202,7 +202,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     than screen. Default is `false`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
     like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
-    `#FFF` (white).
+    `#FFF` (white). If `transparent` is set to `true`, only values with transparent (`#00-------`) or opaque (`#FF-----`) alpha values are respected.
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
