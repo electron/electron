@@ -4,10 +4,14 @@
 
 #include "atom/browser/api/gpu_info_enumerator.h"
 
+#include <utility>
+
 namespace atom {
 
 GPUInfoEnumerator::GPUInfoEnumerator()
     : value_stack(), current(std::make_unique<base::DictionaryValue>()) {}
+
+GPUInfoEnumerator::~GPUInfoEnumerator() {}
 
 void GPUInfoEnumerator::AddInt64(const char* name, int64_t value) {
   current->SetInteger(name, value);

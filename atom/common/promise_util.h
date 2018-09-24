@@ -17,7 +17,6 @@ namespace util {
 class Promise : public base::RefCounted<Promise> {
  public:
   explicit Promise(v8::Isolate* isolate);
-  virtual ~Promise();
 
   v8::Isolate* isolate() const { return isolate_; }
 
@@ -48,6 +47,7 @@ class Promise : public base::RefCounted<Promise> {
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
 
  protected:
+  virtual ~Promise();
   friend class base::RefCounted<Promise>;
   v8::Isolate* isolate_;
 

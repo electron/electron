@@ -5,7 +5,9 @@
 #ifndef ATOM_BROWSER_API_GPUINFO_MANAGER_H_
 #define ATOM_BROWSER_API_GPUINFO_MANAGER_H_
 
+#include <memory>
 #include <unordered_set>
+#include <vector>
 
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/promise_util.h"
@@ -21,7 +23,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   static GPUInfoManager* GetInstance();
 
   GPUInfoManager();
-  ~GPUInfoManager();
+  ~GPUInfoManager() override;
   bool NeedsCompleteGpuInfoCollection();
   void FetchCompleteInfo(scoped_refptr<util::Promise> promise);
   void FetchBasicInfo(scoped_refptr<util::Promise> promise);

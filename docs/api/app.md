@@ -916,7 +916,7 @@ For `infoType` equal to `complete`:
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
-```json
+```js
 { auxAttributes:
    { amdSwitchable: true,
      canSupportThreadedTextureMailbox: false,
@@ -932,11 +932,11 @@ For `infoType` equal to `basic`:
      softwareRendering: false,
      supportsOverlays: false,
      videoDecodeAcceleratorFlags: 0 },
-  gpuDevice:
+gpuDevice:
    [ { active: true, deviceId: 26657, vendorId: 4098 },
      { active: false, deviceId: 3366, vendorId: 32902 } ],
-  machineModelName: 'MacBookPro',
-  machineModelVersion: '11.5' }
+machineModelName: 'MacBookPro',
+machineModelVersion: '11.5' }
 ```
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 

@@ -1152,15 +1152,15 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
 
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
-  const auto gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
+  auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
   if ((info_type != "basic" && info_type != "complete") ||
       !gpu_data_manager->GpuAccessAllowed(nullptr)) {
-    promise->Reject();
+    promise->Reject("Error fetching GPU Info");
     return promise->GetHandle();
   }
 
-  const auto& info_mgr = GPUInfoManager::GetInstance();
+  auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
     info_mgr->FetchCompleteInfo(promise);
   } else /* (info_type == "basic") */ {
