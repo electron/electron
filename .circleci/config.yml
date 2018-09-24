@@ -25,6 +25,7 @@ env-testing-build: &env-testing-build
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
   NOTIFY_SLACK: true
+  ELECTRON_RELEASE: 1
 
 # Build targets options.
 env-ia32: &env-ia32
@@ -226,6 +227,18 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
+step-maybe-generate-breakpad_symbols: &step-maybe-generate-breakpad_symbols
+  run:
+    name: Generate breakpad symbols
+    command: |
+      if [ "$ELECTRON_RELEASE" == "1" ]; then
+        cd src
+        # Build needed dump_syms executable
+        ninja -C out/Default third_party/breakpad:dump_syms
+        electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+      fi
+
+
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
@@ -288,6 +301,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-maybe-generate-breakpad_symbols
 
     # mksnapshot
     - *step-mksnapshot-build

@@ -66,6 +66,14 @@ jobs:
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - bash: |
+      cd src
+      # Build needed dump_syms executable
+      ninja -C out/Default third_party/breakpad:dump_syms
+      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+    displayName: Ninja build app
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
       "$SCCACHE_BINARY" --stop-server
     displayName: Check sccache stats after build
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
