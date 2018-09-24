@@ -880,17 +880,6 @@ copy("chromium_licenses") {
     "$root_build_dir/LICENSES.chromium.html",
   ]
 }
-copy("electron_mksnapshot_copy") {
-  sources = []
-  if (is_win) {
-    sources += "mksnapshot.exe",
-  } else {
-    sources += "mksnapshot",
-  }
-  outputs = [
-    "$root_build_dir/{{source_file_part}}",
-  ]
-}
 
 group("licenses") {
   data_deps = [
@@ -938,23 +927,12 @@ dist_zip("electron_chromedriver_zip") {
 }
 
 dist_zip("electron_mksnapshot_zip") {
-  # mksnapshot gets built in electron_app as part of the v8 build, so copy it from there
-  data_deps = [
-    ":electron_mksnapshot_copy",
-    ":licenses",
-  ]
-  outputs = [
-    "$root_build_dir/mksnapshot.zip",
-  ]
-}
-
-dist_zip("electron_native_mksnapshot_zip") {
   data_deps = [
     "//v8:mksnapshot",
     ":licenses",
   ]
   outputs = [
-    "$root_build_dir/native_mksnapshot.zip",
+    "$root_build_dir/mksnapshot.zip",
   ]
 }
 
