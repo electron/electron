@@ -15,10 +15,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libnotify-bin \
     locales \
     lsb-release \
+    nano \
     nodejs \
     python-dbusmock \
     python-pip \
     python-setuptools \
+    sudo \
     vim-nox \
     wget \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --no-nacl \
