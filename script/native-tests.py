@@ -16,6 +16,11 @@ class Command:
   LIST = 'list'
   RUN = 'run'
 
+class Verbosity:
+  ALL = 'all'  # stdout and stderr
+  ERRORS = 'errors'  # stderr only
+  SILENT = 'silent'  # no output
+
 def parse_args():
   parser = argparse.ArgumentParser(description='Run Google Test binaries')
 
@@ -23,14 +28,31 @@ def parse_args():
                       choices=[Command.LIST, Command.RUN],
                       help='command to execute')
 
-  parser.add_argument('-b', '--binary', nargs='*', required=False,
-                      help='names of binaries to run')
+  parser.add_argument('-b', '--binary', nargs='+', required=False,
+                      help='binaries to run')
   parser.add_argument('-c', '--config', required=True,
                       help='path to a tests config')
   parser.add_argument('-t', '--tests-dir', required=False,
-                      help='path to a directory with binaries to run')
+                      help='path to a directory with test binaries')
   parser.add_argument('-o', '--output-dir', required=False,
                       help='path to a folder to save tests results')
+
+  verbosity = parser.add_mutually_exclusive_group()
+  verbosity.add_argument('-v', '--verbosity', required=False,
+                         default=Verbosity.ALL,
+                         choices=[
+                            Verbosity.ALL,
+                            Verbosity.ERRORS,
+                            Verbosity.SILENT],
+                         help='set verbosity level')
+  verbosity.add_argument('-q', '--quiet', required=False, action='store_const',
+                         const=Verbosity.ERRORS, dest='verbosity',
+                         help='suppress stdout from test binaries')
+  verbosity.add_argument('-qq', '--quiet-quiet',
+                         # https://youtu.be/o0u4M6vppCI?t=1m18s
+                         required=False, action='store_const',
+                         const=Verbosity.SILENT, dest='verbosity',
+                         help='suppress stdout and stderr from test binaries')
 
   args = parser.parse_args()
 
@@ -70,9 +92,9 @@ def main():
 
   if args.command == Command.RUN:
     if args.binary is not None:
-      return tests_list.run(args.binary, args.output_dir)
+      return tests_list.run(args.binary, args.output_dir, args.verbosity)
     else:
-      return tests_list.run_all(args.output_dir)
+      return tests_list.run_all(args.output_dir, args.verbosity)
 
   raise Exception("unexpected command '{}'".format(args.command))
 
@@ -84,7 +106,7 @@ class TestsList():
 
     # A dict with binary names (e.g. 'base_unittests') as keys
     # and various test data as values of dict type.
-    self.tests = self.__get_tests_list(config_path)
+    self.tests = TestsList.__get_tests_list(config_path)
 
   def __len__(self):
     return len(self.tests)
@@ -92,7 +114,7 @@ class TestsList():
   def get_names(self):
     return self.tests.keys()
 
-  def run(self, binaries, output_dir=None):
+  def run(self, binaries, output_dir=None, verbosity=Verbosity.ALL):
     # Don't run anything twice.
     binaries = set(binaries)
 
@@ -104,16 +126,17 @@ class TestsList():
     # TODO(alexeykuzmin): Respect the "platform" setting.
 
     suite_returncode = sum(
-        [self.__run(binary, output_dir) for binary in binaries])
+        [self.__run(binary, output_dir, verbosity) for binary in binaries])
     return suite_returncode
 
-  def run_only(self, binary_name, output_dir=None):
-    return self.run([binary_name], output_dir)
+  def run_only(self, binary_name, output_dir=None, verbosity=Verbosity.ALL):
+    return self.run([binary_name], output_dir, verbosity)
 
-  def run_all(self, output_dir=None):
-    return self.run(self.get_names(), output_dir)
+  def run_all(self, output_dir=None, verbosity=Verbosity.ALL):
+    return self.run(self.get_names(), output_dir, verbosity)
 
-  def __get_tests_list(self, config_path):
+  @staticmethod
+  def __get_tests_list(config_path):
     tests_list = {}
     config_data = TestsList.__get_config_data(config_path)
 
@@ -171,7 +194,7 @@ class TestsList():
 
     return (binary_name, test_data)
 
-  def __run(self, binary_name, output_dir):
+  def __run(self, binary_name, output_dir, verbosity):
     binary_path = os.path.join(self.tests_dir, binary_name)
     test_binary = TestBinary(binary_path)
 
@@ -181,7 +204,8 @@ class TestsList():
     output_file_path = TestsList.__get_output_path(binary_name, output_dir)
 
     return test_binary.run(excluded_tests=excluded_tests,
-                           output_file_path=output_file_path)
+                           output_file_path=output_file_path,
+                           verbosity=verbosity)
 
   @staticmethod
   def __get_output_path(binary_name, output_dir=None):
@@ -198,7 +222,8 @@ class TestBinary():
     # Is only used when writing to a file.
     self.output_format = 'xml'
 
-  def run(self, excluded_tests=None, output_file_path=None):
+  def run(self, excluded_tests=None, output_file_path=None,
+      verbosity=Verbosity.ALL):
     gtest_filter = ""
     if excluded_tests is not None and len(excluded_tests) > 0:
       excluded_tests_string = TestBinary.__format_excluded_tests(
@@ -211,19 +236,26 @@ class TestBinary():
                                                      output_file_path)
 
     args = [self.binary_path, gtest_filter, gtest_output]
+    stdout, stderr = TestBinary.__get_stdout_and_stderr(verbosity)
 
-    # Suppress stdout if we're writing results to a file.
-    stdout = None
-    if output_file_path is not None:
-      devnull = open(os.devnull, 'w')
-      stdout = devnull
-
-    returncode = subprocess.call(args, stdout=stdout)
+    returncode = subprocess.call(args, stdout=stdout, stderr=stderr)
     return returncode
 
   @staticmethod
   def __format_excluded_tests(excluded_tests):
     return "-" + ":".join(excluded_tests)
+
+  @staticmethod
+  def __get_stdout_and_stderr(verbosity):
+    stdout = stderr = None
+
+    if verbosity in (Verbosity.ERRORS, Verbosity.SILENT):
+      devnull = open(os.devnull, 'w')
+      stdout = devnull
+      if verbosity == Verbosity.SILENT:
+        stderr = devnull
+
+    return (stdout, stderr)
 
 
 if __name__ == '__main__':
