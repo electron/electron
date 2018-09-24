@@ -292,7 +292,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
 
-steps-mksnapshot-build: &steps-mksnapshot-build
+steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
     - attach_workspace:
         at: .
@@ -308,10 +308,11 @@ steps-mksnapshot-build: &steps-mksnapshot-build
         name: native mksnapshot (arm/arm64) build
         command: |
           cd src
-          ninja -C out/native_mksnapshot v8:mksnapshot
+          ninja -C out/native_mksnapshot electron:electron_native_mksnapshot_zip
+          cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
     - store_artifacts:
-        path: src/out/native_mksnapshot/mksnapshot
-        destination: mksnapshot
+        path: src/out/native_mksnapshot/native_mksnapshot.zip
+        destination: native_mksnapshot
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -559,7 +560,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm
-    <<: *steps-mksnapshot-build
+    <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
     <<: *machine-linux-2xlarge
@@ -592,7 +593,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm64
-    <<: *steps-mksnapshot-build
+    <<: *steps-native-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac

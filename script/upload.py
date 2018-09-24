@@ -65,8 +65,12 @@ def main():
   if get_target_arch() != 'mips64el':
     upload_electron(release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
   if PLATFORM == 'darwin':
-    upload_electron(release, os.path.join(DIST_DIR, 'electron-api.json'), args)
-    upload_electron(release, os.path.join(DIST_DIR, 'electron.d.ts'), args)
+    api_path = os.path.join(SOURCE_ROOT, 'electron-api.json')
+    upload_electron(release, api_path, args)
+
+    ts_defs_path = os.path.join(SOURCE_ROOT, 'electron.d.ts')
+    upload_electron(release, ts_defs_path, args)
+    
     upload_electron(release, os.path.join(DIST_DIR, DSYM_NAME), args)
   elif PLATFORM == 'win32':
     upload_electron(release, os.path.join(DIST_DIR, PDB_NAME), args)
