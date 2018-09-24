@@ -214,6 +214,18 @@ step-show-sccache-stats: &step-show-sccache-stats
     name: Check sccache stats after build
     command: $SCCACHE_PATH -s
 
+step-mksnapshot-build: &step-mksnapshot-build
+  run:
+    name: mksnapshot build
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_mksnapshot_zip
+
+step-mksnapshot-store: &step-mksnapshot-store
+  store_artifacts:
+    path: src/out/Default/mksnapshot.zip
+    destination: mksnapshot
+
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
@@ -317,18 +329,6 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
     - store_artifacts:
         path: src/out/native_mksnapshot/native_mksnapshot.zip
         destination: native_mksnapshot
-
-step-mksnapshot-build: &step-mksnapshot-build
-  run:
-    name: mksnapshot build
-      command: |
-        cd src
-        ninja -C out/Default electron:electron_mksnapshot_zip
-
-step-mksnapshot-store: &step-mksnapshot-store
-  store_artifacts:
-    path: src/out/Default/mksnapshot.zip
-    destination: mksnapshot
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
