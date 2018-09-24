@@ -927,16 +927,14 @@ dist_zip("electron_chromedriver_zip") {
   ]
 }
 
-if (current_toolchain == v8_snapshot_toolchain) {
-  dist_zip("electron_mksnapshot_zip") {
-    data_deps = [
-      "//v8:mksnapshot($v8_snapshot_toolchain)",
-      ":licenses",
-    ]
-    outputs = [
-      "$root_build_dir/mksnapshot.zip",
-    ]
-  }
+dist_zip("electron_mksnapshot_zip") {
+  data_deps = [
+    "//v8:mksnapshot($v8_snapshot_toolchain)",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/mksnapshot.zip",
+  ]
 }
 
 group("electron") {

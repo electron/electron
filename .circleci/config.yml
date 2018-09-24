@@ -224,7 +224,7 @@ step-mksnapshot-build: &step-mksnapshot-build
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
     path: src/out/Default/mksnapshot.zip
-    destination: mksnapshot
+    destination: mksnapshot.zip
 
 # Lists of steps.
 steps-checkout: &steps-checkout
@@ -328,7 +328,7 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
           cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
     - store_artifacts:
         path: src/out/native_mksnapshot/native_mksnapshot.zip
-        destination: native_mksnapshot
+        destination: native_mksnapshot.zip
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
