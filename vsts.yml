@@ -102,6 +102,11 @@ jobs:
       ninja -C out/Default electron:electron_chromedriver_zip
     displayName: Build chromedriver and zip
 
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_mksnapshot_zip
+    displayName: Build mksnapshot and zip
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
