@@ -206,7 +206,6 @@ class NativeWindowMac : public NativeWindow {
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;
   bool is_simple_fullscreen_ = false;
-  bool was_maximizable_ = false;
   bool was_movable_ = false;
   NSRect original_frame_;
   NSUInteger simple_fullscreen_mask_;

@@ -2458,10 +2458,11 @@ describe('BrowserWindow module', () => {
         assert.strictEqual(w.isResizable(), true)
       })
 
-      it('does not effect the maxmizable state', () => {
+      it('does not effect the former maxmizable state', () => {
+        w.setMaximizable(true)
         assert.strictEqual(w.isResizable(), true)
         w.setResizable(false)
-        assert.strictEqual(w.isMaximizable(), true)
+        assert.strictEqual(w.isMaximizable(), false)
         w.setResizable(true)
         assert.strictEqual(w.isMaximizable(), true)
       })
@@ -2613,8 +2614,14 @@ describe('BrowserWindow module', () => {
       // Only implemented on windows.
       if (process.platform !== 'win32') return
 
-      it('is set to true when resizable state is set to false', () => {
+      it('is reset to its former state', () => {
+        w.setMaximizable(false)
         w.setResizable(false)
+        w.setResizable(true)
+        assert.strictEqual(w.isMaximizable(), false)
+        w.setMaximizable(true)
+        w.setResizable(false)
+        w.setResizable(true)
         assert.strictEqual(w.isMaximizable(), true)
       })
     })
