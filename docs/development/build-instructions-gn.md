@@ -102,14 +102,20 @@ $ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_
 Electron:**
 
 ```sh
-$ gn gen out/Debug --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
 ```
 
 **To build, run `ninja` with the `electron` target:**
+Nota Bene: This will also take a while and probably heat up your lap.
 
+For the debug configuration:
 ```sh
 $ ninja -C out/Debug electron
-# This will also take a while and probably heat up your lap.
+```
+
+For the release configuration:
+```sh
+$ ninja -C out/Release electron
 ```
 
 This will build all of what was previously 'libchromiumcontent' (i.e. the
