@@ -278,7 +278,8 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-dist-store
 
     # mksnapshot
-    - *steps-mksnapshot-build
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
 
     # chromedriver
     - *step-electron-chromedriver-build
@@ -317,27 +318,17 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
         path: src/out/native_mksnapshot/native_mksnapshot.zip
         destination: native_mksnapshot
 
-steps-mksnapshot-build: &steps-mksnapshot-build
-  steps:
-    - attach_workspace:
-        at: .
-    - *step-depot-tools-add-to-path
-    - *step-setup-env-for-build
+step-mksnapshot-build: &step-mksnapshot-build
+  run:
+    name: mksnapshot build
+      command: |
+        cd src
+        ninja -C out/Default electron:electron_mksnapshot_zip
 
-    - run:
-        name: mksnapshot GN gen
-        command: |
-          cd src
-          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-    - run:
-        name: native mksnapshot (arm/arm64) build
-        command: |
-          cd src
-          ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
-          cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
-    - store_artifacts:
-        path: src/out/native_mksnapshot/native_mksnapshot.zip
-        destination: native_mksnapshot
+step-mksnapshot-store: &step-mksnapshot-store
+  store_artifacts:
+    path: src/out/Default/mksnapshot.zip
+    destination: mksnapshot
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -451,6 +442,7 @@ steps-build-mac: &steps-build-mac
 
     # mksnapshot
     - *step-mksnapshot-build
+    - *step-mksnapshot-store
 
     # chromedriver
     - *step-electron-chromedriver-build
