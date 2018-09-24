@@ -9,14 +9,13 @@ RUN chmod a+rwx /tmp
 
 # Install Linux packages
 ADD build/install-build-deps.sh /setup/install-build-deps.sh
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    curl \
     libnotify-bin \
     locales \
     lsb-release \
     nano \
-    nodejs \
     python-dbusmock \
     python-pip \
     python-setuptools \
@@ -26,6 +25,12 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
   && /setup/install-build-deps.sh --syms --no-prompt --no-chromeos-fonts --no-nacl \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+# crcmod is required by gsutil, which is used for filling the gclient git cache
 RUN pip install -U crcmod
 
 RUN mkdir /tmp/workspace
