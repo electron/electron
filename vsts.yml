@@ -128,7 +128,7 @@ jobs:
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
-      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
+      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: 'Post Slack Notification on Failure'
@@ -136,7 +136,7 @@ jobs:
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
-      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
+      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: 'Post Slack Notification on Success'

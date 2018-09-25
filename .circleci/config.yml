@@ -50,7 +50,7 @@ step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
     name: Send a Slack notification on failure
     command: |
       if [ "$NOTIFY_SLACK" == "true" ]; then
-        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build from *$CIRCLE_BRANCH*."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
@@ -61,7 +61,7 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
     name: Send a Slack notification on success
     command: |
       if [ "$NOTIFY_SLACK" == "true" ]; then
-        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build from *$CIRCLE_BRANCH*."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
