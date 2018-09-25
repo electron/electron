@@ -13,7 +13,8 @@ steps:
     gclient config 
     git clone https://chromium.googlesource.com/chromium/buildtools
     (cd buildtools && git checkout "$buildtools_revision")
-    download_from_google_storage.py --bucket chromium-gn -s buildtools/linux64/gn.sha1
+    export PATH="$PATH:${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
+    download_from_google_storage --bucket chromium-gn -s buildtools/linux64/gn.sha1
 
 - bash: |
     export PATH="$PATH:${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
