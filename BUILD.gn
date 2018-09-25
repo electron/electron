@@ -9,6 +9,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
+import("//v8/snapshot_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -923,6 +924,16 @@ dist_zip("electron_chromedriver_zip") {
   ]
   outputs = [
     "$root_build_dir/chromedriver.zip",
+  ]
+}
+
+dist_zip("electron_mksnapshot_zip") {
+  data_deps = [
+    "//v8:mksnapshot($v8_snapshot_toolchain)",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/mksnapshot.zip",
   ]
 }
 

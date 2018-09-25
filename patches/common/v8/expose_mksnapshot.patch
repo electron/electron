@@ -1,0 +1,13 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 30e9ec34cf..fea543df9c 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -2904,8 +2904,6 @@ if (v8_monolithic) {
+ 
+ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+   v8_executable("mksnapshot") {
+-    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+-
+     sources = [
+       "src/snapshot/mksnapshot.cc",
+     ]

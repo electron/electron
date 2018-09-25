@@ -85,3 +85,7 @@ patches:
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: cherry-pick_70c4340.patch
   description: Node 10.6.0 needs it.
+-
+  author: Shelley Vohr <shelley.vohr@gmail.com>
+  file: expose_mksnapshot.patch
+  description: Needed in order to build mksnapshot on arm.
