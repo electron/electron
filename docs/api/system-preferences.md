@@ -288,7 +288,7 @@ theme, is active, `false` otherwise.
 Returns `String` - Can be `dark`, `light` or `unknown`.
 
 Gets the macOS appearance setting that is currently applied to your application,
-maps to [NSApplication.effectiverAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
+maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
 
 Please note that until Electron is built targeting the 10.14 SDK, your application's
 `effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
