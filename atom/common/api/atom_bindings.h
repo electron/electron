@@ -16,11 +16,19 @@
 #include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
 
+namespace memory_instrumentation {
+class GlobalMemoryDump;
+}  // namespace memory_instrumentation
+
 namespace node {
 class Environment;
 }
 
 namespace atom {
+
+namespace util {
+class Promise;
+}
 
 class AtomBindings {
  public:
@@ -41,6 +49,7 @@ class AtomBindings {
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   mate::Arguments* args);
+  static v8::Local<v8::Promise> GetMemoryFootprint(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,
                                           v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
@@ -52,6 +61,10 @@ class AtomBindings {
 
   static void OnCallNextTick(uv_async_t* handle);
 
+  static void DidReceiveMemoryDump(
+      scoped_refptr<util::Promise> promise,
+      bool success,
+      std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
   uv_async_t call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;

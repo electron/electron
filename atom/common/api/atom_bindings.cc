@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "atom/common/api/locker.h"
 #include "atom/common/application_info.h"
@@ -14,14 +15,19 @@
 #include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
-#include "atom/common/node_includes.h"
+#include "atom/common/promise_util.h"
 #include "base/logging.h"
+#include "base/process/process_handle.h"
 #include "base/process/process_info.h"
 #include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_version.h"
 #include "native_mate/dictionary.h"
+#include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
+#include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
+// Must be the last in the includes list.
+#include "atom/common/node_includes.h"
 
 namespace atom {
 
@@ -61,6 +67,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   dict.SetMethod("getHeapStatistics", &GetHeapStatistics);
   dict.SetMethod("getCreationTime", &GetCreationTime);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
+  dict.SetMethod("getMemoryFootprint", &GetMemoryFootprint);
   dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                            base::Unretained(metrics_.get())));
   dict.SetMethod("getIOCounters", &GetIOCounters);
@@ -206,6 +213,40 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 #endif
 
   return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Promise> AtomBindings::GetMemoryFootprint(v8::Isolate* isolate) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  memory_instrumentation::MemoryInstrumentation::GetInstance()
+      ->RequestGlobalDump(std::vector<std::string>(),
+                          base::AdaptCallbackForRepeating(base::BindOnce(
+                              &AtomBindings::DidReceiveMemoryDump, promise)));
+
+  return promise->GetHandle();
+}
+
+// static
+void AtomBindings::DidReceiveMemoryDump(
+    scoped_refptr<util::Promise> promise,
+    bool success,
+    std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
+  if (success) {
+    bool resolved = false;
+    for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
+         global_dump->process_dumps()) {
+      if (base::GetCurrentProcId() == dump.pid()) {
+        promise->Resolve(dump.os_dump().private_footprint_kb);
+        resolved = true;
+      }
+    }
+    if (!resolved) {
+      promise->RejectWithErrorMessage(
+          R"(Failed to find current process memory details in memory dump)");
+    }
+  } else {
+    promise->RejectWithErrorMessage("Failed to receive memory dump");
+  }
 }
 
 // static
