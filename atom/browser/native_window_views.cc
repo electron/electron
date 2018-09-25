@@ -586,21 +586,18 @@ void NativeWindowViews::SetContentSizeConstraints(
 }
 
 void NativeWindowViews::SetResizable(bool resizable) {
-  bool was_maximizable = was_maximizable_;
   if (resizable != resizable_) {
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
-      if (was_maximizable)
-        SetMaximizable(true);
+      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
       resizable_ = false;
       gfx::Size content_size = GetContentSize();
       SetContentSizeConstraints(
           extensions::SizeConstraints(content_size, content_size));
-      was_maximizable_ = was_maximizable;
     }
   }
 #if defined(OS_WIN)
@@ -608,7 +605,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
-  was_maximizable_ = was_maximizable;
 }
 
 #if defined(OS_WIN)
@@ -661,7 +657,6 @@ void NativeWindowViews::SetMaximizable(bool maximizable) {
   FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
 #endif
   maximizable_ = maximizable;
-  was_maximizable_ = maximizable_;
 }
 
 bool NativeWindowViews::IsMaximizable() {

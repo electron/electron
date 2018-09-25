@@ -280,7 +280,6 @@ class NativeWindowViews : public NativeWindow,
   bool movable_ = true;
   bool resizable_ = true;
   bool maximizable_ = true;
-  bool was_maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
   std::string title_;
