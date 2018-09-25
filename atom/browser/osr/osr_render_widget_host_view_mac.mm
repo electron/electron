@@ -77,17 +77,7 @@ void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
 void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
 
-bool OffScreenRenderWidgetHostView::SupportsSpeech() const {
-  return false;
-}
-
 void OffScreenRenderWidgetHostView::SpeakSelection() {}
-
-bool OffScreenRenderWidgetHostView::IsSpeaking() const {
-  return false;
-}
-
-void OffScreenRenderWidgetHostView::StopSpeaking() {}
 
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
   return browser_compositor_->UpdateNSViewAndDisplay(

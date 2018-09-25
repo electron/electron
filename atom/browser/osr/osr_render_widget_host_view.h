@@ -112,11 +112,8 @@ class OffScreenRenderWidgetHostView
 #if defined(OS_MACOSX)
   void SetActive(bool active) override;
   void ShowDefinitionForSelection() override;
-  bool SupportsSpeech() const override;
   void SpeakSelection() override;
-  bool IsSpeaking() const override;
   bool ShouldContinueToPauseForFrame() override;
-  void StopSpeaking() override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MACOSX)
 
