@@ -463,7 +463,7 @@ patches:
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: fix_xcode_ten.patch
   description: |
-    Backports 4287a0d3, a commit which does the following -
+    Backports 27f9cbd8, a commit which does the following -
       * Removes IDEBundleInjection.framework from egtests.
       * Corrects the DTXcode generation function to handle leading '10'.
       * Fixes a main_application_delegate SDK change
