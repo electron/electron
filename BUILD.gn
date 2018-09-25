@@ -760,18 +760,8 @@ group("electron_tests") {
   testonly = true
 
   deps = [
-    ":blink_unittests",
     ":chromium_browsertests",
     ":chromium_unittests",
-  ]
-}
-
-group("blink_unittests") {
-  testonly = true
-
-  deps = [
-    "//third_party/blink/public:all_blink",
-    "//third_party/blink/public:test_support",
   ]
 }
 
@@ -801,6 +791,8 @@ group("chromium_unittests") {
     "//sql:sql_unittests",
     "//storage:storage_unittests",
     "//third_party/angle/src/tests:angle_unittests",
+    "//third_party/blink/public:all_blink",
+    "//third_party/blink/public:test_support",
     "//third_party/leveldatabase:env_chromium_unittests",
     "//tools/gn:gn_unittests",
     "//ui/base:ui_base_unittests",
