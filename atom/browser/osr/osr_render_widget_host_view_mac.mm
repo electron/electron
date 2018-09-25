@@ -67,6 +67,8 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void DestroyCompositorForShutdown() override {}
 
+  void WasResized() override { view_->render_widget_host()->WasResized(); }
+
  private:
   OffScreenRenderWidgetHostView* view_;
 
