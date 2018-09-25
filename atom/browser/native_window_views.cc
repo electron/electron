@@ -609,7 +609,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
 #endif
   resizable_ = resizable;
   was_maximizable_ = was_maximizable;
-  
 }
 
 #if defined(OS_WIN)
