@@ -726,6 +726,9 @@ workflows:
       - linux-arm-ffmpeg:
            requires:
              - linux-arm-checkout
+      - linux-arm-mksnapshot:
+          requires:
+            - linux-arm-checkout
 
       - linux-arm64-debug:
           requires:
@@ -736,6 +739,9 @@ workflows:
       - linux-arm64-ffmpeg:
            requires:
              - linux-arm64-checkout
+      - linux-arm64-mksnapshot:
+          requires:
+            - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
