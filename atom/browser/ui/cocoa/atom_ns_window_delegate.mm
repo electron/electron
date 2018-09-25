@@ -212,6 +212,7 @@
 
       // Set window style to hide the toolbar, otherwise the toolbar will show
       // in fullscreen mode.
+      [window setTitlebarAppearsTransparent:NO];
       shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
     }
   }
@@ -230,6 +231,7 @@
     // Turn off the style for toolbar.
     if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
       shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
+      [window setTitlebarAppearsTransparent:YES];
     }
   }
 }
