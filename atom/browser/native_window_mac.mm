@@ -380,6 +380,7 @@ bool ScopedDisableResize::disable_resize_ = false;
 
     // Set window style to hide the toolbar, otherwise the toolbar will show in
     // fullscreen mode.
+    [window setTitlebarAppearsTransparent:NO];
     shell_->SetStyleMask(true, NSFullSizeContentViewWindowMask);
   }
 }
@@ -397,6 +398,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   // Turn off the style for toolbar.
   if (base::mac::IsAtLeastOS10_10() &&
       shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+    [window setTitlebarAppearsTransparent:YES];
     shell_->SetStyleMask(false, NSFullSizeContentViewWindowMask);
   }
 }
