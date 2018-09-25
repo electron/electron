@@ -9,7 +9,7 @@ steps:
 
 - bash: |
     chromium_revision="$(grep -A1 chromium_version DEPS | tr -d '\n' | cut -d\' -f4)"
-    buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -D | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
+    buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
     git clone https://chromium.googlesource.com/chromium/buildtools
     (cd buildtools && git checkout "$buildtools_revision")
 
