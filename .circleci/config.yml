@@ -44,6 +44,9 @@ env-arm64: &env-arm64
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
 
+env-asan: &env-asan
+  GN_EXTRA_ARGS: 'is_asan = true'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -473,6 +476,25 @@ steps-build-mac: &steps-build-mac
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
+steps-asan-build: &steps-asan-build
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+
+    - run:
+        name: Build
+        command: |
+          cd src
+          gn gen out/asan --args='import("'$GN_CONFIG'") '" $GN_EXTRA_ARGS"
+          ninja -C out/asan electron
+    - run:
+        name: Run
+        command: |
+          cd src
+          out/asan/electron 2>&1 | tools/valgrind/asan/asan_symbolize.py
+
 filter-only-prs-from-forks: &filter-only-prs-from-forks
   filters:
     branches:
@@ -615,6 +637,14 @@ jobs:
       <<: *env-arm64
     <<: *steps-native-mksnapshot-build
 
+  linux-x64-asan:
+    <<: *machine-linux-medium
+    environment:
+      # Cannot be a debug build.
+      <<: *env-testing-build
+      <<: *env-asan
+    <<: *steps-asan-build
+
   osx-testing:
     <<: *machine-mac
     environment:
@@ -680,68 +710,72 @@ workflows:
   build-linux:
     jobs:
       - linux-checkout
-      - linux-arm-checkout
-      - linux-arm64-checkout
+#      - linux-arm-checkout
+#      - linux-arm64-checkout
 
-      - linux-x64-debug:
+      - linux-x64-asan:
           requires:
             - linux-checkout
-      - linux-x64-testing:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-tests:
-          requires:
-            - linux-x64-testing
-      - linux-x64-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-verify-ffmpeg:
-          requires:
-            - linux-x64-testing
-            - linux-x64-ffmpeg
 
-      - linux-ia32-debug:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-tests:
-          requires:
-            - linux-ia32-testing
-      - linux-ia32-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-verify-ffmpeg:
-          requires:
-            - linux-ia32-testing
-            - linux-ia32-ffmpeg
-
-      - linux-arm-debug:
-          requires:
-            - linux-arm-checkout
-      - linux-arm-testing:
-          requires:
-            - linux-arm-checkout
-      - linux-arm-ffmpeg:
-           requires:
-             - linux-arm-checkout
-      - linux-arm-mksnapshot:
-          requires:
-            - linux-arm-checkout
-
-      - linux-arm64-debug:
-          requires:
-            - linux-arm64-checkout
-      - linux-arm64-testing:
-          requires:
-            - linux-arm64-checkout
-      - linux-arm64-ffmpeg:
-           requires:
-             - linux-arm64-checkout
-      - linux-arm64-mksnapshot:
-          requires:
-            - linux-arm64-checkout
+#      - linux-x64-debug:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing-tests:
+#          requires:
+#            - linux-x64-testing
+#      - linux-x64-ffmpeg:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing-verify-ffmpeg:
+#          requires:
+#            - linux-x64-testing
+#            - linux-x64-ffmpeg
+#
+#      - linux-ia32-debug:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing-tests:
+#          requires:
+#            - linux-ia32-testing
+#      - linux-ia32-ffmpeg:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing-verify-ffmpeg:
+#          requires:
+#            - linux-ia32-testing
+#            - linux-ia32-ffmpeg
+#
+#      - linux-arm-debug:
+#          requires:
+#            - linux-arm-checkout
+#      - linux-arm-testing:
+#          requires:
+#            - linux-arm-checkout
+#      - linux-arm-ffmpeg:
+#           requires:
+#             - linux-arm-checkout
+#      - linux-arm-mksnapshot:
+#          requires:
+#            - linux-arm-checkout
+#
+#      - linux-arm64-debug:
+#          requires:
+#            - linux-arm64-checkout
+#      - linux-arm64-testing:
+#          requires:
+#            - linux-arm64-checkout
+#      - linux-arm64-ffmpeg:
+#           requires:
+#             - linux-arm64-checkout
+#      - linux-arm64-mksnapshot:
+#          requires:
+#            - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
