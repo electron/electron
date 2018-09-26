@@ -4,11 +4,18 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 
+#include <memory>
+#include <string>
+
 #include "atom/browser/ui/views/menu_delegate.h"
 #include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
+
+#if defined(USE_X11)
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
+#endif
 
 #if defined(OS_WIN)
 #include "ui/gfx/color_utils.h"
@@ -130,13 +137,17 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (!theme)
     theme = ui::NativeTheme::GetInstanceForNativeUi();
   if (theme) {
-    background_color_ =
-        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
 #if defined(USE_X11)
+    const std::string menubar_selector = "GtkMenuBar#menubar";
+    background_color_ = libgtkui::GetBgColor(menubar_selector);
+
     enabled_color_ = theme->GetSystemColor(
         ui::NativeTheme::kColorId_EnabledMenuItemForegroundColor);
     disabled_color_ = theme->GetSystemColor(
         ui::NativeTheme::kColorId_DisabledMenuItemForegroundColor);
+#else
+    background_color_ =
+        theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
 #endif
   }
 #if defined(OS_WIN)
