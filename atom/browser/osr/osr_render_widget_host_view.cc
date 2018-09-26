@@ -27,13 +27,16 @@
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/render_process_host.h"
 #include "media/base/video_frame.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
+#include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
@@ -951,32 +954,6 @@ void OffScreenRenderWidgetHostView::SetWantsAnimateOnlyBeginFrames() {
   }
 }
 
-void CopyBitmapTo(const SkBitmap& destination,
-                  const SkBitmap& source,
-                  const gfx::Rect& pos) {
-  char* src = static_cast<char*>(source.getPixels());
-  char* dest = static_cast<char*>(destination.getPixels());
-  int pixelsize = source.bytesPerPixel();
-
-  int width =
-      pos.x() + pos.width() <= destination.width()
-          ? pos.width()
-          : pos.width() - ((pos.x() + pos.width()) - destination.width());
-  int height =
-      pos.y() + pos.height() <= destination.height()
-          ? pos.height()
-          : pos.height() - ((pos.y() + pos.height()) - destination.height());
-
-  if (width > 0 && height > 0) {
-    for (int i = 0; i < height; i++) {
-      memcpy(dest + ((pos.y() + i) * destination.width() + pos.x()) * pixelsize,
-             src + (i * source.width()) * pixelsize, width * pixelsize);
-    }
-  }
-
-  destination.notifyPixelsChanged();
-}
-
 void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
                                             const SkBitmap& bitmap) {
   TRACE_EVENT0("electron", "OffScreenRenderWidgetHostView::OnPaint");
@@ -987,41 +964,30 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
     parent_callback_.Run(damage_rect, bitmap);
   } else {
     gfx::Rect damage(damage_rect);
+    gfx::Canvas canvas(GetViewBounds().size(), 1.0f, false);
 
-    std::vector<gfx::Rect> damages;
-    std::vector<const SkBitmap*> bitmaps;
-    std::vector<SkBitmap> originals;
+    canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(bitmap), 0, 0);
 
     if (popup_host_view_ && popup_bitmap_.get()) {
       gfx::Rect pos = popup_host_view_->popup_position_;
       damage.Union(pos);
-      damages.push_back(pos);
-      bitmaps.push_back(popup_bitmap_.get());
-      originals.push_back(SkBitmapOperations::CreateTiledBitmap(
-          bitmap, pos.x(), pos.y(), pos.width(), pos.height()));
+      canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(
+        *popup_bitmap_.get()), 0, 0, pos.width(), pos.height(),
+        pos.x(), pos.y(), pos.width(), pos.height(), false);
     }
 
     for (auto* proxy_view : proxy_views_) {
       gfx::Rect pos = proxy_view->GetBounds();
       damage.Union(pos);
-      damages.push_back(pos);
-      bitmaps.push_back(proxy_view->GetBitmap());
-      originals.push_back(SkBitmapOperations::CreateTiledBitmap(
-          bitmap, pos.x(), pos.y(), pos.width(), pos.height()));
-    }
-
-    for (size_t i = 0; i < damages.size(); i++) {
-      CopyBitmapTo(bitmap, *(bitmaps[i]), damages[i]);
+      canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(
+        *proxy_view->GetBitmap()), 0, 0, pos.width(), pos.height(),
+        pos.x(), pos.y(), pos.width(), pos.height(), false);
     }
 
     damage.Intersect(GetViewBounds());
     paint_callback_running_ = true;
-    callback_.Run(damage, bitmap);
+    callback_.Run(damage, canvas.GetBitmap());
     paint_callback_running_ = false;
-
-    for (size_t i = 0; i < damages.size(); i++) {
-      CopyBitmapTo(bitmap, originals[i], damages[i]);
-    }
   }
 
   ReleaseResize();
