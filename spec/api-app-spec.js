@@ -808,11 +808,11 @@ describe('app module', () => {
     it('succeeds with basic GPUInfo', (done) => {
       app.getGPUInfo('basic').then((gpuInfo) => {
         // Devices information is always present in the available info
-        const activeDevice = gpuInfo.gpuDevice.find((device) => {
-          return device.active === true
-        })
-        expect(activeDevice).to.be.an('object')
-        expect(activeDevice)
+        expect(gpuInfo.gpuDevice).to.be.an('array')
+        expect(gpuInfo.gpuDevice.length).to.be.greaterThan(0)
+        const device = gpuInfo.gpuDevice[0];
+        expect(device).to.be.an('object')
+        expect(device)
           .to.have.property('deviceId')
           .that.is.a('number')
           .not.lessThan(0)
