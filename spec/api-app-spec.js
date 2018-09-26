@@ -811,7 +811,7 @@ describe('app module', () => {
         // Devices information is always present in the available info
         expect(gpuInfo.gpuDevice).to.be.an('array')
         expect(gpuInfo.gpuDevice.length).to.be.greaterThan(0)
-        const device = gpuInfo.gpuDevice[0];
+        const device = gpuInfo.gpuDevice[0]
         expect(device).to.be.an('object')
         expect(device)
           .to.have.property('deviceId')
