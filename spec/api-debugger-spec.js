@@ -111,7 +111,7 @@ describe('debugger module', () => {
       }
 
       const callback = (err, res) => {
-        expect(err.message).to.be.undefined()
+        expect(err).to.be.null()
         expect(res.wasThrown).to.be.undefined()
         expect(res.result.value).to.equal(6)
 
@@ -131,7 +131,7 @@ describe('debugger module', () => {
         return done(`unexpected error : ${err}`)
       }
       const callback = (err, res) => {
-        expect(err.message).to.be.undefined()
+        expect(err).to.be.null()
         expect(res.wasThrown).to.be.undefined()
         expect(res.result.value).to.equal(6)
         w.webContents.debugger.detach()
@@ -178,6 +178,7 @@ describe('debugger module', () => {
       }
 
       w.webContents.debugger.sendCommand('Test', err => {
+        expect(err).to.not.be.null()
         expect(err.message).to.equal("'Test' wasn't found")
         w.webContents.debugger.detach()
         done()
