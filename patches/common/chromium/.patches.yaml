@@ -42,7 +42,6 @@ patches:
 
     These files have debug checks explicitly commented out:
 
-      base/memory/weak_ptr.cc
       base/process/kill_win.cc
       components/viz/service/display/program_binding.h
       content/browser/frame_host/navigation_controller_impl.cc

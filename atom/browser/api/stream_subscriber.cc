@@ -91,7 +91,8 @@ void StreamSubscriber::OnEnd(mate::Arguments* args) {
 void StreamSubscriber::OnError(mate::Arguments* args) {
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&atom::URLRequestStreamJob::OnError, url_job_));
+      base::Bind(&atom::URLRequestStreamJob::OnError, url_job_,
+                 net::ERR_FAILED));
 }
 
 void StreamSubscriber::RemoveAllListeners() {

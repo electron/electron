@@ -15,16 +15,17 @@
 
 namespace atom {
 
-class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
+class URLRequestBufferJob : public JsAsker, public net::URLRequestSimpleJob {
  public:
   URLRequestBufferJob(net::URLRequest*, net::NetworkDelegate*);
   ~URLRequestBufferJob() override;
 
-  // JsAsker:
-  void StartAsync(std::unique_ptr<base::Value> options) override;
+  void StartAsync(std::unique_ptr<base::Value> options, int error);
 
   // URLRequestJob:
+  void Start() override;
   void GetResponseInfo(net::HttpResponseInfo* info) override;
+  void Kill() override;
 
   // URLRequestSimpleJob:
   int GetRefCountedData(std::string* mime_type,
@@ -37,6 +38,8 @@ class URLRequestBufferJob : public JsAsker<net::URLRequestSimpleJob> {
   std::string charset_;
   scoped_refptr<base::RefCountedBytes> data_;
   net::HttpStatusCode status_code_;
+
+  base::WeakPtrFactory<URLRequestBufferJob> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestBufferJob);
 };

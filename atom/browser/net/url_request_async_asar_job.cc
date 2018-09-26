@@ -6,19 +6,70 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/common/atom_constants.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_scheduler/post_task.h"
+#include "content/public/browser/browser_thread.h"
 
 namespace atom {
+
+namespace {
+
+void BeforeStartInUI(base::WeakPtr<URLRequestAsyncAsarJob> job,
+                     mate::Arguments* args) {
+  v8::Local<v8::Value> value;
+  int error = net::OK;
+  std::unique_ptr<base::Value> request_options = nullptr;
+
+  if (args->GetNext(&value)) {
+    V8ValueConverter converter;
+    v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
+    request_options.reset(converter.FromV8Value(value, context));
+  }
+
+  if (request_options) {
+    JsAsker::IsErrorOptions(request_options.get(), &error);
+  } else {
+    error = net::ERR_NOT_IMPLEMENTED;
+  }
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&URLRequestAsyncAsarJob::StartAsync, job,
+                     std::move(request_options), error));
+}
+
+}  // namespace
 
 URLRequestAsyncAsarJob::URLRequestAsyncAsarJob(
     net::URLRequest* request,
     net::NetworkDelegate* network_delegate)
-    : JsAsker<asar::URLRequestAsarJob>(request, network_delegate) {}
+    : asar::URLRequestAsarJob(request, network_delegate), weak_factory_(this) {}
 
-void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
+URLRequestAsyncAsarJob::~URLRequestAsyncAsarJob() = default;
+
+void URLRequestAsyncAsarJob::Start() {
+  auto request_details = std::make_unique<base::DictionaryValue>();
+  FillRequestDetails(request_details.get(), request());
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
+                     handler(), std::move(request_details),
+                     base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
+}
+
+void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
+                                        int error) {
+  if (error != net::OK) {
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
+    return;
+  }
+
   std::string file_path;
   if (options->is_dict()) {
     auto* path_value =
@@ -44,6 +95,11 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options) {
 #endif
     asar::URLRequestAsarJob::Start();
   }
+}
+
+void URLRequestAsyncAsarJob::Kill() {
+  weak_factory_.InvalidateWeakPtrs();
+  URLRequestAsarJob::Kill();
 }
 
 void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {

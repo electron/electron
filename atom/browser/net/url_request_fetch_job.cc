@@ -7,12 +7,16 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/common/native_mate_converters/net_converter.h"
+#include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/guid.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
@@ -76,43 +80,85 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
   DISALLOW_COPY_AND_ASSIGN(ResponsePiper);
 };
 
+void BeforeStartInUI(base::WeakPtr<URLRequestFetchJob> job,
+                     mate::Arguments* args) {
+  // Pass whatever user passed to the actaul request job.
+  v8::Local<v8::Value> value;
+  mate::Dictionary options;
+  if (!args->GetNext(&value) ||
+      !mate::ConvertFromV8(args->isolate(), value, &options)) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestFetchJob::OnError, job,
+                       net::ERR_NOT_IMPLEMENTED));
+    return;
+  }
+
+  scoped_refptr<net::URLRequestContextGetter> url_request_context_getter;
+  scoped_refptr<AtomBrowserContext> custom_browser_context;
+  // When |session| is set to |null| we use a new request context for fetch
+  // job.
+  if (options.Get("session", &value)) {
+    if (value->IsNull()) {
+      // We have to create the URLRequestContextGetter on UI thread.
+      custom_browser_context =
+          AtomBrowserContext::From(base::GenerateGUID(), true);
+      url_request_context_getter = custom_browser_context->GetRequestContext();
+    } else {
+      mate::Handle<api::Session> session;
+      if (mate::ConvertFromV8(args->isolate(), value, &session) &&
+          !session.IsEmpty()) {
+        AtomBrowserContext* browser_context = session->browser_context();
+        url_request_context_getter = browser_context->GetRequestContext();
+      }
+    }
+  }
+
+  V8ValueConverter converter;
+  v8::Local<v8::Context> context = args->isolate()->GetCurrentContext();
+  std::unique_ptr<base::Value> request_options(
+      converter.FromV8Value(value, context));
+
+  int error = net::OK;
+  if (!request_options || !request_options->is_dict())
+    error = net::ERR_NOT_IMPLEMENTED;
+
+  JsAsker::IsErrorOptions(request_options.get(), &error);
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&URLRequestFetchJob::StartAsync, job,
+                     base::RetainedRef(url_request_context_getter),
+                     base::RetainedRef(custom_browser_context),
+                     std::move(request_options), error));
+}
+
 }  // namespace
 
 URLRequestFetchJob::URLRequestFetchJob(net::URLRequest* request,
                                        net::NetworkDelegate* network_delegate)
-    : JsAsker<net::URLRequestJob>(request, network_delegate) {}
+    : net::URLRequestJob(request, network_delegate), weak_factory_(this) {}
 
 URLRequestFetchJob::~URLRequestFetchJob() = default;
 
-void URLRequestFetchJob::BeforeStartInUI(v8::Isolate* isolate,
-                                         v8::Local<v8::Value> value) {
-  mate::Dictionary options;
-  if (!mate::ConvertFromV8(isolate, value, &options))
-    return;
-
-  // When |session| is set to |null| we use a new request context for fetch job.
-  v8::Local<v8::Value> val;
-  if (options.Get("session", &val)) {
-    if (val->IsNull()) {
-      // We have to create the URLRequestContextGetter on UI thread.
-      custom_browser_context_ =
-          AtomBrowserContext::From(base::GenerateGUID(), true);
-      url_request_context_getter_ =
-          custom_browser_context_->GetRequestContext();
-    } else {
-      mate::Handle<api::Session> session;
-      if (mate::ConvertFromV8(isolate, val, &session) && !session.IsEmpty()) {
-        AtomBrowserContext* browser_context = session->browser_context();
-        url_request_context_getter_ = browser_context->GetRequestContext();
-      }
-    }
-  }
+void URLRequestFetchJob::Start() {
+  auto request_details = std::make_unique<base::DictionaryValue>();
+  FillRequestDetails(request_details.get(), request());
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
+                     handler(), std::move(request_details),
+                     base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
 }
 
-void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (!options->is_dict()) {
-    NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                           net::ERR_NOT_IMPLEMENTED));
+void URLRequestFetchJob::StartAsync(
+    scoped_refptr<net::URLRequestContextGetter> url_request_context_getter,
+    scoped_refptr<AtomBrowserContext> browser_context,
+    std::unique_ptr<base::Value> options,
+    int error) {
+  if (error != net::OK) {
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
     return;
   }
 
@@ -144,8 +190,8 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
   fetcher_->SaveResponseWithWriter(base::WrapUnique(new ResponsePiper(this)));
 
   // A request context getter is passed by the user.
-  if (url_request_context_getter_)
-    fetcher_->SetRequestContext(url_request_context_getter_.get());
+  if (url_request_context_getter)
+    fetcher_->SetRequestContext(url_request_context_getter.get());
   else
     fetcher_->SetRequestContext(request_context_getter());
 
@@ -168,9 +214,13 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
       request()->extra_request_headers().ToString());
 
   fetcher_->Start();
-  // URLFetcher has a refernce to the context, which
-  // will be cleared when the request is destroyed.
-  url_request_context_getter_ = nullptr;
+
+  if (browser_context)
+    custom_browser_context_ = browser_context;
+}
+
+void URLRequestFetchJob::OnError(int error) {
+  NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
@@ -201,7 +251,8 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
 }
 
 void URLRequestFetchJob::Kill() {
-  JsAsker<URLRequestJob>::Kill();
+  weak_factory_.InvalidateWeakPtrs();
+  net::URLRequestJob::Kill();
   fetcher_.reset();
   custom_browser_context_ = nullptr;
 }
