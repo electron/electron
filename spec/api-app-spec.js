@@ -804,10 +804,9 @@ describe('app module', () => {
     })
   })
 
-  describe.only('getGPUInfo() API', () => {
+  describe('getGPUInfo() API', () => {
     it('succeeds with basic GPUInfo', (done) => {
       app.getGPUInfo('basic').then((gpuInfo) => {
-        console.log(gpuInfo)
         // Devices information is always present in the available info
         expect(gpuInfo.gpuDevice).to.be.an('array')
         expect(gpuInfo.gpuDevice.length).to.be.greaterThan(0)
@@ -824,8 +823,7 @@ describe('app module', () => {
     it('succeeds with complete GPUInfo', (done) => {
       app.getGPUInfo('complete').then((completeInfo) => {
         // Driver version is present in the complete info
-        console.error(completeInfo)
-        expect(completeInfo.auxAttributes.driverVersion).to.be.a('string').that.has.length.greaterThan(0)
+        expect(completeInfo.auxAttributes.glVersion).to.be.a('string').that.has.length.greaterThan(0)
         done()
       })
     })
