@@ -9,6 +9,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/common/view_messages.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+#include "ui/display/screen.h"
 
 namespace {
 
