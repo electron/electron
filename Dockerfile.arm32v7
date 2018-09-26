@@ -1,4 +1,4 @@
-FROM arm64v8/ubuntu:16.04
+FROM arm32v7/ubuntu:16.04
 
 RUN groupadd --gid 1000 builduser \
   && useradd --uid 1000 --gid builduser --shell /bin/bash --create-home builduser
@@ -6,8 +6,6 @@ RUN groupadd --gid 1000 builduser \
 # Set up TEMP directory
 ENV TEMP=/tmp
 RUN chmod a+rwx /tmp
-
-RUN dpkg --add-architecture armhf
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  bison \
@@ -18,7 +16,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  git \
  libasound2 \
  libasound2-dev \
- libc6:armhf \
  libcap-dev \
  libcups2-dev \
  libdbus-1-dev \
@@ -32,7 +29,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  libnotify-bin \
  libnss3 \
  libnss3-dev \
- libstdc++6:armhf \
  libxss1 \
  libxtst-dev \
  libxtst6 \

@@ -182,6 +182,11 @@ step-nodejs-headers-build: &step-nodejs-headers-build
       cd src
       ninja -C out/Default third_party/electron_node:headers
 
+step-nodejs-headers-store: &step-nodejs-headers-store
+  store_artifacts:
+    path: src/out/Default/gen/node_headers.tar.gz
+    destination: node_headers.tar.gz
+
 step-electron-publish: &step-electron-publish
   run:
     name: Publish Electron Dist
@@ -314,6 +319,17 @@ step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
     path: src/out/native_mksnapshot/mksnapshot.zip
     destination: native_mksnapshot.zip
 
+step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
+  run:
+    name: Trigger an arm test on VSTS if applicable
+    command: |
+      cd src
+      # Only run for non-fork prs
+      if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
+        #Trigger VSTS job, passing along CircleCI job number and branch to build
+        echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"
+        node electron/script/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
+      fi
 # Lists of steps.
 steps-checkout: &steps-checkout
   steps:
@@ -387,11 +403,15 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     # Node.js headers
     - *step-nodejs-headers-build
+    - *step-nodejs-headers-store
 
     - *step-show-sccache-stats
 
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
+
+    # Trigger tests on arm hardware if needed
+    - *step-maybe-trigger-arm-test
 
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
@@ -426,6 +446,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Node.js headers
     - *step-nodejs-headers-build
+    - *step-nodejs-headers-store
 
     # ffmpeg
     - *step-ffmpeg-gn-gen
@@ -700,6 +721,7 @@ jobs:
       <<: *env-arm
       <<: *env-testing-build
       <<: *env-enable-sccache
+      TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
   linux-arm-ffmpeg:
@@ -746,6 +768,7 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
       <<: *env-enable-sccache
+      TRIGGER_ARM_TEST: true
     <<: *steps-electron-build-for-tests
 
   linux-arm64-ffmpeg:
