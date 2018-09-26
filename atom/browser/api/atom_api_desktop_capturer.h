@@ -35,11 +35,6 @@ class DesktopCapturer : public mate::EventEmitter<DesktopCapturer>,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size);
 
-  std::unique_ptr<DesktopMediaList> media_list_;
-#if defined(OS_WIN)
-  bool using_directx_capturer_ = false;
-#endif  // defined(OS_WIN)
-
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
@@ -53,7 +48,10 @@ class DesktopCapturer : public mate::EventEmitter<DesktopCapturer>,
   bool OnRefreshFinished() override;
 
  private:
-  scoped_refptr<base::SequencedTaskRunner> capture_thread_;
+  std::unique_ptr<DesktopMediaList> media_list_;
+#if defined(OS_WIN)
+  bool using_directx_capturer_ = false;
+#endif  // defined(OS_WIN)
 
   DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
