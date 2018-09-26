@@ -9,6 +9,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
+import("//v8/snapshot_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -531,7 +532,7 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
-    framework_contents = [ "Resources" ]
+    framework_contents = [ "Resources", "Libraries" ]
     public_deps = [
       ":electron_lib",
     ]
@@ -705,7 +706,8 @@ if (is_mac) {
     }
 
     if (!is_mac) {
-      data += [ "$root_out_dir/resources" ]
+      data += [ "$root_out_dir/resources/default_app.asar" ]
+      data += [ "$root_out_dir/resources/electron.asar" ]
     }
 
     public_deps = [
@@ -912,6 +914,26 @@ dist_zip("electron_ffmpeg_zip") {
   ]
   outputs = [
     "$root_build_dir/ffmpeg.zip",
+  ]
+}
+
+dist_zip("electron_chromedriver_zip") {
+  data_deps = [
+    "//chrome/test/chromedriver",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/chromedriver.zip",
+  ]
+}
+
+dist_zip("electron_mksnapshot_zip") {
+  data_deps = [
+    "//v8:mksnapshot($v8_snapshot_toolchain)",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/mksnapshot.zip",
   ]
 }
 

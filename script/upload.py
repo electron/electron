@@ -39,9 +39,6 @@ def main():
     utcnow = datetime.datetime.utcnow()
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
-  if not dist_newer_than_head():
-    run_python_script('create-dist.py')
-
   build_version = get_electron_build_version()
   if not ELECTRON_VERSION.startswith(build_version):
     error = 'Tag name ({0}) should match build version ({1})\n'.format(
@@ -65,8 +62,12 @@ def main():
   if get_target_arch() != 'mips64el':
     upload_electron(release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
   if PLATFORM == 'darwin':
-    upload_electron(release, os.path.join(DIST_DIR, 'electron-api.json'), args)
-    upload_electron(release, os.path.join(DIST_DIR, 'electron.d.ts'), args)
+    api_path = os.path.join(SOURCE_ROOT, 'electron-api.json')
+    upload_electron(release, api_path, args)
+
+    ts_defs_path = os.path.join(SOURCE_ROOT, 'electron.d.ts')
+    upload_electron(release, ts_defs_path, args)
+    
     upload_electron(release, os.path.join(DIST_DIR, DSYM_NAME), args)
   elif PLATFORM == 'win32':
     upload_electron(release, os.path.join(DIST_DIR, PDB_NAME), args)
@@ -133,20 +134,6 @@ def get_electron_build_version():
     electron = os.path.join(SOURCE_ROOT, 'out', 'R', PROJECT_NAME)
 
   return subprocess.check_output([electron, '--version']).strip()
-
-
-def dist_newer_than_head():
-  with scoped_cwd(SOURCE_ROOT):
-    try:
-      head_time = subprocess.check_output(['git', 'log', '--pretty=format:%at',
-                                           '-n', '1']).strip()
-      dist_time = os.path.getmtime(os.path.join(DIST_DIR, DIST_NAME))
-    except OSError as e:
-      if e.errno != errno.ENOENT:
-        raise
-      return False
-
-  return dist_time > int(head_time)
 
 
 def upload_electron(release, file_path, args):

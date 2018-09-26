@@ -212,6 +212,7 @@
 
       // Set window style to hide the toolbar, otherwise the toolbar will show
       // in fullscreen mode.
+      [window setTitlebarAppearsTransparent:NO];
       shell_->SetStyleMask(true, NSWindowStyleMaskFullSizeContentView);
     }
   }

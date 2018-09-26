@@ -1,6 +1,7 @@
 jobs:
 - job: Build_Electron_via_GN
-  timeoutInMinutes: 180
+  displayName: Build Electron via GN
+  timeoutInMinutes: 120
   steps:
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
@@ -52,41 +53,82 @@ jobs:
     displayName: Ninja build app
 
   - bash: |
+      cd src
+      ninja -C out/Default third_party/electron_node:headers
+    displayName: Build Node.js headers for testing
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
+      cd src
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      ninja -C out/ffmpeg third_party/ffmpeg
+    displayName: Non proprietary ffmpeg build
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
       "$SCCACHE_BINARY" --stop-server
     displayName: Check sccache stats after build
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
+      if pgrep Electron; then
+        killall Electron
+      fi
+    displayName: Make sure Electron isn't running from previous tests
+
+  - bash: |
       cd src
-      # Make sure there aren't any Electron processes left running from previous tests
-      killall Electron
+      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+    displayName: Verify non proprietary ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 5
+
+  - bash: |
+      cd src
       ninja -C out/Default third_party/electron_node:headers
       export ELECTRON_OUT_DIR=Default
       (cd electron && npm run test -- --ci --enable-logging)
-    displayName: Test
+    displayName: Run Electron test suite
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 10
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_dist_zip
     displayName: Build dist zip
 
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_chromedriver_zip
+    displayName: Build chromedriver and zip
+
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_mksnapshot_zip
+    displayName: Build mksnapshot and zip
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
       testResultsFiles: '*.xml'
       searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
-    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'), eq(variables['RUN_TESTS'], '1'))
+    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
 
   - task: PublishBuildArtifacts@1
-    displayName: Publish Build Artifacts
+    displayName: Publish Build Artifacts (application zip)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
-      ArtifactName: dist.zip
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (chromedriver.zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
+      ArtifactName: Default
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
-      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
+      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: 'Post Slack Notification on Failure'
@@ -94,7 +136,7 @@ jobs:
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
-      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build."
+      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: 'Post Slack Notification on Success'

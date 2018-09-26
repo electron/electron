@@ -1,7 +1,7 @@
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electronbuilds/electron:0.0.8
+    - image: electronbuilds/electron:0.0.9
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -50,7 +50,7 @@ step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
     name: Send a Slack notification on failure
     command: |
       if [ "$NOTIFY_SLACK" == "true" ]; then
-        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        export MESSAGE="Build failed for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build from *$CIRCLE_BRANCH*."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
@@ -61,7 +61,7 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
     name: Send a Slack notification on success
     command: |
       if [ "$NOTIFY_SLACK" == "true" ]; then
-        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build."
+        export MESSAGE="Build succeeded for *<$CIRCLE_BUILD_URL|$CIRCLE_JOB>* nightly build from *$CIRCLE_BRANCH*."
         curl -g -H "Content-Type: application/json" -X POST \
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
@@ -140,19 +140,24 @@ step-electron-dist-store: &step-electron-dist-store
     path: src/out/Default/dist.zip
     destination: dist.zip
 
+step-electron-chromedriver-build: &step-electron-chromedriver-build
+  run:
+    name: Build chromedriver.zip
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_chromedriver_zip
+
+step-electron-chromedriver-store: &step-electron-chromedriver-store
+  store_artifacts:
+    path: src/out/Default/chromedriver.zip
+    destination: chromedriver.zip
+
 step-nodejs-headers-build: &step-nodejs-headers-build
   run:
     name: Build Node.js headers
     command: |
       cd src
       ninja -C out/Default third_party/electron_node:headers
-
-step-native-tests-build: &step-native-tests-build
-  run:
-    name: Native tests build
-    command: |
-      cd src
-      ninja -C out/Default electron:electron_tests
 
 step-persist-data-for-tests: &step-persist-data-for-tests
   persist_to_workspace:
@@ -208,6 +213,18 @@ step-show-sccache-stats: &step-show-sccache-stats
   run:
     name: Check sccache stats after build
     command: $SCCACHE_PATH -s
+
+step-mksnapshot-build: &step-mksnapshot-build
+  run:
+    name: mksnapshot build
+    command: |
+      cd src
+      ninja -C out/Default electron:electron_mksnapshot_zip
+
+step-mksnapshot-store: &step-mksnapshot-store
+  store_artifacts:
+    path: src/out/Default/mksnapshot.zip
+    destination: mksnapshot.zip
 
 # Lists of steps.
 steps-checkout: &steps-checkout
@@ -272,6 +289,14 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-dist-build
     - *step-electron-dist-store
 
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
+
     # Node.js headers
     - *step-nodejs-headers-build
 
@@ -283,7 +308,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
 
-steps-mksnapshot-build: &steps-mksnapshot-build
+steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
     - attach_workspace:
         at: .
@@ -299,10 +324,11 @@ steps-mksnapshot-build: &steps-mksnapshot-build
         name: native mksnapshot (arm/arm64) build
         command: |
           cd src
-          ninja -C out/native_mksnapshot v8:mksnapshot
+          ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
+          cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
     - store_artifacts:
-        path: src/out/native_mksnapshot/mksnapshot
-        destination: mksnapshot
+        path: src/out/native_mksnapshot/native_mksnapshot.zip
+        destination: native_mksnapshot.zip
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -330,9 +356,34 @@ steps-native-tests: &steps-native-tests
     - *step-setup-env-for-build
 
     - *step-electron-gn-gen
-    - *step-native-tests-build
-
-    # TODO(alexeykuzmin): Run the tests. It can be extremely parallelized!
+    - run:
+        name: List native tests
+        command: |
+          cd src
+          python electron/script/native-tests.py list \
+            --config electron/script/tests.yml > testslist.txt
+    # TODO(alexeykuzmin): Build only a subset of all tests.
+    - run:
+        name: Build native tests
+        command: |
+          cd src
+          ninja -C out/Default electron:electron_tests
+    # TODO(alexeykuzmin): Run only a subset of all tests.
+    # --binary $(circleci tests split testslist.txt)
+    - run:
+        name: Run native tests
+        command: |
+          cd src
+          mkdir tests_results
+          python electron/script/native-tests.py run \
+            --config electron/script/tests.yml \
+            --tests-dir out/Default \
+            --output-dir tests_results
+    - store_artifacts:
+        path: src/tests_results
+        destination: results
+    - store_test_results:
+        path: src/tests_results
 
 steps-verify-ffmpeg: &steps-verify-ffmpeg
   steps:
@@ -389,6 +440,14 @@ steps-build-mac: &steps-build-mac
     - *step-electron-dist-build
     - *step-electron-dist-store
 
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
+
     # ffmpeg
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
@@ -399,8 +458,7 @@ steps-build-mac: &steps-build-mac
     # It would be better to verify ffmpeg as a part of a test job,
     # but it requires `gn` to run, and it's complicated
     # to store all gn's dependencies and configs.
-    # FIXME(alexeykuzmin): Enable the next step back.
-    # - *step-verify-ffmpeg
+    - *step-verify-ffmpeg
 
     # Node.js headers for tests
     - *step-nodejs-headers-build
@@ -522,7 +580,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm
-    <<: *steps-mksnapshot-build
+    <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
     <<: *machine-linux-2xlarge
@@ -555,7 +613,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm64
-    <<: *steps-mksnapshot-build
+    <<: *steps-native-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac
@@ -571,11 +629,13 @@ jobs:
     <<: *steps-build-mac
 
   # Layer 3: Tests.
-  linux-x64-native-tests-fyi:
+  linux-x64-native-tests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
     <<: *steps-native-tests
+    # TODO(alexeykuzmin): Use parallelism.
+    # parallelism: 4  # https://xkcd.com/221/
 
   linux-x64-testing-tests:
     <<: *machine-linux-medium
@@ -623,10 +683,6 @@ workflows:
       - linux-arm-checkout
       - linux-arm64-checkout
 
-      - linux-x64-native-tests-fyi:
-          requires:
-            - linux-checkout
-
       - linux-x64-debug:
           requires:
             - linux-checkout
@@ -670,6 +726,9 @@ workflows:
       - linux-arm-ffmpeg:
            requires:
              - linux-arm-checkout
+      - linux-arm-mksnapshot:
+          requires:
+            - linux-arm-checkout
 
       - linux-arm64-debug:
           requires:
@@ -680,6 +739,9 @@ workflows:
       - linux-arm64-ffmpeg:
            requires:
              - linux-arm64-checkout
+      - linux-arm64-mksnapshot:
+          requires:
+            - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
@@ -705,11 +767,15 @@ workflows:
             branches:
               only:
                 - master
-                - chromium-upgrade/*
+                - /chromium\-upgrade\/[0-9]+/
     jobs:
       - linux-checkout
       - linux-arm-checkout
       - linux-arm64-checkout
+
+      - linux-x64-native-tests:
+          requires:
+            - linux-checkout
 
       - linux-x64-release:
           requires:
