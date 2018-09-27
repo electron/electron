@@ -27,6 +27,14 @@ env-release-build: &env-release-build
   NOTIFY_SLACK: true
   ELECTRON_RELEASE: 1
 
+env-browsertests: &env-browsertests
+  BUILD_TARGET: electron:chromium_browsertests
+  TESTS_CONFIG: src/electron/script/browsertests.yml
+
+env-unittests: &env-unittests
+  BUILD_TARGET: electron:chromium_unittests
+  TESTS_CONFIG: src/electron/script/unittests.yml
+
 # Build targets options.
 env-ia32: &env-ia32
   GN_EXTRA_ARGS: 'target_cpu = "x86"'
@@ -207,6 +215,7 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
     name: Setup for headless testing
     command: |
       if [ "`uname`" != "Darwin" ]; then
+        echo 'export DISPLAY=":99.0"' >> $BASH_ENV
         sh -e /etc/init.d/xvfb start
       fi
 
@@ -368,36 +377,39 @@ steps-native-tests: &steps-native-tests
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
-
     - *step-electron-gn-gen
+
+    # This list is used to split tests across executors.
     - run:
-        name: List native tests
+        name: List tests
         command: |
-          cd src
-          python electron/script/native-tests.py list \
-            --config electron/script/tests.yml > testslist.txt
+          python src/electron/script/native-tests.py list \
+            --config $TESTS_CONFIG > tests_list.txt
+
     # TODO(alexeykuzmin): Build only a subset of all tests.
     - run:
-        name: Build native tests
+        name: Build tests
         command: |
           cd src
-          ninja -C out/Default electron:electron_tests
-    # TODO(alexeykuzmin): Run only a subset of all tests.
-    # --binary $(circleci tests split testslist.txt)
+          ninja -C out/Default $BUILD_TARGET
+    - *step-show-sccache-stats
+
+    - *step-setup-linux-for-headless-testing
     - run:
-        name: Run native tests
+        name: Run tests
         command: |
-          cd src
-          mkdir tests_results
-          python electron/script/native-tests.py run \
-            --config electron/script/tests.yml \
-            --tests-dir out/Default \
-            --output-dir tests_results
+          mkdir test_results
+          python src/electron/script/native-tests.py run \
+            --config $TESTS_CONFIG \
+            --tests-dir src/out/Default \
+            --output-dir test_results \
+            --binary $(circleci tests split tests_list.txt)
+
     - store_artifacts:
-        path: src/tests_results
-        destination: results
+        path: test_results
+        destination: test_results  # Put it in the root folder.
     - store_test_results:
-        path: src/tests_results
+        path: test_results
 
 steps-verify-ffmpeg: &steps-verify-ffmpeg
   steps:
@@ -421,7 +433,6 @@ steps-tests: &steps-tests
     - run:
         name: Run Electron tests
         environment:
-          DISPLAY: ':99.0'
           MOCHA_REPORTER: mocha-multi-reporters
           MOCHA_FILE: junit/test-results.xml
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
@@ -643,13 +654,21 @@ jobs:
     <<: *steps-build-mac
 
   # Layer 3: Tests.
-  linux-x64-native-tests:
+  linux-x64-unittests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
+      <<: *env-unittests
     <<: *steps-native-tests
-    # TODO(alexeykuzmin): Use parallelism.
-    # parallelism: 4  # https://xkcd.com/221/
+#    TODO(alexeykuzmin): Use parallelism.
+#    parallelism: 4  # https://xkcd.com/221/
+
+  linux-x64-browsertests:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-testing-build
+      <<: *env-browsertests
+    <<: *steps-native-tests
 
   linux-x64-testing-tests:
     <<: *machine-linux-medium
@@ -787,7 +806,12 @@ workflows:
       - linux-arm-checkout
       - linux-arm64-checkout
 
-      - linux-x64-native-tests:
+# TODO(alexeykuzmin): The only suite there fails to start, so skip
+# the job for now. Fix the "content_browsertests" and enable the job back.
+#      - linux-x64-browsertests:
+#          requires:
+#            - linux-checkout
+      - linux-x64-unittests:
           requires:
             - linux-checkout
 
