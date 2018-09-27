@@ -5,12 +5,11 @@ import shutil
 import subprocess
 import sys
 
-from lib.gn import gn
-from lib.util import rm_rf
+from lib.util import get_electron_branding, rm_rf
 
-
+PROJECT_NAME = get_electron_branding()['project_name']
+PRODUCT_NAME = get_electron_branding()['product_name']
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
 
 def main():
   args = parse_args()
@@ -19,23 +18,18 @@ def main():
   initial_app_path = os.path.join(source_root, args.build_dir)
   app_path = create_app_copy(initial_app_path)
 
-  # Those are the same in the original app and its copy.
-  # So it is ok to get them from the original build dir and use in the copy.
-  product_name = gn(initial_app_path).args().get_string('electron_product_name')
-  project_name = gn(initial_app_path).args().get_string('electron_project_name')
-
   if sys.platform == 'darwin':
-    electron = os.path.join(app_path, 'Contents', 'MacOS', product_name)
+    electron = os.path.join(app_path, 'Contents', 'MacOS', PRODUCT_NAME)
     ffmpeg_name = 'libffmpeg.dylib'
     ffmpeg_app_path = os.path.join(app_path, 'Contents', 'Frameworks',
-                    '{0} Framework.framework'.format(product_name),
+                    '{0} Framework.framework'.format(PRODUCT_NAME),
                     'Libraries')
   elif sys.platform == 'win32':
-    electron = os.path.join(app_path, '{0}.exe'.format(project_name))
+    electron = os.path.join(app_path, '{0}.exe'.format(PROJECT_NAME))
     ffmpeg_app_path = app_path
     ffmpeg_name = 'ffmpeg.dll'
   else:
-    electron = os.path.join(app_path, project_name)
+    electron = os.path.join(app_path, PROJECT_NAME)
     ffmpeg_app_path = app_path
     ffmpeg_name = 'libffmpeg.so'
 
@@ -65,9 +59,7 @@ def create_app_copy(initial_app_path):
                           + '-no-proprietary-codecs')
 
   if sys.platform == 'darwin':
-    product_name = gn(initial_app_path).args().get_string(
-        'electron_product_name')
-    app_name = '{0}.app'.format(product_name)
+    app_name = '{0}.app'.format(PRODUCT_NAME)
     initial_app_path = os.path.join(initial_app_path, app_name)
     app_path = os.path.join(app_path, app_name)
 
