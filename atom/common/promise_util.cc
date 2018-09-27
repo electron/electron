@@ -25,7 +25,7 @@ v8::Maybe<bool> Promise::RejectWithErrorMessage(const std::string& string) {
                             mate::ConvertToV8(isolate(), error));
 }
 
-v8::Local<v8::Object> Promise::GetHandle() const {
+v8::Local<v8::Promise> Promise::GetHandle() const {
   return GetInner()->GetPromise();
 }
 

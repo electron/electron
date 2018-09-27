@@ -14,14 +14,13 @@ namespace atom {
 
 namespace util {
 
-class Promise {
+class Promise : public base::RefCounted<Promise> {
  public:
   explicit Promise(v8::Isolate* isolate);
-  ~Promise();
 
   v8::Isolate* isolate() const { return isolate_; }
 
-  virtual v8::Local<v8::Object> GetHandle() const;
+  virtual v8::Local<v8::Promise> GetHandle() const;
 
   v8::Maybe<bool> Resolve() {
     return GetInner()->Resolve(isolate()->GetCurrentContext(),
@@ -34,13 +33,13 @@ class Promise {
   }
 
   template <typename T>
-  v8::Maybe<bool> Resolve(T* value) {
+  v8::Maybe<bool> Resolve(const T& value) {
     return GetInner()->Resolve(isolate()->GetCurrentContext(),
                                mate::ConvertToV8(isolate(), value));
   }
 
   template <typename T>
-  v8::Maybe<bool> Reject(T* value) {
+  v8::Maybe<bool> Reject(const T& value) {
     return GetInner()->Reject(isolate()->GetCurrentContext(),
                               mate::ConvertToV8(isolate(), value));
   }
@@ -48,6 +47,8 @@ class Promise {
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
 
  protected:
+  virtual ~Promise();
+  friend class base::RefCounted<Promise>;
   v8::Isolate* isolate_;
 
  private:
