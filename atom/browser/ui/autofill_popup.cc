@@ -9,6 +9,7 @@
 #include "atom/browser/native_window_views.h"
 #include "atom/browser/ui/autofill_popup.h"
 #include "atom/common/api/api_messages.h"
+#include "electron/buildflags/buildflags.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
@@ -17,7 +18,7 @@
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/gfx/text_utils.h"
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "atom/browser/osr/osr_view_proxy.h"
 #endif
@@ -135,7 +136,7 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   view_ = new AutofillPopupView(this, parent->GetWidget());
   view_->Show();
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   if (offscreen) {
     auto* rwhv = frame_host->GetView();
     if (embedder_frame_host != nullptr) {

@@ -20,6 +20,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "printing/backend/print_backend.h"
 #include "ui/gfx/image/image.h"
@@ -49,7 +50,7 @@ class WebContentsZoomController;
 class WebViewGuestDelegate;
 class FrameSubscriber;
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
 class OffScreenWebContentsView;
 class OffScreenRenderWidgetHostView;
 #endif
@@ -208,12 +209,14 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
+#if BUILDFLAG(ENABLE_OSR)
   void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
+#endif
   void Invalidate();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
 
@@ -416,7 +419,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif

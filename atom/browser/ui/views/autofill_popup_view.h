@@ -9,17 +9,19 @@
 
 #include "atom/browser/ui/autofill_popup.h"
 
-#if defined(ENABLE_OSR)
-#include "atom/browser/osr/osr_view_proxy.h"
-#endif
 #include "base/optional.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
+#include "electron/buildflags/buildflags.h"
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
+
+#if BUILDFLAG(ENABLE_OSR)
+#include "atom/browser/osr/osr_view_proxy.h"
+#endif
 
 namespace atom {
 
@@ -137,7 +139,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   // The index of the currently selected line
   base::Optional<int> selected_line_;
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   std::unique_ptr<OffscreenViewProxy> view_proxy_;
 #endif
 
