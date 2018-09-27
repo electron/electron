@@ -2,17 +2,13 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//electron/buildflags/buildflags.gni")
+
 # Builds some of the chrome sources that Electron depends
 # on unconditionally.
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
-    "//chrome/browser/media/webrtc/desktop_media_list.h",
-    "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
-    "//chrome/browser/media/webrtc/desktop_media_list_base.h",
-    "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
-    "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
-    "//chrome/browser/media/webrtc/native_desktop_media_list.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
   ]
@@ -22,4 +18,16 @@ source_set("chrome") {
   deps = [
     "//components/security_state/content",
   ]
+
+  if (enable_desktop_capturer) {
+    sources += [
+      "//chrome/browser/media/webrtc/desktop_media_list.h",
+      "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
+      "//chrome/browser/media/webrtc/desktop_media_list_base.h",
+      "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
+      "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
+      "//chrome/browser/media/webrtc/native_desktop_media_list.h",
+    ]
+    deps += [ "//ui/snapshot" ]
+  }
 }
