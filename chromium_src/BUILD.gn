@@ -7,9 +7,19 @@
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/media/webrtc/desktop_media_list.h",
+    "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
+    "//chrome/browser/media/webrtc/desktop_media_list_base.h",
+    "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
+    "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
+    "//chrome/browser/media/webrtc/native_desktop_media_list.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
   ]
-  public_deps = [ "//content/public/browser" ]
-  deps = [ "//components/security_state/content" ]
+  public_deps = [
+    "//content/public/browser",
+  ]
+  deps = [
+    "//components/security_state/content",
+  ]
 }
