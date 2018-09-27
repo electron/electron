@@ -1,7 +1,7 @@
 // For these tests we use a fake DBus daemon to verify powerMonitor module
 // interaction with the system bus. This requires python-dbusmock installed and
 // running (with the DBUS_SYSTEM_BUS_ADDRESS environment variable set).
-// script/test.py will take care of spawning the fake DBus daemon and setting
+// script/spec-runner.js will take care of spawning the fake DBus daemon and setting
 // DBUS_SYSTEM_BUS_ADDRESS when python-dbusmock is installed.
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about

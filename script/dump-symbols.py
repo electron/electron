@@ -5,11 +5,11 @@ import os
 import sys
 
 from lib.config import PLATFORM, enable_verbose_mode, is_verbose_mode
-from lib.util import get_electron_branding, execute, rm_rf
+from lib.util import get_electron_branding, execute, rm_rf, get_out_dir
 
 ELECTRON_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SOURCE_ROOT = os.path.abspath(os.path.dirname(ELECTRON_ROOT))
-RELEASE_PATH = os.path.join('out', 'Default')
+RELEASE_PATH = get_out_dir()
 
 def main():
   args = parse_args()

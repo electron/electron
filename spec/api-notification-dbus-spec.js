@@ -2,7 +2,7 @@
 // with the session bus. This requires python-dbusmock to be installed and
 // running at $DBUS_SESSION_BUS_ADDRESS.
 //
-// script/test.py spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
+// script/spec-runner.js spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
