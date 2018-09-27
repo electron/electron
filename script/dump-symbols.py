@@ -5,8 +5,7 @@ import os
 import sys
 
 from lib.config import PLATFORM, enable_verbose_mode, is_verbose_mode
-from lib.gn import gn
-from lib.util import execute, rm_rf
+from lib.util import get_electron_branding, execute, rm_rf
 
 ELECTRON_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SOURCE_ROOT = os.path.abspath(os.path.dirname(ELECTRON_ROOT))
@@ -19,8 +18,7 @@ def main():
   rm_rf(args.destination)
   source_root = os.path.abspath(args.source_root)
   build_path = os.path.join(source_root, args.build_dir)
-  product_name = gn(build_path).args().get_string('electron_product_name')
-  project_name = gn(build_path).args().get_string('electron_project_name')
+  (project_name, product_name) = get_names_from_branding()
 
   if PLATFORM in ['darwin', 'linux']:
 
@@ -49,6 +47,10 @@ def main():
       os.path.relpath(build_path),
     ]  
     execute([sys.executable, generate_breakpad_symbols] + args)
+
+def get_names_from_branding():
+  variables = get_electron_branding()
+  return (variables['project_name'], variables['product_name'])
 
 def generate_posix_symbols(binary, source_root, build_dir, destination):
   generate_breakpad_symbols = os.path.join(source_root, 'components', 'crash',

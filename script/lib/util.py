@@ -4,6 +4,8 @@ import atexit
 import contextlib
 import datetime
 import errno
+import json
+import os
 import platform
 import re
 import shutil
@@ -14,7 +16,6 @@ import sys
 import tarfile
 import tempfile
 import urllib2
-import os
 import zipfile
 
 from lib.config import is_verbose_mode, PLATFORM
@@ -171,17 +172,17 @@ def execute_stdout(argv, env=None, cwd=None):
   else:
     execute(argv, env, cwd)
 
-def electron_gyp():
-  # FIXME(alexeykuzmin): Use data from //BUILD.gn.
-  # electron.gyp is not used during the build.
+def get_electron_branding():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
-  with open(gyp) as f:
-    obj = eval(f.read());
-    return obj['variables']
+  branding_file_path = os.path.join(SOURCE_ROOT, 'atom', 'app', 'BRANDING.json')
+  with open(branding_file_path) as f:
+    return json.load(f)
 
 def get_electron_version():
-  return 'v' + electron_gyp()['version%']
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  version_file = os.path.join(SOURCE_ROOT, 'VERSION')
+  with open(version_file) as f:
+    return 'v' + f.read().strip()
 
 def boto_path_dirs():
   return [

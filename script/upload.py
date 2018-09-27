@@ -13,15 +13,15 @@ import tempfile
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
-from lib.util import electron_gyp, execute, get_electron_version, \
+from lib.util import get_electron_branding, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put
 
 
 ELECTRON_REPO = 'electron/electron'
 ELECTRON_VERSION = get_electron_version()
 
-PROJECT_NAME = electron_gyp()['project_name%']
-PRODUCT_NAME = electron_gyp()['product_name%']
+PROJECT_NAME = get_electron_branding()['project_name']
+PRODUCT_NAME = get_electron_branding()['product_name']
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
