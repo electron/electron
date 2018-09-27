@@ -77,6 +77,12 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("removeUserDefault", &SystemPreferences::RemoveUserDefault)
       .SetMethod("isSwipeTrackingFromScrollEventsEnabled",
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
+      .SetMethod("getEffectiveAppearance",
+                 &SystemPreferences::GetEffectiveAppearance)
+      .SetMethod("getAppLevelAppearance",
+                 &SystemPreferences::GetAppLevelAppearance)
+      .SetMethod("setAppLevelAppearance",
+                 &SystemPreferences::SetAppLevelAppearance)
 #endif
       .SetMethod("isInvertedColorScheme",
                  &SystemPreferences::IsInvertedColorScheme)

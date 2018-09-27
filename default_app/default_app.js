@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, systemPreferences } = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -10,6 +10,10 @@ app.on('window-all-closed', () => {
 
 exports.load = async (appUrl) => {
   await app.whenReady()
+
+  if (process.platform === 'darwin') {
+    systemPreferences.startAppLevelAppearanceTrackingOS()
+  }
 
   const options = {
     width: 900,
