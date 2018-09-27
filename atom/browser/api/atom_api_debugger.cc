@@ -67,14 +67,17 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       return;
     base::DictionaryValue* error_body = nullptr;
     base::DictionaryValue error;
-    if (dict->GetDictionary("error", &error_body))
+    bool has_error;
+    if ((has_error = dict->GetDictionary("error", &error_body))) {
       error.Swap(error_body);
+    }
 
     base::DictionaryValue* result_body = nullptr;
     base::DictionaryValue result;
     if (dict->GetDictionary("result", &result_body))
       result.Swap(result_body);
-    send_command_callback.Run(error, result);
+    send_command_callback.Run(has_error ? error.Clone() : base::Value(),
+                              result);
   }
 }
 
