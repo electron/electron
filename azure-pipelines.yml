@@ -4,13 +4,9 @@ resources:
     image: electronbuilds/arm64v8:0.0.3
     options: -u=0
 
-queue:
-  container: build-container
-  name: 'Arm64'
-  timeoutInMinutes: 360
-
 jobs:
 - job: Test_Arm64
+  container: arm64-test-container
   displayName: Test Arm64 on Arm64 hardware
   timeoutInMinutes: 120
   steps:
