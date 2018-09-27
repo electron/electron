@@ -141,9 +141,7 @@ class TestsList():
 
   def get_for_current_platform(self):
     all_binaries = self.tests.keys()
-
     supported_binaries = filter(self.__platform_supports, all_binaries)
-
     return supported_binaries
 
   def run(self, binaries, output_dir=None, verbosity=Verbosity.CHATTY):
@@ -304,6 +302,9 @@ class TestBinary():
         print("An error occurred while running '{}':".format(self.binary_path),
             '\n', exception, file=sys.stderr)
       returncode = 1
+
+    # FIXME
+    print(">>> {0} returned {1}".format(self.binary_path, returncode))
 
     return returncode
 
