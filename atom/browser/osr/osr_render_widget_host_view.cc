@@ -964,29 +964,29 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
     parent_callback_.Run(damage_rect, bitmap);
   } else {
     gfx::Rect damage(damage_rect);
-    gfx::Canvas canvas(GetViewBounds().size(), 1.0f, false);
 
-    canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(bitmap), 0, 0);
+    gfx::Size size = GetViewBounds().size();
+    SkBitmap backing;
+    backing.allocN32Pixels(size.width(), size.height(), false);
+    SkCanvas canvas(backing);
+
+    canvas.writePixels(bitmap, 0, 0);
 
     if (popup_host_view_ && popup_bitmap_.get()) {
       gfx::Rect pos = popup_host_view_->popup_position_;
       damage.Union(pos);
-      canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(
-        *popup_bitmap_.get()), 0, 0, pos.width(), pos.height(),
-        pos.x(), pos.y(), pos.width(), pos.height(), false);
+      canvas.writePixels(*popup_bitmap_.get(), pos.x(), pos.y());
     }
 
     for (auto* proxy_view : proxy_views_) {
       gfx::Rect pos = proxy_view->GetBounds();
       damage.Union(pos);
-      canvas.DrawImageInt(gfx::ImageSkia::CreateFrom1xBitmap(
-        *proxy_view->GetBitmap()), 0, 0, pos.width(), pos.height(),
-        pos.x(), pos.y(), pos.width(), pos.height(), false);
+      canvas.writePixels(*proxy_view->GetBitmap(), pos.x(), pos.y());
     }
 
     damage.Intersect(GetViewBounds());
     paint_callback_running_ = true;
-    callback_.Run(damage, canvas.GetBitmap());
+    callback_.Run(damage, backing);
     paint_callback_running_ = false;
   }
 
