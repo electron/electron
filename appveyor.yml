@@ -53,6 +53,7 @@ test_script:
       }
   - cd electron
   - if "%GN_CONFIG%"=="testing" ( echo Running test suite & npm run test -- --ci )
+  - cd ..
 deploy_script:
   - cd electron
   - ps: >-
