@@ -25,6 +25,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
@@ -46,9 +47,9 @@
 #include "atom/common/atom_constants.h"
 #endif  // defined(ENABLE_PDF_VIEWER)
 
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/renderer/pepper/pepper_helper.h"
-#endif  // defined(ENABLE_PEPPER_FLASH)
+#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 namespace atom {
 
@@ -165,7 +166,7 @@ void RendererClientBase::RenderFrameCreated(
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
 #endif
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);

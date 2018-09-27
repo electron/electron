@@ -52,6 +52,7 @@
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "device/geolocation/public/cpp/location_provider.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
@@ -69,9 +70,9 @@
 #include "net/ssl/client_cert_store.h"
 #endif
 
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
-#endif  // defined(ENABLE_PEPPER_FLASH)
+#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 #if defined(OVERRIDE_LOCATION_PROVIDER)
 #include "atom/browser/fake_location_provider.h"
@@ -360,7 +361,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
 }
 
 void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
   host->GetPpapiHost()->AddHostFactoryFilter(
       base::WrapUnique(new ChromeBrowserPepperHostFactory(host)));
 #endif
