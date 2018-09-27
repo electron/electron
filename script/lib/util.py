@@ -305,3 +305,11 @@ def get_out_dir():
 
 def get_dist_dir():
   return os.path.join(get_out_dir(), 'gen', 'electron_dist')
+
+def get_electron_exec():
+  if sys.platform == 'darwin':
+    return 'out/{0}/Electron.app/Contents/MacOS/Electron'.format(get_out_dir())
+  elif sys.platform == 'win32':
+    return 'out/{0}/electron.exe'.format(get_out_dir())
+  elif sys.platform == 'linux':
+    return 'out/{0}/electron'.format(get_out_dir())
