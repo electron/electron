@@ -82,7 +82,7 @@
 // implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
 ELECTRON_VIEW_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
@@ -183,7 +183,7 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   ELECTRON_BUILTIN_MODULES(V)
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
   ELECTRON_VIEW_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
