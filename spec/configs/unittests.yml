@@ -15,29 +15,24 @@ tests:
           - RTLTest*
           - SysStrings*
           - UTFOffsetStringConversionsTest*
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - cc_unittests
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - cc_blink_unittests
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - content_unittests:
-#      disabled:
+  - cc_unittests
+  - cc_blink_unittests
+  - content_unittests:
+      disabled:
         # TODO(alexeykuzmin): Should those be fixed?
-#        - _/DOMStorageMapParamTest.EnforcesQuota/0
-#        - _/DOMStorageMapParamTest.EnforcesQuota/1
+        - _/DOMStorageMapParamTest.EnforcesQuota/0
+        - _/DOMStorageMapParamTest.EnforcesQuota/1
   - crypto_unittests
   - device_unittests
   - gin_unittests
   - gpu_unittests
   - ipc_tests
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - media_unittests
+  - media_unittests
   - capture_unittests
   - midi_unittests
   - media_mojo_unittests
   - mojo_unittests
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - mojo_common_unittests
+  - mojo_common_unittests
   - net_unittests:
       disabled:
         # TODO(alexeykuzmin): Should those be fixed?
@@ -85,10 +80,9 @@ tests:
         # TODO(alexeykuzmin): Should it be fixed?
         - LiveRangeUnitTest*
   # Blink
-# TODO(alexeykuzmin): Doesn't exist in Ch67.
+# TODO: Enable in Ch68.
 #  - blink_common_unittests
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - blink_heap_unittests
+  - blink_heap_unittests
   - blink_platform_unittests:
       disabled:
         # TODO(alexeykuzmin): Should those be fixed?
@@ -108,8 +102,7 @@ tests:
         - PNGTests*
         - StaticPNGTests*
         - StaticWebPTests*
-# TODO(alexeykuzmin): The binary can't be launched, fix it and enable it back.
-#  - webkit_unit_tests
+  - webkit_unit_tests
   - wtf_unittests
   # Third party
   - angle_unittests
@@ -120,7 +113,13 @@ tests:
   - sandbox_linux_unittests:
       platform: linux
       disabled:
-        # TODO(alexeykuzmin): Should it be fixed?
+        # TODO(alexeykuzmin): Should these be fixed?
         - BrokerProcess*
+        - SandboxBPF.SigBus
   - dbus_unittests:
       platform: linux
+      disabled:
+        # TODO(alexeykuzmin): Should these be fixed?
+        - EndToEndAsyncTest.InvalidServiceName
+        - EndToEndSyncTest.InvalidServiceName
+        - MessageTest.SetInvalidHeaders
