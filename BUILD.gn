@@ -271,7 +271,6 @@ static_library("electron_lib") {
   }
 
   if (enable_fake_location_provider) {
-    defines += [ "OVERRIDE_LOCATION_PROVIDER" ]
     sources += [
       "atom/browser/fake_location_provider.cc",
       "atom/browser/fake_location_provider.h",

@@ -74,9 +74,9 @@
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
-#if defined(OVERRIDE_LOCATION_PROVIDER)
+#if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "atom/browser/fake_location_provider.h"
-#endif  // defined(OVERRIDE_LOCATION_PROVIDER)
+#endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 using content::BrowserThread;
 
@@ -511,7 +511,7 @@ std::unique_ptr<net::ClientCertStore> AtomBrowserClient::CreateClientCertStore(
 
 std::unique_ptr<device::LocationProvider>
 AtomBrowserClient::OverrideSystemLocationProvider() {
-#if defined(OVERRIDE_LOCATION_PROVIDER)
+#if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
   return std::make_unique<FakeLocationProvider>();
 #else
   return nullptr;
