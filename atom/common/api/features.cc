@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 // clang-format off
 #include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
@@ -10,43 +11,23 @@
 namespace {
 
 bool IsDesktopCapturerEnabled() {
-#if defined(ENABLE_DESKTOP_CAPTURER)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_DESKTOP_CAPTURER);
 }
 
 bool IsOffscreenRenderingEnabled() {
-#if defined(ENABLE_OSR)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_OSR);
 }
 
 bool IsPDFViewerEnabled() {
-#if defined(ENABLE_PDF_VIEWER)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_PDF_VIEWER);
 }
 
 bool IsFakeLocationProviderEnabled() {
-#if defined(OVERRIDE_LOCATION_PROVIDER)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
 }
 
 bool IsViewApiEnabled() {
-#if defined(ENABLE_VIEW_API)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_VIEW_API);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

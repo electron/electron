@@ -1,5 +1,6 @@
 import("build/asar.gni")
 import("build/npm.gni")
+import("buildflags/buildflags.gni")
 import("electron_paks.gni")
 import("filenames.gni")
 import("//build/config/locales.gni")
@@ -30,22 +31,6 @@ electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
 
-declare_args() {
-  enable_desktop_capturer = true
-  enable_run_as_node = true
-  enable_osr = true
-  enable_view_api = false
-
-  # Provide a fake location provider for mocking
-  # the geolocation responses. Disable it if you
-  # need to test with chromium's location provider.
-  # Should not be enabled for release build.
-  enable_fake_location_provider = !is_official_build
-
-  # Enable flash plugin support.
-  enable_pepper_flash = true
-}
-
 if (is_mas_build) {
   assert(is_mac,
          "It doesn't make sense to build a MAS build on a non-mac platform")
@@ -56,25 +41,6 @@ config("branding") {
     "ATOM_PRODUCT_NAME=\"$electron_product_name\"",
     "ATOM_PROJECT_NAME=\"$electron_project_name\"",
   ]
-}
-
-config("features") {
-  defines = []
-  if (enable_desktop_capturer) {
-    defines += [ "ENABLE_DESKTOP_CAPTURER=1" ]
-  }
-  if (enable_run_as_node) {
-    defines += [ "ENABLE_RUN_AS_NODE=1" ]
-  }
-  if (enable_osr) {
-    defines += [ "ENABLE_OSR=1" ]
-  }
-  if (enable_view_api) {
-    defines += [ "ENABLE_VIEW_API" ]
-  }
-  if (enable_pepper_flash) {
-    defines += [ "ENABLE_PEPPER_FLASH" ]
-  }
 }
 
 npm_action("atom_browserify_sandbox") {
@@ -95,7 +61,7 @@ npm_action("atom_browserify_sandbox") {
     "-r",
     "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
     "-t",
-    "aliasify"
+    "aliasify",
   ]
 
   inputs = [
@@ -209,14 +175,12 @@ static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
 
-  public_configs = [
-    ":branding",
-    ":features",
-  ]
+  public_configs = [ ":branding" ]
 
   deps = [
     ":atom_js2c",
     "brightray",
+    "buildflags",
     "chromium_src:chrome",
     "native_mate",
     "//base",
@@ -530,7 +494,10 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
-    framework_contents = [ "Resources", "Libraries" ]
+    framework_contents = [
+      "Resources",
+      "Libraries",
+    ]
     public_deps = [
       ":electron_lib",
     ]
@@ -671,11 +638,11 @@ if (is_mac) {
 } else {
   windows_manifest("electron_app_manifest") {
     sources = [
+      "atom/browser/resources/win/disable_window_filtering.manifest",
+      "atom/browser/resources/win/dpi_aware.manifest",
       as_invoker_manifest,
       common_controls_manifest,
       default_compatibility_manifest,
-      "atom/browser/resources/win/dpi_aware.manifest",
-      "atom/browser/resources/win/disable_window_filtering.manifest",
     ]
   }
 
