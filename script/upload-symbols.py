@@ -7,7 +7,8 @@ import sys
 from lib.config import PLATFORM, s3_config, enable_verbose_mode
 from lib.util import get_electron_branding, execute, rm_rf, safe_mkdir, s3put
 
-
+# TODO: Update this entire file to point at the correct file names in the out
+#       directory
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
 RELEASE_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')

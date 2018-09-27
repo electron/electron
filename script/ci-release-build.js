@@ -6,16 +6,21 @@ const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
 const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
 const appVeyorJobs = {
-  'electron-x64': 'electron',
-  'electron-ia32': 'electron-39ng6'
+  'electron-x64': 'electron-n7wrc',
+  'electron-ia32': 'electron-egxcs'
 }
 
+// TODO: Enable the Build Processing preview to get the ability to trigger workflows
+//       programatically.
+//       - https://circleci.com/docs/2.0/build-processing/
+
+// TODO: Update sudowoodo to somehow support monitoring workflows and individual
+//       builds on legacy brances
 const circleCIJobs = [
-  'electron-linux-arm',
-  'electron-linux-arm64',
-  'electron-linux-ia32',
-  //  'electron-linux-mips64el',
-  'electron-linux-x64'
+  'linux-arm-release',
+  'linux-arm64-release',
+  'linux-ia32-release',
+  'linux-x64-release'
 ]
 
 const vstsJobs = [
@@ -94,16 +99,13 @@ function buildAppVeyor (targetBranch, options) {
 
 async function callAppVeyor (targetBranch, job, options) {
   console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`)
-  let environmentVariables = {}
-
-  if (options.ghRelease) {
-    environmentVariables.ELECTRON_RELEASE = 1
-  } else {
-    environmentVariables.RUN_RELEASE_BUILD = 'true'
+  const environmentVariables = {
+    GN_CONFIG: 'release',
+    ELECTRON_RELEASE: 1
   }
 
-  if (options.automaticRelease) {
-    environmentVariables.AUTO_RELEASE = 'true'
+  if (!options.ghRelease) {
+    environmentVariables.UPLOAD_TO_S3 = 1
   }
 
   const requestOpts = {
@@ -144,14 +146,12 @@ async function buildVSTS (targetBranch, options) {
     assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
-  let environmentVariables = {}
+  const environmentVariables = {
+    ELECTRON_RELEASE: 1
+  }
 
   if (!options.ghRelease) {
     environmentVariables.UPLOAD_TO_S3 = 1
-  }
-
-  if (options.automaticRelease) {
-    environmentVariables.AUTO_RELEASE = 'true'
   }
 
   let requestOpts = {

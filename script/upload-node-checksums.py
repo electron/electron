@@ -10,7 +10,8 @@ import tempfile
 from lib.config import s3_config
 from lib.util import download, rm_rf, s3put, safe_mkdir
 
-
+# TODO: Update this entire file to point at the correct file names in the out
+#       directory
 DIST_URL = 'https://atom.io/download/electron/'
 
 

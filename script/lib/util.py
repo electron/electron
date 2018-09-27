@@ -21,6 +21,7 @@ import zipfile
 from lib.config import is_verbose_mode, PLATFORM
 from lib.env_util import get_vs_env
 
+GN_SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
 
@@ -294,4 +295,11 @@ def make_version(major, minor, patch, pre = None):
   if pre is None:
     return major + '.' + minor + '.' + patch
   return major + "." + minor + "." + patch + '-' + pre
+
+def get_out_dir():
+  out_dir = 'Debug'
+  override = os.environ.get('ELECTRON_OUT_DIR')
+  if override is not None:
+    out_dir = override
+  return os.path.join(GN_SRC_DIR, 'out', out_dir)
 

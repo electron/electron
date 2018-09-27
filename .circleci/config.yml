@@ -179,6 +179,10 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       # Build artifacts
       - src/out/Default/dist.zip
       - src/out/Default/gen/node_headers
+      - src/out/Default/chromedriver.zip
+      - src/out/Default/dsym.zip
+      - src/out/Default/symbols.zip
+      - src/out/Default/mksnapshot.zip
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -201,7 +205,7 @@ step-ffmpeg-build: &step-ffmpeg-build
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg third_party/ffmpeg
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -245,6 +249,7 @@ step-maybe-generate-breakpad_symbols: &step-maybe-generate-breakpad_symbols
         # Build needed dump_syms executable
         ninja -C out/Default third_party/breakpad:dump_syms
         electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+        electron/script/zip-symbols.py
       fi
 
 
@@ -352,6 +357,10 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
     - store_artifacts:
         path: src/out/native_mksnapshot/native_mksnapshot.zip
         destination: native_mksnapshot.zip
+    - persist_to_workspace:
+        root: .
+        paths:
+          - src/out/Default/mksnapshot.zip
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -370,6 +379,7 @@ steps-ffmpeg-build: &steps-ffmpeg-build
         root: .
         paths:
           - src/out/ffmpeg/libffmpeg.so
+          - src/out/ffmpeg/ffmpeg.zip
 
 steps-native-tests: &steps-native-tests
   steps:
@@ -775,6 +785,64 @@ workflows:
       - linux-arm64-mksnapshot:
           requires:
             - linux-arm64-checkout
+
+  release-linux:
+    jobs:
+      - linux-checkout
+      - linux-arm-checkout
+      - linux-arm64-checkout
+
+      - linux-x64-release:
+          requires:
+            - linux-checkout
+      - linux-x64-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-x64-publish:
+          requires:
+            - linux-x64-release
+            - linux-x64-ffmpeg
+
+      - linux-ia32-release:
+          requires:
+            - linux-checkout
+      - linux-ia32-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-ia32-publish:
+          requires:
+            - linux-ia32-release
+            - linux-ia32-ffmpeg
+
+      - linux-arm-release:
+          requires:
+            - linux-arm-checkout
+      - linux-arm-ffmpeg:
+           requires:
+             - linux-arm-checkout
+      - linux-arm-mksnapshot:
+          requires:
+            - linux-arm-checkout
+      - linux-arm-publish:
+          requires:
+            - linux-arm-release
+            - linux-arm-ffmpeg
+            - linux-arm-mksnapshot
+
+      - linux-arm64-release:
+          requires:
+            - linux-arm64-checkout
+      - linux-arm64-ffmpeg:
+           requires:
+             - linux-arm64-checkout
+      - linux-arm64-mksnapshot:
+          requires:
+            - linux-arm64-checkout
+      - linux-arm64-publish:
+          requires:
+            - linux-arm64-release
+            - linux-arm64-ffmpeg
+            - linux-arm64-mksnapshot
 
   build-mac-fork-prs:
     jobs:

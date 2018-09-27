@@ -38,6 +38,7 @@ build_script:
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\dump-symbols.py -d %cd%/out/Default/electron.breakpad.syms
+        python electron\script\zip-symbols.py
         appveyor PushArtifact out/Default/electron.breakpad.syms
       }
 test_script:
@@ -52,3 +53,15 @@ test_script:
       }
   - cd electron
   - if "%GN_CONFIG%"=="testing" ( echo Running test suite & npm run test -- --ci )
+deploy_script:
+  - cd electron
+  - ps: >-
+      if (Test-Path Env:\ELECTRON_RELEASE) {
+        if (Test-Path Env:\UPLOAD_TO_S3) {
+          Write-Output "Uploading Electron release distribution to s3"
+          & python script\upload.py --upload_to_s3
+        } else {
+          Write-Output "Uploading Electron release distribution to github releases"
+          & python script\upload.py
+        }
+      }

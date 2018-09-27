@@ -7,6 +7,8 @@ import urllib2
 from lib.config import s3_config
 from lib.util import s3put, scoped_cwd, safe_mkdir
 
+# TODO: Update this entire file to point at the correct file names in the out
+#       directory
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'D')
 

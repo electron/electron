@@ -33,6 +33,8 @@ DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 
 
+# TODO: Update this entire file to point at the correct file names in the out
+#       directory
 def main():
   args = parse_args()
   if  args.upload_to_s3:
