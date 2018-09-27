@@ -303,3 +303,5 @@ def get_out_dir():
     out_dir = override
   return os.path.join(GN_SRC_DIR, 'out', out_dir)
 
+def get_dist_dir():
+  return os.path.join(get_out_dir(), 'gen', 'electron_dist')

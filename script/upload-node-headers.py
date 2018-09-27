@@ -7,13 +7,13 @@ import shutil
 import sys
 
 from lib.config import PLATFORM, get_target_arch, s3_config
-from lib.util import safe_mkdir, scoped_cwd, s3put
+from lib.util import safe_mkdir, scoped_cwd, s3put, get_out_dir, get_dist_dir
 
 # TODO: Update this entire file to point at the correct file names in the out
 #       directory
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-DIST_DIR    = os.path.join(SOURCE_ROOT, 'dist')
-OUT_DIR     = os.path.join(SOURCE_ROOT, 'out', 'R')
+DIST_DIR    = get_dist_dir()
+OUT_DIR     = get_out_dir()
 
 def main():
   args = parse_args()
@@ -31,6 +31,7 @@ def parse_args():
 
 
 def upload_node(bucket, access_key, secret_key, version):
+  safe_mkdir(DIST_DIR)
   with scoped_cwd(DIST_DIR):
     s3put(bucket, access_key, secret_key, DIST_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
@@ -49,11 +50,11 @@ def upload_node(bucket, access_key, secret_key, version):
     safe_mkdir(os.path.dirname(node_lib))
     safe_mkdir(os.path.dirname(iojs_lib))
 
-    # Copy atom.lib to node.lib, iojs.lib and v4 node.lib
-    atom_lib = os.path.join(OUT_DIR, 'node.dll.lib')
-    shutil.copy2(atom_lib, node_lib)
-    shutil.copy2(atom_lib, iojs_lib)
-    shutil.copy2(atom_lib, v4_node_lib)
+    # Copy electron.lib to node.lib and iojs.lib.
+    electron_lib = os.path.join(OUT_DIR, 'electron.lib')
+    shutil.copy2(electron_lib, node_lib)
+    shutil.copy2(electron_lib, iojs_lib)
+    shutil.copy2(electron_lib, v4_node_lib)
 
     # Upload the node.lib.
     s3put(bucket, access_key, secret_key, DIST_DIR,
