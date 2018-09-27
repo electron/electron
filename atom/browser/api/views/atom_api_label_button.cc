@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/browser/api/atom_api_label_button.h"
+#include "atom/browser/api/views/atom_api_label_button.h"
 
 #include "atom/common/api/constructor.h"
 #include "base/strings/utf_string_conversions.h"

@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-#include "atom/browser/api/atom_api_layout_manager.h"
+#include "atom/browser/api/views/atom_api_layout_manager.h"
 #include "native_mate/handle.h"
 #include "ui/views/view.h"
 
