@@ -6,21 +6,15 @@ const buildAppVeyorURL = 'https://windows-ci.electronjs.org/api/builds'
 const vstsURL = 'https://github.visualstudio.com/electron/_apis/build'
 
 const appVeyorJobs = {
-  'electron-x64': 'electron-n7wrc',
-  'electron-ia32': 'electron-egxcs'
+  'electron-x64': 'electron',
+  'electron-ia32': 'electron-39ng6'
 }
 
-// TODO: Enable the Build Processing preview to get the ability to trigger workflows
-//       programatically.
-//       - https://circleci.com/docs/2.0/build-processing/
-
-// TODO: Update sudowoodo to somehow support monitoring workflows and individual
-//       builds on legacy brances
 const circleCIJobs = [
-  'linux-arm-release',
-  'linux-arm64-release',
-  'linux-ia32-release',
-  'linux-x64-release'
+  'linux-arm-publish',
+  'linux-arm64-publish',
+  'linux-ia32-publish',
+  'linux-x64-publish'
 ]
 
 const vstsJobs = [
@@ -100,7 +94,6 @@ function buildAppVeyor (targetBranch, options) {
 async function callAppVeyor (targetBranch, job, options) {
   console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`)
   const environmentVariables = {
-    GN_CONFIG: 'release',
     ELECTRON_RELEASE: 1
   }
 
