@@ -23,6 +23,7 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -84,7 +85,7 @@ ELECTRON_BUILTIN_MODULES(V)
 #if defined(ENABLE_VIEW_API)
 ELECTRON_VIEW_MODULES(V)
 #endif
-#if defined(ENABLE_DESKTOP_CAPTURER)
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
@@ -185,7 +186,7 @@ void NodeBindings::RegisterBuiltinModules() {
 #if defined(ENABLE_VIEW_API)
   ELECTRON_VIEW_MODULES(V)
 #endif
-#if defined(ENABLE_DESKTOP_CAPTURER)
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
