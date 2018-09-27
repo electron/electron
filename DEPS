@@ -65,6 +65,33 @@ hooks = [
     'pattern': 'src/electron/package.json',
     'name': 'electron_npm_deps'
   },
+  {
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron"); os.system("git submodule update --init --recursive");',
+    ],
+    'pattern': 'src/electron',
+    'name': 'electron_submodules'
+  },
+  {
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("boto"); os.system("python setup.py build");',
+    ],
+    'pattern': 'src/electron',
+    'name': 'setup_boto',
+  },
+  {
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("requests"); os.system("python setup.py build");',
+    ],
+    'pattern': 'src/electron',
+    'name': 'setup_requests',
+  }
 ]
 
 recursedeps = [

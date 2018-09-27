@@ -14,6 +14,14 @@ from lib.util import safe_mkdir, scoped_cwd, s3put, get_out_dir, get_dist_dir
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 DIST_DIR    = get_dist_dir()
 OUT_DIR     = get_out_dir()
+GEN_DIR     = os.path.join(OUT_DIR, 'gen')
+
+HEADER_TAR_NAMES = [
+  'node-{0}.tar.gz',
+  'node-{0}-headers.tar.gz',
+  'iojs-{0}.tar.gz',
+  'iojs-{0}-headers.tar.gz'
+]
 
 def main():
   args = parse_args()
@@ -31,11 +39,15 @@ def parse_args():
 
 
 def upload_node(bucket, access_key, secret_key, version):
-  safe_mkdir(DIST_DIR)
-  with scoped_cwd(DIST_DIR):
-    s3put(bucket, access_key, secret_key, DIST_DIR,
+  with scoped_cwd(GEN_DIR):
+    generated_tar = os.path.join(GEN_DIR, 'node_headers.tar.gz')
+    for header_tar in HEADER_TAR_NAMES:
+      versioned_header_tar = header_tar.format(version)
+      shutil.copy2(generated_tar, os.path.join(GEN_DIR, versioned_header_tar))
+
+    s3put(bucket, access_key, secret_key, GEN_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('node-*.tar.gz'))
-    s3put(bucket, access_key, secret_key, DIST_DIR,
+    s3put(bucket, access_key, secret_key, GEN_DIR,
           'atom-shell/dist/{0}'.format(version), glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
