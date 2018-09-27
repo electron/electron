@@ -13,7 +13,7 @@ For guides on Electron app development, see
 * [Coding Style](coding-style.md)
 * [Using clang-format on C++ Code](clang-format.md)
 * [Build System Overview](build-system-overview.md)
-* [Build Instructions (macOS)](build-instructions-osx.md)
+* [Build Instructions (macOS)](build-instructions-macos.md)
 * [Build Instructions (Windows)](build-instructions-windows.md)
 * [Build Instructions (Linux)](build-instructions-linux.md)
 * [Chromium Development](chromium-development.md)

@@ -30,7 +30,7 @@ def check_tls(verbose):
   if sys.platform == "linux" or sys.platform == "linux2":
     tutorial = "./docs/development/build-instructions-linux.md"
   elif sys.platform == "darwin":
-    tutorial = "./docs/development/build-instructions-osx.md"
+    tutorial = "./docs/development/build-instructions-macos.md"
   elif sys.platform == "win32":
     tutorial = "./docs/development/build-instructions-windows.md"
   else:
