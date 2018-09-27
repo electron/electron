@@ -91,7 +91,7 @@ bool TriggerAcceleratorTableCommand(AcceleratorTable* table,
   if (base::ContainsKey(*table, accelerator)) {
     const accelerator_util::MenuItem& item = (*table)[accelerator];
     if (item.model->IsEnabledAt(item.position)) {
-      const auto event_flags = 
+      const auto event_flags =
         accelerator.MaskOutKeyEventFlags(accelerator.modifiers());
       item.model->ActivatedAt(item.position, event_flags);
       return true;
