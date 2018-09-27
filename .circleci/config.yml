@@ -226,9 +226,9 @@ step-verify-ffmpeg: &step-verify-ffmpeg
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
 step-ffmpeg-store: &step-ffmpeg-store
-  - store_artifacts:
-      path: src/out/ffmpeg/ffmpeg.zip
-      destination: ffmpeg.zip
+  store_artifacts:
+    path: src/out/ffmpeg/ffmpeg.zip
+    destination: ffmpeg.zip
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
