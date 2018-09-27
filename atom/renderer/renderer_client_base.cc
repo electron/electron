@@ -43,9 +43,9 @@
 #include <shlobj.h>
 #endif
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/renderer/pepper/pepper_helper.h"
@@ -172,11 +172,11 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
   new printing::PrintWebViewHelper(render_frame);
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
@@ -213,9 +213,9 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 

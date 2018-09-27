@@ -12,6 +12,7 @@
 #include "brightray/browser/browser_client.h"
 #include "brightray/common/content_client.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
@@ -60,7 +61,7 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.ReloadLocaleResources(locale);
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   NOTIMPLEMENTED()
       << "Hi, whoever's fixing PDF support! Thanks! The pdf "
          "viewer resources haven't been ported over to the GN build yet, so "
@@ -68,7 +69,7 @@ void LoadResourceBundle(const std::string& locale) {
   bundle.AddDataPackFromPath(
       pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
       ui::GetSupportedScaleFactors()[0]);
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 MainDelegate::MainDelegate() {}

@@ -14,6 +14,7 @@ buildflag_header("buildflags") {
     "ENABLE_OSR=$enable_osr",
     "ENABLE_VIEW_API=$enable_view_api",
     "ENABLE_PEPPER_FLASH=$enable_pepper_flash",
+    "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 }

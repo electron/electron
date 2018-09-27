@@ -23,6 +23,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/constants.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
@@ -33,9 +34,9 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/browser/atom_web_ui_controller_factory.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/views_delegate_mac.h"
@@ -206,10 +207,10 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                   base::Bind(&v8::Isolate::LowMemoryNotification,
                              base::Unretained(js_env_->isolate())));
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
   bridge_task_runner_->MessageLoopIsReady();

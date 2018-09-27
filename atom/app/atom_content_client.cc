@@ -31,10 +31,10 @@
 #include "media/base/video_codecs.h"
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
 #include "pdf/pdf.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -131,7 +131,7 @@ void AddPepperFlashFromCommandLine(
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
@@ -148,7 +148,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_ShutdownModule;
   pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,

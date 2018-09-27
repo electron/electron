@@ -10,15 +10,16 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/render_frame_host.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/escape.h"
 #include "url/gurl.h"
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/browser/stream_info.h"
 #include "net/url_request/url_request.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 using content::BrowserThread;
 
@@ -26,7 +27,7 @@ namespace atom {
 
 namespace {
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 void OnPdfResourceIntercepted(
     const GURL& original_url,
     int render_process_host_id,
@@ -65,7 +66,7 @@ void OnPdfResourceIntercepted(
   params.frame_tree_node_id = frame_host->GetFrameTreeNodeId();
   web_contents->GetController().LoadURLWithParams(params);
 }
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace
 
@@ -76,7 +77,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
     const std::string& mime_type,
     GURL* origin,
     std::string* payload) {
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   const content::ResourceRequestInfo* info =
       content::ResourceRequestInfo::ForRequest(request);
 
@@ -96,7 +97,7 @@ bool AtomResourceDispatcherHostDelegate::ShouldInterceptResourceAsStream(
                    info->GetWebContentsGetterForRequest()));
     return true;
   }
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   return false;
 }
 
