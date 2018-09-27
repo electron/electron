@@ -9,6 +9,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/common/view_messages.h"
 #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+#include "ui/display/screen.h"
 
 namespace {
 
@@ -67,6 +68,8 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void DestroyCompositorForShutdown() override {}
 
+  void WasResized() override { view_->render_widget_host()->WasResized(); }
+
  private:
   OffScreenRenderWidgetHostView* view_;
 
@@ -77,17 +80,7 @@ void OffScreenRenderWidgetHostView::SetActive(bool active) {}
 
 void OffScreenRenderWidgetHostView::ShowDefinitionForSelection() {}
 
-bool OffScreenRenderWidgetHostView::SupportsSpeech() const {
-  return false;
-}
-
 void OffScreenRenderWidgetHostView::SpeakSelection() {}
-
-bool OffScreenRenderWidgetHostView::IsSpeaking() const {
-  return false;
-}
-
-void OffScreenRenderWidgetHostView::StopSpeaking() {}
 
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
   return browser_compositor_->UpdateNSViewAndDisplay(
