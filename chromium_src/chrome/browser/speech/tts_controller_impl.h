@@ -41,10 +41,8 @@ class TtsControllerImpl : public TtsController {
   void GetVoices(content::BrowserContext* browser_context,
                  std::vector<VoiceData>* out_voices) override;
   void VoicesChanged() override;
-  void AddVoicesChangedDelegate(
-      VoicesChangedDelegate* delegate) override;
-  void RemoveVoicesChangedDelegate(
-      VoicesChangedDelegate* delegate) override;
+  void AddVoicesChangedDelegate(VoicesChangedDelegate* delegate) override;
+  void RemoveVoicesChangedDelegate(VoicesChangedDelegate* delegate) override;
   void SetTtsEngineDelegate(TtsEngineDelegate* delegate) override;
   TtsEngineDelegate* GetTtsEngineDelegate() override;
   void SetPlatformImpl(TtsPlatformImpl* platform_impl) override;

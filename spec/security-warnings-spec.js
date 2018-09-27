@@ -4,10 +4,10 @@ const fs = require('fs')
 const path = require('path')
 const url = require('url')
 
-const {remote} = require('electron')
-const {BrowserWindow} = remote
+const { remote } = require('electron')
+const { BrowserWindow } = remote
 
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
 describe('security warnings', () => {
   let server

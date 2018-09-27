@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 #define ATOM_BROWSER_API_ATOM_API_DESKTOP_CAPTURER_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"

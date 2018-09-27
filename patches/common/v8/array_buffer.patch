@@ -1,0 +1,32 @@
+diff --git a/include/v8.h b/include/v8.h
+index 573e80176d..80bfd1d22a 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -7337,6 +7337,9 @@ class V8_EXPORT Isolate {
+    */
+   void SetIdle(bool is_idle);
+ 
++  /** Returns the ArrayBuffer::Allocator used in this isolate. */
++  ArrayBuffer::Allocator* GetArrayBufferAllocator();
++
+   /** Returns true if this isolate has a current context. */
+   bool InContext();
+ 
+diff --git a/src/api.cc b/src/api.cc
+index 8b177d041d..f58a350f0f 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -8139,6 +8139,13 @@ void Isolate::SetIdle(bool is_idle) {
+   isolate->SetIdle(is_idle);
+ }
+ 
++
++ArrayBuffer::Allocator* Isolate::GetArrayBufferAllocator() {
++  i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
++  return isolate->array_buffer_allocator();
++}
++
++
+ bool Isolate::InContext() {
+   i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
+   return isolate->context() != nullptr;

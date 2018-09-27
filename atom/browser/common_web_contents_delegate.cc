@@ -4,8 +4,10 @@
 
 #include "atom/browser/common_web_contents_delegate.h"
 
+#include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/atom_browser_context.h"
@@ -16,6 +18,7 @@
 #include "atom/common/atom_constants.h"
 #include "atom/common/options_switches.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
@@ -46,13 +49,16 @@ const char kRootName[] = "<root>";
 
 struct FileSystem {
   FileSystem() {}
-  FileSystem(const std::string& file_system_name,
+  FileSystem(const std::string& type,
+             const std::string& file_system_name,
              const std::string& root_url,
              const std::string& file_system_path)
-      : file_system_name(file_system_name),
+      : type(type),
+        file_system_name(file_system_name),
         root_url(root_url),
         file_system_path(file_system_path) {}
 
+  std::string type;
   std::string file_system_name;
   std::string root_url;
   std::string file_system_path;
@@ -82,19 +88,21 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
 
 FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
                                   const std::string& file_system_id,
-                                  const std::string& file_system_path) {
+                                  const std::string& file_system_path,
+                                  const std::string& type) {
   const GURL origin = web_contents->GetURL().GetOrigin();
   std::string file_system_name =
       storage::GetIsolatedFileSystemName(origin, file_system_id);
   std::string root_url = storage::GetIsolatedFileSystemRootURIString(
       origin, file_system_id, kRootName);
-  return FileSystem(file_system_name, root_url, file_system_path);
+  return FileSystem(type, file_system_name, root_url, file_system_path);
 }
 
 std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
     const FileSystem& file_system) {
   std::unique_ptr<base::DictionaryValue> file_system_value(
       new base::DictionaryValue());
+  file_system_value->SetString("type", file_system.type);
   file_system_value->SetString("fileSystemName", file_system.file_system_name);
   file_system_value->SetString("rootURL", file_system.root_url);
   file_system_value->SetString("fileSystemPath", file_system.file_system_path);
@@ -120,16 +128,18 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
   return static_cast<atom::AtomBrowserContext*>(context)->prefs();
 }
 
-std::set<std::string> GetAddedFileSystemPaths(
+std::map<std::string, std::string> GetAddedFileSystemPaths(
     content::WebContents* web_contents) {
   auto* pref_service = GetPrefService(web_contents);
   const base::DictionaryValue* file_system_paths_value =
       pref_service->GetDictionary(prefs::kDevToolsFileSystemPaths);
-  std::set<std::string> result;
+  std::map<std::string, std::string> result;
   if (file_system_paths_value) {
     base::DictionaryValue::Iterator it(*file_system_paths_value);
     for (; !it.IsAtEnd(); it.Advance()) {
-      result.insert(it.key());
+      std::string type =
+          it.value().is_string() ? it.value().GetString() : std::string();
+      result[it.key()] = type;
     }
   }
   return result;
@@ -146,7 +156,8 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 CommonWebContentsDelegate::CommonWebContentsDelegate()
     : devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
       file_task_runner_(
-          base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})) {}
+          base::CreateSequencedTaskRunnerWithTraits({base::MayBlock()})),
+      weak_factory_(this) {}
 
 CommonWebContentsDelegate::~CommonWebContentsDelegate() {}
 
@@ -351,11 +362,13 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
 
   std::vector<FileSystem> file_systems;
   for (const auto& file_system_path : file_system_paths) {
-    base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
+    base::FilePath path =
+        base::FilePath::FromUTF8Unsafe(file_system_path.first);
     std::string file_system_id =
         RegisterFileSystem(GetDevToolsWebContents(), path);
-    FileSystem file_system = CreateFileSystemStruct(
-        GetDevToolsWebContents(), file_system_id, file_system_path);
+    FileSystem file_system =
+        CreateFileSystemStruct(GetDevToolsWebContents(), file_system_id,
+                               file_system_path.first, file_system_path.second);
     file_systems.push_back(file_system);
   }
 
@@ -367,6 +380,7 @@ void CommonWebContentsDelegate::DevToolsRequestFileSystems() {
 }
 
 void CommonWebContentsDelegate::DevToolsAddFileSystem(
+    const std::string& type,
     const base::FilePath& file_system_path) {
   base::FilePath path = file_system_path;
   if (path.empty()) {
@@ -387,17 +401,16 @@ void CommonWebContentsDelegate::DevToolsAddFileSystem(
     return;
 
   FileSystem file_system = CreateFileSystemStruct(
-      GetDevToolsWebContents(), file_system_id, path.AsUTF8Unsafe());
+      GetDevToolsWebContents(), file_system_id, path.AsUTF8Unsafe(), type);
   std::unique_ptr<base::DictionaryValue> file_system_value(
       CreateFileSystemValue(file_system));
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
   update.Get()->SetWithoutPathExpansion(path.AsUTF8Unsafe(),
-                                        std::make_unique<base::Value>());
-
-  web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded",
-                                    file_system_value.get(), nullptr, nullptr);
+                                        std::make_unique<base::Value>(type));
+  web_contents_->CallClientFunction("DevToolsAPI.fileSystemAdded", nullptr,
+                                    file_system_value.get(), nullptr);
 }
 
 void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
@@ -420,24 +433,37 @@ void CommonWebContentsDelegate::DevToolsRemoveFileSystem(
 
 void CommonWebContentsDelegate::DevToolsIndexPath(
     int request_id,
-    const std::string& file_system_path) {
+    const std::string& file_system_path,
+    const std::string& excluded_folders_message) {
   if (!IsDevToolsFileSystemAdded(GetDevToolsWebContents(), file_system_path)) {
     OnDevToolsIndexingDone(request_id, file_system_path);
     return;
   }
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
+  std::vector<std::string> excluded_folders;
+  std::unique_ptr<base::Value> parsed_excluded_folders =
+      base::JSONReader::Read(excluded_folders_message);
+  if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
+    const std::vector<base::Value>& folder_paths =
+        parsed_excluded_folders->GetList();
+    for (const base::Value& folder_path : folder_paths) {
+      if (folder_path.is_string())
+        excluded_folders.push_back(folder_path.GetString());
+    }
+  }
   devtools_indexing_jobs_[request_id] =
       scoped_refptr<DevToolsFileSystemIndexer::FileSystemIndexingJob>(
           devtools_file_system_indexer_->IndexPath(
-              file_system_path,
+              file_system_path, excluded_folders,
               base::Bind(
                   &CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated,
-                  base::Unretained(this), request_id, file_system_path),
+                  weak_factory_.GetWeakPtr(), request_id, file_system_path),
               base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingWorked,
-                         base::Unretained(this), request_id, file_system_path),
+                         weak_factory_.GetWeakPtr(), request_id,
+                         file_system_path),
               base::Bind(&CommonWebContentsDelegate::OnDevToolsIndexingDone,
-                         base::Unretained(this), request_id,
+                         weak_factory_.GetWeakPtr(), request_id,
                          file_system_path)));
 }
 
@@ -461,7 +487,7 @@ void CommonWebContentsDelegate::DevToolsSearchInPath(
   devtools_file_system_indexer_->SearchInPath(
       file_system_path, query,
       base::Bind(&CommonWebContentsDelegate::OnDevToolsSearchCompleted,
-                 base::Unretained(this), request_id, file_system_path));
+                 weak_factory_.GetWeakPtr(), request_id, file_system_path));
 }
 
 void CommonWebContentsDelegate::OnDevToolsIndexingWorkCalculated(

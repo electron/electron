@@ -11,7 +11,8 @@
                                             NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
-  base::scoped_nsobject<NSUserActivity> currentActivity_ API_AVAILABLE(macosx(10.10));
+  base::scoped_nsobject<NSUserActivity> currentActivity_
+      API_AVAILABLE(macosx(10.10));
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   base::Callback<bool()> shouldShutdown_;

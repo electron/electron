@@ -6,6 +6,7 @@
 
 #include <windows.h>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "third_party/skia/include/core/SkBitmap.h"

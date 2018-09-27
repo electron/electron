@@ -4,6 +4,7 @@
 
 #include "atom/browser/browser.h"
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/atom_browser_main_parts.h"

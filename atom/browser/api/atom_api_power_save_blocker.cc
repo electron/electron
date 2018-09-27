@@ -61,10 +61,8 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   device::mojom::WakeLockType new_blocker_type =
       device::mojom::WakeLockType::kPreventAppSuspension;
   for (const auto& element : power_save_blocker_types_) {
-    if (element.second ==
-        device::mojom::WakeLockType::kPreventDisplaySleep) {
-      new_blocker_type =
-          device::mojom::WakeLockType::kPreventDisplaySleep;
+    if (element.second == device::mojom::WakeLockType::kPreventDisplaySleep) {
+      new_blocker_type = device::mojom::WakeLockType::kPreventDisplaySleep;
       break;
     }
   }

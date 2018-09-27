@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 @interface MacLockMonitor : NSObject {
-@private
+ @private
   std::vector<atom::api::PowerMonitor*> emitters;
 }
 
@@ -21,15 +21,15 @@
 - (id)init {
   if ((self = [super init])) {
     NSDistributedNotificationCenter* distCenter =
-          [NSDistributedNotificationCenter defaultCenter];
+        [NSDistributedNotificationCenter defaultCenter];
     [distCenter addObserver:self
-                  selector:@selector(onScreenLocked:)
-                      name:@"com.apple.screenIsLocked"
-                    object:nil];
+                   selector:@selector(onScreenLocked:)
+                       name:@"com.apple.screenIsLocked"
+                     object:nil];
     [distCenter addObserver:self
-                  selector:@selector(onScreenUnlocked:)
-                      name:@"com.apple.screenIsUnlocked"
-                    object:nil];
+                   selector:@selector(onScreenUnlocked:)
+                       name:@"com.apple.screenIsUnlocked"
+                     object:nil];
   }
   return self;
 }

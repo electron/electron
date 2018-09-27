@@ -4,18 +4,10 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 
+#include <memory>
 #include <set>
 #include <string>
-
-// We have problems with redefinition of ssize_t between node.h and
-// port_chromium.h, and the latter was introduced by leveldb.mojom.h.
-// The best solution is to not include content/browser/frame_host/ headers
-// and node.h in the same file, but for now I'm just working around the
-// problem.
-#if defined(OS_WIN)
-#define COMPONENTS_SERVICES_LEVELDB_PUBLIC_INTERFACES_LEVELDB_MOJOM_H_
-#define COMPONENTS_LEVELDB_PUBLIC_INTERFACES_LEVELDB_MOJOM_H_
-#endif
+#include <utility>
 
 #include "atom/browser/api/atom_api_browser_window.h"
 #include "atom/browser/api/atom_api_debugger.h"
@@ -24,6 +16,7 @@
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
+#include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
@@ -57,6 +50,7 @@
 #include "atom/common/options_switches.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "brightray/browser/inspectable_web_contents.h"
@@ -853,7 +847,8 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-void WebContents::DidStartNavigation(
+bool WebContents::EmitNavigationEvent(
+    const std::string& event,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -874,8 +869,18 @@ void WebContents::DidStartNavigation(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  Emit("did-start-navigation", url, is_same_document, is_main_frame,
-       frame_process_id, frame_routing_id);
+  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
+              frame_routing_id);
+}
+
+void WebContents::DidStartNavigation(
+    content::NavigationHandle* navigation_handle) {
+  EmitNavigationEvent("did-start-navigation", navigation_handle);
+}
+
+void WebContents::DidRedirectNavigation(
+    content::NavigationHandle* navigation_handle) {
+  EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
 void WebContents::DidFinishNavigation(
@@ -1455,7 +1460,7 @@ void WebContents::AddWorkSpace(mate::Arguments* args,
     args->ThrowError("path cannot be empty");
     return;
   }
-  DevToolsAddFileSystem(path);
+  DevToolsAddFileSystem(std::string(), path);
 }
 
 void WebContents::RemoveWorkSpace(mate::Arguments* args,
@@ -1981,6 +1986,24 @@ void WebContents::GrantOriginAccess(const GURL& url) {
       url::Origin::Create(url));
 }
 
+bool WebContents::TakeHeapSnapshot(const base::FilePath& file_path,
+                                   const std::string& channel) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  base::File file(file_path,
+                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  if (!file.IsValid())
+    return false;
+
+  auto* frame_host = web_contents()->GetMainFrame();
+  if (!frame_host)
+    return false;
+
+  return frame_host->Send(new AtomFrameMsg_TakeHeapSnapshot(
+      frame_host->GetRoutingID(),
+      IPC::TakePlatformFileForTransit(std::move(file)), channel));
+}
+
 // static
 void WebContents::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
@@ -2077,6 +2100,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
+      .SetMethod("_takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

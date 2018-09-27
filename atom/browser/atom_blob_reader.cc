@@ -4,6 +4,8 @@
 
 #include "atom/browser/atom_blob_reader.h"
 
+#include <utility>
+
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/io_buffer.h"

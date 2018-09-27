@@ -70,13 +70,15 @@
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
 
-  NSButton* close_button = [NSWindow standardWindowButton:NSWindowCloseButton
-                                             forStyleMask:NSTitledWindowMask];
+  NSButton* close_button =
+      [NSWindow standardWindowButton:NSWindowCloseButton
+                        forStyleMask:NSWindowStyleMaskTitled];
   NSButton* miniaturize_button =
       [NSWindow standardWindowButton:NSWindowMiniaturizeButton
-                        forStyleMask:NSTitledWindowMask];
-  NSButton* zoom_button = [NSWindow standardWindowButton:NSWindowZoomButton
-                                            forStyleMask:NSTitledWindowMask];
+                        forStyleMask:NSWindowStyleMaskTitled];
+  NSButton* zoom_button =
+      [NSWindow standardWindowButton:NSWindowZoomButton
+                        forStyleMask:NSWindowStyleMaskTitled];
 
   CGFloat x = 0;
   const CGFloat space_between = 20;
@@ -319,18 +321,18 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask;
+  NSUInteger styleMask = NSWindowStyleMaskTitled;
   if (@available(macOS 10.10, *)) {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
         (!useStandardWindow || transparent() || !has_frame())) {
-      styleMask = NSFullSizeContentViewWindowMask;
+      styleMask = NSWindowStyleMaskFullSizeContentView;
     }
   }
   if (minimizable) {
     styleMask |= NSMiniaturizableWindowMask;
   }
   if (closable) {
-    styleMask |= NSClosableWindowMask;
+    styleMask |= NSWindowStyleMaskClosable;
   }
   if (title_bar_style_ != NORMAL) {
     // The window without titlebar is treated the same with frameless window.
@@ -610,7 +612,7 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSResizableWindowMask) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
     return [window_ isZoomed];
   } else {
     NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
@@ -651,7 +653,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
 }
 
 bool NativeWindowMac::IsFullscreen() const {
-  return [window_ styleMask] & NSFullScreenWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskFullScreen;
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -730,11 +732,11 @@ void NativeWindowMac::MoveTop() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
-  SetStyleMask(resizable, NSResizableWindowMask);
+  SetStyleMask(resizable, NSWindowStyleMaskResizable);
 }
 
 bool NativeWindowMac::IsResizable() {
-  return [window_ styleMask] & NSResizableWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskResizable;
 }
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
@@ -800,11 +802,11 @@ bool NativeWindowMac::IsFullScreenable() {
 }
 
 void NativeWindowMac::SetClosable(bool closable) {
-  SetStyleMask(closable, NSClosableWindowMask);
+  SetStyleMask(closable, NSWindowStyleMaskClosable);
 }
 
 bool NativeWindowMac::IsClosable() {
-  return [window_ styleMask] & NSClosableWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskClosable;
 }
 
 void NativeWindowMac::SetAlwaysOnTop(bool top,
@@ -911,7 +913,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     if (!fullscreen_window_title()) {
       // Hide the titlebar
-      SetStyleMask(false, NSTitledWindowMask);
+      SetStyleMask(false, NSWindowStyleMaskTitled);
 
       // Resize the window to accomodate the _entire_ screen size
       fullscreenFrame.size.height -=
@@ -936,7 +938,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     if (!fullscreen_window_title()) {
       // Restore the titlebar
-      SetStyleMask(true, NSTitledWindowMask);
+      SetStyleMask(true, NSWindowStyleMaskTitled);
     }
 
     // Restore window controls visibility state
@@ -1349,10 +1351,16 @@ void NativeWindowMac::AddContentViewLayers() {
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
   if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
-    base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
-    [background_layer
-        setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
-    [[window_ contentView] setLayer:background_layer];
+    // For normal window, we need to explicitly set layer for contentView to
+    // make setBackgroundColor work correctly.
+    // There is no need to do so for frameless window, and doing so would make
+    // titleBarStyle stop working.
+    if (has_frame()) {
+      base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+      [background_layer
+          setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
+      [[window_ contentView] setLayer:background_layer];
+    }
     [[window_ contentView] setWantsLayer:YES];
   }
 

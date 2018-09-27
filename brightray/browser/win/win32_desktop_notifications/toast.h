@@ -70,6 +70,9 @@ class DesktopNotificationController::Toast {
   HDC hdc_;
   HBITMAP bitmap_ = NULL;
 
+  class UIAutomationInterface;
+  UIAutomationInterface* uia_ = nullptr;
+
   const std::shared_ptr<NotificationData> data_;  // never null
 
   SIZE toast_size_ = {};

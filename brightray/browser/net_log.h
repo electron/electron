@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_NET_LOG_H_
 #define BRIGHTRAY_BROWSER_NET_LOG_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "net/log/net_log.h"

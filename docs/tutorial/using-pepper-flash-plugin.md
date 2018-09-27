@@ -20,7 +20,7 @@ before the app ready event. Also, turn on `plugins` option of `BrowserWindow`.
 For example:
 
 ```javascript
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
 // Specify flash path, supposing it is placed in the same directory with main.js.

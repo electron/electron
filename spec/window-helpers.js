@@ -1,10 +1,10 @@
-const {expect} = require('chai')
-const {BrowserWindow} = require('electron').remote
+const { expect } = require('chai')
+const { BrowserWindow } = require('electron').remote
 
-const {emittedOnce} = require('./events-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 exports.closeWindow = async (window = null,
-    {assertSingleWindow} = {assertSingleWindow: true}) => {
+  { assertSingleWindow } = { assertSingleWindow: true }) => {
   const windowExists = (window !== null) && !window.isDestroyed()
   if (windowExists) {
     const isClosed = emittedOnce(window, 'closed')

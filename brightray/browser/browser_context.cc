@@ -4,6 +4,9 @@
 
 #include "brightray/browser/browser_context.h"
 
+#include <memory>
+#include <utility>
+
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
@@ -53,8 +56,7 @@ scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
 }
 
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
-    : in_memory_(in_memory),
-      weak_factory_(this) {
+    : in_memory_(in_memory), weak_factory_(this) {
   if (!PathService::Get(DIR_USER_DATA, &path_)) {
     PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));

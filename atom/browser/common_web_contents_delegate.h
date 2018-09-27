@@ -6,20 +6,20 @@
 #define ATOM_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "brightray/browser/devtools_file_system_indexer.h"
+#include "base/memory/weak_ptr.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
 #endif
-
-using brightray::DevToolsFileSystemIndexer;
 
 namespace base {
 class SequencedTaskRunner;
@@ -110,11 +110,13 @@ class CommonWebContentsDelegate
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsRequestFileSystems() override;
-  void DevToolsAddFileSystem(const base::FilePath& path) override;
+  void DevToolsAddFileSystem(const std::string& type,
+                             const base::FilePath& file_system_path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
   void DevToolsIndexPath(int request_id,
-                         const std::string& file_system_path) override;
+                         const std::string& file_system_path,
+                         const std::string& excluded_folders_message) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
@@ -188,6 +190,8 @@ class CommonWebContentsDelegate
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  base::WeakPtrFactory<CommonWebContentsDelegate> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

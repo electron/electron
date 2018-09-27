@@ -11,7 +11,7 @@ be retrieved by certain properties and methods (e.g. `webFrame.firstChild`).
 An example of zooming current page to 200%.
 
 ```javascript
-const {webFrame} = require('electron')
+const { webFrame } = require('electron')
 
 webFrame.setZoomFactor(2)
 ```
@@ -73,7 +73,7 @@ whether the word passed is correctly spelled.
 An example of using [node-spellchecker][spellchecker] as provider:
 
 ```javascript
-const {webFrame} = require('electron')
+const { webFrame } = require('electron')
 webFrame.setSpellCheckProvider('en-US', true, {
   spellCheck (text) {
     return !(require('spellchecker').isMisspelled(text))
@@ -105,7 +105,7 @@ Specify an option with the value of `false` to omit it from the registration.
 An example of registering a privileged scheme, without bypassing Content Security Policy:
 
 ```javascript
-const {webFrame} = require('electron')
+const { webFrame } = require('electron')
 webFrame.registerURLSchemeAsPrivileged('foo', { bypassCSP: false })
 ```
 
@@ -122,7 +122,7 @@ Inserts `text` to the focused element.
 * `callback` Function (optional) - Called after script has been executed.
   * `result` Any
 
-Returns `Promise` - A promise that resolves with the result of the executed code
+Returns `Promise<any>` - A promise that resolves with the result of the executed code
 or is rejected if the result of the code is a rejected promise.
 
 Evaluates `code` in page.
@@ -177,7 +177,7 @@ Returns an object describing usage information of Blink's internal memory
 caches.
 
 ```javascript
-const {webFrame} = require('electron')
+const { webFrame } = require('electron')
 console.log(webFrame.getResourceUsage())
 ```
 

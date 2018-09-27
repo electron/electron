@@ -44,10 +44,8 @@ class GlobalShortcutListenerMac : public GlobalShortcutListener {
   // GlobalShortcutListener implementation.
   void StartListening() override;
   void StopListening() override;
-  bool RegisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) override;
-  void UnregisterAcceleratorImpl(
-      const ui::Accelerator& accelerator) override;
+  bool RegisterAcceleratorImpl(const ui::Accelerator& accelerator) override;
+  void UnregisterAcceleratorImpl(const ui::Accelerator& accelerator) override;
 
   // Mac-specific functions for registering hot keys with modifiers.
   bool RegisterHotKey(const ui::Accelerator& accelerator, KeyId hot_key_id);

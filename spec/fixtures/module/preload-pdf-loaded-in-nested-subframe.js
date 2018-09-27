@@ -1,7 +1,7 @@
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 
 document.addEventListener('DOMContentLoaded', (event) => {
-  var outerFrame = document.getElementById('outer-frame')
+  var outerFrame = document.querySelector('#outer-frame')
   if (outerFrame) {
     outerFrame.onload = function () {
       var pdframe = outerFrame.contentWindow.document.getElementById('pdf-frame')

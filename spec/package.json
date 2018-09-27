@@ -15,30 +15,15 @@
     "mkdirp": "^0.5.1",
     "mocha": "^5.2.0",
     "mocha-junit-reporter": "^1.17.0",
+    "mocha-multi-reporters": "^1.1.7",
     "multiparty": "^4.1.4",
     "q": "^1.5.1",
+    "runas": "3.x",
     "send": "^0.16.2",
     "temp": "^0.8.3",
     "walkdir": "0.0.12",
     "winreg": "^1.2.4",
     "ws": "^5.2.0",
     "yargs": "^11.0.0"
-  },
-  "optionalDependencies": {
-    "runas": "3.x"
-  },
-  "standard": {
-    "env": {
-      "browser": true,
-      "mocha": true,
-      "jquery": true,
-      "serviceworker": true
-    },
-    "globals": [
-      "Bindings",
-      "Components",
-      "UI",
-      "WebView"
-    ]
   }
 }

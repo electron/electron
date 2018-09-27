@@ -7,7 +7,7 @@ static_library("brightray") {
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//content/public/browser",
-    "//content/shell:resources",
+    "//content/shell:copy_shell_resources",
     "//net:extras",
     "//net:net_with_v8",
     "//skia",
@@ -15,11 +15,6 @@ static_library("brightray") {
   ]
 
   include_dirs = [ ".." ]
-
-  defines = [
-    "DISABLE_NACL=1",
-    "ELECTRON_GN_BUILD",
-  ]
 
   if (is_linux) {
     deps += [ "//build/config/linux/gtk" ]
@@ -45,12 +40,6 @@ static_library("brightray") {
     "browser/browser_main_parts.cc",
     "browser/browser_main_parts.h",
     "browser/browser_main_parts_mac.mm",
-    "browser/devtools_contents_resizing_strategy.cc",
-    "browser/devtools_contents_resizing_strategy.h",
-    "browser/devtools_embedder_message_dispatcher.cc",
-    "browser/devtools_embedder_message_dispatcher.h",
-    "browser/devtools_file_system_indexer.cc",
-    "browser/devtools_file_system_indexer.h",
     "browser/devtools_manager_delegate.cc",
     "browser/devtools_manager_delegate.h",
     "browser/devtools_ui.cc",
@@ -109,6 +98,8 @@ static_library("brightray") {
     "browser/win/win32_desktop_notifications/common.h",
     "browser/win/win32_desktop_notifications/desktop_notification_controller.cc",
     "browser/win/win32_desktop_notifications/desktop_notification_controller.h",
+    "browser/win/win32_desktop_notifications/toast_uia.cc",
+    "browser/win/win32_desktop_notifications/toast_uia.h",
     "browser/win/win32_desktop_notifications/toast.cc",
     "browser/win/win32_desktop_notifications/toast.h",
     "browser/win/win32_notification.cc",
@@ -142,4 +133,13 @@ static_library("brightray") {
     "common/platform_util.h",
   ]
   set_sources_assignment_filter(sources_assignment_filter)
+
+  sources += [
+    "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
+    "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
+    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
+    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.h",
+    "//chrome/browser/devtools/devtools_file_system_indexer.cc",
+    "//chrome/browser/devtools/devtools_file_system_indexer.h",
+  ]
 }

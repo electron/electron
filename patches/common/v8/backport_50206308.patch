@@ -1,0 +1,235 @@
+From 5020630808043615f2f6fbbfba1ea73342bebd69 Mon Sep 17 00:00:00 2001
+From: Daniel Clifford <danno@chromium.org>
+Date: Wed, 28 Mar 2018 13:30:16 +0200
+Subject: [PATCH] Remove legacy C++ implementation of Array#slice
+
+Change-Id: Ifdeda00ad55aa937a6a414e7e566e6640ccd83c0
+Reviewed-on: https://chromium-review.googlesource.com/980936
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Commit-Queue: Daniel Clifford <danno@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#52278}
+---
+ src/bootstrapper.cc                 |  8 ++---
+ src/builtins/builtins-array.cc      | 69 -------------------------------------
+ src/builtins/builtins-definitions.h |  1 -
+ src/contexts.h                      |  1 -
+ src/debug/debug-evaluate.cc         |  1 -
+ src/flag-definitions.h              |  2 +-
+ src/js/array.js                     | 43 +++--------------------
+ 7 files changed, 8 insertions(+), 117 deletions(-)
+
+diff --git a/src/bootstrapper.cc b/src/bootstrapper.cc
+index 95d98078f3..626251202d 100644
+--- a/src/bootstrapper.cc
++++ b/src/bootstrapper.cc
+@@ -1658,12 +1658,8 @@ void Genesis::InitializeGlobal(Handle<JSGlobalObject> global_object,
+     SimpleInstallFunction(proto, "shift", Builtins::kArrayPrototypeShift, 0,
+                           false);
+     SimpleInstallFunction(proto, "unshift", Builtins::kArrayUnshift, 1, false);
+-    if (FLAG_enable_experimental_builtins) {
+-      SimpleInstallFunction(proto, "slice", Builtins::kArrayPrototypeSlice, 2,
+-                            false);
+-    } else {
+-      SimpleInstallFunction(proto, "slice", Builtins::kArraySlice, 2, false);
+-    }
++    SimpleInstallFunction(proto, "slice", Builtins::kArrayPrototypeSlice, 2,
++                          false);
+     SimpleInstallFunction(proto, "splice", Builtins::kArraySplice, 2, false);
+     SimpleInstallFunction(proto, "includes", Builtins::kArrayIncludes, 1,
+                           false);
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index f400e824f0..7e3f948cbe 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -240,75 +240,6 @@ BUILTIN(ArrayUnshift) {
+   return Smi::FromInt(new_length);
+ }
+ 
+-BUILTIN(ArraySlice) {
+-  HandleScope scope(isolate);
+-  Handle<Object> receiver = args.receiver();
+-  int len = -1;
+-  int relative_start = 0;
+-  int relative_end = 0;
+-
+-  if (receiver->IsJSArray()) {
+-    DisallowHeapAllocation no_gc;
+-    JSArray* array = JSArray::cast(*receiver);
+-    if (V8_UNLIKELY(!array->HasFastElements() ||
+-                    !IsJSArrayFastElementMovingAllowed(isolate, array) ||
+-                    !isolate->IsSpeciesLookupChainIntact() ||
+-                    // If this is a subclass of Array, then call out to JS
+-                    !array->HasArrayPrototype(isolate))) {
+-      AllowHeapAllocation allow_allocation;
+-      return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+-    }
+-    len = Smi::ToInt(array->length());
+-  } else if (receiver->IsJSObject() &&
+-             JSSloppyArgumentsObject::GetSloppyArgumentsLength(
+-                 isolate, Handle<JSObject>::cast(receiver), &len)) {
+-    // Array.prototype.slice.call(arguments, ...) is quite a common idiom
+-    // (notably more than 50% of invocations in Web apps).
+-    // Treat it in C++ as well.
+-    DCHECK(JSObject::cast(*receiver)->HasFastElements() ||
+-           JSObject::cast(*receiver)->HasFastArgumentsElements());
+-  } else {
+-    AllowHeapAllocation allow_allocation;
+-    return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+-  }
+-  DCHECK_LE(0, len);
+-  int argument_count = args.length() - 1;
+-  // Note carefully chosen defaults---if argument is missing,
+-  // it's undefined which gets converted to 0 for relative_start
+-  // and to len for relative_end.
+-  relative_start = 0;
+-  relative_end = len;
+-  if (argument_count > 0) {
+-    DisallowHeapAllocation no_gc;
+-    if (!ClampedToInteger(isolate, args[1], &relative_start)) {
+-      AllowHeapAllocation allow_allocation;
+-      return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+-    }
+-    if (argument_count > 1) {
+-      Object* end_arg = args[2];
+-      // slice handles the end_arg specially
+-      if (end_arg->IsUndefined(isolate)) {
+-        relative_end = len;
+-      } else if (!ClampedToInteger(isolate, end_arg, &relative_end)) {
+-        AllowHeapAllocation allow_allocation;
+-        return CallJsIntrinsic(isolate, isolate->array_slice(), args);
+-      }
+-    }
+-  }
+-
+-  // ECMAScript 232, 3rd Edition, Section 15.4.4.10, step 6.
+-  uint32_t actual_start = (relative_start < 0) ? Max(len + relative_start, 0)
+-                                               : Min(relative_start, len);
+-
+-  // ECMAScript 232, 3rd Edition, Section 15.4.4.10, step 8.
+-  uint32_t actual_end =
+-      (relative_end < 0) ? Max(len + relative_end, 0) : Min(relative_end, len);
+-
+-  Handle<JSObject> object = Handle<JSObject>::cast(receiver);
+-  ElementsAccessor* accessor = object->GetElementsAccessor();
+-  return *accessor->Slice(object, actual_start, actual_end);
+-}
+-
+ BUILTIN(ArraySplice) {
+   HandleScope scope(isolate);
+   Handle<Object> receiver = args.receiver();
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index f31cf707cb..5d2b160f78 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -269,7 +269,6 @@ namespace internal {
+   CPP(ArrayShift)                                                              \
+   TFJ(ArrayPrototypeShift, SharedFunctionInfo::kDontAdaptArgumentsSentinel)    \
+   /* ES6 #sec-array.prototype.slice */                                         \
+-  CPP(ArraySlice)                                                              \
+   TFJ(ArrayPrototypeSlice, SharedFunctionInfo::kDontAdaptArgumentsSentinel)    \
+   /* ES6 #sec-array.prototype.splice */                                        \
+   CPP(ArraySplice)                                                             \
+diff --git a/src/contexts.h b/src/contexts.h
+index 03b32ab586..bb55d91c9c 100644
+--- a/src/contexts.h
++++ b/src/contexts.h
+@@ -69,7 +69,6 @@ enum ContextLookupFlags {
+   V(ARRAY_PUSH_INDEX, JSFunction, array_push)                             \
+   V(ARRAY_SHIFT_INDEX, JSFunction, array_shift)                           \
+   V(ARRAY_SPLICE_INDEX, JSFunction, array_splice)                         \
+-  V(ARRAY_SLICE_INDEX, JSFunction, array_slice)                           \
+   V(ARRAY_UNSHIFT_INDEX, JSFunction, array_unshift)                       \
+   V(ARRAY_ENTRIES_ITERATOR_INDEX, JSFunction, array_entries_iterator)     \
+   V(ARRAY_FOR_EACH_ITERATOR_INDEX, JSFunction, array_for_each_iterator)   \
+diff --git a/src/debug/debug-evaluate.cc b/src/debug/debug-evaluate.cc
+index c937be4fe0..d9defc778c 100644
+--- a/src/debug/debug-evaluate.cc
++++ b/src/debug/debug-evaluate.cc
+@@ -616,7 +616,6 @@ bool BuiltinHasNoSideEffect(Builtins::Name id) {
+     case Builtins::kArrayEvery:
+     case Builtins::kArraySome:
+     case Builtins::kArrayConcat:
+-    case Builtins::kArraySlice:
+     case Builtins::kArrayFilter:
+     case Builtins::kArrayMap:
+     case Builtins::kArrayReduce:
+diff --git a/src/flag-definitions.h b/src/flag-definitions.h
+index 21cd9b2d3c..a05571700f 100644
+--- a/src/flag-definitions.h
++++ b/src/flag-definitions.h
+@@ -832,7 +832,7 @@ DEFINE_BOOL(expose_trigger_failure, false, "expose trigger-failure extension")
+ DEFINE_INT(stack_trace_limit, 10, "number of stack frames to capture")
+ DEFINE_BOOL(builtins_in_stack_traces, false,
+             "show built-in functions in stack traces")
+-DEFINE_BOOL(enable_experimental_builtins, true,
++DEFINE_BOOL(enable_experimental_builtins, false,
+             "enable new csa-based experimental builtins")
+ DEFINE_BOOL(disallow_code_generation_from_strings, false,
+             "disallow eval and friends")
+diff --git a/src/js/array.js b/src/js/array.js
+index c293f8e8c8..5b393263da 100644
+--- a/src/js/array.js
++++ b/src/js/array.js
+@@ -578,46 +578,14 @@ function ArrayUnshiftFallback(arg1) {  // length == 1
+ }
+ 
+ 
++// Oh the humanity... don't remove the following function because js2c for some
++// reason gets symbol minifiation wrong if it's not there. Instead of spending
++// the time fixing js2c (which will go away when all of the internal .js runtime
++// files are gone), just keep this work-around.
+ function ArraySliceFallback(start, end) {
+-  var array = TO_OBJECT(this);
+-  var len = TO_LENGTH(array.length);
+-  var start_i = TO_INTEGER(start);
+-  var end_i = len;
+-
+-  if (!IS_UNDEFINED(end)) end_i = TO_INTEGER(end);
+-
+-  if (start_i < 0) {
+-    start_i += len;
+-    if (start_i < 0) start_i = 0;
+-  } else {
+-    if (start_i > len) start_i = len;
+-  }
+-
+-  if (end_i < 0) {
+-    end_i += len;
+-    if (end_i < 0) end_i = 0;
+-  } else {
+-    if (end_i > len) end_i = len;
+-  }
+-
+-  var result = ArraySpeciesCreate(array, MathMax(end_i - start_i, 0));
+-
+-  if (end_i < start_i) return result;
+-
+-  if (UseSparseVariant(array, len, IS_ARRAY(array), end_i - start_i)) {
+-    %NormalizeElements(array);
+-    if (IS_ARRAY(result)) %NormalizeElements(result);
+-    SparseSlice(array, start_i, end_i - start_i, len, result);
+-  } else {
+-    SimpleSlice(array, start_i, end_i - start_i, len, result);
+-  }
+-
+-  result.length = end_i - start_i;
+-
+-  return result;
++  return null;
+ }
+ 
+-
+ function ComputeSpliceStartIndex(start_i, len) {
+   if (start_i < 0) {
+     start_i += len;
+@@ -1229,7 +1197,6 @@ utils.Export(function(to) {
+   "array_push", ArrayPushFallback,
+   "array_shift", ArrayShiftFallback,
+   "array_splice", ArraySpliceFallback,
+-  "array_slice", ArraySliceFallback,
+   "array_unshift", ArrayUnshiftFallback,
+ ]);
+ 
+-- 
+2.11.0 (Apple Git-81)
+

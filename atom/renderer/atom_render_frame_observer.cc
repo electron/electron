@@ -9,9 +9,11 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
@@ -19,10 +21,10 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
+#include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_draggable_region.h"
 #include "third_party/blink/public/web/web_element.h"
-#include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -161,6 +163,7 @@ bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
     IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomFrameMsg_TakeHeapSnapshot, OnTakeHeapSnapshot)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
@@ -193,6 +196,22 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
         EmitIPCEvent(child->ToWebLocalFrame(), channel, args, sender_id);
       }
   }
+}
+
+void AtomRenderFrameObserver::OnTakeHeapSnapshot(
+    IPC::PlatformFileForTransit file_handle,
+    const std::string& channel) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  auto file = IPC::PlatformFileForTransitToFile(file_handle);
+  bool success = TakeHeapSnapshot(blink::MainThreadIsolate(), &file);
+
+  base::ListValue args;
+  args.AppendString(channel);
+  args.AppendBoolean(success);
+
+  render_frame_->Send(new AtomFrameHostMsg_Message(
+      render_frame_->GetRoutingID(), "ipc-message", args));
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,

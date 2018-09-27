@@ -60,7 +60,7 @@ function testSampleDebugSession () {
     // expected as the session already exists
   }
   session.on('Debugger.paused',
-             (notification) => debuggerPausedCallback(session, notification))
+    (notification) => debuggerPausedCallback(session, notification))
   let cbAsSecondArgCalled = false
   session.post('Debugger.enable', () => { cbAsSecondArgCalled = true })
   session.post('Debugger.setBreakpointByUrl', {

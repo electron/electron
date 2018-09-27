@@ -1,0 +1,22 @@
+diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
+index 9173f6f0324c..8f976057d5d9 100644
+--- a/third_party/blink/renderer/platform/BUILD.gn
++++ b/third_party/blink/renderer/platform/BUILD.gn
+@@ -1819,7 +1819,7 @@ jumbo_source_set("blink_platform_unittests_sources") {
+     "graphics/accelerated_static_bitmap_image_test.cc",
+     "graphics/bitmap_image_test.cc",
+     "graphics/compositing/chunk_to_layer_mapper_test.cc",
+-    "graphics/compositing/composited_layer_raster_invalidator_test.cc",
++    #"graphics/compositing/composited_layer_raster_invalidator_test.cc",
+     "graphics/compositing/paint_artifact_compositor_test.cc",
+     "graphics/compositing/paint_chunks_to_cc_layer_test.cc",
+     "graphics/compositor_element_id_test.cc",
+@@ -1839,7 +1839,7 @@ jumbo_source_set("blink_platform_unittests_sources") {
+     "graphics/paint/drawing_display_item_test.cc",
+     "graphics/paint/drawing_recorder_test.cc",
+     "graphics/paint/float_clip_rect_test.cc",
+-    "graphics/paint/geometry_mapper_test.cc",
++    #"graphics/paint/geometry_mapper_test.cc",
+     "graphics/paint/paint_chunk_test.cc",
+     "graphics/paint/paint_chunker_test.cc",
+     "graphics/paint/paint_controller_test.cc",

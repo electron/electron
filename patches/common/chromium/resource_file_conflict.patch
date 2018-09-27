@@ -1,0 +1,24 @@
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index 4304cc82494f..01588f173b16 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -1663,6 +1663,11 @@ if (is_chrome_branded && !is_android) {
+   }
+ }
+ 
++if (is_electron_build) {
++  group("packed_resources") {
++    public_deps = [ "//electron:packed_resources" ]
++  }
++} else {
+ chrome_paks("packed_resources") {
+   if (is_mac) {
+     output_dir = "$root_gen_dir/repack"
+@@ -1684,6 +1689,7 @@ chrome_paks("packed_resources") {
+     ]
+   }
+ }
++}
+ 
+ repack("browser_tests_pak") {
+   sources = [

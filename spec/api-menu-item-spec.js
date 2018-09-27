@@ -1,12 +1,12 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {remote} = require('electron')
-const {BrowserWindow, app, Menu, MenuItem} = remote
+const { remote } = require('electron')
+const { BrowserWindow, app, Menu, MenuItem } = remote
 const roles = require('../lib/browser/api/menu-item-roles')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('MenuItems', () => {
@@ -83,7 +83,7 @@ describe('MenuItems', () => {
           })
         }
 
-        template.push({type: 'separator'})
+        template.push({ type: 'separator' })
 
         for (let i = 12; i <= 20; i++) {
           template.push({
@@ -142,8 +142,8 @@ describe('MenuItems', () => {
 
   describe('MenuItem role execution', () => {
     it('does not try to execute roles without a valid role property', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      let item = new MenuItem({role: 'asdfghjkl'})
+      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      let item = new MenuItem({ role: 'asdfghjkl' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.false()
@@ -152,8 +152,8 @@ describe('MenuItems', () => {
     })
 
     it('executes roles with native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      let item = new MenuItem({role: 'reload'})
+      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      let item = new MenuItem({ role: 'reload' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true()
@@ -162,8 +162,8 @@ describe('MenuItems', () => {
     })
 
     it('execute roles with non-native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      let item = new MenuItem({role: 'resetzoom'})
+      let win = new BrowserWindow({ show: false, width: 200, height: 200 })
+      let item = new MenuItem({ role: 'resetzoom' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true()
@@ -174,7 +174,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem command id', () => {
     it('cannot be overwritten', () => {
-      const item = new MenuItem({label: 'item'})
+      const item = new MenuItem({ label: 'item' })
 
       const commandId = item.commandId
       expect(commandId).to.not.be.undefined()
@@ -230,7 +230,7 @@ describe('MenuItems', () => {
       ]
 
       for (let role in roleList) {
-        const item = new MenuItem({role})
+        const item = new MenuItem({ role })
         expect(item.getDefaultRoleAccelerator()).to.be.undefined()
       }
     })
@@ -259,7 +259,7 @@ describe('MenuItems', () => {
       }
 
       for (let role in roleList) {
-        const item = new MenuItem({role})
+        const item = new MenuItem({ role })
         expect(item.label).to.equal(roleList[role])
       }
     })
@@ -288,7 +288,7 @@ describe('MenuItems', () => {
       }
 
       for (let role in roleList) {
-        const item = new MenuItem({role})
+        const item = new MenuItem({ role })
         expect(item.getDefaultRoleAccelerator()).to.equal(roleList[role])
       }
     })
@@ -308,7 +308,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem editMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({role: 'editMenu'})
+      const item = new MenuItem({ role: 'editMenu' })
 
       expect(item.label).to.equal('Edit')
       expect(item.submenu.items[0].role).to.equal('undo')
@@ -345,7 +345,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem windowMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({role: 'windowMenu'})
+      const item = new MenuItem({ role: 'windowMenu' })
 
       expect(item.label).to.equal('Window')
       expect(item.submenu.items[0].role).to.equal('minimize')
@@ -360,7 +360,7 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'windowMenu',
-        submenu: [{role: 'copy'}]
+        submenu: [{ role: 'copy' }]
       })
 
       expect(item.label).to.equal('Window')

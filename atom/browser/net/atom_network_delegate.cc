@@ -4,6 +4,7 @@
 
 #include "atom/browser/net/atom_network_delegate.h"
 
+#include <memory>
 #include <utility>
 
 #include "atom/browser/api/atom_api_web_contents.h"

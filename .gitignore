@@ -41,6 +41,7 @@
 /vendor/python_26/
 /vendor/native_mksnapshot
 /vendor/LICENSES.chromium.html
+/vendor/pyyaml
 node_modules/
 SHASUMS256.txt
 **/yarn.lock
@@ -52,3 +53,13 @@ compile_commands.json
 /npm/path.txt
 
 .npmrc
+
+# Generated API definitions
+electron-api.json
+electron.d.ts
+
+# Spec hash calculation
+spec/.hash
+
+# Eslint Cache
+.eslintcache

@@ -416,7 +416,7 @@ bool PathProvider(int key, base::FilePath* result) {
         return false;
       cur =
           cur.Append(GetWidevinePath())
-             .AppendASCII(base::GetNativeLibraryName(kWidevineCdmLibraryName));
+              .AppendASCII(base::GetNativeLibraryName(kWidevineCdmLibraryName));
       break;
 #endif  // defined(WIDEVINE_CDM_AVAILABLE) && BUILDFLAG(ENABLE_LIBRARY_CDMS)
     case chrome::FILE_RESOURCES_PACK:

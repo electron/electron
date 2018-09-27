@@ -2,11 +2,18 @@
 #define NOMINMAX
 #endif
 #include "brightray/browser/win/win32_desktop_notifications/toast.h"
+
+#include <combaseapi.h>
+
+#include <UIAutomation.h>
 #include <uxtheme.h>
 #include <windowsx.h>
 #include <algorithm>
+#include <memory>
+
 #include "base/logging.h"
 #include "brightray/browser/win/win32_desktop_notifications/common.h"
+#include "brightray/browser/win/win32_desktop_notifications/toast_uia.h"
 
 #pragma comment(lib, "msimg32.lib")
 #pragma comment(lib, "uxtheme.lib")
@@ -196,6 +203,22 @@ DesktopNotificationController::Toast::Toast(HWND hwnd,
 }
 
 DesktopNotificationController::Toast::~Toast() {
+  if (uia_) {
+    auto* UiaDisconnectProvider =
+        reinterpret_cast<decltype(&::UiaDisconnectProvider)>(GetProcAddress(
+            GetModuleHandle(L"uiautomationcore.dll"), "UiaDisconnectProvider"));
+    // first detach from the toast, then call UiaDisconnectProvider;
+    // UiaDisconnectProvider may call WM_GETOBJECT and we don't want
+    // it to return the object that we're disconnecting
+    uia_->DetachToast();
+
+    if (UiaDisconnectProvider)
+      UiaDisconnectProvider(uia_);
+
+    uia_->Release();
+    uia_ = nullptr;
+  }
+
   DeleteDC(hdc_);
   if (bitmap_)
     DeleteBitmap(bitmap_);
@@ -231,6 +254,13 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hwnd,
       delete Get(hwnd);
       SetWindowLongPtr(hwnd, 0, 0);
       return 0;
+
+    case WM_DESTROY:
+      if (Get(hwnd)->uia_) {
+        // free UI Automation resources associated with this window
+        UiaReturnRawElementProvider(hwnd, 0, 0, nullptr);
+      }
+      break;
 
     case WM_MOUSEACTIVATE:
       return MA_NOACTIVATE;
@@ -295,6 +325,20 @@ LRESULT DesktopNotificationController::Toast::WndProc(HWND hwnd,
           Get(hwnd)->is_highlighted_ = false;
       }
     } break;
+
+    case WM_GETOBJECT:
+      if (lparam == UiaRootObjectId) {
+        auto* inst = Get(hwnd);
+        if (!inst->uia_) {
+          inst->uia_ = new UIAutomationInterface(inst);
+          inst->uia_->AddRef();
+        }
+        // don't return the interface if it's being disconnected
+        if (!inst->uia_->IsDetached()) {
+          return UiaReturnRawElementProvider(hwnd, wparam, lparam, inst->uia_);
+        }
+      }
+      break;
   }
 
   return DefWindowProc(hwnd, message, wparam, lparam);

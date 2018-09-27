@@ -8,11 +8,15 @@
 #include <shlobj.h>
 #endif
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_navigation_throttle.h"
 #include "atom/browser/atom_quota_permission_context.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
@@ -28,6 +32,7 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/no_destructor.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -82,7 +87,7 @@ namespace {
 bool g_suppress_renderer_process_restart = false;
 
 // Custom schemes to be registered to handle service worker.
-std::string g_custom_service_worker_schemes = "";
+base::NoDestructor<std::string> g_custom_service_worker_schemes;
 
 bool IsSameWebSite(content::BrowserContext* browser_context,
                    const GURL& src_url,
@@ -105,7 +110,7 @@ void AtomBrowserClient::SuppressRendererProcessRestartForOnce() {
 
 void AtomBrowserClient::SetCustomServiceWorkerSchemes(
     const std::vector<std::string>& schemes) {
-  g_custom_service_worker_schemes = base::JoinString(schemes, ",");
+  *g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
 AtomBrowserClient::AtomBrowserClient() {}
@@ -326,9 +331,9 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
                                  arraysize(kCommonSwitchNames));
 
   // The registered service worker schemes.
-  if (!g_custom_service_worker_schemes.empty())
+  if (!g_custom_service_worker_schemes->empty())
     command_line->AppendSwitchASCII(switches::kRegisterServiceWorkerSchemes,
-                                    g_custom_service_worker_schemes);
+                                    *g_custom_service_worker_schemes);
 
 #if defined(OS_WIN)
   // Append --app-user-model-id.
@@ -607,6 +612,14 @@ bool AtomBrowserClient::HandleExternalProtocol(
       base::BindOnce(&HandleExternalProtocolInUI, url, web_contents_getter,
                      has_user_gesture));
   return true;
+}
+
+std::vector<std::unique_ptr<content::NavigationThrottle>>
+AtomBrowserClient::CreateThrottlesForNavigation(
+    content::NavigationHandle* handle) {
+  std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
+  throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
+  return throttles;
 }
 
 }  // namespace atom

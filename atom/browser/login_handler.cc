@@ -4,6 +4,9 @@
 
 #include "atom/browser/login_handler.h"
 
+#include <memory>
+#include <utility>
+
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/values.h"

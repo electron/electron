@@ -1,6 +1,6 @@
-const {autoUpdater} = require('electron').remote
-const {ipcRenderer} = require('electron')
-const {expect} = require('chai')
+const { autoUpdater } = require('electron').remote
+const { ipcRenderer } = require('electron')
+const { expect } = require('chai')
 
 describe('autoUpdater module', function () {
   // XXX(alexeykuzmin): Calling `.skip()` in a 'before' hook

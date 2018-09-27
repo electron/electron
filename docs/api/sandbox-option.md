@@ -115,7 +115,7 @@ and preload.js:
 // private scope that can access a subset of Electron renderer APIs. We must be
 // careful to not leak any objects into the global scope!
 const fs = require('fs')
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 
 // read a configuration file using the `fs` module
 const buf = fs.readFileSync('allowed-popup-urls.json')

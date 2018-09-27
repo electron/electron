@@ -4,7 +4,9 @@
 
 #include "atom/browser/web_contents_permission_helper.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -100,9 +102,23 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     const content::MediaResponseCallback& response_callback) {
   auto callback = base::Bind(&MediaAccessAllowed, request, response_callback);
+
+  base::DictionaryValue details;
+  std::unique_ptr<base::ListValue> media_types(new base::ListValue);
+  if (request.audio_type ==
+      content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
+    media_types->AppendString("audio");
+  }
+  if (request.video_type ==
+      content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
+    media_types->AppendString("video");
+  }
+  details.SetList("mediaTypes", std::move(media_types));
+
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback);
+  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback, false,
+                    &details);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(

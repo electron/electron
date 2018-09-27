@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import atexit
 import os
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ import sys
 
 from lib.config import enable_verbose_mode
 from lib.util import get_electron_branding, execute_stdout, rm_rf
+import lib.dbus_mock
 
 
 if sys.platform == 'linux2':
@@ -17,8 +19,6 @@ if sys.platform == 'linux2':
     # while also setting DBUS_SYSTEM_BUS_ADDRESS environment variable, which
     # will be picked up by electron.
     try:
-        import lib.dbus_mock
-        import atexit
         lib.dbus_mock.start()
         atexit.register(lib.dbus_mock.stop)
     except ImportError:

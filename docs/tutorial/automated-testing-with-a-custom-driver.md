@@ -11,7 +11,7 @@ var electronPath = require('electron')
 // spawn the process
 var env = { /* ... */ }
 var stdio = ['inherit', 'inherit', 'inherit', 'ipc']
-var appProcess = childProcess.spawn(electronPath, ['./app'], {stdio, env})
+var appProcess = childProcess.spawn(electronPath, ['./app'], { stdio, env })
 
 // listen for IPC messages from the app
 appProcess.on('message', (msg) => {
@@ -19,7 +19,7 @@ appProcess.on('message', (msg) => {
 })
 
 // send an IPC message to the app
-appProcess.send({my: 'message'})
+appProcess.send({ my: 'message' })
 ```
 
 From within the Electron app, you can listen for messages and send replies using the nodejs [process](https://nodejs.org/api/process.html) API:
@@ -31,7 +31,7 @@ process.on('message', (msg) => {
 })
 
 // send an IPC message to the test suite
-process.send({my: 'message'})
+process.send({ my: 'message' })
 ```
 
 We can now communicate from the test suite to the Electron app using the `appProcess` object.
@@ -40,12 +40,12 @@ For convenience, you may want to wrap `appProcess` in a driver object that provi
 
 ```js
 class TestDriver {
-  constructor ({path, args, env}) {
+  constructor ({ path, args, env }) {
     this.rpcCalls = []
 
     // start child process
     env.APP_TEST_DRIVER = 1 // let the app know it should listen for messages
-    this.process = childProcess.spawn(path, args, {stdio: ['inherit', 'inherit', 'inherit', 'ipc'], env})
+    this.process = childProcess.spawn(path, args, { stdio: ['inherit', 'inherit', 'inherit', 'ipc'], env })
 
     // handle rpc responses
     this.process.on('message', (message) => {
@@ -71,8 +71,8 @@ class TestDriver {
   async rpc (cmd, ...args) {
     // send rpc request
     var msgId = this.rpcCalls.length
-    this.process.send({msgId, cmd, args})
-    return new Promise((resolve, reject) => this.rpcCalls.push({resolve, reject}))
+    this.process.send({ msgId, cmd, args })
+    return new Promise((resolve, reject) => this.rpcCalls.push({ resolve, reject }))
   }
 
   stop () {
@@ -88,19 +88,19 @@ if (process.env.APP_TEST_DRIVER) {
   process.on('message', onMessage)
 }
 
-async function onMessage ({msgId, cmd, args}) {
+async function onMessage ({ msgId, cmd, args }) {
   var method = METHODS[cmd]
   if (!method) method = () => new Error('Invalid method: ' + cmd)
   try {
     var resolve = await method(...args)
-    process.send({msgId, resolve})
+    process.send({ msgId, resolve })
   } catch (err) {
     var reject = {
       message: err.message,
       stack: err.stack,
       name: err.name
     }
-    process.send({msgId, reject})
+    process.send({ msgId, reject })
   }
 }
 

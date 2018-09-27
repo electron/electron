@@ -5,6 +5,7 @@
 #include "atom/common/asar/archive.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/asar/scoped_temporary_file.h"

@@ -4,6 +4,7 @@
 
 #include "brightray/browser/devtools_manager_delegate.h"
 
+#include <memory>
 #include <vector>
 
 #include "base/bind.h"

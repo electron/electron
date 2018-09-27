@@ -1,0 +1,13 @@
+diff --git a/content/browser/cache_storage/cache_storage.cc b/content/browser/cache_storage/cache_storage.cc
+index ce6a21b..10a3b18 100644
+--- a/content/browser/cache_storage/cache_storage.cc
++++ b/content/browser/cache_storage/cache_storage.cc
+@@ -129,7 +129,7 @@ class CacheStorage::CacheLoader {
+         blob_context_(blob_context),
+         cache_storage_(cache_storage),
+         origin_(origin) {
+-    DCHECK(!origin_.unique());
++    // DCHECK(!origin_.unique());
+   }
+ 
+   virtual ~CacheLoader() {}

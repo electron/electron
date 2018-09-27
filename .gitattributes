@@ -1,0 +1,3 @@
+# `git apply` and friends don't understand CRLF, even on windows. Force those
+# files to be checked out with LF endings even if core.autocrlf is true.
+*.patch text eol=lf

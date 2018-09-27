@@ -4,6 +4,8 @@
 
 #include "atom/browser/bridge_task_runner.h"
 
+#include <utility>
+
 #include "base/message_loop/message_loop.h"
 
 namespace atom {

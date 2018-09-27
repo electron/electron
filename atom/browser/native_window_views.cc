@@ -9,6 +9,8 @@
 #include <wrl/client.h>
 #endif
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -589,6 +591,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
+      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
       resizable_ = false;
@@ -601,7 +604,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
-
   resizable_ = resizable;
 }
 
@@ -792,6 +794,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
+  InvalidateRect(GetAcceleratedWidget(), NULL, 1);
 #endif
 }
 

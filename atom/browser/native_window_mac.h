@@ -7,6 +7,7 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 

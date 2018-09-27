@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include "atom/browser/api/atom_api_net_log.h"
+
+#include <utility>
+
 #include "atom/browser/atom_browser_client.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"

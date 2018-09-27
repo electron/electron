@@ -1,0 +1,15 @@
+repo: src/third_party/ffmpeg
+patches:
+-
+  author: Ales Pergl <alpergl@microsoft.com>
+  file: build_gn.patch
+  description: |
+    Chromium's Mac toolchain sets the "install_name" linker parameter only
+    when "is_component_build" is true, but we want to set even if it's false,
+    because we are making a dylib which will be distributed inside a bundle.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: fix_build_on_linux_x86.patch
+  description: |
+    Builds on Linux x86 fail with a clang error. See https://crbug.com/796379.
+    Once it's fixed the patch can be removed.

@@ -1,0 +1,55 @@
+diff --git a/chrome/browser/apps/app_shim/BUILD.gn b/chrome/browser/apps/app_shim/BUILD.gn
+index b480129fcd7c..4f4f7d06029b 100644
+--- a/chrome/browser/apps/app_shim/BUILD.gn
++++ b/chrome/browser/apps/app_shim/BUILD.gn
+@@ -1,6 +1,7 @@
+ # Copyright 2015 The Chromium Authors. All rights reserved.
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
++import("//extensions/buildflags/buildflags.gni")
+ 
+ # This is the part of the Chrome browser process responsible for launching and
+ # communicating with app_shim processes on Mac.
+@@ -14,8 +15,6 @@ source_set("app_shim") {
+     "app_shim_host_manager_mac.mm",
+     "apps_page_shim_handler.h",
+     "apps_page_shim_handler.mm",
+-    "extension_app_shim_handler_mac.cc",
+-    "extension_app_shim_handler_mac.h",
+     "unix_domain_socket_acceptor.cc",
+     "unix_domain_socket_acceptor.h",
+   ]
+@@ -23,7 +22,16 @@ source_set("app_shim") {
+   deps = [
+     "//content/public/browser",
+     "//content/public/common",
+-    "//extensions/browser",
+-    "//extensions/common",
+   ]
++
++  if (enable_extensions) {
++    sources += [
++      "extension_app_shim_handler_mac.cc",
++      "extension_app_shim_handler_mac.h",
++    ]
++    deps += [
++      "//extensions/browser",
++      "//extensions/common",
++    ]
++  }
+ }
+diff --git a/chrome/browser/ui/BUILD.gn b/chrome/browser/ui/BUILD.gn
+index 72dde06a99a7..e00d6b863b84 100644
+--- a/chrome/browser/ui/BUILD.gn
++++ b/chrome/browser/ui/BUILD.gn
+@@ -2496,7 +2496,9 @@ split_static_library("ui") {
+         ]
+       }
+ 
+-      deps += [ "//extensions/components/native_app_window" ]
++      if (enable_extensions) {
++        deps += [ "//extensions/components/native_app_window" ]
++      }
+ 
+       # Truly cocoa-browser-specific sources. These are secondary UI pieces that
+       # are obsolete before mac_views_browser will ever ship, so they aren't

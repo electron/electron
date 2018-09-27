@@ -1,0 +1,151 @@
+jobs:
+- job: Build_Electron_via_GN
+  displayName: Build Electron via GN
+  timeoutInMinutes: 120
+  steps:
+  - bash: |
+      export PATH="$PATH:/Users/electron/depot_tools"
+      echo "##vso[task.setvariable variable=PATH]$PATH"
+      export GIT_CACHE_PATH="/Users/electron/libcc_cache"
+      set -ex
+      gclient config \
+        --name "src/electron" \
+        --unmanaged \
+        "https://github.com/electron/electron"
+      mkdir src
+      git clone https://github.com/electron/electron src/electron
+      # TODO: there's a subtle race condition here in that if you push two
+      # commits to $BUILD_SOURCEBRANCH in quick succession, it's possible that
+      # fetching the BUILD_SOURCEBRANCH ref will not actually fetch the
+      # BUILD_SOURCEVERSION commit, and so the checkout will fail. Find a
+      # better solution for checking out the commit to be built.
+      (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
+      gclient sync --with_branch_heads --with_tags
+      cd src
+      export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
+      echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
+    displayName: gclient sync
+
+  - bash: |
+      cd src
+      export SCCACHE_BINARY="`pwd`/electron/external_binaries/sccache"
+      "$SCCACHE_BINARY" --start-server
+      echo "##vso[task.setvariable variable=SCCACHE_BINARY]$SCCACHE_BINARY"
+      "$SCCACHE_BINARY" -s
+      echo "GN gen for: $GN_CONFIG"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_BINARY"'"'" $GN_EXTRA_ARGS"
+    env:
+      AWS_ACCESS_KEY_ID: $(SCCACHE_AWS_ACCESS_KEY)
+      AWS_SECRET_ACCESS_KEY: $(SCCACHE_AWS_SECRET)
+    displayName: GN gen with sccache
+    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
+      cd src
+      echo "GN gen for: $GN_CONFIG"
+      gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
+    displayName: GN gen without sccache
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_app
+    displayName: Ninja build app
+
+  - bash: |
+      cd src
+      ninja -C out/Default third_party/electron_node:headers
+    displayName: Build Node.js headers for testing
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
+      cd src
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      ninja -C out/ffmpeg third_party/ffmpeg
+    displayName: Non proprietary ffmpeg build
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+
+  - bash: |
+      cd src
+      # Build needed dump_syms executable
+      ninja -C out/Default third_party/breakpad:dump_syms
+      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+    displayName: Ninja build app
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
+      "$SCCACHE_BINARY" --stop-server
+    displayName: Check sccache stats after build
+    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+  - bash: |
+      if pgrep Electron; then
+        killall Electron
+      fi
+    displayName: Make sure Electron isn't running from previous tests
+
+  - bash: |
+      cd src
+      python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+    displayName: Verify non proprietary ffmpeg
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 5
+
+  - bash: |
+      cd src
+      ninja -C out/Default third_party/electron_node:headers
+      export ELECTRON_OUT_DIR=Default
+      (cd electron && npm run test -- --ci --enable-logging)
+    displayName: Run Electron test suite
+    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    timeoutInMinutes: 10
+
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_dist_zip
+    displayName: Build dist zip
+
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_chromedriver_zip
+    displayName: Build chromedriver and zip
+
+  - bash: |
+      cd src
+      ninja -C out/Default electron:electron_mksnapshot_zip
+    displayName: Build mksnapshot and zip
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testResultsFiles: '*.xml'
+      searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
+    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (application zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (chromedriver.zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
+      ArtifactName: Default
+
+  - bash: |
+      export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
+      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
+      curl -g -H "Content-Type: application/json" -X POST \
+      -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
+    displayName: 'Post Slack Notification on Failure'
+    condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
+
+  - bash: |
+      export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
+      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
+      curl -g -H "Content-Type: application/json" -X POST \
+      -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
+    displayName: 'Post Slack Notification on Success'
+    condition: and(succeeded(), eq(variables['NOTIFY_SLACK'], '1'))

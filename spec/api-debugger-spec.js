@@ -2,10 +2,10 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
-const {closeWindow} = require('./window-helpers')
-const {BrowserWindow} = require('electron').remote
+const { closeWindow } = require('./window-helpers')
+const { BrowserWindow } = require('electron').remote
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 describe('debugger module', () => {
@@ -72,6 +72,24 @@ describe('debugger module', () => {
       }
       w.webContents.debugger.detach()
     })
+
+    it('doesn\'t disconnect an active devtools session', done => {
+      w.webContents.loadURL('about:blank')
+      try {
+        w.webContents.debugger.attach()
+      } catch (err) {
+        return done(`unexpected error : ${err}`)
+      }
+      w.webContents.openDevTools()
+      w.webContents.once('devtools-opened', () => {
+        w.webContents.debugger.detach()
+      })
+      w.webContents.debugger.on('detach', (e, reason) => {
+        expect(w.webContents.debugger.isAttached()).to.be.false()
+        expect(w.devToolsWebContents.isDestroyed()).to.be.false()
+        done()
+      })
+    })
   })
 
   describe('debugger.sendCommand', () => {
@@ -93,7 +111,7 @@ describe('debugger module', () => {
       }
 
       const callback = (err, res) => {
-        expect(err.message).to.be.undefined()
+        expect(err).to.be.null()
         expect(res.wasThrown).to.be.undefined()
         expect(res.result.value).to.equal(6)
 
@@ -101,8 +119,29 @@ describe('debugger module', () => {
         done()
       }
 
-      const params = {'expression': '4+2'}
+      const params = { 'expression': '4+2' }
       w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
+    })
+
+    it('returns response when devtools is opened', done => {
+      w.webContents.loadURL('about:blank')
+      try {
+        w.webContents.debugger.attach()
+      } catch (err) {
+        return done(`unexpected error : ${err}`)
+      }
+      const callback = (err, res) => {
+        expect(err).to.be.null()
+        expect(res.wasThrown).to.be.undefined()
+        expect(res.result.value).to.equal(6)
+        w.webContents.debugger.detach()
+        done()
+      }
+      w.webContents.openDevTools()
+      w.webContents.once('devtools-opened', () => {
+        const params = { 'expression': '4+2' }
+        w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
+      })
     })
 
     it('fires message event', done => {
@@ -139,6 +178,7 @@ describe('debugger module', () => {
       }
 
       w.webContents.debugger.sendCommand('Test', err => {
+        expect(err).to.not.be.null()
         expect(err.message).to.equal("'Test' wasn't found")
         w.webContents.debugger.detach()
         done()

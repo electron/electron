@@ -5,6 +5,7 @@
 #include "atom/renderer/guest_view_container.h"
 
 #include <map>
+#include <utility>
 
 #include "base/bind.h"
 #include "base/lazy_instance.h"

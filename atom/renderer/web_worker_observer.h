@@ -5,6 +5,8 @@
 #ifndef ATOM_RENDERER_WEB_WORKER_OBSERVER_H_
 #define ATOM_RENDERER_WEB_WORKER_OBSERVER_H_
 
+#include <memory>
+
 #include "base/macros.h"
 #include "v8/include/v8.h"
 

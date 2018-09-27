@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_BROWSER_CLIENT_H_
 
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -45,6 +46,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // Custom schemes to be registered to handle service worker.
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);
+
+  std::vector<std::unique_ptr<content::NavigationThrottle>>
+  CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
 
  protected:
   // content::ContentBrowserClient:

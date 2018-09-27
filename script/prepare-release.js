@@ -28,7 +28,7 @@ if (!versionType && !args.notesOnly) {
 
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..')
-github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
+github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 async function getNewVersion (dryRun) {
   if (!dryRun) {
@@ -36,14 +36,11 @@ async function getNewVersion (dryRun) {
   }
   let bumpScript = path.join(__dirname, 'bump-version.py')
   let scriptArgs = [bumpScript, '--bump', versionType]
-  if (args.stable) {
-    scriptArgs.push('--stable')
-  }
   if (dryRun) {
     scriptArgs.push('--dry-run')
   }
   try {
-    let bumpVersion = execSync(scriptArgs.join(' '), {encoding: 'UTF-8'})
+    let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'UTF-8' })
     bumpVersion = bumpVersion.substr(bumpVersion.indexOf(':') + 1).trim()
     let newVersion = `v${bumpVersion}`
     if (!dryRun) {

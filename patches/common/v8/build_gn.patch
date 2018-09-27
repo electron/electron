@@ -1,0 +1,22 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 4b48f7d687..30e9ec34cf 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -192,7 +192,7 @@ config("internal_config") {
+ 
+   include_dirs = [ "." ]
+ 
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines = [ "BUILDING_V8_SHARED" ]
+   }
+ }
+@@ -2912,6 +2912,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+ 
+     configs = [ ":internal_config" ]
+ 
++    configs += [ "//electron/build/config:build_time_executable" ]
++
+     deps = [
+       ":v8_base",
+       ":v8_init",

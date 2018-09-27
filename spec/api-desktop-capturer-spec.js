@@ -1,9 +1,9 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const {desktopCapturer, remote, screen} = require('electron')
+const { desktopCapturer, remote, screen } = require('electron')
 const features = process.atomBinding('features')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 const isCI = remote.getGlobal('isCi')
@@ -47,8 +47,8 @@ describe('desktopCapturer', () => {
       if (callCount === 2) done()
     }
 
-    desktopCapturer.getSources({types: ['window', 'screen']}, callback)
-    desktopCapturer.getSources({types: ['window', 'screen']}, callback)
+    desktopCapturer.getSources({ types: ['window', 'screen'] }, callback)
+    desktopCapturer.getSources({ types: ['window', 'screen'] }, callback)
   })
 
   it('responds to subsequent calls of different options', done => {
@@ -59,8 +59,8 @@ describe('desktopCapturer', () => {
       if (callCount === 2) done()
     }
 
-    desktopCapturer.getSources({types: ['window']}, callback)
-    desktopCapturer.getSources({types: ['screen']}, callback)
+    desktopCapturer.getSources({ types: ['window'] }, callback)
+    desktopCapturer.getSources({ types: ['screen'] }, callback)
   })
 
   it('returns an empty display_id for window sources on Windows and Mac', done => {
@@ -72,11 +72,11 @@ describe('desktopCapturer', () => {
     const { BrowserWindow } = remote
     const w = new BrowserWindow({ width: 200, height: 200 })
 
-    desktopCapturer.getSources({types: ['window']}, (error, sources) => {
+    desktopCapturer.getSources({ types: ['window'] }, (error, sources) => {
       w.destroy()
       expect(error).to.be.null()
       expect(sources).to.be.an('array').that.is.not.empty()
-      for (const {display_id: displayId} of sources) {
+      for (const { display_id: displayId } of sources) {
         expect(displayId).to.be.a('string').and.be.empty()
       }
       done()
@@ -89,7 +89,7 @@ describe('desktopCapturer', () => {
     }
 
     const displays = screen.getAllDisplays()
-    desktopCapturer.getSources({types: ['screen']}, (error, sources) => {
+    desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
       expect(error).to.be.null()
       expect(sources).to.be.an('array').of.length(displays.length)
 

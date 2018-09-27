@@ -1,0 +1,24 @@
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 1bfef2c..0ba2260 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -675,6 +675,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+ 
+ bool WebContentsViewAura::IsValidDragTarget(
+     RenderWidgetHostImpl* target_rwh) const {
++  return true;
+   return target_rwh->GetProcess()->GetID() == drag_start_process_id_ ||
+       GetRenderViewHostID(web_contents_->GetRenderViewHost()) !=
+       drag_start_view_id_;
+diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
+index 37ed265..814a37d 100644
+--- a/content/browser/web_contents/web_drag_dest_mac.mm
++++ b/content/browser/web_contents/web_drag_dest_mac.mm
+@@ -348,6 +348,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
+ }
+ 
+ - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
++  return YES;
+   return targetRWH->GetProcess()->GetID() == dragStartProcessID_ ||
+          GetRenderViewHostID(webContents_->GetRenderViewHost()) !=
+              dragStartViewID_;

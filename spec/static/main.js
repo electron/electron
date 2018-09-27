@@ -2,9 +2,9 @@
 process.throwDeprecation = false
 
 const electron = require('electron')
-const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
+const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
 
-const {Coverage} = require('electabul')
+const { Coverage } = require('electabul')
 
 const fs = require('fs')
 const path = require('path')
@@ -19,7 +19,7 @@ var argv = require('yargs')
 
 var window = null
 
- // will be used by crash-reporter spec.
+// will be used by crash-reporter spec.
 process.port = 0
 process.crashServicePid = 0
 
@@ -265,6 +265,22 @@ ipcMain.on('close-on-will-navigate', (event, id) => {
   })
 })
 
+ipcMain.on('close-on-will-redirect', (event, id) => {
+  const contents = event.sender
+  const window = BrowserWindow.fromId(id)
+  window.webContents.once('will-redirect', (event, input) => {
+    window.close()
+    contents.send('closed-on-will-redirect')
+  })
+})
+
+ipcMain.on('prevent-will-redirect', (event, id) => {
+  const window = BrowserWindow.fromId(id)
+  window.webContents.once('will-redirect', (event) => {
+    event.preventDefault()
+  })
+})
+
 ipcMain.on('create-window-with-options-cycle', (event) => {
   // This can't be done over remote since cycles are already
   // nulled out at the IPC layer
@@ -276,7 +292,7 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
     }
   }
   foo.baz2 = foo.baz
-  const window = new BrowserWindow({show: false, foo: foo})
+  const window = new BrowserWindow({ show: false, foo: foo })
   event.returnValue = window.id
 })
 
@@ -323,7 +339,7 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     console.warn = (message) => {
       warningMessage = message
     }
-    contents.emit(eventName, {sender: contents})
+    contents.emit(eventName, { sender: contents })
   } finally {
     console.warn = consoleWarn
   }
@@ -379,6 +395,26 @@ ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
   })
 
   contents.loadURL(options.url)
+})
+
+ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
+  let focusListener = (event, win) => win.id
+  app.on('browser-window-focus', focusListener)
+  const windowCount = 3
+  const windowOptions = {
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      backgroundThrottling: false
+    }
+  }
+  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
+  windows.forEach(win => win.show())
+  windows.forEach(win => win.focus())
+  windows.forEach(win => win.destroy())
+  app.removeListener('browser-window-focus', focusListener)
+  event.sender.send(testOptions.responseEvent)
 })
 
 // Suspend listeners until the next event and then restore them

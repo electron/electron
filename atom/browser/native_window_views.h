@@ -7,6 +7,7 @@
 
 #include "atom/browser/native_window.h"
 
+#include <memory>
 #include <set>
 #include <string>
 

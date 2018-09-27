@@ -1,0 +1,45 @@
+diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+index a93834fbe86e..937b7f335693 100644
+--- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
+@@ -843,6 +843,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+   return MainWorldScriptContext()->Global();
+ }
+ 
++v8::Local<v8::Context> WebLocalFrameImpl::WorldScriptContext(
++    v8::Isolate* isolate, int world_id) const {
++  scoped_refptr<DOMWrapperWorld> world = DOMWrapperWorld::EnsureIsolatedWorld(
++      isolate, world_id);
++  return ToScriptState(GetFrame(), *world)->GetContext();
++}
++
+ bool WebFrame::ScriptCanAccess(WebFrame* target) {
+   return BindingSecurity::ShouldAllowAccessToFrame(
+       CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
+diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
+index d66499296ff8..bfea68983fda 100644
+--- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
++++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
+@@ -142,6 +142,8 @@ class CORE_EXPORT WebLocalFrameImpl final
+       int argc,
+       v8::Local<v8::Value> argv[]) override;
+   v8::Local<v8::Context> MainWorldScriptContext() const override;
++  v8::Local<v8::Context> WorldScriptContext(
++      v8::Isolate* isolate, int world_id) const override;
+   v8::Local<v8::Object> GlobalProxy() const override;
+   void Reload(WebFrameLoadType) override;
+   void ReloadWithOverrideURL(const WebURL& override_url,
+diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
+index ad0fa84f9511..69f96587b1f1 100644
+--- a/third_party/blink/public/web/web_local_frame.h
++++ b/third_party/blink/public/web/web_local_frame.h
+@@ -404,6 +404,9 @@ class WebLocalFrame : public WebFrame {
+   // be calling this API.
+   virtual v8::Local<v8::Context> MainWorldScriptContext() const = 0;
+ 
++  virtual v8::Local<v8::Context> WorldScriptContext(
++      v8::Isolate* isolate, int world_id) const = 0;
++
+   // Executes script in the context of the current page and returns the value
+   // that the script evaluated to with callback. Script execution can be
+   // suspend.

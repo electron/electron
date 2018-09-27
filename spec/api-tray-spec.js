@@ -1,5 +1,5 @@
-const {remote} = require('electron')
-const {Menu, Tray, nativeImage} = remote
+const { remote } = require('electron')
+const { Menu, Tray, nativeImage } = remote
 
 describe('tray module', () => {
   let tray

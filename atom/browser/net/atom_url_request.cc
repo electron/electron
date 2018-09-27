@@ -4,7 +4,11 @@
 // found in the LICENSE file.
 
 #include "atom/browser/net/atom_url_request.h"
+
+#include <memory>
 #include <string>
+#include <utility>
+
 #include "atom/browser/api/atom_api_url_request.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"

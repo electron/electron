@@ -1,0 +1,30 @@
+diff --git a/src/api.cc b/src/api.cc
+index 8531cd5c05..47254c9f5c 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -8598,7 +8604,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+ 
+ 
+ void Isolate::RunMicrotasks() {
+-  DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
++  // DCHECK_NE(MicrotasksPolicy::kScoped, GetMicrotasksPolicy());
+   reinterpret_cast<i::Isolate*>(this)->RunMicrotasks();
+ }
+ 
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index 62a5856f34..c59dfad2c8 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -5963,9 +5963,9 @@ void Heap::TearDown() {
+ void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
+                                  GCType gc_type, void* data) {
+   DCHECK_NOT_NULL(callback);
+-  DCHECK(gc_prologue_callbacks_.end() ==
+-         std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
+-                   GCCallbackTuple(callback, gc_type, data)));
++//  DCHECK(gc_prologue_callbacks_.end() ==
++//         std::find(gc_prologue_callbacks_.begin(), gc_prologue_callbacks_.end(),
++//                   GCCallbackTuple(callback, gc_type, data)));
+   gc_prologue_callbacks_.emplace_back(callback, gc_type, data);
+ }
+ 

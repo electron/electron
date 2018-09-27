@@ -10,6 +10,7 @@
 #include "content/public/common/common_param_traits.h"
 #include "content/public/common/referrer.h"
 #include "ipc/ipc_message_macros.h"
+#include "ipc/ipc_platform_file.h"
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
 #include "url/gurl.h"
@@ -76,3 +77,7 @@ IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
                     GURL /* url */,
                     content::Referrer /* referrer */)
+
+IPC_MESSAGE_ROUTED2(AtomFrameMsg_TakeHeapSnapshot,
+                    IPC::PlatformFileForTransit /* file_handle */,
+                    std::string /* channel */)

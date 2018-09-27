@@ -4,7 +4,9 @@
 
 #include "atom/common/native_mate_converters/net_converter.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/native_mate_converters/gurl_converter.h"

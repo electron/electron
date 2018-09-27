@@ -9,6 +9,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
+import("//v8/snapshot_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -93,6 +94,8 @@ npm_action("atom_browserify_sandbox") {
     "./lib/sandboxed_renderer/api/exports/path.js:path",
     "-r",
     "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
+    "-t",
+    "aliasify"
   ]
 
   inputs = [
@@ -128,6 +131,8 @@ npm_action("atom_browserify_isolated") {
 
   script = "browserify"
   args = inputs + [
+           "-t",
+           "aliasify",
            "-o",
            rebase_path(outputs[0]),
          ]
@@ -212,6 +217,7 @@ static_library("electron_lib") {
   deps = [
     ":atom_js2c",
     "brightray",
+    "chromium_src:chrome",
     "native_mate",
     "//base",
     "//base:i18n",
@@ -219,7 +225,6 @@ static_library("electron_lib") {
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
-    "//components/security_state/content",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
@@ -525,7 +530,7 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
-    framework_contents = [ "Resources" ]
+    framework_contents = [ "Resources", "Libraries" ]
     public_deps = [
       ":electron_lib",
     ]
@@ -669,6 +674,8 @@ if (is_mac) {
       as_invoker_manifest,
       common_controls_manifest,
       default_compatibility_manifest,
+      "atom/browser/resources/win/dpi_aware.manifest",
+      "atom/browser/resources/win/disable_window_filtering.manifest",
     ]
   }
 
@@ -699,7 +706,8 @@ if (is_mac) {
     }
 
     if (!is_mac) {
-      data += [ "$root_out_dir/resources" ]
+      data += [ "$root_out_dir/resources/default_app.asar" ]
+      data += [ "$root_out_dir/resources/electron.asar" ]
     }
 
     public_deps = [
@@ -898,6 +906,35 @@ dist_zip("electron_dist_zip") {
   ]
   outputs = [
     "$root_build_dir/dist.zip",
+  ]
+}
+
+dist_zip("electron_ffmpeg_zip") {
+  data_deps = [
+    "//third_party/ffmpeg",
+  ]
+  outputs = [
+    "$root_build_dir/ffmpeg.zip",
+  ]
+}
+
+dist_zip("electron_chromedriver_zip") {
+  data_deps = [
+    "//chrome/test/chromedriver",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/chromedriver.zip",
+  ]
+}
+
+dist_zip("electron_mksnapshot_zip") {
+  data_deps = [
+    "//v8:mksnapshot($v8_snapshot_toolchain)",
+    ":licenses",
+  ]
+  outputs = [
+    "$root_build_dir/mksnapshot.zip",
   ]
 }
 

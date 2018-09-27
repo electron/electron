@@ -1,7 +1,7 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
 const CallbacksRegistry = require('../lib/renderer/callbacks-registry')

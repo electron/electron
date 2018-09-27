@@ -1,0 +1,15 @@
+diff --git a/test/unittests/base/bits-unittest.cc b/test/unittests/base/bits-unittest.cc
+index 45fb921797..8c9f249609 100644
+--- a/test/unittests/base/bits-unittest.cc
++++ b/test/unittests/base/bits-unittest.cc
+@@ -13,7 +13,9 @@
+ #else
+ #define DISABLE_IN_RELEASE(Name) DISABLED_##Name
+ #endif
+-
++#ifdef _WIN32
++#pragma warning(disable:4724 4723)  // Disable potential divide by 0 warnings
++#endif
+ namespace v8 {
+ namespace base {
+ namespace bits {

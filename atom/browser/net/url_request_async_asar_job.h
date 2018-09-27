@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_ASYNC_ASAR_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_ASYNC_ASAR_JOB_H_
 
+#include <memory>
+
 #include "atom/browser/net/asar/url_request_asar_job.h"
 #include "atom/browser/net/js_asker.h"
 

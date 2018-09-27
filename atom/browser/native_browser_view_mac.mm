@@ -55,7 +55,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     return;
   }
 
-  if (self.window.styleMask & NSFullScreenWindowMask) {
+  if (self.window.styleMask & NSWindowStyleMaskFullScreen) {
     return;
   }
 
@@ -67,7 +67,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
     return;
   }
 
-  if (self.window.styleMask & NSFullScreenWindowMask) {
+  if (self.window.styleMask & NSWindowStyleMaskFullScreen) {
     return;
   }
 
