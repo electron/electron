@@ -158,10 +158,11 @@ def update_version_h(versions, suffix):
       lines[i + 1] = '#define ATOM_MINOR_VERSION {0}\n'.format(versions[1])
       lines[i + 2] = '#define ATOM_PATCH_VERSION {0}\n'.format(versions[2])
 
+      # We do +4 here to avoid the clang format comment
       if (suffix):
-        lines[i + 3] = '#define ATOM_PRE_RELEASE_VERSION {0}\n'.format(suffix)
+        lines[i + 4] = '#define ATOM_PRE_RELEASE_VERSION {0}\n'.format(suffix)
       else:
-        lines[i + 3] = '// #define ATOM_PRE_RELEASE_VERSION\n'
+        lines[i + 4] = '// #define ATOM_PRE_RELEASE_VERSION\n'
 
       with open(version_h, 'w') as f:
         f.write(''.join(lines))
