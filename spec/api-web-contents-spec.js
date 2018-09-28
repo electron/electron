@@ -46,14 +46,16 @@ describe('webContents module', () => {
 
         assert.ok(all.length >= 4)
         assert.strictEqual(all[0].getType(), 'window')
-        assert.strictEqual(all[all.length - 2].getType(), 'remote')
-        assert.strictEqual(all[all.length - 1].getType(), 'webview')
+        assert.strictEqual(all[all.length - 2].getType(), 'webview')
+        assert.strictEqual(all[all.length - 1].getType(), 'remote')
 
         done()
       })
 
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'))
-      w.webContents.openDevTools()
+      w.webContents.on('did-attach-webview', () => {
+        w.webContents.openDevTools()
+      })
     })
   })
 
