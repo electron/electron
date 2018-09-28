@@ -84,8 +84,8 @@ describe('ipc renderer module', () => {
 
     it('can send objects that both reference the same object', done => {
       const child = { hello: 'world' }
-      const foo = { name: 'foo', child: child }
-      const bar = { name: 'bar', child: child }
+      const foo = { name: 'foo', child }
+      const bar = { name: 'bar', child }
       const array = [foo, bar]
 
       ipcRenderer.once('message', (event, arrayValue, fooValue, barValue, childValue) => {

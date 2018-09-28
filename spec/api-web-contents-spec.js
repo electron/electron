@@ -199,7 +199,7 @@ describe('webContents module', () => {
             w.webContents.sendInputEvent({
               type: opts.type,
               keyCode: opts.keyCode,
-              modifiers: modifiers
+              modifiers
             })
           })
         }

@@ -292,7 +292,7 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
     }
   }
   foo.baz2 = foo.baz
-  const window = new BrowserWindow({ show: false, foo: foo })
+  const window = new BrowserWindow({ show: false, foo })
   event.returnValue = window.id
 })
 

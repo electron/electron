@@ -818,7 +818,7 @@ describe('protocol module', () => {
         const url = `http://127.0.0.1:${port}`
         const handler = (request, callback) => {
           const data = {
-            url: url,
+            url,
             method: 'POST',
             uploadData: {
               contentType: 'application/x-www-form-urlencoded',

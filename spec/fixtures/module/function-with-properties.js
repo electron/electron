@@ -13,5 +13,5 @@ foo.method1.prop1 = function () {
 }
 
 module.exports = {
-  foo: foo
+  foo
 }

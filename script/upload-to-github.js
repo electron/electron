@@ -19,7 +19,7 @@ const githubOpts = {
   owner: 'electron',
   repo: targetRepo,
   id: releaseId,
-  filePath: filePath,
+  filePath,
   name: fileName
 }
 

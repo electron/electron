@@ -76,7 +76,7 @@ function testSampleDebugSession () {
   process.send({
     'cmd': 'assert',
     'debuggerEnabled': cbAsSecondArgCalled,
-    'secondSessionOpened': secondSessionOpened,
+    secondSessionOpened,
     'success': (cur === 5) && (failures.length === 0)
   })
 }

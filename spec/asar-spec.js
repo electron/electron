@@ -1047,7 +1047,7 @@ describe('asar package', function () {
       const p = path.resolve(fixtures, 'asar', 'a.asar', 'no-exist')
       $.ajax({
         url: 'file://' + p,
-        error: function (err) {
+        error (err) {
           assert.strictEqual(err.status, 404)
           done()
         }

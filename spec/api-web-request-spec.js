@@ -166,7 +166,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Accept = '*/*;test/header'
-        callback({ requestHeaders: requestHeaders })
+        callback({ requestHeaders })
       })
       $.ajax({
         url: defaultURL,
@@ -183,7 +183,7 @@ describe('webRequest module', () => {
         Test: 'header'
       }
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders })
+        callback({ requestHeaders })
       })
       ses.webRequest.onSendHeaders((details) => {
         assert.deepStrictEqual(details.requestHeaders, requestHeaders)
@@ -242,7 +242,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
         responseHeaders['Custom'] = ['Changed']
-        callback({ responseHeaders: responseHeaders })
+        callback({ responseHeaders })
       })
       $.ajax({
         url: defaultURL,
@@ -273,7 +273,7 @@ describe('webRequest module', () => {
     it('follows server redirect', (done) => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
-        callback({ responseHeaders: responseHeaders })
+        callback({ responseHeaders })
       })
       $.ajax({
         url: defaultURL + 'serverRedirect',
@@ -289,7 +289,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
         callback({
-          responseHeaders: responseHeaders,
+          responseHeaders,
           statusLine: 'HTTP/1.1 404 Not Found'
         })
       })
@@ -338,7 +338,7 @@ describe('webRequest module', () => {
       const redirectURL = defaultURL + 'redirect'
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL })
+          callback({ redirectURL })
         } else {
           callback({})
         }

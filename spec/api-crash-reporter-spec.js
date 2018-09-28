@@ -67,7 +67,7 @@ describe('crashReporter module', () => {
             w.loadFile(path.join(fixtures, 'api', 'crash.html'), { query: { port } })
           },
           processType: 'renderer',
-          done: done
+          done
         })
       })
 
@@ -100,7 +100,7 @@ describe('crashReporter module', () => {
             childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
           },
           processType: 'browser',
-          done: done
+          done
         })
       })
 
@@ -182,7 +182,7 @@ describe('crashReporter module', () => {
             w.loadURL(crashUrl)
           },
           processType: 'renderer',
-          done: done
+          done
         })
       })
     })
@@ -265,7 +265,7 @@ describe('crashReporter module', () => {
       const { report: newestReport } = reports.reduce((acc, cur) => {
         const timestamp = new Date(cur.date).getTime()
         return (timestamp > acc.timestamp)
-          ? { report: cur, timestamp: timestamp }
+          ? { report: cur, timestamp }
           : acc
       }, { timestamp: -Infinity })
       assert(newestReport, 'Hey!')

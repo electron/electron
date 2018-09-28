@@ -11,5 +11,5 @@ class Foo {
 Foo.bar = 'baz'
 
 module.exports = {
-  Foo: Foo
+  Foo
 }

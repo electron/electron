@@ -1034,7 +1034,7 @@ describe('chromium feature', () => {
       server = http.createServer()
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port
-        wss = new WebSocketServer({ server: server })
+        wss = new WebSocketServer({ server })
         wss.on('error', done)
         wss.on('connection', (ws, upgradeReq) => {
           if (upgradeReq.headers['user-agent']) {
@@ -1135,7 +1135,7 @@ describe('chromium feature', () => {
           show: false,
           webPreferences: {
             preload: path.join(fixtures, 'module', preload),
-            plugins: plugins
+            plugins
           }
         })
       }
