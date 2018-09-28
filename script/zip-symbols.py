@@ -4,10 +4,10 @@ import sys
 
 from lib.config import PLATFORM, get_target_arch
 from lib.util import scoped_cwd, get_electron_version, make_zip, \
-                     electron_gyp, get_out_dir
+                     get_electron_branding, get_out_dir
 
 ELECTRON_VERSION = get_electron_version()
-PROJECT_NAME = electron_gyp()['project_name%']
+PROJECT_NAME = get_electron_branding()['project_name']
 OUT_DIR = get_out_dir()
 
 def main():
