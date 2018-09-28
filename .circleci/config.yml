@@ -25,6 +25,9 @@ env-testing-build: &env-testing-build
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
   NOTIFY_SLACK: true
+
+env-publish-build: &env-publish-build
+  GN_CONFIG: //electron/build/args/release.gn
   ELECTRON_RELEASE: 1
 
 env-browsertests: &env-browsertests
@@ -44,11 +47,13 @@ env-arm: &env-arm
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
   GN_EXTRA_ARGS: 'target_cpu = "arm"'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm
+  BUILD_NATIVE_MKSNAPSHOT: 1
 
 env-arm64: &env-arm64
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
   GN_EXTRA_ARGS: 'target_cpu = "arm64" fatal_linker_warnings = false enable_linux_installer = false'
   MKSNAPSHOT_TOOLCHAIN: //build/toolchain/linux:clang_arm64
+  BUILD_NATIVE_MKSNAPSHOT: 1
 
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
@@ -110,9 +115,11 @@ step-setup-env-for-build: &step-setup-env-for-build
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
 
-      # https://github.com/mozilla/sccache
-      SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
-      echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+      if [ "$ELECTRON_RELEASE" != "1" ]; then
+        # https://github.com/mozilla/sccache
+        SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
+        echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+      fi
 
 step-install-nodejs-on-mac: &step-install-nodejs-on-mac
   run:
@@ -128,7 +135,11 @@ step-electron-gn-gen: &step-electron-gn-gen
     name: Electron GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      if [ "$ELECTRON_RELEASE" == "1" ]; then
+        gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
+      else
+        gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      fi
 
 step-electron-build: &step-electron-build
   run:
@@ -194,14 +205,18 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      if [ "$ELECTRON_RELEASE" == "1" ]; then
+        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn")'" $GN_EXTRA_ARGS"
+      else
+        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      fi
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg third_party/ffmpeg
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -209,6 +224,11 @@ step-verify-ffmpeg: &step-verify-ffmpeg
     command: |
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+
+step-ffmpeg-store: &step-ffmpeg-store
+  store_artifacts:
+    path: src/out/ffmpeg/ffmpeg.zip
+    destination: ffmpeg.zip
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
@@ -236,17 +256,47 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-maybe-generate-breakpad_symbols: &step-maybe-generate-breakpad_symbols
+step-generate-breakpad_symbols: &step-generate-breakpad_symbols
   run:
     name: Generate breakpad symbols
     command: |
-      if [ "$ELECTRON_RELEASE" == "1" ]; then
+      cd src
+      # Build needed dump_syms executable
+      ninja -C out/Default third_party/breakpad:dump_syms
+      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+      electron/script/zip-symbols.py
+
+step-native-mksnapshot-gn-gen: &step-native-mksnapshot-gn-gen
+  run:
+    name: native mksnapshot GN gen (if needed)
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        # Build needed dump_syms executable
-        ninja -C out/Default third_party/breakpad:dump_syms
-        electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+        if [ "$ELECTRON_RELEASE" == "1" ]; then
+          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
+        else
+          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
+        fi
+      else
+        echo 'skipping native mksnapshot GN gen for non arm build'
       fi
 
+step-native-mksnapshot-build: &step-native-mksnapshot-build
+  run:
+    name: native mksnapshot (arm/arm64) build
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
+        cd src
+        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
+        cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
+      else
+        echo 'skipping native mksnapshot build for non arm build'
+      fi
+
+step-native-mksnapshot-store: &step-native-mksnapshot-store
+  store_artifacts:
+    path: src/out/native_mksnapshot/native_mksnapshot.zip
+    destination: native_mksnapshot.zip
 
 # Lists of steps.
 steps-checkout: &steps-checkout
@@ -310,7 +360,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-maybe-generate-breakpad_symbols
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -331,27 +380,47 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-notify-slack-failure
     - *step-maybe-notify-slack-success
 
+steps-electron-build-for-publish: &steps-electron-build-for-publish
+  steps:
+    - *step-checkout-electron
+    - *step-depot-tools-get
+    - *step-depot-tools-add-to-path
+    - *step-gclient-sync
+    - *step-setup-env-for-build
+
+    # Electron app
+    - *step-electron-gn-gen
+    - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+    - *step-generate-breakpad_symbols
+
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+
+    # native_mksnapshot
+    - *step-native-mksnapshot-gn-gen
+    - *step-native-mksnapshot-build
+    - *step-native-mksnapshot-store
+
+    # chromedriver
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
+
+    # Node.js headers
+    - *step-nodejs-headers-build
+
+
 steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
     - attach_workspace:
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
-
-    - run:
-        name: native mksnapshot GN gen
-        command: |
-          cd src
-          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-    - run:
-        name: native mksnapshot (arm/arm64) build
-        command: |
-          cd src
-          ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
-          cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
-    - store_artifacts:
-        path: src/out/native_mksnapshot/native_mksnapshot.zip
-        destination: native_mksnapshot.zip
+    - *step-native-mksnapshot-gn-gen
+    - *step-native-mksnapshot-build
+    - *step-native-mksnapshot-store
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -362,14 +431,13 @@ steps-ffmpeg-build: &steps-ffmpeg-build
 
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
+    - *step-ffmpeg-store
 
-    - store_artifacts:
-        path: src/out/ffmpeg/libffmpeg.so
-        destination: libffmpeg.so
     - persist_to_workspace:
         root: .
         paths:
           - src/out/ffmpeg/libffmpeg.so
+          - src/out/ffmpeg/ffmpeg.zip
 
 steps-native-tests: &steps-native-tests
   steps:
@@ -476,9 +544,7 @@ steps-build-mac: &steps-build-mac
     # ffmpeg
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
-    - store_artifacts:
-        path: src/out/ffmpeg/libffmpeg.dylib
-        destination: libffmpeg.dylib
+    - *step-ffmpeg-store
 
     # It would be better to verify ffmpeg as a part of a test job,
     # but it requires `gn` to run, and it's complicated
@@ -547,6 +613,12 @@ jobs:
       <<: *env-release-build
     <<: *steps-electron-build-for-tests
 
+  linux-x64-publish:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-publish-build
+    <<: *steps-electron-build-for-publish
+
   linux-ia32-debug:
     <<: *machine-linux-2xlarge
     environment:
@@ -574,6 +646,13 @@ jobs:
       <<: *env-release-build
     <<: *steps-electron-build-for-tests
 
+  linux-ia32-publish:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-ia32
+      <<: *env-publish-build
+    <<: *steps-electron-build-for-publish
+
   linux-arm-debug:
     <<: *machine-linux-2xlarge
     environment:
@@ -600,6 +679,13 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
     <<: *steps-electron-build-for-tests
+
+  linux-arm-publish:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-arm
+      <<: *env-publish-build
+    <<: *steps-electron-build-for-publish
 
   linux-arm-mksnapshot:
     <<: *machine-linux-medium
@@ -633,6 +719,13 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
     <<: *steps-electron-build-for-tests
+
+  linux-arm64-publish:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-arm64
+      <<: *env-publish-build
+    <<: *steps-electron-build-for-publish
 
   linux-arm64-mksnapshot:
     <<: *machine-linux-medium

@@ -21,6 +21,7 @@ import zipfile
 from lib.config import is_verbose_mode, PLATFORM
 from lib.env_util import get_vs_env
 
+GN_SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
 
@@ -295,3 +296,22 @@ def make_version(major, minor, patch, pre = None):
     return major + '.' + minor + '.' + patch
   return major + "." + minor + "." + patch + '-' + pre
 
+def get_out_dir():
+  out_dir = 'Debug'
+  override = os.environ.get('ELECTRON_OUT_DIR')
+  if override is not None:
+    out_dir = override
+  return os.path.join(GN_SRC_DIR, 'out', out_dir)
+
+# NOTE: This path is not created by gn, it is used as a scratch zone by our
+#       upload scripts
+def get_dist_dir():
+  return os.path.join(get_out_dir(), 'gen', 'electron_dist')
+
+def get_electron_exec():
+  if sys.platform == 'darwin':
+    return 'out/{0}/Electron.app/Contents/MacOS/Electron'.format(get_out_dir())
+  elif sys.platform == 'win32':
+    return 'out/{0}/electron.exe'.format(get_out_dir())
+  elif sys.platform == 'linux':
+    return 'out/{0}/electron'.format(get_out_dir())

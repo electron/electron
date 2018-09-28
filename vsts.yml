@@ -61,7 +61,7 @@ jobs:
   - bash: |
       cd src
       gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-      ninja -C out/ffmpeg third_party/ffmpeg
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip
     displayName: Non proprietary ffmpeg build
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
@@ -70,6 +70,7 @@ jobs:
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
       electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+      electron/script/zip-symbols.py
     displayName: Ninja build app
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
@@ -114,6 +115,18 @@ jobs:
       cd src
       ninja -C out/Default electron:electron_mksnapshot_zip
     displayName: Build mksnapshot and zip
+
+  - bash: |
+      cd src/electron
+      if [ "$UPLOAD_TO_S3" != "1" ]; then
+        echo 'Uploading Electron release distribution to github releases'
+        ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py
+      else
+        echo 'Uploading Electron release distribution to s3'
+        ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py --upload_to_s3
+      fi
+    name: Upload_distribution
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
   - task: PublishTestResults@2
     displayName: Publish Test Results

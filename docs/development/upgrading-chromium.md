@@ -97,7 +97,7 @@ This is an overview of the steps needed to upgrade Chromium in Electron.
 - Add more build flags to disable features in build-time.
 
 When a Debug build of Electron succeeds, run the tests:
-`$ ./script/test.py`
+`$ npm run test`
 Fix the failing tests.
 
 Follow all the steps above to fix Electron code on all supported platforms.

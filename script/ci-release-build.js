@@ -11,11 +11,10 @@ const appVeyorJobs = {
 }
 
 const circleCIJobs = [
-  'electron-linux-arm',
-  'electron-linux-arm64',
-  'electron-linux-ia32',
-  //  'electron-linux-mips64el',
-  'electron-linux-x64'
+  'linux-arm-publish',
+  'linux-arm64-publish',
+  'linux-ia32-publish',
+  'linux-x64-publish'
 ]
 
 const vstsJobs = [
@@ -94,16 +93,12 @@ function buildAppVeyor (targetBranch, options) {
 
 async function callAppVeyor (targetBranch, job, options) {
   console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`)
-  let environmentVariables = {}
-
-  if (options.ghRelease) {
-    environmentVariables.ELECTRON_RELEASE = 1
-  } else {
-    environmentVariables.RUN_RELEASE_BUILD = 'true'
+  const environmentVariables = {
+    ELECTRON_RELEASE: 1
   }
 
-  if (options.automaticRelease) {
-    environmentVariables.AUTO_RELEASE = 'true'
+  if (!options.ghRelease) {
+    environmentVariables.UPLOAD_TO_S3 = 1
   }
 
   const requestOpts = {
@@ -144,14 +139,12 @@ async function buildVSTS (targetBranch, options) {
     assert(vstsJobs.includes(options.job), `Unknown VSTS CI job name: ${options.job}. Valid values are: ${vstsJobs}.`)
   }
   console.log(`Triggering VSTS to run build on branch: ${targetBranch} with release flag.`)
-  let environmentVariables = {}
+  const environmentVariables = {
+    ELECTRON_RELEASE: 1
+  }
 
   if (!options.ghRelease) {
     environmentVariables.UPLOAD_TO_S3 = 1
-  }
-
-  if (options.automaticRelease) {
-    environmentVariables.AUTO_RELEASE = 'true'
   }
 
   let requestOpts = {
