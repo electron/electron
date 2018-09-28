@@ -412,7 +412,7 @@ const waitForCrashReport = () => {
 
 const startServer = ({ callback, processType, done }) => {
   let called = false
-  let server = http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     const form = new multiparty.Form()
     form.parse(req, (error, fields) => {
       if (error) throw error

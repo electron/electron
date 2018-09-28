@@ -228,7 +228,7 @@ describe('remote module', () => {
     })
 
     it('is referenced by its members', () => {
-      let stringify = remote.getGlobal('JSON').stringify
+      const stringify = remote.getGlobal('JSON').stringify
       global.gc()
       stringify({})
     })
@@ -451,13 +451,13 @@ describe('remote module', () => {
       assert.strictEqual(derived.method(), 'method')
       assert.strictEqual(derived.readonly, 'readonly')
       assert(!derived.hasOwnProperty('method'))
-      let proto = Object.getPrototypeOf(derived)
+      const proto = Object.getPrototypeOf(derived)
       assert(!proto.hasOwnProperty('method'))
       assert(Object.getPrototypeOf(proto).hasOwnProperty('method'))
     })
 
     it('is referenced by methods in prototype chain', () => {
-      let method = derived.method
+      const method = derived.method
       derived = null
       global.gc()
       assert.strictEqual(method(), 'method')
@@ -474,7 +474,7 @@ describe('remote module', () => {
     })
 
     it('throws custom errors from the main process', () => {
-      let err = new Error('error')
+      const err = new Error('error')
       err.cause = new Error('cause')
       err.prop = 'error prop'
       try {

@@ -51,7 +51,7 @@ async function makeRequest (requestOptions, parseResponse) {
 
 async function circleCIcall (buildUrl, targetBranch, job, options) {
   console.log(`Triggering CircleCI to run build job: ${job} on branch: ${targetBranch} with release flag.`)
-  let buildRequest = {
+  const buildRequest = {
     'build_parameters': {
       'CIRCLE_JOB': job
     }
@@ -67,7 +67,7 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
     buildRequest.build_parameters.AUTO_RELEASE = 'true'
   }
 
-  let circleResponse = await makeRequest({
+  const circleResponse = await makeRequest({
     method: 'POST',
     url: buildUrl,
     headers: {
@@ -117,7 +117,7 @@ async function callAppVeyor (targetBranch, job, options) {
     }),
     method: 'POST'
   }
-  let appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
+  const appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling AppVeyor:', err)
   })
   const buildUrl = `https://windows-ci.electronjs.org/project/AppVeyor/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`
@@ -147,7 +147,7 @@ async function buildVSTS (targetBranch, options) {
     environmentVariables.UPLOAD_TO_S3 = 1
   }
 
-  let requestOpts = {
+  const requestOpts = {
     url: `${vstsURL}/definitions?api-version=4.1`,
     auth: {
       user: '',
@@ -157,7 +157,7 @@ async function buildVSTS (targetBranch, options) {
       'Content-Type': 'application/json'
     }
   }
-  let vstsResponse = await makeRequest(requestOpts, true).catch(err => {
+  const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log('Error calling VSTS to get build definitions:', err)
   })
   let buildsToRun = []
@@ -170,14 +170,14 @@ async function buildVSTS (targetBranch, options) {
 }
 
 async function callVSTSBuild (build, targetBranch, environmentVariables) {
-  let buildBody = {
+  const buildBody = {
     definition: build,
     sourceBranch: targetBranch
   }
   if (Object.keys(environmentVariables).length !== 0) {
     buildBody.parameters = JSON.stringify(environmentVariables)
   }
-  let requestOpts = {
+  const requestOpts = {
     url: `${vstsURL}/builds?api-version=4.1`,
     auth: {
       user: '',
@@ -189,7 +189,7 @@ async function callVSTSBuild (build, targetBranch, environmentVariables) {
     body: JSON.stringify(buildBody),
     method: 'POST'
   }
-  let vstsResponse = await makeRequest(requestOpts, true).catch(err => {
+  const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
     console.log(`Error calling VSTS for job ${build.name}`, err)
   })
   console.log(`VSTS release build request for ${build.name} successful. Check ${vstsResponse._links.web.href} for status.`)

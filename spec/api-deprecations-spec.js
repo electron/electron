@@ -71,7 +71,7 @@ describe('deprecations', () => {
     deprecations.setHandler(m => { msg = m })
 
     const prop = 'itMustGo'
-    let o = { [prop]: 0 }
+    const o = { [prop]: 0 }
 
     deprecate.removeProperty(o, prop)
 
@@ -88,7 +88,7 @@ describe('deprecations', () => {
 
     const key = 'foo'
     const val = 'bar'
-    let o = { [key]: val }
+    const o = { [key]: val }
     deprecate.removeProperty(o, key)
 
     for (let i = 0; i < 3; ++i) {
@@ -104,7 +104,7 @@ describe('deprecations', () => {
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
 
-    let o = { [oldProp]: 0 }
+    const o = { [oldProp]: 0 }
     deprecate.renameProperty(o, oldProp, newProp)
 
     expect(msg).to.be.a('string')

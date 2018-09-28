@@ -987,7 +987,7 @@ describe('<webview> tag', function () {
   describe('found-in-page event', () => {
     it('emits when a request is made', (done) => {
       let requestId = null
-      let activeMatchOrdinal = []
+      const activeMatchOrdinal = []
       const listener = (e) => {
         assert.strictEqual(e.result.requestId, requestId)
         assert.strictEqual(e.result.matches, 3)
@@ -1157,7 +1157,7 @@ describe('<webview> tag', function () {
     it('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = await openTheWindow({ show: false })
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'))
-      let [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
+      const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong')
       assert.strictEqual(visibilityState, 'hidden')
       assert.strictEqual(hidden, true)
 

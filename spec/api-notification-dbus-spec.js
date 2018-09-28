@@ -62,10 +62,10 @@ const skip = process.platform !== 'linux' ||
     }
 
     function unmarshalDBusNotifyHints (dbusHints) {
-      let o = {}
-      for (let hint of dbusHints) {
-        let key = hint[0]
-        let value = hint[1][1][0]
+      const o = {}
+      for (const hint of dbusHints) {
+        const key = hint[0]
+        const value = hint[1][1][0]
         o[key] = value
       }
       return o
@@ -102,11 +102,11 @@ const skip = process.platform !== 'linux' ||
       const calls = await getCalls()
       expect(calls).to.be.an('array').of.lengthOf.at.least(1)
 
-      let lastCall = calls[calls.length - 1]
-      let methodName = lastCall[1]
+      const lastCall = calls[calls.length - 1]
+      const methodName = lastCall[1]
       expect(methodName).to.equal('Notify')
 
-      let args = unmarshalDBusNotifyArgs(lastCall[2])
+      const args = unmarshalDBusNotifyArgs(lastCall[2])
       expect(args).to.deep.equal({
         app_name: appName,
         replaces_id: 0,

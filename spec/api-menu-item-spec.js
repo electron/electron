@@ -49,10 +49,10 @@ describe('MenuItems', () => {
     })
 
     describe('MenuItem group properties', () => {
-      let template = []
+      const template = []
 
       const findRadioGroups = (template) => {
-        let groups = []
+        const groups = []
         let cur = null
         for (let i = 0; i <= template.length; i++) {
           if (cur && ((i === template.length) || (template[i].type !== 'radio'))) {
@@ -68,7 +68,7 @@ describe('MenuItems', () => {
 
       // returns array of checked menuitems in [begin,end)
       const findChecked = (menuItems, begin, end) => {
-        let checked = []
+        const checked = []
         for (let i = begin; i < end; i++) {
           if (menuItems[i].checked) checked.push(i)
         }
@@ -107,7 +107,7 @@ describe('MenuItems', () => {
       it('should assign groupId automatically', () => {
         const menu = Menu.buildFromTemplate(template)
 
-        let usedGroupIds = new Set()
+        const usedGroupIds = new Set()
         const groups = findRadioGroups(template)
         groups.forEach(g => {
           const groupId = menu.items[g.begin].groupId
@@ -143,7 +143,7 @@ describe('MenuItems', () => {
   describe('MenuItem role execution', () => {
     it('does not try to execute roles without a valid role property', () => {
       let win = new BrowserWindow({ show: false, width: 200, height: 200 })
-      let item = new MenuItem({ role: 'asdfghjkl' })
+      const item = new MenuItem({ role: 'asdfghjkl' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.false()
@@ -153,7 +153,7 @@ describe('MenuItems', () => {
 
     it('executes roles with native role functions', () => {
       let win = new BrowserWindow({ show: false, width: 200, height: 200 })
-      let item = new MenuItem({ role: 'reload' })
+      const item = new MenuItem({ role: 'reload' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true()
@@ -163,7 +163,7 @@ describe('MenuItems', () => {
 
     it('execute roles with non-native role functions', () => {
       let win = new BrowserWindow({ show: false, width: 200, height: 200 })
-      let item = new MenuItem({ role: 'resetzoom' })
+      const item = new MenuItem({ role: 'resetzoom' })
 
       const canExecute = roles.execute(item.role, win, win.webContents)
       expect(canExecute).to.be.true()
@@ -229,7 +229,7 @@ describe('MenuItems', () => {
         'zoomout'
       ]
 
-      for (let role in roleList) {
+      for (const role in roleList) {
         const item = new MenuItem({ role })
         expect(item.getDefaultRoleAccelerator()).to.be.undefined()
       }
@@ -258,7 +258,7 @@ describe('MenuItems', () => {
         'zoomout': 'Zoom Out'
       }
 
-      for (let role in roleList) {
+      for (const role in roleList) {
         const item = new MenuItem({ role })
         expect(item.label).to.equal(roleList[role])
       }
@@ -287,7 +287,7 @@ describe('MenuItems', () => {
         'zoomout': 'CommandOrControl+-'
       }
 
-      for (let role in roleList) {
+      for (const role in roleList) {
         const item = new MenuItem({ role })
         expect(item.getDefaultRoleAccelerator()).to.equal(roleList[role])
       }

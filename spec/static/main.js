@@ -56,7 +56,7 @@ if (process.platform !== 'darwin') {
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
 const print = function (_, args) {
-  let output = util.format.apply(null, args)
+  const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
   } else {
@@ -398,7 +398,7 @@ ipcMain.on('test-webcontents-navigation-observer', (event, options) => {
 })
 
 ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
-  let focusListener = (event, win) => win.id
+  const focusListener = (event, win) => win.id
   app.on('browser-window-focus', focusListener)
   const windowCount = 3
   const windowOptions = {

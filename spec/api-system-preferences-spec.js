@@ -11,7 +11,7 @@ describe('systemPreferences module', () => {
     })
 
     it('should return a non-empty string', () => {
-      let accentColor = systemPreferences.getAccentColor()
+      const accentColor = systemPreferences.getAccentColor()
       assert.notStrictEqual(accentColor, null)
       assert(accentColor.length > 0)
     })

@@ -131,7 +131,7 @@ describe('modules support', () => {
 
     describe('when the path is outside the resources path', () => {
       it('includes paths outside of the resources path', () => {
-        let modulePath = path.resolve('/foo')
+        const modulePath = path.resolve('/foo')
         assert.deepStrictEqual(Module._nodeModulePaths(modulePath), [
           path.join(modulePath, 'node_modules'),
           path.resolve('/node_modules')

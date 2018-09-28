@@ -12,7 +12,7 @@ const { session } = remote
 function randomBuffer (size, start, end) {
   start = start || 0
   end = end || 255
-  let range = 1 + end - start
+  const range = 1 + end - start
   const buffer = Buffer.allocUnsafe(size)
   for (let i = 0; i < size; ++i) {
     buffer[i] = start + Math.floor(Math.random() * range)
@@ -21,7 +21,7 @@ function randomBuffer (size, start, end) {
 }
 
 function randomString (length) {
-  let buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
+  const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
   return buffer.toString()
 }
 
@@ -209,8 +209,8 @@ describe('net module', () => {
 
       let chunkIndex = 0
       const chunkCount = 100
-      let sentChunks = []
-      let receivedChunks = []
+      const sentChunks = []
+      const receivedChunks = []
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
         response.pause()
@@ -218,8 +218,8 @@ describe('net module', () => {
           receivedChunks.push(chunk)
         })
         response.on('end', () => {
-          let sentData = Buffer.concat(sentChunks)
-          let receivedData = Buffer.concat(receivedChunks)
+          const sentData = Buffer.concat(sentChunks)
+          const receivedData = Buffer.concat(receivedChunks)
           assert.strictEqual(sentData.toString(), receivedData.toString())
           assert.strictEqual(chunkIndex, chunkCount)
           done()
@@ -285,14 +285,14 @@ describe('net module', () => {
         requestResponseEventEmitted = true
         const statusCode = response.statusCode
         assert.strictEqual(statusCode, 200)
-        let buffers = []
+        const buffers = []
         response.pause()
         response.on('data', (chunk) => {
           buffers.push(chunk)
           responseDataEventEmitted = true
         })
         response.on('end', () => {
-          let receivedBodyData = Buffer.concat(buffers)
+          const receivedBodyData = Buffer.concat(buffers)
           assert(receivedBodyData.toString() === bodyData)
           responseEndEventEmitted = true
           maybeDone(done)
@@ -907,7 +907,7 @@ describe('net module', () => {
         assert.fail('Request should not be intercepted by the default session')
       })
 
-      let customSession = session.fromPartition(customPartitionName, { cache: false })
+      const customSession = session.fromPartition(customPartitionName, { cache: false })
       let requestIsIntercepted = false
       customSession.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === `${server.url}${requestUrl}`) {
@@ -1189,7 +1189,7 @@ describe('net module', () => {
         assert.fail('Request should not be intercepted by the default session')
       })
 
-      let customSession = session.fromPartition(customPartitionName, {
+      const customSession = session.fromPartition(customPartitionName, {
         cache: false
       })
       let requestIsIntercepted = false
@@ -1260,7 +1260,7 @@ describe('net module', () => {
       })
 
       const serverUrl = url.parse(server.url)
-      let options = {
+      const options = {
         port: serverUrl.port,
         hostname: '127.0.0.1',
         headers: {}
@@ -1312,7 +1312,7 @@ describe('net module', () => {
         }
       })
 
-      let nodeRequest = http.request(`${server.url}${nodeRequestUrl}`)
+      const nodeRequest = http.request(`${server.url}${nodeRequestUrl}`)
       nodeRequest.on('response', (nodeResponse) => {
         const netRequest = net.request(`${server.url}${netRequestUrl}`)
         netRequest.on('response', (netResponse) => {
@@ -1470,7 +1470,7 @@ describe('net module', () => {
 
     it('should not emit any event after close', (done) => {
       const requestUrl = '/requestUrl'
-      let bodyData = randomString(kOneKiloByte)
+      const bodyData = randomString(kOneKiloByte)
       server.on('request', (request, response) => {
         switch (request.url) {
           case requestUrl:

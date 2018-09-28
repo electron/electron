@@ -331,10 +331,10 @@ describe('node feature', () => {
       const key = 'q90K9yBqhWZnAMCMTOJfPQ=='
       const cipherText = '{"error_code":114,"error_message":"Tham số không hợp lệ","data":null}'
       for (let i = 0; i < 10000; ++i) {
-        let iv = Buffer.from('0'.repeat(32), 'hex')
-        let input = Buffer.from(data, 'base64')
-        let decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv)
-        let result = Buffer.concat([decipher.update(input), decipher.final()]).toString('utf8')
+        const iv = Buffer.from('0'.repeat(32), 'hex')
+        const input = Buffer.from(data, 'base64')
+        const decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv)
+        const result = Buffer.concat([decipher.update(input), decipher.final()]).toString('utf8')
         assert.strictEqual(cipherText, result)
       }
     })

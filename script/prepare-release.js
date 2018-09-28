@@ -34,15 +34,15 @@ async function getNewVersion (dryRun) {
   if (!dryRun) {
     console.log(`Bumping for new "${versionType}" version.`)
   }
-  let bumpScript = path.join(__dirname, 'bump-version.py')
-  let scriptArgs = [bumpScript, '--bump', versionType]
+  const bumpScript = path.join(__dirname, 'bump-version.py')
+  const scriptArgs = [bumpScript, '--bump', versionType]
   if (dryRun) {
     scriptArgs.push('--dry-run')
   }
   try {
     let bumpVersion = execSync(scriptArgs.join(' '), { encoding: 'UTF-8' })
     bumpVersion = bumpVersion.substr(bumpVersion.indexOf(':') + 1).trim()
-    let newVersion = `v${bumpVersion}`
+    const newVersion = `v${bumpVersion}`
     if (!dryRun) {
       console.log(`${pass} Successfully bumped version to ${newVersion}`)
     }
@@ -55,15 +55,15 @@ async function getNewVersion (dryRun) {
 
 async function getCurrentBranch (gitDir) {
   console.log(`Determining current git branch`)
-  let gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
-  let branchDetails = await GitProcess.exec(gitArgs, gitDir)
+  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
+  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
   if (branchDetails.exitCode === 0) {
-    let currentBranch = branchDetails.stdout.trim()
+    const currentBranch = branchDetails.stdout.trim()
     console.log(`${pass} Successfully determined current git branch is ` +
       `${currentBranch}`)
     return currentBranch
   } else {
-    let error = GitProcess.parseError(branchDetails.stderr)
+    const error = GitProcess.parseError(branchDetails.stderr)
     console.log(`${fail} Could not get details for the current branch,
       error was ${branchDetails.stderr}`, error)
     process.exit(1)
@@ -75,7 +75,7 @@ async function getReleaseNotes (currentBranch) {
     return 'Nightlies do not get release notes, please compare tags for info'
   }
   console.log(`Generating release notes for ${currentBranch}.`)
-  let githubOpts = {
+  const githubOpts = {
     owner: 'electron',
     repo: targetRepo,
     base: `v${pkg.version}`,
@@ -88,7 +88,7 @@ async function getReleaseNotes (currentBranch) {
     releaseNotes = '(placeholder)\n'
   }
   console.log(`Checking for commits from ${pkg.version} to ${currentBranch}`)
-  let commitComparison = await github.repos.compareCommits(githubOpts)
+  const commitComparison = await github.repos.compareCommits(githubOpts)
     .catch(err => {
       console.log(`${fail} Error checking for commits from ${pkg.version} to ` +
         `${currentBranch}`, err)
@@ -112,7 +112,7 @@ async function getReleaseNotes (currentBranch) {
       let prNumber
       if (prMatch) {
         commitMessage = commitMessage.replace(mergeRE, '').replace('\n', '')
-        let newlineMatch = commitMessage.match(newlineRE)
+        const newlineMatch = commitMessage.match(newlineRE)
         if (newlineMatch) {
           commitMessage = newlineMatch[1]
         }
@@ -138,19 +138,19 @@ async function getReleaseNotes (currentBranch) {
 }
 
 async function createRelease (branchToTarget, isBeta) {
-  let releaseNotes = await getReleaseNotes(branchToTarget)
-  let newVersion = await getNewVersion()
+  const releaseNotes = await getReleaseNotes(branchToTarget)
+  const newVersion = await getNewVersion()
   await tagRelease(newVersion)
   const githubOpts = {
     owner: 'electron',
     repo: targetRepo
   }
   console.log(`Checking for existing draft release.`)
-  let releases = await github.repos.getReleases(githubOpts)
+  const releases = await github.repos.getReleases(githubOpts)
     .catch(err => {
       console.log('$fail} Could not get releases.  Error was', err)
     })
-  let drafts = releases.data.filter(release => release.draft &&
+  const drafts = releases.data.filter(release => release.draft &&
     release.tag_name === newVersion)
   if (drafts.length > 0) {
     console.log(`${fail} Aborting because draft release for
@@ -188,7 +188,7 @@ async function createRelease (branchToTarget, isBeta) {
 }
 
 async function pushRelease (branch) {
-  let pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
+  const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], gitDir)
   if (pushDetails.exitCode === 0) {
     console.log(`${pass} Successfully pushed the release.  Wait for ` +
       `release builds to finish before running "npm run release".`)
@@ -208,7 +208,7 @@ async function runReleaseBuilds (branch) {
 
 async function tagRelease (version) {
   console.log(`Tagging release ${version}.`)
-  let checkoutDetails = await GitProcess.exec([ 'tag', '-a', '-m', version, version ], gitDir)
+  const checkoutDetails = await GitProcess.exec([ 'tag', '-a', '-m', version, version ], gitDir)
   if (checkoutDetails.exitCode === 0) {
     console.log(`${pass} Successfully tagged ${version}.`)
   } else {
@@ -219,7 +219,7 @@ async function tagRelease (version) {
 }
 
 async function verifyNewVersion () {
-  let newVersion = await getNewVersion(true)
+  const newVersion = await getNewVersion(true)
   let response
   if (args.automaticRelease) {
     response = 'y'
@@ -249,19 +249,19 @@ async function promptForVersion (version) {
 
 // function to determine if there have been commits to master since the last release
 async function changesToRelease () {
-  let lastCommitWasRelease = new RegExp(`^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$`, 'g')
-  let lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], gitDir)
+  const lastCommitWasRelease = new RegExp(`^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$`, 'g')
+  const lastCommit = await GitProcess.exec(['log', '-n', '1', `--pretty=format:'%s'`], gitDir)
   return !lastCommitWasRelease.test(lastCommit.stdout)
 }
 
 async function prepareRelease (isBeta, notesOnly) {
   if (args.dryRun) {
-    let newVersion = await getNewVersion(true)
+    const newVersion = await getNewVersion(true)
     console.log(newVersion)
   } else {
     const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(gitDir)
     if (notesOnly) {
-      let releaseNotes = await getReleaseNotes(currentBranch)
+      const releaseNotes = await getReleaseNotes(currentBranch)
       console.log(`Draft release notes are: \n${releaseNotes}`)
     } else {
       const changes = await changesToRelease(currentBranch)

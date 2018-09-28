@@ -537,7 +537,7 @@ describe('session module', () => {
         if (request.method === 'GET') {
           callback({ data: content, mimeType: 'text/html' })
         } else if (request.method === 'POST') {
-          let uuid = request.uploadData[1].blobUUID
+          const uuid = request.uploadData[1].blobUUID
           assert(uuid)
           session.defaultSession.getBlobData(uuid, (result) => {
             assert.strictEqual(result.toString(), postData)
@@ -648,7 +648,7 @@ describe('session module', () => {
       const fixtures = path.join(__dirname, 'fixtures')
       const downloadFilePath = path.join(fixtures, 'logo.png')
       const rangeServer = http.createServer((req, res) => {
-        let options = { root: fixtures }
+        const options = { root: fixtures }
         send(req, req.url, options)
           .on('error', (error) => { done(error) }).pipe(res)
       })

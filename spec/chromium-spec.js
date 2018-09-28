@@ -34,7 +34,7 @@ describe('chromium feature', () => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'locale-check')
         const electronPath = remote.getGlobal('process').execPath
         let output = ''
-        let appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`])
+        const appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`])
 
         appProcess.stdout.on('data', (data) => { output += data })
         appProcess.stdout.on('end', () => {
@@ -175,7 +175,7 @@ describe('chromium feature', () => {
 
   describe('navigator.languages', (done) => {
     it('should return the system locale only', () => {
-      let appLocale = app.getLocale()
+      const appLocale = app.getLocale()
       assert.strictEqual(navigator.languages.length, 1)
       assert.strictEqual(navigator.languages[0], appLocale)
     })
@@ -294,7 +294,7 @@ describe('chromium feature', () => {
     })
 
     it('accepts "nodeIntegration" as feature', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         assert.strictEqual(event.data.isProcessGlobalUndefined, true)
         b.close()
@@ -305,7 +305,7 @@ describe('chromium feature', () => {
     })
 
     it('inherit options of parent window', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         const ref1 = remote.getCurrentWindow().getSize()
         const width = ref1[0]
@@ -339,7 +339,7 @@ describe('chromium feature', () => {
     }
 
     it('disables node integration when it is disabled on the parent window', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         assert.strictEqual(event.data.isProcessGlobalUndefined, true)
         b.close()
@@ -359,7 +359,7 @@ describe('chromium feature', () => {
     })
 
     it('disables webviewTag when node integration is disabled on the parent window', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         assert.strictEqual(event.data.isWebViewUndefined, true)
         b.close()
@@ -380,7 +380,7 @@ describe('chromium feature', () => {
 
     // TODO(codebytere): re-enable this test
     xit('disables node integration when it is disabled on the parent window for chrome devtools URLs', (done) => {
-      let b
+      let b = null
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
           contents.executeJavaScript('typeof process').then((typeofProcessGlobal) => {
@@ -394,7 +394,7 @@ describe('chromium feature', () => {
     })
 
     it('disables JavaScript when it is disabled on the parent window', (done) => {
-      let b
+      let b = null
       app.once('web-contents-created', (event, contents) => {
         contents.once('did-finish-load', () => {
           app.once('browser-window-created', (event, window) => {
@@ -419,7 +419,7 @@ describe('chromium feature', () => {
     })
 
     it('disables the <webview> tag when it is disabled on the parent window', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         assert.strictEqual(event.data.isWebViewGlobalUndefined, true)
         b.close()
@@ -439,7 +439,7 @@ describe('chromium feature', () => {
     })
 
     it('does not override child options', (done) => {
-      let b
+      let b = null
       const size = {
         width: 350,
         height: 450
@@ -476,7 +476,7 @@ describe('chromium feature', () => {
     })
 
     it('defines a window.location getter', (done) => {
-      let b
+      let b = null
       let targetURL
       if (process.platform === 'win32') {
         targetURL = `file:///${fixtures.replace(/\\/g, '/')}/pages/base-page.html`
@@ -494,7 +494,7 @@ describe('chromium feature', () => {
     })
 
     it('defines a window.location setter', (done) => {
-      let b
+      let b = null
       app.once('browser-window-created', (event, { webContents }) => {
         webContents.once('did-finish-load', () => {
           // When it loads, redirect
@@ -510,14 +510,14 @@ describe('chromium feature', () => {
     })
 
     it('open a blank page when no URL is specified', (done) => {
-      let b
+      let b = null
       app.once('browser-window-created', (event, { webContents }) => {
         webContents.once('did-finish-load', () => {
           const { location } = b
           b.close()
           assert.strictEqual(location, 'about:blank')
 
-          let c
+          let c = null
           app.once('browser-window-created', (event, { webContents }) => {
             webContents.once('did-finish-load', () => {
               const { location } = c
@@ -543,7 +543,7 @@ describe('chromium feature', () => {
     })
 
     it('sets the window title to the specified frameName', (done) => {
-      let b
+      let b = null
       app.once('browser-window-created', (event, createdWindow) => {
         assert.strictEqual(createdWindow.getTitle(), 'hello')
         b.close()
@@ -553,7 +553,7 @@ describe('chromium feature', () => {
     })
 
     it('does not throw an exception when the frameName is a built-in object property', (done) => {
-      let b
+      let b = null
       app.once('browser-window-created', (event, createdWindow) => {
         assert.strictEqual(createdWindow.getTitle(), '__proto__')
         b.close()
@@ -563,7 +563,7 @@ describe('chromium feature', () => {
     })
 
     it('does not throw an exception when the features include webPreferences', () => {
-      let b
+      let b = null
       assert.doesNotThrow(() => {
         b = window.open('', '', 'webPreferences=')
       })
@@ -572,7 +572,7 @@ describe('chromium feature', () => {
   })
 
   describe('window.opener', () => {
-    let url = `file://${fixtures}/pages/window-opener.html`
+    const url = `file://${fixtures}/pages/window-opener.html`
     it('is null for main window', (done) => {
       w = new BrowserWindow({ show: false })
       w.webContents.once('ipc-message', (event, args) => {
@@ -583,7 +583,7 @@ describe('chromium feature', () => {
     })
 
     it('is not null for window opened by window.open', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         assert.strictEqual(event.data, 'object')
         b.close()
@@ -596,7 +596,7 @@ describe('chromium feature', () => {
 
   describe('window.opener access from BrowserWindow', () => {
     const scheme = 'other'
-    let url = `${scheme}://${fixtures}/pages/window-opener-location.html`
+    const url = `${scheme}://${fixtures}/pages/window-opener-location.html`
     let w = null
 
     before((done) => {
@@ -720,7 +720,7 @@ describe('chromium feature', () => {
 
   describe('window.postMessage', () => {
     it('sets the source and origin correctly', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         window.removeEventListener('message', listener)
         b.close()
@@ -751,7 +751,7 @@ describe('chromium feature', () => {
 
   describe('window.opener.postMessage', () => {
     it('sets source and origin correctly', (done) => {
-      let b
+      let b = null
       listener = (event) => {
         window.removeEventListener('message', listener)
         b.close()
@@ -803,7 +803,7 @@ describe('chromium feature', () => {
       })
 
       it('delivers messages that match the origin', (done) => {
-        let b
+        let b = null
         listener = (event) => {
           window.removeEventListener('message', listener)
           b.close()
@@ -856,7 +856,7 @@ describe('chromium feature', () => {
     })
 
     it('Worker has no node integration by default', (done) => {
-      let worker = new Worker('../fixtures/workers/worker_node.js')
+      const worker = new Worker('../fixtures/workers/worker_node.js')
       worker.onmessage = (event) => {
         assert.strictEqual(event.data, 'undefined undefined undefined undefined')
         worker.terminate()
@@ -865,7 +865,7 @@ describe('chromium feature', () => {
     })
 
     it('Worker has node integration with nodeIntegrationInWorker', (done) => {
-      let webview = new WebView()
+      const webview = new WebView()
       webview.addEventListener('ipc-message', (e) => {
         assert.strictEqual(e.channel, 'object function object function')
         webview.remove()
@@ -887,7 +887,7 @@ describe('chromium feature', () => {
     })
 
     it('SharedWorker has no node integration by default', (done) => {
-      let worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
+      const worker = new SharedWorker('../fixtures/workers/shared_worker_node.js')
       worker.port.onmessage = (event) => {
         assert.strictEqual(event.data, 'undefined undefined undefined undefined')
         done()
@@ -895,7 +895,7 @@ describe('chromium feature', () => {
     })
 
     it('SharedWorker has node integration with nodeIntegrationInWorker', (done) => {
-      let webview = new WebView()
+      const webview = new WebView()
       webview.addEventListener('console-message', (e) => {
         console.log(e)
       })
@@ -944,7 +944,7 @@ describe('chromium feature', () => {
       let contents = null
       before((done) => {
         const handler = (request, callback) => {
-          let parsedUrl = url.parse(request.url)
+          const parsedUrl = url.parse(request.url)
           let filename
           switch (parsedUrl.pathname) {
             case '/localStorage' : filename = 'local_storage.html'; break
