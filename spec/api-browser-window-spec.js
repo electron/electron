@@ -581,7 +581,7 @@ describe('BrowserWindow module', () => {
     it('sets the content size', () => {
       const size = [400, 400]
       w.setContentSize(size[0], size[1])
-      var after = w.getContentSize()
+      const after = w.getContentSize()
       assert.strictEqual(after[0], size[0])
       assert.strictEqual(after[1], size[1])
     })
@@ -3132,7 +3132,7 @@ describe('BrowserWindow module', () => {
         }
       })
 
-      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
       BrowserWindow.removeDevToolsExtension('foo')
       BrowserWindow.addDevToolsExtension(extensionPath)
 
@@ -3148,9 +3148,9 @@ describe('BrowserWindow module', () => {
     })
 
     it('serializes the registered extensions on quit', () => {
-      var extensionName = 'foo'
-      var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName)
-      var serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions')
+      const extensionName = 'foo'
+      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', extensionName)
+      const serializedPath = path.join(app.getPath('userData'), 'DevTools Extensions')
 
       BrowserWindow.addDevToolsExtension(extensionPath)
       app.emit('will-quit')
@@ -3166,7 +3166,7 @@ describe('BrowserWindow module', () => {
         BrowserWindow.removeExtension('foo')
         assert.strictEqual(BrowserWindow.getExtensions().hasOwnProperty('foo'), false)
 
-        var extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
+        const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo')
         BrowserWindow.addExtension(extensionPath)
         assert.strictEqual(BrowserWindow.getExtensions().hasOwnProperty('foo'), true)
 

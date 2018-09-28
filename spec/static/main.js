@@ -11,13 +11,13 @@ const path = require('path')
 const util = require('util')
 const v8 = require('v8')
 
-var argv = require('yargs')
+const argv = require('yargs')
   .boolean('ci')
   .string('g').alias('g', 'grep')
   .boolean('i').alias('i', 'invert')
   .argv
 
-var window = null
+let window = null
 
 // will be used by crash-reporter spec.
 process.port = 0
@@ -145,7 +145,7 @@ app.on('ready', function () {
     }
   })
   window.on('unresponsive', function () {
-    var chosen = dialog.showMessageBox(window, {
+    const chosen = dialog.showMessageBox(window, {
       type: 'warning',
       buttons: ['Close', 'Keep Waiting'],
       message: 'Window is not responsing',
@@ -160,7 +160,7 @@ app.on('ready', function () {
 
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
-  var downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
+  const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
   ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath) {
     window.webContents.session.once('will-download', function (e, item) {
       window.webContents.send('download-created',

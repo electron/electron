@@ -1,8 +1,8 @@
-var fs = require('fs')
-var https = require('https')
-var path = require('path')
+const fs = require('fs')
+const https = require('https')
+const path = require('path')
 
-var server = https.createServer({
+const server = https.createServer({
   key: fs.readFileSync(path.resolve(__dirname, 'tls.key.pem')),
   cert: fs.readFileSync(path.resolve(__dirname, 'tls.cert.pem'))
 }, (req, res) => {

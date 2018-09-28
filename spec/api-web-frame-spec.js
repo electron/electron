@@ -14,8 +14,8 @@ chai.use(dirtyChai)
 /* eslint-disable standard/no-callback-literal */
 
 describe('webFrame module', function () {
-  var fixtures = path.resolve(__dirname, 'fixtures')
-  var w = null
+  const fixtures = path.resolve(__dirname, 'fixtures')
+  let w = null
 
   afterEach(function () {
     return closeWindow(w).then(function () { w = null })
@@ -23,7 +23,7 @@ describe('webFrame module', function () {
 
   describe('webFrame.registerURLSchemeAsPrivileged', function () {
     it('supports fetch api by default', function (done) {
-      var url = 'file://' + fixtures + '/assets/logo.png'
+      const url = 'file://' + fixtures + '/assets/logo.png'
       window.fetch(url).then(function (response) {
         assert(response.ok)
         done()
@@ -102,7 +102,7 @@ describe('webFrame module', function () {
       </html>`, done)
     })
 
-    var runNumber = 1
+    let runNumber = 1
     function allowsCORSRequests (expected, content, done) {
       const standardScheme = remote.getGlobal('standardScheme') + runNumber
       const corsScheme = 'cors' + runNumber
