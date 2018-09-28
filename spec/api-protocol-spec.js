@@ -663,7 +663,7 @@ describe('protocol module', () => {
     })
 
     it('does not crash when handler is called twice', (done) => {
-      var doubleHandler = (request, callback) => {
+      const doubleHandler = (request, callback) => {
         try {
           callback(text)
           callback()

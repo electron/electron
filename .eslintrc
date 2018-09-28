@@ -2,5 +2,8 @@
   "extends": "standard",
   "env": {
     "browser": true
+  },
+  "rules": {
+    "no-var": "error"
   }
 }
