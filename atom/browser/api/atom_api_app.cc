@@ -1154,9 +1154,13 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
                                        const std::string& info_type) {
   auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
-  if ((info_type != "basic" && info_type != "complete") ||
-      !gpu_data_manager->GpuAccessAllowed(nullptr)) {
-    promise->Reject("Error fetching GPU Info");
+  if (info_type != "basic" && info_type != "complete") {
+    promise->Reject("Invalid info type. Use 'basic' or 'complete'");
+    return promise->GetHandle();
+  }
+  std::string reason;
+  if (!gpu_data_manager->GpuAccessAllowed(&reason)) {
+    promise->Reject("GPU access not allowed. Reason: " + reason);
     return promise->GetHandle();
   }
 

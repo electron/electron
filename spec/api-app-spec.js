@@ -810,9 +810,8 @@ describe('app module', () => {
 
       // Devices information is always present in the available info.
       expect(gpuInfo).to.have.own.property('gpuDevice')
-        .that.is.an('object')
-      expect(gpuInfo.gpuDevice).to.be.an('array')
-        .that.is.not.empty()
+        .that.is.an('array')
+        .and.is.not.empty()
 
       const device = gpuInfo.gpuDevice[0]
       expect(device).to.be.an('object')
