@@ -2,10 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ATOM_BROWSER_API_ATOM_API_BOX_LAYOUT_H_
-#define ATOM_BROWSER_API_ATOM_API_BOX_LAYOUT_H_
+#ifndef ATOM_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
+#define ATOM_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
 
-#include "atom/browser/api/atom_api_layout_manager.h"
+#include "atom/browser/api/views/atom_api_layout_manager.h"
 #include "native_mate/handle.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -37,4 +37,4 @@ class BoxLayout : public LayoutManager {
 
 }  // namespace atom
 
-#endif  // ATOM_BROWSER_API_ATOM_API_BOX_LAYOUT_H_
+#endif  // ATOM_BROWSER_API_VIEWS_ATOM_API_BOX_LAYOUT_H_
