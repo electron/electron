@@ -17,3 +17,7 @@
   On some platforms, this is equivalent to the `XX` portion of the `id` field
   above and on others it will differ. It will be an empty string if not
   available.
+* `appIcon` [NativeImage](../native-image.md) - An icon image of the
+  application that owns the window or null if the source has a type screen.
+  The size of the icon is not known in advance and depends on what the
+  the application provides.

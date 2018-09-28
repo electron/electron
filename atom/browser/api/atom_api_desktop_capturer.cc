@@ -14,6 +14,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
+#include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
 #include "native_mate/dictionary.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
@@ -42,6 +43,12 @@ struct Converter<atom::api::DesktopCapturer::Source> {
              atom::api::NativeImage::Create(
                  isolate, gfx::Image(source.media_list_source.thumbnail)));
     dict.Set("display_id", source.display_id);
+    if (source.fetch_icon) {
+      dict.Set(
+          "appIcon",
+          atom::api::NativeImage::Create(
+              isolate, gfx::Image(GetWindowIcon(source.media_list_source.id))));
+    }
     return ConvertToV8(isolate, dict);
   }
 };
@@ -60,7 +67,9 @@ DesktopCapturer::~DesktopCapturer() {}
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
-                                    const gfx::Size& thumbnail_size) {
+                                    const gfx::Size& thumbnail_size,
+                                    bool fetch_window_icons) {
+  fetch_window_icons_ = fetch_window_icons;
 #if defined(OS_WIN)
   if (content::desktop_capture::CreateDesktopCaptureOptions()
           .allow_directx_capturer()) {
@@ -134,8 +143,8 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     capture_window_ = false;
     const auto& media_list_sources = list->GetSources();
     for (const auto& media_list_source : media_list_sources) {
-      window_sources.emplace_back(
-          DesktopCapturer::Source{media_list_source, std::string()});
+      window_sources.emplace_back(DesktopCapturer::Source{
+          media_list_source, std::string(), fetch_window_icons_});
     }
     std::move(window_sources.begin(), window_sources.end(),
               std::back_inserter(captured_sources_));
@@ -187,7 +196,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   }
 
   if (!capture_window_ && !capture_screen_)
-    Emit("finished", captured_sources_);
+    Emit("finished", captured_sources_, fetch_window_icons_);
 }
 
 // static
