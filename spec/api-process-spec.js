@@ -38,16 +38,14 @@ describe('process module', () => {
     })
   })
 
-  // FIXME: Chromium 67 - getProcessMemoryInfo has been removed
-  // describe('process.getProcessMemoryInfo()', () => {
-  //   it('returns process memory info object', () => {
-  //     const processMemoryInfo = process.getProcessMemoryInfo()
-  //     expect(processMemoryInfo.peakWorkingSetSize).to.be.a('number')
-  //     expect(processMemoryInfo.privateBytes).to.be.a('number')
-  //     expect(processMemoryInfo.sharedBytes).to.be.a('number')
-  //     expect(processMemoryInfo.workingSetSize).to.be.a('number')
-  //   })
-  // })
+  describe('process.getMemoryFootprint()', () => {
+    it('resolves promise successfully with non zero value', (done) => {
+      process.getMemoryFootprint().then((memoryFootprint) => {
+        expect(memoryFootprint).to.be.a('number').greaterThan(0)
+        done()
+      })
+    })
+  })
 
   describe('process.getSystemMemoryInfo()', () => {
     it('returns system memory info object', () => {
