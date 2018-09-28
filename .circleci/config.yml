@@ -31,10 +31,12 @@ env-publish-build: &env-publish-build
   ELECTRON_RELEASE: 1
 
 env-browsertests: &env-browsertests
+  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_browsertests
   TESTS_CONFIG: src/electron/script/browsertests.yml
 
 env-unittests: &env-unittests
+  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_unittests
   TESTS_CONFIG: src/electron/script/unittests.yml
 
@@ -806,68 +808,75 @@ workflows:
   build-linux:
     jobs:
       - linux-checkout
-      - linux-arm-checkout
-      - linux-arm64-checkout
+#      - linux-arm-checkout
+#      - linux-arm64-checkout
 
-      - linux-x64-debug:
+      - linux-x64-browsertests:
           requires:
             - linux-checkout
-      - linux-x64-testing:
+      - linux-x64-unittests:
           requires:
             - linux-checkout
-      - linux-x64-testing-tests:
-          requires:
-            - linux-x64-testing
-      - linux-x64-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-verify-ffmpeg:
-          requires:
-            - linux-x64-testing
-            - linux-x64-ffmpeg
-
-      - linux-ia32-debug:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-tests:
-          requires:
-            - linux-ia32-testing
-      - linux-ia32-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-verify-ffmpeg:
-          requires:
-            - linux-ia32-testing
-            - linux-ia32-ffmpeg
-
-      - linux-arm-debug:
-          requires:
-            - linux-arm-checkout
-      - linux-arm-testing:
-          requires:
-            - linux-arm-checkout
-      - linux-arm-ffmpeg:
-           requires:
-             - linux-arm-checkout
-      - linux-arm-mksnapshot:
-          requires:
-            - linux-arm-checkout
-
-      - linux-arm64-debug:
-          requires:
-            - linux-arm64-checkout
-      - linux-arm64-testing:
-          requires:
-            - linux-arm64-checkout
-      - linux-arm64-ffmpeg:
-           requires:
-             - linux-arm64-checkout
-      - linux-arm64-mksnapshot:
-          requires:
-            - linux-arm64-checkout
+#
+#      - linux-x64-debug:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing-tests:
+#          requires:
+#            - linux-x64-testing
+#      - linux-x64-ffmpeg:
+#          requires:
+#            - linux-checkout
+#      - linux-x64-testing-verify-ffmpeg:
+#          requires:
+#            - linux-x64-testing
+#            - linux-x64-ffmpeg
+#
+#      - linux-ia32-debug:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing-tests:
+#          requires:
+#            - linux-ia32-testing
+#      - linux-ia32-ffmpeg:
+#          requires:
+#            - linux-checkout
+#      - linux-ia32-testing-verify-ffmpeg:
+#          requires:
+#            - linux-ia32-testing
+#            - linux-ia32-ffmpeg
+#
+#      - linux-arm-debug:
+#          requires:
+#            - linux-arm-checkout
+#      - linux-arm-testing:
+#          requires:
+#            - linux-arm-checkout
+#      - linux-arm-ffmpeg:
+#           requires:
+#             - linux-arm-checkout
+#      - linux-arm-mksnapshot:
+#          requires:
+#            - linux-arm-checkout
+#
+#      - linux-arm64-debug:
+#          requires:
+#            - linux-arm64-checkout
+#      - linux-arm64-testing:
+#          requires:
+#            - linux-arm64-checkout
+#      - linux-arm64-ffmpeg:
+#           requires:
+#             - linux-arm64-checkout
+#      - linux-arm64-mksnapshot:
+#          requires:
+#            - linux-arm64-checkout
 
   build-mac-fork-prs:
     jobs:
@@ -899,11 +908,9 @@ workflows:
       - linux-arm-checkout
       - linux-arm64-checkout
 
-# TODO(alexeykuzmin): The only suite there fails to start, so skip
-# the job for now. Fix the "content_browsertests" and enable the job back.
-#      - linux-x64-browsertests:
-#          requires:
-#            - linux-checkout
+      - linux-x64-browsertests:
+          requires:
+            - linux-checkout
       - linux-x64-unittests:
           requires:
             - linux-checkout
