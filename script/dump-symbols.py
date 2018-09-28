@@ -47,6 +47,8 @@ def main():
       '--jobs=16',
       os.path.relpath(build_path),
     ]
+    if is_verbose_mode():
+      args += ['-v']
     #Make sure msdia140.dll is in the path (needed for dump_syms.exe)
     env = os.environ.copy()
     msdia140_dll_path =  os.path.join(GN_SRC_DIR, 'third_party', 'llvm-build',
