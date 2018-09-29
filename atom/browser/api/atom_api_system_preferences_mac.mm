@@ -36,8 +36,12 @@ struct Converter<NSAppearance*> {
     if (name == "light") {
       *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
       return true;
-    } else if (@available(macOS 10.14, *) && name == "dark") {
-      *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+    } else if (name == "dark") {
+      if (@available(macOS 10.14, *)) {
+        *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+      } else {
+        *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+      }
       return true;
     }
 
