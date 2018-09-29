@@ -65,7 +65,7 @@ def main():
   upload_electron(release, electron_zip, args)
   if get_target_arch() != 'mips64el':
     symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'symobls.zip'), symbols_zip)
+    shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
     api_path = os.path.join(OUT_DIR, 'electron-api.json')
@@ -77,7 +77,9 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
   elif PLATFORM == 'win32':
-    upload_electron(release, os.path.join(OUT_DIR, PDB_NAME), args)
+    pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
+    upload_electron(release, pdb_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
