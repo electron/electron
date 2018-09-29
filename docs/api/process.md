@@ -28,6 +28,8 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `type`
 - `version`
 - `versions`
+- `mas`
+- `windowsStore`
 
 ## Events
 
