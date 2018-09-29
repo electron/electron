@@ -807,46 +807,38 @@ describe('app module', () => {
   describe('getGPUInfo() API', () => {
     const appPath = path.join(__dirname, 'fixtures', 'api', 'gpu-info.js')
 
-    it('succeeds with basic GPUInfo', (done) => {
-      const appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, 'basic'])
+    const getGPUInfo = async (type) => {
+      const appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, type])
       let gpuInfoData = ''
       appProcess.stdout.on('data', (data) => {
         gpuInfoData += data
       })
-      appProcess.stdout.on('end', () => {
-        const gpuInfo = JSON.parse(gpuInfoData.toString())
-        // Devices information is always present in the available info.
-        expect(gpuInfo).to.have.own.property('gpuDevice')
-          .that.is.an('array')
-          .and.is.not.empty()
+      await emittedOnce(appProcess.stdout, 'end')
+      return JSON.parse(gpuInfoData)
+    }
 
-        const device = gpuInfo.gpuDevice[0]
-        expect(device).to.be.an('object')
-          .and.to.have.property('deviceId')
-          .that.is.a('number')
-          .not.lessThan(0)
-        done()
-      })
+    it('succeeds with basic GPUInfo', async () => {
+      const gpuInfo = await getGPUInfo('basic')
+      // Devices information is always present in the available info.
+      expect(gpuInfo).to.have.own.property('gpuDevice')
+        .that.is.an('array')
+        .and.is.not.empty()
+
+      const device = gpuInfo.gpuDevice[0]
+      expect(device).to.be.an('object')
+        .and.to.have.property('deviceId')
+        .that.is.a('number')
+        .not.lessThan(0)
     })
 
-    it('succeeds with complete GPUInfo', (done) => {
-      const appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, 'basic'])
-
-      let gpuInfoData = ''
-      appProcess.stdout.on('data', (data) => {
-        gpuInfoData += data
-      })
-      appProcess.stdout.on('end', () => {
-        console.log(gpuInfoData)
-        const completeInfo = JSON.parse(gpuInfoData.toString())
-        // Gl version is present in the complete info.
-        expect(completeInfo).to.have.own.property('auxAttributes')
-          .that.is.an('object')
-        expect(completeInfo.auxAttributes).to.have.own.property('glVersion')
-          .that.is.a('string')
-          .and.not.empty()
-        done()
-      })
+    it('succeeds with complete GPUInfo', async () => {
+      const completeInfo = await getGPUInfo('complete')
+      // Gl version is present in the complete info.
+      expect(completeInfo).to.have.own.property('auxAttributes')
+        .that.is.an('object')
+      expect(completeInfo.auxAttributes).to.have.own.property('glVersion')
+        .that.is.a('string')
+        .and.not.empty()
     })
 
     it('fails for invalid info_type', () => {
