@@ -818,7 +818,13 @@ describe('app module', () => {
         errorData += data
       })
       const [exitCode] = await emittedOnce(appProcess, 'exit')
-      if (exitCode === 0) { return JSON.parse(gpuInfoData) } else { return Promise.reject(new Error(errorData)) }
+      if (exitCode === 0) {
+        // return info data on successful exit
+        return JSON.parse(gpuInfoData)
+      } else {
+        // return error if not clean exit
+        return Promise.reject(new Error(errorData))
+      }
     }
 
     it('succeeds with basic GPUInfo', async () => {
