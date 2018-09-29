@@ -117,6 +117,13 @@ jobs:
 
   - bash: |
       cd src/electron
+      npm run create-typescript-definitions
+    displayName: Generate type declarations
+    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+
+
+  - bash: |
+      cd src/electron
       if [ "$UPLOAD_TO_S3" != "1" ]; then
         echo 'Uploading Electron release distribution to github releases'
         ELECTRON_S3_BUCKET="$(s3_bucket)" ELECTRON_S3_ACCESS_KEY="$(s3_access_key)" ELECTRON_S3_SECRET_KEY="$(s3_secret_key)" ELECTRON_GITHUB_TOKEN="$(github_token)" script/upload.py

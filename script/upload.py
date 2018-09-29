@@ -68,10 +68,10 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
-    api_path = os.path.join(OUT_DIR, 'electron-api.json')
+    api_path = os.path.join(SOURCE_ROOT, 'electron-api.json')
     upload_electron(release, api_path, args)
 
-    ts_defs_path = os.path.join(OUT_DIR, 'electron.d.ts')
+    ts_defs_path = os.path.join(SOURCE_ROOT, 'electron.d.ts')
     upload_electron(release, ts_defs_path, args)
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
