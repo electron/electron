@@ -1,6 +1,6 @@
 const { app } = require('electron')
 
-app.commandLine.appendSwitch('--disable-software-rasterizer')
+// app.commandLine.appendSwitch('--disable-software-rasterizer')
 
 app.on('ready', () => {
   const infoType = process.argv.pop()
