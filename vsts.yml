@@ -119,7 +119,7 @@ jobs:
       cd src/electron
       npm run create-typescript-definitions
     displayName: Generate type declarations
-    condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+    condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
 
   - bash: |
