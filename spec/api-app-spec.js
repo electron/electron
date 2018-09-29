@@ -810,11 +810,15 @@ describe('app module', () => {
     const getGPUInfo = async (type) => {
       const appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, type])
       let gpuInfoData = ''
+      let errorData = ''
       appProcess.stdout.on('data', (data) => {
         gpuInfoData += data
       })
-      await emittedOnce(appProcess.stdout, 'end')
-      return JSON.parse(gpuInfoData)
+      appProcess.stderr.on('data', (data) => {
+        errorData += data
+      })
+      const [exitCode] = await emittedOnce(appProcess, 'exit')
+      if (exitCode === 0) { return JSON.parse(gpuInfoData) } else { return Promise.reject(new Error(errorData)) }
     }
 
     it('succeeds with basic GPUInfo', async () => {

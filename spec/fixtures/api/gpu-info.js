@@ -9,8 +9,8 @@ app.on('ready', () => {
       console.log(JSON.stringify(gpuInfo))
       app.exit(0)
     },
-    (err) => {
-      console.error(err)
+    (error) => {
+      console.error(error)
       app.exit(1)
     }
   )
