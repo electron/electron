@@ -5,7 +5,8 @@ import os
 import sys
 
 from lib.config import PLATFORM, enable_verbose_mode, is_verbose_mode
-from lib.util import get_electron_branding, execute, rm_rf, get_out_dir
+from lib.util import get_electron_branding, execute, rm_rf, get_out_dir, \
+                     GN_SRC_DIR
 
 ELECTRON_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 SOURCE_ROOT = os.path.abspath(os.path.dirname(ELECTRON_ROOT))
@@ -30,12 +31,12 @@ def main():
       helper_app = os.path.join(build_path, '{0}.app'.format(helper_name),
                             'Contents', 'MacOS', product_name + " Helper")
       binaries = [main_app, helper_app]
-      for binary in binaries:        
-        generate_posix_symbols(binary, source_root, build_path, 
+      for binary in binaries:
+        generate_posix_symbols(binary, source_root, build_path,
                                         args.destination)
     else:
       binary = os.path.join(build_path, project_name)
-      generate_posix_symbols(binary, source_root, build_path, 
+      generate_posix_symbols(binary, source_root, build_path,
                                       args.destination)
 
   else:
@@ -45,8 +46,16 @@ def main():
       '--symbols-dir={0}'.format(args.destination),
       '--jobs=16',
       os.path.relpath(build_path),
-    ]  
-    execute([sys.executable, generate_breakpad_symbols] + args)
+    ]
+    if is_verbose_mode():
+      args += ['-v']
+    #Make sure msdia140.dll is in the path (needed for dump_syms.exe)
+    env = os.environ.copy()
+    msdia140_dll_path =  os.path.join(GN_SRC_DIR, 'third_party', 'llvm-build',
+                                      'Release+Asserts', 'bin')
+    env['PATH'] = os.path.pathsep.join(
+        [env.get('PATH', '')] + [msdia140_dll_path])
+    execute([sys.executable, generate_breakpad_symbols] + args, env)
 
 def get_names_from_branding():
   variables = get_electron_branding()
@@ -62,9 +71,9 @@ def generate_posix_symbols(binary, source_root, build_dir, destination):
     '--jobs=16',
     '--binary={0}'.format(binary),
   ]
-  if is_verbose_mode(): 
+  if is_verbose_mode():
     args += ['-v']
-  execute([sys.executable, generate_breakpad_symbols] + args)    
+  execute([sys.executable, generate_breakpad_symbols] + args)
 
 def parse_args():
   parser = argparse.ArgumentParser(description='Create breakpad symbols')
@@ -83,7 +92,7 @@ def parse_args():
                       required=False)
   parser.add_argument('-v', '--verbose',
                       action='store_true',
-                      help='Prints the output of the subprocesses')                      
+                      help='Prints the output of the subprocesses')
   return parser.parse_args()
 
 if __name__ == '__main__':

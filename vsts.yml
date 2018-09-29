@@ -56,7 +56,6 @@ jobs:
       cd src
       ninja -C out/Default third_party/electron_node:headers
     displayName: Build Node.js headers for testing
-    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
 
   - bash: |
       cd src

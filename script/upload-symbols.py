@@ -10,16 +10,13 @@ from lib.util import get_electron_branding, execute, rm_rf, safe_mkdir, s3put, \
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 RELEASE_DIR = get_out_dir()
-GEN_DIR = os.path.join(RELEASE_DIR, 'gen')
 
 
 PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
-
-if PLATFORM == 'win32':
-  SYMBOLS_DIR = os.path.join(GEN_DIR, 'symbols')
-else:
-  SYMBOLS_DIR = os.path.join(GEN_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
+SYMBOLS_DIR = os.path.join(
+  RELEASE_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME)
+)
 
 PDB_LIST = [
   os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))
