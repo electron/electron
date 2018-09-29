@@ -17,6 +17,7 @@ EXTENSIONS_TO_SKIP = [
 PATHS_TO_SKIP = [
   'angledata', #Skipping because it is an output of //ui/gl that we don't need
   'swiftshader', #Skipping because it is an output of //ui/gl that we don't need
+  'libVkLayer_', #Skipping because these are outputs that we don't need
 ]
 
 def skip_path(dep):
@@ -57,7 +58,8 @@ def main(argv):
   with open(runtime_deps) as f:
     for dep in f.readlines():
       dep = dep.strip()
-      dist_files += [dep]
+      if dep not in dist_files:
+        dist_files += [dep]
   if sys.platform == 'darwin':
     mac_zip_results = execute(['zip', '-r', '-y', dist_zip] + dist_files)
   else:
