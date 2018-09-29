@@ -62,7 +62,7 @@ jobs:
       gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
       ninja -C out/ffmpeg electron:electron_ffmpeg_zip
     displayName: Non proprietary ffmpeg build
-    condition: and(succeeded(), or(eq(variables['RUN_TESTS'], '1')), eq(variables['ELECTRON_RELEASE'], '1')))
+    condition: and(succeeded(), or(eq(variables['RUN_TESTS'], '1'), eq(variables['ELECTRON_RELEASE'], '1')))
 
   - bash: |
       cd src
