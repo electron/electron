@@ -84,7 +84,8 @@ def main():
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
   ffmpeg_zip = os.path.join(OUT_DIR, ffmpeg)
-  shutil.copy2(os.path.join(OUT_DIR, 'ffmpeg.zip'), ffmpeg_zip)
+  ffmpeg_build_path = os.path.join(GN_SRC_DIR, 'out', 'ffmpeg', 'ffmpeg.zip')
+  shutil.copy2(ffmpeg_build_path, ffmpeg_zip)
   upload_electron(release, ffmpeg_zip, args)
 
   chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)

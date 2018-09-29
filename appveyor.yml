@@ -31,6 +31,7 @@ build_script:
   - ninja -C out/Default electron:electron_dist_zip
   - ninja -C out/Default electron:electron_mksnapshot_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
+  - ninja -C out/Default third_party/electron_node:headers
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
 
@@ -49,7 +50,6 @@ test_script:
   - if "%GN_CONFIG%"=="testing" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
   - ps: >-
       if ($env:GN_CONFIG -eq 'testing') {
-        ninja -C out/Default third_party/electron_node:headers
         New-Item .\out\Default\gen\node_headers\Release -Type directory
         Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
       } else {
