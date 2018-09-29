@@ -35,17 +35,10 @@ def get_platform_key():
 
 
 def get_target_arch():
-  try:
-    target_arch_path = os.path.join(__file__, '..', '..', '..', 'vendor',
-                                    'download', 'libchromiumcontent',
-                                    '.target_arch')
-    with open(os.path.normpath(target_arch_path)) as f:
-      return f.read().strip()
-  except IOError as e:
-    if e.errno != errno.ENOENT:
-      raise
-
-  return 'x64'
+  arch = os.environ.get('TARGET_ARCH')
+  if arch is None:
+    return 'x64'
+  return arch
 
 
 def get_env_var(name):

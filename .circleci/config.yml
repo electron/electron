@@ -42,6 +42,7 @@ env-unittests: &env-unittests
 env-ia32: &env-ia32
   GN_EXTRA_ARGS: 'target_cpu = "x86"'
   NPM_CONFIG_ARCH: ia32
+  TARGET_ARCH: ia32
 
 env-arm: &env-arm
   GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
