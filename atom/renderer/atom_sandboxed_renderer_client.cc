@@ -17,6 +17,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
+#include "brightray/common/application_info.h"
 #include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
@@ -78,10 +79,6 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 isolate->GetCurrentContext(), mod->nm_priv);
   cache.Set(module_key.c_str(), exports);
   return exports;
-}
-
-base::CommandLine::StringVector GetArgv() {
-  return base::CommandLine::ForCurrentProcess()->argv();
 }
 
 base::FilePath::StringType GetExecPath() {
@@ -146,17 +143,34 @@ void AtomSandboxedRendererClient::InitializeBindings(
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
   b.SetMethod("createPreloadScript", CreatePreloadScript);
-  b.SetMethod("crash", AtomBindings::Crash);
-  b.SetMethod("hang", AtomBindings::Hang);
-  b.SetMethod("getArgv", GetArgv);
-  b.SetMethod("getExecPath", GetExecPath);
-  b.SetMethod("getPid", &base::GetCurrentProcId);
-  b.SetMethod("getResourcesPath", &NodeBindings::GetHelperResourcesPath);
-  b.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
-  b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
-  b.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
-                                        base::Unretained(metrics_.get())));
-  b.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
+
+  mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
+  b.Set("process", process);
+
+  process.SetMethod("crash", AtomBindings::Crash);
+  process.SetMethod("hang", AtomBindings::Hang);
+  process.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
+  process.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
+  process.SetMethod(
+      "getCPUUsage",
+      base::Bind(&AtomBindings::GetCPUUsage, base::Unretained(metrics_.get())));
+  process.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
+
+  process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
+  process.Set("execPath", GetExecPath());
+  process.Set("pid", base::GetCurrentProcId());
+  process.Set("resourcesPath", NodeBindings::GetHelperResourcesPath());
+  process.Set("sandboxed", true);
+  process.Set("type", "renderer");
+
+#if defined(MAS_BUILD)
+  process.Set("mas", true);
+#endif
+
+#if defined(OS_WIN)
+  if (brightray::IsRunningInDesktopBridge())
+    process.Set("windowsStore", true);
+#endif
 
   // Pass in CLI flags needed to setup the renderer
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
