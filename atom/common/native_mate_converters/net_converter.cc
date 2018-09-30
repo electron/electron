@@ -189,16 +189,34 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     if (!keys->Get(i)->ToString(context).ToLocal(&key)) {
       return false;
     }
-    if (!headers->Get(key)->ToString(context).ToLocal(&value)) {
-      return false;
+
+    if (headers->Get(key)->IsArray()) {
+      auto values = v8::Local<v8::Array>::Cast(headers->Get(key));
+      for (uint32_t j = 0; j < values->Length(); j++) {
+        if (!values->Get(j)->ToString(context).ToLocal(&value)) {
+          return false;
+        }
+
+        v8::String::Utf8Value key_utf8(key);
+        v8::String::Utf8Value value_utf8(value);
+        std::string k(*key_utf8, key_utf8.length());
+        std::string v(*value_utf8, value_utf8.length());
+        std::ostringstream tmp;
+        tmp << k << ": " << v;
+        out->AddHeader(tmp.str());
+      }
+    } else {
+      if (!headers->Get(key)->ToString(context).ToLocal(&value)) {
+        return false;
+      }
+      v8::String::Utf8Value key_utf8(key);
+      v8::String::Utf8Value value_utf8(value);
+      std::string k(*key_utf8, key_utf8.length());
+      std::string v(*value_utf8, value_utf8.length());
+      std::ostringstream tmp;
+      tmp << k << ": " << v;
+      out->AddHeader(tmp.str());
     }
-    v8::String::Utf8Value key_utf8(key);
-    v8::String::Utf8Value value_utf8(value);
-    std::string k(*key_utf8, key_utf8.length());
-    std::string v(*value_utf8, value_utf8.length());
-    std::ostringstream tmp;
-    tmp << k << ": " << v;
-    out->AddHeader(tmp.str());
   }
   return true;
 }

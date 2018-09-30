@@ -589,6 +589,36 @@ describe('protocol module', () => {
         })
       })
     })
+
+    it('returns response multiple response headers with the same name', (done) => {
+      const handler = (request, callback) => {
+        callback({
+          headers: {
+            'header1': ['value1', 'value2'],
+            'header2': 'value3'
+          },
+          data: getStream()
+        })
+      }
+
+      protocol.registerStreamProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data, status, request) => {
+            // SUBTLE: when the response headers have multiple values it
+            // separates values by ", ". When the response headers are incorrectly
+            // converting an array to a string it separates values by ",".
+            assert.strictEqual(request.getAllResponseHeaders(), 'header1: value1, value2\r\nheader2: value3\r\n')
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error || new Error(`Request failed: ${xhr.status}`))
+          }
+        })
+      })
+    })
   })
 
   describe('protocol.isProtocolHandled', () => {
