@@ -26,12 +26,14 @@ env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
 
 env-browsertests: &env-browsertests
+  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_browsertests
-  TESTS_CONFIG: src/electron/script/browsertests.yml
+  TESTS_CONFIG: src/electron/spec/configs/browsertests.yml
 
 env-unittests: &env-unittests
+  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_unittests
-  TESTS_CONFIG: src/electron/script/unittests.yml
+  TESTS_CONFIG: src/electron/spec/configs/unittests.yml
 
 # Build targets options.
 env-ia32: &env-ia32
@@ -948,8 +950,9 @@ workflows:
       - linux-arm-checkout
       - linux-arm64-checkout
 
-# TODO(alexeykuzmin): The only suite there fails to start, so skip
-# the job for now. Fix the "content_browsertests" and enable the job back.
+      # TODO(alexeykuzmin): Enable it back.
+      # Tons of crashes right now, see
+      # https://circleci.com/gh/electron/electron/67463
 #      - linux-x64-browsertests:
 #          requires:
 #            - linux-checkout
