@@ -826,9 +826,7 @@ describe('app module', () => {
         return Promise.reject(new Error(errorData))
       }
     }
-
-    it('succeeds with basic GPUInfo', async () => {
-      const gpuInfo = await getGPUInfo('basic')
+    const verifyBasicGPUInfo = async (gpuInfo) => {
       // Devices information is always present in the available info.
       expect(gpuInfo).to.have.own.property('gpuDevice')
         .that.is.an('array')
@@ -839,16 +837,28 @@ describe('app module', () => {
         .and.to.have.property('deviceId')
         .that.is.a('number')
         .not.lessThan(0)
+    }
+
+    it('succeeds with basic GPUInfo', async () => {
+      const gpuInfo = await getGPUInfo('basic')
+      await verifyBasicGPUInfo(gpuInfo)
     })
 
     it('succeeds with complete GPUInfo', async () => {
       const completeInfo = await getGPUInfo('complete')
-      // Gl version is present in the complete info.
-      expect(completeInfo).to.have.own.property('auxAttributes')
-        .that.is.an('object')
-      expect(completeInfo.auxAttributes).to.have.own.property('glVersion')
-        .that.is.a('string')
-        .and.not.empty()
+      if (process.platform === 'linux') {
+        // For linux complete info is same as basic info
+        await verifyBasicGPUInfo(completeInfo)
+        const basicInfo = await getGPUInfo('basic')
+        expect(completeInfo).to.deep.equal(basicInfo)
+      } else {
+        // Gl version is present in the complete info.
+        expect(completeInfo).to.have.own.property('auxAttributes')
+          .that.is.an('object')
+        expect(completeInfo.auxAttributes).to.have.own.property('glVersion')
+          .that.is.a('string')
+          .and.not.empty()
+      }
     })
 
     it('fails for invalid info_type', () => {
