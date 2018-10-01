@@ -10,4 +10,10 @@ process.crashReporter.start({
   }
 })
 
+if (process.platform === 'darwin') {
+  process.crashReporter.addExtraParameter('newExtra', 'newExtra')
+  process.crashReporter.addExtraParameter('removeExtra', 'removeExtra')
+  process.crashReporter.removeExtraParameter('removeExtra')
+}
+
 process.nextTick(() => process.crash())
