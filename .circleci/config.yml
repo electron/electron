@@ -24,11 +24,6 @@ env-testing-build: &env-testing-build
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
-  NOTIFY_SLACK: true
-
-env-publish-build: &env-publish-build
-  GN_CONFIG: //electron/build/args/release.gn
-  ELECTRON_RELEASE: 1
 
 env-browsertests: &env-browsertests
   BUILD_TARGET: electron:chromium_browsertests
@@ -60,6 +55,13 @@ env-arm64: &env-arm64
 
 env-mas: &env-mas
   GN_EXTRA_ARGS: 'is_mas_build = true'
+
+# Misc build configuration options.
+env-enable-sccache: &env-enable-sccache
+  USE_SCCACHE: true
+
+env-send-slack-notifications: &env-send-slack-notifications
+  NOTIFY_SLACK: true
 
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
@@ -118,7 +120,7 @@ step-setup-env-for-build: &step-setup-env-for-build
       # To find `gn` executable.
       echo 'export CHROMIUM_BUILDTOOLS_PATH="'"$PWD"'/src/buildtools"' >> $BASH_ENV
 
-      if [ "$ELECTRON_RELEASE" != "1" ]; then
+      if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
@@ -138,11 +140,7 @@ step-electron-gn-gen: &step-electron-gn-gen
     name: Electron GN gen
     command: |
       cd src
-      if [ "$ELECTRON_RELEASE" == "1" ]; then
-        gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
-      else
-        gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-      fi
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
 
 step-electron-build: &step-electron-build
   run:
@@ -187,14 +185,12 @@ step-electron-publish: &step-electron-publish
     name: Publish Electron Dist
     command: |
       cd src/electron
-      if [ "$ELECTRON_RELEASE" == "1" ]; then
-        if [ "$UPLOAD_TO_S3" != "1" ]; then
-          echo 'Uploading Electron release distribution to github releases'
-          script/upload.py
-        else
-          echo 'Uploading Electron release distribution to s3'
-          script/upload.py --upload_to_s3
-        fi
+      if [ "$UPLOAD_TO_S3" == "1" ]; then
+        echo 'Uploading Electron release distribution to S3'
+        script/upload.py --upload_to_s3
+      else
+        echo 'Uploading Electron release distribution to Github releases'
+        script/upload.py
       fi
 
 step-persist-data-for-tests: &step-persist-data-for-tests
@@ -223,11 +219,7 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      if [ "$ELECTRON_RELEASE" == "1" ]; then
-        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn")'" $GN_EXTRA_ARGS"
-      else
-        gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
-      fi
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
@@ -260,7 +252,10 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
 step-show-sccache-stats: &step-show-sccache-stats
   run:
     name: Check sccache stats after build
-    command: $SCCACHE_PATH -s
+    command: |
+      if [ "$SCCACHE_PATH" != "" ]; then
+        $SCCACHE_PATH -s
+      fi
 
 step-mksnapshot-build: &step-mksnapshot-build
   run:
@@ -284,36 +279,31 @@ step-generate-breakpad_symbols: &step-generate-breakpad_symbols
       electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
       electron/script/zip-symbols.py
 
-step-native-mksnapshot-gn-gen: &step-native-mksnapshot-gn-gen
+step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
   run:
-    name: native mksnapshot GN gen (if needed)
+    name: Native mksnapshot GN gen (arm/arm64)
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        if [ "$ELECTRON_RELEASE" == "1" ]; then
-          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-        else
-          gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
-        fi
+        gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
       else
-        echo 'skipping native mksnapshot GN gen for non arm build'
+        echo 'Skipping native mksnapshot GN gen for non arm build'
       fi
 
-step-native-mksnapshot-build: &step-native-mksnapshot-build
+step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
   run:
-    name: native mksnapshot (arm/arm64) build
+    name: Native mksnapshot build (arm/arm64)
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
         ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
-        cp out/native_mksnapshot/mksnapshot.zip out/native_mksnapshot/native_mksnapshot.zip
       else
-        echo 'skipping native mksnapshot build for non arm build'
+        echo 'Skipping native mksnapshot build for non arm build'
       fi
 
-step-native-mksnapshot-store: &step-native-mksnapshot-store
+step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
   store_artifacts:
-    path: src/out/native_mksnapshot/native_mksnapshot.zip
+    path: src/out/native_mksnapshot/mksnapshot.zip
     destination: native_mksnapshot.zip
 
 # Lists of steps.
@@ -418,9 +408,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-mksnapshot-store
 
     # native_mksnapshot
-    - *step-native-mksnapshot-gn-gen
-    - *step-native-mksnapshot-build
-    - *step-native-mksnapshot-store
+    - *step-maybe-native-mksnapshot-gn-gen
+    - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-store
 
     # chromedriver
     - *step-electron-chromedriver-build
@@ -432,10 +422,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     # ffmpeg
     - *step-ffmpeg-gn-gen
     - *step-ffmpeg-build
+    - *step-ffmpeg-store
 
     # Publish
     - *step-electron-publish
-
 
 steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
@@ -443,9 +433,9 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
-    - *step-native-mksnapshot-gn-gen
-    - *step-native-mksnapshot-build
-    - *step-native-mksnapshot-store
+    - *step-maybe-native-mksnapshot-gn-gen
+    - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-store
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -464,6 +454,8 @@ steps-ffmpeg-build: &steps-ffmpeg-build
           - src/out/ffmpeg/libffmpeg.so
           - src/out/ffmpeg/ffmpeg.zip
 
+    - *step-show-sccache-stats
+
 steps-native-tests: &steps-native-tests
   steps:
     - attach_workspace:
@@ -472,14 +464,6 @@ steps-native-tests: &steps-native-tests
     - *step-setup-env-for-build
     - *step-electron-gn-gen
 
-    # This list is used to split tests across executors.
-    - run:
-        name: List tests
-        command: |
-          python src/electron/script/native-tests.py list \
-            --config $TESTS_CONFIG > tests_list.txt
-
-    # TODO(alexeykuzmin): Build only a subset of all tests.
     - run:
         name: Build tests
         command: |
@@ -495,8 +479,7 @@ steps-native-tests: &steps-native-tests
           python src/electron/script/native-tests.py run \
             --config $TESTS_CONFIG \
             --tests-dir src/out/Default \
-            --output-dir test_results \
-            --binary $(circleci tests split tests_list.txt)
+            --output-dir test_results
 
     - store_artifacts:
         path: test_results
@@ -619,29 +602,34 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-debug-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build
 
   linux-x64-testing:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
   linux-x64-ffmpeg:
     <<: *machine-linux-medium
     environment:
+      <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
 
   linux-x64-release:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-publish-build
+      <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
   linux-ia32-debug:
@@ -649,6 +637,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-debug-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build
 
   linux-ia32-testing:
@@ -656,12 +645,14 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
   linux-ia32-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
 
   linux-ia32-release:
@@ -669,13 +660,15 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-ia32
-      <<: *env-publish-build
+      <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
   linux-arm-debug:
@@ -683,6 +676,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-debug-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build
 
   linux-arm-testing:
@@ -690,12 +684,14 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
   linux-arm-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm
+      <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
 
   linux-arm-release:
@@ -703,19 +699,22 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
   linux-arm-publish:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm
-      <<: *env-publish-build
+      <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
-  linux-arm-mksnapshot:
+  linux-arm-native-mksnapshot:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm
+      <<: *env-enable-sccache
     <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
@@ -723,6 +722,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-debug-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build
 
   linux-arm64-testing:
@@ -730,12 +730,14 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
   linux-arm64-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm64
+      <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
 
   linux-arm64-release:
@@ -743,25 +745,29 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-electron-build-for-tests
 
   linux-arm64-publish:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-arm64
-      <<: *env-publish-build
+      <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
-  linux-arm64-mksnapshot:
+  linux-arm64-native-mksnapshot:
     <<: *machine-linux-medium
     environment:
       <<: *env-arm64
+      <<: *env-enable-sccache
     <<: *steps-native-mksnapshot-build
 
   osx-testing:
     <<: *machine-mac
     environment:
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-build-mac
 
   mas-testing:
@@ -769,23 +775,24 @@ jobs:
     environment:
       <<: *env-mas
       <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-build-mac
 
   # Layer 3: Tests.
   linux-x64-unittests:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-testing-build
       <<: *env-unittests
+      <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-native-tests
-#    TODO(alexeykuzmin): Use parallelism.
-#    parallelism: 4  # https://xkcd.com/221/
 
   linux-x64-browsertests:
     <<: *machine-linux-2xlarge
     environment:
-      <<: *env-testing-build
       <<: *env-browsertests
+      <<: *env-testing-build
+      <<: *env-enable-sccache
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
@@ -799,6 +806,10 @@ jobs:
   linux-x64-release-tests:
     <<: *machine-linux-medium
     <<: *steps-tests
+
+  linux-x64-release-verify-ffmpeg:
+    <<: *machine-linux-medium
+    <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
     <<: *machine-linux-medium
@@ -817,6 +828,12 @@ jobs:
     environment:
       <<: *env-ia32
     <<: *steps-tests
+
+  linux-ia32-release-verify-ffmpeg:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+    <<: *steps-verify-ffmpeg
 
   osx-testing-tests:
     <<: *machine-mac
@@ -877,7 +894,7 @@ workflows:
       - linux-arm-ffmpeg:
            requires:
              - linux-arm-checkout
-      - linux-arm-mksnapshot:
+      - linux-arm-native-mksnapshot:
           requires:
             - linux-arm-checkout
 
@@ -890,7 +907,7 @@ workflows:
       - linux-arm64-ffmpeg:
            requires:
              - linux-arm64-checkout
-      - linux-arm64-mksnapshot:
+      - linux-arm64-native-mksnapshot:
           requires:
             - linux-arm64-checkout
 
@@ -939,6 +956,13 @@ workflows:
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
+      - linux-x64-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-x64-release-verify-ffmpeg:
+          requires:
+            - linux-x64-release
+            - linux-x64-ffmpeg
 
       - linux-ia32-release:
           requires:
@@ -946,17 +970,30 @@ workflows:
       - linux-ia32-release-tests:
           requires:
             - linux-ia32-release
+      - linux-ia32-ffmpeg:
+          requires:
+            - linux-checkout
+      - linux-ia32-release-verify-ffmpeg:
+          requires:
+            - linux-ia32-release
+            - linux-ia32-ffmpeg
 
       - linux-arm-release:
           requires:
             - linux-arm-checkout
-      - linux-arm-mksnapshot:
+      - linux-arm-ffmpeg:
+           requires:
+             - linux-arm-checkout
+      - linux-arm-native-mksnapshot:
           requires:
             - linux-arm-checkout
 
       - linux-arm64-release:
           requires:
             - linux-arm64-checkout
-      - linux-arm64-mksnapshot:
+      - linux-arm64-ffmpeg:
+           requires:
+             - linux-arm64-checkout
+      - linux-arm64-native-mksnapshot:
           requires:
             - linux-arm64-checkout
