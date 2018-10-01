@@ -56,8 +56,10 @@ struct Converter<NSAppearance*> {
     if (val.name == NSAppearanceNameAqua) {
       return mate::ConvertToV8(isolate, "light");
     }
-    if (@available(macOS 10.14, *) && val.name == NSAppearanceNameDarkAqua) {
-      return mate::ConvertToV8(isolate, "dark");
+    if (@available(macOS 10.14, *)) {
+      if (val.name == NSAppearanceNameDarkAqua) {
+        return mate::ConvertToV8(isolate, "dark");
+      }
     }
 
     return mate::ConvertToV8(isolate, "unknown");
