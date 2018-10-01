@@ -27,6 +27,16 @@
 
 namespace atom {
 
+#if defined(OS_MACOSX)
+void AddExtraParameter(const std::string& key, const std::string& value) {
+  crash_reporter::CrashReporter::GetInstance()->AddExtraParameter(key, value);
+}
+
+void RemoveExtraParameter(const std::string& key) {
+  crash_reporter::CrashReporter::GetInstance()->RemoveExtraParameter(key);
+}
+#endif
+
 int NodeMain(int argc, char* argv[]) {
   base::CommandLine::Init(argc, argv);
 
@@ -77,6 +87,12 @@ int NodeMain(int argc, char* argv[]) {
     // Setup process.crashReporter.start in child node processes
     auto reporter = mate::Dictionary::CreateEmpty(gin_env.isolate());
     reporter.SetMethod("start", &crash_reporter::CrashReporter::StartInstance);
+
+#if defined(OS_MACOSX)
+    reporter.SetMethod("addExtraParameter", &AddExtraParameter);
+    reporter.SetMethod("removeExtraParameter", &RemoveExtraParameter);
+#endif
+
     process.Set("crashReporter", reporter);
 
     node::LoadEnvironment(env);
