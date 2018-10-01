@@ -20,6 +20,7 @@ describe('crashReporter module', () => {
 
   let originalTempDirectory = null
   let tempDirectory = null
+  let specTimeout = 180000
 
   before(() => {
     tempDirectory = temp.mkdirSync('electronCrashReporterSpec-')
@@ -59,11 +60,25 @@ describe('crashReporter module', () => {
       it('should send minidump when renderer crashes', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
-
-        this.timeout(180000)
-
+        
+        this.timeout(specTimeout)
+        
         stopServer = startServer({
           callback (port) {
+
+            crashReporter.start({
+              productName: 'Zombies',
+              companyName: 'Umbrella Corporation',
+              submitURL: 'http://127.0.0.1:' + port,
+              uploadToServer: true,
+              ignoreSystemCrashHandler: true,
+              extra: {
+                'extra1': 'extra1',
+                'extra2': 'extra2',
+              }
+            })
+
+            console.log("Loading file " + path.join(fixtures, 'api', 'crash.html'));
             w.loadFile(path.join(fixtures, 'api', 'crash.html'), { query: { port } })
           },
           processType: 'renderer',
@@ -75,7 +90,7 @@ describe('crashReporter module', () => {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
-        this.timeout(180000)
+        this.timeout(specTimeout)
 
         stopServer = startServer({
           callback (port) {
@@ -105,7 +120,7 @@ describe('crashReporter module', () => {
       })
 
       it('should not send minidump if uploadToServer is false', function (done) {
-        this.timeout(180000)
+        this.timeout(specTimeout)
 
         let dumpFile
         let crashesDir = crashReporter.getCrashesDirectory()
@@ -166,11 +181,49 @@ describe('crashReporter module', () => {
         })
       })
 
+      it('should send minidump with updated extra parameters when node processes crash', function (done) {
+        if (process.platform !== 'darwin') {
+          // FIXME(alexeykuzmin): Skip the test.
+          // this.skip()
+          return
+        }
+        // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
+        if (process.env.APPVEYOR === 'True') return done()
+         this.timeout(specTimeout)
+         stopServer = startServer({
+          callback (port) {
+            const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.getName()} Crashes`)
+            const version = app.getVersion()
+            const crashPath = path.join(fixtures, 'module', 'crash.js')
+             if (process.platform === 'win32') {
+              const crashServiceProcess = childProcess.spawn(process.execPath, [
+                `--reporter-url=http://127.0.0.1:${port}`,
+                '--application-name=Zombies',
+                `--crashes-directory=${crashesDir}`
+              ], {
+                env: {
+                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
+                },
+                detached: true
+              })
+              remote.process.crashServicePid = crashServiceProcess.pid
+            }
+             childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
+          },
+          processType: 'browser',
+          done: done,
+          preAssert:fields=>{
+            assert.equal(fields.newExtra,"newExtra");
+            assert.equal(fields.removeExtra,undefined);
+          }
+        })
+      })      
+
       it('should send minidump with updated extra parameters', function (done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
-        this.timeout(180000)
+        this.timeout(specTimeout)
 
         stopServer = startServer({
           callback (port) {
@@ -415,7 +468,7 @@ const waitForCrashReport = () => {
   })
 }
 
-const startServer = ({ callback, processType, done }) => {
+const startServer = ({ callback, processType, done, preAssert, postAssert }) => {
   let called = false
   const server = http.createServer((req, res) => {
     const form = new multiparty.Form()
@@ -433,10 +486,12 @@ const startServer = ({ callback, processType, done }) => {
       assert.strictEqual(String(fields._productName), 'Zombies')
       assert.strictEqual(String(fields._companyName), 'Umbrella Corporation')
       assert.strictEqual(String(fields._version), app.getVersion())
+      if(preAssert)preAssert(fields);
 
       const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
       res.end(reportId, () => {
         waitForCrashReport().then(() => {
+          if(postAssert)postAssert(reportId)
           assert.strictEqual(crashReporter.getLastCrashReport().id, reportId)
           assert.notStrictEqual(crashReporter.getUploadedReports().length, 0)
           assert.strictEqual(crashReporter.getUploadedReports()[0].id, reportId)
