@@ -82,6 +82,7 @@ origin URLs.
 $ cd src/electron
 $ git remote remove origin
 $ git remote add origin https://github.com/electron/electron
+$ git branch --set-upstream-to=origin/master
 $ cd -
 ```
 
@@ -94,7 +95,6 @@ So, in order to pull, you'd run the following commands:
 ```sh
 $ cd src/electron
 $ git pull
-$ cd ..
 $ gclient sync -f
 ```
 
