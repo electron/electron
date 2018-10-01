@@ -3,6 +3,12 @@ jobs:
   displayName: Build Electron via GN
   timeoutInMinutes: 120
   steps:
+
+  - task: CopyFiles@2
+    displayName: 'Copy Files to: src/electron'
+    inputs:
+      TargetFolder: src/electron
+
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
       echo "##vso[task.setvariable variable=PATH]$PATH"
@@ -12,14 +18,6 @@ jobs:
         --name "src/electron" \
         --unmanaged \
         "https://github.com/electron/electron"
-      mkdir src
-      git clone https://github.com/electron/electron src/electron
-      # TODO: there's a subtle race condition here in that if you push two
-      # commits to $BUILD_SOURCEBRANCH in quick succession, it's possible that
-      # fetching the BUILD_SOURCEBRANCH ref will not actually fetch the
-      # BUILD_SOURCEVERSION commit, and so the checkout will fail. Find a
-      # better solution for checking out the commit to be built.
-      (cd src/electron; git fetch origin +"${BUILD_SOURCEBRANCH}"; git checkout "${BUILD_SOURCEVERSION}")
       gclient sync --with_branch_heads --with_tags
       cd src
       export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
