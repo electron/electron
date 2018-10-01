@@ -21,11 +21,6 @@
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/net/atom_network_delegate.h"
-#if defined(ENABLE_OSR)
-#include "atom/browser/osr/osr_output_device.h"
-#include "atom/browser/osr/osr_render_widget_host_view.h"
-#include "atom/browser/osr/osr_web_contents_view.h"
-#endif
 #include "atom/browser/ui/drag_util.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
@@ -90,6 +85,12 @@
 #include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+
+#if BUILDFLAG(ENABLE_OSR)
+#include "atom/browser/osr/osr_output_device.h"
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#include "atom/browser/osr/osr_web_contents_view.h"
+#endif
 
 #if !defined(OS_MACOSX)
 #include "ui/aura/window.h"
@@ -237,7 +238,7 @@ struct Converter<atom::api::WebContents::Type> {
       *out = Type::BROWSER_VIEW;
     } else if (type == "webview") {
       *out = Type::WEB_VIEW;
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
     } else if (type == "offscreen") {
       *out = Type::OFF_SCREEN;
 #endif
@@ -338,7 +339,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     type_ = BACKGROUND_PAGE;
   else if (options.Get("isBrowserView", &b) && b)
     type_ = BROWSER_VIEW;
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   else if (options.Get(options::kOffscreen, &b) && b)
     type_ = OFF_SCREEN;
 #endif
@@ -372,7 +373,7 @@ WebContents::WebContents(v8::Isolate* isolate,
         new WebViewGuestDelegate(embedder_->web_contents(), this));
     params.guest_delegate = guest_delegate_.get();
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
           false, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
@@ -384,7 +385,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     } else {
 #endif
       web_contents = content::WebContents::Create(params);
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
     }
   } else if (IsOffScreen()) {
     bool transparent = false;
@@ -1605,7 +1606,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseEvent mouse_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
 #endif
       } else {
@@ -1625,7 +1626,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (mate::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
             mouse_wheel_event);
 #endif
@@ -1757,77 +1758,50 @@ void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
 }
 
 bool WebContents::IsOffScreen() const {
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   return type_ == OFF_SCREEN;
 #else
   return false;
 #endif
 }
 
+#if BUILDFLAG(ENABLE_OSR)
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
   Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 void WebContents::StartPainting() {
-  if (!IsOffScreen())
-    return;
-
-#if defined(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetPainting(true);
-#endif
 }
 
 void WebContents::StopPainting() {
-  if (!IsOffScreen())
-    return;
-
-#if defined(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetPainting(false);
-#endif
 }
 
 bool WebContents::IsPainting() const {
-  if (!IsOffScreen())
-    return false;
-
-#if defined(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   return osr_wcv && osr_wcv->IsPainting();
-#else
-  return false;
-#endif
 }
 
 void WebContents::SetFrameRate(int frame_rate) {
-  if (!IsOffScreen())
-    return;
-
-#if defined(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetFrameRate(frame_rate);
-#endif
 }
 
 int WebContents::GetFrameRate() const {
-  if (!IsOffScreen())
-    return 0;
-
-#if defined(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   return osr_wcv ? osr_wcv->GetFrameRate() : 0;
-#else
-  return 0;
-#endif
 }
+#endif
 
 void WebContents::Invalidate() {
   if (IsOffScreen()) {
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
     auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
     if (osr_rwhv)
       osr_rwhv->Invalidate();
@@ -2064,11 +2038,13 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isGuest", &WebContents::IsGuest)
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
+#if BUILDFLAG(ENABLE_OSR)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
+#endif
       .SetMethod("invalidate", &WebContents::Invalidate)
       .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
       .SetMethod("_getZoomLevel", &WebContents::GetZoomLevel)

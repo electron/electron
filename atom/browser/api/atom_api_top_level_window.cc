@@ -19,6 +19,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 
@@ -79,7 +80,7 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
   mate::Dictionary web_preferences;
   bool offscreen;

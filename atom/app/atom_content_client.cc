@@ -18,6 +18,7 @@
 #include "content/public/common/content_constants.h"
 #include "content/public/common/pepper_plugin_info.h"
 #include "content/public/common/user_agent.h"
+#include "electron/buildflags/buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/url_constants.h"
@@ -30,10 +31,10 @@
 #include "media/base/video_codecs.h"
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
 #include "pdf/pdf.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 namespace atom {
 
@@ -74,7 +75,7 @@ bool IsWidevineAvailable(base::FilePath* cdm_path,
 }
 #endif  // defined(WIDEVINE_CDM_AVAILABLE)
 
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
 content::PepperPluginInfo CreatePepperFlashInfo(const base::FilePath& path,
                                                 const std::string& version) {
   content::PepperPluginInfo plugin;
@@ -127,10 +128,10 @@ void AddPepperFlashFromCommandLine(
 
   plugins->push_back(CreatePepperFlashInfo(flash_path, flash_version));
 }
-#endif  // defined(ENABLE_PEPPER_FLASH)
+#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::PepperPluginInfo pdf_info;
   pdf_info.is_internal = true;
   pdf_info.is_out_of_process = true;
@@ -147,7 +148,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
       chrome_pdf::PPP_ShutdownModule;
   pdf_info.permissions = ppapi::PERMISSION_PRIVATE | ppapi::PERMISSION_DEV;
   plugins->push_back(pdf_info);
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 void ConvertStringWithSeparatorToVector(std::vector<std::string>* vec,
@@ -198,9 +199,9 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
   AddPepperFlashFromCommandLine(command_line, plugins);
-#endif  // defined(ENABLE_PEPPER_FLASH)
+#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
   ComputeBuiltInPlugins(plugins);
 }
 

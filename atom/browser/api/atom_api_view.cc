@@ -23,7 +23,7 @@ View::~View() {
     delete view_;
 }
 
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
 void View::SetLayoutManager(mate::Handle<LayoutManager> layout_manager) {
   layout_manager_.Reset(isolate(), layout_manager->GetWrapper());
   view()->SetLayoutManager(layout_manager->TakeOver());
@@ -53,7 +53,7 @@ mate::WrappableBase* View::New(mate::Arguments* args) {
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "View"));
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setLayoutManager", &View::SetLayoutManager)
       .SetMethod("addChildView", &View::AddChildView)

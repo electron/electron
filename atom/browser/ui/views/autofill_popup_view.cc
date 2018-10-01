@@ -44,7 +44,7 @@ AutofillPopupView::~AutofillPopupView() {
 
   RemoveObserver();
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->ResetView();
   }
@@ -226,7 +226,7 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
     return;
 
   GetWidget()->SetBounds(popup_->popup_bounds_);
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
   }
@@ -240,7 +240,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
   gfx::Canvas* draw_canvas = canvas;
   SkBitmap bitmap;
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   std::unique_ptr<cc::SkiaPaintCanvas> paint_canvas;
   if (view_proxy_.get()) {
     bitmap.allocN32Pixels(popup_->popup_bounds_in_view().width(),
@@ -260,7 +260,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     DrawAutofillEntry(draw_canvas, i, line_rect);
   }
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
     view_proxy_->SetBitmap(bitmap);
