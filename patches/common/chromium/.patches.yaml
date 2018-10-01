@@ -475,3 +475,9 @@ patches:
       desktop capture api.
     * Backports https://chromium-review.googlesource.com/c/chromium/src/+/1199806
       that fixes crash with screen capturer, can be removed in 71.0.3539.0
+-
+  author: Jeremy Apthorp <jeremya@chromium.org>
+  file: expose-net-observer-api.patch
+  description: |
+    Expose URLRequestContextGetter::{Add,Remove}Observer.
+    This patch should be removed once we switch to using the net service (cc @robo)
