@@ -37,7 +37,11 @@ struct Converter<NSAppearance*> {
       *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
       return true;
     } else if (name == "dark") {
-      *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+      if (@available(macOS 10.14, *)) {
+        *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+      } else {
+        *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+      }
       return true;
     }
 
@@ -48,11 +52,14 @@ struct Converter<NSAppearance*> {
     if (val == nil) {
       return v8::Null(isolate);
     }
+
     if (val.name == NSAppearanceNameAqua) {
       return mate::ConvertToV8(isolate, "light");
     }
-    if (val.name == NSAppearanceNameDarkAqua) {
-      return mate::ConvertToV8(isolate, "dark");
+    if (@available(macOS 10.14, *)) {
+      if (val.name == NSAppearanceNameDarkAqua) {
+        return mate::ConvertToV8(isolate, "dark");
+      }
     }
 
     return mate::ConvertToV8(isolate, "unknown");
