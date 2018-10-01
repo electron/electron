@@ -226,7 +226,9 @@ step-ffmpeg-build: &step-ffmpeg-build
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip
+      # NOTE(jeremy): -j3 because ffmpeg is currently built on a smaller
+      # machine size and ninja mis-detects the number of CPUs available.
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j3
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -262,7 +264,9 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      ninja -C out/Default electron:electron_mksnapshot_zip
+      # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
+      # machine size and ninja mis-detects the number of CPUs available.
+      ninja -C out/Default electron:electron_mksnapshot_zip -j3
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
@@ -296,7 +300,9 @@ step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip
+        # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
+        # machine size and ninja mis-detects the number of CPUs available.
+        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j3
       else
         echo 'Skipping native mksnapshot build for non arm build'
       fi
