@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const cp = require('child_process')
+const childProcess = require('child_process')
 const crypto = require('crypto')
 const fs = require('fs')
 const { hashElement } = require('folder-hash')
@@ -13,68 +13,87 @@ const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
-const [lastSpecHash, lastSpecInstallHash] = fs.existsSync(specHashPath)
-  ? fs.readFileSync(specHashPath, 'utf8').split('\n')
-  : ['invalid', 'invalid']
+async function main () {
+  const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash()
+  const [currentSpecHash, currentSpecInstallHash] = await getSpecHash()
+  const somethingChanged = (currentSpecHash !== lastSpecHash) ||
+      (lastSpecInstallHash !== currentSpecInstallHash)
 
-getSpecHash().then(([currentSpecHash, currentSpecInstallHash]) => {
-  const specChanged = currentSpecHash !== lastSpecHash
-  const installChanged = lastSpecInstallHash !== currentSpecInstallHash
-  if (specChanged || installChanged) {
-    const out = cp.spawnSync(NPM_CMD, ['install'], {
-      env: Object.assign({}, process.env, {
-        npm_config_nodedir: path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`),
-        npm_config_msvs_version: '2017'
-      }),
-      cwd: path.resolve(__dirname, '../spec'),
-      stdio: 'inherit'
-    })
-    if (out.status !== 0) {
-      console.error('Failed to npm install in the spec folder')
-      process.exit(1)
-    }
-    return getSpecHash()
-      .then(([newSpecHash, newSpecInstallHash]) => {
-        fs.writeFileSync(specHashPath, `${newSpecHash}\n${newSpecInstallHash}`)
-      })
+  if (somethingChanged) {
+    await installSpecModules()
+    await getSpecHash().then(saveSpecHash)
   }
-}).then(() => {
+
+  await runElectronTests()
+}
+
+function loadLastSpecHash () {
+  return fs.existsSync(specHashPath)
+    ? fs.readFileSync(specHashPath, 'utf8').split('\n')
+    : [null, null]
+}
+
+function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
+  fs.writeFileSync(specHashPath, `${newSpecHash}\n${newSpecInstallHash}`)
+}
+
+async function runElectronTests () {
   let exe = path.resolve(BASE, utils.getElectronExec())
   const args = process.argv.slice(2)
   if (process.platform === 'linux') {
     args.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe)
     exe = 'python'
   }
-  const child = cp.spawn(exe, args, {
+
+  const { status } = childProcess.spawnSync(exe, args, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   })
-  child.on('exit', (code) => {
-    process.exit(code)
+  if (status !== 0) {
+    throw new Error(`Electron tests failed with code ${status}.`)
+  }
+}
+
+async function installSpecModules () {
+  const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
+  const env = Object.assign({}, process.env, {
+    npm_config_nodedir: nodeDir,
+    npm_config_msvs_version: '2017'
   })
-}).catch((error) => {
-  console.error('An error occurred inside the spec runner', error)
-  process.exit(1)
-})
+  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
+    env,
+    cwd: path.resolve(__dirname, '../spec'),
+    stdio: 'inherit'
+  })
+  if (status !== 0) {
+    throw new Error('Failed to npm install in the spec folder')
+  }
+}
 
 function getSpecHash () {
   return Promise.all([
-    new Promise((resolve) => {
+    (async () => {
       const hasher = crypto.createHash('SHA256')
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')))
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package-lock.json')))
-      resolve(hasher.digest('hex'))
-    }),
-    new Promise((resolve, reject) => {
+      return hasher.digest('hex')
+    })(),
+    (async () => {
       const specNodeModulesPath = path.resolve(__dirname, '../spec/node_modules')
       if (!fs.existsSync(specNodeModulesPath)) {
-        return resolve('invalid')
+        return null
       }
-      hashElement(specNodeModulesPath, {
+      const { hash } = await hashElement(specNodeModulesPath, {
         folders: {
           exclude: ['.bin']
         }
-      }).then((result) => resolve(result.hash)).catch(reject)
-    })
+      })
+      return hash
+    })()
   ])
 }
+
+main().catch((error) => {
+  console.error('An error occurred inside the spec runner:', error)
+  process.exit(1)
+})
