@@ -467,3 +467,9 @@ patches:
       * Fixes a main_application_delegate SDK change
       * Fixes a non-null SDK change in a net unittest.
     This is needed for Electron to compile with XCode 10.0.
+-
+  author: Jeremy Apthorp <jeremya@chromium.org>
+  file: expose-net-observer-api.patch
+  description: |
+    Expose URLRequestContextGetter::{Add,Remove}Observer.
+    This patch should be removed once we switch to using the net service (cc @robo)
