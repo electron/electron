@@ -52,6 +52,9 @@ getSpecHash().then(([currentSpecHash, currentSpecInstallHash]) => {
   child.on('exit', (code) => {
     process.exit(code)
   })
+}).catch((error) => {
+  console.error('An error occurred inside the spec runner', error)
+  process.exit(1)
 })
 
 function getSpecHash () {
@@ -67,7 +70,11 @@ function getSpecHash () {
       if (!fs.existsSync(specNodeModulesPath)) {
         return resolve('invalid')
       }
-      hashElement(specNodeModulesPath).then((result) => resolve(result.hash)).catch(reject)
+      hashElement(specNodeModulesPath, {
+        folders: {
+          exclude: ['.bin']
+        }
+      }).then((result) => resolve(result.hash)).catch(reject)
     })
   ])
 }
