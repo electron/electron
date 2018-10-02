@@ -72,7 +72,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   if (web_preferences && !web_preferences->IsEnabled(options::kOffscreen)) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents);
     if (relay)
-      window = relay->window.get();
+      window = relay->GetNativeWindow();
   }
 
   atom::ShowMessageBox(

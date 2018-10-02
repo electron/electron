@@ -86,7 +86,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   auto* relay =
       web_contents ? NativeWindowRelay::FromWebContents(web_contents) : nullptr;
   if (relay)
-    window = relay->window.get();
+    window = relay->GetNativeWindow();
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   bool offscreen =
