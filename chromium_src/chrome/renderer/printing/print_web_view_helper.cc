@@ -32,9 +32,9 @@
 #include "third_party/blink/public/web/web_console_message.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
-#include "third_party/blink/public/web/web_frame_client.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_local_frame_client.h"
 #include "third_party/blink/public/web/web_plugin.h"
 #include "third_party/blink/public/web/web_plugin_document.h"
 #include "third_party/blink/public/web/web_print_params.h"
@@ -352,7 +352,7 @@ float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
 // Class that calls the Begin and End print functions on the frame and changes
 // the size of the view temporarily to support full page printing..
 class PrepareFrameAndViewForPrint : public blink::WebViewClient,
-                                    public blink::WebFrameClient {
+                                    public blink::WebLocalFrameClient {
  public:
   PrepareFrameAndViewForPrint(const PrintMsg_Print_Params& params,
                               blink::WebLocalFrame* frame,
@@ -386,7 +386,7 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   void DidStopLoading() override;
   bool AllowsBrokenNullLayerTreeView() const override;
 
-  // blink::WebFrameClient:
+  // blink::WebLocalFrameClient:
   blink::WebLocalFrame* CreateChildFrame(
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
