@@ -997,6 +997,8 @@ bool NativeWindowMac::IsKiosk() {
 }
 
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
+  NOTIMPLEMENTED() << "TODO";
+  /*
   base::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
   // views::Widget adds a layer for the content view.
@@ -1008,6 +1010,7 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
   // When using WebContents as content view, the contentView also has layer.
   if ([[window_ contentView] wantsLayer])
     [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+    */
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
