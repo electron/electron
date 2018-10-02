@@ -55,7 +55,7 @@ class AtomPermissionManager : public content::PermissionManager {
       const GURL& requesting_origin,
       bool user_gesture,
       const base::DictionaryValue* details,
-      const base::Callback<void(blink::mojom::PermissionStatus)>& callback);
+      const StatusCallback& callback);
   int RequestPermissions(
       const std::vector<content::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
