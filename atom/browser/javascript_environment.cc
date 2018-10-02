@@ -31,13 +31,9 @@ JavascriptEnvironment::JavascriptEnvironment()
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
 
-void JavascriptEnvironment::OnMessageLoopCreated() {
-  isolate_holder_.AddRunMicrotasksObserver();
-}
+void JavascriptEnvironment::OnMessageLoopCreated() {}
 
-void JavascriptEnvironment::OnMessageLoopDestroying() {
-  isolate_holder_.RemoveRunMicrotasksObserver();
-}
+void JavascriptEnvironment::OnMessageLoopDestroying() {}
 
 bool JavascriptEnvironment::Initialize() {
   auto* cmd = base::CommandLine::ForCurrentProcess();
