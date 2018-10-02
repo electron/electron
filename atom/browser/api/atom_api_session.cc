@@ -515,9 +515,18 @@ void Session::DisableNetworkEmulation() {
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
 
+void WrapVerifyProc(base::Callback<void(const VerifyRequestParams& request,
+                                        base::Callback<void(int)>)> proc,
+                    const VerifyRequestParams& request,
+                    base::OnceCallback<void(int)> cb) {
+  proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
+}
+
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  AtomCertVerifier::VerifyProc proc;
+  base::Callback<void(const VerifyRequestParams& request,
+                      base::Callback<void(int)>)>
+      proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
@@ -527,7 +536,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(&SetCertVerifyProcInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     proc));
+                     base::Bind(&WrapVerifyProc, proc)));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,

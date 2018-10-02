@@ -30,14 +30,14 @@ namespace {
 class Response : public base::LinkNode<Response> {
  public:
   Response(net::CertVerifyResult* verify_result,
-           const net::CompletionCallback& callback)
-      : verify_result_(verify_result), callback_(callback) {}
+           net::CompletionOnceCallback callback)
+      : verify_result_(verify_result), callback_(std::move(callback)) {}
   net::CertVerifyResult* verify_result() { return verify_result_; }
-  net::CompletionCallback callback() { return callback_; }
+  net::CompletionOnceCallback callback() { return std::move(callback_); }
 
  private:
   net::CertVerifyResult* verify_result_;
-  net::CompletionCallback callback_;
+  net::CompletionOnceCallback callback_;
 
   DISALLOW_COPY_AND_ASSIGN(Response);
 };
@@ -130,8 +130,8 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
   }
 
   void AddResponseListener(net::CertVerifyResult* verify_result,
-                           const net::CompletionCallback& callback) {
-    response_list_.Append(new Response(verify_result, callback));
+                           net::CompletionOnceCallback callback) {
+    response_list_.Append(new Response(verify_result, std::move(callback)));
   }
 
   const AtomCertVerifier::RequestParams& params() const { return params_; }
@@ -163,15 +163,15 @@ void AtomCertVerifier::SetVerifyProc(const VerifyProc& proc) {
 int AtomCertVerifier::Verify(const RequestParams& params,
                              net::CRLSet* crl_set,
                              net::CertVerifyResult* verify_result,
-                             const net::CompletionCallback& callback,
+                             net::CompletionOnceCallback callback,
                              std::unique_ptr<Request>* out_req,
                              const net::NetLogWithSource& net_log) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   if (verify_proc_.is_null()) {
     ct_delegate_->ClearCTExcludedHostsList();
-    return default_cert_verifier_->Verify(params, crl_set, verify_result,
-                                          callback, out_req, net_log);
+    return default_cert_verifier_->Verify(
+        params, crl_set, verify_result, std::move(callback), out_req, net_log);
   } else {
     CertVerifierRequest* request = FindRequest(params);
     if (!request) {
@@ -182,7 +182,7 @@ int AtomCertVerifier::Verify(const RequestParams& params,
       *out_req = std::move(new_request);
       inflight_requests_[params] = request;
     }
-    request->AddResponseListener(verify_result, callback);
+    request->AddResponseListener(verify_result, std::move(callback));
 
     return net::ERR_IO_PENDING;
   }
