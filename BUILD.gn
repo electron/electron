@@ -236,6 +236,7 @@ static_library("electron_lib") {
     "//ui/gl",
     "//ui/views",
     "//v8",
+    "//media/mojo/interfaces",
   ]
 
   # TODO: this requires a visibility patch to chromium src. it would be better
