@@ -805,41 +805,69 @@ describe('app module', () => {
   })
 
   describe('getGPUInfo() API', () => {
-    before(function () {
-      // TODO(alexeykuzmoin): Fails on linux. Enable them back.
-      // https://github.com/electron/electron/pull/14863
+    const appPath = path.join(__dirname, 'fixtures', 'api', 'gpu-info.js')
+
+    const getGPUInfo = async (type) => {
+      const appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, type])
+      let gpuInfoData = ''
+      let errorData = ''
+      appProcess.stdout.on('data', (data) => {
+        gpuInfoData += data
+      })
+      appProcess.stderr.on('data', (data) => {
+        errorData += data
+      })
+      const [exitCode] = await emittedOnce(appProcess, 'exit')
+      if (exitCode === 0) {
+        // return info data on successful exit
+        return JSON.parse(gpuInfoData)
+      } else {
+        // return error if not clean exit
+        return Promise.reject(new Error(errorData))
+      }
+    }
+    const verifyBasicGPUInfo = async (gpuInfo) => {
+      // Devices information is always present in the available info.
+      expect(gpuInfo).to.have.own.property('gpuDevice')
+        .that.is.an('array')
+        .and.is.not.empty()
+
+      const device = gpuInfo.gpuDevice[0]
+      expect(device).to.be.an('object')
+        .and.to.have.property('deviceId')
+        .that.is.a('number')
+        .not.lessThan(0)
+    }
+
+    it('succeeds with basic GPUInfo', async () => {
+      const gpuInfo = await getGPUInfo('basic')
+      await verifyBasicGPUInfo(gpuInfo)
+    })
+
+    it('succeeds with complete GPUInfo', async () => {
+      const completeInfo = await getGPUInfo('complete')
       if (process.platform === 'linux') {
-        this.skip()
+        // For linux complete info is same as basic info
+        await verifyBasicGPUInfo(completeInfo)
+        const basicInfo = await getGPUInfo('basic')
+        expect(completeInfo).to.deep.equal(basicInfo)
+      } else {
+        // Gl version is present in the complete info.
+        expect(completeInfo).to.have.own.property('auxAttributes')
+          .that.is.an('object')
+        expect(completeInfo.auxAttributes).to.have.own.property('glVersion')
+          .that.is.a('string')
+          .and.not.empty()
       }
     })
 
-    it('succeeds with basic GPUInfo', (done) => {
-      app.getGPUInfo('basic').then((gpuInfo) => {
-        // Devices information is always present in the available info
-        expect(gpuInfo.gpuDevice).to.be.an('array')
-        expect(gpuInfo.gpuDevice.length).to.be.greaterThan(0)
-        const device = gpuInfo.gpuDevice[0]
-        expect(device).to.be.an('object')
-        expect(device)
-          .to.have.property('deviceId')
-          .that.is.a('number')
-          .not.lessThan(0)
-        done()
-      })
-    })
-
-    it('succeeds with complete GPUInfo', (done) => {
-      app.getGPUInfo('complete').then((completeInfo) => {
-        // Driver version is present in the complete info
-        expect(completeInfo.auxAttributes.glVersion).to.be.a('string').that.has.length.greaterThan(0)
-        done()
-      })
-    })
-
-    it('fails for invalid info_type', (done) => {
-      app.getGPUInfo('invalid').catch(() => {
-        done()
-      })
+    it('fails for invalid info_type', () => {
+      const invalidType = 'invalid'
+      const errorMessage =
+          `app.getGPUInfo() didn't fail for the "${invalidType}" info type`
+      return app.getGPUInfo(invalidType).then(
+        () => Promise.reject(new Error(errorMessage)),
+        () => Promise.resolve())
     })
   })
 
