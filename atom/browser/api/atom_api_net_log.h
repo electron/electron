@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
@@ -39,7 +40,7 @@ class NetLog : public mate::TrackableObject<NetLog>,
 
  private:
   net_log::NetExportFileWriter* net_log_writer_;
-  base::OnceClosure stop_callback_;
+  std::vector<base::OnceClosure> stop_callback_queue_;
   std::unique_ptr<base::DictionaryValue> net_log_state_;
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);

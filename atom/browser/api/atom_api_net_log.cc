@@ -82,24 +82,29 @@ std::string NetLog::GetCurrentlyLoggingPath() {
 }
 
 void NetLog::StopLogging(mate::Arguments* args) {
-  args->GetNext(&stop_callback_);
+  base::OnceClosure callback;
+  args->GetNext(&callback);
   if (IsCurrentlyLogging()) {
+    stop_callback_queue_.emplace_back(std::move(callback));
     net_log_writer_->StopNetLog(nullptr, nullptr);
   } else {
-    std::move(stop_callback_).Run();
+    std::move(callback).Run();
   }
 }
 
 void NetLog::OnNewState(const base::DictionaryValue& state) {
   net_log_state_ = state.CreateDeepCopy();
 
-  if (stop_callback_.is_null())
+  if (stop_callback_queue_.empty())
     return;
 
   const auto* current_log_state =
       state.FindKeyOfType("state", base::Value::Type::STRING);
-  if (current_log_state && current_log_state->GetString() == "STOPPING_LOG")
-    std::move(stop_callback_).Run();
+  if (current_log_state && current_log_state->GetString() == "STOPPING_LOG") {
+    for (auto& callback : stop_callback_queue_)
+      std::move(callback).Run();
+    stop_callback_queue_.clear();
+  }
 }
 
 // static
