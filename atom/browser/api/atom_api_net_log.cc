@@ -57,16 +57,19 @@ void NetLog::StartLogging(mate::Arguments* args) {
       std::string(), {} /* URLRequestContextGetter list */);
 }
 
-bool NetLog::IsCurrentlyLogging() {
+std::string NetLog::GetLoggingState() const {
   const base::Value* current_log_state =
       net_log_state_->FindKeyOfType("state", base::Value::Type::STRING);
-  if (current_log_state && current_log_state->GetString() == "LOGGING")
-    return true;
-
-  return false;
+  if (!current_log_state)
+    return std::string();
+  return current_log_state->GetString();
 }
 
-std::string NetLog::GetCurrentlyLoggingPath() {
+bool NetLog::IsCurrentlyLogging() const {
+  return (GetLoggingState() == "LOGGING");
+}
+
+std::string NetLog::GetCurrentlyLoggingPath() const {
   // Net log exporter has a default path which will be used
   // when no log path is provided, but since we don't allow
   // net log capture without user provided file path, this
@@ -98,11 +101,16 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
   if (stop_callback_queue_.empty())
     return;
 
-  const auto* current_log_state =
-      state.FindKeyOfType("state", base::Value::Type::STRING);
-  if (current_log_state && current_log_state->GetString() == "STOPPING_LOG") {
-    for (auto& callback : stop_callback_queue_)
-      std::move(callback).Run();
+  if (GetLoggingState() == "STOPPING_LOG") {
+    // We don't use ranged for loop because iterators are getting
+    // invalided when the callback runs.
+    for (auto iter = stop_callback_queue_.begin();
+         iter != stop_callback_queue_.end();) {
+      base::OnceClosure callback = std::move(*iter);
+      if (!callback.is_null())
+        std::move(callback).Run();
+      ++iter;
+    }
     stop_callback_queue_.clear();
   }
 }

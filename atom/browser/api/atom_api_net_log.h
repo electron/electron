@@ -27,8 +27,9 @@ class NetLog : public mate::TrackableObject<NetLog>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   void StartLogging(mate::Arguments* args);
-  bool IsCurrentlyLogging();
-  std::string GetCurrentlyLoggingPath();
+  std::string GetLoggingState() const;
+  bool IsCurrentlyLogging() const;
+  std::string GetCurrentlyLoggingPath() const;
   void StopLogging(mate::Arguments* args);
 
  protected:
