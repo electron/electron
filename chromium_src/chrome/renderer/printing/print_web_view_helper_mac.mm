@@ -9,10 +9,10 @@
 #include "base/logging.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/metrics/histogram.h"
+#include "cc/paint/paint_canvas.h"
 #include "chrome/common/print_messages.h"
 #include "printing/metafile_skia_wrapper.h"
 #include "printing/page_size_margins.h"
-#include "third_party/blink/public/platform/web_canvas.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace printing {
@@ -117,7 +117,7 @@ void PrintWebViewHelper::RenderPage(const PrintMsg_Print_Params& params,
 
     MetafileSkiaWrapper::SetMetafileOnCanvas(canvas, metafile);
     RenderPageContent(frame, page_number, canvas_area, content_area,
-                      scale_factor, static_cast<blink::WebCanvas*>(canvas));
+                      scale_factor, static_cast<cc::PaintCanvas*>(canvas));
   }
 
   // Done printing. Close the device context to retrieve the compiled metafile.
