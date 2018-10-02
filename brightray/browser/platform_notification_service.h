@@ -43,6 +43,8 @@ class PlatformNotificationService
   void GetDisplayedNotifications(
       content::BrowserContext* browser_context,
       const DisplayedNotificationsCallback& callback) override;
+  int64_t ReadNextPersistentNotificationId(
+      content::BrowserContext* browser_context) override;
 
  private:
   BrowserClient* browser_client_;
