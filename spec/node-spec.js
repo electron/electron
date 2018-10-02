@@ -221,14 +221,23 @@ describe('node feature', () => {
       })
 
       let output = ''
-      child.stderr.on('data', (data) => {
+      function cleanup () {
+        child.stderr.removeListener('data', errorDataListener)
+        child.stdout.removeListener('data', outDataHandler)
+      }
+      function errorDataListener (data) {
         output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) done()
-      })
-
-      child.stdout.on('data', (data) => {
+        if (output.trim().startsWith('Debugger listening on ws://')) {
+          cleanup()
+          done()
+        }
+      }
+      function outDataHandler (data) {
+        cleanup()
         done(new Error(`Unexpected output: ${data.toString()}`))
-      })
+      }
+      child.stderr.on('data', errorDataListener)
+      child.stdout.on('data', outDataHandler)
     })
 
     it('supports js binding', (done) => {
