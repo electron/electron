@@ -20,7 +20,7 @@ class SpecialStoragePolicy : public storage::SpecialStoragePolicy {
   bool HasIsolatedStorage(const GURL& origin) override;
   bool IsStorageSessionOnly(const GURL& origin) override;
   bool HasSessionOnlyOrigins() override;
-  storage::SpecialStoragePolicy::DeleteCookiePredicate
+  network::SessionCleanupCookieStore::DeleteCookiePredicate
   CreateDeleteCookieOnExitPredicate() override;
 
  protected:
