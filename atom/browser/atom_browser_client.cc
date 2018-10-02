@@ -552,8 +552,7 @@ std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
   if (id == -1)
     return nullptr;
 
-  base::StringPiece manifest_contents =
-      rb.GetRawDataResourceForScale(id, ui::ScaleFactor::SCALE_FACTOR_NONE);
+  base::StringPiece manifest_contents = rb.GetRawDataResource(id);
   return base::JSONReader::Read(manifest_contents);
 }
 
