@@ -52,7 +52,7 @@ bool AtomWebUIControllerFactory::UseWebUIBindingsForURL(
   return UseWebUIForURL(browser_context, url);
 }
 
-content::WebUIController*
+std::unique_ptr<content::WebUIController>
 AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
                                                         const GURL& url) const {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -78,7 +78,7 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     return new PdfViewerUI(browser_context, web_ui, src);
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-  return nullptr;
+  return std::unique_ptr<content::WebUIController>();
 }
 
 }  // namespace atom
