@@ -381,7 +381,7 @@ void AtomNetworkDelegate::OnURLRequestDestroyed(net::URLRequest* request) {
 net::NetworkDelegate::AuthRequiredResponse AtomNetworkDelegate::OnAuthRequired(
     net::URLRequest* request,
     const net::AuthChallengeInfo& auth_info,
-    const AuthCallback& callback,
+    AuthCallback callback,
     net::AuthCredentials* credentials) {
   auto* resource_request_info =
       content::ResourceRequestInfo::ForRequest(request);
