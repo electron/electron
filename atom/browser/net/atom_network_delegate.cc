@@ -269,7 +269,7 @@ void AtomNetworkDelegate::SetResponseListenerInIO(ResponseEvent type,
 
 int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     GURL* new_url) {
   if (!base::ContainsKey(response_listeners_, kOnBeforeRequest)) {
     for (const auto& domain : ignore_connections_limit_domains_) {
@@ -283,18 +283,19 @@ int AtomNetworkDelegate::OnBeforeURLRequest(
     return net::OK;
   }
 
-  return HandleResponseEvent(kOnBeforeRequest, request, callback, new_url);
+  return HandleResponseEvent(kOnBeforeRequest, request, std::move(callback),
+                             new_url);
 }
 
 int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     net::HttpRequestHeaders* headers) {
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return net::OK;
 
-  return HandleResponseEvent(kOnBeforeSendHeaders, request, callback, headers,
-                             *headers);
+  return HandleResponseEvent(kOnBeforeSendHeaders, request, std::move(callback),
+                             headers, *headers);
 }
 
 void AtomNetworkDelegate::OnStartTransaction(
@@ -308,7 +309,7 @@ void AtomNetworkDelegate::OnStartTransaction(
 
 int AtomNetworkDelegate::OnHeadersReceived(
     net::URLRequest* request,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     const net::HttpResponseHeaders* original,
     scoped_refptr<net::HttpResponseHeaders>* override,
     GURL* allowed) {
@@ -316,7 +317,7 @@ int AtomNetworkDelegate::OnHeadersReceived(
     return net::OK;
 
   return HandleResponseEvent(
-      kOnHeadersReceived, request, callback,
+      kOnHeadersReceived, request, std::move(callback),
       std::make_pair(override, original->GetStatusLine()), original);
 }
 
@@ -463,7 +464,7 @@ template <typename Out, typename... Args>
 int AtomNetworkDelegate::HandleResponseEvent(
     ResponseEvent type,
     net::URLRequest* request,
-    const net::CompletionCallback& callback,
+    net::CompletionOnceCallback callback,
     Out out,
     Args... args) {
   const auto& info = response_listeners_[type];
@@ -478,7 +479,7 @@ int AtomNetworkDelegate::HandleResponseEvent(
       request, &render_process_id, &render_frame_id);
 
   // The |request| could be destroyed before the |callback| is called.
-  callbacks_[request->identifier()] = callback;
+  callbacks_[request->identifier()] = std::move(callback);
 
   ResponseCallback response =
       base::Bind(&AtomNetworkDelegate::OnListenerResultInUI<Out>,
@@ -524,7 +525,7 @@ void AtomNetworkDelegate::OnListenerResultInIO(
 
   bool cancel = false;
   response->GetBoolean("cancel", &cancel);
-  callbacks_[id].Run(cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK);
+  std::move(callbacks_[id]).Run(cancel ? net::ERR_BLOCKED_BY_CLIENT : net::OK);
 }
 
 template <typename T>

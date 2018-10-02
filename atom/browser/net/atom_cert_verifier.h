@@ -38,7 +38,7 @@ class AtomCertVerifier : public net::CertVerifier {
   ~AtomCertVerifier() override;
 
   using VerifyProc = base::Callback<void(const VerifyRequestParams& request,
-                                         const net::CompletionCallback&)>;
+                                         net::CompletionOnceCallback)>;
 
   void SetVerifyProc(const VerifyProc& proc);
 
@@ -53,7 +53,7 @@ class AtomCertVerifier : public net::CertVerifier {
   int Verify(const RequestParams& params,
              net::CRLSet* crl_set,
              net::CertVerifyResult* verify_result,
-             const net::CompletionCallback& callback,
+             net::CompletionOnceCallback callback,
              std::unique_ptr<Request>* out_req,
              const net::NetLogWithSource& net_log) override;
   bool SupportsOCSPStapling() override;

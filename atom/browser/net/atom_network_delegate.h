@@ -82,10 +82,10 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
  protected:
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
-                         const net::CompletionCallback& callback,
+                         net::CompletionOnceCallback callback,
                          GURL* new_url) override;
   int OnBeforeStartTransaction(net::URLRequest* request,
-                               const net::CompletionCallback& callback,
+                               net::CompletionOnceCallback callback,
                                net::HttpRequestHeaders* headers) override;
   void OnBeforeSendHeaders(net::URLRequest* request,
                            const net::ProxyInfo& proxy_info,
@@ -95,7 +95,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                           const net::HttpRequestHeaders& headers) override;
   int OnHeadersReceived(
       net::URLRequest* request,
-      const net::CompletionCallback& callback,
+      net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) override;
@@ -150,7 +150,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent type,
                           net::URLRequest* request,
-                          const net::CompletionCallback& callback,
+                          net::CompletionOnceCallback callback,
                           Out out,
                           Args... args);
 
@@ -167,7 +167,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   std::map<uint64_t, scoped_refptr<LoginHandler>> login_handler_map_;
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
-  std::map<uint64_t, net::CompletionCallback> callbacks_;
+  std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
   std::vector<std::string> ignore_connections_limit_domains_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
