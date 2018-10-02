@@ -37,9 +37,9 @@ bool SpecialStoragePolicy::HasSessionOnlyOrigins() {
   return false;
 }
 
-storage::SpecialStoragePolicy::DeleteCookiePredicate
+network::SessionCleanupCookieStore::DeleteCookiePredicate
 SpecialStoragePolicy::CreateDeleteCookieOnExitPredicate() {
-  return storage::SpecialStoragePolicy::DeleteCookiePredicate();
+  return network::SessionCleanupCookieStore::DeleteCookiePredicate();
 }
 
 }  // namespace atom
