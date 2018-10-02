@@ -1019,6 +1019,9 @@ void NativeWindowMac::SetContentProtection(bool enable) {
 }
 
 void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+
   if (browser_view()) {
     [browser_view()->GetInspectableWebContentsView()->GetNativeView()
             removeFromSuperview];
@@ -1026,6 +1029,7 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
   }
 
   if (!view) {
+    [CATransaction commit];
     return;
   }
 
@@ -1035,6 +1039,8 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
                          positioned:NSWindowAbove
                          relativeTo:nil];
   native_view.hidden = NO;
+
+  [CATransaction commit];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
