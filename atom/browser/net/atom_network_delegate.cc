@@ -20,10 +20,8 @@
 #include "net/base/load_flags.h"
 #include "net/base/net_errors.h"
 #include "net/url_request/url_request.h"
-#include "services/network/throttling/throttling_network_transaction.h"
 
 using content::BrowserThread;
-using network::ThrottlingNetworkTransaction;
 
 namespace atom {
 
@@ -270,7 +268,7 @@ void AtomNetworkDelegate::SetResponseListenerInIO(ResponseEvent type,
 }
 
 void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(
-    const std::string& client_id) {
+    const base::UnguessableToken& client_id) {
   client_id_ = client_id;
 }
 
@@ -297,10 +295,6 @@ int AtomNetworkDelegate::OnBeforeStartTransaction(
     net::URLRequest* request,
     const net::CompletionCallback& callback,
     net::HttpRequestHeaders* headers) {
-  if (!client_id_.empty())
-    headers->SetHeader(network::ThrottlingNetworkTransaction::
-                           kDevToolsEmulateNetworkConditionsClientId,
-                       client_id_);
   if (!base::ContainsKey(response_listeners_, kOnBeforeSendHeaders))
     return net::OK;
 

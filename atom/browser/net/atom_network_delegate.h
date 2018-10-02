@@ -79,7 +79,8 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                                URLPatterns patterns,
                                ResponseListener callback);
 
-  void SetDevToolsNetworkEmulationClientId(const std::string& client_id);
+  void SetDevToolsNetworkEmulationClientId(
+      const base::UnguessableToken& client_id);
 
  protected:
   // net::NetworkDelegate:
@@ -173,7 +174,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   std::vector<std::string> ignore_connections_limit_domains_;
 
   // Client id for devtools network emulation.
-  std::string client_id_;
+  base::UnguessableToken client_id_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };
