@@ -598,18 +598,8 @@ jobs:
   # Layer 1: Checkout.
   linux-checkout:
     <<: *machine-linux-2xlarge
-    <<: *steps-checkout
-
-  linux-arm-checkout:
-    <<: *machine-linux-2xlarge
     environment:
-      <<: *env-arm
-    <<: *steps-checkout
-
-  linux-arm64-checkout:
-    <<: *machine-linux-2xlarge
-    environment:
-      <<: *env-arm64
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -863,8 +853,6 @@ workflows:
   build-linux:
     jobs:
       - linux-checkout
-      - linux-arm-checkout
-      - linux-arm64-checkout
 
       - linux-x64-debug:
           requires:
@@ -902,29 +890,29 @@ workflows:
 
       - linux-arm-debug:
           requires:
-            - linux-arm-checkout
+            - linux-checkout
       - linux-arm-testing:
           requires:
-            - linux-arm-checkout
+            - linux-checkout
       - linux-arm-ffmpeg:
            requires:
-             - linux-arm-checkout
+             - linux-checkout
       - linux-arm-native-mksnapshot:
           requires:
-            - linux-arm-checkout
+            - linux-checkout
 
       - linux-arm64-debug:
           requires:
-            - linux-arm64-checkout
+            - linux-checkout
       - linux-arm64-testing:
           requires:
-            - linux-arm64-checkout
+            - linux-checkout
       - linux-arm64-ffmpeg:
            requires:
-             - linux-arm64-checkout
+             - linux-checkout
       - linux-arm64-native-mksnapshot:
           requires:
-            - linux-arm64-checkout
+            - linux-checkout
 
   build-mac-fork-prs:
     jobs:
@@ -953,8 +941,6 @@ workflows:
                 - /chromium\-upgrade\/[0-9]+/
     jobs:
       - linux-checkout
-      - linux-arm-checkout
-      - linux-arm64-checkout
 
       # TODO(alexeykuzmin): Enable it back.
       # Tons of crashes right now, see
@@ -996,20 +982,20 @@ workflows:
 
       - linux-arm-release:
           requires:
-            - linux-arm-checkout
+            - linux-checkout
       - linux-arm-ffmpeg:
            requires:
-             - linux-arm-checkout
+             - linux-checkout
       - linux-arm-native-mksnapshot:
           requires:
-            - linux-arm-checkout
+            - linux-checkout
 
       - linux-arm64-release:
           requires:
-            - linux-arm64-checkout
+            - linux-checkout
       - linux-arm64-ffmpeg:
            requires:
-             - linux-arm64-checkout
+             - linux-checkout
       - linux-arm64-native-mksnapshot:
           requires:
-            - linux-arm64-checkout
+            - linux-checkout
