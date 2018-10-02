@@ -32,11 +32,11 @@ void AtomSpeechRecognitionManagerDelegate::OnRecognitionEnd(int session_id) {}
 
 void AtomSpeechRecognitionManagerDelegate::OnRecognitionResults(
     int session_id,
-    const content::SpeechRecognitionResults& result) {}
+    const std::vector<blink::mojom::SpeechRecognitionResultPtr>& results) {}
 
 void AtomSpeechRecognitionManagerDelegate::OnRecognitionError(
     int session_id,
-    const content::SpeechRecognitionError& error) {}
+    const blink::mojom::SpeechRecognitionError& error) {}
 
 void AtomSpeechRecognitionManagerDelegate::OnAudioLevelsChange(
     int session_id,
