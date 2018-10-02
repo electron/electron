@@ -798,7 +798,6 @@ group("chromium_unittests") {
     "//third_party/blink/public:all_blink",
     "//third_party/blink/public:test_support",
     "//third_party/leveldatabase:env_chromium_unittests",
-    "//tools/gn:gn_unittests",
     "//ui/base:ui_base_unittests",
     "//ui/compositor:compositor_unittests",
     "//ui/display:display_unittests",
