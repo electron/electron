@@ -336,8 +336,6 @@ filenames = {
     "atom/browser/special_storage_policy.h",
     "atom/browser/ui/accelerator_util.cc",
     "atom/browser/ui/accelerator_util.h",
-    "atom/browser/ui/accelerator_util_mac.mm",
-    "atom/browser/ui/accelerator_util_views.cc",
     "atom/browser/ui/atom_menu_model.cc",
     "atom/browser/ui/atom_menu_model.h",
     "atom/browser/ui/autofill_popup.cc",
