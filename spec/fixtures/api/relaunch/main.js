@@ -8,7 +8,7 @@ process.on('uncaughtException', () => {
 })
 
 app.once('ready', () => {
-  let lastArg = process.argv[process.argv.length - 1]
+  const lastArg = process.argv[process.argv.length - 1]
   const client = net.connect(socketPath)
   client.once('connect', () => {
     client.end(String(lastArg === '--second'))

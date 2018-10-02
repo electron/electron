@@ -97,7 +97,7 @@ describe('netLog module', () => {
       return
     }
 
-    let appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(remote.process.execPath,
       [appPath, `--log-net-log=${dumpFile}`], {
         env: {
           TEST_REQUEST_URL: server.url
@@ -116,7 +116,7 @@ describe('netLog module', () => {
       return
     }
 
-    let appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(remote.process.execPath,
       [appPath, `--log-net-log=${dumpFile}`], {
         env: {
           TEST_REQUEST_URL: server.url,
@@ -142,7 +142,7 @@ describe('netLog module', () => {
       return
     }
 
-    let appProcess = ChildProcess.spawn(remote.process.execPath,
+    const appProcess = ChildProcess.spawn(remote.process.execPath,
       [appPath], {
         env: {
           TEST_REQUEST_URL: server.url,

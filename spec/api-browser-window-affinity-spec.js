@@ -129,7 +129,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: false
         })
       ]).then(args => {
-        let w1 = args[1]
+        const w1 = args[1]
         return Promise.all([
           testNodeIntegration(false),
           w1,
@@ -169,7 +169,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: true
         })
       ]).then(args => {
-        let w1 = args[1]
+        const w1 = args[1]
         return Promise.all([
           testNodeIntegration(true),
           w1,

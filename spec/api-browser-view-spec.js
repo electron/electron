@@ -116,12 +116,12 @@ describe('BrowserView module', () => {
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
-      let view2 = w.getBrowserView()
+      const view2 = w.getBrowserView()
       expect(view2.webContents.id).to.equal(view.webContents.id)
     })
 
     it('returns null if none is set', () => {
-      let view = w.getBrowserView()
+      const view = w.getBrowserView()
       expect(view).to.be.null()
     })
   })
@@ -145,7 +145,7 @@ describe('BrowserView module', () => {
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
-      let view2 = BrowserView.fromId(view.id)
+      const view2 = BrowserView.fromId(view.id)
       expect(view2.webContents.id).to.equal(view.webContents.id)
     })
   })
@@ -156,7 +156,7 @@ describe('BrowserView module', () => {
       w.setBrowserView(view)
       expect(view.id).to.not.be.null()
 
-      let view2 = BrowserView.fromWebContents(view.webContents)
+      const view2 = BrowserView.fromWebContents(view.webContents)
       expect(view2.webContents.id).to.equal(view.webContents.id)
     })
   })

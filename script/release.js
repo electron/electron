@@ -24,15 +24,14 @@ const github = new GitHub({
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
 async function getDraftRelease (version, skipValidation) {
-  let releaseInfo = await github.repos.getReleases({ owner: 'electron', repo: targetRepo })
-  let drafts
+  const releaseInfo = await github.repos.getReleases({ owner: 'electron', repo: targetRepo })
   let versionToCheck
   if (version) {
     versionToCheck = version
   } else {
     versionToCheck = pkgVersion
   }
-  drafts = releaseInfo.data
+  const drafts = releaseInfo.data
     .filter(release => release.tag_name === versionToCheck &&
       release.draft === true)
   const draft = drafts[0]
@@ -143,19 +142,19 @@ function checkVersion () {
   if (args.skipVersionCheck) return
 
   console.log(`Verifying that app version matches package version ${pkgVersion}.`)
-  let startScript = path.join(__dirname, 'start.py')
-  let scriptArgs = ['--version']
+  const startScript = path.join(__dirname, 'start.py')
+  const scriptArgs = ['--version']
   if (args.automaticRelease) {
     scriptArgs.unshift('-R')
   }
-  let appVersion = runScript(startScript, scriptArgs).trim()
+  const appVersion = runScript(startScript, scriptArgs).trim()
   check((pkgVersion.indexOf(appVersion) === 0), `App version ${appVersion} matches ` +
     `package version ${pkgVersion}.`, true)
 }
 
 function runScript (scriptName, scriptArgs, cwd) {
-  let scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`
-  let scriptOptions = {
+  const scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`
+  const scriptOptions = {
     encoding: 'UTF-8'
   }
   if (cwd) {
@@ -171,21 +170,21 @@ function runScript (scriptName, scriptArgs, cwd) {
 
 function uploadNodeShasums () {
   console.log('Uploading Node SHASUMS file to S3.')
-  let scriptPath = path.join(__dirname, 'upload-node-checksums.py')
+  const scriptPath = path.join(__dirname, 'upload-node-checksums.py')
   runScript(scriptPath, ['-v', pkgVersion])
   console.log(`${pass} Done uploading Node SHASUMS file to S3.`)
 }
 
 function uploadIndexJson () {
   console.log('Uploading index.json to S3.')
-  let scriptPath = path.join(__dirname, 'upload-index-json.py')
+  const scriptPath = path.join(__dirname, 'upload-index-json.py')
   runScript(scriptPath, [pkgVersion])
   console.log(`${pass} Done uploading index.json to S3.`)
 }
 
 async function createReleaseShasums (release) {
-  let fileName = 'SHASUMS256.txt'
-  let existingAssets = release.assets.filter(asset => asset.name === fileName)
+  const fileName = 'SHASUMS256.txt'
+  const existingAssets = release.assets.filter(asset => asset.name === fileName)
   if (existingAssets.length > 0) {
     console.log(`${fileName} already exists on GitHub; deleting before creating new file.`)
     await github.repos.deleteAsset({
@@ -197,17 +196,17 @@ async function createReleaseShasums (release) {
     })
   }
   console.log(`Creating and uploading the release ${fileName}.`)
-  let scriptPath = path.join(__dirname, 'merge-electron-checksums.py')
-  let checksums = runScript(scriptPath, ['-v', pkgVersion])
+  const scriptPath = path.join(__dirname, 'merge-electron-checksums.py')
+  const checksums = runScript(scriptPath, ['-v', pkgVersion])
   console.log(`${pass} Generated release SHASUMS.`)
-  let filePath = await saveShaSumFile(checksums, fileName)
+  const filePath = await saveShaSumFile(checksums, fileName)
   console.log(`${pass} Created ${fileName} file.`)
   await uploadShasumFile(filePath, fileName, release)
   console.log(`${pass} Successfully uploaded ${fileName} to GitHub.`)
 }
 
 async function uploadShasumFile (filePath, fileName, release) {
-  let githubOpts = {
+  const githubOpts = {
     owner: 'electron',
     repo: targetRepo,
     id: release.id,
@@ -242,7 +241,7 @@ function saveShaSumFile (checksums, fileName) {
 }
 
 async function publishRelease (release) {
-  let githubOpts = {
+  const githubOpts = {
     owner: 'electron',
     repo: targetRepo,
     id: release.id,
@@ -264,7 +263,7 @@ async function makeRelease (releaseToValidate) {
       console.log('Release to validate !=== true')
     }
     console.log(`Validating release ${releaseToValidate}`)
-    let release = await getDraftRelease(releaseToValidate)
+    const release = await getDraftRelease(releaseToValidate)
     await validateReleaseAssets(release, true)
   } else {
     checkVersion()
@@ -295,8 +294,8 @@ async function makeTempDir () {
 }
 
 async function verifyAssets (release) {
-  let downloadDir = await makeTempDir()
-  let githubOpts = {
+  const downloadDir = await makeTempDir()
+  const githubOpts = {
     owner: 'electron',
     repo: targetRepo,
     headers: {
@@ -304,10 +303,10 @@ async function verifyAssets (release) {
     }
   }
   console.log(`Downloading files from GitHub to verify shasums`)
-  let shaSumFile = 'SHASUMS256.txt'
+  const shaSumFile = 'SHASUMS256.txt'
   let filesToCheck = await Promise.all(release.assets.map(async (asset) => {
     githubOpts.id = asset.id
-    let assetDetails = await github.repos.getAsset(githubOpts)
+    const assetDetails = await github.repos.getAsset(githubOpts)
     await downloadFiles(assetDetails.meta.location, downloadDir, false, asset.name)
     return asset.name
   })).catch(err => {
@@ -328,7 +327,7 @@ async function verifyAssets (release) {
 
 function downloadFiles (urls, directory, quiet, targetName) {
   return new Promise((resolve, reject) => {
-    let nuggetOpts = {
+    const nuggetOpts = {
       dir: directory
     }
     if (quiet) {
@@ -348,32 +347,32 @@ function downloadFiles (urls, directory, quiet, targetName) {
 }
 
 async function verifyShasums (urls, isS3) {
-  let fileSource = isS3 ? 'S3' : 'GitHub'
+  const fileSource = isS3 ? 'S3' : 'GitHub'
   console.log(`Downloading files from ${fileSource} to verify shasums`)
-  let downloadDir = await makeTempDir()
+  const downloadDir = await makeTempDir()
   let filesToCheck = []
   try {
     if (!isS3) {
       await downloadFiles(urls, downloadDir)
       filesToCheck = urls.map(url => {
-        let currentUrl = new URL(url)
+        const currentUrl = new URL(url)
         return path.basename(currentUrl.pathname)
       }).filter(file => file.indexOf('SHASUMS') === -1)
     } else {
       const s3VersionPath = `/atom-shell/dist/${pkgVersion}/`
       await Promise.all(urls.map(async (url) => {
-        let currentUrl = new URL(url)
-        let dirname = path.dirname(currentUrl.pathname)
-        let filename = path.basename(currentUrl.pathname)
-        let s3VersionPathIdx = dirname.indexOf(s3VersionPath)
+        const currentUrl = new URL(url)
+        const dirname = path.dirname(currentUrl.pathname)
+        const filename = path.basename(currentUrl.pathname)
+        const s3VersionPathIdx = dirname.indexOf(s3VersionPath)
         if (s3VersionPathIdx === -1 || dirname === s3VersionPath) {
           if (s3VersionPathIdx !== -1 && filename.indexof('SHASUMS') === -1) {
             filesToCheck.push(filename)
           }
           await downloadFiles(url, downloadDir, true)
         } else {
-          let subDirectory = dirname.substr(s3VersionPathIdx + s3VersionPath.length)
-          let fileDirectory = path.join(downloadDir, subDirectory)
+          const subDirectory = dirname.substr(s3VersionPathIdx + s3VersionPath.length)
+          const fileDirectory = path.join(downloadDir, subDirectory)
           try {
             fs.statSync(fileDirectory)
           } catch (err) {
@@ -418,8 +417,8 @@ async function verifyShasums (urls, isS3) {
 async function validateChecksums (validationArgs) {
   console.log(`Validating checksums for files from ${validationArgs.fileSource} ` +
     `against ${validationArgs.shaSumFile}.`)
-  let shaSumFilePath = path.join(validationArgs.fileDirectory, validationArgs.shaSumFile)
-  let checker = new sumchecker.ChecksumValidator(validationArgs.algorithm,
+  const shaSumFilePath = path.join(validationArgs.fileDirectory, validationArgs.shaSumFile)
+  const checker = new sumchecker.ChecksumValidator(validationArgs.algorithm,
     shaSumFilePath, validationArgs.checkerOpts)
   await checker.validate(validationArgs.fileDirectory, validationArgs.filesToCheck)
     .catch(err => {

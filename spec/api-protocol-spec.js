@@ -1036,7 +1036,7 @@ describe('protocol module', () => {
     })
 
     it('can access files through the FileSystem API', (done) => {
-      let filePath = path.join(__dirname, 'fixtures', 'pages', 'filesystem.html')
+      const filePath = path.join(__dirname, 'fixtures', 'pages', 'filesystem.html')
       const handler = (request, callback) => callback({ path: filePath })
       protocol.registerFileProtocol(standardScheme, handler, (error) => {
         if (error) return done(error)
@@ -1047,7 +1047,7 @@ describe('protocol module', () => {
     })
 
     it('registers secure, when {secure: true}', (done) => {
-      let filePath = path.join(__dirname, 'fixtures', 'pages', 'cache-storage.html')
+      const filePath = path.join(__dirname, 'fixtures', 'pages', 'cache-storage.html')
       const handler = (request, callback) => callback({ path: filePath })
       ipcMain.once('success', () => done())
       ipcMain.once('failure', (event, err) => done(err))

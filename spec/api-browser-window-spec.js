@@ -75,7 +75,7 @@ describe('BrowserWindow module', () => {
             if (data) body += data
           })
           req.on('end', () => {
-            let parsedData = qs.parse(body)
+            const parsedData = qs.parse(body)
             fs.readFile(filePath, (err, data) => {
               if (err) return
               if (parsedData.username === 'test' &&
@@ -187,7 +187,7 @@ describe('BrowserWindow module', () => {
       function * genNavigationEvent () {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
-          let w = new BrowserWindow({ show: false })
+          const w = new BrowserWindow({ show: false })
           eventOptions.id = w.id
           eventOptions.responseEvent = responseEvent
           ipcRenderer.send('test-webcontents-navigation-observer', eventOptions)
@@ -195,7 +195,7 @@ describe('BrowserWindow module', () => {
         }
       }
 
-      let gen = genNavigationEvent()
+      const gen = genNavigationEvent()
       ipcRenderer.on(responseEvent, () => {
         if (!gen.next().value) done()
       })
@@ -1399,7 +1399,7 @@ describe('BrowserWindow module', () => {
     describe('"sandbox" option', () => {
       function waitForEvents (emitter, events, callback) {
         let count = events.length
-        for (let event of events) {
+        for (const event of events) {
           emitter.once(event, () => {
             if (!--count) callback()
           })
@@ -1473,7 +1473,7 @@ describe('BrowserWindow module', () => {
             preload: preload
           }
         })
-        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
+        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
         const pageUrl = 'file://' + htmlPath
         w.loadURL(pageUrl)
         ipcMain.once('answer', function (event, url) {
@@ -1496,7 +1496,7 @@ describe('BrowserWindow module', () => {
           }
         })
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
-        let htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
+        const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
         w.loadURL(pageUrl)
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
@@ -2763,7 +2763,7 @@ describe('BrowserWindow module', () => {
       // dynamically.
       it('can be changed with hasShadow option', () => {
         w.destroy()
-        let hasShadow = process.platform !== 'darwin'
+        const hasShadow = process.platform !== 'darwin'
         w = new BrowserWindow({ show: false, hasShadow: hasShadow })
         assert.strictEqual(w.hasShadow(), hasShadow)
       })
@@ -2964,7 +2964,7 @@ describe('BrowserWindow module', () => {
         c.close()
       })
       it('disables parent window recursively', () => {
-        let c2 = new BrowserWindow({ show: false, parent: w, modal: true })
+        const c2 = new BrowserWindow({ show: false, parent: w, modal: true })
         c.show()
         assert.strictEqual(w.isEnabled(), false)
         c2.show()
@@ -3435,7 +3435,7 @@ describe('BrowserWindow module', () => {
     it('creates offscreen window with correct size', (done) => {
       w.webContents.once('paint', function (event, rect, data) {
         assert.notStrictEqual(data.length, 0)
-        let size = data.getSize()
+        const size = data.getSize()
         assertWithinDelta(size.width, 100, 2, 'width')
         assertWithinDelta(size.height, 100, 2, 'height')
         done()
@@ -3450,7 +3450,7 @@ describe('BrowserWindow module', () => {
       })
 
       it('is false for regular window', () => {
-        let c = new BrowserWindow({ show: false })
+        const c = new BrowserWindow({ show: false })
         assert.strictEqual(c.webContents.isOffscreen(), false)
         c.destroy()
       })

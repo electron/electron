@@ -15,7 +15,7 @@ let currentWindowSandboxed = false
 app.once('ready', () => {
   function testWindow (isSandboxed, callback) {
     currentWindowSandboxed = isSandboxed
-    let currentWindow = new BrowserWindow({
+    const currentWindow = new BrowserWindow({
       show: false,
       webPreferences: {
         preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),

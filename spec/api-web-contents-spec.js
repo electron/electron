@@ -103,7 +103,7 @@ describe('webContents module', () => {
 
   describe('setDevToolsWebContents() API', () => {
     it('sets arbitry webContents as devtools', (done) => {
-      let devtools = new BrowserWindow({ show: false })
+      const devtools = new BrowserWindow({ show: false })
       devtools.webContents.once('dom-ready', () => {
         assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
         devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
@@ -756,7 +756,7 @@ describe('webContents module', () => {
         }
       }
 
-      let gen = genNavigationEvent()
+      const gen = genNavigationEvent()
       ipcRenderer.on(responseEvent, () => {
         if (!gen.next().value) done()
       })

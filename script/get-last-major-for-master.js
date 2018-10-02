@@ -5,7 +5,7 @@ const gitDir = path.resolve(__dirname, '..')
 
 async function determineNextMajorForMaster () {
   let branchNames
-  let result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], gitDir)
+  const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]-[0-9]-x'], gitDir)
   if (result.exitCode === 0) {
     branchNames = result.stdout.trim().split('\n')
     const filtered = branchNames.map(b => b.replace('origin/', ''))
