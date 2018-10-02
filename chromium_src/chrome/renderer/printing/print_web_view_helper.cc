@@ -526,7 +526,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
 
   // When loading is done this will call DidStopLoading() and that will do the
   // actual printing.
-  frame()->LoadRequest(blink::WebURLRequest(GURL(url_str)));
+  frame()->StartNavigation(blink::WebURLRequest(GURL(url_str)));
 }
 
 bool PrepareFrameAndViewForPrint::AllowsBrokenNullLayerTreeView() const {
