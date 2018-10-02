@@ -477,17 +477,25 @@ describe('session module', () => {
 
   describe('ses.setProxy(options, callback)', () => {
     let server = null
+    let customSession = null
+
+    beforeEach(() => {
+      customSession = session.fromPartition('proxyconfig')
+    })
 
     afterEach(() => {
       if (server) {
         server.close()
       }
+      if (customSession) {
+        customSession.destroy()
+      }
     })
 
     it('allows configuring proxy settings', (done) => {
       const config = { proxyRules: 'http=myproxy:80' }
-      session.defaultSession.setProxy(config, () => {
-        session.defaultSession.resolveProxy('http://localhost', (proxy) => {
+      customSession.setProxy(config, () => {
+        customSession.resolveProxy('http://localhost', (proxy) => {
           assert.strictEqual(proxy, 'PROXY myproxy:80')
           done()
         })
@@ -498,7 +506,7 @@ describe('session module', () => {
       server = http.createServer((req, res) => {
         const pac = `
           function FindProxyForURL(url, host) {
-            return "PROXY myproxy:80";
+            return "PROXY myproxy:8132";
           }
         `
         res.writeHead(200, {
@@ -508,9 +516,9 @@ describe('session module', () => {
       })
       server.listen(0, '127.0.0.1', () => {
         const config = { pacScript: `http://127.0.0.1:${server.address().port}` }
-        session.defaultSession.setProxy(config, () => {
-          session.defaultSession.resolveProxy('http://localhost', (proxy) => {
-            assert.strictEqual(proxy, 'PROXY myproxy:80')
+        customSession.setProxy(config, () => {
+          customSession.resolveProxy('http://localhost', (proxy) => {
+            assert.strictEqual(proxy, 'PROXY myproxy:8132')
             done()
           })
         })
@@ -522,8 +530,8 @@ describe('session module', () => {
         proxyRules: 'http=myproxy:80',
         proxyBypassRules: '<local>'
       }
-      session.defaultSession.setProxy(config, () => {
-        session.defaultSession.resolveProxy('http://localhost', (proxy) => {
+      customSession.setProxy(config, () => {
+        customSession.resolveProxy('http://localhost', (proxy) => {
           assert.strictEqual(proxy, 'DIRECT')
           done()
         })
