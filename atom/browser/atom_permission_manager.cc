@@ -151,7 +151,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const StatusesCallback& response_callback) {
   if (permissions.empty()) {
     response_callback.Run(std::vector<blink::mojom::PermissionStatus>());
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   if (request_handler_.is_null()) {
@@ -169,7 +169,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     response_callback.Run(statuses);
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   auto* web_contents =
