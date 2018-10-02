@@ -5,6 +5,7 @@
 #include "atom/app/node_main.h"
 
 #include <memory>
+#include <string>
 #include <utility>
 
 #include "atom/app/uv_task_runner.h"
