@@ -1961,7 +1961,7 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
 }
 
 void WebContents::GrantOriginAccess(const GURL& url) {
-  content::ChildProcessSecurityPolicy::GetInstance()->GrantOrigin(
+  content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
       web_contents()->GetMainFrame()->GetProcess()->GetID(),
       url::Origin::Create(url));
 }
