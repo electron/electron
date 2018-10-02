@@ -23,14 +23,6 @@ class PlatformNotificationService
 
  protected:
   // content::PlatformNotificationService:
-  blink::mojom::PermissionStatus CheckPermissionOnUIThread(
-      content::BrowserContext* browser_context,
-      const GURL& origin,
-      int render_process_id) override;
-  blink::mojom::PermissionStatus CheckPermissionOnIOThread(
-      content::ResourceContext* resource_context,
-      const GURL& origin,
-      int render_process_id) override;
   void DisplayNotification(
       content::BrowserContext* browser_context,
       const std::string& notification_id,
