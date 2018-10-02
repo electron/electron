@@ -12,7 +12,7 @@
 #include "base/callback.h"
 #include "base/containers/id_map.h"
 #include "base/values.h"
-#include "content/public/browser/permission_manager.h"
+#include "content/public/browser/permission_controller_delegate.h"
 
 namespace content {
 class WebContents;
@@ -20,7 +20,7 @@ class WebContents;
 
 namespace atom {
 
-class AtomPermissionManager : public content::PermissionManager {
+class AtomPermissionManager : public content::PermissionControllerDelegate {
  public:
   AtomPermissionManager();
   ~AtomPermissionManager() override;
@@ -41,7 +41,7 @@ class AtomPermissionManager : public content::PermissionManager {
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
 
-  // content::PermissionManager:
+  // content::PermissionControllerDelegate:
   int RequestPermission(
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
@@ -87,7 +87,7 @@ class AtomPermissionManager : public content::PermissionManager {
                             int permission_id,
                             blink::mojom::PermissionStatus status);
 
-  // content::PermissionManager:
+  // content::PermissionControllerDelegate:
   void ResetPermission(content::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;
