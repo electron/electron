@@ -343,14 +343,16 @@ void AtomNetworkDelegate::OnResponseStarted(net::URLRequest* request,
                     request->was_cached());
 }
 
-void AtomNetworkDelegate::OnCompleted(net::URLRequest* request, bool started) {
+void AtomNetworkDelegate::OnCompleted(net::URLRequest* request,
+                                      bool started,
+                                      int net_error) {
   // OnCompleted may happen before other events.
   callbacks_.erase(request->identifier());
 
   if (request->status().status() == net::URLRequestStatus::FAILED ||
       request->status().status() == net::URLRequestStatus::CANCELED) {
     // Error event.
-    OnErrorOccurred(request, started);
+    OnErrorOccurred(request, started, net_error);
     return;
   }
 
@@ -452,7 +454,8 @@ bool AtomNetworkDelegate::OnCanUseReportingClient(const url::Origin& origin,
 }
 
 void AtomNetworkDelegate::OnErrorOccurred(net::URLRequest* request,
-                                          bool started) {
+                                          bool started,
+                                          int net_error) {
   if (!base::ContainsKey(simple_listeners_, kOnErrorOccurred))
     return;
 
