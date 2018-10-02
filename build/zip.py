@@ -8,8 +8,7 @@ LINUX_BINARIES_TO_STRIP = [
   'chromedriver',
   'electron',
   'libffmpeg.so',
-  'libnode.so',
-  'mksnapshot'
+  'libnode.so'
 ]
 
 EXTENSIONS_TO_SKIP = [
