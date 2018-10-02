@@ -39,8 +39,10 @@ void CookieChangeNotifier::StartListening() {
   network::mojom::CookieManager* cookie_manager =
       content::BrowserContext::GetDefaultStoragePartition(browser_context_)
           ->GetCookieManagerForBrowserProcess();
-  if (!cookie_manager)
-    return;
+  // Cookie manager should be created whenever network context is created,
+  // if this fails then there is something wrong with our context creation
+  // cycle.
+  CHECK(cookie_manager);
 
   network::mojom::CookieChangeListenerPtr listener_ptr;
   binding_.Bind(mojo::MakeRequest(&listener_ptr));
