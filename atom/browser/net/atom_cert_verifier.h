@@ -56,7 +56,6 @@ class AtomCertVerifier : public net::CertVerifier {
              net::CompletionOnceCallback callback,
              std::unique_ptr<Request>* out_req,
              const net::NetLogWithSource& net_log) override;
-  bool SupportsOCSPStapling() override;
 
  private:
   friend class CertVerifierRequest;
