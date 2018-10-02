@@ -106,7 +106,9 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                               int64_t bytes_read) override {}
   void OnNetworkBytesSent(net::URLRequest* request,
                           int64_t bytes_sent) override {}
-  void OnCompleted(net::URLRequest* request, bool started) override;
+  void OnCompleted(net::URLRequest* request,
+                   bool started,
+                   int net_error) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
   void OnPACScriptError(int line_number, const base::string16& error) override {
   }
@@ -141,7 +143,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                                const GURL& endpoint) const override;
 
  private:
-  void OnErrorOccurred(net::URLRequest* request, bool started);
+  void OnErrorOccurred(net::URLRequest* request, bool started, int net_error);
 
   template <typename... Args>
   void HandleSimpleEvent(SimpleEvent type,
