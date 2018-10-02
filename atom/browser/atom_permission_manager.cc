@@ -111,7 +111,7 @@ int AtomPermissionManager::RequestPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const StatusCallback& response_callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& response_callback) {
   return RequestPermissionWithDetails(permission, render_frame_host,
                                       requesting_origin, user_gesture, nullptr,
                                       response_callback);
@@ -222,7 +222,7 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin,
-    const StatusCallback& callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   return -1;
 }
 

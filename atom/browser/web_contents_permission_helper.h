@@ -27,7 +27,7 @@ class WebContentsPermissionHelper
   void RequestFullscreenPermission(const base::Callback<void(bool)>& callback);
   void RequestMediaAccessPermission(
       const content::MediaStreamRequest& request,
-      const content::MediaResponseCallback& callback);
+      content::MediaResponseCallback callback);
   void RequestWebNotificationPermission(
       const base::Callback<void(bool)>& callback);
   void RequestPointerLockPermission(bool user_gesture);

@@ -734,10 +734,10 @@ bool WebContents::CheckMediaAccessPermission(
 void WebContents::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
+    content::MediaResponseCallback callback) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
-  permission_helper->RequestMediaAccessPermission(request, callback);
+  permission_helper->RequestMediaAccessPermission(request, std::move(callback));
 }
 
 void WebContents::RequestToLockMouse(content::WebContents* web_contents,
