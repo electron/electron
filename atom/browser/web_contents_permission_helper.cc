@@ -74,7 +74,7 @@ void WebContentsPermissionHelper::RequestPermission(
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionManager());
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
       permission, rfh, origin, false, details,
@@ -86,7 +86,7 @@ bool WebContentsPermissionHelper::CheckPermission(
     const base::DictionaryValue* details) const {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionManager());
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,
                                                         details);

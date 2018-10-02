@@ -234,7 +234,8 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
-content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+content::PermissionControllerDelegate*
+AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new AtomPermissionManager);
   return permission_manager_.get();

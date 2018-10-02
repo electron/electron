@@ -81,7 +81,8 @@ class AtomBrowserContext
   std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
-  content::PermissionManager* GetPermissionManager() override;
+  content::PermissionControllerDelegate* GetPermissionControllerDelegate()
+      override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
   net::URLRequestContextGetter* CreateRequestContext(
       content::ProtocolHandlerMap* protocol_handlers,

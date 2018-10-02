@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
