@@ -73,7 +73,6 @@ AtomBrowserMainParts::AtomBrowserMainParts(
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),
-      gc_timer_(true, true),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
