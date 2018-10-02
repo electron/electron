@@ -352,7 +352,8 @@ float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
 // Class that calls the Begin and End print functions on the frame and changes
 // the size of the view temporarily to support full page printing..
 class PrepareFrameAndViewForPrint : public blink::WebViewClient,
-                                    public blink::WebLocalFrameClient {
+                                    public blink::WebLocalFrameClient,
+                                    public blink::WebWidgetClient {
  public:
   PrepareFrameAndViewForPrint(const PrintMsg_Print_Params& params,
                               blink::WebLocalFrame* frame,
@@ -367,6 +368,8 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
 
   // Prepares frame for printing.
   void StartPrinting();
+
+  blink::WebWidgetClient* WidgetClient() override { return this; }
 
   blink::WebLocalFrame* frame() { return frame_.GetFrame(); }
 
@@ -512,7 +515,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
   prefs.javascript_enabled = false;
 
   blink::WebView* web_view = blink::WebView::Create(
-      this, blink::mojom::PageVisibilityState::kVisible, nullptr);
+      this, this, blink::mojom::PageVisibilityState::kVisible, nullptr);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
   blink::WebLocalFrame* main_frame =
