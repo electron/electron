@@ -6,7 +6,7 @@
 #define ATOM_BROWSER_FAKE_LOCATION_PROVIDER_H_
 
 #include "base/macros.h"
-#include "device/geolocation/public/cpp/location_provider.h"
+#include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/device/public/mojom/geoposition.mojom.h"
 
 namespace atom {
