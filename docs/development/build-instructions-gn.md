@@ -86,7 +86,7 @@ $ git branch --set-upstream-to=origin/master
 $ cd -
 ```
 
-:memo: `glient` works by checking a file called `DEPS` inside the 
+:memo: `gclient` works by checking a file called `DEPS` inside the 
 `src/electron` folder for dependencies (like Chromium or Node.js).
 Running `gclient sync -f` ensures that all dependencies required
 to build Electron match that file.
