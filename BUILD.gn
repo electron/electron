@@ -216,7 +216,6 @@ static_library("electron_lib") {
     "//content/public/app:both",
     "//content/public/child",
     "//content/public/common:service_names",
-    "//device/geolocation",
     "//gin",
     "//net:net_resources",
     "//ppapi/host",

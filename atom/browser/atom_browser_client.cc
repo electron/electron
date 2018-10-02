@@ -55,12 +55,12 @@
 #include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
-#include "device/geolocation/public/cpp/location_provider.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
+#include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -372,16 +372,6 @@ void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
   host->GetPpapiHost()->AddHostFactoryFilter(
       base::WrapUnique(new ChromeBrowserPepperHostFactory(host)));
 #endif
-}
-
-void AtomBrowserClient::GetGeolocationRequestContext(
-    base::OnceCallback<void(scoped_refptr<net::URLRequestContextGetter>)>
-        callback) {
-  auto* io_thread = AtomBrowserMainParts::Get()->io_thread();
-  auto* context = io_thread->GetRequestContext();
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE,
-      base::BindOnce(std::move(callback), base::RetainedRef(context)));
 }
 
 std::string AtomBrowserClient::GetGeolocationApiKey() {
