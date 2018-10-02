@@ -349,11 +349,11 @@ class NativeWindowRelay
   explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
   ~NativeWindowRelay() override;
 
-  static void* UserDataKey() {
+  static const void* UserDataKey() {
     return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
   }
 
-  void* key;
+  const void* key;
   base::WeakPtr<NativeWindow> window;
 
  private:
