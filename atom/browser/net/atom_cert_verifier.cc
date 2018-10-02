@@ -188,12 +188,6 @@ int AtomCertVerifier::Verify(const RequestParams& params,
   }
 }
 
-bool AtomCertVerifier::SupportsOCSPStapling() {
-  if (verify_proc_.is_null())
-    return default_cert_verifier_->SupportsOCSPStapling();
-  return false;
-}
-
 void AtomCertVerifier::RemoveRequest(const RequestParams& params) {
   auto it = inflight_requests_.find(params);
   if (it != inflight_requests_.end())
