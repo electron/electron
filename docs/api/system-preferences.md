@@ -292,8 +292,12 @@ maps to [NSApplication.effectiveAppearance](https://developer.apple.com/document
 
 Please note that until Electron is built targeting the 10.14 SDK, your application's
 `effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
-the interim we have provided a helper method `startAppLevelAppearanceTrackingOS()`
-which emulates this behavior.
+the interim in order for your application to inherit the OS preference you must set the
+`NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.  If you are
+using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode`
+packager option to `true`.  See the [Electron Packager API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
+for more details.
+
 
 ### `systemPreferences.getAppLevelAppearance()` _macOS_
 
@@ -309,24 +313,3 @@ You can use the `setAppLevelAppearance` API to set this value.
 
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
-
-### `systemPreferences.startAppLevelAppearanceTrackingOS()` _macOS_
-
-This is a helper method to make your application's "appearance" setting track the
-user's OS level appearance setting.  I.e. your app will have dark mode enabled if
-the user's system has dark mode enabled.
-
-You can track this automatic change with the `appearance-changed` event.
-
-**Note:** This method is exempt from our standard deprecation cycle and will be removed
-without deprecation in an upcoming major release of Electron as soon as we target the 10.14
-SDK
-
-### `systemPreferences.stopAppLevelAppearanceTrackingOS()` _macOS_
-
-This is a helper method to stop your application tracking the OS level appearance
-setting.  It is a no-op if you have not called `startAppLevelAppearanceTrackingOS()`
-
-**Note:** This method is exempt from our standard deprecation cycle and will be removed
-without deprecation in an upcoming major release of Electron as soon as we target the 10.14
-SDK
