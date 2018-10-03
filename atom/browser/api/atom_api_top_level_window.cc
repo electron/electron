@@ -376,13 +376,13 @@ gfx::Rect TopLevelWindow::GetContentBounds() {
 
 void TopLevelWindow::SetSize(int width, int height, mate::Arguments* args) {
   bool animate = false;
-  gfx::Size size = window_->GetSize();
+  gfx::Size size = window_->GetMinimumSize();
   if ((size.height() <= height) |
       (size.width() <= width)) {
-    //throw dev warning
+    args->GetNext(&animate);
+    window_->SetSize(gfx::Size(width, height), animate);
   }
-  args->GetNext(&animate);
-  window_->SetSize(gfx::Size(width, height), animate);
+  
 }
 
 std::vector<int> TopLevelWindow::GetSize() {
