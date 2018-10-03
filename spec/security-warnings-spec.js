@@ -84,11 +84,44 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
+  it('should warn about disabled webSecurity (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        webSecurity: false,
+        sandbox: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Disabled webSecurity'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
   it('should warn about insecure Content-Security-Policy', (done) => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
         nodeIntegration: false
+      }
+    })
+
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Insecure Content-Security-Policy'), message)
+      done()
+    })
+
+    useCsp = false
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
+  it('should warn about insecure Content-Security-Policy (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
       }
     })
 
@@ -117,12 +150,44 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
+  it('should warn about allowRunningInsecureContent (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        allowRunningInsecureContent: true,
+        sandbox: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('allowRunningInsecureContent'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
   it('should warn about experimentalFeatures', (done) => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
         experimentalFeatures: true,
         nodeIntegration: false
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('experimentalFeatures'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
+  it('should warn about experimentalFeatures (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        experimentalFeatures: true,
+        sandbox: true
       }
     })
     w.webContents.once('console-message', (e, level, message) => {
@@ -149,6 +214,22 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
+  it('should warn about enableBlinkFeatures (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        enableBlinkFeatures: ['my-cool-feature'],
+        sandbox: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('enableBlinkFeatures'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
+  })
+
   it('should warn about allowpopups', (done) => {
     w = new BrowserWindow({
       show: false,
@@ -164,11 +245,42 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/webview-allowpopups.html`)
   })
 
+  it('should warn about allowpopups (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('allowpopups'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/webview-allowpopups.html`)
+  })
+
   it('should warn about insecure resources', (done) => {
     w = new BrowserWindow({
-      show: true,
+      show: false,
       webPreferences: {
         nodeIntegration: false
+      }
+    })
+    w.webContents.once('console-message', (e, level, message) => {
+      assert(message.includes('Insecure Resources'), message)
+      done()
+    })
+
+    w.loadURL(`http://127.0.0.1:8881/insecure-resources.html`)
+    w.webContents.openDevTools()
+  })
+
+  it('should warn about insecure resources (sandboxed)', (done) => {
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: true
       }
     })
     w.webContents.once('console-message', (e, level, message) => {
