@@ -48,10 +48,14 @@ class DesktopCapturer : public mate::EventEmitter<DesktopCapturer>,
                      int new_index) override;
   void OnSourceNameChanged(DesktopMediaList* list, int index) override;
   void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override;
+  void OnSourceUnchanged(DesktopMediaList* list) override;
   bool ShouldScheduleNextRefresh(DesktopMediaList* list) override;
 
  private:
-  std::vector<std::unique_ptr<DesktopMediaList>> source_lists_;
+  void UpdateSourcesList(DesktopMediaList* list);
+
+  std::unique_ptr<DesktopMediaList> window_capturer_;
+  std::unique_ptr<DesktopMediaList> screen_capturer_;
   std::vector<DesktopCapturer::Source> captured_sources_;
   bool capture_window_ = false;
   bool capture_screen_ = false;

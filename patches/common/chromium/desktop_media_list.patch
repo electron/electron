@@ -26,7 +26,7 @@ index 8e02a8a95eb0..3497b85428a5 100644
    virtual content::DesktopMediaID::Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 43dd95ef72f5..ef87722226fa 100644
+index 43dd95ef72f5..d4662708f649 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -18,6 +18,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period)
@@ -65,7 +65,20 @@ index 43dd95ef72f5..ef87722226fa 100644
  DesktopMediaID::Type DesktopMediaListBase::GetMediaListType() const {
    return type_;
  }
-@@ -132,6 +139,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
+@@ -60,6 +67,12 @@ DesktopMediaListBase::SourceDescription::SourceDescription(
+ 
+ void DesktopMediaListBase::UpdateSourcesList(
+     const std::vector<SourceDescription>& new_sources) {
++  // Notify observer when there was no new source captured.
++  if (new_sources.empty()) {
++    observer_->OnSourceUnchanged(this);
++    return;
++  }
++
+   typedef std::set<DesktopMediaID> SourceSet;
+   SourceSet new_source_set;
+   for (size_t i = 0; i < new_sources.size(); ++i) {
+@@ -132,6 +145,8 @@ void DesktopMediaListBase::UpdateSourceThumbnail(DesktopMediaID id,
  }
  
  void DesktopMediaListBase::ScheduleNextRefresh() {
@@ -95,13 +108,14 @@ index 746df1210aa9..461e0edf8509 100644
  
    static uint32_t GetImageHash(const gfx::Image& image);
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_observer.h b/chrome/browser/media/webrtc/desktop_media_list_observer.h
-index 47401abc984e..aff387a69e53 100644
+index 47401abc984e..ca6a527ffac8 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_observer.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_observer.h
-@@ -18,6 +18,9 @@ class DesktopMediaListObserver {
+@@ -18,6 +18,10 @@ class DesktopMediaListObserver {
                               int new_index) = 0;
    virtual void OnSourceNameChanged(DesktopMediaList* list, int index) = 0;
    virtual void OnSourceThumbnailChanged(DesktopMediaList* list, int index) = 0;
++  virtual void OnSourceUnchanged(DesktopMediaList* list) = 0;
 +  // Return value indicates whether the observer should continue listening
 +  // for capture updates.
 +  virtual bool ShouldScheduleNextRefresh(DesktopMediaList* list) = 0;

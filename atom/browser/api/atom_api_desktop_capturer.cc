@@ -72,7 +72,6 @@ void DesktopCapturer::StartHandling(bool capture_window,
 #endif  // defined(OS_WIN)
 
   // clear any existing captured sources.
-  source_lists_.clear();
   captured_sources_.clear();
 
   // Start listening for captured sources.
@@ -87,25 +86,21 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
-      std::unique_ptr<DesktopMediaList> window_list =
-          std::make_unique<NativeDesktopMediaList>(
-              content::DesktopMediaID::TYPE_WINDOW,
-              content::desktop_capture::CreateWindowCapturer());
-      window_list->SetThumbnailSize(thumbnail_size);
-      window_list->AddObserver(this);
-      window_list->StartUpdating();
-      source_lists_.push_back(std::move(window_list));
+      window_capturer_.reset(new NativeDesktopMediaList(
+          content::DesktopMediaID::TYPE_WINDOW,
+          content::desktop_capture::CreateWindowCapturer()));
+      window_capturer_->SetThumbnailSize(thumbnail_size);
+      window_capturer_->AddObserver(this);
+      window_capturer_->StartUpdating();
     }
 
     if (capture_screen) {
-      std::unique_ptr<DesktopMediaList> screen_list =
-          std::make_unique<NativeDesktopMediaList>(
-              content::DesktopMediaID::TYPE_SCREEN,
-              content::desktop_capture::CreateScreenCapturer());
-      screen_list->SetThumbnailSize(thumbnail_size);
-      screen_list->AddObserver(this);
-      screen_list->StartUpdating();
-      source_lists_.push_back(std::move(screen_list));
+      screen_capturer_.reset(new NativeDesktopMediaList(
+          content::DesktopMediaID::TYPE_SCREEN,
+          content::desktop_capture::CreateScreenCapturer()));
+      screen_capturer_->SetThumbnailSize(thumbnail_size);
+      screen_capturer_->AddObserver(this);
+      screen_capturer_->StartUpdating();
     }
   }
 }
@@ -123,7 +118,16 @@ void DesktopCapturer::OnSourceNameChanged(DesktopMediaList* list, int index) {}
 void DesktopCapturer::OnSourceThumbnailChanged(DesktopMediaList* list,
                                                int index) {}
 
+void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
+  UpdateSourcesList(list);
+}
+
 bool DesktopCapturer::ShouldScheduleNextRefresh(DesktopMediaList* list) {
+  UpdateSourcesList(list);
+  return false;
+}
+
+void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   std::vector<DesktopCapturer::Source> window_sources;
   if (capture_window_ &&
       list->GetMediaListType() == content::DesktopMediaID::TYPE_WINDOW) {
@@ -184,8 +188,6 @@ bool DesktopCapturer::ShouldScheduleNextRefresh(DesktopMediaList* list) {
 
   if (!capture_window_ && !capture_screen_)
     Emit("finished", captured_sources_);
-
-  return false;
 }
 
 // static
