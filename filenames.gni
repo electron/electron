@@ -112,6 +112,7 @@ filenames = {
     "atom/app/atom_content_client.h",
     "atom/app/atom_main_delegate.cc",
     "atom/app/atom_main_delegate.h",
+    "atom/app/atom_main_delegate_mac.h",
     "atom/app/atom_main_delegate_mac.mm",
     "atom/app/command_line_args.cc",
     "atom/app/command_line_args.h",

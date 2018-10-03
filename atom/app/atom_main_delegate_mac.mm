@@ -4,6 +4,7 @@
 
 #include "atom/app/atom_main_delegate.h"
 
+#include "atom/browser/mac/atom_application.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"
@@ -61,6 +62,11 @@ void AtomMainDelegate::SetUpBundleOverrides() {
   if (team_id)
     base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
   base::mac::SetBaseBundleID(base_bundle_id.c_str());
+}
+
+void RegisterAtomCrApp() {
+  // Force the NSApplication subclass to be used.
+  [AtomApplication sharedApplication];
 }
 
 }  // namespace atom
