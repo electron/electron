@@ -463,3 +463,10 @@ patches:
   file: gritsettings_resource_ids.patch
   description: |
     Add electron resources file to the list of resource ids generation.
+-
+  author: Samuel Attard <samuel.r.attard@gmail.com>
+  file: isolate_holder.patch
+  description: |
+    Expose a hook that allows embedders to intercept allocated isolates
+    before they are initialized or used so they can be added to the correct
+    platform.  (In our case, node_platform)

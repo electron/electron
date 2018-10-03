@@ -11,6 +11,7 @@
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
+class IsolateData;
 }  // namespace node
 
 namespace atom {
@@ -29,6 +30,7 @@ class JavascriptEnvironment {
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
   }
+  void set_isolate_data(node::IsolateData* data) { isolate_data_ = data; }
 
  private:
   bool Initialize();
@@ -44,6 +46,7 @@ class JavascriptEnvironment {
   v8::HandleScope handle_scope_;
   v8::UniquePersistent<v8::Context> context_;
   v8::Context::Scope context_scope_;
+  node::IsolateData* isolate_data_;
 
   DISALLOW_COPY_AND_ASSIGN(JavascriptEnvironment);
 };
@@ -58,6 +61,18 @@ class NodeEnvironment {
   node::Environment* env_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeEnvironment);
+};
+
+class AtomIsolateAllocator : public gin::IsolateAllocater {
+ public:
+  explicit AtomIsolateAllocator(JavascriptEnvironment* env);
+
+  v8::Isolate* Allocate() override;
+
+ private:
+  JavascriptEnvironment* env_;
+
+  DISALLOW_COPY_AND_ASSIGN(AtomIsolateAllocator);
 };
 
 }  // namespace atom

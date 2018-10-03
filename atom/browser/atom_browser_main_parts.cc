@@ -10,7 +10,6 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
@@ -135,11 +134,9 @@ int AtomBrowserMainParts::PreEarlyInitialization() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-  // Temporary set the bridge_task_runner_ as current thread's task runner,
-  // so we can fool gin::PerIsolateData to use it as its task runner, instead
-  // of getting current message loop's task runner, which is null for now.
-  bridge_task_runner_ = new BridgeTaskRunner;
-  base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+  // A workaround was previously needed because there was no ThreadTaskRunner
+  // set.  If this check is failing we may need to re-add that workaround
+  DCHECK(base::ThreadTaskRunnerHandle::IsSet());
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
@@ -243,8 +240,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
-  bridge_task_runner_->MessageLoopIsReady();
-  bridge_task_runner_ = nullptr;
 
 #if defined(USE_X11)
   libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());

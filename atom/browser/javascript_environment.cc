@@ -21,13 +21,19 @@ namespace atom {
 
 JavascriptEnvironment::JavascriptEnvironment()
     : initialized_(Initialize()),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+                      new AtomIsolateAllocator(this)),
       isolate_(isolate_holder_.isolate()),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
-      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
+      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
+  // The assumption is made here that the isolate_holder_ holds a single isolate
+  // if this is not the case or changes in the constructor above the logic
+  // below must be rewritten
+  node::InitializePrivatePropertiesOnIsolateData(isolate_data_);
+}
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
 
@@ -62,6 +68,18 @@ NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
 
 NodeEnvironment::~NodeEnvironment() {
   node::FreeEnvironment(env_);
+}
+
+AtomIsolateAllocator::AtomIsolateAllocator(JavascriptEnvironment* env)
+    : env_(env) {}
+
+v8::Isolate* AtomIsolateAllocator::Allocate() {
+  v8::Isolate* isolate = v8::Isolate::Allocate();
+  // This is a cheatsy way to add the Isolate and it's IsolateData to the node
+  // platform before it is ready
+  env_->set_isolate_data(node::CreateIsolateData(
+      isolate, uv_default_loop(), env_->platform(), true /* only_register */));
+  return isolate;
 }
 
 }  // namespace atom

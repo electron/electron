@@ -1,0 +1,94 @@
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index e099fd3f03e5..46b5ea629d3a 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -30,23 +30,31 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+ const intptr_t* g_reference_table = nullptr;
+ }  // namespace
+ 
++v8::Isolate* IsolateAllocater::Allocate() {
++    return nullptr;
++}
++
+ IsolateHolder::IsolateHolder(
+-    scoped_refptr<base::SingleThreadTaskRunner> task_runner)
+-    : IsolateHolder(std::move(task_runner), AccessMode::kSingleThread) {}
++    scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++    IsolateAllocater* isolate_allocator)
++    : IsolateHolder(std::move(task_runner), AccessMode::kSingleThread, isolate_allocator) {}
+ 
+ IsolateHolder::IsolateHolder(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+-    AccessMode access_mode)
++    AccessMode access_mode,
++    IsolateAllocater* isolate_allocator)
+     : IsolateHolder(std::move(task_runner),
+                     access_mode,
+                     kAllowAtomicsWait,
+-                    IsolateCreationMode::kNormal) {}
++                    IsolateCreationMode::kNormal,
++                    isolate_allocator) {}
+ 
+ IsolateHolder::IsolateHolder(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+     AccessMode access_mode,
+     AllowAtomicsWaitMode atomics_wait_mode,
+-    IsolateCreationMode isolate_creation_mode)
++    IsolateCreationMode isolate_creation_mode,
++    IsolateAllocater* isolate_allocator)
+     : access_mode_(access_mode) {
+   DCHECK(task_runner);
+   DCHECK(task_runner->BelongsToCurrentThread());
+@@ -54,7 +62,11 @@ IsolateHolder::IsolateHolder(
+   v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
+   CHECK(allocator) << "You need to invoke gin::IsolateHolder::Initialize first";
+ 
+-  isolate_ = v8::Isolate::Allocate();
++  if (isolate_allocator) {
++    isolate_ = isolate_allocator->Allocate();
++  } else {
++    isolate_ = v8::Isolate::Allocate();
++  }
+   isolate_data_.reset(
+       new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
+   if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 84cf66e6e9cd..2d5ebb76f050 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -22,6 +22,14 @@ namespace gin {
+ class PerIsolateData;
+ class V8IsolateMemoryDumpProvider;
+ 
++class GIN_EXPORT IsolateAllocater {
++  public:
++    explicit IsolateAllocater() {};
++    virtual ~IsolateAllocater() {};
++
++    virtual v8::Isolate* Allocate();
++};
++
+ // To embed Gin, first initialize gin using IsolateHolder::Initialize and then
+ // create an instance of IsolateHolder to hold the v8::Isolate in which you
+ // will execute JavaScript. You might wish to subclass IsolateHolder if you
+@@ -59,14 +67,17 @@ class GIN_EXPORT IsolateHolder {
+   };
+ 
+   explicit IsolateHolder(
+-      scoped_refptr<base::SingleThreadTaskRunner> task_runner);
++      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++      IsolateAllocater* isolate_allocator = nullptr);
+   IsolateHolder(scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+-                AccessMode access_mode);
++                AccessMode access_mode,
++                IsolateAllocater* isolate_allocator = nullptr);
+   IsolateHolder(
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+       AccessMode access_mode,
+       AllowAtomicsWaitMode atomics_wait_mode,
+-      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal);
++      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
++      IsolateAllocater* isolate_allocator = nullptr);
+   ~IsolateHolder();
+ 
+   // Should be invoked once before creating IsolateHolder instances to
