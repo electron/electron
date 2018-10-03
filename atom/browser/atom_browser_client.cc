@@ -527,8 +527,8 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 
 network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
     content::BrowserContext* browser_context,
-    bool in_memory,
-    const base::FilePath& relative_partition_path) {
+    bool /*in_memory*/,
+    const base::FilePath& /*relative_partition_path*/) {
   if (!browser_context)
     return nullptr;
   return static_cast<AtomBrowserContext*>(browser_context)->GetNetworkContext();
