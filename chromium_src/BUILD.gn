@@ -11,11 +11,14 @@ source_set("chrome") {
   sources = [
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/common/chrome_constants.cc",
+    "//chrome/common/chrome_constants.h",
   ]
   public_deps = [
     "//content/public/browser",
   ]
   deps = [
+    "//chrome/common:constants",
     "//components/security_state/content",
   ]
 

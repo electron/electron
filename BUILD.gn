@@ -185,7 +185,6 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
-    "//chrome/common:constants",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
