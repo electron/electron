@@ -2,7 +2,7 @@ vars = {
   'chromium_version':
     '68.0.3440.128',
   'node_version':
-    'a7fb6742d816d8d17868975f18b50de83244c999',
+    '2297d0c115e663e56813f87a304c3f107d35e8d5',
 
   'pyyaml_version':
     '3.12',
