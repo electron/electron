@@ -54,6 +54,9 @@ source_set("chrome") {
       "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
       "//chrome/browser/media/webrtc/native_desktop_media_list.h",
     ]
-    deps += [ "//ui/snapshot" ]
+    deps += [
+      "//chrome/app:generated_resources",
+      "//ui/snapshot",
+    ]
   }
 }
