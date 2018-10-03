@@ -6,9 +6,9 @@ config("native_mate_config") {
 
 source_set("native_mate") {
   deps = [
-    "//third_party/electron_node:node_lib",
     "//base",
     "//net",
+    "//third_party/electron_node:node_lib",
     "//v8:v8_headers",
   ]
   public_configs = [ ":native_mate_config" ]

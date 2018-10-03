@@ -644,9 +644,7 @@ filenames = {
     "chromium_src/library_loaders/libspeechd.h",
   ]
 
-  lib_sources_linux = [
-    "chromium_src/chrome/browser/icon_loader_auralinux.cc",
-  ]
+  lib_sources_linux = [ "chromium_src/chrome/browser/icon_loader_auralinux.cc" ]
   lib_sources_nss = [
     "chromium_src/chrome/browser/certificate_manager_model.cc",
     "chromium_src/chrome/browser/certificate_manager_model.h",
@@ -672,7 +670,5 @@ filenames = {
     "atom/app/atom_library_main.mm",
   ]
 
-  login_helper_sources = [
-    "atom/app/atom_login_helper.mm",
-  ]
+  login_helper_sources = [ "atom/app/atom_login_helper.mm" ]
 }

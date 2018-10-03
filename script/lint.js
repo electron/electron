@@ -86,12 +86,35 @@ const LINTERS = [ {
     if (opts.fix) args.unshift('--fix')
     spawnAndCheckExitCode(cmd, args, { cwd: SOURCE_ROOT })
   }
+}, {
+  key: 'gn',
+  roots: ['.'],
+  test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
+  run: (opts, filenames) => {
+    const allOk = filenames.map(filename => {
+      const args = ['format', filename]
+      if (!opts.fix) args.push('--dry-run')
+      const result = childProcess.spawnSync('gn', args, { stdio: 'inherit' })
+      if (result.status === 0) {
+        return true
+      } else if (result.status === 2) {
+        console.log(`GN format errors in "${filename}". Run 'gn format "${filename}"' or rerun with --fix to fix them.`)
+        return false
+      } else {
+        console.log(`Error running 'gn format --dry-run "${filename}"': exit code ${result.status}`)
+        return false
+      }
+    }).every(x => x)
+    if (!allOk) {
+      process.exit(1)
+    }
+  }
 }]
 
 function parseCommandLine () {
   let help
   const opts = minimist(process.argv.slice(2), {
-    boolean: [ 'c++', 'javascript', 'python', 'help', 'changed', 'fix', 'verbose' ],
+    boolean: [ 'c++', 'javascript', 'python', 'gn', 'help', 'changed', 'fix', 'verbose' ],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
     unknown: arg => { help = true }
   })
@@ -167,8 +190,8 @@ async function main () {
   const opts = parseCommandLine()
 
   // no mode specified? run 'em all
-  if (!opts['c++'] && !opts.javascript && !opts.python) {
-    opts['c++'] = opts.javascript = opts.python = true
+  if (!opts['c++'] && !opts.javascript && !opts.python && !opts.gn) {
+    opts['c++'] = opts.javascript = opts.python = opts.gn = true
   }
 
   const linters = LINTERS.filter(x => opts[x.key])
