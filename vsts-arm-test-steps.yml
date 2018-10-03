@@ -27,12 +27,14 @@ steps:
    node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=node_headers.tar.gz --dest=$NODE_HEADERS_DEST
    cd $NODE_HEADERS_DEST
    tar xzf node_headers.tar.gz
+   ls -lah *
   displayName: 'Download and untar node header files for test'
   env:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
     cd src
+    ls -lah ../../out/Default/gen/node_headers
     (cd electron/spec && npm i --nodedir=../../out/Default/gen/node_headers)
   displayName: Install test modules
 
@@ -44,7 +46,7 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci --enable-logging
+   electron/script/dbus.py `pwd`/out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 
