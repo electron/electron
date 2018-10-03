@@ -22,6 +22,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
   void PreSandboxStartup() override;
+  void PreContentInitialization() override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
