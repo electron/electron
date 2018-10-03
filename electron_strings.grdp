@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<grit-part>
+  <!-- Proxy Resolver Service -->
+  <message name="IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME" desc="The name of the utility process used for out-of-process V8 proxy resolution.">
+    V8 Proxy Resolver
+  </message>
+
+  <!-- Desktop Capturer API -->
+  <message name="IDS_DESKTOP_MEDIA_PICKER_SINGLE_SCREEN_NAME" desc="Name for screens in the desktop media picker UI when there is only one monitor.">
+    Entire screen
+  </message>
+  <message name="IDS_DESKTOP_MEDIA_PICKER_MULTIPLE_SCREEN_NAME" desc="Name for screens in the desktop media picker UI when there are multiple monitors.">
+    {SCREEN_INDEX, plural, =1{Screen #} other{Screen #}}
+  </message>
+</grit-part>
