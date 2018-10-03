@@ -4,6 +4,7 @@
   const {ipcRenderer, webFrame} = require('electron')
   webFrame.setSpellCheckProvider('en-US', {
     spellCheck: (words, callback) => {
+      callback(words)
       ipcRenderer.send('spec-spell-check', words, callback != undefined)
     }
   })

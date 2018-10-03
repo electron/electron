@@ -152,13 +152,21 @@ describe('webFrame module', function () {
     w.focus()
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true)
 
-    const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')
+    const spellCheckerFeedback =
+      new Promise((resolve, reject) => {
+        ipcMain.on('spec-spell-check', (e, words, callback) => {
+          if (words.length === 2) {
+            // The promise is resolved only after this event is received twice
+            // Array contains only 1 word first time and 2 the next time
+            resolve([words, callback])
+          }
+        })
+      })
     const inputText = 'spleling test '
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'char', keyCode })
     }
-    const [, words, callback] = await spellCheckerFeedback
-
+    const [words, callback] = await spellCheckerFeedback
     expect(words).to.deep.equal(['spleling', 'test'])
     expect(callback).to.be.true()
   })
