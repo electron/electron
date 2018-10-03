@@ -108,6 +108,9 @@ env-ninja-status: &env-ninja-status
 env-disable-run-as-node: &env-disable-run-as-node
   GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
 
+env-asan: &env-asan
+  GN_SANITIZERS: 'is_asan = true'
+
 # Individual (shared) steps.
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
@@ -254,7 +257,7 @@ step-gn-gen-default: &step-gn-gen-default
     name: Default GN gen
     command: |
       cd src
-      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS $GN_SANITIZERS"
 
 step-gn-check: &step-gn-check
   run:
@@ -394,7 +397,7 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
     name: ffmpeg GN gen
     command: |
       cd src
-      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
+      gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS $GN_SANITIZERS"
 
 step-ffmpeg-build: &step-ffmpeg-build
   run:
@@ -1001,6 +1004,15 @@ jobs:
       <<: *env-disable-run-as-node
     <<: *steps-electron-build-for-tests
 
+  # XXX: testing only, normally asan would only be run against release
+  linux-x64-testing.asan:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-asan
+    <<: *steps-electron-build-for-tests
+
   linux-x64-testing-gn-check:
     <<: *machine-linux-medium
     environment:
@@ -1025,6 +1037,15 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  linux-x64-release.asan:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
+      <<: *env-asan
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
@@ -1074,6 +1095,16 @@ jobs:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
       <<: *env-ninja-status
+    <<: *steps-electron-build-for-tests
+
+  linux-ia32-release.asan:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
+      <<: *env-asan
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
@@ -1362,12 +1393,25 @@ jobs:
       <<: *env-stack-dumping
     <<: *steps-test-nan
 
+  # XXX: testing only, normally asan would only be run against release
+  linux-x64-testing.asan-tests:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-asan
+    <<: *steps-tests
+
   linux-x64-release-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
+    <<: *steps-tests
+
+  linux-x64-release.asan-tests:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-asan
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
@@ -1411,6 +1455,13 @@ jobs:
       <<: *env-ia32
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
+    <<: *steps-tests
+
+  linux-ia32-release.asan-tests:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+      <<: *env-asan
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
@@ -1542,10 +1593,21 @@ jobs:
 
 workflows:
   version: 2
+
+  asan-testing-this-pr-only:
+    jobs:
+      - linux-checkout
+      - linux-x64-testing.asan:
+          requires:
+            - linux-checkout
+      - linux-x64-testing.asan-tests:
+          requires:
+            - linux-x64-testing.asan
+
+ignoreme:
   lint:
     jobs:
       - lint
-
   build-linux:
     jobs:
       - linux-checkout
@@ -1656,6 +1718,9 @@ workflows:
       - linux-x64-release-tests:
           requires:
             - linux-x64-release
+      - linux-x64-release-tests-asan:
+          requires:
+            - linux-x64-release
       - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
@@ -1676,6 +1741,9 @@ workflows:
           requires:
             - linux-checkout
       - linux-ia32-release-tests:
+          requires:
+            - linux-ia32-release
+      - linux-ia32-release-tests-asan:
           requires:
             - linux-ia32-release
       - linux-ia32-verify-ffmpeg:
