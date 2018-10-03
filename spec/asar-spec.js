@@ -3,6 +3,7 @@ const ChildProcess = require('child_process')
 const { expect } = require('chai')
 const fs = require('fs')
 const path = require('path')
+const temp = require('temp').track()
 const util = require('util')
 const { closeWindow } = require('./window-helpers')
 
@@ -134,6 +135,44 @@ describe('asar package', function () {
           assert.strictEqual(err.code, 'ENOENT')
           done()
         })
+      })
+    })
+
+    describe('fs.copyFile', function () {
+      it('copies a normal file', function (done) {
+        const p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        const dest = temp.path()
+        fs.copyFile(p, dest, function (err) {
+          assert.strictEqual(err, null)
+          assert(fs.readFileSync(p).equals(fs.readFileSync(dest)))
+          done()
+        })
+      })
+
+      it('copies a unpacked file', function (done) {
+        const p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        const dest = temp.path()
+        fs.copyFile(p, dest, function (err) {
+          assert.strictEqual(err, null)
+          assert(fs.readFileSync(p).equals(fs.readFileSync(dest)))
+          done()
+        })
+      })
+    })
+
+    describe('fs.copyFileSync', function () {
+      it('copies a normal file', function () {
+        const p = path.join(fixtures, 'asar', 'a.asar', 'file1')
+        const dest = temp.path()
+        fs.copyFileSync(p, dest)
+        assert(fs.readFileSync(p).equals(fs.readFileSync(dest)))
+      })
+
+      it('copies a unpacked file', function () {
+        const p = path.join(fixtures, 'asar', 'unpack.asar', 'a.txt')
+        const dest = temp.path()
+        fs.copyFileSync(p, dest)
+        assert(fs.readFileSync(p).equals(fs.readFileSync(dest)))
       })
     })
 
