@@ -1,0 +1,14 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 5154aadb49..fd95f2a50f 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -871,7 +871,8 @@ action("run_torque") {
+   # is the target toolchain and, hence, can't be used.
+   v8_torque_toolchain = v8_snapshot_toolchain
+   if (host_cpu == "x64" &&
+-      (v8_current_cpu == "mips" || v8_current_cpu == "mips64")) {
++      (v8_current_cpu == "mips" || v8_current_cpu == "mips64" ||
++       v8_current_cpu == "arm" || v8_current_cpu == "arm64")) {
+     v8_torque_toolchain = "//build/toolchain/linux:clang_x64"
+   }
+ 
