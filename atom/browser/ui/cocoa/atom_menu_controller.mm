@@ -279,18 +279,10 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (model) {
     BOOL checked = model->IsItemCheckedAt(modelIndex);
     DCHECK([(id)item isKindOfClass:[NSMenuItem class]]);
+
     [(id)item setState:(checked ? NSOnState : NSOffState)];
     [(id)item setHidden:(!model->IsVisibleAt(modelIndex))];
-    if (model->IsItemDynamicAt(modelIndex)) {
-      // Update the label and the icon.
-      NSString* label =
-          l10n_util::FixUpWindowsStyleLabel(model->GetLabelAt(modelIndex));
-      [(id)item setTitle:label];
 
-      gfx::Image icon;
-      model->GetIconAt(modelIndex, &icon);
-      [(id)item setImage:icon.IsEmpty() ? nil : icon.ToNSImage()];
-    }
     return model->IsEnabledAt(modelIndex);
   }
   return NO;
