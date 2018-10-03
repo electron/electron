@@ -65,3 +65,8 @@ patches:
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: expose_mksnapshot.patch
   description: Needed in order to build mksnapshot on arm.
+-
+  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
+  file: build-torque-with-x64-toolchain-on-arm.patch
+  description: |
+    torque binary has to be run during the build.
