@@ -4,6 +4,8 @@
 
 #include "brightray/browser/notification_presenter.h"
 
+#include <algorithm>
+
 #include "brightray/browser/notification.h"
 
 namespace brightray {
