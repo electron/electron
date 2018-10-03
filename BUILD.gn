@@ -857,10 +857,10 @@ group("licenses") {
 
 copy("electron_version") {
   sources = [
-    "VERSION"
+    "VERSION",
   ]
   outputs = [
-    "$root_build_dir/version"
+    "$root_build_dir/version",
   ]
 }
 
