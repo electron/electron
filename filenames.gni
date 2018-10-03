@@ -230,8 +230,6 @@ filenames = {
     "atom/browser/atom_speech_recognition_manager_delegate.h",
     "atom/browser/atom_web_ui_controller_factory.cc",
     "atom/browser/atom_web_ui_controller_factory.h",
-    "atom/browser/bridge_task_runner.cc",
-    "atom/browser/bridge_task_runner.h",
     "atom/browser/browser.cc",
     "atom/browser/browser.h",
     "atom/browser/browser_linux.cc",

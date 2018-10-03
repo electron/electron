@@ -108,10 +108,6 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcess> fake_browser_process_;
 
-  // The gin::PerIsolateData requires a task runner to create, so we feed it
-  // with a task runner that will post all work to main loop.
-  scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
-
   // Pointer to exit code.
   int* exit_code_ = nullptr;
 
