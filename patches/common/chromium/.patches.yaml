@@ -469,3 +469,11 @@ patches:
       * Fixes a main_application_delegate SDK change
       * Fixes a non-null SDK change in a net unittest.
     This is needed for Electron to compile with XCode 10.0.
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: desktop_media_list.patch
+  description: |
+    * Adds a new observer method to DesktopMediaListObserver for
+      desktop capture api.
+    * Backports https://chromium-review.googlesource.com/c/chromium/src/+/1199806
+      that fixes crash with screen capturer, can be removed in 71.0.3539.0
