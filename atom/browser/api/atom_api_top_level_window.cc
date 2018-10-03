@@ -262,6 +262,14 @@ void TopLevelWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
+void TopLevelWindow::OnWindowEnterAlwaysOnTop() {
+  Emit("enter-always-on-top");
+}
+
+void TopLevelWindow::OnWindowLeaveAlwaysOnTop() {
+  Emit("leave-always-on-top");
+}
+
 void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
