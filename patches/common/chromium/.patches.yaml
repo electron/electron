@@ -482,3 +482,12 @@ patches:
     See https://github.com/electron/electron/issues/14327
     (Android specific changes and changes in some test files
     have been removed from the diff.)
+-
+  author: Jeremy Apthorp <jeremya@chromium.org>
+  file: backport_292df1662cd.patch
+  description: |
+    Use MADV_DONTNEED instead of MADV_FREE[_RESUABLE].
+
+    hopefully fixes ffmpeg not working on linux kernels < 4.5
+
+    see https://bugs.launchpad.net/ubuntu/+source/chromium-browser/+bug/1669344

@@ -1,0 +1,108 @@
+From 292df1662cdb1d04f210343aee0f9fc361fd16c6 Mon Sep 17 00:00:00 2001
+From: Chris Palmer <palmer@chromium.org>
+Date: Tue, 3 Apr 2018 01:54:52 +0000
+Subject: [Partition Alloc] Linux: Use MADV_DONTNEED instead of
+ MADV_FREE[_RESUABLE].
+
+Linux: We're not sure what the performance benefits of MADV_FREE are, and it makes
+our measurements less predictable.
+
+macOS: MADV_FREE_REUSABLE seems to have been failing, and the error was hidden by
+the recovery case intended for Linux MADV_FREE. The result was an unnecessary,
+failing call to `madvise`.
+
+Bug: 755284
+Change-Id: Ic7aa3089ada131f6a1b5c40b5ddd353d34ed2c20
+Reviewed-on: https://chromium-review.googlesource.com/990584
+Commit-Queue: Chris Palmer <palmer@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Albert J. Wong <ajwong@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#547598}
+
+diff --git a/base/allocator/partition_allocator/page_allocator_internals_posix.h b/base/allocator/partition_allocator/page_allocator_internals_posix.h
+index 9b9e02f1acbb..c6062a81b7ad 100644
+--- a/base/allocator/partition_allocator/page_allocator_internals_posix.h
++++ b/base/allocator/partition_allocator/page_allocator_internals_posix.h
+@@ -17,10 +17,6 @@
+ 
+ #include "build/build_config.h"
+ 
+-#ifndef MADV_FREE
+-#define MADV_FREE MADV_DONTNEED
+-#endif
+-
+ #ifndef MAP_ANONYMOUS
+ #define MAP_ANONYMOUS MAP_ANON
+ #endif
+@@ -162,23 +158,19 @@ bool RecommitSystemPagesInternal(void* address,
+ }
+ 
+ void DiscardSystemPagesInternal(void* address, size_t length) {
+-#if defined(OS_MACOSX)
+-  // On macOS, MADV_FREE_REUSABLE has comparable behavior to MADV_FREE, but also
+-  // marks the pages with the reusable bit, which allows both Activity Monitor
+-  // and memory-infra to correctly track the pages.
+-  int flags = MADV_FREE_REUSABLE;
+-#else
+-  int flags = MADV_FREE;
+-#endif
+-
+-  int ret = madvise(address, length, flags);
+-  if (ret != 0 && errno == EINVAL) {
+-    // MADV_FREE only works on Linux 4.5+. If request failed, retry with older
+-    // MADV_DONTNEED. Note that MADV_FREE being defined at compile time doesn't
+-    // imply runtime support.
+-    ret = madvise(address, length, MADV_DONTNEED);
+-  }
+-  CHECK(!ret);
++  // We have experimented with other flags values, but with suboptimal results.
++  //
++  // MADV_FREE (Linux): Makes our memory measurements less predictable;
++  // performance benefits unclear.
++  //
++  // MADV_FREE_REUSABLE (macOS): Apparently never worked (EINVAL), and the
++  // failure was masked by a retry block intended for Linux in cases when
++  // MADV_FREE was defined but not implemented in the running kernel. So we were
++  // making an unnecessary system call.
++  //
++  // Therefore, we just do the simple thing: MADV_DONTNEED.
++  int flags = MADV_DONTNEED;
++  CHECK(!madvise(address, length, flags));
+ }
+ 
+ }  // namespace base
+diff --git a/base/allocator/partition_allocator/partition_alloc_unittest.cc b/base/allocator/partition_allocator/partition_alloc_unittest.cc
+index 5a5834f5a85b..7e925f0c59a5 100644
+--- a/base/allocator/partition_allocator/partition_alloc_unittest.cc
++++ b/base/allocator/partition_allocator/partition_alloc_unittest.cc
+@@ -244,27 +244,7 @@ void FreeFullPage(PartitionPage* page) {
+ }
+ 
+ #if defined(OS_LINUX)
+-bool KernelSupportsMadvFree() {
+-  int32_t major_version;
+-  int32_t minor_version;
+-  int32_t bugfix_version;
+-  SysInfo::OperatingSystemVersionNumbers(&major_version, &minor_version,
+-                                         &bugfix_version);
+-  return std::vector<int32_t>{major_version, minor_version, bugfix_version} >=
+-         std::vector<int32_t>{4, 5};
+-}
+-
+ bool CheckPageInCore(void* ptr, bool in_core) {
+-  // If the kernel supports MADV_FREE, then pages may still be in core to be
+-  // reclaimed by the OS later.  This is a cool optimization that prevents the
+-  // kernel from freeing and allocating memory in case the app needs more memory
+-  // soon -- it can just reuse the memory already allocated.  Unfortunately,
+-  // there's no way to test if a page is in core because it needs to be, or if
+-  // it just hasn't been reclaimed yet.
+-  static bool kernel_supports_madv_free = KernelSupportsMadvFree();
+-  if (kernel_supports_madv_free)
+-    return true;
+-
+   unsigned char ret = 0;
+   EXPECT_EQ(0, mincore(ptr, kSystemPageSize, &ret));
+   return in_core == (ret & 1);
+-- 
+2.17.0
+
