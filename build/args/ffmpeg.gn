@@ -4,3 +4,4 @@ is_component_ffmpeg = true
 is_official_build = true
 proprietary_codecs = false
 ffmpeg_branding = "Chromium"
+symbol_level = 2 # TEMPORARY, for debugging a crash in CI
