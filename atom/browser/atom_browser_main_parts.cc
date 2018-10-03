@@ -311,6 +311,7 @@ AtomBrowserMainParts::GetGeolocationControl() {
 }
 
 IconManager* AtomBrowserMainParts::GetIconManager() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   if (!icon_manager_.get())
     icon_manager_.reset(new IconManager);
   return icon_manager_.get();
