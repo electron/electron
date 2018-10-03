@@ -56,14 +56,13 @@ def execute(argv):
 
 def main(argv):
   dist_zip, runtime_deps, target_cpu, target_os = argv
-  dist_files = []
+  dist_files = set()
   with open(runtime_deps) as f:
     for dep in f.readlines():
       dep = dep.strip()
-      if dep not in dist_files:
-        dist_files += [dep]
+      dist_files.add(dep)
   if sys.platform == 'darwin':
-    mac_zip_results = execute(['zip', '-r', '-y', dist_zip] + dist_files)
+    execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED) as z:
       for dep in dist_files:
