@@ -264,7 +264,15 @@ static_library("electron_lib") {
   sources = filenames.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
 
-  sources += [ "$target_gen_dir/atom_natives.h" ]
+  sources += [
+    "$target_gen_dir/atom_natives.h",
+    "//extensions/browser/app_window/size_constraints.cc",
+    "//extensions/browser/app_window/size_constraints.h",
+    "//extensions/common/constants.cc",
+    "//extensions/common/constants.h",
+    "//extensions/common/url_pattern.cc",
+    "//extensions/common/url_pattern.h",
+  ]
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -849,10 +857,10 @@ group("licenses") {
 
 copy("electron_version") {
   sources = [
-    "VERSION"
+    "VERSION",
   ]
   outputs = [
-    "$root_build_dir/version"
+    "$root_build_dir/version",
   ]
 }
 
