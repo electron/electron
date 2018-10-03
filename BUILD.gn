@@ -693,7 +693,6 @@ if (is_mac) {
       ":electron_lib",
       ":js2asar",
       ":packed_resources",
-      "//build/config:exe_and_shlib_deps",
       "//content:sandbox_helper_win",
       "//ui/strings",
     ]
