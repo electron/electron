@@ -44,7 +44,7 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci --enable-logging)
+   ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 
@@ -56,3 +56,10 @@ steps:
     searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
 
   condition: succeededOrFailed()
+
+  steps:
+
+- task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3
+  displayName: 'Clean Agent Directories'
+
+  condition: always()
