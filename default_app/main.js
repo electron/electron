@@ -155,7 +155,11 @@ if (option.file && !option.webdriver) {
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     loadApplicationByUrl(file)
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByUrl('file://' + path.resolve(file))
+    loadApplicationByUrl(url.format({
+      protocol: 'file:',
+      slashes: true,
+      pathname: path.resolve(file)
+    }))
   } else {
     loadApplicationPackage(file)
   }
