@@ -201,8 +201,13 @@ void WebContentsPreferences::AppendExtraCommandLineSwitches(
 
   // --background-color.
   std::string color;
-  if (web_preferences.GetString(options::kBackgroundColor, &color))
+  if (web_preferences.GetString(options::kBackgroundColor, &color)) {
     command_line->AppendSwitchASCII(switches::kBackgroundColor, color);
+  } else if (!(web_preferences.GetBoolean("offscreen", &b) && b)) {
+    // For non-OSR WebContents, we expect to have white background, see
+    // https://github.com/electron/electron/issues/13764 for more.
+    command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
+  }
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
