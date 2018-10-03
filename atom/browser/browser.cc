@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser_observer.h"
@@ -14,6 +15,7 @@
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
@@ -22,6 +24,9 @@
 #include "brightray/common/application_info.h"
 
 namespace atom {
+
+// Null until/unless the default main message loop is running.
+base::NoDestructor<base::OnceClosure> g_quit_main_message_loop;
 
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
@@ -90,9 +95,8 @@ void Browser::Shutdown() {
   for (BrowserObserver& observer : observers_)
     observer.OnQuit();
 
-  if (base::ThreadTaskRunnerHandle::IsSet()) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+  if (*g_quit_main_message_loop) {
+    std::move(*g_quit_main_message_loop).Run();
   } else {
     // There is no message loop available so we are in early stage.
     exit(0);
@@ -189,6 +193,10 @@ void Browser::PreMainMessageLoopRun() {
   for (BrowserObserver& observer : observers_) {
     observer.OnPreMainMessageLoopRun();
   }
+}
+
+void Browser::SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure) {
+  *g_quit_main_message_loop = std::move(quit_closure);
 }
 
 void Browser::NotifyAndShutdown() {
