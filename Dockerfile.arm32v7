@@ -38,6 +38,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
  python-setuptools \
  python-pip \
  python-dbusmock \
+ sudo \
  unzip \
  wget \
  xvfb \
@@ -53,6 +54,9 @@ RUN pip install -U crcmod
 
 ADD tools/xvfb-init.sh /etc/init.d/xvfb
 RUN chmod a+x /etc/init.d/xvfb
+
+RUN usermod -aG sudo builduser
+RUN echo 'builduser ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 USER builduser
 WORKDIR /home/builduser
