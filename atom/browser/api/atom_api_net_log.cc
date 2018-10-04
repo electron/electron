@@ -11,7 +11,6 @@
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "components/net_log/chrome_net_log.h"
-#include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -27,8 +26,7 @@ NetLog::NetLog(v8::Isolate* isolate) {
 
   net_log_writer_ =
       atom::AtomBrowserMainParts::Get()->net_log()->net_export_file_writer();
-  net_log_writer_->Initialize(content::BrowserThread::GetTaskRunnerForThread(
-      content::BrowserThread::IO));
+  net_log_writer_->Initialize();
   net_log_writer_->AddObserver(this);
 }
 
@@ -54,7 +52,7 @@ void NetLog::StartLogging(mate::Arguments* args) {
       log_path, net::NetLogCaptureMode::Default(),
       net_log::NetExportFileWriter::kNoLimit /* file size limit */,
       base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
-      std::string(), {} /* URLRequestContextGetter list */);
+      std::string(), nullptr /* NetworkContext */);
 }
 
 std::string NetLog::GetLoggingState() const {
@@ -89,7 +87,7 @@ void NetLog::StopLogging(mate::Arguments* args) {
   args->GetNext(&callback);
   if (IsCurrentlyLogging()) {
     stop_callback_queue_.emplace_back(std::move(callback));
-    net_log_writer_->StopNetLog(nullptr, nullptr);
+    net_log_writer_->StopNetLog(nullptr);
   } else {
     std::move(callback).Run();
   }

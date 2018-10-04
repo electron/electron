@@ -36,8 +36,6 @@
 #include "content/public/browser/resource_context.h"
 #include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
-#include "net/cert/ct_known_logs.h"
-#include "net/cert/ct_log_verifier.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
 #include "net/dns/mapped_host_resolver.h"
@@ -102,6 +100,10 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
   }
+  // TODO(deepak1556): Decide the stand on chrome ct policy and
+  // enable it.
+  // See //net/docs/certificate-transparency.md
+  // network_context_params->enforce_chrome_ct_policy = true;
   return network_context_params;
 }
 
@@ -361,11 +363,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
                                                       &auth_preferences);
     builder->SetHttpAuthHandlerFactory(std::move(http_auth_handler_factory));
     builder->set_host_resolver(std::move(host_resolver));
-
-    auto ct_verifier = std::make_unique<net::MultiLogCTVerifier>();
-    // Add built-in logs
-    ct_verifier->AddLogs(net::ct::CreateLogVerifiersForKnownLogs());
-    builder->set_ct_verifier(std::move(ct_verifier));
+    builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
 
     network_context_ =
         content::GetNetworkServiceImpl()->CreateNetworkContextWithBuilder(

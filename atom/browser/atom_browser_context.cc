@@ -99,11 +99,11 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!PathService::Get(brightray::DIR_USER_DATA, &path_)) {
-    PathService::Get(brightray::DIR_APP_DATA, &path_);
+  if (!base::PathService::Get(brightray::DIR_USER_DATA, &path_)) {
+    base::PathService::Get(brightray::DIR_APP_DATA, &path_);
     path_ = path_.Append(
         base::FilePath::FromUTF8Unsafe(brightray::GetApplicationName()));
-    PathService::Override(brightray::DIR_USER_DATA, path_);
+    base::PathService::Override(brightray::DIR_USER_DATA, path_);
   }
 
   if (!in_memory && !partition.empty())
@@ -142,7 +142,7 @@ void AtomBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                  base::FilePath());
   base::FilePath download_dir;
-  PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
+  base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
