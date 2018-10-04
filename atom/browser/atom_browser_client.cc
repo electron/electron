@@ -41,6 +41,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/speech/tts_message_filter.h"
+#include "chrome/grit/generated_resources.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -527,7 +528,8 @@ network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
 void AtomBrowserClient::RegisterOutOfProcessServices(
     OutOfProcessServiceMap* services) {
   (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
-      base::ASCIIToUTF16("V8 Proxy Resolver");
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
 }
 
 std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
