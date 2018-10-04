@@ -12,47 +12,44 @@
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
 #include "base/logging.h"
-#include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
+#include "base/synchronization/waitable_event.h"
 
 namespace relauncher {
 
 namespace internal {
 
+// this is global to be visible to the sa_handler
+base::WaitableEvent parentWaiter;
+
 void RelauncherSynchronizeWithParent() {
   base::ScopedFD relauncher_sync_fd(kRelauncherSyncFD);
+  static const auto signum = SIGUSR2;
 
-  // Don't execute signal handlers of SIGUSR2.
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGUSR2);
-  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
-    PLOG(ERROR) << "sigprocmask";
-    return;
-  }
-
-  // Create a signalfd that watches for SIGUSR2.
-  int usr2_fd = signalfd(-1, &mask, 0);
-  if (usr2_fd < 0) {
-    PLOG(ERROR) << "signalfd";
-    return;
-  }
-
-  // Send SIGUSR2 to current process when parent process ends.
-  if (HANDLE_EINTR(prctl(PR_SET_PDEATHSIG, SIGUSR2)) != 0) {
+  // send signum to current process when parent process ends.
+  if (HANDLE_EINTR(prctl(PR_SET_PDEATHSIG, signum)) != 0) {
     PLOG(ERROR) << "prctl";
     return;
   }
 
-  // Write a '\0' character to the pipe.
+  // set up a signum handler
+  struct sigaction action;
+  memset(&action, 0, sizeof(action));
+  action.sa_handler = [](int /*signum*/) { parentWaiter.Signal(); };
+  if (sigaction(signum, &action, nullptr) != 0) {
+    PLOG(ERROR) << "sigaction";
+    return;
+  }
+
+  // write a '\0' character to the pipe to the parent process.
+  // this is how the parent knows that we're ready for it to exit.
   if (HANDLE_EINTR(write(relauncher_sync_fd.get(), "", 1)) != 1) {
     PLOG(ERROR) << "write";
     return;
   }
 
-  // Wait the SIGUSR2 signal to happen.
-  struct signalfd_siginfo si;
-  HANDLE_EINTR(read(usr2_fd, &si, sizeof(si)));
+  // Wait for the parent to exit
+  parentWaiter.Wait();
 }
 
 int LaunchProgram(const StringVector& relauncher_args,
