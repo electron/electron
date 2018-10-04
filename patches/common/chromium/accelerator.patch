@@ -1,11 +1,11 @@
-From e1c45d50622aaa4fcfab05ff69f4ddf79eab0bdd Mon Sep 17 00:00:00 2001
+From 61cd6b5bc2068a3740313d7f4680ef3fcaaacb1a Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Thu, 20 Sep 2018 17:44:41 -0700
+Date: Thu, 4 Oct 2018 14:57:02 -0700
 Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 7e55ef366ac8..5e460ed5d66d 100644
+index 7e55ef366ac8..c3fb98b426cd 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -26,7 +26,7 @@ index 7e55ef366ac8..5e460ed5d66d 100644
  
  namespace ui {
  
-@@ -139,7 +138,17 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -139,7 +138,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
  
@@ -42,7 +42,7 @@ index 7e55ef366ac8..5e460ed5d66d 100644
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -148,17 +157,20 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -148,17 +155,20 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -73,15 +73,7 @@ index 7e55ef366ac8..5e460ed5d66d 100644
  #endif
    }
  
-@@ -215,15 +227,12 @@ base::string16 Accelerator::GetShortcutText() const {
- 
- base::string16 Accelerator::ApplyLongFormModifiers(
-     base::string16 shortcut) const {
-  if (IsShiftDown())
-    shortcut = l10n_util::GetStringFUTF16(IDS_APP_SHIFT_MODIFIER, shortcut);
-
-   // Note that we use 'else-if' in order to avoid using Ctrl+Alt as a shortcut.
-   // See http://blogs.msdn.com/oldnewthing/archive/2004/03/29/101121.aspx for
+@@ -223,7 +233,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_CONTROL_MODIFIER, shortcut);
@@ -90,7 +82,7 @@ index 7e55ef366ac8..5e460ed5d66d 100644
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
  
    if (IsCmdDown()) {
-@@ -243,14 +252,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
+@@ -243,14 +253,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
      base::string16 shortcut) const {
    const base::char16 kCommandSymbol[] = {0x2318, 0};
    const base::char16 kCtrlSymbol[] = {0x2303, 0};
