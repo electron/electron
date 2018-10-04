@@ -402,6 +402,9 @@ void TopLevelWindow::SetSize(int width, int height, mate::Arguments* args) {
   if ((size.height() <= height) | (size.width() <= width)) {
     args->GetNext(&animate);
     window_->SetSize(gfx::Size(width, height), animate);
+  } else {
+    args->GetNext(&animate);
+    window_->SetSize(gfx::Size(size.width(), size.height()), animate);
   }
 }
 
