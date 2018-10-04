@@ -10,7 +10,7 @@ const isCI = remote.getGlobal('isCi')
 
 describe('desktopCapturer', () => {
   before(function () {
-    if (!features.isDesktopCapturerEnabled()) {
+    if (!features.isDesktopCapturerEnabled() || process.arch.indexOf('arm') === 0) {
       // It's been disabled during build time.
       this.skip()
       return
