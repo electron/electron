@@ -135,9 +135,9 @@ step-install-nodejs-on-mac: &step-install-nodejs-on-mac
         brew install node@10
       fi
 
-step-electron-gn-gen: &step-electron-gn-gen
+step-gn-gen-default: &step-gn-gen-default
   run:
-    name: Electron GN gen
+    name: Default GN gen
     command: |
       cd src
       gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
@@ -166,7 +166,9 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      ninja -C out/Default electron:electron_chromedriver_zip
+      # NOTE(alexeykuzmin): -j3 because chromedriver is currently built
+      # on a smaller size machine and ninja mis-detects the number of CPUs available.
+      ninja -C out/Default electron:electron_chromedriver_zip -j3
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -355,11 +357,9 @@ steps-electron-build: &steps-electron-build
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-gn-gen-default
 
-    # Electron app
-    - *step-electron-gn-gen
     - *step-electron-build
-
     - *step-show-sccache-stats
 
 steps-electron-build-for-tests: &steps-electron-build-for-tests
@@ -368,20 +368,12 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
+    - *step-gn-gen-default
 
     # Electron app
-    - *step-electron-gn-gen
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
-
-    # mksnapshot
-    - *step-mksnapshot-build
-    - *step-mksnapshot-store
-
-    # chromedriver
-    - *step-electron-chromedriver-build
-    - *step-electron-chromedriver-store
 
     # Node.js headers
     - *step-nodejs-headers-build
@@ -401,9 +393,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-depot-tools-add-to-path
     - *step-gclient-sync
     - *step-setup-env-for-build
+    - *step-gn-gen-default
 
     # Electron app
-    - *step-electron-gn-gen
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
@@ -432,6 +424,17 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Publish
     - *step-electron-publish
+
+steps-chromedriver-build: &steps-chromedriver-build
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-setup-env-for-build
+    - *step-gn-gen-default
+
+    - *step-electron-chromedriver-build
+    - *step-electron-chromedriver-store
 
 steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
@@ -468,7 +471,7 @@ steps-native-tests: &steps-native-tests
         at: .
     - *step-depot-tools-add-to-path
     - *step-setup-env-for-build
-    - *step-electron-gn-gen
+    - *step-gn-gen-default
 
     - run:
         name: Build tests
@@ -547,9 +550,9 @@ steps-build-mac: &steps-build-mac
     - *step-install-nodejs-on-mac
     - *step-gclient-sync
     - *step-setup-env-for-build
+    - *step-gn-gen-default
 
     # Electron app
-    - *step-electron-gn-gen
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
@@ -590,6 +593,9 @@ filter-only-prs-from-forks: &filter-only-prs-from-forks
     branches:
       only: /^pull\/.*$/
 
+chromium-upgrade-branches: &chromium-upgrade-branches
+  /chromium\-upgrade\/[0-9]+/
+
 # List of all jobs.
 version: 2
 jobs:
@@ -598,6 +604,10 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-checkout
+
+  linux-x64-checkout:
+    <<: *machine-linux-2xlarge
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -620,6 +630,13 @@ jobs:
     environment:
       <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
+
+  linux-x64-chromedriver:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-release-build
+      <<: *env-enable-sccache
+    <<: *steps-chromedriver-build
 
   linux-x64-release:
     <<: *machine-linux-2xlarge
@@ -657,6 +674,14 @@ jobs:
       <<: *env-ia32
       <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
+
+  linux-ia32-chromedriver:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-enable-sccache
+    <<: *steps-chromedriver-build
 
   linux-ia32-release:
     <<: *machine-linux-2xlarge
@@ -696,6 +721,14 @@ jobs:
       <<: *env-arm
       <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
+
+  linux-arm-chromedriver:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm
+      <<: *env-release-build
+      <<: *env-enable-sccache
+    <<: *steps-chromedriver-build
 
   linux-arm-release:
     <<: *machine-linux-2xlarge
@@ -743,6 +776,14 @@ jobs:
       <<: *env-arm64
       <<: *env-enable-sccache
     <<: *steps-ffmpeg-build
+
+  linux-arm64-chromedriver:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-arm64
+      <<: *env-release-build
+      <<: *env-enable-sccache
+    <<: *steps-chromedriver-build
 
   linux-arm64-release:
     <<: *machine-linux-2xlarge
@@ -804,15 +845,11 @@ jobs:
     <<: *machine-linux-medium
     <<: *steps-tests
 
-  linux-x64-testing-verify-ffmpeg:
-    <<: *machine-linux-medium
-    <<: *steps-verify-ffmpeg
-
   linux-x64-release-tests:
     <<: *machine-linux-medium
     <<: *steps-tests
 
-  linux-x64-release-verify-ffmpeg:
+  linux-x64-verify-ffmpeg:
     <<: *machine-linux-medium
     <<: *steps-verify-ffmpeg
 
@@ -822,19 +859,13 @@ jobs:
       <<: *env-ia32
     <<: *steps-tests
 
-  linux-ia32-testing-verify-ffmpeg:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-ia32
-    <<: *steps-verify-ffmpeg
-
   linux-ia32-release-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
     <<: *steps-tests
 
-  linux-ia32-release-verify-ffmpeg:
+  linux-ia32-verify-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
@@ -863,13 +894,6 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
-      - linux-x64-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-verify-ffmpeg:
-          requires:
-            - linux-x64-testing
-            - linux-x64-ffmpeg
 
       - linux-ia32-debug:
           requires:
@@ -880,13 +904,6 @@ workflows:
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
-      - linux-ia32-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-verify-ffmpeg:
-          requires:
-            - linux-ia32-testing
-            - linux-ia32-ffmpeg
 
       - linux-arm-debug:
           requires:
@@ -894,23 +911,11 @@ workflows:
       - linux-arm-testing:
           requires:
             - linux-checkout
-      - linux-arm-ffmpeg:
-           requires:
-             - linux-checkout
-      - linux-arm-native-mksnapshot:
-          requires:
-            - linux-checkout
 
       - linux-arm64-debug:
           requires:
             - linux-checkout
       - linux-arm64-testing:
-          requires:
-            - linux-checkout
-      - linux-arm64-ffmpeg:
-           requires:
-             - linux-checkout
-      - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
 
@@ -938,19 +943,9 @@ workflows:
             branches:
               only:
                 - master
-                - /chromium\-upgrade\/[0-9]+/
+                - *chromium-upgrade-branches
     jobs:
       - linux-checkout
-
-      # TODO(alexeykuzmin): Enable it back.
-      # Tons of crashes right now, see
-      # https://circleci.com/gh/electron/electron/67463
-#      - linux-x64-browsertests:
-#          requires:
-#            - linux-checkout
-      - linux-x64-unittests:
-          requires:
-            - linux-checkout
 
       - linux-x64-release:
           requires:
@@ -961,10 +956,13 @@ workflows:
       - linux-x64-ffmpeg:
           requires:
             - linux-checkout
-      - linux-x64-release-verify-ffmpeg:
+      - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
             - linux-x64-ffmpeg
+      - linux-x64-chromedriver:
+          requires:
+            - linux-checkout
 
       - linux-ia32-release:
           requires:
@@ -975,10 +973,13 @@ workflows:
       - linux-ia32-ffmpeg:
           requires:
             - linux-checkout
-      - linux-ia32-release-verify-ffmpeg:
+      - linux-ia32-verify-ffmpeg:
           requires:
             - linux-ia32-release
             - linux-ia32-ffmpeg
+      - linux-ia32-chromedriver:
+          requires:
+            - linux-checkout
 
       - linux-arm-release:
           requires:
@@ -987,6 +988,9 @@ workflows:
            requires:
              - linux-checkout
       - linux-arm-native-mksnapshot:
+          requires:
+            - linux-checkout
+      - linux-arm-chromedriver:
           requires:
             - linux-checkout
 
@@ -999,3 +1003,31 @@ workflows:
       - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
+      - linux-arm64-chromedriver:
+          requires:
+            - linux-checkout
+
+  # Various slow and non-essential checks we run only nightly.
+  # Sanitizer jobs should be added here.
+  linux-checks-nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - *chromium-upgrade-branches
+    jobs:
+      - linux-x64-checkout
+
+      # TODO(alexeykuzmin): Enable it back.
+      # Tons of crashes right now, see
+      # https://circleci.com/gh/electron/electron/67463
+#      - linux-x64-browsertests:
+#          requires:
+#            - linux-x64-checkout
+
+      - linux-x64-unittests:
+          requires:
+            - linux-x64-checkout
