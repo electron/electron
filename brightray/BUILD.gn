@@ -4,9 +4,9 @@ static_library("brightray") {
   deps = [
     "//base",
     "//base:base_static",
+    "//components/certificate_transparency",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/certificate_transparency",
     "//content/public/browser",
     "//content/shell:copy_shell_resources",
     "//net:extras",
