@@ -11,6 +11,3 @@ proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
 is_cfi = false
-
-# Use OS fontconfig
-use_bundled_fontconfig = false
