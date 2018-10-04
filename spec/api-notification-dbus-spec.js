@@ -15,6 +15,7 @@ const { app } = remote.require('electron')
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
+             process.arch.indexOf('arm') === 0 ||
              !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
