@@ -5,11 +5,18 @@ steps:
     TargetFolder: src/electron
 
 - bash: |
+    echo "Changing ownership to builduser"
+    chown -R builduser:builduser src
+    echo "Done changing ownership to builduser"
+    whoami
+    su builduser
     cd src/electron
-    npm install
+    npm install --verbose
   displayName: 'NPM install'
 
 - bash: |
+    whoami
+    su builduser
     cd src/electron
     export ZIP_DEST=$PWD/src/out/Default
     mkdir -p $ZIP_DEST
@@ -21,6 +28,8 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
+   whoami
+   su builduser
    export NODE_HEADERS_DEST=$PWD/src/out/Default/gen
    mkdir -p $NODE_HEADERS_DEST
    cd src/electron
@@ -32,11 +41,11 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
-    chown -R builduser:builduser src
     su builduser
     cd src
     export npm_config_nodedir=$PWD/out/Default/gen/node_headers
-    (cd electron/spec && npm i)
+    cd electron/spec
+    npm install --verbose
   displayName: Install test modules
 
 - bash: |
