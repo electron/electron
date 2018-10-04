@@ -312,7 +312,7 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
   // Make sure we're about to launch a known executable
   {
     base::FilePath child_path;
-    base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
+    PathService::Get(content::CHILD_PROCESS_EXE, &child_path);
 
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     CHECK(base::MakeAbsoluteFilePath(command_line->GetProgram()) == child_path);
@@ -551,16 +551,15 @@ void AtomBrowserClient::RenderProcessHostDestroyed(
 }
 
 void AtomBrowserClient::RenderProcessReady(content::RenderProcessHost* host) {
-  render_process_host_pids_[host->GetID()] =
-      base::GetProcId(host->GetProcess().Handle());
+  render_process_host_pids_[host->GetID()] = base::GetProcId(host->GetHandle());
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessReady(host);
   }
 }
 
-void AtomBrowserClient::RenderProcessExited(
-    content::RenderProcessHost* host,
-    const content::ChildProcessTerminationInfo& info) {
+void AtomBrowserClient::RenderProcessExited(content::RenderProcessHost* host,
+                                            base::TerminationStatus status,
+                                            int exit_code) {
   auto host_pid = render_process_host_pids_.find(host->GetID());
   if (host_pid != render_process_host_pids_.end()) {
     if (delegate_) {

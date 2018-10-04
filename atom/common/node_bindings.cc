@@ -136,7 +136,7 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
 base::FilePath GetResourcesPath(bool is_browser) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
-  base::PathService::Get(base::FILE_EXE, &exec_path);
+  PathService::Get(base::FILE_EXE, &exec_path);
 
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
@@ -217,11 +217,7 @@ void NodeBindings::Initialize() {
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
   // NOTE: If you change this line, please ping @codebytere or @MarshallOfSound
-  int argc = 0;
-  int exec_argc = 0;
-  const char** argv = nullptr;
-  const char** exec_argv = nullptr;
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
+  node::Init(nullptr, nullptr, nullptr, nullptr);
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -289,7 +285,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     process.Set("_noBrowserGlobals", resources_path);
   // The path to helper app.
   base::FilePath helper_exec_path;
-  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
   return env;

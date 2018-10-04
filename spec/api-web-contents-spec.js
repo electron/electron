@@ -159,16 +159,17 @@ describe('webContents module', () => {
 
   describe('before-input-event event', () => {
     it('can prevent document keyboard events', (done) => {
-      ipcMain.once('keydown', (event, key) => {
-        assert.strictEqual(key, 'b')
-        done()
-      })
+      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
       w.webContents.once('did-finish-load', () => {
-        ipcRenderer.sendSync('prevent-next-input-event', 'a', w.webContents.id)
+        ipcMain.once('keydown', (event, key) => {
+          assert.strictEqual(key, 'b')
+          done()
+        })
+
+        ipcRenderer.send('prevent-next-input-event', 'a', w.webContents.id)
         w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
         w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
       })
-      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
     })
 
     it('has the correct properties', (done) => {

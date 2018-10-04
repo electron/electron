@@ -162,7 +162,7 @@ bool Converter<blink::WebInputEvent>::FromV8(v8::Isolate* isolate,
   std::vector<blink::WebInputEvent::Modifiers> modifiers;
   if (dict.Get("modifiers", &modifiers))
     out->SetModifiers(VectorToBitArray(modifiers));
-  out->SetTimeStamp(base::TimeTicks::Now());
+  out->SetTimeStampSeconds(base::Time::Now().ToDoubleT());
   return true;
 }
 

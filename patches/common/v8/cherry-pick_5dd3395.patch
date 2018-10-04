@@ -1,0 +1,12 @@
+diff --git a/src/log.cc b/src/log.cc
+index 903cc8e2e6..ce917b0be1 100644
+--- a/src/log.cc
++++ b/src/log.cc
+@@ -327,6 +327,7 @@ void PerfBasicLogger::LogRecordedBuffer(AbstractCode* code, SharedFunctionInfo*,
+                                         const char* name, int length) {
+   if (FLAG_perf_basic_prof_only_functions &&
+       (code->kind() != AbstractCode::INTERPRETED_FUNCTION &&
++       code->kind() != AbstractCode::BUILTIN &&
+        code->kind() != AbstractCode::OPTIMIZED_FUNCTION)) {
+     return;
+   }

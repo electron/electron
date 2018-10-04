@@ -24,7 +24,6 @@
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
-#include "services/service_manager/sandbox/switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -246,7 +245,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kSandbox))
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(::switches::kNoSandbox);
 
   // Check if nativeWindowOpen is enabled.
   if (IsEnabled(options::kNativeWindowOpen))

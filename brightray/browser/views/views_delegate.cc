@@ -86,6 +86,12 @@ void ViewsDelegate::AddRef() {}
 
 void ViewsDelegate::ReleaseRef() {}
 
+content::WebContents* ViewsDelegate::CreateWebContents(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* site_instance) {
+  return NULL;
+}
+
 void ViewsDelegate::OnBeforeWidgetInit(
     views::Widget::InitParams* params,
     views::internal::NativeWidgetDelegate* delegate) {

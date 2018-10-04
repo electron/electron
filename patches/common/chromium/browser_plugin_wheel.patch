@@ -1,8 +1,8 @@
 diff --git a/content/renderer/browser_plugin/browser_plugin.cc b/content/renderer/browser_plugin/browser_plugin.cc
-index d64895137a73..c42dd6ddf172 100644
+index 06762fb..e89b1f0 100644
 --- a/content/renderer/browser_plugin/browser_plugin.cc
 +++ b/content/renderer/browser_plugin/browser_plugin.cc
-@@ -642,15 +642,11 @@ blink::WebInputEventResult BrowserPlugin::HandleInputEvent(
+@@ -448,15 +448,11 @@ blink::WebInputEventResult BrowserPlugin::handleInputEvent(
  
    DCHECK(!blink::WebInputEvent::IsTouchEventType(event.GetType()));
  

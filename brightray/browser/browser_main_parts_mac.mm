@@ -15,8 +15,7 @@ void BrowserMainParts::OverrideAppLogsPath() {
   NSString* libraryPath =
       [NSHomeDirectory() stringByAppendingPathComponent:logsPath];
 
-  base::PathService::Override(DIR_APP_LOGS,
-                              base::FilePath([libraryPath UTF8String]));
+  PathService::Override(DIR_APP_LOGS, base::FilePath([libraryPath UTF8String]));
 }
 
 // Replicates NSApplicationMain, but doesn't start a run loop.

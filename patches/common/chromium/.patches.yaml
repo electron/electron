@@ -45,6 +45,7 @@ patches:
       base/memory/weak_ptr.cc
       base/process/kill_win.cc
       components/viz/service/display/program_binding.h
+      components/viz/service/display_embedder/server_shared_bitmap_manager.cc
       content/browser/frame_host/navigation_controller_impl.cc
       content/browser/frame_host/render_frame_host_impl.cc
       content/browser/renderer_host/render_widget_host_view_mac.mm
@@ -441,8 +442,8 @@ patches:
   author: Aleksei Kuzmin <alkuzmin@microsoft.com>
   file: exclude-a-few-test-files-from-build.patch
   description: |
-    Compilation of those files fails with the Chromium 68.
-    Remove the patch during the Chromium 69 upgrade.
+    Compilation of those files fails with the Chromium 67.
+    Remove the patch during the Chromium 68 upgrade.
 -
   author: deepak1556 <hop2deep@gmail.com>
   file: disable_extensions_gn.patch
@@ -451,7 +452,9 @@ patches:
 -
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: crashpad_http_status.patch
-  description: backport of crashpad f540abb506
+  description: |
+    Accept all HTTP codes in [200, 300) as successful, instead of just 200.
+    For example HockeyApp responds with 202.
 -
   author: Jeremy Apthorp <jeremya@chromium.org>
   file: backport_cd7154e0bb5.patch
@@ -474,19 +477,3 @@ patches:
       desktop capture api.
     * Backports https://chromium-review.googlesource.com/c/chromium/src/+/1199806
       that fixes crash with screen capturer, can be removed in 71.0.3539.0
--
-  author: Jeremy Apthorp <jeremya@chromium.org>
-  file: expose-net-observer-api.patch
-  description: |
-    Expose URLRequestContextGetter::{Add,Remove}Observer.
-    This patch should be removed once we switch to using the net service (cc @robo)
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_7167a9eac.patch
-  description: |
-    "viz: Remove the global ServerSharedBitmapManager."
-    https://chromium-review.googlesource.com/802574
-    Landed in 69.0.3447.0.
-    See https://github.com/electron/electron/issues/14327
-    (Android specific changes and changes in some test files
-    have been removed from the diff.)

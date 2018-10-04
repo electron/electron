@@ -248,12 +248,6 @@ static_library("electron_lib") {
       "*\bwin_*.cc",
     ]
   }
-  if (!is_posix) {
-    extra_source_filters += [
-      "*_posix.cc",
-      "*_posix.h",
-    ]
-  }
   if (is_mac) {
     extra_source_filters += [
       "*_views.cc",
@@ -750,6 +744,7 @@ group("chromium_unittests") {
   deps = [
     "//base:base_unittests",
     "//cc:cc_unittests",
+    "//cc/blink:cc_blink_unittests",
     "//content/test:content_unittests",
     "//crypto:crypto_unittests",
     "//device:device_unittests",
@@ -761,6 +756,7 @@ group("chromium_unittests") {
     "//media/midi:midi_unittests",
     "//media/mojo:media_mojo_unittests",
     "//mojo:mojo_unittests",
+    "//mojo/common:mojo_common_unittests",
     "//net:net_unittests",
     "//ppapi:ppapi_unittests",
     "//printing:printing_unittests",

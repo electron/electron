@@ -1,0 +1,183 @@
+diff --git a/src/log.cc b/src/log.cc
+index 563fe3c5f0..edd883976d 100644
+--- a/src/log.cc
++++ b/src/log.cc
+@@ -2011,10 +2011,10 @@ FILE* Logger::TearDown() {
+ }
+
+ void ExistingCodeLogger::LogCodeObject(Object* object) {
+-  AbstractCode* code_object = AbstractCode::cast(object);
++  AbstractCode* abstract_code = AbstractCode::cast(object);
+   CodeEventListener::LogEventsAndTags tag = CodeEventListener::STUB_TAG;
+   const char* description = "Unknown code from before profiling";
+-  switch (code_object->kind()) {
++  switch (abstract_code->kind()) {
+     case AbstractCode::INTERPRETED_FUNCTION:
+     case AbstractCode::OPTIMIZED_FUNCTION:
+       return;  // We log this later using LogCompiledFunctions.
+@@ -2022,7 +2022,7 @@ void ExistingCodeLogger::LogCodeObject(Object* object) {
+       return;  // We log it later by walking the dispatch table.
+     case AbstractCode::STUB:
+       description =
+-          CodeStub::MajorName(CodeStub::GetMajorKey(code_object->GetCode()));
++          CodeStub::MajorName(CodeStub::GetMajorKey(abstract_code->GetCode()));
+       if (description == nullptr) description = "A stub from before profiling";
+       tag = CodeEventListener::STUB_TAG;
+       break;
+@@ -2031,8 +2031,13 @@ void ExistingCodeLogger::LogCodeObject(Object* object) {
+       tag = CodeEventListener::REG_EXP_TAG;
+       break;
+     case AbstractCode::BUILTIN:
++      if (Code::cast(object)->is_interpreter_trampoline_builtin() &&
++          Code::cast(object) ==
++              *BUILTIN_CODE(isolate_, InterpreterEntryTrampoline)) {
++        return;
++      }
+       description =
+-          isolate_->builtins()->name(code_object->GetCode()->builtin_index());
++          isolate_->builtins()->name(abstract_code->GetCode()->builtin_index());
+       tag = CodeEventListener::BUILTIN_TAG;
+       break;
+     case AbstractCode::WASM_FUNCTION:
+@@ -2058,7 +2063,7 @@ void ExistingCodeLogger::LogCodeObject(Object* object) {
+     case AbstractCode::NUMBER_OF_KINDS:
+       UNIMPLEMENTED();
+   }
+-  CALL_CODE_EVENT_HANDLER(CodeCreateEvent(tag, code_object, description))
++  CALL_CODE_EVENT_HANDLER(CodeCreateEvent(tag, abstract_code, description))
+ }
+
+ void ExistingCodeLogger::LogCodeObjects() {
+@@ -2084,6 +2089,12 @@ void ExistingCodeLogger::LogCompiledFunctions() {
+   // During iteration, there can be heap allocation due to
+   // GetScriptLineNumber call.
+   for (int i = 0; i < compiled_funcs_count; ++i) {
++    if (sfis[i]->function_data()->IsInterpreterData()) {
++      LogExistingFunction(sfis[i],
++                          Handle<AbstractCode>(AbstractCode::cast(
++                              sfis[i]->InterpreterTrampoline())),
++                          CodeEventListener::INTERPRETED_FUNCTION_TAG);
++    }
+     if (code_objects[i].is_identical_to(BUILTIN_CODE(isolate_, CompileLazy)))
+       continue;
+     LogExistingFunction(sfis[i], code_objects[i]);
+@@ -2128,8 +2139,9 @@ void ExistingCodeLogger::LogBytecodeHandlers() {
+   }
+ }
+
+-void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
+-                                             Handle<AbstractCode> code) {
++void ExistingCodeLogger::LogExistingFunction(
++    Handle<SharedFunctionInfo> shared, Handle<AbstractCode> code,
++    CodeEventListener::LogEventsAndTags tag) {
+   if (shared->script()->IsScript()) {
+     Handle<Script> script(Script::cast(shared->script()));
+     int line_num = Script::GetLineNumber(script, shared->StartPosition()) + 1;
+@@ -2139,9 +2151,8 @@ void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
+       Handle<String> script_name(String::cast(script->name()));
+       if (line_num > 0) {
+         CALL_CODE_EVENT_HANDLER(
+-            CodeCreateEvent(Logger::ToNativeByScript(
+-                                CodeEventListener::LAZY_COMPILE_TAG, *script),
+-                            *code, *shared, *script_name, line_num, column_num))
++            CodeCreateEvent(Logger::ToNativeByScript(tag, *script), *code,
++                            *shared, *script_name, line_num, column_num))
+       } else {
+         // Can't distinguish eval and script here, so always use Script.
+         CALL_CODE_EVENT_HANDLER(CodeCreateEvent(
+@@ -2149,11 +2160,9 @@ void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
+             *code, *shared, *script_name))
+       }
+     } else {
+-      CALL_CODE_EVENT_HANDLER(
+-          CodeCreateEvent(Logger::ToNativeByScript(
+-                              CodeEventListener::LAZY_COMPILE_TAG, *script),
+-                          *code, *shared, isolate_->heap()->empty_string(),
+-                          line_num, column_num))
++      CALL_CODE_EVENT_HANDLER(CodeCreateEvent(
++          Logger::ToNativeByScript(tag, *script), *code, *shared,
++          isolate_->heap()->empty_string(), line_num, column_num))
+     }
+   } else if (shared->IsApiFunction()) {
+     // API function.
+@@ -2169,9 +2178,8 @@ void ExistingCodeLogger::LogExistingFunction(Handle<SharedFunctionInfo> shared,
+       CALL_CODE_EVENT_HANDLER(CallbackEvent(shared->DebugName(), entry_point))
+     }
+   } else {
+-    CALL_CODE_EVENT_HANDLER(CodeCreateEvent(CodeEventListener::LAZY_COMPILE_TAG,
+-                                            *code, *shared,
+-                                            isolate_->heap()->empty_string()))
++    CALL_CODE_EVENT_HANDLER(
++        CodeCreateEvent(tag, *code, *shared, isolate_->heap()->empty_string()))
+   }
+ }
+
+diff --git a/src/log.h b/src/log.h
+index 738aef4d73..ad254097e6 100644
+--- a/src/log.h
++++ b/src/log.h
+@@ -109,7 +109,9 @@ class ExistingCodeLogger {
+
+   void LogCompiledFunctions();
+   void LogExistingFunction(Handle<SharedFunctionInfo> shared,
+-                           Handle<AbstractCode> code);
++                           Handle<AbstractCode> code,
++                           CodeEventListener::LogEventsAndTags tag =
++                               CodeEventListener::LAZY_COMPILE_TAG);
+   void LogCodeObject(Object* object);
+   void LogBytecodeHandler(interpreter::Bytecode bytecode,
+                           interpreter::OperandScale operand_scale, Code* code);
+diff --git a/test/cctest/test-log.cc b/test/cctest/test-log.cc
+index 97071a63f5..c7864034c9 100644
+--- a/test/cctest/test-log.cc
++++ b/test/cctest/test-log.cc
+@@ -875,6 +875,49 @@ TEST(ExternalCodeEventListener) {
+   isolate->Dispose();
+ }
+
++TEST(ExternalCodeEventListenerWithInterpretedFramesNativeStack) {
++  i::FLAG_log = false;
++  i::FLAG_prof = false;
++  i::FLAG_interpreted_frames_native_stack = true;
++
++  v8::Isolate::CreateParams create_params;
++  create_params.array_buffer_allocator = CcTest::array_buffer_allocator();
++  v8::Isolate* isolate = v8::Isolate::New(create_params);
++
++  {
++    v8::HandleScope scope(isolate);
++    v8::Isolate::Scope isolate_scope(isolate);
++    v8::Local<v8::Context> context = v8::Context::New(isolate);
++    context->Enter();
++
++    TestCodeEventHandler code_event_handler(isolate);
++
++    const char* source_text_before_start =
++        "function testCodeEventListenerBeforeStart(a,b) { return a + b };"
++        "testCodeEventListenerBeforeStart('1', 1);";
++    CompileRun(source_text_before_start);
++
++    CHECK_NULL(code_event_handler.FindLine("InterpretedFunction",
++                                           "testCodeEventListenerBeforeStart"));
++
++    code_event_handler.Enable();
++
++    CHECK_NOT_NULL(code_event_handler.FindLine(
++        "InterpretedFunction", "testCodeEventListenerBeforeStart"));
++
++    const char* source_text_after_start =
++        "function testCodeEventListenerAfterStart(a,b) { return a + b };"
++        "testCodeEventListenerAfterStart('1', 1);";
++    CompileRun(source_text_after_start);
++
++    CHECK_NOT_NULL(code_event_handler.FindLine(
++        "InterpretedFunction", "testCodeEventListenerAfterStart"));
++
++    context->Exit();
++  }
++  isolate->Dispose();
++}
++
+ TEST(TraceMaps) {
+   SETUP_FLAGS();
+   i::FLAG_trace_maps = true;

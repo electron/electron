@@ -212,7 +212,6 @@ app.on('ready', function () {
     webContents.fromId(id).once('before-input-event', (event, input) => {
       if (key === input.key) event.preventDefault()
     })
-    event.returnValue = null
   })
 
   ipcMain.on('executeJavaScript', function (event, code, hasCallback) {

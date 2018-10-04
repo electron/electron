@@ -217,14 +217,6 @@ describe('app module', () => {
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch'
 
-    // TODO(alexeykuzmin): [Ch68] Fails on Linux.
-    // Enable the test back.
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
     beforeEach(done => {
       fs.unlink(socketPath, () => {
         server = net.createServer()

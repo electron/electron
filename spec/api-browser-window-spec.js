@@ -2358,33 +2358,14 @@ describe('BrowserWindow module', () => {
     })
     it('subscribes to frame updates (only dirty rectangle)', (done) => {
       let called = false
-      let gotInitialFullSizeFrame = false
-      const [contentWidth, contentHeight] = w.getContentSize()
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'))
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.beginFrameSubscription(true, (data, rect) => {
-          if (data.length === 0) {
-            // Chromium sometimes sends a 0x0 frame at the beginning of the
-            // page load.
-            return
-          }
-          if (rect.height === contentHeight && rect.width === contentWidth &&
-              !gotInitialFullSizeFrame) {
-            // The initial frame is full-size, but we're looking for a call
-            // with just the dirty-rect. The next frame should be a smaller
-            // rect.
-            gotInitialFullSizeFrame = true
-            return
-          }
+      w.webContents.on('dom-ready', () => {
+        w.webContents.beginFrameSubscription(true, (data) => {
           // This callback might be called twice.
           if (called) return
-          // We asked for just the dirty rectangle, so we expect to receive a
-          // rect smaller than the full size.
-          // TODO(jeremy): this is failing on windows currently; investigate.
-          // assert(rect.width < contentWidth || rect.height < contentHeight)
           called = true
 
-          expect(data.length).to.equal(rect.width * rect.height * 4)
+          assert.notStrictEqual(data.length, 0)
           w.webContents.endFrameSubscription()
           done()
         })
