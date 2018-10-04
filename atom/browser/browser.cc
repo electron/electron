@@ -92,7 +92,7 @@ void Browser::Shutdown() {
 
   if (base::ThreadTaskRunnerHandle::IsSet()) {
     base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+        FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
   } else {
     // There is no message loop available so we are in early stage.
     exit(0);
@@ -152,7 +152,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
-  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+  if (base::PathService::Get(brightray::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;

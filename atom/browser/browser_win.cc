@@ -45,7 +45,7 @@ BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
 
 bool GetProcessExecPath(base::string16* exe) {
   base::FilePath path;
-  if (!PathService::Get(base::FILE_EXE, &path)) {
+  if (!base::PathService::Get(base::FILE_EXE, &path)) {
     LOG(ERROR) << "Error getting app exe path";
     return false;
   }
@@ -329,7 +329,7 @@ PCWSTR Browser::GetAppUserModelID() {
 
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
-  if (PathService::Get(base::FILE_EXE, &path)) {
+  if (base::PathService::Get(base::FILE_EXE, &path)) {
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     std::unique_ptr<FileVersionInfo> version_info(
         FileVersionInfo::CreateFileVersionInfo(path));

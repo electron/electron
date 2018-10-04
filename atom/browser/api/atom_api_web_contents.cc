@@ -362,7 +362,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   }
   session_.Reset(isolate, session.ToV8());
 
-  content::WebContents* web_contents;
+  std::unique_ptr<content::WebContents> web_contents;
   if (IsGuest()) {
     scoped_refptr<content::SiteInstance> site_instance =
         content::SiteInstance::CreateForURL(session->browser_context(),
@@ -405,7 +405,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
   }
 
-  InitWithSessionAndOptions(isolate, web_contents, session, options);
+  InitWithSessionAndOptions(isolate, web_contents.release(), session, options);
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
@@ -537,16 +537,17 @@ void WebContents::WebContentsCreated(content::WebContents* source_contents,
   Emit("-web-contents-created", api_web_contents, target_url, frame_name);
 }
 
-void WebContents::AddNewContents(content::WebContents* source,
-                                 content::WebContents* new_contents,
-                                 WindowOpenDisposition disposition,
-                                 const gfx::Rect& initial_rect,
-                                 bool user_gesture,
-                                 bool* was_blocked) {
-  new ChildWebContentsTracker(new_contents);
+void WebContents::AddNewContents(
+    content::WebContents* source,
+    std::unique_ptr<content::WebContents> new_contents,
+    WindowOpenDisposition disposition,
+    const gfx::Rect& initial_rect,
+    bool user_gesture,
+    bool* was_blocked) {
+  new ChildWebContentsTracker(new_contents.get());
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  auto api_web_contents = CreateFrom(isolate(), new_contents);
+  auto api_web_contents = CreateFrom(isolate(), new_contents.release());
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height())) {
@@ -641,21 +642,25 @@ content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
   return content::KeyboardEventProcessingResult::NOT_HANDLED;
 }
 
-void WebContents::EnterFullscreenModeForTab(content::WebContents* source,
-                                            const GURL& origin) {
+void WebContents::EnterFullscreenModeForTab(
+    content::WebContents* source,
+    const GURL& origin,
+    const blink::WebFullscreenOptions& options) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback = base::Bind(&WebContents::OnEnterFullscreenModeForTab,
-                             base::Unretained(this), source, origin);
+                             base::Unretained(this), source, origin, options);
   permission_helper->RequestFullscreenPermission(callback);
 }
 
-void WebContents::OnEnterFullscreenModeForTab(content::WebContents* source,
-                                              const GURL& origin,
-                                              bool allowed) {
+void WebContents::OnEnterFullscreenModeForTab(
+    content::WebContents* source,
+    const GURL& origin,
+    const blink::WebFullscreenOptions& options,
+    bool allowed) {
   if (!allowed)
     return;
-  CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin);
+  CommonWebContentsDelegate::EnterFullscreenModeForTab(source, origin, options);
   Emit("enter-html-full-screen");
 }
 
@@ -757,8 +762,7 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
   return dialog_manager_.get();
 }
 
-void WebContents::OnAudioStateChanged(content::WebContents* web_contents,
-                                      bool audible) {
+void WebContents::OnAudioStateChanged(bool audible) {
   Emit("-audio-state-changed", audible);
 }
 
@@ -1103,7 +1107,7 @@ int WebContents::GetProcessID() const {
 
 base::ProcessId WebContents::GetOSProcessID() const {
   base::ProcessHandle process_handle =
-      web_contents()->GetMainFrame()->GetProcess()->GetHandle();
+      web_contents()->GetMainFrame()->GetProcess()->GetProcess().Handle();
   return base::GetProcId(process_handle);
 }
 
@@ -1688,8 +1692,7 @@ void WebContents::StartDrag(const mate::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
-    base::MessageLoop::ScopedNestableTaskAllower allow(
-        base::MessageLoop::current());
+    base::MessageLoop::ScopedNestableTaskAllower allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     args->ThrowError("Must specify either 'file' or 'files' option");

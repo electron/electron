@@ -1,8 +1,8 @@
 diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-index bdd886eff5e3..42a3f0ef6e55 100644
+index 4b47f551f366..227c58a5629d 100644
 --- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 +++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-@@ -255,7 +255,6 @@ void WorkerScriptLoader::ProcessContentSecurityPolicy(
+@@ -246,7 +246,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(
    // document (which is implemented in WorkerMessagingProxy, and
    // m_contentSecurityPolicy should be left as nullptr to inherit the policy).
    if (!response.Url().ProtocolIs("blob") &&

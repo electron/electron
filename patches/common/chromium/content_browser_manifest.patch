@@ -1,12 +1,15 @@
 diff --git a/content/public/app/mojo/content_browser_manifest.json b/content/public/app/mojo/content_browser_manifest.json
-index 5a217fa9b741..8fd1b39ea6ca 100644
+index a515b68616a8..dc0431fd17e6 100644
 --- a/content/public/app/mojo/content_browser_manifest.json
 +++ b/content/public/app/mojo/content_browser_manifest.json
-@@ -82,6 +82,7 @@
+@@ -90,6 +90,7 @@
            "device:battery_monitor",
            "device:generic_sensor",
            "device:geolocation",
 +          "device:geolocation_control",
            "device:hid",
            "device:input_service",
-           "device:nfc",
+           "device:mtp",
+-- 
+2.17.0
+

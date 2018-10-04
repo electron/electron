@@ -39,17 +39,18 @@ index b480129fcd7c..4f4f7d06029b 100644
 +  }
  }
 diff --git a/chrome/browser/ui/BUILD.gn b/chrome/browser/ui/BUILD.gn
-index 72dde06a99a7..e00d6b863b84 100644
+index c514878fafe7..bcd3432f75c9 100644
 --- a/chrome/browser/ui/BUILD.gn
 +++ b/chrome/browser/ui/BUILD.gn
-@@ -2496,7 +2496,9 @@ split_static_library("ui") {
-         ]
-       }
- 
+@@ -2495,7 +2495,10 @@ split_static_library("ui") {
+         "views/tabs/window_finder_mac.mm",
+       ]
+
 -      deps += [ "//extensions/components/native_app_window" ]
++
 +      if (enable_extensions) {
 +        deps += [ "//extensions/components/native_app_window" ]
 +      }
- 
+
        # Truly cocoa-browser-specific sources. These are secondary UI pieces that
        # are obsolete before mac_views_browser will ever ship, so they aren't

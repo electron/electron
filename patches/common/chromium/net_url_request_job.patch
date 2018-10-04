@@ -1,8 +1,8 @@
 diff --git a/net/url_request/url_request_job.h b/net/url_request/url_request_job.h
-index 2341999..3011bf7 100644
+index 389315a25d7d..d4e3c0e6c2ba 100644
 --- a/net/url_request/url_request_job.h
 +++ b/net/url_request/url_request_job.h
-@@ -269,6 +269,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
+@@ -285,6 +285,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
    void OnCallToDelegate();
    void OnCallToDelegateComplete();
  

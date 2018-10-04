@@ -1,8 +1,8 @@
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index 964c9a093a3b..f3b3d66ff267 100644
+index a0bc9305e62d..7f022f6cfda7 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
-@@ -214,8 +214,11 @@ void BrowserPluginGuest::Init() {
+@@ -207,8 +207,11 @@ void BrowserPluginGuest::Init() {
  
    WebContentsImpl* owner_web_contents = static_cast<WebContentsImpl*>(
        delegate_->GetOwnerWebContents());

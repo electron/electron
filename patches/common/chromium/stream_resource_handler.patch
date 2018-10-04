@@ -1,5 +1,5 @@
 diff --git a/content/browser/loader/stream_resource_handler.h b/content/browser/loader/stream_resource_handler.h
-index 9f69994..ae8d1630 100644
+index cb8a2d58d6b8..dbfa64089325 100644
 --- a/content/browser/loader/stream_resource_handler.h
 +++ b/content/browser/loader/stream_resource_handler.h
 @@ -11,6 +11,7 @@

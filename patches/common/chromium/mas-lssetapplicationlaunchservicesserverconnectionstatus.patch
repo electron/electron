@@ -1,14 +1,5 @@
-From 3fcbe57ff316894349907bf1c85f71d7487f0932 Mon Sep 17 00:00:00 2001
-From: Jeremy Apthorp <jeremya@chromium.org>
-Date: Mon, 6 Aug 2018 13:40:24 -0700
-Subject: fix: [mas] don't call LaunchServices private api
-
----
- content/gpu/gpu_main.cc | 2 ++
- 1 file changed, 2 insertions(+)
-
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 115f871094bc..aa47a1c1a51e 100644
+index e6a589fb90e0..64ff5e248bd7 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -276,8 +276,10 @@ int GpuMain(const MainFunctionParams& parameters) {

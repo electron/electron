@@ -323,7 +323,7 @@ bool IsChromeProcess(pid_t pid) {
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
-  PathService::Get(base::FILE_EXE, &exec_path);
+  base::PathService::Get(base::FILE_EXE, &exec_path);
 
   return (!other_chrome_path.empty() &&
           other_chrome_path.BaseName() == exec_path.BaseName());
@@ -820,7 +820,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   to_send.push_back(kTokenDelimiter);
 
   base::FilePath current_dir;
-  if (!PathService::Get(base::DIR_CURRENT, &current_dir))
+  if (!base::PathService::Get(base::DIR_CURRENT, &current_dir))
     return PROCESS_NONE;
   to_send.append(current_dir.value());
 

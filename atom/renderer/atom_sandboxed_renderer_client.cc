@@ -83,7 +83,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
 
 base::FilePath::StringType GetExecPath() {
   base::FilePath path;
-  PathService::Get(base::FILE_EXE, &path);
+  base::PathService::Get(base::FILE_EXE, &path);
   return path.value();
 }
 

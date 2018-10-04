@@ -42,7 +42,7 @@ bool RelaunchApp(const StringVector& argv) {
   // helper process, because there's no guarantee that the updated version's
   // relauncher implementation will be compatible with the running version's.
   base::FilePath child_path;
-  if (!PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+  if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
     LOG(ERROR) << "No CHILD_PROCESS_EXE";
     return false;
   }

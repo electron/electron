@@ -229,6 +229,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
+                                   const blink::WebFullscreenOptions& options,
                                    bool allowed);
 
   // Create window with the given disposition.
@@ -300,7 +301,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                           const GURL& target_url,
                           content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
-                      content::WebContents* new_contents,
+                      std::unique_ptr<content::WebContents> new_contents,
                       WindowOpenDisposition disposition,
                       const gfx::Rect& initial_rect,
                       bool user_gesture,
@@ -323,8 +324,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
-  void EnterFullscreenModeForTab(content::WebContents* source,
-                                 const GURL& origin) override;
+  void EnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::WebFullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
@@ -355,8 +358,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::BluetoothChooser::EventHandler& handler) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
-  void OnAudioStateChanged(content::WebContents* web_contents,
-                           bool audible) override;
+  void OnAudioStateChanged(bool audible) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
