@@ -1,39 +1,3 @@
-From 692ff66afa256a7a5a916ab8a15f2ea24d52b892 Mon Sep 17 00:00:00 2001
-From: Jeremy Apthorp <nornagon@nornagon.net>
-Date: Thu, 20 Sep 2018 17:48:42 -0700
-Subject: sysroot.patch
-
-Make chrome's install-sysroot scripts point to our custom sysroot builds,
-which include extra deps that Electron needs (e.g. libnotify)
-
-diff --git a/build/config/sysroot.gni b/build/config/sysroot.gni
-index d5daf2df2e41..46999e2e2198 100644
---- a/build/config/sysroot.gni
-+++ b/build/config/sysroot.gni
-@@ -32,17 +32,17 @@ if (current_os == target_os && current_cpu == target_cpu &&
-   # By default build against a sysroot image downloaded from Cloud Storage
-   # during gclient runhooks.
-   if (current_cpu == "x64") {
--    sysroot = "$target_sysroot_dir/debian_sid_amd64-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_amd64-sysroot"
-   } else if (current_cpu == "x86") {
--    sysroot = "$target_sysroot_dir/debian_sid_i386-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_i386-sysroot"
-   } else if (current_cpu == "mipsel") {
--    sysroot = "$target_sysroot_dir/debian_sid_mips-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_mips-sysroot"
-   } else if (current_cpu == "mips64el") {
--    sysroot = "$target_sysroot_dir/debian_sid_mips64el-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_mips64el-sysroot"
-   } else if (current_cpu == "arm") {
--    sysroot = "$target_sysroot_dir/debian_sid_arm-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_arm-sysroot"
-   } else if (current_cpu == "arm64") {
--    sysroot = "$target_sysroot_dir/debian_sid_arm64-sysroot"
-+    sysroot = "$target_sysroot_dir/debian_stretch_arm64-sysroot"
-   } else {
-     assert(false, "No linux sysroot for cpu: $target_cpu")
-   }
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
 index 58f09950d844..53500a0853a6 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
@@ -49,89 +13,25 @@ index 58f09950d844..53500a0853a6 100755
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  
-@@ -43,7 +43,7 @@ ARCH_TRANSLATIONS = {
-     'mips64': 'mips64el',
- }
+diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
+index 53500a0853a6..f38f9a732856 100755
+--- a/build/linux/sysroot_scripts/install-sysroot.py
++++ b/build/linux/sysroot_scripts/install-sysroot.py
+@@ -30,6 +30,8 @@ import sys
+ import urllib2
  
--DEFAULT_TARGET_PLATFORM = 'sid'
-+DEFAULT_TARGET_PLATFORM = 'stretch'
+ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
++SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
++SYSTOORS_CONFIG_DIR = os.path.join(SRC_DIR, 'electron', 'script')
  
- class Error(Exception):
-   pass
-diff --git a/build/linux/sysroot_scripts/sysroots.json b/build/linux/sysroot_scripts/sysroots.json
-index e79b69b764b1..91ef1417a1bf 100644
---- a/build/linux/sysroot_scripts/sysroots.json
-+++ b/build/linux/sysroot_scripts/sysroots.json
-@@ -1,38 +1,38 @@
- {
--    "sid_amd64": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "4e7db513b0faeea8fb410f70c9909e8736f5c0ab",
--        "SysrootDir": "debian_sid_amd64-sysroot",
--        "Tarball": "debian_sid_amd64_sysroot.tar.xz"
-+    "stretch_amd64": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "69457fddca3500e2dde124f77f8382b0a18d765e",
-+        "SysrootDir": "debian_stretch_amd64-sysroot",
-+        "Tarball": "debian_stretch_amd64_sysroot.tgz"
-     },
--    "sid_arm": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "b2165ab47ab9c4cc780db53ace1b08607d68ae31",
--        "SysrootDir": "debian_sid_arm-sysroot",
--        "Tarball": "debian_sid_arm_sysroot.tar.xz"
-+    "stretch_arm": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "3e880f69177992ce02b05deeac619f7591b30287",
-+        "SysrootDir": "debian_stretch_arm-sysroot",
-+        "Tarball": "debian_stretch_arm_sysroot.tgz"
-     },
--    "sid_arm64": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "37dfa5f22e2c0e847cee34f9848eb31230c33d35",
--        "SysrootDir": "debian_sid_arm64-sysroot",
--        "Tarball": "debian_sid_arm64_sysroot.tar.xz"
-+    "stretch_arm64": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "8fd58c7d4b38fa3c6785573c6310cf6ca6c88312",
-+        "SysrootDir": "debian_stretch_arm64-sysroot",
-+        "Tarball": "debian_stretch_arm64_sysroot.tgz"
-     },
--    "sid_i386": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "b8639749e2b561a7462d7e7978ca74ee4044bdab",
--        "SysrootDir": "debian_sid_i386-sysroot",
--        "Tarball": "debian_sid_i386_sysroot.tar.xz"
-+    "stretch_i386": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "1bd14db5eb0466064659126d398b38220013fb38",
-+        "SysrootDir": "debian_stretch_i386-sysroot",
-+        "Tarball": "debian_stretch_i386_sysroot.tgz"
-     },
--    "sid_mips": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "baaf37cdcbcf251fb9a4ccaf8b479722ae61fe49",
--        "SysrootDir": "debian_sid_mips-sysroot",
--        "Tarball": "debian_sid_mips_sysroot.tar.xz"
-+    "stretch_mips": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "285751660ffab14e6d052c8ddb5c90752a51704d",
-+        "SysrootDir": "debian_stretch_mips-sysroot",
-+        "Tarball": "debian_stretch_mips_sysroot.tgz"
-     },
--    "sid_mips64el": {
--        "Revision": "1015a998c2adf188813cca60b558b0ea1a0b6ced",
--        "Sha1Sum": "bbfe1a513b849921cfcf78865faec8fc03f93b3d",
--        "SysrootDir": "debian_sid_mips64el-sysroot",
--        "Tarball": "debian_sid_mips64el_sysroot.tar.xz"
--    }
-+    "stretch_mips64el": {
-+        "Revision": "02772eaba5440a79c6bd2d9cb7e42fa836950366",
-+        "Sha1Sum": "23f51f29bc35a550092dde41dc823780fdb50f9e",
-+        "SysrootDir": "debian_stretch_mips64el-sysroot",
-+        "Tarball": "debian_stretch_mips64el_sysroot.tgz"
-+     }
- }
--- 
-2.17.0
-
+ URL_PREFIX = 'http://s3.amazonaws.com'
+ URL_PATH = 'gh-contractor-zcbenz/toolchain'
+@@ -96,7 +98,7 @@ def GetSysrootDict(target_platform, target_arch):
+   if target_arch not in VALID_ARCHS:
+     raise Error('Unknown architecture: %s' % target_arch)
+ 
+-  sysroots_file = os.path.join(SCRIPT_DIR, 'sysroots.json')
++  sysroots_file = os.path.join(SYSTOORS_CONFIG_DIR, 'sysroots.json')
+   sysroots = json.load(open(sysroots_file))
+   sysroot_key = '%s_%s' % (target_platform, target_arch)
+   if sysroot_key not in sysroots:
