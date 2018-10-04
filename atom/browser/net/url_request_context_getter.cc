@@ -83,7 +83,6 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           brightray::BrowserClient::Get()->GetApplicationLocale());
-  network_context_params->allow_gssapi_library_load = true;
   network_context_params->enable_data_url_support = false;
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
@@ -105,6 +104,29 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   // See //net/docs/certificate-transparency.md
   // network_context_params->enforce_chrome_ct_policy = true;
   return network_context_params;
+}
+
+network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
+  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
+      network::mojom::HttpAuthStaticParams::New();
+
+  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
+                                           "negotiate"};
+
+  return auth_static_params;
+}
+
+network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
+    const base::CommandLine& command_line) {
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+
+  auth_dynamic_params->server_whitelist =
+      command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist);
+  auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
+      switches::kAuthNegotiateDelegateWhitelist);
+
+  return auth_dynamic_params;
 }
 
 void SetupAtomURLRequestJobFactory(
@@ -226,8 +248,7 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
   DCHECK(!main_request_context_getter_.get());
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
-      AtomBrowserClient::Get()->GetNetLog(), this, protocol_handlers,
-      std::move(protocol_interceptors));
+      this, protocol_handlers, std::move(protocol_interceptors));
   return main_request_context_getter_;
 }
 
@@ -284,12 +305,10 @@ void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
 }
 
 URLRequestContextGetter::URLRequestContextGetter(
-    net::NetLog* net_log,
     URLRequestContextGetter::Handle* context_handle,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
-    : net_log_(net_log),
-      context_handle_(context_handle),
+    : context_handle_(context_handle),
       url_request_context_(nullptr),
       protocol_interceptors_(std::move(protocol_interceptors)),
       context_shutting_down_(false) {
@@ -323,6 +342,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
   if (!url_request_context_) {
     auto& command_line = *base::CommandLine::ForCurrentProcess();
+    // Create the network service, so that shared host resolver
+    // gets created which is required to set the auth preferences below.
+    auto* network_service = content::GetNetworkServiceImpl();
+    network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
+    network_service->ConfigureHttpAuthPrefs(
+        CreateHttpAuthDynamicParams(command_line));
+
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
     builder->set_network_delegate(std::make_unique<AtomNetworkDelegate>());
@@ -334,42 +360,12 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     builder->SetCreateHttpTransactionFactoryCallback(
         base::BindOnce(&content::CreateDevToolsNetworkTransactionFactory));
 
-    std::unique_ptr<net::HostResolver> host_resolver =
-        net::HostResolver::CreateDefaultResolver(net_log_);
-    // --host-resolver-rules
-    if (command_line.HasSwitch(network::switches::kHostResolverRules)) {
-      auto remapped_resolver =
-          std::make_unique<net::MappedHostResolver>(std::move(host_resolver));
-      remapped_resolver->SetRulesFromString(command_line.GetSwitchValueASCII(
-          network::switches::kHostResolverRules));
-      host_resolver = std::move(remapped_resolver);
-    }
-
-    net::HttpAuthPreferences auth_preferences;
-    // --auth-server-whitelist
-    if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
-      auth_preferences.SetServerWhitelist(
-          command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
-    }
-
-    // --auth-negotiate-delegate-whitelist
-    if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
-      auth_preferences.SetDelegateWhitelist(command_line.GetSwitchValueASCII(
-          switches::kAuthNegotiateDelegateWhitelist));
-    }
-    auto http_auth_handler_factory =
-        net::HttpAuthHandlerRegistryFactory::CreateDefault(host_resolver.get());
-    http_auth_handler_factory->SetHttpAuthPreferences(net::kNegotiateAuthScheme,
-                                                      &auth_preferences);
-    builder->SetHttpAuthHandlerFactory(std::move(http_auth_handler_factory));
-    builder->set_host_resolver(std::move(host_resolver));
     builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
 
-    network_context_ =
-        content::GetNetworkServiceImpl()->CreateNetworkContextWithBuilder(
-            std::move(context_handle_->main_network_context_request_),
-            std::move(context_handle_->main_network_context_params_),
-            std::move(builder), &url_request_context_);
+    network_context_ = network_service->CreateNetworkContextWithBuilder(
+        std::move(context_handle_->main_network_context_request_),
+        std::move(context_handle_->main_network_context_params_),
+        std::move(builder), &url_request_context_);
 
     net::TransportSecurityState* transport_security_state =
         url_request_context_->transport_security_state();
