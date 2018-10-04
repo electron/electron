@@ -157,6 +157,13 @@ step-electron-build: &step-electron-build
       cd src
       ninja -C out/Default electron -j18
 
+step-electron-dist-strip: &step-electron-dist-strip
+  run:
+    name: Strip electron binaries
+    command: |
+      cd src
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+
 step-electron-dist-build: &step-electron-dist-build
   run:
     name: Build dist.zip
@@ -176,7 +183,9 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
       cd src
       # NOTE(alexeykuzmin): -j3 because chromedriver is currently built
       # on a smaller size machine and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_chromedriver_zip -j3
+      ninja -C out/Default chrome/test/chromedriver -j3
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
+      ninja -C out/Default electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -278,6 +287,15 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
+      if [ "`uname`" != "Darwin" ]; then
+        if [ "$TARGET_ARCH" == "arm" ]; then
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+        elif [ "$TARGET_ARCH" == "arm64" ]; then
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+        else
+          electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
+        fi
+      fi
       # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
       # machine size and ninja mis-detects the number of CPUs available.
       ninja -C out/Default electron:electron_mksnapshot_zip -j3
@@ -324,6 +342,17 @@ step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
         ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j3
       else
         echo 'Skipping native mksnapshot build for non arm build'
+      fi
+
+step-maybe-native-mksnapshot-strip: &step-maybe-native-mksnapshot-strip
+  run:
+    name: Native mksnapshot binary strip (arm/arm64)
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
+        cd src
+        electron/script/strip-binaries.py --file $PWD/out/native_mksnapshot/mksnapshot --target-cpu="$TARGET_ARCH"
+      else
+        echo 'Skipping native mksnapshot binary strip'
       fi
 
 step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
@@ -394,7 +423,7 @@ steps-electron-build: &steps-electron-build
 
     # Node.js headers
     - *step-nodejs-headers-build
-    - *step-nodejs-headers-store    
+    - *step-nodejs-headers-store
 
     - *step-show-sccache-stats
 
@@ -440,6 +469,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
     - *step-generate-breakpad-symbols
@@ -451,6 +481,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     # native_mksnapshot
     - *step-maybe-native-mksnapshot-gn-gen
     - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-strip
     - *step-maybe-native-mksnapshot-store
 
     # chromedriver
