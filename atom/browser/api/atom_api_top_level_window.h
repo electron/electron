@@ -77,8 +77,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
-  void OnWindowEnterAlwaysOnTop() override;
-  void OnWindowLeaveAlwaysOnTop() override;
+  void OnWindowAlwaysOnTopChange() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;

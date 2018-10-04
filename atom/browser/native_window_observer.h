@@ -83,8 +83,7 @@ class NativeWindowObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
-  virtual void OnWindowEnterAlwaysOnTop() {}
-  virtual void OnWindowLeaveAlwaysOnTop() {}
+  virtual void OnWindowAlwaysOnTopChange() {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictionaryValue& details) {}
   virtual void OnNewWindowForTab() {}

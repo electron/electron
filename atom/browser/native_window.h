@@ -254,8 +254,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
-  void NotifyWindowEnterAlwaysOnTop();
-  void NotifyWindowLeaveAlwaysOnTop();
+  void NotifyWindowAlwaysOnTopChange();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      const base::DictionaryValue& details);

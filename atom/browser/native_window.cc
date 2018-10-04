@@ -537,14 +537,9 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
     observer.OnWindowLeaveHtmlFullScreen();
 }
 
-void NativeWindow::NotifyWindowEnterAlwaysOnTop() {
+void NativeWindow::NotifyWindowAlwaysOnTopChange() {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowEnterAlwaysOnTop();
-}
-
-void NativeWindow::NotifyWindowLeaveAlwaysOnTop() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowLeaveAlwaysOnTop();
+    observer.OnWindowAlwaysOnTopChange();
 }
 
 void NativeWindow::NotifyWindowExecuteWindowsCommand(

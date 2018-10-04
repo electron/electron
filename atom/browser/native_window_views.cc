@@ -706,12 +706,7 @@ void NativeWindowViews::SetAlwaysOnTop(bool top,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
-  if (top) {
-    NativeWindow::NotifyWindowEnterAlwaysOnTop();
-  } else {
-    NativeWindow::NotifyWindowLeaveAlwaysOnTop();
-  }
-
+  NativeWindow::NotifyWindowAlwaysOnTopChange();
   widget()->SetAlwaysOnTop(top);
 }
 
