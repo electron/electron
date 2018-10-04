@@ -12,6 +12,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 #include "atom/browser/api/atom_api_download_item.h"
+#include "atom/browser/api/atom_api_net_log.h"
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/api/atom_api_web_request.h"
 #include "atom/browser/atom_browser_context.h"
@@ -402,6 +403,7 @@ Session::~Session() {
   DestroyGlobalHandle(isolate(), cookies_);
   DestroyGlobalHandle(isolate(), web_request_);
   DestroyGlobalHandle(isolate(), protocol_);
+  DestroyGlobalHandle(isolate(), net_log_);
   g_sessions.erase(weak_map_id());
 }
 
@@ -706,6 +708,14 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_request_);
 }
 
+v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
+  if (net_log_.IsEmpty()) {
+    auto handle = atom::api::NetLog::Create(isolate, browser_context());
+    net_log_.Reset(isolate, handle.ToV8());
+  }
+  return v8::Local<v8::Value>::New(isolate, net_log_);
+}
+
 // static
 mate::Handle<Session> Session::CreateFrom(v8::Isolate* isolate,
                                           AtomBrowserContext* browser_context) {
@@ -774,6 +784,7 @@ void Session::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPreloads", &Session::SetPreloads)
       .SetMethod("getPreloads", &Session::GetPreloads)
       .SetProperty("cookies", &Session::Cookies)
+      .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("webRequest", &Session::WebRequest);
 }

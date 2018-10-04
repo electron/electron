@@ -6,11 +6,13 @@
 
 #include <utility>
 
+#include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
 #include "components/net_log/chrome_net_log.h"
+#include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
 #include "net/url_request/url_request_context_getter.h"
@@ -21,22 +23,17 @@ namespace atom {
 
 namespace api {
 
-NetLog::NetLog(v8::Isolate* isolate) {
+NetLog::NetLog(v8::Isolate* isolate, AtomBrowserContext* browser_context)
+    : browser_context_(browser_context) {
   Init(isolate);
 
   net_log_writer_ =
       atom::AtomBrowserMainParts::Get()->net_log()->net_export_file_writer();
-  net_log_writer_->Initialize();
   net_log_writer_->AddObserver(this);
 }
 
 NetLog::~NetLog() {
   net_log_writer_->RemoveObserver(this);
-}
-
-// static
-v8::Local<v8::Value> NetLog::Create(v8::Isolate* isolate) {
-  return mate::CreateHandle(isolate, new NetLog(isolate)).ToV8();
 }
 
 void NetLog::StartLogging(mate::Arguments* args) {
@@ -46,16 +43,22 @@ void NetLog::StartLogging(mate::Arguments* args) {
     return;
   }
 
+  auto* network_context =
+      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+          ->GetNetworkContext();
+
   // TODO(deepak1556): Provide more flexibility to this module
   // by allowing customizations on the capturing options.
   net_log_writer_->StartNetLog(
       log_path, net::NetLogCaptureMode::Default(),
       net_log::NetExportFileWriter::kNoLimit /* file size limit */,
       base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
-      std::string(), nullptr /* NetworkContext */);
+      std::string(), network_context);
 }
 
 std::string NetLog::GetLoggingState() const {
+  if (!net_log_state_)
+    return std::string();
   const base::Value* current_log_state =
       net_log_state_->FindKeyOfType("state", base::Value::Type::STRING);
   if (!current_log_state)
@@ -64,7 +67,8 @@ std::string NetLog::GetLoggingState() const {
 }
 
 bool NetLog::IsCurrentlyLogging() const {
-  return (GetLoggingState() == "LOGGING");
+  const std::string log_state = GetLoggingState();
+  return (log_state == "STARTING_LOG") || (log_state == "LOGGING");
 }
 
 std::string NetLog::GetCurrentlyLoggingPath() const {
@@ -83,13 +87,17 @@ std::string NetLog::GetCurrentlyLoggingPath() const {
 }
 
 void NetLog::StopLogging(mate::Arguments* args) {
-  base::OnceClosure callback;
-  args->GetNext(&callback);
+  net_log::NetExportFileWriter::FilePathCallback callback;
+  if (!args->GetNext(&callback)) {
+    args->ThrowError("Invalid callback function");
+    return;
+  }
+
   if (IsCurrentlyLogging()) {
-    stop_callback_queue_.emplace_back(std::move(callback));
+    stop_callback_queue_.emplace_back(callback);
     net_log_writer_->StopNetLog(nullptr);
   } else {
-    std::move(callback).Run();
+    callback.Run(base::FilePath());
   }
 }
 
@@ -99,18 +107,19 @@ void NetLog::OnNewState(const base::DictionaryValue& state) {
   if (stop_callback_queue_.empty())
     return;
 
-  if (GetLoggingState() == "STOPPING_LOG") {
-    // We don't use ranged for loop because iterators are getting
-    // invalided when the callback runs.
-    for (auto iter = stop_callback_queue_.begin();
-         iter != stop_callback_queue_.end();) {
-      base::OnceClosure callback = std::move(*iter);
+  if (GetLoggingState() == "NOT_LOGGING") {
+    for (auto& callback : stop_callback_queue_) {
       if (!callback.is_null())
-        std::move(callback).Run();
-      ++iter;
+        net_log_writer_->GetFilePathToCompletedLog(callback);
     }
     stop_callback_queue_.clear();
   }
+}
+
+// static
+mate::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
+                                    AtomBrowserContext* browser_context) {
+  return mate::CreateHandle(isolate, new NetLog(isolate, browser_context));
 }
 
 // static
@@ -121,28 +130,9 @@ void NetLog::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetProperty("currentlyLoggingPath", &NetLog::GetCurrentlyLoggingPath)
       .SetMethod("startLogging", &NetLog::StartLogging)
-      .SetMethod("_stopLogging", &NetLog::StopLogging);
+      .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
 }  // namespace api
 
 }  // namespace atom
-
-namespace {
-
-using atom::api::NetLog;
-
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-
-  mate::Dictionary dict(isolate, exports);
-  dict.Set("netLog", NetLog::Create(isolate));
-  dict.Set("NetLog", NetLog::GetConstructor(isolate)->GetFunction());
-}
-
-}  // namespace
-
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_browser_net_log, Initialize)

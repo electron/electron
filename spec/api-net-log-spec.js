@@ -6,7 +6,7 @@ const os = require('os')
 const path = require('path')
 const ChildProcess = require('child_process')
 const { remote } = require('electron')
-const { netLog } = remote
+const { session } = remote
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log')
 const dumpFile = path.join(os.tmpdir(), 'net_log.json')
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
@@ -14,6 +14,7 @@ const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json')
 const { expect } = chai
 chai.use(dirtyChai)
 const isCI = remote.getGlobal('isCi')
+const netLog = session.fromPartition('net-log').netLog
 
 describe('netLog module', () => {
   let server
@@ -48,8 +49,12 @@ describe('netLog module', () => {
 
   afterEach(() => {
     try {
-      fs.unlinkSync(dumpFile)
-      fs.unlinkSync(dumpFileDynamic)
+      if (fs.existsSync(dumpFile)) {
+        fs.unlinkSync(dumpFile)
+      }
+      if (fs.existsSync(dumpFileDynamic)) {
+        fs.unlinkSync(dumpFileDynamic)
+      }
     } catch (e) {
       // Ignore error
     }
@@ -89,11 +94,7 @@ describe('netLog module', () => {
     })
   })
 
-  // TODO(deepak1556): The following --log-net-log tests are skipped,
-  // Child process spawn doesn't seem to initialize the entire app state,
-  // investigate and re-enable this test. The switch works fine when used
-  // with a standalone app.
-  xit('should begin and end logging automatically when --log-net-log is passed', done => {
+  it('should begin and end logging automatically when --log-net-log is passed', done => {
     if (isCI && process.platform === 'linux') {
       done()
       return
@@ -107,13 +108,13 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('exit', () => {
+    appProcess.once('close', () => {
       expect(fs.existsSync(dumpFile)).to.be.true()
       done()
     })
   })
 
-  xit('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', done => {
+  it('should begin and end logging automtically when --log-net-log is passed, and behave correctly when .startLogging() and .stopLogging() is called', done => {
     if (isCI && process.platform === 'linux') {
       done()
       return
@@ -129,11 +130,7 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.stdout.on('data', data => {
-      console.log(data.toString())
-    })
-
-    appProcess.once('exit', () => {
+    appProcess.once('close', () => {
       expect(fs.existsSync(dumpFile)).to.be.true()
       expect(fs.existsSync(dumpFileDynamic)).to.be.true()
       done()
@@ -154,7 +151,7 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('exit', () => {
+    appProcess.once('close', () => {
       expect(fs.existsSync(dumpFileDynamic)).to.be.true()
       done()
     })
