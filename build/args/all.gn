@@ -11,6 +11,6 @@ proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
 # TODO(jeremy): OSR is broken in M68. Remove this once it's fixed.
-enable_osr = false
+enable_osr = true
 
 is_cfi = false
