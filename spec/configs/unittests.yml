@@ -12,6 +12,7 @@ tests:
           - WeakPtrDeathTest.WeakPtrCopyDoesNotChangeThreadBinding
         undecided:
           - FilePathTest*
+          - PartitionReallocReturnNullTest.RepeatedReturnNullDirect
           - RTLTest*
           - SysStrings*
           - UTFOffsetStringConversionsTest*
