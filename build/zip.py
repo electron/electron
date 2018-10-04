@@ -4,13 +4,6 @@ import subprocess
 import sys
 import zipfile
 
-LINUX_BINARIES_TO_STRIP = [
-  'chromedriver',
-  'electron',
-  'libffmpeg.so',
-  'libnode.so'
-]
-
 EXTENSIONS_TO_SKIP = [
   '.pdb'
 ]
@@ -29,22 +22,6 @@ def skip_path(dep):
   if should_skip:
     print("Skipping {}".format(dep))
   return should_skip
-
-def strip_binaries(target_cpu, dep):
-  for binary in LINUX_BINARIES_TO_STRIP:
-    if dep.endswith(binary):
-     strip_binary(dep, target_cpu)
-
-def strip_binary(binary_path, target_cpu):
-  if target_cpu == 'arm':
-    strip = 'arm-linux-gnueabihf-strip'
-  elif target_cpu == 'arm64':
-    strip = 'aarch64-linux-gnu-strip'
-  elif target_cpu == 'mips64el':
-    strip = 'mips64el-redhat-linux-strip'
-  else:
-    strip = 'strip'
-  execute([strip, binary_path])
 
 def execute(argv):
   try:
@@ -66,8 +43,6 @@ def main(argv):
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED) as z:
       for dep in dist_files:
-        if target_os == 'linux':
-            strip_binaries(target_cpu, dep)
         if skip_path(dep):
           continue
         if os.path.isdir(dep):
