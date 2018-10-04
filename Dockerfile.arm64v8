@@ -62,5 +62,4 @@ RUN chmod a+x /etc/init.d/xvfb
 RUN usermod -aG sudo builduser
 RUN echo 'builduser ALL=(ALL:ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-USER builduser
 WORKDIR /home/builduser

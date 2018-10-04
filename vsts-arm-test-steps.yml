@@ -32,6 +32,8 @@ steps:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
+    chown -R builduser:builduser src
+    su builduser
     cd src
     export npm_config_nodedir=$PWD/out/Default/gen/node_headers
     (cd electron/spec && npm i)
@@ -44,6 +46,7 @@ steps:
     DISPLAY: 99.0
 
 - bash: |
+   su builduser
    cd src
    electron/script/dbus.py `pwd`/out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
