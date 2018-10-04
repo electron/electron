@@ -81,6 +81,15 @@ index d9f245070249..56cce5fa3e0b 100644
  
  // Gets the transient parent aura window for |dialog|.
  aura::Window* GetAuraTransientParent(GtkWidget* dialog);
+@@ -190,7 +190,7 @@ void RenderBackground(const gfx::Size& size,
+ // Renders a background from the style context created by
+ // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
+ // returns the average color.
+-SkColor GetBgColor(const std::string& css_selector);
++LIBGTKUI_EXPORT SkColor GetBgColor(const std::string& css_selector);
+
+ // Renders the border from the style context created by
+ // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
 diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 index e05fbe9d8b2f..3afca9a72ab6 100644
 --- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
