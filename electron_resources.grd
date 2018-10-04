@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grit latest_public_release="0" current_release="1" output_all_resource_defines="false">
+  <outputs>
+    <output filename="grit/electron_resources.h" type="rc_header">
+      <emit emit_type='prepend'></emit>
+    </output>
+    <output filename="electron_resources.pak" type="data_package" />
+  </outputs>
+  <release seq="1">
+    <includes>
+      <include name="IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_browser_manifest_overlay.json" use_base_dir="false" type="BINDATA" />
+      <include name="IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_packaged_services_manifest_overlay.json" use_base_dir="false" type="BINDATA" />
+    </includes>
+  </release>
+</grit>

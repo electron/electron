@@ -1,0 +1,12 @@
+{
+  "name": "content_browser",
+  "display_name": "Electron (browser process)",
+  "interface_provider_specs": {
+    "service_manager:connector": {
+      "requires": {
+        "device": [ "device:geolocation_control" ],
+        "proxy_resolver": [ "factory" ]
+      }
+    }
+  }
+}

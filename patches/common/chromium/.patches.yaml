@@ -378,12 +378,6 @@ patches:
     but there's no way to conditionally set it during a `gn gen` call.
 -
   author: deepak1556 <hop2deep@gmail.com>
-  file: content_browser_manifest.patch
-  description: |
-    Allow content_browser service to access GeolocationControl
-    interface from device service.
--
-  author: deepak1556 <hop2deep@gmail.com>
   file: chrome_key_systems.patch
   description: |
     Disable persiste licence support check for widevine cdm,
@@ -490,3 +484,13 @@ patches:
     See https://github.com/electron/electron/issues/14327
     (Android specific changes and changes in some test files
     have been removed from the diff.)
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: proxy_config_monitor.patch
+  description: |
+    Allow monitoring proxy config changes for a pref service.
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: gritsettings_resource_ids.patch
+  description: |
+    Add electron resources file to the list of resource ids generation.

@@ -12,7 +12,6 @@
 #include "base/macros.h"
 #include "base/path_service.h"
 #include "brightray/browser/brightray_paths.h"
-#include "brightray/browser/io_thread.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "ui/views/layout/layout_provider.h"
 
@@ -28,8 +27,6 @@ class BrowserMainParts : public content::BrowserMainParts {
  public:
   BrowserMainParts();
   ~BrowserMainParts() override;
-
-  IOThread* io_thread() const { return io_thread_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -50,8 +47,6 @@ class BrowserMainParts : public content::BrowserMainParts {
   void InitializeMainNib();
   void OverrideAppLogsPath();
 #endif
-
-  std::unique_ptr<IOThread> io_thread_;
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;

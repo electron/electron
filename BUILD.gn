@@ -6,8 +6,10 @@ import("filenames.gni")
 import("//build/config/locales.gni")
 import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
+import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//third_party/widevine/cdm/widevine.gni")
+import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/snapshot_toolchain.gni")
@@ -171,6 +173,26 @@ asar("app2asar") {
   root = "default_app"
 }
 
+grit("resources") {
+  source = "electron_resources.grd"
+
+  outputs = [
+    "grit/electron_resources.h",
+    "electron_resources.pak",
+  ]
+
+  grit_flags = [
+    "-E",
+    "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
+  ]
+
+  deps = [
+    ":electron_content_manifest_overlays",
+  ]
+
+  output_dir = "$target_gen_dir"
+}
+
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -185,12 +207,15 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
+    "//components/certificate_transparency",
+    "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
     "//components/printing/common",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
+    "//content/public/common:service_names",
     "//device/geolocation",
     "//gin",
     "//net:net_resources",
@@ -198,6 +223,7 @@ static_library("electron_lib") {
     "//ppapi/proxy",
     "//ppapi/shared_impl",
     "//printing",
+    "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/boringssl",
@@ -913,4 +939,20 @@ group("electron") {
   deps = [
     ":electron_app",
   ]
+}
+
+group("electron_content_manifest_overlays") {
+  deps = [
+    ":electron_content_browser_manifest_overlay",
+    ":electron_content_packaged_services_manifest_overlay",
+  ]
+}
+
+service_manifest("electron_content_packaged_services_manifest_overlay") {
+  source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
+  packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
+}
+
+service_manifest("electron_content_browser_manifest_overlay") {
+  source = "//electron/manifests/electron_content_browser_manifest_overlay.json"
 }

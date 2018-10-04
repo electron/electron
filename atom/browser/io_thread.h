@@ -2,12 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_IO_THREAD_H_
-#define BRIGHTRAY_BROWSER_IO_THREAD_H_
+#ifndef ATOM_BROWSER_IO_THREAD_H_
+#define ATOM_BROWSER_IO_THREAD_H_
 
 #include <memory>
 
 #include "base/macros.h"
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/browser_thread_delegate.h"
 
 namespace net {
@@ -15,15 +16,19 @@ class URLRequestContext;
 class URLRequestContextGetter;
 }  // namespace net
 
-namespace brightray {
+namespace net_log {
+class ChromeNetLog;
+}
+
+namespace atom {
 
 class IOThread : public content::BrowserThreadDelegate {
  public:
-  IOThread();
+  explicit IOThread(net_log::ChromeNetLog* net_log);
   ~IOThread() override;
 
   net::URLRequestContextGetter* GetRequestContext() {
-    return url_request_context_getter_;
+    return url_request_context_getter_.get();
   }
 
  protected:
@@ -32,12 +37,15 @@ class IOThread : public content::BrowserThreadDelegate {
   void CleanUp() override;
 
  private:
+  // The NetLog is owned by the browser process, to allow logging from other
+  // threads during shutdown, but is used most frequently on the IOThread.
+  net_log::ChromeNetLog* net_log_;
   std::unique_ptr<net::URLRequestContext> url_request_context_;
-  net::URLRequestContextGetter* url_request_context_getter_;
+  scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_IO_THREAD_H_
+#endif  // ATOM_BROWSER_IO_THREAD_H_

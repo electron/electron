@@ -73,7 +73,7 @@ scoped_refptr<AtomURLRequest> AtomURLRequest::Create(
   if (!browser_context || url.empty() || !delegate) {
     return nullptr;
   }
-  scoped_refptr<brightray::URLRequestContextGetter> request_context_getter(
+  scoped_refptr<net::URLRequestContextGetter> request_context_getter(
       browser_context->GetRequestContext());
   DCHECK(request_context_getter);
   scoped_refptr<AtomURLRequest> atom_url_request(new AtomURLRequest(delegate));

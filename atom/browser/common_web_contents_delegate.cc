@@ -177,8 +177,8 @@ void CommonWebContentsDelegate::InitWithWebContents(
       !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(
-      brightray::InspectableWebContents::Create(web_contents, is_guest));
+  web_contents_.reset(brightray::InspectableWebContents::Create(
+      web_contents, browser_context->prefs(), is_guest));
   web_contents_->SetDelegate(this);
 }
 

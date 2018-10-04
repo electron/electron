@@ -9,10 +9,20 @@ import("//electron/buildflags/buildflags.gni")
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
+    "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
+    "//chrome/browser/net/chrome_net_log_helper.cc",
+    "//chrome/browser/net/chrome_net_log_helper.h",
+    "//chrome/browser/net/proxy_config_monitor.cc",
+    "//chrome/browser/net/proxy_config_monitor.h",
+    "//chrome/browser/net/proxy_service_factory.cc",
+    "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/common/chrome_constants.cc",
     "//chrome/common/chrome_constants.h",
+    "//chrome/common/chrome_switches.cc",
+    "//chrome/common/chrome_switches.h",
     "//chrome/common/secure_origin_whitelist.cc",
     "//chrome/common/secure_origin_whitelist.h",
   ]
@@ -21,6 +31,7 @@ source_set("chrome") {
   ]
   deps = [
     "//chrome/common:constants",
+    "//components/proxy_config",
     "//components/security_state/content",
   ]
 

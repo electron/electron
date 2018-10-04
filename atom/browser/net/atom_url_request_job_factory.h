@@ -23,6 +23,9 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   AtomURLRequestJobFactory();
   ~AtomURLRequestJobFactory() override;
 
+  // Requests are forwarded to the chained job factory first.
+  void Chain(std::unique_ptr<net::URLRequestJobFactory> job_factory);
+
   // Sets the ProtocolHandler for a scheme. Returns true on success, false on
   // failure (a ProtocolHandler already exists for |scheme|). On success,
   // URLRequestJobFactory takes ownership of |protocol_handler|.
@@ -33,9 +36,6 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
   bool InterceptProtocol(const std::string& scheme,
                          std::unique_ptr<ProtocolHandler> protocol_handler);
   bool UninterceptProtocol(const std::string& scheme);
-
-  // Returns the protocol handler registered with scheme.
-  ProtocolHandler* GetProtocolHandler(const std::string& scheme) const;
 
   // Whether the protocol handler is registered by the job factory.
   bool HasProtocolHandler(const std::string& scheme) const;
@@ -68,6 +68,8 @@ class AtomURLRequestJobFactory : public net::URLRequestJobFactory {
       std::unordered_map<std::string, std::unique_ptr<ProtocolHandler>>;
   // Can only be accessed in IO thread.
   OriginalProtocolsMap original_protocols_;
+
+  std::unique_ptr<net::URLRequestJobFactory> job_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomURLRequestJobFactory);
 };
