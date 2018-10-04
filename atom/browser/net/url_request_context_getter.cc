@@ -207,12 +207,6 @@ class ResourceContext : public content::ResourceContext {
   ResourceContext() = default;
   ~ResourceContext() override = default;
 
-  net::HostResolver* GetHostResolver() override {
-    if (request_context_)
-      return request_context_->host_resolver();
-    return nullptr;
-  }
-
   net::URLRequestContext* GetRequestContext() override {
     return request_context_;
   }
