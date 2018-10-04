@@ -1,8 +1,8 @@
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index e6f6b3012b02..965b58e237ec 100644
+index b682235b0f87..0c88f4bf86b6 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1834,6 +1834,18 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1912,6 +1912,18 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    bool was_server_redirect = request.navigation_handle() &&
                               request.navigation_handle()->WasServerRedirect();
  
@@ -21,8 +21,8 @@ index e6f6b3012b02..965b58e237ec 100644
    if (frame_tree_node_->IsMainFrame()) {
      // Renderer-initiated main frame navigations that may require a
      // SiteInstance swap are sent to the browser via the OpenURL IPC and are
-@@ -1850,6 +1862,19 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
- 
+@@ -1931,6 +1943,19 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+                                                request.common_params().url));
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
 +
@@ -41,7 +41,7 @@ index e6f6b3012b02..965b58e237ec 100644
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -1861,18 +1886,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1942,18 +1967,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -59,13 +59,13 @@ index e6f6b3012b02..965b58e237ec 100644
 -      request.dest_site_instance(), candidate_site_instance,
 +      request.dest_site_instance(), candidate_site_instance.get(),
        request.common_params().transition,
+       request.state() == NavigationRequest::FAILED,
        request.restore_type() != RestoreType::NONE, request.is_view_source(),
-       was_server_redirect);
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 746760e8596c..99d9e0770f32 100644
+index 3ca627448e33..7d0c9ed7e1af 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -181,6 +181,15 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -186,6 +186,15 @@ class CONTENT_EXPORT ContentBrowserClient {
   public:
    virtual ~ContentBrowserClient() {}
  

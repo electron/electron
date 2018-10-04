@@ -1,8 +1,8 @@
 diff --git a/content/browser/frame_host/render_frame_proxy_host.cc b/content/browser/frame_host/render_frame_proxy_host.cc
-index b44b0fd..a74d827 100644
+index 838bc1e20c30..2aa16fbf19fc 100644
 --- a/content/browser/frame_host/render_frame_proxy_host.cc
 +++ b/content/browser/frame_host/render_frame_proxy_host.cc
-@@ -253,6 +253,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
+@@ -260,6 +260,12 @@ void RenderFrameProxyHost::SetDestructionCallback(
  
  void RenderFrameProxyHost::OnDetach() {
    if (frame_tree_node_->render_manager()->ForInnerDelegate()) {

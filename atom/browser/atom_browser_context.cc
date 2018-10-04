@@ -108,7 +108,7 @@ void AtomBrowserContext::RegisterPrefs(PrefRegistrySimple* pref_registry) {
   pref_registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
                                       base::FilePath());
   base::FilePath download_dir;
-  PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
+  base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_dir);
   pref_registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                       download_dir);
   pref_registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);

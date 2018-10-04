@@ -1,13 +1,16 @@
-diff --git a/content/app/content_main_runner.cc b/content/app/content_main_runner.cc
-index c283922..397ba80 100644
---- a/content/app/content_main_runner.cc
-+++ b/content/app/content_main_runner.cc
-@@ -657,7 +657,7 @@ class ContentMainRunnerImpl : public ContentMainRunner {
- 
-     InitializeV8IfNeeded(command_line, process_type);
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index 83e8990edf17..94b3450bbea5 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -871,7 +871,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+           return nullptr;
+         }));
  
 -#if !defined(OFFICIAL_BUILD)
 +#if 0
  #if defined(OS_WIN)
      bool should_enable_stack_dump = !process_type.empty();
  #else
+-- 
+2.17.0
+

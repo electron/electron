@@ -41,7 +41,7 @@ void MainDelegate::OverrideChildProcessPath() {
                                    .Append("MacOS")
                                    .Append(GetApplicationName() + " Helper");
 
-  PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
+  base::PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
 }
 
 }  // namespace brightray

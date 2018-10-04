@@ -1,8 +1,8 @@
 diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-index 65e6437c22a6..3b726d196427 100644
+index dc115581a0e1..3466cfd86e9f 100644
 --- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
 +++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-@@ -43,6 +43,7 @@
+@@ -42,6 +42,7 @@
  
  // The methods in this file are specific to the Mac OS X platform.
  
@@ -10,7 +10,7 @@ index 65e6437c22a6..3b726d196427 100644
  // Forward declare Mac SPIs.
  extern "C" {
  void _NSDrawCarbonThemeBezel(NSRect frame, BOOL enabled, BOOL flipped);
-@@ -52,6 +53,7 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
+@@ -51,6 +52,7 @@ void _NSDrawCarbonThemeListBox(NSRect frame,
                                 BOOL flipped,
                                 BOOL always_yes);
  }
@@ -18,7 +18,7 @@ index 65e6437c22a6..3b726d196427 100644
  
  namespace blink {
  
-@@ -74,10 +76,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
+@@ -73,10 +75,12 @@ bool ThemePainterMac::PaintTextField(const Node* node,
    // behavior change while remaining a fragile solution.
    // https://bugs.chromium.org/p/chromium/issues/detail?id=658085#c3
    if (!use_ns_text_field_cell) {
@@ -31,7 +31,7 @@ index 65e6437c22a6..3b726d196427 100644
      return false;
    }
  
-@@ -163,10 +167,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
+@@ -162,10 +166,12 @@ bool ThemePainterMac::PaintTextArea(const Node* node,
                                      const PaintInfo& paint_info,
                                      const IntRect& r) {
    LocalCurrentGraphicsContext local_context(paint_info.context, r);
@@ -45,7 +45,7 @@ index 65e6437c22a6..3b726d196427 100644
  }
  
 diff --git a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
-index acf60f09fdb9..6376120a954f 100644
+index 98dea7c4c3c9..44b4ae940dc5 100644
 --- a/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
 +++ b/third_party/blink/renderer/platform/mac/kill_ring_mac.mm
 @@ -27,6 +27,7 @@

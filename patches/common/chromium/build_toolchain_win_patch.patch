@@ -1,8 +1,8 @@
 diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
-index 53f767a0bddb..661466b779e8 100644
+index 4d9d1f45f870..286c791613ba 100644
 --- a/build/toolchain/win/BUILD.gn
 +++ b/build/toolchain/win/BUILD.gn
-@@ -176,6 +176,12 @@ template("msvc_toolchain") {
+@@ -154,6 +154,12 @@ template("msvc_toolchain") {
        ]
  
        command = "$env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
@@ -15,7 +15,7 @@ index 53f767a0bddb..661466b779e8 100644
      }
  
      tool("cxx") {
-@@ -192,6 +198,12 @@ template("msvc_toolchain") {
+@@ -170,6 +176,12 @@ template("msvc_toolchain") {
        ]
  
        command = "$env_wrapper$cl /nologo /showIncludes ${clflags} $sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /c {{source}} /Fo{{output}} /Fd\"$pdbname\""
@@ -29,10 +29,10 @@ index 53f767a0bddb..661466b779e8 100644
  
      tool("rc") {
 diff --git a/build/toolchain/win/tool_wrapper.py b/build/toolchain/win/tool_wrapper.py
-index 3a81368f3469..7c5ef1ea5db4 100644
+index b2cb093377ee..801d7a9b8e03 100644
 --- a/build/toolchain/win/tool_wrapper.py
 +++ b/build/toolchain/win/tool_wrapper.py
-@@ -315,6 +315,25 @@ class WinTool(object):
+@@ -270,6 +270,25 @@ class WinTool(object):
      dirname = dirname[0] if dirname else None
      return subprocess.call(args, shell=True, env=env, cwd=dirname)
  

@@ -1,11 +1,11 @@
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index eb75461..2116f93 100644
+index deae4d3455a8..fd5d906b98b0 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
-@@ -17,6 +17,8 @@ assert(is_linux, "This file should only be referenced on Linux")
- group("gtk") {
+@@ -18,6 +18,8 @@ group("gtk") {
    visibility = [
      "//chrome/test:interactive_ui_tests",
+     "//chrome/test:unit_tests",
 +    "//electron:*",
 +    "//electron/brightray:*",
      "//examples:peerconnection_client",

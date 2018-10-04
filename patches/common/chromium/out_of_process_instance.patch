@@ -1,8 +1,8 @@
 diff --git a/pdf/out_of_process_instance.cc b/pdf/out_of_process_instance.cc
-index 8b9c9f19a3dd..c4d801135053 100644
+index 8486db85360f..753c93a8c056 100644
 --- a/pdf/out_of_process_instance.cc
 +++ b/pdf/out_of_process_instance.cc
-@@ -333,7 +333,9 @@ bool OutOfProcessInstance::Init(uint32_t argc,
+@@ -455,7 +455,9 @@ bool OutOfProcessInstance::Init(uint32_t argc,
    std::string document_url = document_url_var.AsString();
    base::StringPiece document_url_piece(document_url);
    is_print_preview_ = IsPrintPreviewUrl(document_url_piece);

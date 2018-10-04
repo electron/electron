@@ -57,10 +57,10 @@ scoped_refptr<BrowserContext> BrowserContext::Get(const std::string& partition,
 
 BrowserContext::BrowserContext(const std::string& partition, bool in_memory)
     : in_memory_(in_memory), weak_factory_(this) {
-  if (!PathService::Get(DIR_USER_DATA, &path_)) {
-    PathService::Get(DIR_APP_DATA, &path_);
+  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
+    base::PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    PathService::Override(DIR_USER_DATA, path_);
+    base::PathService::Override(DIR_USER_DATA, path_);
   }
 
   if (!in_memory_ && !partition.empty())

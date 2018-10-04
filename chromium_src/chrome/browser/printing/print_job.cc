@@ -44,11 +44,7 @@ void HoldRefCallback(const scoped_refptr<PrintJobWorkerOwner>& owner,
 
 PrintJob::PrintJob()
     : is_job_pending_(false), is_canceling_(false), quit_factory_(this) {
-  // This is normally a UI message loop, but in unit tests, the message loop is
-  // of the 'default' type.
-  DCHECK(base::MessageLoopForUI::IsCurrent() ||
-         base::MessageLoop::current()->type() ==
-             base::MessageLoop::TYPE_DEFAULT);
+  DCHECK(base::MessageLoopForUI::IsCurrent());
 }
 
 PrintJob::~PrintJob() {
@@ -188,8 +184,7 @@ bool PrintJob::FlushJob(base::TimeDelta timeout) {
       FROM_HERE, base::Bind(&PrintJob::Quit, quit_factory_.GetWeakPtr()),
       timeout);
 
-  base::MessageLoop::ScopedNestableTaskAllower allow(
-      base::MessageLoop::current());
+  base::MessageLoop::ScopedNestableTaskAllower allow;
   base::RunLoop().Run();
 
   return true;

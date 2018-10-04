@@ -1,11 +1,11 @@
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index c75fb7c2bb7e..423f4b2ddb10 100644
+index d31a9f29fa9c..dea5a6403f4c 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -44,6 +44,13 @@ config("no_asm_config") {
- }
+@@ -46,6 +46,13 @@ config("no_asm_config") {
  
  all_sources = crypto_sources + ssl_sources
+ all_headers = crypto_headers + ssl_headers
 +if (is_electron_build) {
 +  # Needed to build a nodejs-compatible boringssl.
 +  all_sources += [

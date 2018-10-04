@@ -1,8 +1,8 @@
-cdiff --git a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
-index aedc832..8c26681 100644
+diff --git a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
+index 87f2176ce897..ce3d9ce19bff 100644
 --- a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
 +++ b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
-@@ -94,8 +94,10 @@ v8::Local<v8::Function> V8ObjectConstructor::CreateInterfaceObject(
+@@ -98,8 +98,10 @@ v8::Local<v8::Function> V8ObjectConstructor::CreateInterfaceObject(
      bool get_prototype_value =
          interface_object->Get(context, V8AtomicString(isolate, "prototype"))
              .ToLocal(&prototype_value);
