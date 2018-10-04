@@ -42,11 +42,11 @@ steps:
     sh -e /etc/init.d/xvfb start
   displayName: Setup for headless testing
   env:
-    DISPLAY: 99.0
+    DISPLAY: ":99.0"
 
 - bash: |
    cd src
-   electron/script/dbus.py `pwd`/out/Default/electron electron/spec --ci --enable-logging
+   electron/script/dbus_mock.py `pwd`/out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 
