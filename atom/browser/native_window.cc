@@ -537,6 +537,11 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
     observer.OnWindowLeaveHtmlFullScreen();
 }
 
+void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowAlwaysOnTopChanged();
+}
+
 void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
   for (NativeWindowObserver& observer : observers_)
