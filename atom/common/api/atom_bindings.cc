@@ -26,6 +26,7 @@
 #include "native_mate/dictionary.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
+
 // Must be the last in the includes list.
 #include "atom/common/node_includes.h"
 
@@ -218,19 +219,28 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 // static
 v8::Local<v8::Promise> AtomBindings::GetMemoryFootprint(v8::Isolate* isolate) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  node::Environment* env = node::Environment::GetCurrent(isolate);
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDump(std::vector<std::string>(),
                           base::AdaptCallbackForRepeating(base::BindOnce(
-                              &AtomBindings::DidReceiveMemoryDump, promise)));
-
+                              &AtomBindings::DidReceiveMemoryDump,
+                              base::Unretained(env), promise)));
   return promise->GetHandle();
 }
 
 // static
 void AtomBindings::DidReceiveMemoryDump(
+    node::Environment* env,
     scoped_refptr<util::Promise> promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
+  // Enter Node environment.
+  mate::Locker locker(env->isolate());
+  v8::HandleScope handle_scope(env->isolate());
+  v8::MicrotasksScope script_scope(env->isolate(),
+                                   v8::MicrotasksScope::kRunMicrotasks);
+  v8::Context::Scope context_scope(env->context());
+
   if (success) {
     bool resolved = false;
     for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :

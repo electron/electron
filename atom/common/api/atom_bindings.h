@@ -18,7 +18,7 @@
 
 namespace memory_instrumentation {
 class GlobalMemoryDump;
-}  // namespace memory_instrumentation
+}
 
 namespace node {
 class Environment;
@@ -62,9 +62,11 @@ class AtomBindings {
   static void OnCallNextTick(uv_async_t* handle);
 
   static void DidReceiveMemoryDump(
+      node::Environment* env,
       scoped_refptr<util::Promise> promise,
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
+
   uv_async_t call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;
