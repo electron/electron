@@ -10,8 +10,11 @@ steps:
     echo "Done changing ownership to builduser"
     whoami
     su builduser
+    whoami
     cd src/electron
+    echo "About to run npm install"
     npm install --verbose
+    echo "Done npm install"
   displayName: 'NPM install'
 
 - bash: |
