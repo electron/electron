@@ -804,15 +804,11 @@ jobs:
     <<: *machine-linux-medium
     <<: *steps-tests
 
-  linux-x64-testing-verify-ffmpeg:
-    <<: *machine-linux-medium
-    <<: *steps-verify-ffmpeg
-
   linux-x64-release-tests:
     <<: *machine-linux-medium
     <<: *steps-tests
 
-  linux-x64-release-verify-ffmpeg:
+  linux-x64-verify-ffmpeg:
     <<: *machine-linux-medium
     <<: *steps-verify-ffmpeg
 
@@ -822,19 +818,13 @@ jobs:
       <<: *env-ia32
     <<: *steps-tests
 
-  linux-ia32-testing-verify-ffmpeg:
-    <<: *machine-linux-medium
-    environment:
-      <<: *env-ia32
-    <<: *steps-verify-ffmpeg
-
   linux-ia32-release-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
     <<: *steps-tests
 
-  linux-ia32-release-verify-ffmpeg:
+  linux-ia32-verify-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
@@ -863,13 +853,6 @@ workflows:
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
-      - linux-x64-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-x64-testing-verify-ffmpeg:
-          requires:
-            - linux-x64-testing
-            - linux-x64-ffmpeg
 
       - linux-ia32-debug:
           requires:
@@ -880,13 +863,6 @@ workflows:
       - linux-ia32-testing-tests:
           requires:
             - linux-ia32-testing
-      - linux-ia32-ffmpeg:
-          requires:
-            - linux-checkout
-      - linux-ia32-testing-verify-ffmpeg:
-          requires:
-            - linux-ia32-testing
-            - linux-ia32-ffmpeg
 
       - linux-arm-debug:
           requires:
@@ -894,23 +870,11 @@ workflows:
       - linux-arm-testing:
           requires:
             - linux-checkout
-      - linux-arm-ffmpeg:
-           requires:
-             - linux-checkout
-      - linux-arm-native-mksnapshot:
-          requires:
-            - linux-checkout
 
       - linux-arm64-debug:
           requires:
             - linux-checkout
       - linux-arm64-testing:
-          requires:
-            - linux-checkout
-      - linux-arm64-ffmpeg:
-           requires:
-             - linux-checkout
-      - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
 
@@ -961,7 +925,7 @@ workflows:
       - linux-x64-ffmpeg:
           requires:
             - linux-checkout
-      - linux-x64-release-verify-ffmpeg:
+      - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
             - linux-x64-ffmpeg
@@ -975,7 +939,7 @@ workflows:
       - linux-ia32-ffmpeg:
           requires:
             - linux-checkout
-      - linux-ia32-release-verify-ffmpeg:
+      - linux-ia32-verify-ffmpeg:
           requires:
             - linux-ia32-release
             - linux-ia32-ffmpeg
