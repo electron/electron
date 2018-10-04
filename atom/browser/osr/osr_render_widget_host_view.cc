@@ -274,7 +274,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack), this,
-      features::IsSurfaceSynchronizationEnabled(),
       base::FeatureList::IsEnabled(features::kVizDisplayCompositor),
       true /* should_register_frame_sink_id */);
 
@@ -775,16 +774,6 @@ void OffScreenRenderWidgetHostView::OnFrameTokenChanged(uint32_t frame_token) {
 
 void OffScreenRenderWidgetHostView::DidReceiveFirstFrameAfterNavigation() {
   render_widget_host_->DidReceiveFirstFrameAfterNavigation();
-}
-
-std::unique_ptr<ui::CompositorLock>
-OffScreenRenderWidgetHostView::GetCompositorLock(
-    ui::CompositorLockClient* client) {
-  return GetCompositor()->GetCompositorLock(client);
-}
-
-bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
-  return render_widget_host_->auto_resize_enabled();
 }
 
 viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {

@@ -169,7 +169,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void OnBeginFrame(base::TimeTicks frame_time) override;
   void OnFrameTokenChanged(uint32_t frame_token) override;
   void DidReceiveFirstFrameAfterNavigation() override;
-  bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
 
   viz::LocalSurfaceId GetLocalSurfaceId() const override;
