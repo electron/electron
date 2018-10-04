@@ -46,7 +46,7 @@ steps:
 
 - bash: |
    cd src
-   python electron/script/dbus_mock.py `pwd`/out/Default/electron electron/spec --ci --enable-logging
+   ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 
