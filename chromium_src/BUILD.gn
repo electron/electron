@@ -13,8 +13,6 @@ source_set("chrome") {
     "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/common/chrome_constants.cc",
     "//chrome/common/chrome_constants.h",
-    "//chrome/common/secure_origin_whitelist.cc",
-    "//chrome/common/secure_origin_whitelist.h",
   ]
   public_deps = [
     "//content/public/browser",

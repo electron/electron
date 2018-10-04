@@ -1,6 +1,5 @@
 const assert = require('assert')
 const ChildProcess = require('child_process')
-const { expect } = require('chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
@@ -207,10 +206,10 @@ describe('node feature', () => {
   })
 
   describe('inspector', () => {
-    let child = null
+    let child
 
     afterEach(() => {
-      if (child !== null) child.kill()
+      if (child != null) child.kill()
     })
 
     it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
@@ -221,23 +220,14 @@ describe('node feature', () => {
       })
 
       let output = ''
-      function cleanup () {
-        child.stderr.removeListener('data', errorDataListener)
-        child.stdout.removeListener('data', outDataHandler)
-      }
-      function errorDataListener (data) {
+      child.stderr.on('data', (data) => {
         output += data
-        if (output.trim().startsWith('Debugger listening on ws://')) {
-          cleanup()
-          done()
-        }
-      }
-      function outDataHandler (data) {
-        cleanup()
+        if (output.trim().startsWith('Debugger listening on ws://')) done()
+      })
+
+      child.stdout.on('data', (data) => {
         done(new Error(`Unexpected output: ${data.toString()}`))
-      }
-      child.stderr.on('data', errorDataListener)
-      child.stdout.on('data', outDataHandler)
+      })
     })
 
     it('supports js binding', (done) => {
@@ -366,7 +356,8 @@ describe('node feature', () => {
 
     it('should have isTTY defined on Mac and Linux', function () {
       if (isCI || process.platform === 'win32') {
-        this.skip()
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
         return
       }
 
@@ -375,7 +366,8 @@ describe('node feature', () => {
 
     it('should have isTTY undefined on Windows', function () {
       if (isCI || process.platform !== 'win32') {
-        this.skip()
+        // FIXME(alexeykuzmin): Skip the test.
+        // this.skip()
         return
       }
 
@@ -401,23 +393,17 @@ describe('node feature', () => {
     })
   })
 
-  describe('vm.runInNewContext', () => {
+  describe('vm.createContext', () => {
     it('should not crash', () => {
       require('vm').runInNewContext('')
     })
   })
 
   it('includes the electron version in process.versions', () => {
-    expect(process.versions)
-      .to.have.own.property('electron')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+(\S*)?$/)
+    assert(/^\d+\.\d+\.\d+(\S*)?$/.test(process.versions.electron))
   })
 
   it('includes the chrome version in process.versions', () => {
-    expect(process.versions)
-      .to.have.own.property('chrome')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
+    assert(/^\d+\.\d+\.\d+\.\d+$/.test(process.versions.chrome))
   })
 })

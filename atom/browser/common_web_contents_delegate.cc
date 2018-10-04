@@ -270,13 +270,12 @@ void CommonWebContentsDelegate::EnumerateDirectory(content::WebContents* guest,
 
 void CommonWebContentsDelegate::EnterFullscreenModeForTab(
     content::WebContents* source,
-    const GURL& origin,
-    const blink::WebFullscreenOptions& options) {
+    const GURL& origin) {
   if (!owner_window_)
     return;
   SetHtmlApiFullscreen(true);
   owner_window_->NotifyWindowEnterHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 void CommonWebContentsDelegate::ExitFullscreenModeForTab(
@@ -285,7 +284,7 @@ void CommonWebContentsDelegate::ExitFullscreenModeForTab(
     return;
   SetHtmlApiFullscreen(false);
   owner_window_->NotifyWindowLeaveHtmlFullScreen();
-  source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
+  source->GetRenderViewHost()->GetWidget()->WasResized();
 }
 
 bool CommonWebContentsDelegate::IsFullscreenForTabOrPending(

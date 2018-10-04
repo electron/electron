@@ -84,7 +84,7 @@ int NodeMain(int argc, char* argv[]) {
     bool more;
     do {
       more = uv_run(env->event_loop(), UV_RUN_ONCE);
-      gin_env.platform()->DrainTasks(env->isolate());
+      gin_env.platform()->DrainBackgroundTasks(env->isolate());
       if (more == false) {
         node::EmitBeforeExit(env);
 
@@ -98,7 +98,7 @@ int NodeMain(int argc, char* argv[]) {
 
     exit_code = node::EmitExit(env);
     node::RunAtExit(env);
-    gin_env.platform()->DrainTasks(env->isolate());
+    gin_env.platform()->DrainBackgroundTasks(env->isolate());
     gin_env.platform()->CancelPendingDelayedTasks(env->isolate());
 
     node::FreeEnvironment(env);

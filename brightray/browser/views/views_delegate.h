@@ -46,6 +46,9 @@ class ViewsDelegate : public views::ViewsDelegate {
       views::Widget* widget) override;
   void AddRef() override;
   void ReleaseRef() override;
+  content::WebContents* CreateWebContents(
+      content::BrowserContext* browser_context,
+      content::SiteInstance* site_instance) override;
   void OnBeforeWidgetInit(
       views::Widget::InitParams* params,
       views::internal::NativeWidgetDelegate* delegate) override;

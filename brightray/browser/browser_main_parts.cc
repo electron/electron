@@ -95,12 +95,12 @@ const int kWaitForUIThreadSeconds = 10;
 
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path))
+  if (PathService::Get(DIR_APP_DATA, &path))
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
-  base::PathService::Override(DIR_APP_DATA, path);
+  PathService::Override(DIR_APP_DATA, path);
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
@@ -137,7 +137,7 @@ int BrowserX11IOErrorHandler(Display* d) {
   g_in_x11_io_error_handler = true;
   LOG(ERROR) << "X IO error received (X server probably went away)";
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+      FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
 
   return 0;
 }
@@ -173,10 +173,10 @@ BrowserMainParts::~BrowserMainParts() {}
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
   base::FilePath path;
-  if (base::PathService::Get(brightray::DIR_APP_DATA, &path)) {
+  if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
     path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(DIR_APP_LOGS, path);
+    PathService::Override(DIR_APP_LOGS, path);
   }
 }
 #endif
@@ -215,7 +215,7 @@ int BrowserMainParts::PreEarlyInitialization() {
   ui::SetX11ErrorHandlers(nullptr, nullptr);
 #endif
 
-  return service_manager::RESULT_CODE_NORMAL_EXIT;
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void BrowserMainParts::ToolkitInitialized() {

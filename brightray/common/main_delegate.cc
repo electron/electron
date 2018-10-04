@@ -13,7 +13,6 @@
 #include "brightray/common/content_client.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
-#include "services/service_manager/embedder/switches.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
@@ -27,7 +26,7 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
 #if defined(OS_POSIX) && !defined(OS_MACOSX)
       // The zygote process opens the resources for the renderers.
-      process_type == service_manager::switches::kZygoteProcess ||
+      process_type == switches::kZygoteProcess ||
 #endif
 #if defined(OS_MACOSX)
       // Mac needs them too for scrollbar related images and for sandbox
@@ -53,7 +52,7 @@ void LoadResourceBundle(const std::string& locale) {
   pak_dir =
       base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
-  base::PathService::Get(base::DIR_MODULE, &pak_dir);
+  PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
 
   ui::ResourceBundle::InitSharedInstanceWithLocale(

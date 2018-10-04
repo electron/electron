@@ -50,7 +50,6 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/network/public/cpp/network_switches.h"
-#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
@@ -482,7 +481,7 @@ void OnClientCertificateSelected(
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (size_t i = 0; i < identities->size(); ++i) {
-      if (cert->EqualsExcludingChain((*identities)[i]->certificate())) {
+      if (cert->Equals((*identities)[i]->certificate())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
             std::move((*identities)[i]),
             base::Bind(&GotPrivateKey, delegate, std::move(cert)));
@@ -787,21 +786,18 @@ void App::BrowserChildProcessHostDisconnected(
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessCrashed(
-    const content::ChildProcessData& data,
-    const content::ChildProcessTerminationInfo& info) {
+void App::BrowserChildProcessCrashed(const content::ChildProcessData& data,
+                                     int exit_code) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessKilled(
-    const content::ChildProcessData& data,
-    const content::ChildProcessTerminationInfo& info) {
+void App::BrowserChildProcessKilled(const content::ChildProcessData& data,
+                                    int exit_code) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
-                       host->GetProcess().Handle());
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetHandle());
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
@@ -840,7 +836,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   base::FilePath path;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = base::PathService::Get(key, &path);
+    succeed = PathService::Get(key, &path);
   if (!succeed)
     args->ThrowError("Failed to get '" + name + "' path");
   return path;
@@ -857,8 +853,7 @@ void App::SetPath(mate::Arguments* args,
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed =
-        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    succeed = PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
     args->ThrowError("Failed to set path");
 }
@@ -890,7 +885,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
 
   auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
 
@@ -939,7 +934,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
 
   if (exec_path.empty()) {
     base::FilePath current_exe_path;
-    base::PathService::Get(base::FILE_EXE, &current_exe_path);
+    PathService::Get(base::FILE_EXE, &current_exe_path);
     argv.push_back(current_exe_path.value());
   } else {
     argv.push_back(exec_path.value());
@@ -1193,7 +1188,7 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   }
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
+  if (command_line->HasSwitch(::switches::kNoSandbox)) {
 #if defined(OS_WIN)
     const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
 #else

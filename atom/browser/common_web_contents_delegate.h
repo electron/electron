@@ -80,10 +80,8 @@ class CommonWebContentsDelegate
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,
                           const base::FilePath& path) override;
-  void EnterFullscreenModeForTab(
-      content::WebContents* source,
-      const GURL& origin,
-      const blink::WebFullscreenOptions& options) override;
+  void EnterFullscreenModeForTab(content::WebContents* source,
+                                 const GURL& origin) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(
       const content::WebContents* source) const override;

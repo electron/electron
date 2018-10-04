@@ -4,8 +4,6 @@
 
 #include "atom/browser/web_view_guest_delegate.h"
 
-#include <memory>
-
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "content/browser/web_contents/web_contents_impl.h"
@@ -106,16 +104,13 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   guest_params.initial_size =
       embedder_web_contents_->GetContainerBounds().size();
   guest_params.context = embedder_web_contents_->GetNativeView();
-  std::unique_ptr<content::WebContents> guest_contents =
-      content::WebContents::Create(guest_params);
-  content::RenderWidgetHost* render_widget_host =
-      guest_contents->GetRenderViewHost()->GetWidget();
+  auto* guest_contents = content::WebContents::Create(guest_params);
   auto* guest_contents_impl =
-      static_cast<content::WebContentsImpl*>(guest_contents.release());
-  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host,
-                                                      false);
+      static_cast<content::WebContentsImpl*>(guest_contents);
+  guest_contents_impl->GetView()->CreateViewForWidget(
+      guest_contents->GetRenderViewHost()->GetWidget(), false);
 
-  return guest_contents_impl;
+  return guest_contents;
 }
 
 }  // namespace atom

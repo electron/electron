@@ -431,7 +431,8 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
 
   // Need to enable recursive task.
   {
-    base::MessageLoop::ScopedNestableTaskAllower allow;
+    base::MessageLoop::ScopedNestableTaskAllower allow(
+        base::MessageLoop::current());
     base::RunLoop().Run();
   }
 
