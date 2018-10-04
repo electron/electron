@@ -210,8 +210,8 @@ void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {
 
 void AtomContentClient::AddPepperPlugins(
     std::vector<content::PepperPluginInfo>* plugins) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   AddPepperFlashFromCommandLine(command_line, plugins);
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
   ComputeBuiltInPlugins(plugins);
