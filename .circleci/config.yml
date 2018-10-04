@@ -711,6 +711,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-release-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
     <<: *steps-electron-build-for-publish
 
   linux-arm-native-mksnapshot:
@@ -757,6 +758,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-release-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
     <<: *steps-electron-build-for-publish
 
   linux-arm64-native-mksnapshot:
