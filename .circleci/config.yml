@@ -590,6 +590,9 @@ filter-only-prs-from-forks: &filter-only-prs-from-forks
     branches:
       only: /^pull\/.*$/
 
+chromium-upgrade-branches: &chromium-upgrade-branches
+  /chromium\-upgrade\/[0-9]+/
+
 # List of all jobs.
 version: 2
 jobs:
@@ -598,6 +601,10 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    <<: *steps-checkout
+
+  linux-x64-checkout:
+    <<: *machine-linux-2xlarge
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -902,19 +909,9 @@ workflows:
             branches:
               only:
                 - master
-                - /chromium\-upgrade\/[0-9]+/
+                - *chromium-upgrade-branches
     jobs:
       - linux-checkout
-
-      # TODO(alexeykuzmin): Enable it back.
-      # Tons of crashes right now, see
-      # https://circleci.com/gh/electron/electron/67463
-#      - linux-x64-browsertests:
-#          requires:
-#            - linux-checkout
-      - linux-x64-unittests:
-          requires:
-            - linux-checkout
 
       - linux-x64-release:
           requires:
@@ -963,3 +960,28 @@ workflows:
       - linux-arm64-native-mksnapshot:
           requires:
             - linux-checkout
+
+  # Various slow and non-essential checks we run only nightly.
+  # Sanitizer jobs should be added here.
+  linux-checks-nightly:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+                - *chromium-upgrade-branches
+    jobs:
+      - linux-x64-checkout
+
+      # TODO(alexeykuzmin): Enable it back.
+      # Tons of crashes right now, see
+      # https://circleci.com/gh/electron/electron/67463
+#      - linux-x64-browsertests:
+#          requires:
+#            - linux-x64-checkout
+
+      - linux-x64-unittests:
+          requires:
+            - linux-x64-checkout
