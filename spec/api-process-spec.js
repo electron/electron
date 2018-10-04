@@ -39,11 +39,9 @@ describe('process module', () => {
   })
 
   describe('process.getMemoryFootprint()', () => {
-    it('resolves promise successfully with non zero value', (done) => {
-      process.getMemoryFootprint().then((memoryFootprint) => {
-        expect(memoryFootprint).to.be.a('number').greaterThan(0)
-        done()
-      })
+    it('resolves promise successfully with non zero value', async () => {
+      let memoryFootprint = await process.getMemoryFootprint()
+      expect(memoryFootprint).to.be.a('number').greaterThan(0)
     })
   })
 
