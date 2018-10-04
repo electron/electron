@@ -5,11 +5,11 @@
 #ifndef ATOM_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_
 #define ATOM_BROWSER_NET_URL_REQUEST_STREAM_JOB_H_
 
-#include <deque>
 #include <memory>
 #include <string>
+#include <vector>
 
-#include "atom/browser/api/event_subscriber.h"
+#include "atom/browser/api/stream_subscriber.h"
 #include "atom/browser/net/js_asker.h"
 #include "base/memory/ref_counted_memory.h"
 #include "native_mate/persistent_dictionary.h"
@@ -26,9 +26,9 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
                       net::NetworkDelegate* network_delegate);
   ~URLRequestStreamJob() override;
 
-  void OnData(mate::Arguments* args);
-  void OnEnd(mate::Arguments* args);
-  void OnError(mate::Arguments* args);
+  void OnData(std::vector<char>&& buffer);  // NOLINT
+  void OnEnd();
+  void OnError();
 
   // URLRequestJob
   void GetResponseInfo(net::HttpResponseInfo* info) override;
@@ -48,17 +48,21 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   void StartAsync(std::unique_ptr<base::Value> options) override;
   void OnResponse(bool success, std::unique_ptr<base::Value> value);
 
-  // Callback after data is asynchronously read from the file into |buf|.
-  void CopyMoreData(scoped_refptr<net::IOBuffer> io_buf, int io_buf_size);
-  void CopyMoreDataDone(scoped_refptr<net::IOBuffer> io_buf, int read_count);
+  int BufferCopy(std::vector<char>* source,
+                 net::IOBuffer* target, int target_size);
 
-  std::deque<char> buffer_;
-  bool ended_ = false;
-  bool errored_ = false;
-  scoped_refptr<net::IOBuffer> pending_io_buf_;
-  int pending_io_buf_size_ = 0;
+  // Saved arguments passed to ReadRawData.
+  scoped_refptr<net::IOBuffer> pending_buf_;
+  int pending_buf_size_;
+
+  // Saved arguments passed to OnData.
+  std::vector<char> write_buffer_;
+
+  bool ended_;
+  bool has_error_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
-  mate::EventSubscriber<URLRequestStreamJob>::SafePtr subscriber_;
+  std::unique_ptr<mate::StreamSubscriber> subscriber_;
+
   base::WeakPtrFactory<URLRequestStreamJob> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestStreamJob);
