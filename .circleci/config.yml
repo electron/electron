@@ -375,7 +375,15 @@ steps-electron-build: &steps-electron-build
     - *step-setup-env-for-build
     - *step-gn-gen-default
 
+    # Electron app
     - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+
+    # Node.js headers
+    - *step-nodejs-headers-build
+    - *step-nodejs-headers-store    
+
     - *step-show-sccache-stats
 
 steps-electron-build-for-tests: &steps-electron-build-for-tests
