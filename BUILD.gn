@@ -728,6 +728,8 @@ if (is_mac) {
       ]
     }
     if (is_linux) {
+      ldflags = [ "-pie" ]
+
       if (!is_component_build && is_component_ffmpeg) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
