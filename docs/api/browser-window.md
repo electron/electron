@@ -542,6 +542,10 @@ Emitted when the window enters a full-screen state triggered by HTML API.
 
 Emitted when the window leaves a full-screen state triggered by HTML API.
 
+#### Event: 'always-on-top-change' _macOS_
+
+Emitted when the window is set or unset to show always on top of other windows.
+
 #### Event: 'app-command' _Windows_
 
 Returns:
