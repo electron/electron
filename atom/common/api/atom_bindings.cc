@@ -221,10 +221,10 @@ v8::Local<v8::Promise> AtomBindings::GetMemoryFootprint(v8::Isolate* isolate) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
   node::Environment* env = node::Environment::GetCurrent(isolate);
   memory_instrumentation::MemoryInstrumentation::GetInstance()
-      ->RequestGlobalDump(std::vector<std::string>(),
-                          base::AdaptCallbackForRepeating(base::BindOnce(
-                              &AtomBindings::DidReceiveMemoryDump,
-                              base::Unretained(env), promise)));
+      ->RequestGlobalDumpForPid(base::GetCurrentProcId(),
+                                base::AdaptCallbackForRepeating(base::BindOnce(
+                                    &AtomBindings::DidReceiveMemoryDump,
+                                    base::Unretained(env), promise)));
   return promise->GetHandle();
 }
 
