@@ -1,14 +1,15 @@
 diff --git a/tools/gritsettings/resource_ids b/tools/gritsettings/resource_ids
-index 3539e7ce5ab4..9450ee117e83 100644
+index fc16a42e623e..8faa1363e177 100644
 --- a/tools/gritsettings/resource_ids
 +++ b/tools/gritsettings/resource_ids
-@@ -400,6 +400,9 @@
-   "devtools_resources.grd": {
-     "includes": [28750],
+@@ -407,6 +407,10 @@
+     "includes": [28900],
    },
+ 
 +  "electron/electron_resources.grd": {
 +    "includes": [31750],
 +  },
- 
++
    # END "everything else" section.
    # Everything but chrome/, components/, content/, and ios/
+ 
