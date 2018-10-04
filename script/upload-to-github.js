@@ -35,6 +35,9 @@ function uploadToGitHub () {
       retry++
       github.repos.getRelease(githubOpts).then(release => {
         const existingAssets = release.data.assets.filter(asset => asset.name === fileName)
+        console.log('There are', release.data.assets.length, 'existing releases')
+        console.log(JSON.stringify(release.data.assets))
+        console.log(githubOpts)
         if (existingAssets.length > 0) {
           console.log(`${fileName} already exists; will delete before retrying upload.`)
           github.repos.deleteAsset({
