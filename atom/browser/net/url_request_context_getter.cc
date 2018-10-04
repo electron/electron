@@ -83,7 +83,6 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           brightray::BrowserClient::Get()->GetApplicationLocale());
-  network_context_params->allow_gssapi_library_load = true;
   network_context_params->enable_data_url_support = false;
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
