@@ -26,7 +26,6 @@
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/frame_host/render_widget_host_view_guest.h"
-#include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
@@ -67,15 +66,13 @@ class AtomBeginFrameTimer;
 class MacHelper;
 #endif
 
-class OffScreenRenderWidgetHostView
-    : public content::RenderWidgetHostViewBase,
-      public ui::CompositorDelegate,
+class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
+                                      public ui::CompositorDelegate,
 #if !defined(OS_MACOSX)
-      public content::DelegatedFrameHostClient,
-      public content::CompositorResizeLockClient,
+                                      public content::DelegatedFrameHostClient,
 #endif
-      public NativeWindowObserver,
-      public OffscreenViewProxyObserver {
+                                      public NativeWindowObserver,
+                                      public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
                                 bool painting,
@@ -95,15 +92,18 @@ class OffScreenRenderWidgetHostView
   ui::TextInputClient* GetTextInputClient() override;
   void Focus(void) override;
   bool HasFocus(void) const override;
+  uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy(void) const override;
   void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
+  void EnsureSurfaceSynchronizedForLayoutTest() override;
   gfx::Rect GetViewBounds(void) const override;
   gfx::Size GetVisibleViewportSize() const override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  SkColor background_color() const override;
+  base::Optional<SkColor> GetBackgroundColor() const override;
+  void UpdateBackgroundColor() override;
   bool LockMouse(void) override;
   void UnlockMouse(void) override;
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
@@ -124,7 +124,7 @@ class OffScreenRenderWidgetHostView
   void SubmitCompositorFrame(
       const viz::LocalSurfaceId& local_surface_id,
       viz::CompositorFrame frame,
-      viz::mojom::HitTestRegionListPtr hit_test_region_list) override;
+      base::Optional<viz::HitTestRegionList> hit_test_region_list) override;
 
   void ClearCompositorFrame(void) override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
@@ -146,7 +146,7 @@ class OffScreenRenderWidgetHostView
   void GetScreenInfo(content::ScreenInfo* results) const override;
   void InitAsGuest(content::RenderWidgetHostView*,
                    content::RenderWidgetHostViewGuest*) override;
-  gfx::Vector2d GetOffsetFromRootSurface() override;
+  void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   void ImeCompositionRangeChanged(const gfx::Range&,
@@ -165,17 +165,10 @@ class OffScreenRenderWidgetHostView
   ui::Layer* DelegatedFrameHostGetLayer(void) const override;
   bool DelegatedFrameHostIsVisible(void) const override;
   SkColor DelegatedFrameHostGetGutterColor() const override;
-  bool DelegatedFrameCanCreateResizeLock() const override;
-  std::unique_ptr<content::CompositorResizeLock>
-  DelegatedFrameHostCreateResizeLock() override;
   void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
   void OnBeginFrame(base::TimeTicks frame_time) override;
   void OnFrameTokenChanged(uint32_t frame_token) override;
   void DidReceiveFirstFrameAfterNavigation() override;
-  // CompositorResizeLockClient implementation.
-  std::unique_ptr<ui::CompositorLock> GetCompositorLock(
-      ui::CompositorLockClient* client) override;
-  void CompositorResizeLockEnded() override;
   bool IsAutoResizeEnabled() const override;
 #endif  // !defined(OS_MACOSX)
 
@@ -184,13 +177,15 @@ class OffScreenRenderWidgetHostView
 
   void DidNavigate() override;
 
-  bool TransformPointToLocalCoordSpace(const gfx::PointF& point,
-                                       const viz::SurfaceId& original_surface,
-                                       gfx::PointF* transformed_point) override;
+  bool TransformPointToLocalCoordSpaceLegacy(
+      const gfx::PointF& point,
+      const viz::SurfaceId& original_surface,
+      gfx::PointF* transformed_point) override;
   bool TransformPointToCoordSpaceForView(
       const gfx::PointF& point,
       RenderWidgetHostViewBase* target_view,
-      gfx::PointF* transformed_point) override;
+      gfx::PointF* transformed_point,
+      viz::EventSource source = viz::EventSource::ANY) override;
 
   // ui::CompositorDelegate:
   std::unique_ptr<viz::SoftwareOutputDevice> CreateSoftwareOutputDevice(
@@ -233,7 +228,7 @@ class OffScreenRenderWidgetHostView
 
   void HoldResize();
   void ReleaseResize();
-  void WasResized();
+  void SynchronizeVisualProperties();
 
   void SendMouseEvent(const blink::WebMouseEvent& event);
   void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
@@ -246,6 +241,13 @@ class OffScreenRenderWidgetHostView
 
   ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
+
+#if defined(OS_MACOSX)
+  content::BrowserCompositorMac* browser_compositor() const {
+    return browser_compositor_.get();
+  }
+#endif
+
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;
 
   void Invalidate();
@@ -343,6 +345,11 @@ class OffScreenRenderWidgetHostView
 
   viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink_ =
       nullptr;
+
+  // Latest capture sequence number which is incremented when the caller
+  // requests surfaces be synchronized via
+  // EnsureSurfaceSynchronizedForLayoutTest().
+  uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();
 

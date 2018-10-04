@@ -53,14 +53,7 @@ class MacHelper : public content::BrowserCompositorMacClient,
     return [view_->window()->GetNativeWindow() contentView];
   }
 
-  void AcceleratedWidgetGetVSyncParameters(
-      base::TimeTicks* timebase,
-      base::TimeDelta* interval) const override {
-    *timebase = base::TimeTicks();
-    *interval = base::TimeDelta();
-  }
-
-  void AcceleratedWidgetSwapCompleted() override {}
+  void AcceleratedWidgetCALayerParamsUpdated() override {}
 
   void DidReceiveFirstFrameAfterNavigation() override {
     view_->render_widget_host()->DidReceiveFirstFrameAfterNavigation();
@@ -68,7 +61,9 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void DestroyCompositorForShutdown() override {}
 
-  void WasResized() override { view_->render_widget_host()->WasResized(); }
+  bool SynchronizeVisualProperties() override {
+    return view_->render_widget_host()->SynchronizeVisualProperties();
+  }
 
  private:
   OffScreenRenderWidgetHostView* view_;
