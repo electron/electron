@@ -632,6 +632,7 @@ jobs:
   linux-x64-publish:
     <<: *machine-linux-2xlarge
     environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
@@ -670,6 +671,7 @@ jobs:
   linux-ia32-publish:
     <<: *machine-linux-2xlarge
     environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
       <<: *env-release-build
     <<: *steps-electron-build-for-publish
@@ -711,7 +713,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
 
   linux-arm-native-mksnapshot:
@@ -758,7 +760,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-release-build
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True --custom-var=checkout_boto=True --custom-var=checkout_requests=True'
     <<: *steps-electron-build-for-publish
 
   linux-arm64-native-mksnapshot:

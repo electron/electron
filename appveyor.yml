@@ -17,10 +17,15 @@ build_script:
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
   - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
+  - ps: >-
+      if ($env:GN_CONFIG -eq 'release') {
+        $env:GCLIENT_EXTRA_ARGS="--custom-var=checkout_boto=True --custom-var=checkout_requests=True"
+      }
   - >-
       gclient config
       --name "src\electron"
       --unmanaged
+      %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
@@ -34,7 +39,6 @@ build_script:
   - ninja -C out/Default third_party/electron_node:headers
   - appveyor PushArtifact out/Default/dist.zip
   - appveyor PushArtifact out/Default/chromedriver.zip
-
   - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
