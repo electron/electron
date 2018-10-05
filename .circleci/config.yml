@@ -419,7 +419,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-maybe-trigger-arm-test
 
     - *step-maybe-notify-slack-failure
-    - *step-maybe-notify-slack-success
 
 steps-electron-build-for-publish: &steps-electron-build-for-publish
   steps:
@@ -472,6 +471,8 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
+    - *step-maybe-notify-slack-failure
+
 steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
     - attach_workspace:
@@ -481,6 +482,8 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
     - *step-maybe-native-mksnapshot-gn-gen
     - *step-maybe-native-mksnapshot-build
     - *step-maybe-native-mksnapshot-store
+
+    - *step-maybe-notify-slack-failure
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -500,6 +503,7 @@ steps-ffmpeg-build: &steps-ffmpeg-build
           - src/out/ffmpeg/ffmpeg.zip
 
     - *step-show-sccache-stats
+    - *step-maybe-notify-slack-failure
 
 steps-native-tests: &steps-native-tests
   steps:
@@ -541,6 +545,7 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-setup-linux-for-headless-testing
 
     - *step-verify-ffmpeg
+    - *step-maybe-notify-slack-failure
 
 steps-tests: &steps-tests
   steps:
@@ -572,6 +577,8 @@ steps-tests: &steps-tests
           fi
     - store_test_results:
         path: src/junit
+
+    - *step-maybe-notify-slack-failure
 
 # Mac build are different in a few ways:
 # 1. We can't use save_cache/restore_cache on Mac,
@@ -665,6 +672,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-x64-chromedriver:
@@ -672,6 +680,7 @@ jobs:
     environment:
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-x64-release:
@@ -710,6 +719,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-ia32-chromedriver:
@@ -718,6 +728,7 @@ jobs:
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-ia32-release:
@@ -759,6 +770,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-arm-chromedriver:
@@ -767,6 +779,7 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-arm-release:
@@ -791,6 +804,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
@@ -815,6 +829,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-arm64-chromedriver:
@@ -823,6 +838,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-arm64-release:
@@ -847,6 +863,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
 
   osx-testing:
@@ -893,12 +910,14 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
@@ -906,6 +925,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-ia32-release-tests:
@@ -913,6 +933,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
@@ -920,6 +941,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   osx-testing-tests:
@@ -929,6 +951,35 @@ jobs:
   mas-testing-tests:
     <<: *machine-mac
     <<: *steps-tests
+
+  # Layer 4: Summary.
+  linux-x64-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-ia32-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-arm-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-arm64-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
 
 workflows:
   version: 2
@@ -1014,6 +1065,13 @@ workflows:
       - linux-x64-chromedriver:
           requires:
             - linux-checkout
+      - linux-x64-release-summary:
+          requires:
+            - linux-x64-release
+            - linux-x64-release-tests
+            - linux-x64-ffmpeg
+            - linux-x64-verify-ffmpeg
+            - linux-x64-chromedriver
 
       - linux-ia32-release:
           requires:
@@ -1031,6 +1089,13 @@ workflows:
       - linux-ia32-chromedriver:
           requires:
             - linux-checkout
+      - linux-ia32-release-summary:
+          requires:
+            - linux-ia32-release
+            - linux-ia32-release-tests
+            - linux-ia32-ffmpeg
+            - linux-ia32-verify-ffmpeg
+            - linux-ia32-chromedriver
 
       - linux-arm-release:
           requires:
@@ -1044,6 +1109,12 @@ workflows:
       - linux-arm-chromedriver:
           requires:
             - linux-checkout
+      - linux-arm-release-summary:
+          requires:
+            - linux-arm-release
+            - linux-arm-ffmpeg
+            - linux-arm-chromedriver
+            - linux-arm-native-mksnapshot
 
       - linux-arm64-release:
           requires:
@@ -1057,6 +1128,12 @@ workflows:
       - linux-arm64-chromedriver:
           requires:
             - linux-checkout
+      - linux-arm64-release-summary:
+          requires:
+            - linux-arm64-release
+            - linux-arm64-ffmpeg
+            - linux-arm64-chromedriver
+            - linux-arm64-native-mksnapshot
 
   # Various slow and non-essential checks we run only nightly.
   # Sanitizer jobs should be added here.
