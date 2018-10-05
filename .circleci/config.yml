@@ -124,6 +124,13 @@ step-setup-env-for-build: &step-setup-env-for-build
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+        if [ "$CIRCLE_PR_NUMBER" != "" ]; then
+          #if building a fork set readonly access to sccache
+          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
+          $SCCACHE_PATH --start-server
+          $SCCACHE_PATH -s
+        fi
       fi
 
 step-install-nodejs-on-mac: &step-install-nodejs-on-mac
@@ -254,7 +261,7 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
     name: Setup for headless testing
     command: |
       if [ "`uname`" != "Darwin" ]; then
-        echo 'export DISPLAY=":99.0"' >> $BASH_ENV
+        export DISPLAY=":99.0"
         sh -e /etc/init.d/xvfb start
       fi
 
