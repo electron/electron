@@ -123,7 +123,7 @@ void PlatformNotificationService::GetDisplayedNotifications(
 
 int64_t PlatformNotificationService::ReadNextPersistentNotificationId(
     content::BrowserContext* browser_context) {
-  NOTREACHED() << "TODO";
+  // Electron doesn't support persistent notifications.
   return 0;
 }
 
