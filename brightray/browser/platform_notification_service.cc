@@ -10,6 +10,7 @@
 #include "brightray/browser/notification_delegate.h"
 #include "brightray/browser/notification_presenter.h"
 #include "content/public/browser/notification_event_dispatcher.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/common/notification_resources.h"
 #include "content/public/common/platform_notification_data.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -72,11 +73,12 @@ class NotificationDelegateImpl final : public brightray::NotificationDelegate {
 
 PlatformNotificationService::PlatformNotificationService(
     BrowserClient* browser_client)
-    : browser_client_(browser_client), render_process_id_(-1) {}
+    : browser_client_(browser_client) {}
 
 PlatformNotificationService::~PlatformNotificationService() {}
 
 void PlatformNotificationService::DisplayNotification(
+    content::RenderProcessHost* render_process_host,
     content::BrowserContext* browser_context,
     const std::string& notification_id,
     const GURL& origin,
@@ -90,9 +92,10 @@ void PlatformNotificationService::DisplayNotification(
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
     browser_client_->WebNotificationAllowed(
-        render_process_id_, base::Bind(&OnWebNotificationAllowed, notification,
-                                       notification_resources.notification_icon,
-                                       notification_data));
+        render_process_host->GetID(),
+        base::Bind(&OnWebNotificationAllowed, notification,
+                   notification_resources.notification_icon,
+                   notification_data));
   }
 }
 
