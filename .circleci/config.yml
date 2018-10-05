@@ -122,12 +122,14 @@ step-setup-env-for-build: &step-setup-env-for-build
 
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
+        SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
           echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
+          $SCCACHE_PATH --start-server
+          $SCCACHE_PATH -s
         fi
-        SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
       fi
 
