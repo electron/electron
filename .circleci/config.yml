@@ -147,7 +147,7 @@ step-electron-build: &step-electron-build
     name: Electron build
     command: |
       cd src
-      ninja -C out/Default electron
+      ninja -C out/Default electron -j18
 
 step-electron-dist-build: &step-electron-dist-build
   run:
