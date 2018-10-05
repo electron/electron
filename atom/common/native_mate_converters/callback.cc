@@ -114,8 +114,9 @@ v8::Local<v8::Function> SafeV8Function::NewHandle(v8::Isolate* isolate) const {
   return v8_function_->NewHandle(isolate);
 }
 
-v8::Local<v8::Value> CreateFunctionFromTranslater(
-    v8::Isolate* isolate, const Translater& translater, bool one_time) {
+v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
+                                                  const Translater& translater,
+                                                  bool one_time) {
   // The FunctionTemplate is cached.
   if (g_call_translater.IsEmpty())
     g_call_translater.Reset(isolate, mate::CreateFunctionTemplate(
@@ -128,11 +129,9 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(
   Dictionary state = mate::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
-  return BindFunctionWith(isolate,
-                          isolate->GetCurrentContext(),
+  return BindFunctionWith(isolate, isolate->GetCurrentContext(),
                           call_translater->GetFunction(),
-                          holder->handle.Get(isolate),
-                          state.GetHandle());
+                          holder->handle.Get(isolate), state.GetHandle());
 }
 
 // func.bind(func, arg1).

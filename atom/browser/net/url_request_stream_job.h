@@ -49,7 +49,8 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   void OnResponse(bool success, std::unique_ptr<base::Value> value);
 
   int BufferCopy(std::vector<char>* source,
-                 net::IOBuffer* target, int target_size);
+                 net::IOBuffer* target,
+                 int target_size);
 
   // Saved arguments passed to ReadRawData.
   scoped_refptr<net::IOBuffer> pending_buf_;

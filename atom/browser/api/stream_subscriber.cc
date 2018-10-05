@@ -34,7 +34,8 @@ StreamSubscriber::~StreamSubscriber() {
   RemoveAllListeners();
 }
 
-void StreamSubscriber::On(const std::string& event, EventCallback&& callback) {  // NOLINT
+void StreamSubscriber::On(const std::string& event,
+                          EventCallback&& callback) {  // NOLINT
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   DCHECK(js_handlers_.find(event) == js_handlers_.end());
 
@@ -44,7 +45,7 @@ void StreamSubscriber::On(const std::string& event, EventCallback&& callback) { 
   // emitter.on(event, EventEmitted)
   auto fn = CallbackToV8(isolate_, callback);
   js_handlers_[event] = v8::Global<v8::Value>(isolate_, fn);
-  internal::ValueVector args = { StringToV8(isolate_, event), fn };
+  internal::ValueVector args = {StringToV8(isolate_, event), fn};
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_), "on", &args);
 }
 
@@ -77,8 +78,8 @@ void StreamSubscriber::OnData(mate::Arguments* args) {
   std::vector<char> buffer(data, data + length);
   content::BrowserThread::PostTask(
       content::BrowserThread::IO, FROM_HERE,
-      base::Bind(&atom::URLRequestStreamJob::OnData,
-                 url_job_, base::Passed(&buffer)));
+      base::Bind(&atom::URLRequestStreamJob::OnData, url_job_,
+                 base::Passed(&buffer)));
 }
 
 void StreamSubscriber::OnEnd(mate::Arguments* args) {
@@ -103,8 +104,8 @@ void StreamSubscriber::RemoveAllListeners() {
 }
 
 void StreamSubscriber::RemoveListener(JSHandlersMap::iterator it) {
-  internal::ValueVector args = { StringToV8(isolate_, it->first),
-                                 it->second.Get(isolate_) };
+  internal::ValueVector args = {StringToV8(isolate_, it->first),
+                                it->second.Get(isolate_)};
   internal::CallMethodWithArgs(isolate_, emitter_.Get(isolate_),
                                "removeListener", &args);
   js_handlers_.erase(it);

@@ -87,7 +87,7 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
   }
 
   subscriber_.reset(new mate::StreamSubscriber(isolate, data.GetHandle(),
-                                              weak_factory_.GetWeakPtr()));
+                                               weak_factory_.GetWeakPtr()));
 }
 
 void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
@@ -123,8 +123,8 @@ void URLRequestStreamJob::OnEnd() {
 }
 
 void URLRequestStreamJob::OnError() {
-  NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                         net::ERR_FAILED));
+  NotifyStartError(
+      net::URLRequestStatus(net::URLRequestStatus::FAILED, net::ERR_FAILED));
 }
 
 int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
@@ -186,7 +186,8 @@ void URLRequestStreamJob::GetResponseInfo(net::HttpResponseInfo* info) {
 }
 
 int URLRequestStreamJob::BufferCopy(std::vector<char>* source,
-                                    net::IOBuffer* target, int target_size) {
+                                    net::IOBuffer* target,
+                                    int target_size) {
   int bytes_written = std::min(static_cast<int>(source->size()), target_size);
   memcpy(target->data(), source->data(), bytes_written);
   return bytes_written;
