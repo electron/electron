@@ -217,6 +217,7 @@ static_library("electron_lib") {
     "//content/public/child",
     "//content/public/common:service_names",
     "//gin",
+    "//media/mojo/interfaces",
     "//net:net_resources",
     "//ppapi/host",
     "//ppapi/proxy",
@@ -235,7 +236,6 @@ static_library("electron_lib") {
     "//ui/gl",
     "//ui/views",
     "//v8",
-    "//media/mojo/interfaces",
   ]
 
   # TODO: this requires a visibility patch to chromium src. it would be better
