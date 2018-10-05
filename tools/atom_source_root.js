@@ -1,3 +1,3 @@
-var path = require('path')
+const path = require('path')
 
 console.log(path.resolve(path.dirname(__dirname)))

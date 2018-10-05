@@ -1,27 +1,27 @@
-var app = require('electron').app
-var fs = require('fs')
-var request = require('request')
+const app = require('electron').app
+const fs = require('fs')
+const request = require('request')
 
-var TARGET_URL = 'https://atom.io/download/electron/index.json'
+const TARGET_URL = 'https://atom.io/download/electron/index.json'
 
 function getDate () {
-  var today = new Date()
-  var year = today.getFullYear()
-  var month = today.getMonth() + 1
+  const today = new Date()
+  const year = today.getFullYear()
+  let month = today.getMonth() + 1
   if (month <= 9) month = '0' + month
-  var day = today.getDate()
+  let day = today.getDate()
   if (day <= 9) day = '0' + day
   return year + '-' + month + '-' + day
 }
 
 function getInfoForCurrentVersion () {
-  var json = {}
+  const json = {}
   json.version = process.versions.electron
   json.date = getDate()
 
-  var names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
-  for (var i in names) {
-    var name = names[i]
+  const names = ['node', 'v8', 'uv', 'zlib', 'openssl', 'modules', 'chrome']
+  for (const i in names) {
+    const name = names[i]
     json[name] = process.versions[name]
   }
 
@@ -54,7 +54,7 @@ function getIndexJsInServer (callback) {
 }
 
 function findObjectByVersion (all, version) {
-  for (var i in all) {
+  for (const i in all) {
     if (all[i].version === version) return i
   }
   return -1
@@ -67,8 +67,8 @@ app.on('ready', function () {
       process.exit(1)
     }
 
-    var current = getInfoForCurrentVersion()
-    var found = findObjectByVersion(all, current.version)
+    const current = getInfoForCurrentVersion()
+    const found = findObjectByVersion(all, current.version)
     if (found === -1) {
       all.unshift(current)
     } else {
