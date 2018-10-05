@@ -17,7 +17,6 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
@@ -104,29 +103,6 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   // See //net/docs/certificate-transparency.md
   // network_context_params->enforce_chrome_ct_policy = true;
   return network_context_params;
-}
-
-network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
-  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
-      network::mojom::HttpAuthStaticParams::New();
-
-  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
-                                           "negotiate"};
-
-  return auth_static_params;
-}
-
-network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
-    const base::CommandLine& command_line) {
-  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
-      network::mojom::HttpAuthDynamicParams::New();
-
-  auth_dynamic_params->server_whitelist =
-      command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist);
-  auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
-      switches::kAuthNegotiateDelegateWhitelist);
-
-  return auth_dynamic_params;
 }
 
 void SetupAtomURLRequestJobFactory(
@@ -335,14 +311,6 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     return nullptr;
 
   if (!url_request_context_) {
-    auto& command_line = *base::CommandLine::ForCurrentProcess();
-    // Create the network service, so that shared host resolver
-    // gets created which is required to set the auth preferences below.
-    auto* network_service = content::GetNetworkServiceImpl();
-    network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-    network_service->ConfigureHttpAuthPrefs(
-        CreateHttpAuthDynamicParams(command_line));
-
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
     builder->set_network_delegate(std::make_unique<AtomNetworkDelegate>());
@@ -356,6 +324,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
 
     builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
 
+    auto* network_service = content::GetNetworkServiceImpl();
     network_context_ = network_service->CreateNetworkContextWithBuilder(
         std::move(context_handle_->main_network_context_request_),
         std::move(context_handle_->main_network_context_params_),

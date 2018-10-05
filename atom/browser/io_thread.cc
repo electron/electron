@@ -3,13 +3,16 @@
 // found in the LICENSE file.
 
 #include "atom/browser/io_thread.h"
+#include "atom/common/options_switches.h"
 
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/network_service_instance.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_getter.h"
+#include "services/network/network_service.h"
 
 #if defined(USE_NSS_CERTS)
 #include "net/cert_net/nss_ocsp.h"
@@ -24,6 +27,33 @@ using content::BrowserThread;
 
 namespace atom {
 
+namespace {
+
+network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
+  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
+      network::mojom::HttpAuthStaticParams::New();
+
+  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
+                                           "negotiate"};
+
+  return auth_static_params;
+}
+
+network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
+    const base::CommandLine& command_line) {
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+
+  auth_dynamic_params->server_whitelist =
+      command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist);
+  auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
+      switches::kAuthNegotiateDelegateWhitelist);
+
+  return auth_dynamic_params;
+}
+
+}  // namespace
+
 IOThread::IOThread(net_log::ChromeNetLog* net_log) : net_log_(net_log) {
   BrowserThread::SetIOThreadDelegate(this);
 }
@@ -33,6 +63,14 @@ IOThread::~IOThread() {
 }
 
 void IOThread::Init() {
+  // Create the network service, so that shared host resolver
+  // gets created which is required to set the auth preferences below.
+  auto& command_line = *base::CommandLine::ForCurrentProcess();
+  auto* network_service = content::GetNetworkServiceImpl();
+  network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
+  network_service->ConfigureHttpAuthPrefs(
+      CreateHttpAuthDynamicParams(command_line));
+
   net::URLRequestContextBuilder builder;
   // TODO(deepak1556): We need to respoect user proxy configurations,
   // the following initialization has to happen before any request
