@@ -13,10 +13,15 @@ jobs:
       export PATH="$PATH:/Users/electron/depot_tools"
       echo "##vso[task.setvariable variable=PATH]$PATH"
       export GIT_CACHE_PATH="/Users/electron/libcc_cache"
+      if [ "$ELECTRON_RELEASE" == "1" ]; then
+        GCLIENT_EXTRA_ARGS='--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
+      fi
+
       set -ex
       gclient config \
         --name "src/electron" \
         --unmanaged \
+        $GCLIENT_EXTRA_ARGS \
         "https://github.com/electron/electron"
       gclient sync --with_branch_heads --with_tags
       cd src
