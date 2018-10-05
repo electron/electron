@@ -965,57 +965,37 @@ Returns `Boolean` - Whether the current desktop environment is Unity launcher.
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
-  * `path` String (optional) _Windows_ - The executable path to compare against.
-    Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to compare
-    against. Defaults to an empty array.
+  * `path` String (optional) _Windows_ - The executable path to compare against. Defaults to `process.execPath`.
+  * `args` String[] (optional) _Windows_ - The command-line arguments to compare against. Defaults to an empty array.
 
-If you provided `path` and `args` options to `app.setLoginItemSettings` then you
-need to pass the same arguments here for `openAtLogin` to be set correctly.
+If you provided `path` and `args` options to `app.addToLoginItems` then you need to pass the same arguments here for `isLoginItem` to be set correctly.
 
 Returns `Object`:
 
-* `openAtLogin` Boolean - `true` if the app is set to open at login.
-* `openAsHidden` Boolean _macOS_ - `true` if the app is set to open as hidden at login.
-  This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAtLogin` Boolean _macOS_ - `true` if the app was opened at login
-  automatically. This setting is not available on [MAS builds][mas-builds].
-* `wasOpenedAsHidden` Boolean _macOS_ - `true` if the app was opened as a hidden login
-  item. This indicates that the app should not open any windows at startup.
-  This setting is not available on [MAS builds][mas-builds].
-* `restoreState` Boolean _macOS_ - `true` if the app was opened as a login item that
-  should restore the state from the previous session. This indicates that the
-  app should restore the windows that were open the last time the app was
-  closed. This setting is not available on [MAS builds][mas-builds].
+* `isLoginItem` Boolean - `true` if the app is set to open at login.
+* `openAsHidden` Boolean _macOS_ - `true` if the app is set to open as hidden at login. This setting is not available on [MAS builds][mas-builds].
+* `wasOpenedAtLogin` Boolean _macOS_ - `true` if the app was opened at login automatically. This setting is not available on [MAS builds][mas-builds].
+* `wasOpenedAsHidden` Boolean _macOS_ - `true` if the app was opened as a hidden login item. This indicates that the app should not open any windows at startup. This setting is not available on [MAS builds][mas-builds].
+* `restoreState` Boolean _macOS_ - `true` if the app was opened as a login item that should restore the state from the previous session. This indicates that the app should restore the windows that were open the last time the app was closed. This setting is not available on [MAS builds][mas-builds].
 
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+### `app.addToLoginItems(settings)` _macOS_ _Windows_
 
 * `settings` Object
-  * `openAtLogin` Boolean (optional) - `true` to open the app at login, `false` to remove
-    the app as a login item. Defaults to `false`.
-  * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
-    `false`. The user can edit this setting from the System Preferences so
-    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
-    is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
+  * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to `false`. The user can edit this setting from the System Preferences so `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
   * `path` String (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
-  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to
-    the executable. Defaults to an empty array. Take care to wrap paths in
-    quotes.
+  * `args` String[] (optional) _Windows_ - The command-line arguments to pass to the executable. Defaults to an empty array. Take care to wrap paths in quotes.
 
-Set the app's login item settings.
+Add the app to login items. If you want to change a given app's login item status from visible to hidden, call `app.addToLoginItems()` with `openAsHidden` set to the desired new setting.
 
-To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
-you'll want to set the launch path to Update.exe, and pass arguments that specify your
-application name. For example:
+To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows], you'll want to set the launch path to Update.exe, and pass arguments that specify your application name. For example:
 
 ``` javascript
 const appFolder = path.dirname(process.execPath)
 const updateExe = path.resolve(appFolder, '..', 'Update.exe')
 const exeName = path.basename(process.execPath)
 
-app.setLoginItemSettings({
-  openAtLogin: true,
+app.addToLoginItems({
   path: updateExe,
   args: [
     '--processStart', `"${exeName}"`,
@@ -1023,6 +1003,10 @@ app.setLoginItemSettings({
   ]
 })
 ```
+
+### `app.removeFromLoginItems()` _macOS_ _Windows_
+
+Removes the app from login items.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 

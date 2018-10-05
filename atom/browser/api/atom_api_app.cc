@@ -316,7 +316,7 @@ struct Converter<Browser::LoginItemSettings> {
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
 
-    dict.Get("openAtLogin", &(out->open_at_login));
+    dict.Get("isLoginItem", &(out->is_login_item));
     dict.Get("openAsHidden", &(out->open_as_hidden));
     dict.Get("path", &(out->path));
     dict.Get("args", &(out->args));
@@ -326,7 +326,7 @@ struct Converter<Browser::LoginItemSettings> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LoginItemSettings val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
-    dict.Set("openAtLogin", val.open_at_login);
+    dict.Set("isLoginItem", val.is_login_item);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
     dict.Set("wasOpenedAtLogin", val.opened_at_login);
@@ -1257,8 +1257,10 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBadgeCount", base::Bind(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount", base::Bind(&Browser::GetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
-      .SetMethod("setLoginItemSettings",
-                 base::Bind(&Browser::SetLoginItemSettings, browser))
+      .SetMethod("addToLoginItems",
+                 base::Bind(&Browser::AddToLoginItems, browser))
+      .SetMethod("removeFromLoginItems",
+                 base::Bind(&Browser::RemoveFromLoginItems, browser))
 #if defined(OS_MACOSX)
       .SetMethod("hide", base::Bind(&Browser::Hide, browser))
       .SetMethod("show", base::Bind(&Browser::Show, browser))
