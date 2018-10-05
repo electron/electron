@@ -6,7 +6,11 @@ process.on('uncaughtException', () => {
   app.exit(1)
 })
 
-if (!process.argv.includes('--enable-mixed-sandbox')) {
+if (process.argv.includes('--app-enable-sandbox')) {
+  app.enableSandbox()
+}
+
+if (process.argv.includes('--app-enable-mixed-sandbox')) {
   app.enableMixedSandbox()
 }
 
