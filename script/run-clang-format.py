@@ -281,6 +281,8 @@ def main():
         njobs = multiprocessing.cpu_count() + 1
     njobs = min(len(files), njobs)
 
+    patch_filenames = []
+
     if njobs == 1:
         # execute directly instead of in a pool,
         # less overhead, simpler stacktraces
@@ -321,8 +323,15 @@ def main():
                     patch_file.write('\n')
                     print("\nTo apply this patch, run:\n$ git apply {}\n"
                           .format(patch_file.name))
+                    patch_filenames.append(patch_file.name)
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
+
+    if len(patch_filenames) > 1:
+      print("\nTo apply all patches, run:\n"
+            "$ for file in {}; do git apply $file; done"
+            .format(' '.join(patch_filenames)))
+
     return retcode
 
 
