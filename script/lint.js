@@ -51,6 +51,11 @@ const LINTERS = [ {
   roots: ['atom', 'brightray'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
+    if (opts.fix) {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames])
+    } else {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
+    }
     const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
     // cpplint.py writes EVERYTHING to stderr, including status messages
     if (result.stderr) {
@@ -61,7 +66,6 @@ const LINTERS = [ {
       }
     }
     if (result.status) {
-      if (opts.fix) spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
       process.exit(result.status)
     }
   }
@@ -157,7 +161,7 @@ async function findFiles (args, linter) {
   if (args.changed) {
     whitelist = await findChangedFiles(SOURCE_ROOT)
     if (!whitelist.size) {
-      return filenames
+      return []
     }
   }
 
@@ -183,7 +187,10 @@ async function findFiles (args, linter) {
     filenames = filenames.filter(x => whitelist.has(x))
   }
 
-  return filenames
+  // it's important that filenames be relative otherwise clang-format will
+  // produce patches with absolute paths in them, which `git apply` will refuse
+  // to apply.
+  return filenames.map(x => path.relative(SOURCE_ROOT, x))
 }
 
 async function main () {

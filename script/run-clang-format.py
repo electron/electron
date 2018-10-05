@@ -105,6 +105,8 @@ def run_clang_format_diff(args, file_name):
     except IOError as exc:
         raise DiffError(str(exc))
     invocation = [args.clang_format_executable, file_name]
+    if args.fix:
+        invocation.append('-i')
     try:
         proc = subprocess.Popen(
             ' '.join(invocation),
@@ -129,6 +131,8 @@ def run_clang_format_diff(args, file_name):
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
             proc.returncode, file_name), errs)
+    if args.fix:
+        return None, errs
     return make_diff(file_name, original, outs), errs
 
 
@@ -190,6 +194,10 @@ def main():
         help='comma separated list of file extensions (default: {})'.format(
             DEFAULT_EXTENSIONS),
         default=DEFAULT_EXTENSIONS)
+    parser.add_argument(
+        '--fix',
+        help='if specified, reformat files in-place',
+        action='store_true')
     parser.add_argument(
         '-r',
         '--recursive',
@@ -281,8 +289,9 @@ def main():
         njobs = multiprocessing.cpu_count() + 1
     njobs = min(len(files), njobs)
 
-    patch_file = tempfile.NamedTemporaryFile(delete=False,
-                                             prefix='electron-format-')
+    if not args.fix:
+        patch_file = tempfile.NamedTemporaryFile(delete=False,
+                                                 prefix='electron-format-')
 
     if njobs == 1:
         # execute directly instead of in a pool,
@@ -316,20 +325,22 @@ def main():
             sys.stderr.writelines(errs)
             if outs == []:
                 continue
-            if not args.quiet:
-                print_diff(outs, use_color=colored_stdout)
-                for line in outs:
-                    patch_file.write(line)
-                patch_file.write('\n')
-            if retcode == ExitStatus.SUCCESS:
-                retcode = ExitStatus.DIFF
+            if not args.fix:
+                if not args.quiet:
+                    print_diff(outs, use_color=colored_stdout)
+                    for line in outs:
+                        patch_file.write(line)
+                    patch_file.write('\n')
+                if retcode == ExitStatus.SUCCESS:
+                    retcode = ExitStatus.DIFF
 
-    if patch_file.tell() == 0:
-      patch_file.close()
-      os.unlink(patch_file.name)
-    else:
-      print("\nTo patch these files, run:\n$ git apply {}\n"
-            .format(patch_file.name))
+    if not args.fix:
+        if patch_file.tell() == 0:
+          patch_file.close()
+          os.unlink(patch_file.name)
+        else:
+          print("\nTo patch these files, run:\n$ git apply {}\n"
+                .format(patch_file.name))
 
     return retcode
 
