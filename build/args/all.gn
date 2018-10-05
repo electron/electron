@@ -10,6 +10,4 @@ enable_extensions = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
-enable_osr = true
-
 is_cfi = false
