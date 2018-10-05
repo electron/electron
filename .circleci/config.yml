@@ -25,6 +25,9 @@ env-testing-build: &env-testing-build
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
 
+env-headless-testing: &env-headless-testing
+  DISPLAY: ':99.0'
+
 env-browsertests: &env-browsertests
   GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_browsertests
@@ -124,6 +127,11 @@ step-setup-env-for-build: &step-setup-env-for-build
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+        if [ "$CIRCLE_PR_NUMBER" != "" ]; then
+          #if building a fork set readonly access to sccache
+          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
+        fi
       fi
 
 step-install-nodejs-on-mac: &step-install-nodejs-on-mac
@@ -254,7 +262,6 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
     name: Setup for headless testing
     command: |
       if [ "`uname`" != "Darwin" ]; then
-        echo 'export DISPLAY=":99.0"' >> $BASH_ENV
         sh -e /etc/init.d/xvfb start
       fi
 
@@ -864,6 +871,7 @@ jobs:
       <<: *env-unittests
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-headless-testing
     <<: *steps-native-tests
 
   linux-x64-browsertests:
@@ -872,36 +880,46 @@ jobs:
       <<: *env-browsertests
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-headless-testing
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
     <<: *steps-tests
 
   linux-x64-release-tests:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
     <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
     <<: *steps-tests
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
     <<: *steps-verify-ffmpeg
 
   osx-testing-tests:
