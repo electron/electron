@@ -17,6 +17,7 @@
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 
 class BrowserProcess;
+class IconManager;
 
 #if defined(TOOLKIT_VIEWS)
 namespace brightray {
@@ -64,6 +65,9 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
   device::mojom::GeolocationControl* GetGeolocationControl();
+
+  // Returns handle to the class responsible for extracting file icons.
+  IconManager* GetIconManager();
 
   Browser* browser() { return browser_.get(); }
   IOThread* io_thread() const { return io_thread_.get(); }
@@ -119,6 +123,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<NodeDebugger> node_debugger_;
   std::unique_ptr<IOThread> io_thread_;
   std::unique_ptr<net_log::ChromeNetLog> net_log_;
+  std::unique_ptr<IconManager> icon_manager_;
 
   base::Timer gc_timer_;
 

@@ -1100,7 +1100,7 @@ void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
     return;
   }
 
-  auto* icon_manager = g_browser_process->GetIconManager();
+  auto* icon_manager = AtomBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {

@@ -9,6 +9,12 @@ import("//electron/buildflags/buildflags.gni")
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/icon_loader.cc",
+    "//chrome/browser/icon_loader.h",
+    "//chrome/browser/icon_loader_mac.mm",
+    "//chrome/browser/icon_loader_win.cc",
+    "//chrome/browser/icon_manager.cc",
+    "//chrome/browser/icon_manager.h",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.cc",
     "//chrome/browser/net/chrome_mojo_proxy_resolver_factory.h",
     "//chrome/browser/net/chrome_net_log_helper.cc",
@@ -34,6 +40,10 @@ source_set("chrome") {
     "//components/proxy_config",
     "//components/security_state/content",
   ]
+
+  if (is_linux) {
+    sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+  }
 
   if (enable_desktop_capturer) {
     sources += [
