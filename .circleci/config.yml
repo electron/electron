@@ -254,7 +254,7 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
     name: Setup for headless testing
     command: |
       if [ "`uname`" != "Darwin" ]; then
-        echo 'export DISPLAY=":99.0"' >> $BASH_ENV
+        echo 'export DISPLAY="127.0.0.1:99.0"' >> $BASH_ENV
         sh -e /etc/init.d/xvfb start
       fi
 
