@@ -1,11 +1,11 @@
-var fs = require('fs')
-var path = require('path')
+const fs = require('fs')
+const path = require('path')
 
-var pathFile = path.join(__dirname, 'path.txt')
+const pathFile = path.join(__dirname, 'path.txt')
 
 function getElectronPath () {
   if (fs.existsSync(pathFile)) {
-    var executablePath = fs.readFileSync(pathFile, 'utf-8')
+    const executablePath = fs.readFileSync(pathFile, 'utf-8')
     if (process.env.ELECTRON_OVERRIDE_DIST_PATH) {
       return path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, executablePath)
     }
