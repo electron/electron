@@ -123,10 +123,10 @@ index 47401abc984e..ca6a527ffac8 100644
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 0c9ba953cb3c..5a2d853aeeac 100644
+index 0c9ba953cb3c..c2482774f074 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -5,10 +5,16 @@
+@@ -5,11 +5,15 @@
  #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
  
  #include "base/hash.h"
@@ -137,13 +137,13 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
 +#include "base/threading/thread_restrictions.h"
 +#include "build/build_config.h"
  #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
-+#if 0
- #include "chrome/grit/generated_resources.h"
-+#endif
+-#include "chrome/grit/generated_resources.h"
  #include "content/public/browser/browser_thread.h"
++#include "electron/grit/electron_resources.h"
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
-@@ -76,11 +82,13 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
+ #include "third_party/skia/include/core/SkBitmap.h"
+@@ -76,11 +80,13 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
  class NativeDesktopMediaList::Worker
      : public webrtc::DesktopCapturer::Callback {
   public:
@@ -158,7 +158,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
    void Refresh(const DesktopMediaID::Id& view_dialog_id);
  
    void RefreshThumbnails(const std::vector<DesktopMediaID>& native_ids,
-@@ -93,6 +101,9 @@ class NativeDesktopMediaList::Worker
+@@ -93,6 +99,9 @@ class NativeDesktopMediaList::Worker
    void OnCaptureResult(webrtc::DesktopCapturer::Result result,
                         std::unique_ptr<webrtc::DesktopFrame> frame) override;
  
@@ -168,7 +168,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
    base::WeakPtr<NativeDesktopMediaList> media_list_;
  
    DesktopMediaID::Type type_;
-@@ -106,17 +117,27 @@ class NativeDesktopMediaList::Worker
+@@ -106,17 +115,27 @@ class NativeDesktopMediaList::Worker
  };
  
  NativeDesktopMediaList::Worker::Worker(
@@ -199,21 +199,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
    std::vector<SourceDescription> result;
  
    webrtc::DesktopCapturer::SourceList sources;
-@@ -133,11 +154,8 @@ void NativeDesktopMediaList::Worker::Refresh(
-         // Just in case 'Screen' is inflected depending on the screen number,
-         // use plural formatter.
-         title = mutiple_sources
--                    ? l10n_util::GetPluralStringFUTF16(
--                          IDS_DESKTOP_MEDIA_PICKER_MULTIPLE_SCREEN_NAME,
--                          static_cast<int>(i + 1))
--                    : l10n_util::GetStringUTF16(
--                          IDS_DESKTOP_MEDIA_PICKER_SINGLE_SCREEN_NAME);
-+                    ? base::UTF8ToUTF16("Screen " + base::IntToString(i + 1))
-+                    : base::UTF8ToUTF16("Entire screen");
-         break;
- 
-       case DesktopMediaID::TYPE_WINDOW:
-@@ -163,6 +181,7 @@ void NativeDesktopMediaList::Worker::Refresh(
+@@ -163,6 +182,7 @@ void NativeDesktopMediaList::Worker::Refresh(
  void NativeDesktopMediaList::Worker::RefreshThumbnails(
      const std::vector<DesktopMediaID>& native_ids,
      const gfx::Size& thumbnail_size) {
@@ -221,7 +207,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
    ImageHashesMap new_image_hashes;
  
    // Get a thumbnail for each native source.
-@@ -210,17 +229,30 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+@@ -210,17 +230,30 @@ NativeDesktopMediaList::NativeDesktopMediaList(
      std::unique_ptr<webrtc::DesktopCapturer> capturer)
      : DesktopMediaListBase(base::TimeDelta::FromMilliseconds(
            kDefaultNativeDesktopMediaListUpdatePeriod)),
@@ -257,7 +243,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
  }
  
  void NativeDesktopMediaList::Refresh() {
-@@ -230,7 +262,7 @@ void NativeDesktopMediaList::Refresh() {
+@@ -230,7 +263,7 @@ void NativeDesktopMediaList::Refresh() {
    new_aura_thumbnail_hashes_.clear();
  #endif
  
@@ -266,7 +252,7 @@ index 0c9ba953cb3c..5a2d853aeeac 100644
        FROM_HERE,
        base::BindOnce(&Worker::Refresh, base::Unretained(worker_.get()),
                       view_dialog_id_.id));
-@@ -280,7 +312,7 @@ void NativeDesktopMediaList::RefreshForAuraWindows(
+@@ -280,7 +313,7 @@ void NativeDesktopMediaList::RefreshForAuraWindows(
  #if defined(USE_AURA)
      pending_native_thumbnail_capture_ = true;
  #endif
