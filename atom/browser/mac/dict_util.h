@@ -12,7 +12,7 @@
 namespace base {
 class ListValue;
 class DictionaryValue;
-}
+}  // namespace base
 
 namespace atom {
 
