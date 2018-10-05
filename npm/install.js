@@ -1,23 +1,23 @@
 #!/usr/bin/env node
 
-var version = require('./package').version
+const version = require('./package').version
 
-var fs = require('fs')
-var os = require('os')
-var path = require('path')
-var extract = require('extract-zip')
-var download = require('electron-download')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const extract = require('extract-zip')
+const download = require('electron-download')
 
-var installedVersion = null
+let installedVersion = null
 try {
   installedVersion = fs.readFileSync(path.join(__dirname, 'dist', 'version'), 'utf-8').replace(/^v/, '')
 } catch (ignored) {
   // do nothing
 }
 
-var platformPath = getPlatformPath()
+const platformPath = getPlatformPath()
 
-var electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
+const electronPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist', platformPath)
 
 if (installedVersion === version && fs.existsSync(electronPath)) {
   process.exit(0)
@@ -50,7 +50,7 @@ function onerror (err) {
 }
 
 function getPlatformPath () {
-  var platform = process.env.npm_config_platform || os.platform()
+  const platform = process.env.npm_config_platform || os.platform()
 
   switch (platform) {
     case 'darwin':
