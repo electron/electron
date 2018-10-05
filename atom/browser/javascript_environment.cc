@@ -19,29 +19,22 @@
 
 namespace atom {
 
-JavascriptEnvironment::JavascriptEnvironment()
-    : initialized_(Initialize()),
+JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
+    : isolate_(Initialize(event_loop)),
       isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
-                      new AtomIsolateAllocator(this)),
-      isolate_(isolate_holder_.isolate()),
+                      gin::IsolateHolder::kSingleThread,
+                      gin::IsolateHolder::kAllowAtomicsWait,
+                      gin::IsolateHolder::IsolateCreationMode::kNormal,
+                      isolate_),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
       context_(isolate_, v8::Context::New(isolate_)),
-      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {
-  // The assumption is made here that the isolate_holder_ holds a single isolate
-  // if this is not the case or changes in the constructor above the logic
-  // below must be rewritten
-  node::InitializePrivatePropertiesOnIsolateData(isolate_data_);
-}
+      context_scope_(v8::Local<v8::Context>::New(isolate_, context_)) {}
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
 
-void JavascriptEnvironment::OnMessageLoopCreated() {}
-
-void JavascriptEnvironment::OnMessageLoopDestroying() {}
-
-bool JavascriptEnvironment::Initialize() {
+v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
@@ -56,30 +49,27 @@ bool JavascriptEnvironment::Initialize() {
   platform_ = node::CreatePlatform(
       base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
       tracing_controller);
+
   v8::V8::InitializePlatform(platform_);
   gin::IsolateHolder::Initialize(
       gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
       gin::ArrayBufferAllocator::SharedInstance(),
       nullptr /* external_reference_table */, false /* create_v8_platform */);
-  return true;
+
+  v8::Isolate* isolate = v8::Isolate::Allocate();
+  platform_->RegisterIsolate(isolate, event_loop);
+
+  return isolate;
+}
+
+void JavascriptEnvironment::OnMessageLoopDestroying() {
+  platform_->UnregisterIsolate(isolate_);
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
 
 NodeEnvironment::~NodeEnvironment() {
   node::FreeEnvironment(env_);
-}
-
-AtomIsolateAllocator::AtomIsolateAllocator(JavascriptEnvironment* env)
-    : env_(env) {}
-
-v8::Isolate* AtomIsolateAllocator::Allocate() {
-  v8::Isolate* isolate = v8::Isolate::Allocate();
-  // This is a cheatsy way to add the Isolate and it's IsolateData to the node
-  // platform before it is ready
-  env_->set_isolate_data(node::CreateIsolateData(
-      isolate, uv_default_loop(), env_->platform(), true /* only_register */));
-  return isolate;
 }
 
 }  // namespace atom

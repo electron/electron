@@ -140,10 +140,9 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  js_env_.reset(new JavascriptEnvironment(node_bindings_->uv_loop()));
 
   node_bindings_->Initialize();
-
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->context(), js_env_->platform());
@@ -218,8 +217,6 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
-  js_env_->OnMessageLoopCreated();
-
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
