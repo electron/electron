@@ -280,7 +280,7 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-generate-breakpad_symbols: &step-generate-breakpad_symbols
+step-generate-breakpad-symbols: &step-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
     command: |
@@ -288,6 +288,9 @@ step-generate-breakpad_symbols: &step-generate-breakpad_symbols
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
       electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+
+      # TODO(alexeykuzmin): Explicitly pass an out folder path to the "zip-symbols.py" script.
+      export ELECTRON_OUT_DIR=Default
       electron/script/zip-symbols.py
 
 step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
@@ -408,6 +411,10 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
+    # Breakpad symbols.
+    # TODO(alexeykuzmin): We should do it only in nightly builds.
+    - *step-generate-breakpad-symbols
+
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
 
@@ -427,7 +434,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-electron-build
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-generate-breakpad_symbols
+    - *step-generate-breakpad-symbols
 
     # mksnapshot
     - *step-mksnapshot-build
