@@ -4,12 +4,6 @@ tests:
       # with lists of disabled tests. Those properties' names
       # are used only to explain why a group of tests is disabled.
       disabled:
-        to_fix:
-          - WeakPtrDeathTest.NonOwnerThreadDeletesObjectAfterReference
-          - WeakPtrDeathTest.NonOwnerThreadDeletesWeakPtrAfterReference
-          - WeakPtrDeathTest.NonOwnerThreadDereferencesWeakPtrAfterReference
-          - WeakPtrDeathTest.NonOwnerThreadReferencesObjectAfterDeletion
-          - WeakPtrDeathTest.WeakPtrCopyDoesNotChangeThreadBinding
         undecided:
           - FilePathTest*
           - PartitionReallocReturnNullTest.RepeatedReturnNullDirect
