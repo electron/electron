@@ -189,17 +189,17 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents,
     NativeWindow* owner_window) {
-  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
-  auto relay = std::make_unique<NativeWindowRelay>(owner_window_);
-  auto* relay_key = relay->key;
   if (owner_window) {
+    owner_window_ = owner_window->GetWeakPtr();
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
     autofill_popup_.reset(new AutofillPopup());
 #endif
-    web_contents->SetUserData(relay_key, std::move(relay));
+    NativeWindowRelay::CreateForWebContents(web_contents,
+                                            owner_window->GetWeakPtr());
   } else {
-    web_contents->RemoveUserData(relay_key);
-    relay.reset();
+    owner_window_ = nullptr;
+    web_contents->RemoveUserData(
+        NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
 }
 

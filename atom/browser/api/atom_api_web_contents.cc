@@ -462,7 +462,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
       auto* relay =
           NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
-        owner_window = relay->window.get();
+        owner_window = relay->GetNativeWindow();
     }
     if (owner_window)
       SetOwnerWindow(owner_window);
@@ -985,7 +985,8 @@ void WebContents::DevToolsOpened() {
 
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  bool has_window =
+      devtools->GetUserData(NativeWindowRelay::kNativeWindowRelayUserDataKey);
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 
@@ -1820,7 +1821,8 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
   if (IsOffScreen() && wc == web_contents()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents());
     if (relay) {
-      return relay->window->GetSize();
+      auto* owner_window = relay->GetNativeWindow();
+      return owner_window ? owner_window->GetSize() : gfx::Size();
     }
   }
 
@@ -1913,7 +1915,7 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     NativeWindow* owner_window = nullptr;
     auto* relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
     if (relay) {
-      owner_window = relay->window.get();
+      owner_window = relay->GetNativeWindow();
     }
     if (owner_window)
       SetOwnerWindow(owner_window);

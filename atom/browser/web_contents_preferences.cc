@@ -329,7 +329,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
       if (embedder) {
         auto* relay = NativeWindowRelay::FromWebContents(embedder);
         if (relay) {
-          auto* window = relay->window.get();
+          auto* window = relay->GetNativeWindow();
           if (window) {
             const bool visible = window->IsVisible() && !window->IsMinimized();
             if (!visible) {

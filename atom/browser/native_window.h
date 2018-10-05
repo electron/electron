@@ -346,18 +346,20 @@ class NativeWindow : public base::SupportsUserData,
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+  static const void* const kNativeWindowRelayUserDataKey;
+
+  static void CreateForWebContents(content::WebContents*,
+                                   base::WeakPtr<NativeWindow>);
+
   ~NativeWindowRelay() override;
 
-  static const void* UserDataKey() {
-    return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
-  }
-
-  const void* key;
-  base::WeakPtr<NativeWindow> window;
+  NativeWindow* GetNativeWindow() const { return native_window_.get(); }
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;
+  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+
+  base::WeakPtr<NativeWindow> native_window_;
 };
 
 }  // namespace atom
