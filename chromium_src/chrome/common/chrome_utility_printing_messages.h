@@ -89,9 +89,11 @@ IPC_MESSAGE_CONTROL2(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageDone,
 // Request that the given font characters be loaded by the browser so it's
 // cached by the OS. Please see
 // PdfToEmfUtilityProcessHostClient::OnPreCacheFontCharacters for details.
+#if 0
 IPC_SYNC_MESSAGE_CONTROL2_0(ChromeUtilityHostMsg_PreCacheFontCharacters,
                             LOGFONT /* font_data */,
                             base::string16 /* characters */)
+#endif
 
 // Tell the utility process to start rendering the given PDF into a metafile.
 // Utility process would be alive until
