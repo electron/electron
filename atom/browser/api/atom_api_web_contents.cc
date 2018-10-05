@@ -381,7 +381,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       params.delegate_view = view;
 
       web_contents = content::WebContents::Create(params);
-      view->SetWebContents(web_contents);
+      view->SetWebContents(web_contents.get());
     } else {
 #endif
       web_contents = content::WebContents::Create(params);
@@ -398,7 +398,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.delegate_view = view;
 
     web_contents = content::WebContents::Create(params);
-    view->SetWebContents(web_contents);
+    view->SetWebContents(web_contents.get());
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
