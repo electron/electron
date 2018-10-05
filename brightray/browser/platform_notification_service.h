@@ -24,6 +24,7 @@ class PlatformNotificationService
  protected:
   // content::PlatformNotificationService:
   void DisplayNotification(
+      content::RenderProcessHost* render_process_host,
       content::BrowserContext* browser_context,
       const std::string& notification_id,
       const GURL& origin,
@@ -48,7 +49,6 @@ class PlatformNotificationService
 
  private:
   BrowserClient* browser_client_;
-  int render_process_id_;
 
   DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };

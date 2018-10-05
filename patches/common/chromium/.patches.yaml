@@ -470,3 +470,10 @@ patches:
     Pass pre allocated isolate for initialization, node platform
     needs to register on an isolate so that it can be used later
     down in the initialization process of an isolate.
+-
+  author: Jeremy Apthorp <jeremya@chromium.org>
+  file: notification_provenance.patch
+  description: |
+    Pass RenderProcessHost through to PlatformNotificationService.
+
+    This is so Electron can identify which renderer a notification came from.
