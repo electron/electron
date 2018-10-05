@@ -123,6 +123,7 @@ step-setup-env-for-build: &step-setup-env-for-build
       if [ "$USE_SCCACHE" == "true" ]; then
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
+        echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
         if [ "$CIRCLE_PR_NUMBER" != "" ]; then
           #if building a fork set readonly access to sccache
           echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
@@ -130,7 +131,6 @@ step-setup-env-for-build: &step-setup-env-for-build
           $SCCACHE_PATH --start-server
           $SCCACHE_PATH -s
         fi
-        echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
       fi
 
 step-install-nodejs-on-mac: &step-install-nodejs-on-mac
