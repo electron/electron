@@ -35,6 +35,10 @@ vars = {
 
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
+
+  # It is always needed for normal Electron builds,
+  # but might be impossible for custom in-house builds.
+  'download_external_binaries': True,
 }
 
 deps = {
@@ -68,14 +72,15 @@ hooks = [
       'patch_chromium'
   },
   {
+    'name': 'electron_external_binaries',
+    'condition': 'download_external_binaries',
     'action': [
       'python',
-      'src/electron/script/update-external-binaries.py'
-    ],
-    'pattern':
       'src/electron/script/update-external-binaries.py',
-    'name':
-      'electron_external_binaries'
+      '--root-url=http://github.com/electron/electron-frameworks/releases/download',
+      '--version=v1.4.0'
+    ],
+    'pattern': 'src/electron/script/update-external-binaries.py',
   },
   {
     'action': [
