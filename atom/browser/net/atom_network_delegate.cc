@@ -267,11 +267,6 @@ void AtomNetworkDelegate::SetResponseListenerInIO(ResponseEvent type,
     response_listeners_[type] = {std::move(patterns), std::move(callback)};
 }
 
-void AtomNetworkDelegate::SetDevToolsNetworkEmulationClientId(
-    const base::UnguessableToken& client_id) {
-  client_id_ = client_id;
-}
-
 int AtomNetworkDelegate::OnBeforeURLRequest(
     net::URLRequest* request,
     const net::CompletionCallback& callback,

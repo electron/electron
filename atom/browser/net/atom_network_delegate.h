@@ -79,9 +79,6 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                                URLPatterns patterns,
                                ResponseListener callback);
 
-  void SetDevToolsNetworkEmulationClientId(
-      const base::UnguessableToken& client_id);
-
  protected:
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
@@ -172,9 +169,6 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, net::CompletionCallback> callbacks_;
   std::vector<std::string> ignore_connections_limit_domains_;
-
-  // Client id for devtools network emulation.
-  base::UnguessableToken client_id_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };

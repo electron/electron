@@ -107,8 +107,8 @@ class Session : public mate::TrackableObject<Session>,
   v8::Global<v8::Value> web_request_;
   v8::Global<v8::Value> net_log_;
 
-  // The X-DevTools-Emulate-Network-Conditions-Client-Id.
-  base::UnguessableToken devtools_network_emulation_client_id_;
+  // The client id to enable the network throttler.
+  base::UnguessableToken network_emulation_token_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
 
