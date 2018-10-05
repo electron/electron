@@ -342,6 +342,13 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
 #endif
 }
 
+content::BrowserAccessibilityManager*
+OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
+    content::BrowserAccessibilityDelegate*,
+    bool) {
+  return nullptr;
+}
+
 void OffScreenRenderWidgetHostView::OnWindowResize() {
   // In offscreen mode call RenderWidgetHostView's SetSize explicitly
   auto size = native_window_->GetSize();
