@@ -131,6 +131,10 @@ step-setup-env-for-build: &step-setup-env-for-build
           #if building a fork set readonly access to sccache
           echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
           echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
+          export SCCACHE_BUCKET="electronjs-sccache"
+          export SCCACHE_TWO_TIER=true
+          $SCCACHE_PATH --start-server
+          $SCCACHE_PATH -s
         fi
       fi
 
@@ -389,7 +393,7 @@ steps-electron-build: &steps-electron-build
 
     # Node.js headers
     - *step-nodejs-headers-build
-    - *step-nodejs-headers-store    
+    - *step-nodejs-headers-store
 
     - *step-show-sccache-stats
 
