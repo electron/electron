@@ -467,6 +467,6 @@ patches:
   author: Samuel Attard <samuel.r.attard@gmail.com>
   file: isolate_holder.patch
   description: |
-    Expose a hook that allows embedders to intercept allocated isolates
-    before they are initialized or used so they can be added to the correct
-    platform.  (In our case, node_platform)
+    Pass pre allocated isolate for initialization, node platform
+    needs to register on an isolate so that it can be used later
+    down in the initialization process of an isolate.

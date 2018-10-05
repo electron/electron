@@ -7,11 +7,11 @@
 
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
+#include "uv.h"  // NOLINT(build/include)
 
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
-class IsolateData;
 }  // namespace node
 
 namespace atom {
@@ -19,10 +19,9 @@ namespace atom {
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
-  JavascriptEnvironment();
+  explicit JavascriptEnvironment(uv_loop_t* event_loop);
   ~JavascriptEnvironment();
 
-  void OnMessageLoopCreated();
   void OnMessageLoopDestroying();
 
   node::MultiIsolatePlatform* platform() const { return platform_; }
@@ -30,23 +29,19 @@ class JavascriptEnvironment {
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
   }
-  void set_isolate_data(node::IsolateData* data) { isolate_data_ = data; }
 
  private:
-  bool Initialize();
-
+  v8::Isolate* Initialize(uv_loop_t* event_loop);
   // Leaked on exit.
   node::MultiIsolatePlatform* platform_;
 
-  bool initialized_;
-  gin::IsolateHolder isolate_holder_;
   v8::Isolate* isolate_;
+  gin::IsolateHolder isolate_holder_;
   v8::Isolate::Scope isolate_scope_;
   v8::Locker locker_;
   v8::HandleScope handle_scope_;
-  v8::UniquePersistent<v8::Context> context_;
+  v8::Global<v8::Context> context_;
   v8::Context::Scope context_scope_;
-  node::IsolateData* isolate_data_;
 
   DISALLOW_COPY_AND_ASSIGN(JavascriptEnvironment);
 };
@@ -61,18 +56,6 @@ class NodeEnvironment {
   node::Environment* env_;
 
   DISALLOW_COPY_AND_ASSIGN(NodeEnvironment);
-};
-
-class AtomIsolateAllocator : public gin::IsolateAllocater {
- public:
-  explicit AtomIsolateAllocator(JavascriptEnvironment* env);
-
-  v8::Isolate* Allocate() override;
-
- private:
-  JavascriptEnvironment* env_;
-
-  DISALLOW_COPY_AND_ASSIGN(AtomIsolateAllocator);
 };
 
 }  // namespace atom
