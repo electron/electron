@@ -932,7 +932,6 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
-      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-ia32-release-tests:
