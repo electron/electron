@@ -71,12 +71,13 @@ jobs:
       cd src
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
-      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
 
-      # TODO(alexeykuzmin): Explicitly pass an out folder path to the "zip-symbols.py" script.
+      # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
       export ELECTRON_OUT_DIR=Default
+
+      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
       electron/script/zip-symbols.py
-    displayName: Ninja build app
+    displayName: Collect symbols
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
