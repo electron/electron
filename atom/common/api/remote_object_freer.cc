@@ -56,7 +56,7 @@ void RemoteObjectFreer::RunDestructor() {
   if (!render_frame)
     return;
 
-  auto* channel = "ipc-message";
+  auto* channel = "ipc-internal-message";
   base::ListValue args;
   args.AppendString("ELECTRON_BROWSER_DEREFERENCE");
   args.AppendString(context_id_);

@@ -3,7 +3,9 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
+const cp = require('child_process')
 const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -55,18 +57,6 @@ describe('ipc main module', () => {
     })
   })
 
-  it('throws an error when removing all the listeners', () => {
-    ipcMain.on('test-event', () => {})
-    expect(ipcMain.listenerCount('test-event')).to.equal(1)
-
-    expect(() => {
-      ipcMain.removeAllListeners()
-    }).to.throw(/Removing all listeners from ipcMain will make Electron internals stop working/)
-
-    ipcMain.removeAllListeners('test-event')
-    expect(ipcMain.listenerCount('test-event')).to.equal(0)
-  })
-
   describe('remote objects registry', () => {
     it('does not dereference until the render view is deleted (regression)', (done) => {
       w = new BrowserWindow({ show: false })
@@ -78,6 +68,22 @@ describe('ipc main module', () => {
       })
 
       w.loadFile(path.join(fixtures, 'api', 'render-view-deleted.html'))
+    })
+  })
+
+  describe('ipcMain.on', () => {
+    it('is not used for internals', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'ipc-main-listeners')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = cp.spawn(electronPath, [appPath])
+
+      let output = ''
+      appProcess.stdout.on('data', (data) => { output += data })
+
+      await emittedOnce(appProcess.stdout, 'end')
+
+      output = JSON.parse(output)
+      expect(output).to.deep.equal(['error'])
     })
   })
 })
