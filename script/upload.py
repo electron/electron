@@ -98,7 +98,7 @@ def main():
   if get_target_arch().startswith('arm'):
     # Upload the native mksnapshot as mksnapshot.zip
     shutil.copy2(os.path.join(GN_SRC_DIR, 'out', 'native_mksnapshot',
-                              'native_mksnapshot.zip'), mksnapshot_zip)
+                              'mksnapshot.zip'), mksnapshot_zip)
     upload_electron(release, mksnapshot_zip, args)
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
