@@ -27,10 +27,10 @@ index 3cc51d43f6..c0b606c004 100644
          UniqueCFRef<CGColorSpaceRef> colorspace(CGColorSpaceCreateDeviceRGB());
 -        UniqueCFRef<CGContextRef> cgContext(
 -                CGBitmapContextCreate(&bitmap, 16, 16, 8, 16*4, colorspace.get(), BITMAP_INFO_RGB));
-+        SkUniqueCFRef<CGContextRef> noSmoothContext(
++        UniqueCFRef<CGContextRef> noSmoothContext(
 +                CGBitmapContextCreate(&noSmoothBitmap, 16, 16, 8, 16*4,
 +                                      colorspace.get(), BITMAP_INFO_RGB));
-+        SkUniqueCFRef<CGContextRef> smoothContext(
++        UniqueCFRef<CGContextRef> smoothContext(
 +                CGBitmapContextCreate(&smoothBitmap, 16, 16, 8, 16*4,
 +                                      colorspace.get(), BITMAP_INFO_RGB));
  
@@ -62,8 +62,8 @@ index 3cc51d43f6..c0b606c004 100644
          // For debugging.
 -        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(cgContext.get()));
 -
-+        //SkUniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(noSmoothContext()));
-+        //SkUniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(smoothContext()));
++        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(noSmoothContext()));
++        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(smoothContext()));
 +        
 +        SmoothBehavior smoothBehavior = SmoothBehavior::none;
          for (int x = 0; x < 16; ++x) {
