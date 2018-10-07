@@ -197,25 +197,20 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
           return false;
         }
 
-        v8::String::Utf8Value key_utf8(key);
-        v8::String::Utf8Value value_utf8(value);
-        std::string k(*key_utf8, key_utf8.length());
-        std::string v(*value_utf8, value_utf8.length());
-        std::ostringstream tmp;
-        tmp << k << ": " << v;
-        out->AddHeader(tmp.str());
+        std::string k, v;
+        mate::ConvertFromV8(isolate, key, &k);
+        mate::ConvertFromV8(isolate, value, &v);
+        out->AddHeader(k + ": " + v);
       }
     } else {
       if (!headers->Get(key)->ToString(context).ToLocal(&value)) {
         return false;
       }
-      v8::String::Utf8Value key_utf8(key);
-      v8::String::Utf8Value value_utf8(value);
-      std::string k(*key_utf8, key_utf8.length());
-      std::string v(*value_utf8, value_utf8.length());
-      std::ostringstream tmp;
-      tmp << k << ": " << v;
-      out->AddHeader(tmp.str());
+
+      std::string k, v;
+      mate::ConvertFromV8(isolate, key, &k);
+      mate::ConvertFromV8(isolate, value, &v);
+      out->AddHeader(k + ": " + v);
     }
   }
   return true;
