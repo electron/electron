@@ -322,6 +322,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   }
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
+  if (!has_frame() && title_bar_style_ == NORMAL) {
+    styleMask = NSWindowStyleMaskBorderless;
+  }
   if (@available(macOS 10.10, *)) {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
         (!useStandardWindow || transparent() || !has_frame())) {
