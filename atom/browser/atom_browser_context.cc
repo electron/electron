@@ -72,7 +72,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
     : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
-          base::SequencedTaskRunnerHandle::Get()),
+          base::ThreadTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
