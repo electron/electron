@@ -25,11 +25,9 @@ GPUInfoManager::~GPUInfoManager() {
 }
 
 // Based on
-// https://chromium.googlesource.com/chromium/src.git/+/66.0.3359.181/content/browser/gpu/gpu_data_manager_impl_private.cc#810
+// https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/content/browser/gpu/gpu_data_manager_impl_private.cc#810
 bool GPUInfoManager::NeedsCompleteGpuInfoCollection() {
-#if defined(OS_MACOSX)
-  return gpu_data_manager_->GetGPUInfo().gl_vendor.empty();
-#elif defined(OS_WIN)
+#if defined(OS_WIN)
   const auto& gpu_info = gpu_data_manager_->GetGPUInfo();
   return (gpu_info.dx_diagnostics.values.empty() &&
           gpu_info.dx_diagnostics.children.empty());

@@ -34,6 +34,14 @@ app.releaseSingleInstance()
 app.releaseSingleInstanceLock()
 ```
 
+## `app.getGPUInfo`
+
+```js
+app.getGPUInfo('complete')
+// Now behaves the same with `basic` on macOS
+app.getGPUInfo('basic')
+```
+
 
 # Breaking API Changes (3.0)
 
