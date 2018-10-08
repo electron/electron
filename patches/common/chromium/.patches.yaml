@@ -521,3 +521,8 @@ patches:
     remained in chromium from a long time ago (last update of that part of the
     code was around 2012-2013, and this is purely UI, I don't think they have
     automated tests for it).
+-
+  author: Heilig Benedek <benecene@gmail.com>
+  file: printing.patch
+  description:  |
+    Add changeset that was previously applied to sources in chromium_src

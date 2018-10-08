@@ -19,7 +19,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
@@ -53,6 +52,11 @@
 #if BUILDFLAG(ENABLE_TTS)
 #include "chrome/renderer/tts_dispatcher.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
+#include "components/printing/renderer/print_render_frame_helper.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
 
@@ -173,7 +177,10 @@ void RendererClientBase::RenderFrameCreated(
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);
-  new printing::PrintWebViewHelper(render_frame);
+#if BUILDFLAG(ENABLE_PRINTING)
+  new printing::PrintRenderFrameHelper(
+      render_frame, std::make_unique<ChromePrintRenderFrameHelperDelegate>());
+#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.

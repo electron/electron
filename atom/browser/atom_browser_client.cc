@@ -88,6 +88,10 @@
 #include "chrome/browser/speech/tts_message_filter.h"
 #endif  // BUILDFLAG(ENABLE_TTS)
 
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#include "chrome/services/printing/public/mojom/constants.mojom.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -535,6 +539,12 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
   (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
       base::BindRepeating(&l10n_util::GetStringUTF16,
                           IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
+
+#if BUILDFLAG(ENABLE_PRINTING)
+  (*services)[printing::mojom::kChromePrintingServiceName] =
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);
+#endif
 }
 
 std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(

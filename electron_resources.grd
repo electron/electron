@@ -15,6 +15,7 @@
       <!-- TODO(deepak1556): Add translations,
            check https://www.chromium.org/developers/design-documents/ui-localization -->
       <part file="electron_strings.grdp" />
+      <part file="../chrome/app/printing_strings.grdp" />
     </messages>
     <includes>
       <include name="IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_browser_manifest_overlay.json" use_base_dir="false" type="BINDATA" />

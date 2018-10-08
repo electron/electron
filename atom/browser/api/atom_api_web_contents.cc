@@ -51,8 +51,6 @@
 #include "brightray/browser/inspectable_web_contents.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/printing/print_preview_message_handler.h"
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "content/browser/frame_host/frame_tree_node.h"
 #include "content/browser/frame_host/render_frame_host_manager.h"
@@ -101,6 +99,11 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/browser/printing/print_preview_message_handler.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
+#endif
+
 #include "atom/common/node_includes.h"
 
 namespace {
@@ -110,6 +113,7 @@ struct PrintSettings {
   bool print_background;
   base::string16 device_name;
 };
+
 }  // namespace
 
 namespace mate {
@@ -1423,6 +1427,7 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
+#if BUILDFLAG(ENABLE_PRINTING)
   PrintSettings settings = {false, false, base::string16()};
   if (args->Length() >= 1 && !args->GetNext(&settings)) {
     args->ThrowError();
@@ -1441,20 +1446,27 @@ void WebContents::Print(mate::Arguments* args) {
   print_view_manager_basic_ptr->PrintNow(
       web_contents()->GetMainFrame(), settings.silent,
       settings.print_background, settings.device_name);
+#endif
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
+
+#if BUILDFLAG(ENABLE_PRINTING)
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   print_backend->EnumeratePrinters(&printers);
+#endif
+
   return printers;
 }
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
                              const PrintToPDFCallback& callback) {
+#if BUILDFLAG(ENABLE_PRINTING)
   printing::PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(setting, callback);
+#endif
 }
 
 void WebContents::AddWorkSpace(mate::Arguments* args,

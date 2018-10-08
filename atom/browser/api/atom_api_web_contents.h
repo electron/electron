@@ -22,8 +22,11 @@
 #include "content/public/common/favicon_url.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
-#include "printing/backend/print_backend.h"
 #include "ui/gfx/image/image.h"
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "printing/backend/print_backend.h"
+#endif
 
 namespace blink {
 struct WebDeviceEmulationParams;
