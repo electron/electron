@@ -123,8 +123,10 @@ void PowerObserverLinux::SetShutdownHandler(base::Callback<bool()> handler) {
 
 void PowerObserverLinux::OnInhibitResponse(base::ScopedFD* scoped_fd,
                                            dbus::Response* response) {
-  dbus::MessageReader reader(response);
-  reader.PopFileDescriptor(scoped_fd);
+  if (response != nullptr) {
+    dbus::MessageReader reader(response);
+    reader.PopFileDescriptor(scoped_fd);
+  }
 }
 
 void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
