@@ -22,6 +22,7 @@
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
@@ -231,6 +232,7 @@ HRESULT DeleteFileProgressSink::ResumeTimer() {
 namespace platform_util {
 
 bool ShowItemInFolder(const base::FilePath& full_path) {
+  base::ScopedAllowBlockingForTesting allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   if (!com_initializer.Succeeded())
     return false;
@@ -288,6 +290,7 @@ bool ShowItemInFolder(const base::FilePath& full_path) {
 }
 
 bool OpenItem(const base::FilePath& full_path) {
+  base::ScopedAllowBlockingForTesting allow_blocking;
   if (base::DirectoryExists(full_path))
     return ui::win::OpenFolderViaShell(full_path);
   else
