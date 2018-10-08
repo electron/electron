@@ -192,6 +192,13 @@ void BrowserMainParts::InitializeFeatureList() {
   enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
+#if defined(OS_MACOSX)
+  // Disable the V2 sandbox on macOS.
+  // Chromium is going to use the system sandbox API of macOS for the sandbox
+  // implmentation, we may have to deprecate --mixed-sandbox for macOS once
+  // Chromium drops support for the old sandbox implmentation.
+  disable_features += std::string(",") + features::kMacV2Sandbox.name;
+#endif
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
