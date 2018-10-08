@@ -313,7 +313,9 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
   if (!url_request_context_) {
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
-    builder->set_network_delegate(std::make_unique<AtomNetworkDelegate>());
+    auto network_delegate = std::make_unique<AtomNetworkDelegate>();
+    network_delegate_ = network_delegate.get();
+    builder->set_network_delegate(std::move(network_delegate));
 
     ct_delegate_.reset(new brightray::RequireCTDelegate);
     auto cert_verifier = std::make_unique<AtomCertVerifier>(ct_delegate_.get());
