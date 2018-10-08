@@ -477,3 +477,9 @@ patches:
     Pass RenderProcessHost through to PlatformNotificationService.
 
     This is so Electron can identify which renderer a notification came from.
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: content_browser_main_loop.patch
+  description: |
+    Pass idle quit closure for main message loop, so that pending tasks are
+    run before shutdown.
