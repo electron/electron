@@ -12,12 +12,16 @@
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/sandbox/switches.h"
 
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
-#include "chrome/services/printing/pdf_to_emf_converter_factory.h"
+#if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/services/printing/printing_service.h"
 #include "chrome/services/printing/public/mojom/constants.mojom.h"
+
+#if defined(OS_WIN)
+#include "chrome/services/printing/pdf_to_emf_converter_factory.h"
 #include "chrome/utility/printing_handler.h"
-#endif
+#endif  // defined(OS_WIN)
+
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
 
