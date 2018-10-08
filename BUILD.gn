@@ -357,7 +357,7 @@ static_library("electron_lib") {
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
-    sources += filenames.lib_sources_linux
+
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
