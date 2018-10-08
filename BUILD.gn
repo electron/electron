@@ -207,6 +207,7 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
+    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
