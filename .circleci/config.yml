@@ -1,3 +1,5 @@
+version: 2.1
+
 # Build machines configs.
 docker-image: &docker-image
   docker:
@@ -67,6 +69,22 @@ env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
 
 # Individual (shared) steps.
+commands:
+  ninja:
+    description: Generalized Ninja build
+    parameters:
+      dir:
+        type: string
+        default: out/Default
+      target:
+        type: string
+    steps:
+      - run:
+          name: Ninja build of << parameters.target >>  # Does it work?
+          command: |
+            cd src
+            ninja -C << parameters.dir >> << parameters.target >> -j3  # FIXME
+
 step-maybe-notify-slack-failure: &step-maybe-notify-slack-failure
   run:
     name: Send a Slack notification on failure
@@ -151,18 +169,12 @@ step-gn-gen-default: &step-gn-gen-default
       gn gen out/Default --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
 
 step-electron-build: &step-electron-build
-  run:
-    name: Electron build
-    command: |
-      cd src
-      ninja -C out/Default electron -j18
+  ninja:
+    target: electron
 
 step-electron-dist-build: &step-electron-dist-build
-  run:
-    name: Build dist.zip
-    command: |
-      cd src
-      ninja -C out/Default electron:electron_dist_zip
+  ninja:
+    target: electron:electron_dist_zip
 
 step-electron-dist-store: &step-electron-dist-store
   store_artifacts:
@@ -170,13 +182,8 @@ step-electron-dist-store: &step-electron-dist-store
     destination: dist.zip
 
 step-electron-chromedriver-build: &step-electron-chromedriver-build
-  run:
-    name: Build chromedriver.zip
-    command: |
-      cd src
-      # NOTE(alexeykuzmin): -j3 because chromedriver is currently built
-      # on a smaller size machine and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_chromedriver_zip -j3
+  ninja:
+    target: electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -184,11 +191,8 @@ step-electron-chromedriver-store: &step-electron-chromedriver-store
     destination: chromedriver.zip
 
 step-nodejs-headers-build: &step-nodejs-headers-build
-  run:
-    name: Build Node.js headers
-    command: |
-      cd src
-      ninja -C out/Default third_party/electron_node:headers
+  ninja:
+    target: third_party/electron_node:headers
 
 step-nodejs-headers-store: &step-nodejs-headers-store
   store_artifacts:
@@ -237,13 +241,9 @@ step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
       gn gen out/ffmpeg --args='import("//electron/build/args/ffmpeg.gn") cc_wrapper="'"$SCCACHE_PATH"'"'" $GN_EXTRA_ARGS"
 
 step-ffmpeg-build: &step-ffmpeg-build
-  run:
-    name: Non proprietary ffmpeg build
-    command: |
-      cd src
-      # NOTE(jeremy): -j3 because ffmpeg is currently built on a smaller
-      # machine size and ninja mis-detects the number of CPUs available.
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j3
+  ninja:
+    dir: out/ffmpeg
+    target: electron:electron_ffmpeg_zip
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -274,13 +274,9 @@ step-show-sccache-stats: &step-show-sccache-stats
       fi
 
 step-mksnapshot-build: &step-mksnapshot-build
-  run:
-    name: mksnapshot build
-    command: |
-      cd src
-      # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
-      # machine size and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_mksnapshot_zip -j3
+  ninja:
+    dir: out/ffmpeg
+    target: electron:electron_mksnapshot_zip
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
@@ -647,7 +643,6 @@ chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
 # List of all jobs.
-version: 2
 jobs:
   # Layer 1: Checkout.
   linux-checkout:
