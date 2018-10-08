@@ -108,7 +108,7 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('close', () => {
+    appProcess.once('exit', () => {
       expect(fs.existsSync(dumpFile)).to.be.true()
       done()
     })
@@ -130,7 +130,7 @@ describe('netLog module', () => {
         }
       })
 
-    appProcess.once('close', () => {
+    appProcess.once('exit', () => {
       expect(fs.existsSync(dumpFile)).to.be.true()
       expect(fs.existsSync(dumpFileDynamic)).to.be.true()
       done()
