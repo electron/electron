@@ -17,7 +17,7 @@ chai.use(dirtyChai)
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
 // TODO(alexeykuzmin): [Ch66] Crashes on Linux ia32. Fix it and enable back.
-xdescribe('powerMonitor', () => {
+describe('powerMonitor', () => {
   let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
 
   if (!skip) {
@@ -31,7 +31,9 @@ xdescribe('powerMonitor', () => {
       reset = Promise.promisify(logindMock.Reset, { context: logindMock })
     })
 
-    after(reset)
+    after(async () => {
+      await reset()
+    })
   }
 
   (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
@@ -129,8 +131,12 @@ xdescribe('powerMonitor', () => {
 
     describe('powerMonitor.querySystemIdleState', () => {
       it('notify current system idle state', done => {
+        // this funtion is just a wrapper around ui::CalculateIdleState,
+        // so this test checks for form and type, but not state
         powerMonitor.querySystemIdleState(1, idleState => {
-          expect(idleState).to.be.true()
+          expect(idleState).to.be.a('string')
+          const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
+          expect(validIdleStates).to.include(idleState)
           done()
         })
       })

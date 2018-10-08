@@ -33,21 +33,30 @@ namespace atom {
 
 PowerObserverLinux::PowerObserverLinux()
     : lock_owner_name_(get_executable_basename()), weak_ptr_factory_(this) {
-  auto* dbus_thread_manager = bluez::DBusThreadManagerLinux::Get();
-  if (dbus_thread_manager) {
-    bus_ = dbus_thread_manager->GetSystemBus();
-    if (bus_) {
-      logind_ = bus_->GetObjectProxy(kLogindServiceName,
-                                     dbus::ObjectPath(kLogindObjectPath));
-      logind_->WaitForServiceToBeAvailable(
-          base::Bind(&PowerObserverLinux::OnLoginServiceAvailable,
-                     weak_ptr_factory_.GetWeakPtr()));
-    } else {
-      LOG(WARNING) << "Failed to get system bus connection";
-    }
-  } else {
-    LOG(WARNING) << "DBusThreadManagerLinux instance isn't available";
+  bus_ = bluez::DBusThreadManagerLinux::Get()->GetSystemBus();
+  if (!bus_) {
+    LOG(WARNING) << "Failed to get system bus connection";
+    return;
   }
+
+  // create the logind proxy
+  logind_ = bus_->GetObjectProxy(kLogindServiceName,
+                                 dbus::ObjectPath(kLogindObjectPath));
+  logind_->ConnectToSignal(
+      kLogindManagerInterface, "PrepareForShutdown",
+      base::BindRepeating(&PowerObserverLinux::OnPrepareForShutdown,
+                          weak_ptr_factory_.GetWeakPtr()),
+      base::BindRepeating(&PowerObserverLinux::OnSignalConnected,
+                          weak_ptr_factory_.GetWeakPtr()));
+  logind_->ConnectToSignal(
+      kLogindManagerInterface, "PrepareForSleep",
+      base::BindRepeating(&PowerObserverLinux::OnPrepareForSleep,
+                          weak_ptr_factory_.GetWeakPtr()),
+      base::BindRepeating(&PowerObserverLinux::OnSignalConnected,
+                          weak_ptr_factory_.GetWeakPtr()));
+  logind_->WaitForServiceToBeAvailable(
+      base::Bind(&PowerObserverLinux::OnLoginServiceAvailable,
+                 weak_ptr_factory_.GetWeakPtr()));
 }
 
 PowerObserverLinux::~PowerObserverLinux() = default;
@@ -57,17 +66,6 @@ void PowerObserverLinux::OnLoginServiceAvailable(bool service_available) {
     LOG(WARNING) << kLogindServiceName << " not available";
     return;
   }
-  // Connect to PrepareForShutdown/PrepareForSleep signals
-  logind_->ConnectToSignal(kLogindManagerInterface, "PrepareForShutdown",
-                           base::Bind(&PowerObserverLinux::OnPrepareForShutdown,
-                                      weak_ptr_factory_.GetWeakPtr()),
-                           base::Bind(&PowerObserverLinux::OnSignalConnected,
-                                      weak_ptr_factory_.GetWeakPtr()));
-  logind_->ConnectToSignal(kLogindManagerInterface, "PrepareForSleep",
-                           base::Bind(&PowerObserverLinux::OnPrepareForSleep,
-                                      weak_ptr_factory_.GetWeakPtr()),
-                           base::Bind(&PowerObserverLinux::OnSignalConnected,
-                                      weak_ptr_factory_.GetWeakPtr()));
   // Take sleep inhibit lock
   BlockSleep();
 }
