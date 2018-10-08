@@ -199,7 +199,7 @@ describe('crashReporter module', () => {
           processType: 'browser',
           done: done,
           preAssert: fields => {
-            assert.strictEqual(fields.newExtra, 'newExtra')
+            assert.strictEqual(String(fields.newExtra), 'newExtra')
             assert.strictEqual(fields.removeExtra, undefined)
           }
         })
