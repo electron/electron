@@ -206,23 +206,21 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
+    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/printing/common",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
     "//content/public/common:service_names",
-    "//chrome/common",
     "//gin",
     "//media/mojo/interfaces",
     "//net:net_resources",
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
-    "//printing",
     "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
@@ -432,13 +430,14 @@ static_library("electron_lib") {
 
   if (enable_printing) {
     deps += [
-      "//printing",
+      "//chrome/common:mojo_bindings",
+      "//chrome/services/printing:lib",
       "//components/printing/browser",
+      "//components/printing/common",
       "//components/printing/renderer",
       "//components/services/pdf_compositor/public/cpp:utils",
       "//components/services/pdf_compositor/public/interfaces",
-      "//chrome/services/printing:lib",
-      "//chrome/common:mojo_bindings",
+      "//printing",
     ]
 
     sources += [
@@ -448,6 +447,8 @@ static_library("electron_lib") {
       "//chrome/browser/printing/print_job_manager.h",
       "//chrome/browser/printing/print_job_worker.cc",
       "//chrome/browser/printing/print_job_worker.h",
+      "//chrome/browser/printing/print_preview_message_handler.cc",
+      "//chrome/browser/printing/print_preview_message_handler.h",
       "//chrome/browser/printing/print_view_manager_base.cc",
       "//chrome/browser/printing/print_view_manager_base.h",
       "//chrome/browser/printing/print_view_manager_basic.cc",
@@ -464,10 +465,6 @@ static_library("electron_lib") {
       "//chrome/browser/printing/printing_init.h",
       "//chrome/browser/printing/printing_message_filter.cc",
       "//chrome/browser/printing/printing_message_filter.h",
-      "//chrome/browser/printing/print_preview_message_handler.cc",
-      "//chrome/browser/printing/print_preview_message_handler.h",
-      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.cc",
-      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h",
       "//chrome/renderer/prerender/prerender_dispatcher.cc",
       "//chrome/renderer/prerender/prerender_dispatcher.h",
       "//chrome/renderer/prerender/prerender_extra_data.cc",
@@ -476,14 +473,16 @@ static_library("electron_lib") {
       "//chrome/renderer/prerender/prerender_helper.h",
       "//chrome/renderer/prerender/prerenderer_client.cc",
       "//chrome/renderer/prerender/prerenderer_client.h",
+      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.cc",
+      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h",
     ]
 
     if (is_win) {
       sources += [
-        "//chrome/utility/printing_handler.cc",
-        "//chrome/utility/printing_handler.h",
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
+        "//chrome/utility/printing_handler.cc",
+        "//chrome/utility/printing_handler.h",
       ]
     }
   }
@@ -848,9 +847,7 @@ group("chromium_unittests") {
   ]
 
   if (enable_printing) {
-    deps += [
-      "//printing:printing_unittests",
-    ]
+    deps += [ "//printing:printing_unittests" ]
   }
 
   if (is_linux) {
