@@ -81,10 +81,10 @@ void PowerObserverLinux::BlockSleep() {
   inhibit_writer.AppendString(lock_owner_name_);                      // who
   inhibit_writer.AppendString("Application cleanup before suspend");  // why
   inhibit_writer.AppendString("delay");                               // mode
-  logind_->CallMethod(&sleep_inhibit_call,
-                      dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-                      base::Bind(&PowerObserverLinux::OnInhibitResponse,
-                                 weak_ptr_factory_.GetWeakPtr(), &sleep_lock_));
+  logind_->CallMethod(
+      &sleep_inhibit_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+      base::BindOnce(&PowerObserverLinux::OnInhibitResponse,
+                     weak_ptr_factory_.GetWeakPtr(), &sleep_lock_));
 }
 
 void PowerObserverLinux::UnblockSleep() {
@@ -104,8 +104,8 @@ void PowerObserverLinux::BlockShutdown() {
   inhibit_writer.AppendString("delay");                    // mode
   logind_->CallMethod(
       &shutdown_inhibit_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-      base::Bind(&PowerObserverLinux::OnInhibitResponse,
-                 weak_ptr_factory_.GetWeakPtr(), &shutdown_lock_));
+      base::BindOnce(&PowerObserverLinux::OnInhibitResponse,
+                     weak_ptr_factory_.GetWeakPtr(), &shutdown_lock_));
 }
 
 void PowerObserverLinux::UnblockShutdown() {
