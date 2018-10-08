@@ -14,6 +14,8 @@ declare_args() {
 
   enable_pdf_viewer = false
 
+  enable_tts = true
+
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
   # need to test with chromium's location provider.

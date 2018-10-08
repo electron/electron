@@ -380,7 +380,7 @@ patches:
   file: allow_nested_error_trackers.patch
   description: |
     Only one X11ErrorTracker should exist at a time, but upstream has a bug
-    where two can exist if running in headless mode -- 
+    where two can exist if running in headless mode --
       ui::(anonymous namespace)::SupportsEWMH() [inner tracker is created]
       ui::WmSupportsHint()
       ui::IsX11WindowFullScreen()
@@ -503,3 +503,8 @@ patches:
     (and aren't compiling command.cc), it's safe to duplicate the
     definition. A candidate for upstreaming would be to move the IsMediaKey
     function into //ui.
+-
+  author: Heilig Benedek <benecene@gmail.com>
+  file: tts.patch
+  description:  |
+    Add changeset that was previously applied to sources in chromium_src

@@ -437,6 +437,26 @@ static_library("electron_lib") {
     ]
   }
 
+  if (enable_tts) {
+    sources += [
+      "//chrome/browser/speech/tts_controller.h",
+      "//chrome/browser/speech/tts_controller_impl.cc",
+      "//chrome/browser/speech/tts_controller_impl.h",
+      "//chrome/browser/speech/tts_mac.mm",
+      "//chrome/browser/speech/tts_message_filter.cc",
+      "//chrome/browser/speech/tts_message_filter.h",
+      "//chrome/browser/speech/tts_platform.cc",
+      "//chrome/browser/speech/tts_platform.h",
+      "//chrome/browser/speech/tts_win.cc",
+      "//chrome/renderer/tts_dispatcher.cc",
+      "//chrome/renderer/tts_dispatcher.h",
+    ]
+
+    if (is_desktop_linux) {
+      sources += [ "//chrome/browser/speech/tts_linux.cc" ]
+    }
+  }
+
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
   }
