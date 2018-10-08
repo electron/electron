@@ -476,12 +476,12 @@ static_library("electron_lib") {
       "//chrome/renderer/prerender/prerender_helper.h",
       "//chrome/renderer/prerender/prerenderer_client.cc",
       "//chrome/renderer/prerender/prerenderer_client.h",
-      "//chrome/utility/printing_handler.cc",
-      "//chrome/utility/printing_handler.h",
     ]
 
     if (is_win) {
       sources += [
+        "//chrome/utility/printing_handler.cc",
+        "//chrome/utility/printing_handler.h",
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
       ]
