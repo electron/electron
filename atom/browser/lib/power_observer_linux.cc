@@ -161,7 +161,7 @@ void PowerObserverLinux::OnPrepareForShutdown(dbus::Signal* signal) {
   }
 }
 
-void PowerObserverLinux::OnSignalConnected(const std::string& interface,
+void PowerObserverLinux::OnSignalConnected(const std::string& /*interface*/,
                                            const std::string& signal,
                                            bool success) {
   LOG_IF(WARNING, !success) << "Failed to connect to " << signal;
