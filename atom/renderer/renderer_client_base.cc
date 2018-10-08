@@ -173,22 +173,26 @@ void RendererClientBase::RenderFrameCreated(
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
 #endif  // defined(ENABLE_PDF_VIEWER)
+
+  content::RenderView* render_view = render_frame->GetRenderView();
+  if (render_view) {
+    blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
+    if (web_frame_widget) {
+      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+        web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
+      } else {  // normal window.
+        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+        SkColor color =
+            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
+        web_frame_widget->SetBaseBackgroundColor(color);
+      }
+    }
+  }
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view);
-  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
-  if (!web_frame_widget)
-    return;
-
-  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-  } else {  // normal window.
-    std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-    SkColor color = name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-    web_frame_widget->SetBaseBackgroundColor(color);
-  }
 }
 
 void RendererClientBase::DidClearWindowObject(
