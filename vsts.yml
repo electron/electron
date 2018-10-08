@@ -2,6 +2,8 @@ jobs:
 - job: Build_Electron_via_GN
   displayName: Build Electron via GN
   timeoutInMinutes: 120
+  variables:
+    CI: true
   steps:
 
   - task: CopyFiles@2
