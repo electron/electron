@@ -131,8 +131,8 @@ describe('powerMonitor', () => {
 
     describe('powerMonitor.querySystemIdleState', () => {
       it('notify current system idle state', done => {
-        // this funtion is just a wrapper around ui::CalculateIdleState,
-        // so this test checks for form and type, but not state
+        // this function is not mocked out, so we can test the result's
+        // form and type but not its value.
         powerMonitor.querySystemIdleState(1, idleState => {
           expect(idleState).to.be.a('string')
           const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
