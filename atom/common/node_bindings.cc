@@ -36,6 +36,7 @@
   V(atom_browser_debugger)                   \
   V(atom_browser_dialog)                     \
   V(atom_browser_download_item)              \
+  V(atom_browser_event)                      \
   V(atom_browser_global_shortcut)            \
   V(atom_browser_in_app_purchase)            \
   V(atom_browser_menu)                       \

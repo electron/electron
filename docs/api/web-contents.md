@@ -663,6 +663,28 @@ Returns:
 Emitted when the associated window logs a console message. Will not be emitted
 for windows with *offscreen rendering* enabled.
 
+#### Event: 'remote-require'
+
+Returns:
+
+* `event` Event
+* `moduleName` String
+
+Emitted when `remote.require()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the module from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
+#### Event: 'remote-get-global'
+
+Returns:
+
+* `event` Event
+* `globalName` String
+
+Emitted when `remote.getGlobal()` is called in the renderer process.
+Calling `event.preventDefault()` will prevent the global from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
