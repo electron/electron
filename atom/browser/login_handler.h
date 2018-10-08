@@ -40,7 +40,7 @@ class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
   // thread.
   content::WebContents* GetWebContents() const;
 
-  const net::AuthChallengeInfo* auth_info() const { return &*auth_info_; }
+  const net::AuthChallengeInfo* auth_info() const { return auth_info_.get(); }
 
  private:
   friend class base::RefCountedThreadSafe<LoginHandler>;
