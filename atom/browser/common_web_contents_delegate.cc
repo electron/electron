@@ -43,7 +43,7 @@
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #endif
@@ -177,7 +177,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
   printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
 #endif

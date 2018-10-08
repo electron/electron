@@ -697,7 +697,7 @@ index d29bb6aedecd..bb0bd7bfa494 100644
 --- a/components/printing/common/print_messages.h
 +++ b/components/printing/common/print_messages.h
 @@ -367,7 +367,10 @@ IPC_MESSAGE_ROUTED0(PrintMsg_PrintNodeUnderContextMenu)
- #if BUILDFLAG(ENABLE_PRINTING)
+ #if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
  // Tells the RenderFrame to switch the CSS to print media type, renders every
  // requested pages and switch back the CSS to display media type.
 -IPC_MESSAGE_ROUTED0(PrintMsg_PrintPages)

@@ -14,7 +14,7 @@
 #include "content/public/utility/content_utility_client.h"
 #include "electron/buildflags/buildflags.h"
 
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON) && defined(OS_WIN)
 #include "chrome/utility/printing_handler.h"
 #endif
 
@@ -30,7 +30,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   void RegisterServices(StaticServiceMap* services) override;
 
  private:
-#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON) && defined(OS_WIN)
   std::unique_ptr<printing::PrintingHandler> printing_handler_;
 #endif
 

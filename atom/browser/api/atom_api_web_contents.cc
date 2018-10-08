@@ -99,7 +99,7 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #endif
@@ -1427,7 +1427,7 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
   PrintSettings settings = {false, false, base::string16()};
   if (args->Length() >= 1 && !args->GetNext(&settings)) {
     args->ThrowError();
@@ -1452,7 +1452,7 @@ void WebContents::Print(mate::Arguments* args) {
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
 
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   print_backend->EnumeratePrinters(&printers);
@@ -1463,7 +1463,7 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
                              const PrintToPDFCallback& callback) {
-#if BUILDFLAG(ENABLE_PRINTING)
+#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
   printing::PrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(setting, callback);
 #endif
