@@ -401,7 +401,7 @@ void TopLevelWindow::SetSize(int width, int height, mate::Arguments* args) {
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
   args->GetNext(&animate);
-  window_->SetSize(size, animate); 
+  window_->SetSize(size, animate);
 }
 
 std::vector<int> TopLevelWindow::GetSize() {
