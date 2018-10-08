@@ -1,19 +1,28 @@
+version: 2.1
+
 # Build machines configs.
 docker-image: &docker-image
   docker:
     - image: electronbuilds/electron:0.0.9
 
-machine-linux-medium: &machine-linux-medium
-  <<: *docker-image
-  resource_class: medium
+executors:
+  linux-medium:
+    <<: *docker-image
+    resource_class: medium
+    environment:
+      # Ninja misdetects a number of available CPUs.
+      NINJA_PARALLEL_JOBS: 3  # 2 CPUs + 1
 
-machine-linux-2xlarge: &machine-linux-2xlarge
-  <<: *docker-image
-  resource_class: 2xlarge
+  linux-2xlarge:
+    <<: *docker-image
+    resource_class: 2xlarge
+    environment:
+      # Ninja misdetects a number of available CPUs.
+      NINJA_PARALLEL_JOBS: 18  # 16 CPUs + 2
 
-machine-mac: &machine-mac
-  macos:
-    xcode: "8.3.3"
+  mac:
+    macos:
+      xcode: "8.3.3"
 
 # Build configurations options.
 env-debug-build: &env-debug-build
@@ -155,14 +164,14 @@ step-electron-build: &step-electron-build
     name: Electron build
     command: |
       cd src
-      ninja -C out/Default electron -j18
+      ninja -C out/Default electron -j$NINJA_PARALLEL_JOBS
 
 step-electron-dist-build: &step-electron-dist-build
   run:
     name: Build dist.zip
     command: |
       cd src
-      ninja -C out/Default electron:electron_dist_zip
+      ninja -C out/Default electron:electron_dist_zip -j$NINJA_PARALLEL_JOBS
 
 step-electron-dist-store: &step-electron-dist-store
   store_artifacts:
@@ -174,9 +183,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
     name: Build chromedriver.zip
     command: |
       cd src
-      # NOTE(alexeykuzmin): -j3 because chromedriver is currently built
-      # on a smaller size machine and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_chromedriver_zip -j3
+      ninja -C out/Default electron:electron_chromedriver_zip -j$NINJA_PARALLEL_JOBS
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -188,7 +195,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default third_party/electron_node:headers
+      ninja -C out/Default third_party/electron_node:headers -j$NINJA_PARALLEL_JOBS
 
 step-nodejs-headers-store: &step-nodejs-headers-store
   store_artifacts:
@@ -241,9 +248,7 @@ step-ffmpeg-build: &step-ffmpeg-build
     name: Non proprietary ffmpeg build
     command: |
       cd src
-      # NOTE(jeremy): -j3 because ffmpeg is currently built on a smaller
-      # machine size and ninja mis-detects the number of CPUs available.
-      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j3
+      ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j$NINJA_PARALLEL_JOBS
 
 step-verify-ffmpeg: &step-verify-ffmpeg
   run:
@@ -278,9 +283,7 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
-      # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
-      # machine size and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_mksnapshot_zip -j3
+      ninja -C out/Default electron:electron_mksnapshot_zip -j$NINJA_PARALLEL_JOBS
 
 step-mksnapshot-store: &step-mksnapshot-store
   store_artifacts:
@@ -293,7 +296,7 @@ step-generate-breakpad-symbols: &step-generate-breakpad-symbols
     command: |
       cd src
       # Build needed dump_syms executable
-      ninja -C out/Default third_party/breakpad:dump_syms
+      ninja -C out/Default third_party/breakpad:dump_syms -j$NINJA_PARALLEL_JOBS
       electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
 
       # TODO(alexeykuzmin): Explicitly pass an out folder path to the "zip-symbols.py" script.
@@ -317,9 +320,7 @@ step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
-        # machine size and ninja mis-detects the number of CPUs available.
-        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j3
+        ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j$NINJA_PARALLEL_JOBS
       else
         echo 'Skipping native mksnapshot build for non arm build'
       fi
@@ -524,7 +525,7 @@ steps-native-tests: &steps-native-tests
         name: Build tests
         command: |
           cd src
-          ninja -C out/Default $BUILD_TARGET
+          ninja -C out/Default $BUILD_TARGET -j$NINJA_PARALLEL_JOBS
     - *step-show-sccache-stats
 
     - *step-setup-linux-for-headless-testing
@@ -647,43 +648,42 @@ chromium-upgrade-branches: &chromium-upgrade-branches
   /chromium\-upgrade\/[0-9]+/
 
 # List of all jobs.
-version: 2
 jobs:
   # Layer 1: Checkout.
   linux-checkout:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout
 
   linux-x64-checkout:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     <<: *steps-checkout
 
   # Layer 2: Builds.
   linux-x64-debug:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-debug-build
       <<: *env-enable-sccache
     <<: *steps-electron-build
 
   linux-x64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-testing-build
       <<: *env-enable-sccache
     <<: *steps-electron-build-for-tests
 
   linux-x64-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-x64-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -691,7 +691,7 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-x64-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-release-build
       <<: *env-enable-sccache
@@ -699,14 +699,14 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-x64-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-release-build
     <<: *steps-electron-build-for-publish
 
   linux-ia32-debug:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-debug-build
@@ -714,7 +714,7 @@ jobs:
     <<: *steps-electron-build
 
   linux-ia32-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-testing-build
@@ -722,7 +722,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-ia32-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-ia32
       <<: *env-enable-sccache
@@ -730,7 +730,7 @@ jobs:
     <<: *steps-ffmpeg-build
 
   linux-ia32-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-ia32
       <<: *env-release-build
@@ -739,7 +739,7 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-ia32-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-ia32
       <<: *env-release-build
@@ -748,7 +748,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-ia32-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_boto=True --custom-var=checkout_requests=True'
       <<: *env-ia32
@@ -756,7 +756,7 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm-debug:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-debug-build
@@ -764,7 +764,7 @@ jobs:
     <<: *steps-electron-build
 
   linux-arm-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-testing-build
@@ -773,7 +773,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-arm-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
@@ -781,7 +781,7 @@ jobs:
     <<: *steps-ffmpeg-build
 
   linux-arm-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm
       <<: *env-release-build
@@ -790,7 +790,7 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-arm-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-release-build
@@ -799,7 +799,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-arm-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm
       <<: *env-release-build
@@ -807,7 +807,7 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm-native-mksnapshot:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
@@ -815,7 +815,7 @@ jobs:
     <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-debug-build
@@ -823,7 +823,7 @@ jobs:
     <<: *steps-electron-build
 
   linux-arm64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-testing-build
@@ -832,7 +832,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-arm64-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
@@ -840,7 +840,7 @@ jobs:
     <<: *steps-ffmpeg-build
 
   linux-arm64-chromedriver:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm64
       <<: *env-release-build
@@ -849,7 +849,7 @@ jobs:
     <<: *steps-chromedriver-build
 
   linux-arm64-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-release-build
@@ -858,7 +858,7 @@ jobs:
     <<: *steps-electron-build-for-tests
 
   linux-arm64-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-arm64
       <<: *env-release-build
@@ -866,7 +866,7 @@ jobs:
     <<: *steps-electron-build-for-publish
 
   linux-arm64-native-mksnapshot:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
@@ -874,14 +874,14 @@ jobs:
     <<: *steps-native-mksnapshot-build
 
   osx-testing:
-    <<: *machine-mac
+    executor: mac
     environment:
       <<: *env-testing-build
       <<: *env-enable-sccache
     <<: *steps-build-mac
 
   mas-testing:
-    <<: *machine-mac
+    executor: mac
     environment:
       <<: *env-mas
       <<: *env-testing-build
@@ -890,7 +890,7 @@ jobs:
 
   # Layer 3: Tests.
   linux-x64-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-unittests
       <<: *env-testing-build
@@ -899,7 +899,7 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-browsertests:
-    <<: *machine-linux-2xlarge
+    executor: linux-2xlarge
     environment:
       <<: *env-browsertests
       <<: *env-testing-build
@@ -908,34 +908,34 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-headless-testing
     <<: *steps-tests
 
   linux-x64-release-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
     <<: *steps-tests
 
   linux-ia32-release-tests:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
@@ -943,7 +943,7 @@ jobs:
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor: linux-medium
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
@@ -951,11 +951,11 @@ jobs:
     <<: *steps-verify-ffmpeg
 
   osx-testing-tests:
-    <<: *machine-mac
+    executor: mac
     <<: *steps-tests
 
   mas-testing-tests:
-    <<: *machine-mac
+    executor: mac
     <<: *steps-tests
 
   # Layer 4: Summary.
