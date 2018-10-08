@@ -21,7 +21,7 @@ import zipfile
 from lib.config import is_verbose_mode, PLATFORM
 from lib.env_util import get_vs_env
 
-GN_SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
+SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
 
@@ -301,7 +301,7 @@ def get_out_dir():
   override = os.environ.get('ELECTRON_OUT_DIR')
   if override is not None:
     out_dir = override
-  return os.path.join(GN_SRC_DIR, 'out', out_dir)
+  return os.path.join(SRC_DIR, 'out', out_dir)
 
 # NOTE: This path is not created by gn, it is used as a scratch zone by our
 #       upload scripts
@@ -309,9 +309,14 @@ def get_dist_dir():
   return os.path.join(get_out_dir(), 'gen', 'electron_dist')
 
 def get_electron_exec():
+  out_dir = get_out_dir()
+
   if sys.platform == 'darwin':
-    return 'out/{0}/Electron.app/Contents/MacOS/Electron'.format(get_out_dir())
+    return '{0}/Electron.app/Contents/MacOS/Electron'.format(out_dir)
   elif sys.platform == 'win32':
-    return 'out/{0}/electron.exe'.format(get_out_dir())
+    return '{0}/electron.exe'.format(out_dir)
   elif sys.platform == 'linux':
-    return 'out/{0}/electron'.format(get_out_dir())
+    return '{0}/electron'.format(out_dir)
+
+  raise Exception(
+      "get_electron_exec: unexpected platform '{0}'".format(sys.platform))
