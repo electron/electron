@@ -846,8 +846,8 @@ describe('app module', () => {
 
     it('succeeds with complete GPUInfo', async () => {
       const completeInfo = await getGPUInfo('complete')
-      if (process.platform === 'linux') {
-        // For linux complete info is same as basic info
+      if (process.platform === 'linux' || process.platform === 'darwin') {
+        // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo)
         const basicInfo = await getGPUInfo('basic')
         expect(completeInfo).to.deep.equal(basicInfo)

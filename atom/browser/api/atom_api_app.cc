@@ -1173,7 +1173,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_WIN)
     info_mgr->FetchCompleteInfo(promise);
 #else
     info_mgr->FetchBasicInfo(promise);
