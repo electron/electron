@@ -25,7 +25,7 @@ GPUInfoManager::~GPUInfoManager() {
 }
 
 // Based on
-// https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/content/browser/gpu/gpu_data_manager_impl_private.cc#810
+// https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/content/browser/gpu/gpu_data_manager_impl_private.cc#838
 bool GPUInfoManager::NeedsCompleteGpuInfoCollection() {
 #if defined(OS_WIN)
   const auto& gpu_info = gpu_data_manager_->GetGPUInfo();
