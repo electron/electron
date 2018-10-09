@@ -502,7 +502,8 @@ patches:
   author: Heilig Benedek <benecene@gmail.com>
   file: tts.patch
   description:  |
-    To enable TTS support, we have to disable the connection between the TTS
-    related source files and the chromium Profile class, since that is deeply
-    rooted in almost everything under the //chrome target. This patch disables
-    those calls.
+    * Adds patch in //chrome/browser/speech/tts_controller_impl.cc
+      to disable calls using chrome profile class.
+    * Adds patch in //chrome/browser/speech/tts_message_filter.cc
+      to remove reference to browser context when its signaled for
+      destruction from content layer.

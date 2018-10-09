@@ -32,6 +32,7 @@
 #include "brightray/common/application_info.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
+#include "components/keyed_service/content/browser_context_dependency_manager.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -119,6 +120,8 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   proxy_config_monitor_ = std::make_unique<ProxyConfigMonitor>(prefs_.get());
   io_handle_ = new URLRequestContextGetter::Handle(weak_factory_.GetWeakPtr());
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
+
+  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 }
 
 AtomBrowserContext::~AtomBrowserContext() {
@@ -126,6 +129,9 @@ AtomBrowserContext::~AtomBrowserContext() {
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
   io_handle_->ShutdownOnUIThread();
+  // Notify any keyed services of browser context destruction.
+  BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
+      this);
 }
 
 void AtomBrowserContext::InitPrefs() {

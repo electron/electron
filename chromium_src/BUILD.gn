@@ -39,6 +39,7 @@ static_library("chrome") {
   ]
   deps = [
     "//chrome/common",
+    "//components/keyed_service/content",
     "//components/proxy_config",
     "//components/security_state/content",
   ]
