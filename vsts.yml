@@ -257,6 +257,13 @@ jobs:
     displayName: Run Electron test suite
     timeoutInMinutes: 10
 
+  - bash: |
+      cd src
+      if [ ! -s "$MOCHA_FILE" ]; then
+        exit 1
+      fi
+    displayName: Check test results existence
+
   - task: PublishTestResults@2
     displayName: Publish Test Results
     inputs:
