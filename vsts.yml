@@ -187,6 +187,10 @@ jobs:
   # Run this job only if we are supposed to run the tests,
   # and we have an Electron built either in the previous job or in a different job, defined by a user.
   condition: and(eq(variables['RUN_TESTS'], '1'), or(succeeded(), ne(variables['Custom.UseArtifacts.BuildId'], '')))
+# TODO(alexeykuzmin): Run on Microsoft-hosted agents
+# once https://github.com/electron/electron/issues/15041 is fixed.
+#  pool:
+#    vmImage: 'macOS-10.13'
   timeoutInMinutes: 20
   variables:
     CI: true
