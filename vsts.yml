@@ -154,6 +154,16 @@ jobs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
       ArtifactName: Default
 
+  - bash: |
+      echo $BUILD_SOURCEVERSION > revision
+    displayName: Save exact revision
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (revision)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/revision'
+      ArtifactName: Default
+
   # Notify about success only if we are supposed to, and we don't have to run tests first.
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
@@ -206,6 +216,15 @@ jobs:
       buildId: $(Custom.UseArtifacts.BuildId)
       artifactName: Default
     condition: and(succeeded(), ne(variables['Custom.UseArtifacts.BuildId'], ''))
+
+  - bash: |
+      TESTS_REVISION=$BUILD_SOURCEVERSION
+      SOURCES_REVISION=`cat ${SYSTEM_ARTIFACTSDIRECTORY}/Default/revision`
+      if [ $TESTS_REVISION != $SOURCES_REVISION ]; then
+        echo "$TESTS_REVISION != $SOURCES_REVISION"
+        exit 1
+      fi
+    displayName: Check if revisions of build sources and test sources match
 
   - task: ExtractFiles@1
     displayName: Extract Electron app
