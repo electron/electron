@@ -64,7 +64,8 @@ def main(argv):
   if sys.platform == 'darwin':
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
-    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(dist_zip, mode='w', compression=zipfile.ZIP_DEFLATED,
+                         allowZip64=True) as z:
       for dep in dist_files:
         if skip_path(dep):
           continue
