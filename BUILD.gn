@@ -207,7 +207,6 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
-    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
@@ -449,12 +448,16 @@ static_library("electron_lib") {
       "//chrome/browser/speech/tts_platform.cc",
       "//chrome/browser/speech/tts_platform.h",
       "//chrome/browser/speech/tts_win.cc",
+      "//chrome/common/tts_messages.h",
+      "//chrome/common/tts_utterance_request.cc",
+      "//chrome/common/tts_utterance_request.h",
       "//chrome/renderer/tts_dispatcher.cc",
       "//chrome/renderer/tts_dispatcher.h",
     ]
 
-    if (is_desktop_linux) {
+    if (is_linux) {
       sources += [ "//chrome/browser/speech/tts_linux.cc" ]
+      deps += [ "//third_party/speech-dispatcher" ]
     }
   }
 
