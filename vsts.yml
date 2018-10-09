@@ -1,7 +1,9 @@
 jobs:
-- job: Build_Electron_via_GN
-  displayName: Build Electron via GN
-  timeoutInMinutes: 120
+- job: build
+  displayName: Build
+  # Build Electron only if we are NOT going to use artifacts produced by a different build.
+  condition: eq(variables['Custom.UseArtifacts.BuildId'], '')
+  timeoutInMinutes: 100
   variables:
     CI: true
   steps:
@@ -88,28 +90,11 @@ jobs:
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
 
   - bash: |
-      if pgrep Electron; then
-        killall Electron
-      fi
-      rm -rf ~/Library/Saved\ Application\ State/com.github.electron.savedState
-      rm -rf ~/Library/Application\ Support/Electron
-    displayName: Make sure Electron isn't running from previous tests
-
-  - bash: |
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
     displayName: Verify non proprietary ffmpeg
     condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
     timeoutInMinutes: 5
-
-  - bash: |
-      cd src
-      ninja -C out/Default third_party/electron_node:headers
-      export ELECTRON_OUT_DIR=Default
-      (cd electron && npm run test -- --ci --enable-logging)
-    displayName: Run Electron test suite
-    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
-    timeoutInMinutes: 10
 
   - bash: |
       cd src
@@ -132,7 +117,6 @@ jobs:
     displayName: Generate type declarations
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
-
   - bash: |
       cd src/electron
 
@@ -152,17 +136,16 @@ jobs:
     displayName: Upload distribution
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
 
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    inputs:
-      testResultsFiles: '*.xml'
-      searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
-    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
-
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts (application zip)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
+      ArtifactName: Default
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (Node.js headers)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/gen/node_headers.tar.gz'
       ArtifactName: Default
 
   - task: PublishBuildArtifacts@1
@@ -172,6 +155,25 @@ jobs:
       ArtifactName: Default
 
   - bash: |
+      echo $BUILD_SOURCEVERSION > revision
+    displayName: Save exact revision
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (revision)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/revision'
+      ArtifactName: Default
+
+  # Notify about success only if we are supposed to, and we don't have to run tests first.
+  - bash: |
+      export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
+      export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
+      curl -g -H "Content-Type: application/json" -X POST \
+      -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
+    displayName: Post Slack Notification on success
+    condition: and(succeeded(), and(eq(variables['NOTIFY_SLACK'], '1'), ne(variables['RUN_TESTS'], '1')))
+
+  - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
       export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
@@ -179,10 +181,118 @@ jobs:
     displayName: 'Post Slack Notification on Failure'
     condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
 
+- job: run_tests
+  displayName: Run Tests
+  dependsOn: build
+  # Run this job only if we are supposed to run the tests,
+  # and we have an Electron built either in the previous job or in a different job, defined by a user.
+  condition: and(eq(variables['RUN_TESTS'], '1'), or(succeeded(), ne(variables['Custom.UseArtifacts.BuildId'], '')))
+# TODO(alexeykuzmin): Run on Microsoft-hosted agents
+# once https://github.com/electron/electron/issues/15041 is fixed.
+#  pool:
+#    vmImage: 'macOS-10.13'
+  timeoutInMinutes: 20
+  variables:
+    CI: true
+  steps:
+
+  - task: CopyFiles@2
+    displayName: Copy Electron sources to "src/electron"
+    inputs:
+      TargetFolder: src/electron
+
+  # Use Electron built in the current job, if a user didn't specify a build id.
+  - task: DownloadBuildArtifacts@0
+    displayName: Download build artifacts from the current build
+    inputs:
+      buildType: 'current'
+      artifactName: Default
+    condition: and(succeeded(), eq(variables['Custom.UseArtifacts.BuildId'], ''))
+
+  # Use Electron built in a different job.
+  - task: DownloadBuildArtifacts@0
+    displayName: Download build artifacts from a build specified by user
+    inputs:
+      buildType: 'specific'
+      project: $(System.TeamProjectId)
+      pipeline: $(Build.DefinitionName)
+      buildVersionToDownload: 'specific'
+      buildId: $(Custom.UseArtifacts.BuildId)
+      artifactName: Default
+    condition: and(succeeded(), ne(variables['Custom.UseArtifacts.BuildId'], ''))
+
+  - bash: |
+      TESTS_REVISION=$BUILD_SOURCEVERSION
+      SOURCES_REVISION=`cat ${SYSTEM_ARTIFACTSDIRECTORY}/Default/revision`
+      if [ $TESTS_REVISION != $SOURCES_REVISION ]; then
+        echo "$TESTS_REVISION != $SOURCES_REVISION"
+        exit 1
+      fi
+    displayName: Check if revisions of build sources and test sources match
+
+  - task: ExtractFiles@1
+    displayName: Extract Electron app
+    inputs:
+      archiveFilePatterns: $(System.ArtifactsDirectory)/Default/dist.zip
+      destinationFolder: src/out/Default
+
+  - task: ExtractFiles@1
+    displayName: Extract Node.js headers
+    inputs:
+      archiveFilePatterns: $(System.ArtifactsDirectory)/Default/node_headers.tar.gz
+      destinationFolder: src/out/Default/gen
+
+#  TODO(alexeykuzmin): Install Node when tests are run on Microsoft-hosted agents.
+#  - task: NodeTool@0
+#    displayName: Install Node.js 10.x
+#    inputs:
+#      versionSpec: '10.x'
+
+  - bash: |
+      cd src/electron
+      npm install
+    displayName: Install Node.js modules
+
+  - bash: |
+      if pgrep Electron; then
+        killall Electron
+      fi
+      rm -rf ~/Library/Saved\ Application\ State/com.github.electron.savedState
+      rm -rf ~/Library/Application\ Support/Electron
+    displayName: Make sure Electron isn't running from previous tests
+
+  - bash: |
+      export ELECTRON_OUT_DIR=Default
+      (cd src/electron && npm run test -- --ci --enable-logging)
+    displayName: Run Electron test suite
+    timeoutInMinutes: 10
+
+  - bash: |
+      cd src
+      if [ ! -s "$MOCHA_FILE" ]; then
+        exit 1
+      fi
+    displayName: Check test results existence
+
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testResultsFiles: '*.xml'
+      searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
+    condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
+
+  - bash: |
+      export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
+      export MESSAGE="Build failed for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
+      curl -g -H "Content-Type: application/json" -X POST \
+      -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
+    displayName: Post Slack Notification on failure
+    condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
+
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
       export MESSAGE="Build succeeded for *<$BUILD_URL|$BUILD_DEFINITIONNAME>* nightly build from *$BUILD_SOURCEBRANCHNAME*."
       curl -g -H "Content-Type: application/json" -X POST \
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
-    displayName: 'Post Slack Notification on Success'
+    displayName: Post Slack Notification on success
     condition: and(succeeded(), eq(variables['NOTIFY_SLACK'], '1'))
