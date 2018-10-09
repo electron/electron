@@ -13,7 +13,7 @@ const Promise = require('bluebird')
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
 // TODO(alexeykuzmin): [Ch66] Crashes on Linux ia32. Fix it and enable back.
-xdescribe('powerMonitor', () => {
+describe('powerMonitor', () => {
   let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
 
   if (!skip) {
@@ -126,9 +126,13 @@ xdescribe('powerMonitor', () => {
     })
 
     describe('powerMonitor.querySystemIdleState', () => {
-      it('notify current system idle state', (done) => {
-        powerMonitor.querySystemIdleState(1, (idleState) => {
-          assert.ok(idleState)
+      it('notify current system idle state', done => {
+        // this function is not mocked out, so we can test the result's
+        // form and type but not its value.
+        powerMonitor.querySystemIdleState(1, idleState => {
+          assert.equal(typeof idleState, 'string')
+          const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
+          assert.ok(validIdleStates.includes(idleState))
           done()
         })
       })
