@@ -580,6 +580,10 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 **Note:** On Windows you have to call it after the `ready` events gets emitted.
 
+### `app.getRegion()` _macOS_ _Linux_ _Windows_
+Returns `String` - User operating system region in ISO3166 [here](https://www.iso.org/iso-3166-country-codes.html). The value is taken from OS apis.
+**Note:** When unable to detect region, it returns empty string.
+
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
 * `path` String

@@ -60,6 +60,7 @@
 #endif
 
 #if defined(OS_MACOSX)
+#include <CoreFoundation/CoreFoundation.h>
 #include "atom/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
 
@@ -874,6 +875,55 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
+std::string App::GetRegion() {
+  std::string region;
+
+#if defined(OS_WIN)
+  WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
+
+  if (
+    GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
+                      LOCALE_SISO3166CTRYNAME,
+                      (LPWSTR)&locale_name,
+                      sizeof(locale_name) / sizeof(WCHAR))
+                      ||
+    GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT,
+                      LOCALE_SISO3166CTRYNAME,
+                      (LPWSTR)&locale_name,
+                      sizeof(locale_name) / sizeof(WCHAR))) {
+    char tmp[wcslen(locale_name) * 4];
+    WideCharToMultiByte(CP_ACP, 0, locale_name, -1, tmp, sizeof(locale_name), NULL, NULL);
+    region = tmp;
+  }
+#elif defined(OS_MACOSX)
+  auto locale = CFLocaleCopyCurrent();
+  auto value = CFStringRef(static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  const CFIndex kCStringSize = 128;
+  char temporaryCString[kCStringSize];
+  bzero(temporaryCString,kCStringSize);
+  CFStringGetCString(value, temporaryCString, kCStringSize, kCFStringEncodingUTF8);
+  region = temporaryCString;
+#else
+  std::string locale = setlocale(LC_TIME, NULL);
+  if (locale.empty())
+    locale = setlocale(LC_NUMERIC, NULL);
+
+  if (!locale.empty()) {
+    std::string::size_type rpos = locale.rfind('.');
+    if (rpos != std::string::npos)
+      locale = locale.substr(0, locale.rfind('.'));
+
+    rpos = locale.rfind('_');
+    if (rpos != std::string::npos && region.size() > rpos)
+      region = locale.substr(rpos + 1, 2);
+  }
+#endif
+  if (!region.empty() && region.size() == 2)
+    return region;
+
+  return "";
+}
+
 void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
                            const base::FilePath& cwd) {
   Emit("second-instance", cmd, cwd);
@@ -1288,6 +1338,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getRegion", &App::GetRegion)
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
