@@ -507,4 +507,7 @@ patches:
   author: Heilig Benedek <benecene@gmail.com>
   file: tts.patch
   description:  |
-    Add changeset that was previously applied to sources in chromium_src
+    To enable TTS support, we have to disable the connection between the TTS
+    related source files and the chromium Profile class, since that is deeply
+    rooted in almost everything under the //chrome target. This patch disables
+    those calls.

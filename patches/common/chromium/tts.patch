@@ -17,6 +17,18 @@ index 2ca56c3a247e..f58e33b3c019 100644
    return prefs;
  }
 
+diff --git a/chrome/browser/speech/tts_mac.mm b/chrome/browser/speech/tts_mac.mm
+index 74996d854df3..d3bf665c2963 100644
+--- a/chrome/browser/speech/tts_mac.mm
++++ b/chrome/browser/speech/tts_mac.mm
+@@ -11,7 +11,6 @@
+ #include "base/values.h"
+ #include "chrome/browser/speech/tts_controller.h"
+ #include "chrome/browser/speech/tts_platform.h"
+-#include "extensions/browser/extension_function.h"
+
+ #import <Cocoa/Cocoa.h>
+
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
 index 013c7a9c60f9..7f468ab165f9 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
