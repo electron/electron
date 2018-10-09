@@ -1,4 +1,6 @@
 const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
@@ -11,6 +13,9 @@ const { resolveGetters } = require('./assert-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
+
+const { expect } = chai
+chai.use(dirtyChai)
 
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -1267,6 +1272,37 @@ describe('chromium feature', () => {
         })
         w.loadURL('about:blank')
       })
+    })
+  })
+
+  describe('SpeechSynthesis', () => {
+    it('should emit lifecycle events', async () => {
+      const sentence = `long sentence which will take at least a few seconds to
+          utter so that it's possible to pause and resume before the end`
+      const utter = new SpeechSynthesisUtterance(sentence)
+      // Create a dummy utterence so that speech synthesis state
+      // is initialized for later calls.
+      speechSynthesis.speak(new SpeechSynthesisUtterance())
+      speechSynthesis.cancel()
+      speechSynthesis.speak(utter)
+      // paused state after speak()
+      expect(speechSynthesis.paused).to.be.false()
+      await new Promise((resolve) => { utter.onstart = resolve })
+      // paused state after start event
+      expect(speechSynthesis.paused).to.be.false()
+
+      speechSynthesis.pause()
+      // paused state changes async, right before the pause event
+      expect(speechSynthesis.paused).to.be.false()
+      await new Promise((resolve) => { utter.onpause = resolve })
+      expect(speechSynthesis.paused).to.be.true()
+
+      speechSynthesis.resume()
+      await new Promise((resolve) => { utter.onresume = resolve })
+      // paused state after resume event
+      expect(speechSynthesis.paused).to.be.false()
+
+      await new Promise((resolve) => { utter.onend = resolve })
     })
   })
 })
