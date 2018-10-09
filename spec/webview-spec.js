@@ -971,12 +971,17 @@ describe('<webview> tag', function () {
 
   describe('media-started-playing media-paused events', () => {
     it('emits when audio starts and stops playing', async () => {
-      await loadWebView(webview, { src: `file://${fixtures}/pages/audio.html` })
+      await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` })
 
-      // XXX(alexeykuzmin): Starting from Ch66 playing an audio requires
-      // a user interaction. See https://goo.gl/xX8pDD.
-
-      webview.executeJavaScript('document.querySelector("audio").play()', true)
+      // With the new autoplay policy, audio elements must be unmuted
+      // see https://goo.gl/xX8pDD.
+      const source = `
+        const audio = document.createElement("audio")
+        audio.src = "../assets/tone.wav"
+        document.body.appendChild(audio);
+        audio.play()
+      `
+      webview.executeJavaScript(source, true)
       await waitForEvent(webview, 'media-started-playing')
 
       webview.executeJavaScript('document.querySelector("audio").pause()', true)
