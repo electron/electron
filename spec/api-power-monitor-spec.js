@@ -16,7 +16,6 @@ chai.use(dirtyChai)
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
-// TODO(alexeykuzmin): [Ch66] Crashes on Linux ia32. Fix it and enable back.
 describe('powerMonitor', () => {
   let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
 
