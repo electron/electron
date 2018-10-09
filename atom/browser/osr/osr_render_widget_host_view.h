@@ -57,6 +57,10 @@ class NSWindow;
 #endif
 #endif
 
+namespace content {
+class CursorManager;
+}  // namespace content
+
 namespace atom {
 
 class AtomCopyFrameGenerator;
@@ -141,6 +145,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void RenderProcessGone(base::TerminationStatus, int) override;
   void Destroy(void) override;
   void SetTooltipText(const base::string16&) override;
+  content::CursorManager* GetCursorManager() override;
   void SelectionBoundsChanged(
       const ViewHostMsg_SelectionBounds_Params&) override;
   void CopyFromSurface(
@@ -156,7 +161,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
   gfx::Size GetCompositorViewportPixelSize() const override;
-  gfx::Size GetRequestedRendererSize() const override;
+
+#if defined(OS_MACOSX)
+  viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
+      const cc::RenderFrameMetadata& metadata) override;
+#endif
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
@@ -175,8 +184,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void DidReceiveFirstFrameAfterNavigation() override;
 #endif  // !defined(OS_MACOSX)
 
-  viz::LocalSurfaceId GetLocalSurfaceId() const override;
-  viz::FrameSinkId GetFrameSinkId() override;
+  const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
+  const viz::FrameSinkId& GetFrameSinkId() const override;
 
   void DidNavigate() override;
 
@@ -259,6 +268,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   content::RenderWidgetHostImpl* render_widget_host() const {
     return render_widget_host_;
   }
+  void SetNativeWindow(NativeWindow* window);
   NativeWindow* window() const { return native_window_; }
   gfx::Size size() const { return size_; }
   float scale_factor() const { return scale_factor_; }
@@ -272,6 +282,12 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   }
 
  private:
+#if defined(OS_MACOSX)
+  display::Display GetDisplay();
+  void OnDidUpdateVisualPropertiesComplete(
+      const cc::RenderFrameMetadata& metadata);
+#endif
+
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
@@ -323,6 +339,8 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::unique_ptr<ui::Layer> root_layer_;
   std::unique_ptr<ui::Compositor> compositor_;
   std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+
+  std::unique_ptr<content::CursorManager> cursor_manager_;
 
   std::unique_ptr<AtomCopyFrameGenerator> copy_frame_generator_;
   std::unique_ptr<AtomBeginFrameTimer> begin_frame_timer_;
