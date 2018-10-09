@@ -8,7 +8,6 @@ import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
 import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
-import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
@@ -295,15 +294,7 @@ static_library("electron_lib") {
   sources = filenames.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
 
-  sources += [
-    "$target_gen_dir/atom_natives.h",
-    "//extensions/browser/app_window/size_constraints.cc",
-    "//extensions/browser/app_window/size_constraints.h",
-    "//extensions/common/constants.cc",
-    "//extensions/common/constants.h",
-    "//extensions/common/url_pattern.cc",
-    "//extensions/common/url_pattern.h",
-  ]
+  sources += [ "$target_gen_dir/atom_natives.h" ]
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -437,42 +428,8 @@ static_library("electron_lib") {
     ]
   }
 
-  if (enable_tts) {
-    sources += [
-      "//chrome/browser/speech/tts_controller.h",
-      "//chrome/browser/speech/tts_controller_impl.cc",
-      "//chrome/browser/speech/tts_controller_impl.h",
-      "//chrome/browser/speech/tts_mac.mm",
-      "//chrome/browser/speech/tts_message_filter.cc",
-      "//chrome/browser/speech/tts_message_filter.h",
-      "//chrome/browser/speech/tts_platform.cc",
-      "//chrome/browser/speech/tts_platform.h",
-      "//chrome/browser/speech/tts_win.cc",
-      "//chrome/common/tts_messages.h",
-      "//chrome/common/tts_utterance_request.cc",
-      "//chrome/common/tts_utterance_request.h",
-      "//chrome/renderer/tts_dispatcher.cc",
-      "//chrome/renderer/tts_dispatcher.h",
-    ]
-
-    if (is_linux) {
-      sources += [ "//chrome/browser/speech/tts_linux.cc" ]
-      deps += [ "//third_party/speech-dispatcher" ]
-    }
-  }
-
   if (enable_pepper_flash) {
     deps += [ "components/pepper_flash" ]
-  }
-
-  if (enable_widevine) {
-    sources += [
-      "//chrome/renderer/media/chrome_key_systems.cc",
-      "//chrome/renderer/media/chrome_key_systems.h",
-      "//chrome/renderer/media/chrome_key_systems_provider.cc",
-      "//chrome/renderer/media/chrome_key_systems_provider.h",
-    ]
-    deps += [ "//components/cdm/renderer" ]
   }
 }
 

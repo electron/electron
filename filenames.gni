@@ -620,8 +620,6 @@ filenames = {
     "chromium_src/chrome/renderer/spellchecker/spellcheck_worditerator.cc",
     "chromium_src/chrome/renderer/spellchecker/spellcheck_worditerator.h",
     "chromium_src/chrome/utility/utility_message_handler.h",
-    "chromium_src/library_loaders/libspeechd_loader.cc",
-    "chromium_src/library_loaders/libspeechd.h",
   ]
 
   lib_sources_nss = [
