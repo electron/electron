@@ -971,13 +971,14 @@ describe('<webview> tag', function () {
 
   describe('media-started-playing media-paused events', () => {
     it('emits when audio starts and stops playing', async () => {
-      await loadWebView(webview, { src: `data:text/html` })
+      await loadWebView(webview, { src: `file://${fixtures}/pages/base-page.html` })
 
       // With the new autoplay policy, audio elements must be unmuted
       // see https://goo.gl/xX8pDD.
       const source = `
         const audio = document.createElement("audio")
         audio.src = "../assets/tone.wav"
+        document.body.appendChild(audio);
         audio.play()
       `
       webview.executeJavaScript(source, true)
