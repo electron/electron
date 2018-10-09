@@ -1,6 +1,6 @@
-From 76b7181bb594403e3529a961efcacc6923af7e83 Mon Sep 17 00:00:00 2001
+From c353972f86d7c8afea19128dd404f4532b3ac9c1 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Thu, 20 Sep 2018 17:48:52 -0700
+Date: Tue, 9 Oct 2018 10:36:20 -0700
 Subject: mas_no_private_api.patch
 
 Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
@@ -423,7 +423,7 @@ index 9073364142e8..2356add74dfa 100644
        NOTREACHED();
        return nullptr;
 diff --git a/ui/views/cocoa/bridged_native_widget.mm b/ui/views/cocoa/bridged_native_widget.mm
-index 69c5f1f44d7e..8a1d8e7fc0dd 100644
+index 69c5f1f44d7e..8841b59f6b70 100644
 --- a/ui/views/cocoa/bridged_native_widget.mm
 +++ b/ui/views/cocoa/bridged_native_widget.mm
 @@ -43,6 +43,7 @@
@@ -434,14 +434,14 @@ index 69c5f1f44d7e..8a1d8e7fc0dd 100644
  extern "C" {
  
  typedef int32_t CGSConnection;
-@@ -55,6 +56,7 @@ CGError CGSSetWindowBackgroundBlurRadius(CGSConnection connection,
+@@ -52,6 +53,7 @@ CGError CGSSetWindowBackgroundBlurRadius(CGSConnection connection,
+                                          int radius);
+ 
+ }
++#endif
  namespace {
  constexpr auto kUIPaintTimeout = base::TimeDelta::FromSeconds(5);
  }  // namespace
-+#endif
- 
- // The NSView that hosts the composited CALayer drawing the UI. It fills the
- // window but is not hittable so that accessibility hit tests always go to the
 -- 
 2.17.0
 
