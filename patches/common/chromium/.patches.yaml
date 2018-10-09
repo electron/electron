@@ -482,4 +482,5 @@ patches:
   file: content_browser_main_loop.patch
   description: |
     Pass idle quit closure for main message loop, so that pending tasks are
-    run before shutdown.
+    run before shutdown. This is required to cleanup WebContents asynchronously
+    in atom::CommonWebContentsDelegate::ResetManageWebContents.

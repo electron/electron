@@ -209,14 +209,15 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // this is guaranteed in the sync mode by the order of declaration,
     // in the async version we maintain a reference until the WebContents
     // is destroyed.
+    // //electron/patches/common/chromium/content_browser_main_loop.patch
+    // is required to get the right quit closure for the main message loop.
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
-        base::BindOnce(
-            [](scoped_refptr<AtomBrowserContext> browser_context,
-               void* web_contents) {
-              delete static_cast<content::WebContents*>(web_contents);
-            },
-            base::RetainedRef(browser_context_), web_contents_.release()));
+        base::BindOnce([](scoped_refptr<AtomBrowserContext> browser_context,
+                          std::unique_ptr<brightray::InspectableWebContents>
+                              web_contents) { web_contents.reset(); },
+                       base::RetainedRef(browser_context_),
+                       std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }
