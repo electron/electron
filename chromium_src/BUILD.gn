@@ -9,6 +9,8 @@ import("//third_party/widevine/cdm/widevine.gni")
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/browser_process.cc",
+    "//chrome/browser/browser_process.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/extensions/global_shortcut_listener_mac.h",

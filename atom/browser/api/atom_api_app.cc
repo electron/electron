@@ -23,7 +23,6 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -62,6 +61,8 @@
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
+
+#include "atom/common/node_includes.h"
 
 using atom::Browser;
 
