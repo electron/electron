@@ -242,6 +242,12 @@ jobs:
       archiveFilePatterns: $(System.ArtifactsDirectory)/Default/node_headers.tar.gz
       destinationFolder: src/out/Default/gen
 
+#  TODO(alexeykuzmin): Install Node when tests are run on Microsoft-hosted agents.
+#  - task: NodeTool@0
+#    displayName: Install Node.js 10.x
+#    inputs:
+#      versionSpec: '10.x'
+
   - bash: |
       cd src/electron
       npm install
