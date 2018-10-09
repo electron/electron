@@ -525,4 +525,7 @@ patches:
   author: Heilig Benedek <benecene@gmail.com>
   file: printing.patch
   description:  |
-    Add changeset that was previously applied to sources in chromium_src
+    Add changeset that was previously applied to sources in chromium_src. The
+    majority of changes originally come from these PRs:
+      * https://github.com/electron/electron/pull/1835
+      * https://github.com/electron/electron/pull/8596
