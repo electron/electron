@@ -62,14 +62,8 @@ async function circleCIcall (buildUrl, targetBranch, job, options) {
     }
   }
 
-  if (options.ghRelease) {
-    buildRequest.build_parameters.ELECTRON_RELEASE = 1
-  } else {
-    buildRequest.build_parameters.RUN_RELEASE_BUILD = 'true'
-  }
-
-  if (options.automaticRelease) {
-    buildRequest.build_parameters.AUTO_RELEASE = 'true'
+  if (!options.ghRelease) {
+    buildRequest.build_parameters.UPLOAD_TO_S3 = 1
   }
 
   const circleResponse = await makeRequest({
@@ -237,13 +231,13 @@ module.exports = runRelease
 
 if (require.main === module) {
   const args = require('minimist')(process.argv.slice(2), {
-    boolean: ['ghRelease', 'automaticRelease', 'armTest']
+    boolean: ['ghRelease', 'armTest']
   })
   const targetBranch = args._[0]
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
     Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor|VSTS]
-    [--ghRelease] [--automaticRelease] [--armTest] [--circleBuildNum=xxx] TARGET_BRANCH
+    [--ghRelease] [--armTest] [--circleBuildNum=xxx] TARGET_BRANCH
     `)
     process.exit(0)
   }
