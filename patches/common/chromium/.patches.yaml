@@ -431,11 +431,6 @@ patches:
     Compilation of those files fails with the Chromium 68.
     Remove the patch during the Chromium 69 upgrade.
 -
-  author: deepak1556 <hop2deep@gmail.com>
-  file: disable_extensions_gn.patch
-  description: |
-    Fix build files generation when chrome extensions are disabled.
--
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: crashpad_http_status.patch
   description: backport of crashpad f540abb506
