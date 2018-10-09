@@ -67,6 +67,8 @@ def main(argv):
     with zipfile.ZipFile(dist_zip, mode='w', compression=zipfile.ZIP_DEFLATED,
                          allowZip64=True) as z:
       for dep in dist_files:
+        if target_os == 'linux':
+            strip_binaries(target_cpu, dep)
         if skip_path(dep):
           continue
         if os.path.isdir(dep):
