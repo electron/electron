@@ -16,9 +16,7 @@ namespace atom {
 class MacHelper : public content::BrowserCompositorMacClient,
                   public ui::AcceleratedWidgetMacNSView {
  public:
-  explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {
-    [this->AcceleratedWidgetGetNSView() setWantsLayer:YES];
-  }
+  explicit MacHelper(OffScreenRenderWidgetHostView* view) : view_(view) {}
 
   virtual ~MacHelper() {}
 
