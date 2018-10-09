@@ -46,9 +46,9 @@ class CommonWebContentsDelegate
                            bool is_guest);
 
   // Set the window as owner window.
-  void SetOwnerWindow(NativeWindow* owner_window);
-  void SetOwnerWindow(content::WebContents* web_contents,
-                      NativeWindow* owner_window);
+  virtual void SetOwnerWindow(NativeWindow* owner_window);
+  virtual void SetOwnerWindow(content::WebContents* web_contents,
+                              NativeWindow* owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
