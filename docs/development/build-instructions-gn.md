@@ -72,6 +72,32 @@ $ gclient sync --with_branch_heads --with_tags
 # This will take a while, go get a coffee.
 ```
 
+#### A note on pulling/pushing
+
+If you intend to `git pull` or `git push` from the official `electron`
+repository in the future, you now need to update the respective folder's
+origin URLs.
+
+```sh
+$ cd src/electron
+$ git remote remove origin
+$ git remote add origin https://github.com/electron/electron
+$ git branch --set-upstream-to=origin/master
+$ cd -
+```
+
+:memo: `gclient` works by checking a file called `DEPS` inside the 
+`src/electron` folder for dependencies (like Chromium or Node.js).
+Running `gclient sync -f` ensures that all dependencies required
+to build Electron match that file.
+
+So, in order to pull, you'd run the following commands:
+```sh
+$ cd src/electron
+$ git pull
+$ gclient sync -f
+```
+
 ## Building
 
 ```sh
