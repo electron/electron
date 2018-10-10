@@ -268,6 +268,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       size_(native_window ? native_window->GetSize() : gfx::Size()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
+      cursor_manager_(new content::CursorManager(this)),
       mouse_wheel_phase_handler_(this),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
@@ -313,7 +314,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     native_window_->AddObserver(this);
 
   ResizeRootLayer(false);
-  cursor_manager_.reset(new content::CursorManager(this));
   render_widget_host_->SetView(this);
   InstallTransparency();
 }
@@ -359,9 +359,10 @@ void OffScreenRenderWidgetHostView::OnWindowResize() {
 }
 
 void OffScreenRenderWidgetHostView::OnWindowClosed() {
-  if (native_window_)
+  if (native_window_) {
     native_window_->RemoveObserver(this);
-  native_window_ = nullptr;
+    native_window_ = nullptr;
+  }
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
@@ -1251,10 +1252,10 @@ void OffScreenRenderWidgetHostView::SetNativeWindow(NativeWindow* window) {
 
   native_window_ = window;
 
-  if (native_window_) {
+  if (native_window_)
     native_window_->AddObserver(this);
-    OnWindowResize();
-  }
+
+  OnWindowResize();
 }
 
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
