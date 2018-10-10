@@ -325,6 +325,7 @@ def main():
                 retcode = ExitStatus.DIFF
 
     if patch_file.tell() == 0:
+      patch_file.close()
       os.unlink(patch_file.name)
     else:
       print("\nTo patch these files, run:\n$ git apply {}\n"
