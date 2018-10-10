@@ -71,7 +71,8 @@ class CommonWebContentsDelegate
 
  protected:
 #if BUILDFLAG(ENABLE_OSR)
-  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
+  virtual OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const;
 #endif
 
   // content::WebContentsDelegate:

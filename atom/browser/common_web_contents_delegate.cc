@@ -30,6 +30,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -248,12 +249,7 @@ content::WebContents* CommonWebContentsDelegate::GetDevToolsWebContents()
 #if BUILDFLAG(ENABLE_OSR)
 OffScreenRenderWidgetHostView*
 CommonWebContentsDelegate::GetOffScreenRenderWidgetHostView() const {
-  if (GetWebContents()) {
-    return static_cast<OffScreenRenderWidgetHostView*>(
-        GetWebContents()->GetRenderWidgetHostView());
-  } else {
-    return nullptr;
-  }
+  return nullptr;
 }
 #endif
 
