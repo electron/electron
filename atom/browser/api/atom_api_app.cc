@@ -881,27 +881,26 @@ std::string App::GetRegion() {
 #if defined(OS_WIN)
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
-  if (
-    GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT,
-                      LOCALE_SISO3166CTRYNAME,
+  if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
                       (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))
-                      ||
-    GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT,
-                      LOCALE_SISO3166CTRYNAME,
+                      sizeof(locale_name) / sizeof(WCHAR)) ||
+      GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
                       (LPWSTR)&locale_name,
                       sizeof(locale_name) / sizeof(WCHAR))) {
-    char tmp[wcslen(locale_name) * 4];
-    WideCharToMultiByte(CP_ACP, 0, locale_name, -1, tmp, sizeof(locale_name), NULL, NULL);
+    char tmp[LOCALE_NAME_MAX_LENGTH * 4];
+    WideCharToMultiByte(CP_ACP, 0, locale_name, -1, tmp, sizeof(locale_name),
+                        NULL, NULL);
     region = tmp;
   }
 #elif defined(OS_MACOSX)
   auto locale = CFLocaleCopyCurrent();
-  auto value = CFStringRef(static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  auto value = CFStringRef(
+      static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
   const CFIndex kCStringSize = 128;
   char temporaryCString[kCStringSize];
-  bzero(temporaryCString,kCStringSize);
-  CFStringGetCString(value, temporaryCString, kCStringSize, kCFStringEncodingUTF8);
+  bzero(temporaryCString, kCStringSize);
+  CFStringGetCString(value, temporaryCString, kCStringSize,
+                     kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
   std::string locale = setlocale(LC_TIME, NULL);
