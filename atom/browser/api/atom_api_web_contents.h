@@ -424,6 +424,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const override;
 #endif
 
   // Called when we receive a CursorChange message from chromium.
