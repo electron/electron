@@ -6,6 +6,18 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+# Planned Breaking API Changes (5.0)
+
+## `new BrowserWindow({ webPreferences })`
+
+The following `webPreferences` option default values are deprecated in favor of the new defaults listed below.
+
+| Property | Deprecated Default | New Default |
+|----------|--------------------|-------------|
+| `contextIsolation` | `false` | `true` |
+| `nodeIntegration` | `true` | `false` |
+| `webviewTag` | `nodeIntegration` if set else `true` | `false` |
+
 
 # Planned Breaking API Changes (4.0)
 
