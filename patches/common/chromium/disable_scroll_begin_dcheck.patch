@@ -1,21 +1,30 @@
+From 56f1078f33969f1d3c097b398a10d251ea774add Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:27 -0700
+Subject: disable_scroll_begin_dcheck.patch
+
+When testing https://github.com/electron/electron/issues/13137 I have met
+these assertions. I grouped them together since they are all related to the
+ScrollBegin event.
+
 diff --git a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-index c3f4641e8525..dd50ff1c2557 100644
+index 702915772e4f..71fb66a7401c 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
 +++ b/content/browser/renderer_host/input/mouse_wheel_event_queue.cc
-@@ -362,7 +362,7 @@ void MouseWheelEventQueue::SendScrollBegin(
-          (synthetic && !needs_scroll_begin_when_scroll_latching_disabled_) ||
-          needs_scroll_begin_when_scroll_latching_disabled_);
- 
+@@ -295,7 +295,7 @@ void MouseWheelEventQueue::SendScrollEnd(WebGestureEvent update_event,
+ void MouseWheelEventQueue::SendScrollBegin(
+     const WebGestureEvent& gesture_update,
+     bool synthetic) {
 -  DCHECK(!client_->IsWheelScrollInProgress());
 +  // DCHECK(!client_->IsWheelScrollInProgress());
  
    WebGestureEvent scroll_begin(gesture_update);
    scroll_begin.SetType(WebInputEvent::kGestureScrollBegin);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 9b930b8acd1d..f3d356f86f15 100644
+index 28879dc5e9bb..222b5d7e91ec 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1263,8 +1263,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
+@@ -1321,8 +1321,8 @@ void RenderWidgetHostImpl::ForwardGestureEventWithLatencyInfo(
      // GSB and GSU events instead of sending them to the renderer and continues
      // to progress the fling. So, the renderer doesn't receive two GSB events
      // without any GSE in between.
@@ -26,3 +35,6 @@ index 9b930b8acd1d..f3d356f86f15 100644
      is_in_gesture_scroll_[gesture_event.SourceDevice()] = true;
    } else if (gesture_event.GetType() ==
               blink::WebInputEvent::kGestureScrollEnd) {
+-- 
+2.17.0
+

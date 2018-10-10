@@ -1,8 +1,14 @@
+From eaf64921a97d513151d48ab01975b5ac966a7e34 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:44 -0700
+Subject: gin_enable_disable_v8_platform.patch
+
+
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 076d137eb7cf..c10c3b0be66b 100644
+index e3a23cf30e42..e099fd3f03e5 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -119,9 +119,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -116,9 +116,10 @@ IsolateHolder::~IsolateHolder() {
  void IsolateHolder::Initialize(ScriptMode mode,
                                 V8ExtrasMode v8_extras_mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -16,10 +22,10 @@ index 076d137eb7cf..c10c3b0be66b 100644
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 2509aca609f9..94003c6031cf 100644
+index a70ad1ce51a9..84cf66e6e9cd 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -84,7 +84,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -83,7 +83,8 @@ class GIN_EXPORT IsolateHolder {
    static void Initialize(ScriptMode mode,
                           V8ExtrasMode v8_extras_mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -64,3 +70,6 @@ index 6f3265ba4d06..29f28bebbdcd 100644
  
    // Get address and size information for currently loaded snapshot.
    // If no snapshot is loaded, the return values are null for addresses
+-- 
+2.17.0
+

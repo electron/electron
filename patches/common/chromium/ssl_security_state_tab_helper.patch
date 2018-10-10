@@ -1,5 +1,12 @@
+From 87f31d450894df2b00c6a2d6fb7eb2639b595756 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:34 -0700
+Subject: ssl_security_state_tab_helper.patch
+
+Allows populating security tab info for devtools in Electron.
+
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 7b12c9d2df52..e75171b86ef1 100644
+index 58066f3a532b..a1643c6492e3 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,17 +13,23 @@
@@ -83,7 +90,7 @@ index 7b12c9d2df52..e75171b86ef1 100644
    safe_browsing::SafeBrowsingService* sb_service =
        g_browser_process->safe_browsing_service();
    if (!sb_service)
-@@ -323,6 +337,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
+@@ -340,6 +354,7 @@ SecurityStateTabHelper::GetMaliciousContentStatus() const {
          break;
      }
    }
@@ -91,7 +98,7 @@ index 7b12c9d2df52..e75171b86ef1 100644
    return security_state::MALICIOUS_CONTENT_STATUS_NONE;
  }
  
-@@ -343,15 +358,19 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
+@@ -360,15 +375,19 @@ std::vector<std::string> SecurityStateTabHelper::GetSecureOriginsAndPatterns()
      const {
    const base::CommandLine& command_line =
        *base::CommandLine::ForCurrentProcess();
@@ -112,7 +119,7 @@ index 7b12c9d2df52..e75171b86ef1 100644
    return secure_origin_whitelist::ParseWhitelist(origins_str);
  }
 diff --git a/chrome/common/secure_origin_whitelist.cc b/chrome/common/secure_origin_whitelist.cc
-index db9bb54ddbc1..cc7a22bdb920 100644
+index 3319df136d4d..fbc6eea480d2 100644
 --- a/chrome/common/secure_origin_whitelist.cc
 +++ b/chrome/common/secure_origin_whitelist.cc
 @@ -13,7 +13,9 @@
@@ -125,7 +132,7 @@ index db9bb54ddbc1..cc7a22bdb920 100644
  #include "net/base/registry_controlled_domains/registry_controlled_domain.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -155,7 +157,9 @@ std::vector<std::string> GetWhitelist() {
+@@ -163,7 +165,9 @@ std::vector<std::string> GetWhitelist() {
  
  std::set<std::string> GetSchemesBypassingSecureContextCheck() {
    std::set<std::string> schemes;
@@ -135,3 +142,6 @@ index db9bb54ddbc1..cc7a22bdb920 100644
    return schemes;
  }
  
+-- 
+2.17.0
+

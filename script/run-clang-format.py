@@ -281,6 +281,9 @@ def main():
         njobs = multiprocessing.cpu_count() + 1
     njobs = min(len(files), njobs)
 
+    patch_file = tempfile.NamedTemporaryFile(delete=False,
+                                             prefix='electron-format-')
+
     if njobs == 1:
         # execute directly instead of in a pool,
         # less overhead, simpler stacktraces
@@ -315,14 +318,18 @@ def main():
                 continue
             if not args.quiet:
                 print_diff(outs, use_color=colored_stdout)
-                with tempfile.NamedTemporaryFile(delete=False) as patch_file:
-                    for line in outs:
-                        patch_file.write(line)
-                    patch_file.write('\n')
-                    print("\nTo apply this patch, run:\n$ git apply {}\n"
-                          .format(patch_file.name))
+                for line in outs:
+                    patch_file.write(line)
+                patch_file.write('\n')
             if retcode == ExitStatus.SUCCESS:
                 retcode = ExitStatus.DIFF
+
+    if patch_file.tell() == 0:
+      os.unlink(patch_file.name)
+    else:
+      print("\nTo patch these files, run:\n$ git apply {}\n"
+            .format(patch_file.name))
+
     return retcode
 
 

@@ -1,9 +1,9 @@
 diff --git a/src/ostreams.h b/src/ostreams.h
-index e72c8ee..9f25bca 100644
+index c6b64a1cd9..236a73d018 100644
 --- a/src/ostreams.h
 +++ b/src/ostreams.h
-@@ -34,7 +34,7 @@ class OFStreamBase : public std::streambuf {
- 
+@@ -32,7 +32,7 @@ class OFStreamBase : public std::streambuf {
+ };
  
  // An output stream writing to a file.
 -class V8_EXPORT_PRIVATE OFStream : public std::ostream {

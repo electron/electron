@@ -608,8 +608,10 @@ bool PdfConverterUtilityProcessHostClient::OnMessageReceived(
         ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageCount, OnPageCount)
     IPC_MESSAGE_HANDLER(ChromeUtilityHostMsg_RenderPDFPagesToMetafiles_PageDone,
                         OnPageDone)
+#if 0
     IPC_MESSAGE_HANDLER(ChromeUtilityHostMsg_PreCacheFontCharacters,
                         OnPreCacheFontCharacters)
+#endif
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
   return handled;

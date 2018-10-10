@@ -179,11 +179,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
-  bool SendIPCMessage(bool all_frames,
+  bool SendIPCMessage(bool internal,
+                      bool send_to_all,
                       const std::string& channel,
                       const base::ListValue& args);
 
-  bool SendIPCMessageWithSender(bool all_frames,
+  bool SendIPCMessageWithSender(bool internal,
+                                bool send_to_all,
                                 const std::string& channel,
                                 const base::ListValue& args,
                                 int32_t sender_id = 0);
@@ -312,12 +314,11 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
-  void MoveContents(content::WebContents* source,
-                    const gfx::Rect& pos) override;
+  void SetContentsBounds(content::WebContents* source,
+                         const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
   void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
-  bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
@@ -331,7 +332,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
-      content::RenderWidgetHost* render_widget_host) override;
+      content::RenderWidgetHost* render_widget_host,
+      base::RepeatingClosure hang_monitor_restarter) override;
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
@@ -349,7 +351,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
-      const content::MediaResponseCallback& callback) override;
+      content::MediaResponseCallback callback) override;
   void RequestToLockMouse(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
@@ -442,6 +444,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when received a message from renderer to be forwarded.
   void OnRendererMessageTo(content::RenderFrameHost* frame_host,
+                           bool internal,
                            bool send_to_all,
                            int32_t web_contents_id,
                            const std::string& channel,

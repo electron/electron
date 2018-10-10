@@ -1,4 +1,4 @@
-FROM arm32v7/ubuntu:16.04
+FROM arm32v7/ubuntu:18.04
 
 RUN groupadd --gid 1000 builduser \
   && useradd --uid 1000 --gid builduser --shell /bin/bash --create-home builduser

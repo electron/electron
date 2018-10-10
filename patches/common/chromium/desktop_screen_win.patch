@@ -1,3 +1,9 @@
+From 0dbac64c4877f7783726d3bc04f332a1491285b7 Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:45:44 -0700
+Subject: desktop_screen_win.patch
+
+
 diff --git a/ui/views/widget/desktop_aura/desktop_screen_win.cc b/ui/views/widget/desktop_aura/desktop_screen_win.cc
 index f772f64d656e..7d13f9f81b6c 100644
 --- a/ui/views/widget/desktop_aura/desktop_screen_win.cc
@@ -11,3 +17,6 @@ index f772f64d656e..7d13f9f81b6c 100644
    aura::WindowTreeHost* host = window->GetHost();
    return host ? host->GetAcceleratedWidget() : NULL;
  }
+-- 
+2.17.0
+

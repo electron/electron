@@ -21,11 +21,11 @@ namespace atom {
 LoginHandler::LoginHandler(
     net::URLRequest* request,
     const net::AuthChallengeInfo& auth_info,
-    const net::NetworkDelegate::AuthCallback& callback,
+    net::NetworkDelegate::AuthCallback callback,
     net::AuthCredentials* credentials,
     const content::ResourceRequestInfo* resource_request_info)
     : credentials_(credentials),
-      auth_info_(auth_info),
+      auth_info_(&auth_info),
       auth_callback_(std::move(callback)),
       weak_factory_(this) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);

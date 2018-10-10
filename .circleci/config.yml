@@ -25,6 +25,12 @@ env-testing-build: &env-testing-build
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
 
+env-headless-testing: &env-headless-testing
+  DISPLAY: ':99.0'
+
+env-stack-dumping: &env-stack-dumping
+  ELECTRON_ENABLE_STACK_DUMPING: '1'
+
 env-browsertests: &env-browsertests
   GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_browsertests
@@ -124,6 +130,11 @@ step-setup-env-for-build: &step-setup-env-for-build
         # https://github.com/mozilla/sccache
         SCCACHE_PATH="$PWD/src/electron/external_binaries/sccache"
         echo 'export SCCACHE_PATH="'"$SCCACHE_PATH"'"' >> $BASH_ENV
+        if [ "$CIRCLE_PR_NUMBER" != "" ]; then
+          #if building a fork set readonly access to sccache
+          echo 'export SCCACHE_BUCKET="electronjs-sccache"' >> $BASH_ENV
+          echo 'export SCCACHE_TWO_TIER=true' >> $BASH_ENV
+        fi
       fi
 
 step-install-nodejs-on-mac: &step-install-nodejs-on-mac
@@ -149,6 +160,13 @@ step-electron-build: &step-electron-build
       cd src
       ninja -C out/Default electron -j18
 
+step-electron-dist-strip: &step-electron-dist-strip
+  run:
+    name: Strip electron binaries
+    command: |
+      cd src
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+
 step-electron-dist-build: &step-electron-dist-build
   run:
     name: Build dist.zip
@@ -168,7 +186,9 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
       cd src
       # NOTE(alexeykuzmin): -j3 because chromedriver is currently built
       # on a smaller size machine and ninja mis-detects the number of CPUs available.
-      ninja -C out/Default electron:electron_chromedriver_zip -j3
+      ninja -C out/Default chrome/test/chromedriver -j3
+      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/out/Default/chromedriver
+      ninja -C out/Default electron:electron_chromedriver_zip
 
 step-electron-chromedriver-store: &step-electron-chromedriver-store
   store_artifacts:
@@ -254,7 +274,6 @@ step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
     name: Setup for headless testing
     command: |
       if [ "`uname`" != "Darwin" ]; then
-        echo 'export DISPLAY=":99.0"' >> $BASH_ENV
         sh -e /etc/init.d/xvfb start
       fi
 
@@ -271,6 +290,15 @@ step-mksnapshot-build: &step-mksnapshot-build
     name: mksnapshot build
     command: |
       cd src
+      if [ "`uname`" != "Darwin" ]; then
+        if [ "$TARGET_ARCH" == "arm" ]; then
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+        elif [ "$TARGET_ARCH" == "arm64" ]; then
+          electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+        else
+          electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
+        fi
+      fi
       # NOTE(jeremy): -j3 because mksnapshot is currently built on a smaller
       # machine size and ninja mis-detects the number of CPUs available.
       ninja -C out/Default electron:electron_mksnapshot_zip -j3
@@ -280,13 +308,18 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-generate-breakpad_symbols: &step-generate-breakpad_symbols
+step-generate-breakpad-symbols: &step-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
+    environment:
+      # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
+      ELECTRON_OUT_DIR: Default
     command: |
       cd src
+
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
+
       electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
       electron/script/zip-symbols.py
 
@@ -312,6 +345,17 @@ step-maybe-native-mksnapshot-build: &step-maybe-native-mksnapshot-build
         ninja -C out/native_mksnapshot electron:electron_mksnapshot_zip -j3
       else
         echo 'Skipping native mksnapshot build for non arm build'
+      fi
+
+step-maybe-native-mksnapshot-strip: &step-maybe-native-mksnapshot-strip
+  run:
+    name: Native mksnapshot binary strip (arm/arm64)
+    command: |
+      if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
+        cd src
+        electron/script/strip-binaries.py --file $PWD/out/native_mksnapshot/mksnapshot --target-cpu="$TARGET_ARCH"
+      else
+        echo 'Skipping native mksnapshot binary strip'
       fi
 
 step-maybe-native-mksnapshot-store: &step-maybe-native-mksnapshot-store
@@ -375,7 +419,15 @@ steps-electron-build: &steps-electron-build
     - *step-setup-env-for-build
     - *step-gn-gen-default
 
+    # Electron app
     - *step-electron-build
+    - *step-electron-dist-build
+    - *step-electron-dist-store
+
+    # Node.js headers
+    - *step-nodejs-headers-build
+    - *step-nodejs-headers-store
+
     - *step-show-sccache-stats
 
 steps-electron-build-for-tests: &steps-electron-build-for-tests
@@ -400,11 +452,14 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
+    # Breakpad symbols.
+    # TODO(alexeykuzmin): We should do it only in nightly builds.
+    - *step-generate-breakpad-symbols
+
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
 
     - *step-maybe-notify-slack-failure
-    - *step-maybe-notify-slack-success
 
 steps-electron-build-for-publish: &steps-electron-build-for-publish
   steps:
@@ -417,9 +472,10 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
+    - *step-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
-    - *step-generate-breakpad_symbols
+    - *step-generate-breakpad-symbols
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -428,6 +484,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     # native_mksnapshot
     - *step-maybe-native-mksnapshot-gn-gen
     - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-strip
     - *step-maybe-native-mksnapshot-store
 
     # chromedriver
@@ -457,6 +514,8 @@ steps-chromedriver-build: &steps-chromedriver-build
     - *step-electron-chromedriver-build
     - *step-electron-chromedriver-store
 
+    - *step-maybe-notify-slack-failure
+
 steps-native-mksnapshot-build: &steps-native-mksnapshot-build
   steps:
     - attach_workspace:
@@ -466,6 +525,8 @@ steps-native-mksnapshot-build: &steps-native-mksnapshot-build
     - *step-maybe-native-mksnapshot-gn-gen
     - *step-maybe-native-mksnapshot-build
     - *step-maybe-native-mksnapshot-store
+
+    - *step-maybe-notify-slack-failure
 
 steps-ffmpeg-build: &steps-ffmpeg-build
   steps:
@@ -485,6 +546,7 @@ steps-ffmpeg-build: &steps-ffmpeg-build
           - src/out/ffmpeg/ffmpeg.zip
 
     - *step-show-sccache-stats
+    - *step-maybe-notify-slack-failure
 
 steps-native-tests: &steps-native-tests
   steps:
@@ -526,6 +588,7 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-setup-linux-for-headless-testing
 
     - *step-verify-ffmpeg
+    - *step-maybe-notify-slack-failure
 
 steps-tests: &steps-tests
   steps:
@@ -546,7 +609,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && npm run test -- --ci --enable-logging)
+          (cd electron && npm run test -- --ci)
     - run:
         name: Check test results existence
         command: |
@@ -557,6 +620,8 @@ steps-tests: &steps-tests
           fi
     - store_test_results:
         path: src/junit
+
+    - *step-maybe-notify-slack-failure
 
 # Mac build are different in a few ways:
 # 1. We can't use save_cache/restore_cache on Mac,
@@ -650,6 +715,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-x64-chromedriver:
@@ -657,6 +723,7 @@ jobs:
     environment:
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-x64-release:
@@ -695,6 +762,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-ia32-chromedriver:
@@ -703,6 +771,7 @@ jobs:
       <<: *env-ia32
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-ia32-release:
@@ -744,6 +813,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-arm-chromedriver:
@@ -752,6 +822,7 @@ jobs:
       <<: *env-arm
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-arm-release:
@@ -776,6 +847,7 @@ jobs:
     environment:
       <<: *env-arm
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
 
   linux-arm64-debug:
@@ -800,6 +872,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-ffmpeg-build
 
   linux-arm64-chromedriver:
@@ -808,6 +881,7 @@ jobs:
       <<: *env-arm64
       <<: *env-release-build
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-chromedriver-build
 
   linux-arm64-release:
@@ -832,6 +906,7 @@ jobs:
     environment:
       <<: *env-arm64
       <<: *env-enable-sccache
+      <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
 
   osx-testing:
@@ -856,6 +931,7 @@ jobs:
       <<: *env-unittests
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-headless-testing
     <<: *steps-native-tests
 
   linux-x64-browsertests:
@@ -864,45 +940,94 @@ jobs:
       <<: *env-browsertests
       <<: *env-testing-build
       <<: *env-enable-sccache
+      <<: *env-headless-testing
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   linux-x64-release-tests:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
     <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   linux-ia32-release-tests:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
     <<: *machine-linux-medium
     environment:
       <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
   osx-testing-tests:
     <<: *machine-mac
+    environment:
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   mas-testing-tests:
     <<: *machine-mac
+    environment:
+      <<: *env-stack-dumping
     <<: *steps-tests
+
+  # Layer 4: Summary.
+  linux-x64-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-ia32-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-arm-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+  linux-arm64-release-summary:
+    <<: *machine-linux-medium
+    environment:
+      - *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
 
 workflows:
   version: 2
@@ -988,6 +1113,13 @@ workflows:
       - linux-x64-chromedriver:
           requires:
             - linux-checkout
+      - linux-x64-release-summary:
+          requires:
+            - linux-x64-release
+            - linux-x64-release-tests
+            - linux-x64-ffmpeg
+            - linux-x64-verify-ffmpeg
+            - linux-x64-chromedriver
 
       - linux-ia32-release:
           requires:
@@ -1005,6 +1137,13 @@ workflows:
       - linux-ia32-chromedriver:
           requires:
             - linux-checkout
+      - linux-ia32-release-summary:
+          requires:
+            - linux-ia32-release
+            - linux-ia32-release-tests
+            - linux-ia32-ffmpeg
+            - linux-ia32-verify-ffmpeg
+            - linux-ia32-chromedriver
 
       - linux-arm-release:
           requires:
@@ -1018,6 +1157,12 @@ workflows:
       - linux-arm-chromedriver:
           requires:
             - linux-checkout
+      - linux-arm-release-summary:
+          requires:
+            - linux-arm-release
+            - linux-arm-ffmpeg
+            - linux-arm-chromedriver
+            - linux-arm-native-mksnapshot
 
       - linux-arm64-release:
           requires:
@@ -1031,6 +1176,12 @@ workflows:
       - linux-arm64-chromedriver:
           requires:
             - linux-checkout
+      - linux-arm64-release-summary:
+          requires:
+            - linux-arm64-release
+            - linux-arm64-ffmpeg
+            - linux-arm64-chromedriver
+            - linux-arm64-native-mksnapshot
 
   # Various slow and non-essential checks we run only nightly.
   # Sanitizer jobs should be added here.

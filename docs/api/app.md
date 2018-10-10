@@ -916,7 +916,7 @@ Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Fe
 Returns `Promise`
 
 For `infoType` equal to `complete`:
- Promise is fulfilled with `Object` containing all the GPU Information as in [chromium's GPUInfo object](https://chromium.googlesource.com/chromium/src.git/+/66.0.3359.181/gpu/config/gpu_info.cc). This includes the version and driver information that's shown on `chrome://gpu` page.
+ Promise is fulfilled with `Object` containing all the GPU Information as in [chromium's GPUInfo object](https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/gpu/config/gpu_info.cc). This includes the version and driver information that's shown on `chrome://gpu` page.
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
@@ -1092,6 +1092,12 @@ Append an argument to Chromium's command line. The argument will be quoted
 correctly.
 
 **Note:** This will not affect `process.argv`.
+
+### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
+
+Enables full sandbox mode on the app.
+
+This method can only be called before app is ready.
 
 ### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
 

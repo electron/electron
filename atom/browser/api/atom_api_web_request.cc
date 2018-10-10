@@ -49,11 +49,9 @@ void CallNetworkDelegateMethod(
     URLPatterns patterns,
     Listener listener) {
   // Force creating network delegate.
-  net::URLRequestContext* context =
-      url_request_context_getter->GetURLRequestContext();
+  url_request_context_getter->GetURLRequestContext();
   // Then call the method.
-  AtomNetworkDelegate* network_delegate =
-      static_cast<AtomNetworkDelegate*>(context->network_delegate());
+  auto* network_delegate = url_request_context_getter->network_delegate();
   (network_delegate->*method)(type, std::move(patterns), std::move(listener));
 }
 

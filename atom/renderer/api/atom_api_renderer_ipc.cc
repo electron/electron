@@ -61,6 +61,7 @@ base::ListValue SendSync(mate::Arguments* args,
 }
 
 void SendTo(mate::Arguments* args,
+            bool internal,
             bool send_to_all,
             int32_t web_contents_id,
             const std::string& channel,
@@ -69,9 +70,9 @@ void SendTo(mate::Arguments* args,
   if (render_frame == nullptr)
     return;
 
-  bool success = render_frame->Send(
-      new AtomFrameHostMsg_Message_To(render_frame->GetRoutingID(), send_to_all,
-                                      web_contents_id, channel, arguments));
+  bool success = render_frame->Send(new AtomFrameHostMsg_Message_To(
+      render_frame->GetRoutingID(), internal, send_to_all, web_contents_id,
+      channel, arguments));
 
   if (!success)
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_To");

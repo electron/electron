@@ -26,8 +26,8 @@ class Arguments;
 class StreamSubscriber {
  public:
   StreamSubscriber(v8::Isolate* isolate,
-                  v8::Local<v8::Object> emitter,
-                  base::WeakPtr<atom::URLRequestStreamJob> url_job);
+                   v8::Local<v8::Object> emitter,
+                   base::WeakPtr<atom::URLRequestStreamJob> url_job);
   ~StreamSubscriber();
 
  private:

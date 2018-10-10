@@ -1,12 +1,22 @@
+From d3439444d4aa219c6d3ebacb241bff165a76cf22 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:24 -0700
+Subject: blink_initialization_order.patch
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/1030530
+to fix the order of V8 and Blink initialization.  Also fixes order
+of DidCreateScriptContext notification with initialization of window globals
+to fix electron/electron#13787.  The backport landed in Chromium 67 but the
+DidCreateScriptContext re-ordering needs to be upstreamed or kept indefinitely
+
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 5c00e3e935b2..43f882eb0883 100644
+index cbd9f811d978..160e5bc7d57a 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -171,11 +171,11 @@ void LocalWindowProxy::Initialize() {
+@@ -177,11 +177,10 @@ void LocalWindowProxy::Initialize() {
                   GetFrame()->IsMainFrame());
-     MainThreadDebugger::Instance()->ContextCreated(script_state_.get(),
-                                                    GetFrame(), origin);
-+
+     MainThreadDebugger::Instance()->ContextCreated(script_state_, GetFrame(),
+                                                    origin);
 +    InstallConditionalFeatures();
      GetFrame()->Client()->DidCreateScriptContext(context, world_->GetWorldId());
    }
@@ -16,3 +26,6 @@ index 5c00e3e935b2..43f882eb0883 100644
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
    }
+-- 
+2.17.0
+

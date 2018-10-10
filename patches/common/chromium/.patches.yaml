@@ -42,7 +42,6 @@ patches:
 
     These files have debug checks explicitly commented out:
 
-      base/memory/weak_ptr.cc
       base/process/kill_win.cc
       components/viz/service/display/program_binding.h
       content/browser/frame_host/navigation_controller_impl.cc
@@ -316,12 +315,6 @@ patches:
   description: |
     Patch to make scrollBounce option work.
 -
-  author: Birunthan Mohanathas <birunthan@mohanathas.com>
-  file: backport_d65792a.patch
-  description: |
-    https://chromium-review.googlesource.com/c/chromium/src/+/1105698
-    Fixes https://github.com/electron/electron/issues/13256
--
   author: Cheng Zhao <zcbenz@gmail.com>
   file: webview_reattach.patch
   description: |
@@ -448,18 +441,10 @@ patches:
   description: backport of crashpad f540abb506
 -
   author: Jeremy Apthorp <jeremya@chromium.org>
-  file: backport_cd7154e0bb5.patch
-  description: Support macosx 10.14 SDK
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: fix_xcode_ten.patch
+  file: expose-net-observer-api.patch
   description: |
-    Backports 27f9cbd8, a commit which does the following -
-      * Removes IDEBundleInjection.framework from egtests.
-      * Corrects the DTXcode generation function to handle leading '10'.
-      * Fixes a main_application_delegate SDK change
-      * Fixes a non-null SDK change in a net unittest.
-    This is needed for Electron to compile with XCode 10.0.
+    Expose URLRequestContextGetter::{Add,Remove}Observer.
+    This patch should be removed once we switch to using the net service (cc @robo)
 -
   author: deepak1556 <hop2deep@gmail.com>
   file: desktop_media_list.patch
@@ -468,22 +453,6 @@ patches:
       desktop capture api.
     * Backports https://chromium-review.googlesource.com/c/chromium/src/+/1199806
       that fixes crash with screen capturer, can be removed in 71.0.3539.0
--
-  author: Jeremy Apthorp <jeremya@chromium.org>
-  file: expose-net-observer-api.patch
-  description: |
-    Expose URLRequestContextGetter::{Add,Remove}Observer.
-    This patch should be removed once we switch to using the net service (cc @robo)
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: backport_7167a9eac.patch
-  description: |
-    "viz: Remove the global ServerSharedBitmapManager."
-    https://chromium-review.googlesource.com/802574
-    Landed in 69.0.3447.0.
-    See https://github.com/electron/electron/issues/14327
-    (Android specific changes and changes in some test files
-    have been removed from the diff.)
 -
   author: deepak1556 <hop2deep@gmail.com>
   file: proxy_config_monitor.patch
@@ -494,3 +463,24 @@ patches:
   file: gritsettings_resource_ids.patch
   description: |
     Add electron resources file to the list of resource ids generation.
+-
+  author: Samuel Attard <samuel.r.attard@gmail.com>
+  file: isolate_holder.patch
+  description: |
+    Pass pre allocated isolate for initialization, node platform
+    needs to register on an isolate so that it can be used later
+    down in the initialization process of an isolate.
+-
+  author: Jeremy Apthorp <jeremya@chromium.org>
+  file: notification_provenance.patch
+  description: |
+    Pass RenderProcessHost through to PlatformNotificationService.
+
+    This is so Electron can identify which renderer a notification came from.
+-
+  author: deepak1556 <hop2deep@gmail.com>
+  file: content_browser_main_loop.patch
+  description: |
+    Pass idle quit closure for main message loop, so that pending tasks are
+    run before shutdown. This is required to cleanup WebContents asynchronously
+    in atom::CommonWebContentsDelegate::ResetManageWebContents.

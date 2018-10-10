@@ -55,7 +55,9 @@ class URLRequestAsarJob : public net::URLRequestJob {
   void Start() override;
   void Kill() override;
   int ReadRawData(net::IOBuffer* buf, int buf_size) override;
-  bool IsRedirectResponse(GURL* location, int* http_status_code) override;
+  bool IsRedirectResponse(GURL* location,
+                          int* http_status_code,
+                          bool* insecure_scheme_was_upgraded) override;
   std::unique_ptr<net::SourceStream> SetUpSourceStream() override;
   bool GetMimeType(std::string* mime_type) const override;
   void SetExtraRequestHeaders(const net::HttpRequestHeaders& headers) override;

@@ -201,8 +201,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported). Default is
-    `#FFF` (white). If `transparent` is set to `true`, only values with transparent (`#00-------`) or opaque (`#FF-----`) alpha values are respected.
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if
+    `transparent` is set to `true`). Default is `#FFF` (white).
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
@@ -864,6 +864,15 @@ height areas you have within the overall content view.
 Calling this function with a value of `0` will remove any previously set aspect
 ratios.
 
+#### `win.setBackgroundColor(backgroundColor)`
+
+* `backgroundColor` String - Window's background color as a hexadecimal value,
+  like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if `transparent`
+  is `true`). Default is `#FFF` (white).
+
+Sets the background color of the window. See [Setting
+`backgroundColor`](#setting-backgroundcolor).
+
 #### `win.previewFile(path[, displayName])` _macOS_
 
 * `path` String - The absolute path to the file to preview with QuickLook. This
@@ -920,7 +929,7 @@ Disable or enable the window.
 * `height` Integer
 * `animate` Boolean (optional) _macOS_
 
-Resizes the window to `width` and `height`.
+Resizes the window to `width` and `height`. If `width` or `height` are below any set minimum size constraints the window will snap to its minimum size.
 
 #### `win.getSize()`
 

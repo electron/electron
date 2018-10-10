@@ -7,6 +7,7 @@
 
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
+#include "uv.h"  // NOLINT(build/include)
 
 namespace node {
 class Environment;
@@ -18,10 +19,9 @@ namespace atom {
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
-  JavascriptEnvironment();
+  explicit JavascriptEnvironment(uv_loop_t* event_loop);
   ~JavascriptEnvironment();
 
-  void OnMessageLoopCreated();
   void OnMessageLoopDestroying();
 
   node::MultiIsolatePlatform* platform() const { return platform_; }
@@ -31,18 +31,16 @@ class JavascriptEnvironment {
   }
 
  private:
-  bool Initialize();
-
+  v8::Isolate* Initialize(uv_loop_t* event_loop);
   // Leaked on exit.
   node::MultiIsolatePlatform* platform_;
 
-  bool initialized_;
-  gin::IsolateHolder isolate_holder_;
   v8::Isolate* isolate_;
+  gin::IsolateHolder isolate_holder_;
   v8::Isolate::Scope isolate_scope_;
   v8::Locker locker_;
   v8::HandleScope handle_scope_;
-  v8::UniquePersistent<v8::Context> context_;
+  v8::Global<v8::Context> context_;
   v8::Context::Scope context_scope_;
 
   DISALLOW_COPY_AND_ASSIGN(JavascriptEnvironment);

@@ -4,7 +4,6 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
-#include "atom/browser/mac/atom_application.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
@@ -13,9 +12,6 @@
 namespace atom {
 
 void AtomBrowserMainParts::PreMainMessageLoopStart() {
-  // Force the NSApplication subclass to be used.
-  [AtomApplication sharedApplication];
-
   // Set our own application delegate.
   AtomApplicationDelegate* delegate = [[AtomApplicationDelegate alloc] init];
   [NSApp setDelegate:delegate];

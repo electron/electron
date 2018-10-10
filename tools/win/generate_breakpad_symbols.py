@@ -16,7 +16,7 @@ import subprocess
 import sys
 import threading
 
-GN_SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
+SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 
 # Duplicated as this script lives in tools not script
 def get_out_dir():
@@ -24,7 +24,7 @@ def get_out_dir():
   override = os.environ.get('ELECTRON_OUT_DIR')
   if override is not None:
     out_dir = override
-  return os.path.join(GN_SRC_DIR, 'out', out_dir)
+  return os.path.join(SRC_DIR, 'out', out_dir)
 
 
 CONCURRENT_TASKS=4

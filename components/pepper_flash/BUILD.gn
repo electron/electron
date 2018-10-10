@@ -54,4 +54,7 @@ component("pepper_flash") {
       "//chrome/browser/renderer_host/pepper/monitor_finder_mac.mm",
     ]
   }
+  if (is_linux) {
+    deps += [ "//components/services/font/public/cpp" ]
+  }
 }

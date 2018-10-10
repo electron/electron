@@ -204,6 +204,7 @@ class App : public AtomBrowserClient::Delegate,
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
+  void EnableSandbox(mate::Arguments* args);
   void EnableMixedSandbox(mate::Arguments* args);
 
 #if defined(OS_MACOSX)

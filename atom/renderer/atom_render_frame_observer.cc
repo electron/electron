@@ -35,8 +35,10 @@ namespace {
 
 bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
+                  bool internal,
                   v8::Local<v8::Object>* ipc) {
-  v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
+  v8::Local<v8::String> key =
+      mate::StringToV8(isolate, internal ? "ipc-internal" : "ipc");
   v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
   v8::Local<v8::Object> global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -170,7 +172,8 @@ bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
   return handled;
 }
 
-void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
+void AtomRenderFrameObserver::OnBrowserMessage(bool internal,
+                                               bool send_to_all,
                                                const std::string& channel,
                                                const base::ListValue& args,
                                                int32_t sender_id) {
@@ -186,14 +189,15 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
   if (!frame || !render_frame_->IsMainFrame())
     return;
 
-  EmitIPCEvent(frame, channel, args, sender_id);
+  EmitIPCEvent(frame, internal, channel, args, sender_id);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), channel, args, sender_id);
+        EmitIPCEvent(child->ToWebLocalFrame(), internal, channel, args,
+                     sender_id);
       }
   }
 }
@@ -215,6 +219,7 @@ void AtomRenderFrameObserver::OnTakeHeapSnapshot(
 }
 
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
+                                           bool internal,
                                            const std::string& channel,
                                            const base::ListValue& args,
                                            int32_t sender_id) {
@@ -233,7 +238,7 @@ void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
     return;
 
   v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, &ipc)) {
+  if (GetIPCObject(isolate, context, internal, &ipc)) {
     TRACE_EVENT0("devtools.timeline", "FunctionCall");
     auto args_vector = ListValueToVector(isolate, args);
     // Insert the Event object, event.sender is ipc.

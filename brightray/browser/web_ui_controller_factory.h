@@ -5,6 +5,8 @@
 #ifndef BRIGHTRAY_BROWSER_WEB_UI_CONTROLLER_FACTORY_H_
 #define BRIGHTRAY_BROWSER_WEB_UI_CONTROLLER_FACTORY_H_
 
+#include <memory>
+
 #include "base/macros.h"
 #include "content/public/browser/web_ui.h"
 #include "content/public/browser/web_ui_controller_factory.h"
@@ -31,7 +33,7 @@ class WebUIControllerFactory : public content::WebUIControllerFactory {
                       const GURL& url) const override;
   bool UseWebUIBindingsForURL(content::BrowserContext* browser_context,
                               const GURL& url) const override;
-  content::WebUIController* CreateWebUIControllerForURL(
+  std::unique_ptr<content::WebUIController> CreateWebUIControllerForURL(
       content::WebUI* web_ui,
       const GURL& url) const override;
 

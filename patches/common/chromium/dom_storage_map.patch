@@ -1,8 +1,14 @@
+From 71828a0d7703c56120f127ca42f097fda647ef1c Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:55 -0700
+Subject: dom_storage_map.patch
+
+
 diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
-index 0a6b0176a982..35a1c3c11a58 100644
+index fd088fb170be..a9e4b3375e9b 100644
 --- a/content/common/dom_storage/dom_storage_map.cc
 +++ b/content/common/dom_storage/dom_storage_map.cc
-@@ -182,10 +182,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
+@@ -185,10 +185,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
    size_t new_item_size = size_in_storage(key, value);
    size_t new_storage_used = storage_used_ - old_item_size + new_item_size;
  
@@ -15,3 +21,6 @@ index 0a6b0176a982..35a1c3c11a58 100644
  
    (*map_type)[key] = value;
    ResetKeyIterator();
+-- 
+2.17.0
+

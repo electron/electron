@@ -239,6 +239,10 @@ class Browser : public WindowListObserver {
 
   void PreMainMessageLoopRun();
 
+  // Stores the supplied |quit_closure|, to be run when the last Browser
+  // instance is destroyed.
+  static void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
+
   void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
 
   void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }

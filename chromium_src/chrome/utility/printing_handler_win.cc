@@ -32,8 +32,10 @@ void ReleaseProcessIfNeeded() {
 void PreCacheFontCharacters(const LOGFONT* logfont,
                             const wchar_t* text,
                             size_t text_length) {
+#if 0
   Send(new ChromeUtilityHostMsg_PreCacheFontCharacters(
       *logfont, base::string16(text, text_length)));
+#endif
 }
 
 }  // namespace

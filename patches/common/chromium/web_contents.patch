@@ -1,8 +1,14 @@
+From 3fae422b46dec513879ec6d4fd8c8dd4c4cdcd0f Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:46:53 -0700
+Subject: web_contents.patch
+
+
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6ae9bf2f9c6a..6ed6ece96d0f 100644
+index 26384f823b51..64ad6ca91d93 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -1845,6 +1845,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1931,6 +1931,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -15,7 +21,7 @@ index 6ae9bf2f9c6a..6ed6ece96d0f 100644
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -1860,6 +1866,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1946,6 +1952,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -24,7 +30,7 @@ index 6ae9bf2f9c6a..6ed6ece96d0f 100644
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 699570cc1390..63e60667fa7d 100644
+index 44c68ed25b66..c7b0c747fa41 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -38,7 +44,7 @@ index 699570cc1390..63e60667fa7d 100644
    // view hierarchy. We add this view as embedder's child here.
    // This would go in WebContentsViewGuest::CreateView, but that is too early to
    // access embedder_web_contents(). Therefore, we do it here.
-   if (!base::FeatureList::IsEnabled(features::kMash))
+   if (features::IsAshInBrowserProcess())
 -    parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
 +    if (parent_view->GetNativeView() != platform_view_->GetNativeView())
 +      parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
@@ -49,7 +55,7 @@ index 699570cc1390..63e60667fa7d 100644
  #if defined(USE_AURA)
 +  if (!platform_view_->GetNativeView())
 +    return;
-   if (!base::FeatureList::IsEnabled(features::kMash)) {
+   if (features::IsAshInBrowserProcess()) {
 -    old_parent_view->GetNativeView()->RemoveChild(
 -        platform_view_->GetNativeView());
 +    if (old_parent_view->GetNativeView() != platform_view_->GetNativeView())
@@ -86,10 +92,10 @@ index 699570cc1390..63e60667fa7d 100644
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index dee5814a247c..7690ce8d404b 100644
+index 0f82f91e437c..0deb4d93fffb 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -74,9 +74,12 @@ class BrowserPluginGuestDelegate;
+@@ -76,9 +76,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -102,7 +108,7 @@ index dee5814a247c..7690ce8d404b 100644
  struct CustomContextMenuContext;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -213,6 +216,10 @@ class WebContents : public PageNavigator,
+@@ -215,6 +218,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  
@@ -112,4 +118,7 @@ index dee5814a247c..7690ce8d404b 100644
 +
      // Sandboxing flags set on the new WebContents.
      blink::WebSandboxFlags starting_sandbox_flags;
-   };
+ 
+-- 
+2.17.0
+

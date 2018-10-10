@@ -1,5 +1,11 @@
+From 2c3fe795d68b12828a1891c062b77a9b3cddf017 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:17 -0700
+Subject: out_of_process_instance.patch
+
+
 diff --git a/pdf/out_of_process_instance.cc b/pdf/out_of_process_instance.cc
-index 8486db85360f..753c93a8c056 100644
+index 0358d15fb45b..101763db35d1 100644
 --- a/pdf/out_of_process_instance.cc
 +++ b/pdf/out_of_process_instance.cc
 @@ -455,7 +455,9 @@ bool OutOfProcessInstance::Init(uint32_t argc,
@@ -13,3 +19,6 @@ index 8486db85360f..753c93a8c056 100644
      return false;
  
    // Check if the plugin is full frame. This is passed in from JS.
+-- 
+2.17.0
+

@@ -12,7 +12,7 @@ namespace brightray {
 class MediaStreamDevicesController {
  public:
   MediaStreamDevicesController(const content::MediaStreamRequest& request,
-                               const content::MediaResponseCallback& callback);
+                               content::MediaResponseCallback callback);
 
   virtual ~MediaStreamDevicesController();
 

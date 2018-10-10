@@ -216,8 +216,8 @@ static_library("electron_lib") {
     "//content/public/app:both",
     "//content/public/child",
     "//content/public/common:service_names",
-    "//device/geolocation",
     "//gin",
+    "//media/mojo/interfaces",
     "//net:net_resources",
     "//ppapi/host",
     "//ppapi/proxy",
@@ -367,7 +367,6 @@ static_library("electron_lib") {
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
-    sources += filenames.lib_sources_linux
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
@@ -694,7 +693,6 @@ if (is_mac) {
       ":electron_lib",
       ":js2asar",
       ":packed_resources",
-      "//build/config:exe_and_shlib_deps",
       "//content:sandbox_helper_win",
       "//ui/strings",
     ]
@@ -799,7 +797,6 @@ group("chromium_unittests") {
     "//third_party/blink/public:all_blink",
     "//third_party/blink/public:test_support",
     "//third_party/leveldatabase:env_chromium_unittests",
-    "//tools/gn:gn_unittests",
     "//ui/base:ui_base_unittests",
     "//ui/compositor:compositor_unittests",
     "//ui/display:display_unittests",

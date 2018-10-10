@@ -17,38 +17,28 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/time/time.h"
+#include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "net/filter/gzip_source_stream.h"
 
 namespace atom {
 
-URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
-                                         net::NetworkDelegate* network_delegate)
-    : JsAsker<net::URLRequestJob>(request, network_delegate),
-      pending_buf_(nullptr),
-      pending_buf_size_(0),
-      ended_(false),
-      has_error_(false),
-      response_headers_(nullptr),
-      weak_factory_(this) {}
+namespace {
 
-URLRequestStreamJob::~URLRequestStreamJob() {
-  if (subscriber_) {
-    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                       std::move(subscriber_));
-  }
-}
-
-void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
-                                          v8::Local<v8::Value> value) {
-  if (value->IsNull() || value->IsUndefined() || !value->IsObject()) {
+void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
+                     mate::Arguments* args) {
+  v8::Local<v8::Value> value;
+  int error = net::OK;
+  bool ended = false;
+  if (!args->GetNext(&value) || !value->IsObject()) {
     // Invalid opts.
-    ended_ = true;
-    has_error_ = true;
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestStreamJob::OnError, job, net::ERR_FAILED));
     return;
   }
 
-  mate::Dictionary opts(isolate, v8::Local<v8::Object>::Cast(value));
+  mate::Dictionary opts(args->isolate(), v8::Local<v8::Object>::Cast(value));
   int status_code;
   if (!opts.Get("statusCode", &status_code)) {
     // assume HTTP OK if statusCode is not passed.
@@ -60,11 +50,12 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
   status.append(
       net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code)));
   status.append("\0\0", 2);
-  response_headers_ = new net::HttpResponseHeaders(status);
+  scoped_refptr<net::HttpResponseHeaders> response_headers(
+      new net::HttpResponseHeaders(status));
 
   if (opts.Get("headers", &value)) {
-    mate::Converter<net::HttpResponseHeaders*>::FromV8(isolate, value,
-                                                       response_headers_.get());
+    mate::Converter<net::HttpResponseHeaders*>::FromV8(args->isolate(), value,
+                                                       response_headers.get());
   }
 
   if (!opts.Get("data", &value)) {
@@ -73,28 +64,77 @@ void URLRequestStreamJob::BeforeStartInUI(v8::Isolate* isolate,
   } else if (value->IsNullOrUndefined()) {
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
-    ended_ = true;
+    ended = true;
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestStreamJob::StartAsync, job, nullptr,
+                       base::RetainedRef(response_headers), ended, error));
     return;
   }
 
-  mate::Dictionary data(isolate, v8::Local<v8::Object>::Cast(value));
+  mate::Dictionary data(args->isolate(), v8::Local<v8::Object>::Cast(value));
   if (!data.Get("on", &value) || !value->IsFunction() ||
       !data.Get("removeListener", &value) || !value->IsFunction()) {
     // If data is passed but it is not a stream, signal an error.
-    ended_ = true;
-    has_error_ = true;
+    content::BrowserThread::PostTask(
+        content::BrowserThread::IO, FROM_HERE,
+        base::BindOnce(&URLRequestStreamJob::OnError, job, net::ERR_FAILED));
     return;
   }
 
-  subscriber_.reset(new mate::StreamSubscriber(isolate, data.GetHandle(),
-                                              weak_factory_.GetWeakPtr()));
+  auto subscriber = std::make_unique<mate::StreamSubscriber>(
+      args->isolate(), data.GetHandle(), job);
+
+  content::BrowserThread::PostTask(
+      content::BrowserThread::IO, FROM_HERE,
+      base::BindOnce(&URLRequestStreamJob::StartAsync, job,
+                     std::move(subscriber), base::RetainedRef(response_headers),
+                     ended, error));
 }
 
-void URLRequestStreamJob::StartAsync(std::unique_ptr<base::Value> options) {
-  if (has_error_) {
-    OnError();
+}  // namespace
+
+URLRequestStreamJob::URLRequestStreamJob(net::URLRequest* request,
+                                         net::NetworkDelegate* network_delegate)
+    : net::URLRequestJob(request, network_delegate),
+      pending_buf_(nullptr),
+      pending_buf_size_(0),
+      ended_(false),
+      response_headers_(nullptr),
+      weak_factory_(this) {}
+
+URLRequestStreamJob::~URLRequestStreamJob() {
+  if (subscriber_) {
+    content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
+                                       std::move(subscriber_));
+  }
+}
+
+void URLRequestStreamJob::Start() {
+  auto request_details = std::make_unique<base::DictionaryValue>();
+  FillRequestDetails(request_details.get(), request());
+  content::BrowserThread::PostTask(
+      content::BrowserThread::UI, FROM_HERE,
+      base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
+                     handler(), std::move(request_details),
+                     base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));
+}
+
+void URLRequestStreamJob::StartAsync(
+    std::unique_ptr<mate::StreamSubscriber> subscriber,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    bool ended,
+    int error) {
+  if (error != net::OK) {
+    NotifyStartError(
+        net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
     return;
   }
+
+  ended_ = ended;
+  response_headers_ = response_headers;
+  subscriber_ = std::move(subscriber);
+  request_start_time_ = base::TimeTicks::Now();
   NotifyHeadersComplete();
 }
 
@@ -122,12 +162,13 @@ void URLRequestStreamJob::OnEnd() {
   ReadRawDataComplete(0);
 }
 
-void URLRequestStreamJob::OnError() {
-  NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
-                                         net::ERR_FAILED));
+void URLRequestStreamJob::OnError(int error) {
+  NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED, error));
 }
 
 int URLRequestStreamJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
+  response_start_time_ = base::TimeTicks::Now();
+
   if (ended_)
     return 0;
 
@@ -185,8 +226,22 @@ void URLRequestStreamJob::GetResponseInfo(net::HttpResponseInfo* info) {
   info->headers = response_headers_;
 }
 
+void URLRequestStreamJob::GetLoadTimingInfo(
+    net::LoadTimingInfo* load_timing_info) const {
+  load_timing_info->send_start = request_start_time_;
+  load_timing_info->send_end = request_start_time_;
+  load_timing_info->request_start = request_start_time_;
+  load_timing_info->receive_headers_end = response_start_time_;
+}
+
+void URLRequestStreamJob::Kill() {
+  weak_factory_.InvalidateWeakPtrs();
+  net::URLRequestJob::Kill();
+}
+
 int URLRequestStreamJob::BufferCopy(std::vector<char>* source,
-                                    net::IOBuffer* target, int target_size) {
+                                    net::IOBuffer* target,
+                                    int target_size) {
   int bytes_written = std::min(static_cast<int>(source->size()), target_size);
   memcpy(target->data(), source->data(), bytes_written);
   return bytes_written;

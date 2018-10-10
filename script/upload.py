@@ -16,7 +16,7 @@ from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      parse_version, scoped_cwd, s3put, get_electron_exec, \
-                     get_out_dir, GN_SRC_DIR
+                     get_out_dir, SRC_DIR
 
 
 ELECTRON_REPO = 'electron/electron'
@@ -84,7 +84,7 @@ def main():
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
   ffmpeg_zip = os.path.join(OUT_DIR, ffmpeg)
-  ffmpeg_build_path = os.path.join(GN_SRC_DIR, 'out', 'ffmpeg', 'ffmpeg.zip')
+  ffmpeg_build_path = os.path.join(SRC_DIR, 'out', 'ffmpeg', 'ffmpeg.zip')
   shutil.copy2(ffmpeg_build_path, ffmpeg_zip)
   upload_electron(release, ffmpeg_zip, args)
 
@@ -97,8 +97,8 @@ def main():
   mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
   if get_target_arch().startswith('arm'):
     # Upload the native mksnapshot as mksnapshot.zip
-    shutil.copy2(os.path.join(GN_SRC_DIR, 'out', 'native_mksnapshot',
-                              'native_mksnapshot.zip'), mksnapshot_zip)
+    shutil.copy2(os.path.join(SRC_DIR, 'out', 'native_mksnapshot',
+                              'mksnapshot.zip'), mksnapshot_zip)
     upload_electron(release, mksnapshot_zip, args)
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')

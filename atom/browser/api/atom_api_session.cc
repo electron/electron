@@ -27,7 +27,6 @@
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "base/files/file_path.h"
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
@@ -56,9 +55,9 @@
 #include "net/url_request/static_http_user_agent_settings.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_getter.h"
-#include "services/network/throttling/network_conditions.h"
-#include "services/network/throttling/throttling_controller.h"
 #include "ui/base/l10n/l10n_util.h"
+
+#include "atom/common/node_includes.h"
 
 using atom::api::Cookies;
 using content::BrowserThread;
@@ -353,18 +352,6 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
-void SetDevToolsNetworkEmulationClientIdInIO(
-    net::URLRequestContextGetter* url_request_context_getter,
-    const std::string& client_id) {
-  if (!url_request_context_getter)
-    return;
-  net::URLRequestContext* context =
-      url_request_context_getter->GetURLRequestContext();
-  AtomNetworkDelegate* network_delegate =
-      static_cast<AtomNetworkDelegate*>(context->network_delegate());
-  network_delegate->SetDevToolsNetworkEmulationClientId(client_id);
-}
-
 void DestroyGlobalHandle(v8::Isolate* isolate,
                          const v8::Global<v8::Value>& global_handle) {
   v8::Locker locker(isolate);
@@ -385,7 +372,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
 }  // namespace
 
 Session::Session(v8::Isolate* isolate, AtomBrowserContext* browser_context)
-    : devtools_network_emulation_client_id_(base::GenerateGUID()),
+    : network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
   content::BrowserContext::GetDownloadManager(browser_context)
@@ -503,42 +490,43 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const mate::Dictionary& options) {
-  std::unique_ptr<network::NetworkConditions> conditions;
-  bool offline = false;
-  double latency = 0.0, download_throughput = 0.0, upload_throughput = 0.0;
-  if (options.Get("offline", &offline) && offline) {
-    conditions.reset(new network::NetworkConditions(offline));
-  } else {
-    options.Get("latency", &latency);
-    options.Get("downloadThroughput", &download_throughput);
-    options.Get("uploadThroughput", &upload_throughput);
-    conditions.reset(new network::NetworkConditions(
-        false, latency, download_throughput, upload_throughput));
+  auto conditions = network::mojom::NetworkConditions::New();
+
+  options.Get("offline", &conditions->offline);
+  options.Get("downloadThroughput", &conditions->download_throughput);
+  options.Get("uploadThroughput", &conditions->upload_throughput);
+  double latency = 0.0;
+  if (options.Get("latency", &latency) && latency) {
+    conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
   }
 
-  network::ThrottlingController::SetConditions(
-      devtools_network_emulation_client_id_, std::move(conditions));
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
-                     base::RetainedRef(browser_context_->GetRequestContext()),
-                     devtools_network_emulation_client_id_));
+  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
+                              browser_context_.get())
+                              ->GetNetworkContext();
+  network_context->SetNetworkConditions(network_emulation_token_,
+                                        std::move(conditions));
 }
 
 void Session::DisableNetworkEmulation() {
-  auto conditions = std::make_unique<network::NetworkConditions>();
-  network::ThrottlingController::SetConditions(
-      devtools_network_emulation_client_id_, std::move(conditions));
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
-      base::BindOnce(&SetDevToolsNetworkEmulationClientIdInIO,
-                     base::RetainedRef(browser_context_->GetRequestContext()),
-                     std::string()));
+  auto* network_context = content::BrowserContext::GetDefaultStoragePartition(
+                              browser_context_.get())
+                              ->GetNetworkContext();
+  network_context->SetNetworkConditions(
+      network_emulation_token_, network::mojom::NetworkConditions::New());
+}
+
+void WrapVerifyProc(base::Callback<void(const VerifyRequestParams& request,
+                                        base::Callback<void(int)>)> proc,
+                    const VerifyRequestParams& request,
+                    base::OnceCallback<void(int)> cb) {
+  proc.Run(request, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
                                 mate::Arguments* args) {
-  AtomCertVerifier::VerifyProc proc;
+  base::Callback<void(const VerifyRequestParams& request,
+                      base::Callback<void(int)>)>
+      proc;
   if (!(val->IsNull() || mate::ConvertFromV8(args->isolate(), val, &proc))) {
     args->ThrowError("Must pass null or function");
     return;
@@ -548,7 +536,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(&SetCertVerifyProcInIO,
                      WrapRefCounted(browser_context_->GetRequestContext()),
-                     proc));
+                     base::Bind(&WrapVerifyProc, proc)));
 }
 
 void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
@@ -559,7 +547,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
     return;
   }
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      browser_context()->GetPermissionManager());
+      browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionRequestHandler(handler);
 }
 
@@ -571,7 +559,7 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
     return;
   }
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      browser_context()->GetPermissionManager());
+      browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionCheckHandler(handler);
 }
 

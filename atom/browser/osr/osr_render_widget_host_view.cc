@@ -19,7 +19,6 @@
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/render_pass.h"
-#include "content/browser/renderer_host/compositor_resize_lock.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
@@ -27,8 +26,8 @@
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/render_process_host.h"
 #include "media/base/video_frame.h"
-#include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/blink/public/platform/web_input_event.h"
+#include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
@@ -275,7 +274,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack), this,
-      features::IsSurfaceSynchronizationEnabled(),
       base::FeatureList::IsEnabled(features::kVizDisplayCompositor),
       true /* should_register_frame_sink_id */);
 
@@ -289,9 +287,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   CreatePlatformWidget(is_guest_view_hack);
 #endif
 
-  bool opaque = SkColorGetA(background_color()) == SK_AlphaOPAQUE;
+  bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
-  GetRootLayer()->SetColor(background_color());
+  GetRootLayer()->SetColor(background_color_);
 
 #if !defined(OS_MACOSX)
   // On macOS the ui::Compositor is created/owned by the platform view.
@@ -342,6 +340,13 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   compositor_.reset(NULL);
   root_layer_.reset(NULL);
 #endif
+}
+
+content::BrowserAccessibilityManager*
+OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
+    content::BrowserAccessibilityDelegate*,
+    bool) {
+  return nullptr;
 }
 
 void OffScreenRenderWidgetHostView::OnWindowResize() {
@@ -400,7 +405,7 @@ void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
 
 void OffScreenRenderWidgetHostView::SetSize(const gfx::Size& size) {
   size_ = size;
-  WasResized();
+  SynchronizeVisualProperties();
 }
 
 void OffScreenRenderWidgetHostView::SetBounds(const gfx::Rect& new_bounds) {
@@ -469,6 +474,11 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
+void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForLayoutTest() {
+  ++latest_capture_sequence_number_;
+  SynchronizeVisualProperties();
+}
+
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() const {
   if (IsPopupWidget())
     return popup_position_;
@@ -487,8 +497,13 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-SkColor OffScreenRenderWidgetHostView::background_color() const {
+base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor()
+    const {
   return background_color_;
+}
+
+void OffScreenRenderWidgetHostView::UpdateBackgroundColor() {
+  NOTREACHED();
 }
 
 gfx::Size OffScreenRenderWidgetHostView::GetVisibleViewportSize() const {
@@ -511,7 +526,7 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
               ->IsRenderWidgetHostViewGuest());
   OffScreenRenderWidgetHostView* view_osr =
       static_cast<OffScreenRenderWidgetHostView*>(view);
-  SetBackgroundColor(view_osr->background_color());
+  SetBackgroundColor(view_osr->background_color_);
   if (GetDelegatedFrameHost() && view_osr->GetDelegatedFrameHost()) {
     GetDelegatedFrameHost()->TakeFallbackContentFrom(
         view_osr->GetDelegatedFrameHost());
@@ -531,7 +546,7 @@ void OffScreenRenderWidgetHostView::DidCreateNewRendererCompositorFrameSink(
 void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
     const viz::LocalSurfaceId& local_surface_id,
     viz::CompositorFrame frame,
-    viz::mojom::HitTestRegionListPtr hit_test_region_list) {
+    base::Optional<viz::HitTestRegionList> hit_test_region_list) {
   TRACE_EVENT0("electron",
                "OffScreenRenderWidgetHostView::SubmitCompositorFrame");
 
@@ -659,6 +674,10 @@ void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16&) {}
 void OffScreenRenderWidgetHostView::SelectionBoundsChanged(
     const ViewHostMsg_SelectionBounds_Params&) {}
 
+uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
+  return latest_capture_sequence_number_;
+}
+
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
@@ -686,9 +705,8 @@ void OffScreenRenderWidgetHostView::InitAsGuest(
   parent_host_view_->RegisterGuestViewFrameSwappedCallback(guest_view);
 }
 
-gfx::Vector2d OffScreenRenderWidgetHostView::GetOffsetFromRootSurface() {
-  return gfx::Vector2d();
-}
+void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
+    gfx::PointF* point) {}
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
@@ -752,17 +770,6 @@ SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor()
   return background_color_;
 }
 
-bool OffScreenRenderWidgetHostView::DelegatedFrameCanCreateResizeLock() const {
-  return !render_widget_host_->auto_resize_enabled();
-}
-
-std::unique_ptr<content::CompositorResizeLock>
-OffScreenRenderWidgetHostView::DelegatedFrameHostCreateResizeLock() {
-  HoldResize();
-  const gfx::Size& desired_size = GetRootLayer()->bounds().size();
-  return std::make_unique<content::CompositorResizeLock>(this, desired_size);
-}
-
 void OffScreenRenderWidgetHostView::OnFirstSurfaceActivation(
     const viz::SurfaceInfo& surface_info) {}
 
@@ -774,20 +781,6 @@ void OffScreenRenderWidgetHostView::OnFrameTokenChanged(uint32_t frame_token) {
 
 void OffScreenRenderWidgetHostView::DidReceiveFirstFrameAfterNavigation() {
   render_widget_host_->DidReceiveFirstFrameAfterNavigation();
-}
-
-std::unique_ptr<ui::CompositorLock>
-OffScreenRenderWidgetHostView::GetCompositorLock(
-    ui::CompositorLockClient* client) {
-  return GetCompositor()->GetCompositorLock(client);
-}
-
-void OffScreenRenderWidgetHostView::CompositorResizeLockEnded() {
-  ReleaseResize();
-}
-
-bool OffScreenRenderWidgetHostView::IsAutoResizeEnabled() const {
-  return render_widget_host_->auto_resize_enabled();
 }
 
 viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
@@ -810,14 +803,14 @@ void OffScreenRenderWidgetHostView::DidNavigate() {
 #endif
 }
 
-bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
+bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
     const gfx::PointF& point,
     const viz::SurfaceId& original_surface,
     gfx::PointF* transformed_point) {
   // Transformations use physical pixels rather than DIP, so conversion
   // is necessary.
   gfx::PointF point_in_pixels = gfx::ConvertPointToPixel(scale_factor_, point);
-  if (!GetDelegatedFrameHost()->TransformPointToLocalCoordSpace(
+  if (!GetDelegatedFrameHost()->TransformPointToLocalCoordSpaceLegacy(
           point_in_pixels, original_surface, transformed_point)) {
     return false;
   }
@@ -830,7 +823,8 @@ bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpace(
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
     const gfx::PointF& point,
     RenderWidgetHostViewBase* target_view,
-    gfx::PointF* transformed_point) {
+    gfx::PointF* transformed_point,
+    viz::EventSource source) {
   if (target_view == this) {
     *transformed_point = point;
     return true;
@@ -840,7 +834,7 @@ bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
   // but it is not necessary here because the final target view is responsible
   // for converting before computing the final transform.
   return GetDelegatedFrameHost()->TransformPointToCoordSpaceForView(
-      point, target_view, transformed_point);
+      point, target_view, transformed_point, source);
 }
 
 void OffScreenRenderWidgetHostView::CancelWidget() {
@@ -1019,12 +1013,13 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
     pending_resize_ = false;
     content::BrowserThread::PostTask(
         content::BrowserThread::UI, FROM_HERE,
-        base::BindOnce(&OffScreenRenderWidgetHostView::WasResized,
-                       weak_ptr_factory_.GetWeakPtr()));
+        base::BindOnce(
+            &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
+            weak_ptr_factory_.GetWeakPtr()));
   }
 }
 
-void OffScreenRenderWidgetHostView::WasResized() {
+void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
   if (hold_resize_) {
     if (!pending_resize_)
       pending_resize_ = true;
@@ -1033,9 +1028,9 @@ void OffScreenRenderWidgetHostView::WasResized() {
 
   ResizeRootLayer(false);
   if (render_widget_host_)
-    render_widget_host_->WasResized();
-  GetDelegatedFrameHost()->WasResized(local_surface_id_, size_,
-                                      cc::DeadlinePolicy::UseDefaultDeadline());
+    render_widget_host_->SynchronizeVisualProperties();
+  GetDelegatedFrameHost()->SynchronizeVisualProperties(
+      local_surface_id_, size_, cc::DeadlinePolicy::UseDefaultDeadline());
 }
 
 void OffScreenRenderWidgetHostView::SendMouseEvent(
@@ -1274,14 +1269,15 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   bool resized = UpdateNSViewAndDisplay();
 #else
   bool resized = true;
-  GetDelegatedFrameHost()->WasResized(local_surface_id_, size,
-                                      cc::DeadlinePolicy::UseDefaultDeadline());
+  GetDelegatedFrameHost()->SynchronizeVisualProperties(
+      local_surface_id_, size, cc::DeadlinePolicy::UseDefaultDeadline());
 #endif
 
   // Note that |render_widget_host_| will retrieve resize parameters from the
-  // DelegatedFrameHost, so it must have WasResized called after.
+  // DelegatedFrameHost, so it must have SynchronizeVisualProperties called
+  // after.
   if (resized && render_widget_host_)
-    render_widget_host_->WasResized();
+    render_widget_host_->SynchronizeVisualProperties();
 }
 
 viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
@@ -1302,7 +1298,7 @@ viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId(
 
 void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     SkColor color) {
-  if (color == background_color())
+  if (color == background_color_)
     return;
   background_color_ = color;
 

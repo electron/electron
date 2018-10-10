@@ -11,6 +11,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -111,7 +112,8 @@ int AtomPermissionManager::RequestPermission(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const StatusCallback& response_callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>&
+        response_callback) {
   return RequestPermissionWithDetails(permission, render_frame_host,
                                       requesting_origin, user_gesture, nullptr,
                                       response_callback);
@@ -150,7 +152,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const StatusesCallback& response_callback) {
   if (permissions.empty()) {
     response_callback.Run(std::vector<blink::mojom::PermissionStatus>());
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   if (request_handler_.is_null()) {
@@ -168,7 +170,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     response_callback.Run(statuses);
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   auto* web_contents =
@@ -222,7 +224,7 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin,
-    const StatusCallback& callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   return -1;
 }
 

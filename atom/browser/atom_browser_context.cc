@@ -72,7 +72,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
                                        bool in_memory,
                                        const base::DictionaryValue& options)
     : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
-          base::SequencedTaskRunnerHandle::Get()),
+          base::ThreadTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
       storage_policy_(new SpecialStoragePolicy),
       in_memory_(in_memory),
@@ -234,7 +234,8 @@ content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   return guest_manager_.get();
 }
 
-content::PermissionManager* AtomBrowserContext::GetPermissionManager() {
+content::PermissionControllerDelegate*
+AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
     permission_manager_.reset(new AtomPermissionManager);
   return permission_manager_.get();

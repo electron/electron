@@ -11,45 +11,45 @@
 
 #include "atom/browser/api/stream_subscriber.h"
 #include "atom/browser/net/js_asker.h"
-#include "base/memory/ref_counted_memory.h"
-#include "native_mate/persistent_dictionary.h"
+#include "base/memory/scoped_refptr.h"
 #include "net/base/io_buffer.h"
 #include "net/http/http_status_code.h"
-#include "net/url_request/url_request_context_getter.h"
-#include "v8/include/v8.h"
+#include "net/url_request/url_request_job.h"
 
 namespace atom {
 
-class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
+class URLRequestStreamJob : public JsAsker, public net::URLRequestJob {
  public:
   URLRequestStreamJob(net::URLRequest* request,
                       net::NetworkDelegate* network_delegate);
   ~URLRequestStreamJob() override;
 
+  void StartAsync(std::unique_ptr<mate::StreamSubscriber> subscriber,
+                  scoped_refptr<net::HttpResponseHeaders> response_headers,
+                  bool ended,
+                  int error);
+
   void OnData(std::vector<char>&& buffer);  // NOLINT
   void OnEnd();
-  void OnError();
-
-  // URLRequestJob
-  void GetResponseInfo(net::HttpResponseInfo* info) override;
+  void OnError(int error);
 
  protected:
   // URLRequestJob
+  void Start() override;
   int ReadRawData(net::IOBuffer* buf, int buf_size) override;
   void DoneReading() override;
   void DoneReadingRedirectResponse() override;
   std::unique_ptr<net::SourceStream> SetUpSourceStream() override;
   bool GetMimeType(std::string* mime_type) const override;
   int GetResponseCode() const override;
+  void GetResponseInfo(net::HttpResponseInfo* info) override;
+  void GetLoadTimingInfo(net::LoadTimingInfo* load_timing_info) const override;
+  void Kill() override;
 
  private:
-  // JSAsker
-  void BeforeStartInUI(v8::Isolate*, v8::Local<v8::Value>) override;
-  void StartAsync(std::unique_ptr<base::Value> options) override;
-  void OnResponse(bool success, std::unique_ptr<base::Value> value);
-
   int BufferCopy(std::vector<char>* source,
-                 net::IOBuffer* target, int target_size);
+                 net::IOBuffer* target,
+                 int target_size);
 
   // Saved arguments passed to ReadRawData.
   scoped_refptr<net::IOBuffer> pending_buf_;
@@ -59,7 +59,8 @@ class URLRequestStreamJob : public JsAsker<net::URLRequestJob> {
   std::vector<char> write_buffer_;
 
   bool ended_;
-  bool has_error_;
+  base::TimeTicks request_start_time_;
+  base::TimeTicks response_start_time_;
   scoped_refptr<net::HttpResponseHeaders> response_headers_;
   std::unique_ptr<mate::StreamSubscriber> subscriber_;
 

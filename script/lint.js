@@ -94,7 +94,7 @@ const LINTERS = [ {
     const allOk = filenames.map(filename => {
       const args = ['format', filename]
       if (!opts.fix) args.push('--dry-run')
-      const result = childProcess.spawnSync('gn', args, { stdio: 'inherit' })
+      const result = childProcess.spawnSync('gn', args, { stdio: 'inherit', shell: true })
       if (result.status === 0) {
         return true
       } else if (result.status === 2) {

@@ -1150,7 +1150,7 @@ void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
     return;
   }
 
-  auto* icon_manager = g_browser_process->GetIconManager();
+  auto* icon_manager = AtomBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
@@ -1223,7 +1223,7 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
 
   auto* const info_mgr = GPUInfoManager::GetInstance();
   if (info_type == "complete") {
-#if defined(OS_MACOSX) || defined(OS_WIN)
+#if defined(OS_WIN)
     info_mgr->FetchCompleteInfo(promise);
 #else
     info_mgr->FetchBasicInfo(promise);
@@ -1232,6 +1232,33 @@ v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
     info_mgr->FetchBasicInfo(promise);
   }
   return promise->GetHandle();
+}
+
+static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
+  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
+    const base::CommandLine::CharType* noSandboxArg =
+        FILE_PATH_LITERAL("--no-sandbox");
+    base::CommandLine::StringVector modified_command_line;
+    for (auto& arg : command_line->argv()) {
+      if (arg.compare(noSandboxArg) != 0) {
+        modified_command_line.push_back(arg);
+      }
+    }
+    command_line->InitFromArgv(modified_command_line);
+  }
+}
+
+void App::EnableSandbox(mate::Arguments* args) {
+  if (Browser::Get()->is_ready()) {
+    args->ThrowError(
+        "app.enableSandbox() can only be called "
+        "before app is ready");
+    return;
+  }
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  RemoveNoSandboxSwitch(command_line);
+  command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
 void App::EnableMixedSandbox(mate::Arguments* args) {
@@ -1243,22 +1270,7 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   }
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
-#if defined(OS_WIN)
-    const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
-#else
-    const base::CommandLine::CharType* noSandboxArg = "--no-sandbox";
-#endif
-
-    // Remove the --no-sandbox switch
-    base::CommandLine::StringVector modified_command_line;
-    for (auto& arg : command_line->argv()) {
-      if (arg.compare(noSandboxArg) != 0) {
-        modified_command_line.push_back(arg);
-      }
-    }
-    command_line->InitFromArgv(modified_command_line);
-  }
+  RemoveNoSandboxSwitch(command_line);
   command_line->AppendSwitch(switches::kEnableMixedSandbox);
 }
 
@@ -1367,6 +1379,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
+      .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 

@@ -149,6 +149,8 @@ describe('webFrame module', function () {
     w = new BrowserWindow({ show: false })
     w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'))
     await emittedOnce(w.webContents, 'did-finish-load')
+    w.focus()
+    await w.webContents.executeJavaScript('document.querySelector("input").focus()', true)
 
     const spellCheckerFeedback = emittedOnce(ipcMain, 'spec-spell-check')
     const misspelledWord = 'spleling'

@@ -1,3 +1,15 @@
+From 3ac191f7b549fb23471d357294a84836520d7373 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:48:19 -0700
+Subject: blink_fix_prototype_assert.patch
+
+A recent Chromium change has accidentally added assertion for the case when
+a new window object may not have a prototype attached. In Electron it may
+happen when preventDefault for a native new-window event.
+https://chromium.googlesource.com/chromium/src/+/f47b361887a31cccf42a6e21a82bccf28372bdaa%5E%21
+In the long term we should investigate why it happened, and take a more
+formal fix. But for now I'm just make this assertion silently pass away.
+
 diff --git a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc b/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
 index 87f2176ce897..ce3d9ce19bff 100644
 --- a/third_party/blink/renderer/platform/bindings/v8_object_constructor.cc
@@ -15,3 +27,6 @@ index 87f2176ce897..ce3d9ce19bff 100644
  
      prototype_object = prototype_value.As<v8::Object>();
      if (prototype_object->InternalFieldCount() ==
+-- 
+2.17.0
+
