@@ -609,7 +609,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && npm run test -- --ci --enable-logging)
+          (cd electron && npm run test -- --ci)
     - run:
         name: Check test results existence
         command: |
