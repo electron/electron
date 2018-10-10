@@ -1089,6 +1089,12 @@ correctly.
 
 **Note:** This will not affect `process.argv`.
 
+### `app.enableSandbox()` _Experimental_ _macOS_ _Windows_
+
+Enables full sandbox mode on the app.
+
+This method can only be called before app is ready.
+
 ### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
 
 Enables mixed sandbox mode on the app.

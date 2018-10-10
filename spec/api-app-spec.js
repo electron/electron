@@ -872,7 +872,7 @@ describe('app module', () => {
     })
   })
 
-  describe('mixed sandbox option', () => {
+  describe('sandbox options', () => {
     let appProcess = null
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
@@ -904,10 +904,60 @@ describe('app module', () => {
       })
     })
 
-    describe('when app.enableMixedSandbox() is called', () => {
-      it('adds --enable-sandbox to render processes created with sandbox: true', done => {
+    describe('when app.enableSandbox() is called', () => {
+      it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
-        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath])
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--app-enable-sandbox'])
+
+        server.once('error', error => { done(error) })
+
+        server.on('connection', client => {
+          client.once('data', data => {
+            const argv = JSON.parse(data)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
+
+            expect(argv.noSandbox).to.include('--enable-sandbox')
+            expect(argv.noSandbox).to.not.include('--no-sandbox')
+
+            expect(argv.noSandboxDevtools).to.be.true()
+            expect(argv.sandboxDevtools).to.be.true()
+
+            done()
+          })
+        })
+      })
+    })
+
+    describe('when the app is launched with --enable-sandbox', () => {
+      it('adds --enable-sandbox to all renderer processes', done => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-sandbox'])
+
+        server.once('error', error => { done(error) })
+
+        server.on('connection', client => {
+          client.once('data', data => {
+            const argv = JSON.parse(data)
+            expect(argv.sandbox).to.include('--enable-sandbox')
+            expect(argv.sandbox).to.not.include('--no-sandbox')
+
+            expect(argv.noSandbox).to.include('--enable-sandbox')
+            expect(argv.noSandbox).to.not.include('--no-sandbox')
+
+            expect(argv.noSandboxDevtools).to.be.true()
+            expect(argv.sandboxDevtools).to.be.true()
+
+            done()
+          })
+        })
+      })
+    })
+
+    describe('when app.enableMixedSandbox() is called', () => {
+      it('adds --enable-sandbox to renderer processes created with sandbox: true', done => {
+        const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
+        appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--app-enable-mixed-sandbox'])
 
         server.once('error', error => { done(error) })
 
@@ -920,6 +970,9 @@ describe('app module', () => {
             expect(argv.noSandbox).to.not.include('--enable-sandbox')
             expect(argv.noSandbox).to.include('--no-sandbox')
 
+            expect(argv.noSandboxDevtools).to.be.true()
+            expect(argv.sandboxDevtools).to.be.true()
+
             done()
           })
         })
@@ -927,7 +980,7 @@ describe('app module', () => {
     })
 
     describe('when the app is launched with --enable-mixed-sandbox', () => {
-      it('adds --enable-sandbox to render processes created with sandbox: true', done => {
+      it('adds --enable-sandbox to renderer processes created with sandbox: true', done => {
         const appPath = path.join(__dirname, 'fixtures', 'api', 'mixed-sandbox-app')
         appProcess = ChildProcess.spawn(remote.process.execPath, [appPath, '--enable-mixed-sandbox'])
 
