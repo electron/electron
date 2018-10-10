@@ -611,7 +611,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 #else
         escaped_url,
 #endif
-        true);
+        platform_util::OpenExternalOptions());
 }
 
 void HandleExternalProtocolInUI(
