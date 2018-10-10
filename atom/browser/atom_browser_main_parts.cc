@@ -10,7 +10,6 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
@@ -73,7 +72,6 @@ AtomBrowserMainParts::AtomBrowserMainParts(
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),
-      gc_timer_(true, true),
       main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
@@ -136,18 +134,15 @@ int AtomBrowserMainParts::PreEarlyInitialization() {
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-  // Temporary set the bridge_task_runner_ as current thread's task runner,
-  // so we can fool gin::PerIsolateData to use it as its task runner, instead
-  // of getting current message loop's task runner, which is null for now.
-  bridge_task_runner_ = new BridgeTaskRunner;
-  base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+  // A workaround was previously needed because there was no ThreadTaskRunner
+  // set.  If this check is failing we may need to re-add that workaround
+  DCHECK(base::ThreadTaskRunnerHandle::IsSet());
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  js_env_.reset(new JavascriptEnvironment(node_bindings_->uv_loop()));
 
   node_bindings_->Initialize();
-
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->context(), js_env_->platform());
@@ -222,8 +217,6 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
-  js_env_->OnMessageLoopCreated();
-
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -244,8 +237,6 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
-  bridge_task_runner_->MessageLoopIsReady();
-  bridge_task_runner_ = nullptr;
 
 #if defined(USE_X11)
   libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
@@ -264,6 +255,11 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
   exit_code_ = result_code;
   return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
+}
+
+void AtomBrowserMainParts::PreDefaultMainMessageLoopRun(
+    base::OnceClosure quit_closure) {
+  Browser::SetMainMessageLoopQuitClosure(std::move(quit_closure));
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopStart() {

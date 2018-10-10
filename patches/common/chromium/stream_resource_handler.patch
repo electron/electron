@@ -1,5 +1,11 @@
+From 62bf8be2412ea4b7fef28d0a6fc2a8baecc8980e Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:39 -0700
+Subject: stream_resource_handler.patch
+
+
 diff --git a/content/browser/loader/stream_resource_handler.h b/content/browser/loader/stream_resource_handler.h
-index cb8a2d58d6b8..dbfa64089325 100644
+index b6f51bba48cd..1ee88dfacee3 100644
 --- a/content/browser/loader/stream_resource_handler.h
 +++ b/content/browser/loader/stream_resource_handler.h
 @@ -11,6 +11,7 @@
@@ -19,3 +25,6 @@ index cb8a2d58d6b8..dbfa64089325 100644
   public:
    // |origin| will be used to construct the URL for the Stream. See
    // WebCore::BlobURL and and WebCore::SecurityOrigin in Blink to understand
+-- 
+2.17.0
+

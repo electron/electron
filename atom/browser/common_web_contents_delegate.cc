@@ -189,24 +189,35 @@ void CommonWebContentsDelegate::SetOwnerWindow(NativeWindow* owner_window) {
 void CommonWebContentsDelegate::SetOwnerWindow(
     content::WebContents* web_contents,
     NativeWindow* owner_window) {
-  owner_window_ = owner_window ? owner_window->GetWeakPtr() : nullptr;
-  auto relay = std::make_unique<NativeWindowRelay>(owner_window_);
-  auto* relay_key = relay->key;
   if (owner_window) {
+    owner_window_ = owner_window->GetWeakPtr();
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
     autofill_popup_.reset(new AutofillPopup());
 #endif
-    web_contents->SetUserData(relay_key, std::move(relay));
+    NativeWindowRelay::CreateForWebContents(web_contents,
+                                            owner_window->GetWeakPtr());
   } else {
-    web_contents->RemoveUserData(relay_key);
-    relay.reset();
+    owner_window_ = nullptr;
+    web_contents->RemoveUserData(
+        NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
 }
 
 void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
   if (async) {
-    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
-                                                    web_contents_.release());
+    // Browser context should be destroyed only after the WebContents,
+    // this is guaranteed in the sync mode by the order of declaration,
+    // in the async version we maintain a reference until the WebContents
+    // is destroyed.
+    // //electron/patches/common/chromium/content_browser_main_loop.patch
+    // is required to get the right quit closure for the main message loop.
+    base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+        FROM_HERE,
+        base::BindOnce([](scoped_refptr<AtomBrowserContext> browser_context,
+                          std::unique_ptr<brightray::InspectableWebContents>
+                              web_contents) { web_contents.reset(); },
+                       base::RetainedRef(browser_context_),
+                       std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }

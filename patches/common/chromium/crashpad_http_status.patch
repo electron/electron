@@ -25,10 +25,10 @@ index 8d5f78c..a433bb3 100644
                                         implicit_cast<long>(http_status));
        return false;
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
-index f0e2dc1..34d8dee 100644
+index f0e2dc14a8a4..34d8deeb5c25 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
-@@ -457,10 +457,18 @@
+@@ -457,10 +457,18 @@ bool ReadResponseLine(Stream* stream) {
      LOG(ERROR) << "ReadLine";
      return false;
    }
@@ -49,8 +49,8 @@ index f0e2dc1..34d8dee 100644
 +                            &http_status) &&
 +         http_status >= 200 && http_status <= 203;
  }
- 
- bool ReadResponseHeaders(int sock, HTTPHeaders* headers) {
+
+ bool ReadResponseHeaders(Stream* stream, HTTPHeaders* headers) {
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_test.cc b/third_party/crashpad/crashpad/util/net/http_transport_test.cc
 index 7b5f41d..d73dc99 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_test.cc

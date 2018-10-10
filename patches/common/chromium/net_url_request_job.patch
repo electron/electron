@@ -1,12 +1,21 @@
+From 49270a5ff41a1808c33e61e832e251979670f6f7 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:06 -0700
+Subject: net_url_request_job.patch
+
+
 diff --git a/net/url_request/url_request_job.h b/net/url_request/url_request_job.h
-index 389315a25d7d..d4e3c0e6c2ba 100644
+index 7a2239587510..08a3940915c6 100644
 --- a/net/url_request/url_request_job.h
 +++ b/net/url_request/url_request_job.h
-@@ -285,6 +285,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
-   void OnCallToDelegate();
+@@ -292,6 +292,7 @@ class NET_EXPORT URLRequestJob : public base::PowerObserver {
+   void OnCallToDelegate(NetLogEventType type);
    void OnCallToDelegateComplete();
  
 + public:
    // Called to read raw (pre-filtered) data from this Job. Reads at most
    // |buf_size| bytes into |buf|.
    // Possible return values:
+-- 
+2.17.0
+

@@ -6,6 +6,7 @@
 #define ATOM_BROWSER_ATOM_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_
 
 #include <string>
+#include <vector>
 
 #include "base/macros.h"
 #include "content/public/browser/speech_recognition_event_listener.h"
@@ -30,10 +31,10 @@ class AtomSpeechRecognitionManagerDelegate
   void OnRecognitionEnd(int session_id) override;
   void OnRecognitionResults(
       int session_id,
-      const content::SpeechRecognitionResults& result) override;
+      const std::vector<blink::mojom::SpeechRecognitionResultPtr>&) override;
   void OnRecognitionError(
       int session_id,
-      const content::SpeechRecognitionError& error) override;
+      const blink::mojom::SpeechRecognitionError& error) override;
   void OnAudioLevelsChange(int session_id,
                            float volume,
                            float noise_volume) override;

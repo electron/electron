@@ -81,6 +81,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   void ToolkitInitialized() override;
   void PreMainMessageLoopRun() override;
   bool MainMessageLoopRun(int* result_code) override;
+  void PreDefaultMainMessageLoopRun(base::OnceClosure quit_closure) override;
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
 #if defined(OS_MACOSX)
@@ -108,10 +109,6 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcess> fake_browser_process_;
 
-  // The gin::PerIsolateData requires a task runner to create, so we feed it
-  // with a task runner that will post all work to main loop.
-  scoped_refptr<BridgeTaskRunner> bridge_task_runner_;
-
   // Pointer to exit code.
   int* exit_code_ = nullptr;
 
@@ -125,7 +122,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
   std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::unique_ptr<IconManager> icon_manager_;
 
-  base::Timer gc_timer_;
+  base::RepeatingTimer gc_timer_;
 
   // List of callbacks should be executed before destroying JS env.
   std::list<base::OnceClosure> destructors_;

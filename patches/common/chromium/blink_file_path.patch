@@ -1,3 +1,9 @@
+From 50f9d1164c07306d128d9860be5a4891310ef495 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:00 -0700
+Subject: blink_file_path.patch
+
+
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
 index 39831f1902c6..fddb013aa122 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
@@ -24,3 +30,6 @@ index a74beceda3e7..7196fd5f5f9e 100644
      readonly attribute long long lastModified;
  
      // Non-standard APIs
+-- 
+2.17.0
+

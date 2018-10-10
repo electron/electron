@@ -1,16 +1,28 @@
+From e97c5ed19320a2fc34e8b71ef838d176db8bd5b0 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:49:13 -0700
+Subject: webview_reattach.patch
+
+Backports https://chromium-review.googlesource.com/c/chromium/src/+/1161391
+Fixes webview not working after renderer process restarted.
+
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 11bf320311bb..27f087d4f706 100644
+index 88211169a7d7..7b2715aea2af 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4725,6 +4725,11 @@ void WebContentsImpl::NotifyViewSwapped(RenderViewHost* old_host,
-   for (auto& observer : observers_)
-     observer.RenderViewHostChanged(old_host, new_host);
+@@ -4906,6 +4906,12 @@ void WebContentsImpl::NotifyViewSwapped(RenderViewHost* old_host,
+ 
+   view_->RenderViewHostChanged(old_host, new_host);
  
 +  // If this is an inner WebContents that has swapped views, we need to reattach
 +  // it to its outer WebContents.
 +  if (node_.outer_web_contents())
 +    ReattachToOuterWebContentsFrame();
 +
++
    // Ensure that the associated embedder gets cleared after a RenderViewHost
    // gets swapped, so we don't reuse the same embedder next time a
    // RenderViewHost is attached to this WebContents.
+-- 
+2.17.0
+

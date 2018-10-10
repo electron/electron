@@ -1,5 +1,12 @@
+From 790e1e19af133252e95e3a4de8c8e7a3a011bf02 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:50:48 -0700
+Subject: disable_extensions_gn.patch
+
+Fix build files generation when chrome extensions are disabled.
+
 diff --git a/chrome/browser/apps/app_shim/BUILD.gn b/chrome/browser/apps/app_shim/BUILD.gn
-index b480129fcd7c..4f4f7d06029b 100644
+index f8a6d1868788..350c3572ec54 100644
 --- a/chrome/browser/apps/app_shim/BUILD.gn
 +++ b/chrome/browser/apps/app_shim/BUILD.gn
 @@ -1,6 +1,7 @@
@@ -19,8 +26,8 @@ index b480129fcd7c..4f4f7d06029b 100644
      "unix_domain_socket_acceptor.cc",
      "unix_domain_socket_acceptor.h",
    ]
-@@ -23,7 +22,16 @@ source_set("app_shim") {
-   deps = [
+@@ -24,7 +23,16 @@ source_set("app_shim") {
+     "//chrome/common:mojo_bindings",
      "//content/public/browser",
      "//content/public/common",
 -    "//extensions/browser",
@@ -39,18 +46,20 @@ index b480129fcd7c..4f4f7d06029b 100644
 +  }
  }
 diff --git a/chrome/browser/ui/BUILD.gn b/chrome/browser/ui/BUILD.gn
-index c514878fafe7..bcd3432f75c9 100644
+index 1b14d628a63b..00401612c191 100644
 --- a/chrome/browser/ui/BUILD.gn
 +++ b/chrome/browser/ui/BUILD.gn
-@@ -2495,7 +2495,10 @@ split_static_library("ui") {
+@@ -2570,7 +2570,10 @@ split_static_library("ui") {
          "views/tabs/window_finder_mac.mm",
        ]
-
+ 
 -      deps += [ "//extensions/components/native_app_window" ]
 +
 +      if (enable_extensions) {
 +        deps += [ "//extensions/components/native_app_window" ]
 +      }
-
+ 
        # Truly cocoa-browser-specific sources. These are secondary UI pieces that
        # are obsolete before mac_views_browser will ever ship, so they aren't
+-- 
+2.17.0

@@ -1,8 +1,14 @@
+From 22107b997c8c2437e90aeccf4ea795682ebc402a Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:46:21 -0700
+Subject: render_widget_host_view_base.patch
+
+
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 1c52a5fd396f..bfaa5a0c7c35 100644
+index 5561b7a1f386..913b24cff3b2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -515,6 +515,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
+@@ -567,6 +567,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
    return frame_sink_id.is_valid() ? frame_sink_id : GetFrameSinkId();
  }
  
@@ -19,7 +25,7 @@ index 1c52a5fd396f..bfaa5a0c7c35 100644
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 048fd7d3a8bf..1555b278a525 100644
+index 8ed6ffd3a284..dd7fdbbdee59 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -22,8 +22,10 @@
@@ -46,7 +52,7 @@ index 048fd7d3a8bf..1555b278a525 100644
  class WebCursor;
  struct TextInputState;
  
-@@ -142,6 +146,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -144,6 +148,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    TouchSelectionControllerClientManager*
    GetTouchSelectionControllerClientManager() override;
  
@@ -56,7 +62,7 @@ index 048fd7d3a8bf..1555b278a525 100644
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -346,6 +353,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -351,6 +358,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  
@@ -68,3 +74,6 @@ index 048fd7d3a8bf..1555b278a525 100644
    // Transform a point that is in the coordinate space of a Surface that is
    // embedded within the RenderWidgetHostViewBase's Surface to the
    // coordinate space of an embedding, or embedded, Surface. Typically this
+-- 
+2.17.0
+

@@ -5,8 +5,11 @@
 #ifndef ATOM_BROWSER_ATOM_WEB_UI_CONTROLLER_FACTORY_H_
 #define ATOM_BROWSER_ATOM_WEB_UI_CONTROLLER_FACTORY_H_
 
+#include <memory>
+
 #include "base/macros.h"
 #include "base/memory/singleton.h"
+#include "content/public/browser/web_ui_controller.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
 namespace atom {
@@ -25,7 +28,7 @@ class AtomWebUIControllerFactory : public content::WebUIControllerFactory {
                       const GURL& url) const override;
   bool UseWebUIBindingsForURL(content::BrowserContext* browser_context,
                               const GURL& url) const override;
-  content::WebUIController* CreateWebUIControllerForURL(
+  std::unique_ptr<content::WebUIController> CreateWebUIControllerForURL(
       content::WebUI* web_ui,
       const GURL& url) const override;
 

@@ -1,3 +1,16 @@
+From 0e2864c50cb039dd2f8d9b9cc88ae26f5bd62581 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Sep 2018 17:44:26 -0700
+Subject: add_realloc.patch
+
+Blink overrides ArrayBuffer's allocator with its own one, while Node simply
+uses malloc and free, so we need to use v8's allocator in Node. As part of the
+10.6.0 upgrade, we needed to make SerializerDelegate accept an allocator
+argument in its constructor, and override ReallocateBufferMemory and
+FreeBufferMemory to use the allocator. We cannot simply allocate and then memcpy
+when we override ReallocateBufferMemory, so we therefore need to implement
+Realloc on the v8 side and correspondingly in gin.
+
 diff --git a/gin/array_buffer.cc b/gin/array_buffer.cc
 index f84934bfd712..fc23fef68b6f 100644
 --- a/gin/array_buffer.cc
@@ -26,10 +39,10 @@ index 2aef366ac819..3c7d66c81032 100644
  
    GIN_EXPORT static ArrayBufferAllocator* SharedInstance();
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index c8c822632a69..d12976b3cd01 100644
+index 83a6639306a9..8511e7d594ce 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -619,6 +619,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -665,6 +665,10 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
          size, WTF::ArrayBufferContents::kDontInitialize);
    }
  
@@ -68,3 +81,6 @@ index 809229caa872..6248ad32d6b0 100644
    static void FreeMemory(void*);
    static DataHandle CreateDataHandle(size_t, InitializationPolicy);
    static void Initialize(
+-- 
+2.17.0
+

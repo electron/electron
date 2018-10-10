@@ -49,14 +49,14 @@ bool WebUIControllerFactory::UseWebUIBindingsForURL(
   return UseWebUIForURL(browser_context, url);
 }
 
-content::WebUIController* WebUIControllerFactory::CreateWebUIControllerForURL(
-    content::WebUI* web_ui,
-    const GURL& url) const {
+std::unique_ptr<content::WebUIController>
+WebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
+                                                    const GURL& url) const {
   if (url.host() == kChromeUIDevToolsBundledHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
-    return new DevToolsUI(browser_context, web_ui);
+    return std::make_unique<DevToolsUI>(browser_context, web_ui);
   }
-  return nullptr;
+  return std::unique_ptr<content::WebUIController>();
 }
 
 }  // namespace brightray

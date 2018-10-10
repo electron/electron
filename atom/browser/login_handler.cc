@@ -21,7 +21,7 @@ namespace atom {
 LoginHandler::LoginHandler(
     net::URLRequest* request,
     const net::AuthChallengeInfo& auth_info,
-    const net::NetworkDelegate::AuthCallback& callback,
+    net::NetworkDelegate::AuthCallback callback,
     net::AuthCredentials* credentials,
     const content::ResourceRequestInfo* resource_request_info)
     : credentials_(credentials),

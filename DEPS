@@ -1,6 +1,18 @@
+gclient_gn_args_file = 'src/build/config/gclient_args.gni'
+gclient_gn_args = [
+  'build_with_chromium',
+  'checkout_android',
+  'checkout_android_native_support',
+  'checkout_libaom',
+  'checkout_nacl',
+  'checkout_oculus_sdk'
+]
+
 vars = {
-  'chromium_version': '68.0.3440.128',
-  'node_version': '18a9880b70039f5d41ee860a95fe84e5ef928973',
+  'chromium_version':
+    '69.0.3497.106',
+  'node_version':
+    '5331c9dc72e0db379a675efdb98f6a67bf7f23f0',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -15,16 +27,25 @@ vars = {
   # Python interface to Amazon Web Services. Is used for releases only.
   'checkout_boto': False,
 
-  'checkout_nacl': False,
-  'checkout_libaom': True,
-  'checkout_oculus_sdk': False,
-
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
 
   # It is always needed for normal Electron builds,
   # but might be impossible for custom in-house builds.
   'download_external_binaries': True,
+
+  'checkout_nacl':
+    False,
+  'checkout_libaom':
+    True,
+  'checkout_oculus_sdk':
+    False,
+  'build_with_chromium':
+    True,
+  'checkout_android':
+    False,
+  'checkout_android_native_support':
+    False,
 }
 
 deps = {
@@ -100,10 +121,3 @@ hooks = [
 recursedeps = [
   'src',
 ]
-
-gclient_gn_args = [
-  'checkout_libaom',
-  'checkout_nacl',
-  'checkout_oculus_sdk',
-]
-gclient_gn_args_file =  'src/build/config/gclient_args.gni'

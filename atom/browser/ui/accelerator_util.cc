@@ -64,7 +64,6 @@ bool StringToAccelerator(const std::string& shortcut,
   }
 
   *accelerator = ui::Accelerator(key, modifiers);
-  SetPlatformAccelerator(accelerator);
   return true;
 }
 

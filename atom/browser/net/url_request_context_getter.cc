@@ -17,7 +17,6 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
-#include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
@@ -83,7 +82,6 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
           brightray::BrowserClient::Get()->GetApplicationLocale());
-  network_context_params->allow_gssapi_library_load = true;
   network_context_params->enable_data_url_support = false;
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
@@ -185,12 +183,6 @@ class ResourceContext : public content::ResourceContext {
   ResourceContext() = default;
   ~ResourceContext() override = default;
 
-  net::HostResolver* GetHostResolver() override {
-    if (request_context_)
-      return request_context_->host_resolver();
-    return nullptr;
-  }
-
   net::URLRequestContext* GetRequestContext() override {
     return request_context_;
   }
@@ -226,8 +218,7 @@ URLRequestContextGetter::Handle::CreateMainRequestContextGetter(
   DCHECK(!main_request_context_getter_.get());
   LazyInitialize();
   main_request_context_getter_ = new URLRequestContextGetter(
-      AtomBrowserClient::Get()->GetNetLog(), this, protocol_handlers,
-      std::move(protocol_interceptors));
+      this, protocol_handlers, std::move(protocol_interceptors));
   return main_request_context_getter_;
 }
 
@@ -284,12 +275,10 @@ void URLRequestContextGetter::Handle::ShutdownOnUIThread() {
 }
 
 URLRequestContextGetter::URLRequestContextGetter(
-    net::NetLog* net_log,
     URLRequestContextGetter::Handle* context_handle,
     content::ProtocolHandlerMap* protocol_handlers,
     content::URLRequestInterceptorScopedVector protocol_interceptors)
-    : net_log_(net_log),
-      context_handle_(context_handle),
+    : context_handle_(context_handle),
       url_request_context_(nullptr),
       protocol_interceptors_(std::move(protocol_interceptors)),
       context_shutting_down_(false) {
@@ -322,10 +311,11 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     return nullptr;
 
   if (!url_request_context_) {
-    auto& command_line = *base::CommandLine::ForCurrentProcess();
     std::unique_ptr<network::URLRequestContextBuilderMojo> builder =
         std::make_unique<network::URLRequestContextBuilderMojo>();
-    builder->set_network_delegate(std::make_unique<AtomNetworkDelegate>());
+    auto network_delegate = std::make_unique<AtomNetworkDelegate>();
+    network_delegate_ = network_delegate.get();
+    builder->set_network_delegate(std::move(network_delegate));
 
     ct_delegate_.reset(new brightray::RequireCTDelegate);
     auto cert_verifier = std::make_unique<AtomCertVerifier>(ct_delegate_.get());
@@ -334,42 +324,13 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     builder->SetCreateHttpTransactionFactoryCallback(
         base::BindOnce(&content::CreateDevToolsNetworkTransactionFactory));
 
-    std::unique_ptr<net::HostResolver> host_resolver =
-        net::HostResolver::CreateDefaultResolver(net_log_);
-    // --host-resolver-rules
-    if (command_line.HasSwitch(network::switches::kHostResolverRules)) {
-      auto remapped_resolver =
-          std::make_unique<net::MappedHostResolver>(std::move(host_resolver));
-      remapped_resolver->SetRulesFromString(command_line.GetSwitchValueASCII(
-          network::switches::kHostResolverRules));
-      host_resolver = std::move(remapped_resolver);
-    }
-
-    net::HttpAuthPreferences auth_preferences;
-    // --auth-server-whitelist
-    if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
-      auth_preferences.SetServerWhitelist(
-          command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
-    }
-
-    // --auth-negotiate-delegate-whitelist
-    if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
-      auth_preferences.SetDelegateWhitelist(command_line.GetSwitchValueASCII(
-          switches::kAuthNegotiateDelegateWhitelist));
-    }
-    auto http_auth_handler_factory =
-        net::HttpAuthHandlerRegistryFactory::CreateDefault(host_resolver.get());
-    http_auth_handler_factory->SetHttpAuthPreferences(net::kNegotiateAuthScheme,
-                                                      &auth_preferences);
-    builder->SetHttpAuthHandlerFactory(std::move(http_auth_handler_factory));
-    builder->set_host_resolver(std::move(host_resolver));
     builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
 
-    network_context_ =
-        content::GetNetworkServiceImpl()->CreateNetworkContextWithBuilder(
-            std::move(context_handle_->main_network_context_request_),
-            std::move(context_handle_->main_network_context_params_),
-            std::move(builder), &url_request_context_);
+    auto* network_service = content::GetNetworkServiceImpl();
+    network_context_ = network_service->CreateNetworkContextWithBuilder(
+        std::move(context_handle_->main_network_context_request_),
+        std::move(context_handle_->main_network_context_params_),
+        std::move(builder), &url_request_context_);
 
     net::TransportSecurityState* transport_security_state =
         url_request_context_->transport_security_state();

@@ -19,10 +19,13 @@
 
 namespace atom {
 
-JavascriptEnvironment::JavascriptEnvironment()
-    : initialized_(Initialize()),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
-      isolate_(isolate_holder_.isolate()),
+JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
+    : isolate_(Initialize(event_loop)),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+                      gin::IsolateHolder::kSingleThread,
+                      gin::IsolateHolder::kAllowAtomicsWait,
+                      gin::IsolateHolder::IsolateCreationMode::kNormal,
+                      isolate_),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
@@ -31,15 +34,7 @@ JavascriptEnvironment::JavascriptEnvironment()
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
 
-void JavascriptEnvironment::OnMessageLoopCreated() {
-  isolate_holder_.AddRunMicrotasksObserver();
-}
-
-void JavascriptEnvironment::OnMessageLoopDestroying() {
-  isolate_holder_.RemoveRunMicrotasksObserver();
-}
-
-bool JavascriptEnvironment::Initialize() {
+v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
@@ -54,12 +49,21 @@ bool JavascriptEnvironment::Initialize() {
   platform_ = node::CreatePlatform(
       base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
       tracing_controller);
+
   v8::V8::InitializePlatform(platform_);
   gin::IsolateHolder::Initialize(
       gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
       gin::ArrayBufferAllocator::SharedInstance(),
       nullptr /* external_reference_table */, false /* create_v8_platform */);
-  return true;
+
+  v8::Isolate* isolate = v8::Isolate::Allocate();
+  platform_->RegisterIsolate(isolate, event_loop);
+
+  return isolate;
+}
+
+void JavascriptEnvironment::OnMessageLoopDestroying() {
+  platform_->UnregisterIsolate(isolate_);
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}

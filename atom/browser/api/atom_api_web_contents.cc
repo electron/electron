@@ -462,7 +462,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
       auto* relay =
           NativeWindowRelay::FromWebContents(embedder_->web_contents());
       if (relay)
-        owner_window = relay->window.get();
+        owner_window = relay->GetNativeWindow();
     }
     if (owner_window)
       SetOwnerWindow(owner_window);
@@ -587,8 +587,8 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
     *proceed_to_fire_unload = true;
 }
 
-void WebContents::MoveContents(content::WebContents* source,
-                               const gfx::Rect& pos) {
+void WebContents::SetContentsBounds(content::WebContents* source,
+                                    const gfx::Rect& pos) {
   Emit("move", pos);
 }
 
@@ -610,10 +610,6 @@ void WebContents::ActivateContents(content::WebContents* source) {
 void WebContents::UpdateTargetURL(content::WebContents* source,
                                   const GURL& url) {
   Emit("update-target-url", url);
-}
-
-bool WebContents::IsPopupOrPanel(const content::WebContents* source) const {
-  return type_ == BROWSER_WINDOW;
 }
 
 void WebContents::HandleKeyboardEvent(
@@ -671,7 +667,8 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
 void WebContents::RendererUnresponsive(
     content::WebContents* source,
-    content::RenderWidgetHost* render_widget_host) {
+    content::RenderWidgetHost* render_widget_host,
+    base::RepeatingClosure hang_monitor_restarter) {
   Emit("unresponsive");
 }
 
@@ -734,10 +731,10 @@ bool WebContents::CheckMediaAccessPermission(
 void WebContents::RequestMediaAccessPermission(
     content::WebContents* web_contents,
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& callback) {
+    content::MediaResponseCallback callback) {
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
-  permission_helper->RequestMediaAccessPermission(request, callback);
+  permission_helper->RequestMediaAccessPermission(request, std::move(callback));
 }
 
 void WebContents::RequestToLockMouse(content::WebContents* web_contents,
@@ -988,7 +985,8 @@ void WebContents::DevToolsOpened() {
 
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = managed_web_contents()->GetDevToolsWebContents();
-  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  bool has_window =
+      devtools->GetUserData(NativeWindowRelay::kNativeWindowRelayUserDataKey);
   if (owner_window() && !has_window)
     handle->SetOwnerWindow(devtools, owner_window());
 
@@ -1823,7 +1821,8 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
   if (IsOffScreen() && wc == web_contents()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents());
     if (relay) {
-      return relay->window->GetSize();
+      auto* owner_window = relay->GetNativeWindow();
+      return owner_window ? owner_window->GetSize() : gfx::Size();
     }
   }
 
@@ -1916,7 +1915,7 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     NativeWindow* owner_window = nullptr;
     auto* relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
     if (relay) {
-      owner_window = relay->window.get();
+      owner_window = relay->GetNativeWindow();
     }
     if (owner_window)
       SetOwnerWindow(owner_window);
@@ -1961,7 +1960,7 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
 }
 
 void WebContents::GrantOriginAccess(const GURL& url) {
-  content::ChildProcessSecurityPolicy::GetInstance()->GrantOrigin(
+  content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
       web_contents()->GetMainFrame()->GetProcess()->GetID(),
       url::Origin::Create(url));
 }

@@ -11,6 +11,7 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "base/command_line.h"
+#include "base/logging.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "native_mate/dictionary.h"
@@ -103,11 +104,13 @@ void NetLog::StopLogging(mate::Arguments* args) {
 
 void NetLog::OnNewState(const base::DictionaryValue& state) {
   net_log_state_ = state.CreateDeepCopy();
+  auto logging_state = GetLoggingState();
+  LOG(INFO) << "Got new state: " << logging_state;
 
   if (stop_callback_queue_.empty())
     return;
 
-  if (GetLoggingState() == "NOT_LOGGING") {
+  if (logging_state == "NOT_LOGGING") {
     for (auto& callback : stop_callback_queue_) {
       if (!callback.is_null())
         net_log_writer_->GetFilePathToCompletedLog(callback);

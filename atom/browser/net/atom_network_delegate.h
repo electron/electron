@@ -79,15 +79,13 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                                URLPatterns patterns,
                                ResponseListener callback);
 
-  void SetDevToolsNetworkEmulationClientId(const std::string& client_id);
-
  protected:
   // net::NetworkDelegate:
   int OnBeforeURLRequest(net::URLRequest* request,
-                         const net::CompletionCallback& callback,
+                         net::CompletionOnceCallback callback,
                          GURL* new_url) override;
   int OnBeforeStartTransaction(net::URLRequest* request,
-                               const net::CompletionCallback& callback,
+                               net::CompletionOnceCallback callback,
                                net::HttpRequestHeaders* headers) override;
   void OnBeforeSendHeaders(net::URLRequest* request,
                            const net::ProxyInfo& proxy_info,
@@ -97,7 +95,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                           const net::HttpRequestHeaders& headers) override;
   int OnHeadersReceived(
       net::URLRequest* request,
-      const net::CompletionCallback& callback,
+      net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
       GURL* allowed_unsafe_redirect_url) override;
@@ -108,14 +106,16 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                               int64_t bytes_read) override {}
   void OnNetworkBytesSent(net::URLRequest* request,
                           int64_t bytes_sent) override {}
-  void OnCompleted(net::URLRequest* request, bool started) override;
+  void OnCompleted(net::URLRequest* request,
+                   bool started,
+                   int net_error) override;
   void OnURLRequestDestroyed(net::URLRequest* request) override;
   void OnPACScriptError(int line_number, const base::string16& error) override {
   }
   AuthRequiredResponse OnAuthRequired(
       net::URLRequest* request,
       const net::AuthChallengeInfo& auth_info,
-      const AuthCallback& callback,
+      AuthCallback callback,
       net::AuthCredentials* credentials) override;
   bool OnCanGetCookies(const net::URLRequest& request,
                        const net::CookieList& cookie_list) override;
@@ -143,7 +143,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
                                const GURL& endpoint) const override;
 
  private:
-  void OnErrorOccurred(net::URLRequest* request, bool started);
+  void OnErrorOccurred(net::URLRequest* request, bool started, int net_error);
 
   template <typename... Args>
   void HandleSimpleEvent(SimpleEvent type,
@@ -152,7 +152,7 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   template <typename Out, typename... Args>
   int HandleResponseEvent(ResponseEvent type,
                           net::URLRequest* request,
-                          const net::CompletionCallback& callback,
+                          net::CompletionOnceCallback callback,
                           Out out,
                           Args... args);
 
@@ -169,11 +169,8 @@ class AtomNetworkDelegate : public net::NetworkDelegate {
   std::map<uint64_t, scoped_refptr<LoginHandler>> login_handler_map_;
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
-  std::map<uint64_t, net::CompletionCallback> callbacks_;
+  std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
   std::vector<std::string> ignore_connections_limit_domains_;
-
-  // Client id for devtools network emulation.
-  std::string client_id_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomNetworkDelegate);
 };

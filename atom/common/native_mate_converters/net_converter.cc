@@ -90,11 +90,11 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     issuer_intermediates.reserve(intermediate_buffers.size() - 1);
     for (size_t i = 1; i < intermediate_buffers.size(); ++i) {
       issuer_intermediates.push_back(
-          net::x509_util::DupCryptoBuffer(intermediate_buffers[i].get()));
+          bssl::UpRef(intermediate_buffers[i].get()));
     }
     const scoped_refptr<net::X509Certificate>& issuer_cert =
         net::X509Certificate::CreateFromBuffer(
-            net::x509_util::DupCryptoBuffer(intermediate_buffers[0].get()),
+            bssl::UpRef(intermediate_buffers[0].get()),
             std::move(issuer_intermediates));
     dict.Set("issuerCert", issuer_cert);
   }
@@ -119,11 +119,9 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
   scoped_refptr<net::X509Certificate> issuer_cert;
   if (dict.Get("issuerCert", &issuer_cert)) {
     std::vector<bssl::UniquePtr<CRYPTO_BUFFER>> intermediates;
-    intermediates.push_back(
-        net::x509_util::DupCryptoBuffer(issuer_cert->cert_buffer()));
+    intermediates.push_back(bssl::UpRef(issuer_cert->cert_buffer()));
     auto cert = net::X509Certificate::CreateFromBuffer(
-        net::x509_util::DupCryptoBuffer(leaf_cert->cert_buffer()),
-        std::move(intermediates));
+        bssl::UpRef(leaf_cert->cert_buffer()), std::move(intermediates));
     if (!cert)
       return false;
 

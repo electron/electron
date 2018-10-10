@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<grit latest_public_release="0" current_release="1" output_all_resource_defines="false">
+<!-- The Resource ids for messages start from 31750 and for includes
+     it starts from 31950, make sure they don't overlap when the limit
+     exceeds in //tools/gritsettings/resource_ids -->
+<grit latest_public_release="0" current_release="1" output_all_resource_defines="false"
+      source_lang_id="en">
   <outputs>
     <output filename="grit/electron_resources.h" type="rc_header">
       <emit emit_type='prepend'></emit>
     </output>
     <output filename="electron_resources.pak" type="data_package" />
   </outputs>
-  <release seq="1">
+  <release seq="1" allow_pseudo="false">
+    <messages fallback_to_english="true">
+      <!-- TODO(deepak1556): Add translations,
+           check https://www.chromium.org/developers/design-documents/ui-localization -->
+      <part file="electron_strings.grdp" />
+    </messages>
     <includes>
       <include name="IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_browser_manifest_overlay.json" use_base_dir="false" type="BINDATA" />
       <include name="IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_packaged_services_manifest_overlay.json" use_base_dir="false" type="BINDATA" />

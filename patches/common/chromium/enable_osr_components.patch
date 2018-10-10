@@ -1,5 +1,12 @@
+From dab99d95ea1d84d1bb263029096a23634b795a94 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Sep 2018 17:49:52 -0700
+Subject: enable_osr_components.patch
+
+Add MouseWheelPhaseHandler for OSR.
+
 diff --git a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
-index 4f7c03d62930..25b74d9b5236 100644
+index 305095fc420e..f5ca4eda4a66 100644
 --- a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
 +++ b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
 @@ -7,6 +7,7 @@
@@ -19,3 +26,6 @@ index 4f7c03d62930..25b74d9b5236 100644
   public:
    MouseWheelPhaseHandler(RenderWidgetHostViewBase* const host_view);
    ~MouseWheelPhaseHandler() {}
+-- 
+2.17.0
+

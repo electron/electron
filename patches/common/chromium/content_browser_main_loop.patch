@@ -1,0 +1,13 @@
+diff --git a/content/browser/browser_main_loop.cc b/content/browser/browser_main_loop.cc
+index eb942391306e..9111cf18b7fc 100644
+--- a/content/browser/browser_main_loop.cc
++++ b/content/browser/browser_main_loop.cc
+@@ -1571,7 +1571,7 @@ void BrowserMainLoop::MainMessageLoopRun() {
+   }
+ 
+   base::RunLoop run_loop;
+-  parts_->PreDefaultMainMessageLoopRun(run_loop.QuitClosure());
++  parts_->PreDefaultMainMessageLoopRun(run_loop.QuitWhenIdleClosure());
+   run_loop.Run();
+ #endif
+ }

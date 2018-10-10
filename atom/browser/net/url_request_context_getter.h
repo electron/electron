@@ -23,13 +23,10 @@ namespace brightray {
 class RequireCTDelegate;
 }  // namespace brightray
 
-namespace net {
-class NetLog;
-}
-
 namespace atom {
 
 class AtomBrowserContext;
+class AtomNetworkDelegate;
 class AtomURLRequestJobFactory;
 class ResourceContext;
 
@@ -47,6 +44,8 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   AtomURLRequestJobFactory* job_factory() const {
     return top_job_factory_.get();
   }
+
+  AtomNetworkDelegate* network_delegate() const { return network_delegate_; }
 
  private:
   friend class AtomBrowserContext;
@@ -88,7 +87,6 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   };
 
   URLRequestContextGetter(
-      net::NetLog* net_log,
       URLRequestContextGetter::Handle* context_handle,
       content::ProtocolHandlerMap* protocol_handlers,
       content::URLRequestInterceptorScopedVector protocol_interceptors);
@@ -102,9 +100,9 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
   std::unique_ptr<network::mojom::NetworkContext> network_context_;
 
-  net::NetLog* net_log_;
   URLRequestContextGetter::Handle* context_handle_;
   net::URLRequestContext* url_request_context_;
+  AtomNetworkDelegate* network_delegate_;
   content::ProtocolHandlerMap protocol_handlers_;
   content::URLRequestInterceptorScopedVector protocol_interceptors_;
   bool context_shutting_down_;

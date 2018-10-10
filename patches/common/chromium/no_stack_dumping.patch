@@ -1,8 +1,14 @@
+From 643954ec09f12c4d97767cbfcfb24e92fbcd5230 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Thu, 20 Sep 2018 17:46:10 -0700
+Subject: no_stack_dumping.patch
+
+
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 83e8990edf17..94b3450bbea5 100644
+index 8d789ef1b9f7..034fdcad958c 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -871,7 +871,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -835,7 +835,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
            return nullptr;
          }));
  

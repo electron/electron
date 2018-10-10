@@ -1,8 +1,14 @@
+From 2ece85392855af0ea2c9406f98922a869d335bcd Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:01 -0700
+Subject: webgl_context_attributes.patch
+
+
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 4205c92765af..c82360f146d1 100644
+index a9b86c68fe50..46931503ec2b 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -1021,8 +1021,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
+@@ -997,8 +997,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
    attributes.sample_buffers = 0;
    attributes.bind_generates_resource = false;
    attributes.enable_raster_interface = web_attributes.enable_raster_interface;
@@ -16,11 +22,11 @@ index 4205c92765af..c82360f146d1 100644
    attributes.fail_if_major_perf_caveat =
        web_attributes.fail_if_major_performance_caveat;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index f3ec52975650..920d161a1b81 100644
+index f927253a7e0b..12ada20ec3a3 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -493,6 +493,7 @@ class BLINK_PLATFORM_EXPORT Platform {
-     kGLES3ContextType,   // GLES 3.0 context
+@@ -500,6 +500,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+     kGLES3ContextType,  // GLES 3.0 context
    };
    struct ContextAttributes {
 +    bool prefer_integrated_gpu = false;
@@ -28,7 +34,7 @@ index f3ec52975650..920d161a1b81 100644
      ContextType context_type = kGLES2ContextType;
      // Offscreen contexts usually share a surface for the default frame buffer
 diff --git a/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h b/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
-index 298e186289a0..5223ae30db6b 100644
+index 03da0840b0e3..9551675de44d 100644
 --- a/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
 +++ b/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
 @@ -30,6 +30,7 @@ class CORE_EXPORT CanvasContextCreationAttributesCore {
@@ -65,7 +71,7 @@ index 7b655dd12a77..8969eb7d98f3 100644
      [OriginTrialEnabled=WebXR] XRDevice compatibleXRDevice = null;
  };
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc b/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
-index 7274af57b8ee..2a2737da1a56 100644
+index 3846b2a179d9..bf7c63a81391 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
 @@ -18,6 +18,7 @@ WebGLContextAttributes ToWebGLContextAttributes(
@@ -77,13 +83,13 @@ index 7274af57b8ee..2a2737da1a56 100644
        attrs.fail_if_major_performance_caveat);
    result.setCompatibleXRDevice(
 @@ -30,6 +31,7 @@ Platform::ContextAttributes ToPlatformContextAttributes(
-     unsigned web_gl_version,
+     Platform::ContextType context_type,
      bool support_own_offscreen_surface) {
    Platform::ContextAttributes result;
 +  result.prefer_integrated_gpu = attrs.power_preference == "low-power";
    result.fail_if_major_performance_caveat =
        attrs.fail_if_major_performance_caveat;
-   result.context_type = web_gl_version == 2 ? Platform::kWebGL2ContextType
+   result.context_type = context_type;
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl b/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl
 index 38ca0f6b6a0c..90cfe8497daf 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl

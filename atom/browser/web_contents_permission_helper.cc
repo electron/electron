@@ -36,9 +36,10 @@ namespace atom {
 namespace {
 
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
-                        const content::MediaResponseCallback& callback,
+                        content::MediaResponseCallback callback,
                         bool allowed) {
-  brightray::MediaStreamDevicesController controller(request, callback);
+  brightray::MediaStreamDevicesController controller(request,
+                                                     std::move(callback));
   if (allowed)
     controller.TakeAction();
   else
@@ -50,7 +51,7 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
     web_contents->GotResponseToLockMouseRequest(allowed);
 }
 
-void OnPermissionResponse(const base::Callback<void(bool)>& callback,
+void OnPermissionResponse(base::Callback<void(bool)> callback,
                           blink::mojom::PermissionStatus status) {
   if (status == blink::mojom::PermissionStatus::GRANTED)
     callback.Run(true);
@@ -73,11 +74,11 @@ void WebContentsPermissionHelper::RequestPermission(
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionManager());
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
       permission, rfh, origin, false, details,
-      base::Bind(&OnPermissionResponse, callback));
+      base::Bind(&OnPermissionResponse, std::move(callback)));
 }
 
 bool WebContentsPermissionHelper::CheckPermission(
@@ -85,7 +86,7 @@ bool WebContentsPermissionHelper::CheckPermission(
     const base::DictionaryValue* details) const {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionManager());
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,
                                                         details);
@@ -100,8 +101,9 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& response_callback) {
-  auto callback = base::Bind(&MediaAccessAllowed, request, response_callback);
+    content::MediaResponseCallback response_callback) {
+  auto callback = base::AdaptCallbackForRepeating(base::BindOnce(
+      &MediaAccessAllowed, request, std::move(response_callback)));
 
   base::DictionaryValue details;
   std::unique_ptr<base::ListValue> media_types(new base::ListValue);
@@ -117,8 +119,8 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback, false,
-                    &details);
+  RequestPermission(content::PermissionType::AUDIO_CAPTURE, std::move(callback),
+                    false, &details);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(

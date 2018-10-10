@@ -35,6 +35,10 @@
 #include "atom/common/common_message_generator.h"
 #endif
 
+#if defined(OS_MACOSX)
+#include "atom/app/atom_main_delegate_mac.h"
+#endif
+
 namespace atom {
 
 namespace {
@@ -155,6 +159,12 @@ void AtomMainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
   command_line->AppendSwitch("enable-avfoundation");
+#endif
+}
+
+void AtomMainDelegate::PreContentInitialization() {
+#if defined(OS_MACOSX)
+  RegisterAtomCrApp();
 #endif
 }
 

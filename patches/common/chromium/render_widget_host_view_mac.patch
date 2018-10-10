@@ -1,8 +1,14 @@
+From 7c728945a2edf66fc4c795b6b61634b30c76bd1e Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:46:28 -0700
+Subject: render_widget_host_view_mac.patch
+
+
 diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-index 5b4ae0732914..ea774eb81c75 100644
+index 8b84322baa80..70d244e01b75 100644
 --- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-@@ -179,6 +179,11 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -174,6 +174,11 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -14,7 +20,7 @@ index 5b4ae0732914..ea774eb81c75 100644
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -363,6 +368,9 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -354,6 +359,9 @@ void ExtractUnderlines(NSAttributedString* string,
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -24,23 +30,7 @@ index 5b4ae0732914..ea774eb81c75 100644
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -587,6 +595,7 @@ void ExtractUnderlines(NSAttributedString* string,
-   if (EventIsReservedBySystem(theEvent))
-     return NO;
- 
-+#if 0
-   // If we return |NO| from this function, cocoa will send the key event to
-   // the menu and only if the menu does not process the event to |keyDown:|. We
-   // want to send the event to a renderer _before_ sending it to the menu, so
-@@ -600,6 +609,7 @@ void ExtractUnderlines(NSAttributedString* string,
-     DCHECK(![[NSApp mainMenu] performKeyEquivalent:theEvent]);
-     return NO;
-   }
-+#endif
- 
-   // Command key combinations are sent via performKeyEquivalent rather than
-   // keyDown:. We just forward this on and if WebCore doesn't want to handle
-@@ -699,6 +709,10 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -688,6 +696,10 @@ void ExtractUnderlines(NSAttributedString* string,
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -50,8 +40,8 @@ index 5b4ae0732914..ea774eb81c75 100644
 +
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
-     client_->OnNSViewForwardKeyboardEvent(event, latency_info);
-@@ -1461,9 +1475,11 @@ void ExtractUnderlines(NSAttributedString* string,
+     localClient_->ForwardKeyboardEvent(event, latency_info);
+@@ -1460,9 +1472,11 @@ void ExtractUnderlines(NSAttributedString* string,
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -63,7 +53,7 @@ index 5b4ae0732914..ea774eb81c75 100644
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1472,7 +1488,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
+@@ -1471,7 +1485,10 @@ extern NSString* NSTextInputReplacementRangeAttributeName;
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,
@@ -76,11 +66,11 @@ index 5b4ae0732914..ea774eb81c75 100644
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 8b012bcb8f77..077ccbeaa913 100644
+index 0703dd02c901..7186a054cf55 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -53,6 +53,7 @@
- #include "ui/events/keycodes/dom/dom_code.h"
+@@ -54,6 +54,7 @@
+ #include "ui/events/keycodes/dom/dom_keyboard_layout_map.h"
  #include "ui/gfx/geometry/dip_util.h"
  #include "ui/gfx/mac/coordinate_conversion.h"
 +#include "ui/gl/gpu_switching_manager.h"

@@ -32,9 +32,9 @@
 #include "third_party/blink/public/web/web_console_message.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
-#include "third_party/blink/public/web/web_frame_client.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_local_frame_client.h"
 #include "third_party/blink/public/web/web_plugin.h"
 #include "third_party/blink/public/web/web_plugin_document.h"
 #include "third_party/blink/public/web/web_print_params.h"
@@ -342,7 +342,7 @@ float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
                                             const gfx::Rect& canvas_area,
                                             const gfx::Rect& content_area,
                                             double scale_factor,
-                                            blink::WebCanvas* canvas) {
+                                            cc::PaintCanvas* canvas) {
   cc::PaintCanvasAutoRestore auto_restore(canvas, true);
   canvas->translate((content_area.x() - canvas_area.x()) / scale_factor,
                     (content_area.y() - canvas_area.y()) / scale_factor);
@@ -352,7 +352,8 @@ float PrintWebViewHelper::RenderPageContent(blink::WebLocalFrame* frame,
 // Class that calls the Begin and End print functions on the frame and changes
 // the size of the view temporarily to support full page printing..
 class PrepareFrameAndViewForPrint : public blink::WebViewClient,
-                                    public blink::WebFrameClient {
+                                    public blink::WebLocalFrameClient,
+                                    public blink::WebWidgetClient {
  public:
   PrepareFrameAndViewForPrint(const PrintMsg_Print_Params& params,
                               blink::WebLocalFrame* frame,
@@ -367,6 +368,8 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
 
   // Prepares frame for printing.
   void StartPrinting();
+
+  blink::WebWidgetClient* WidgetClient() override { return this; }
 
   blink::WebLocalFrame* frame() { return frame_.GetFrame(); }
 
@@ -386,7 +389,7 @@ class PrepareFrameAndViewForPrint : public blink::WebViewClient,
   void DidStopLoading() override;
   bool AllowsBrokenNullLayerTreeView() const override;
 
-  // blink::WebFrameClient:
+  // blink::WebLocalFrameClient:
   blink::WebLocalFrame* CreateChildFrame(
       blink::WebLocalFrame* parent,
       blink::WebTreeScopeType scope,
@@ -512,7 +515,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
   prefs.javascript_enabled = false;
 
   blink::WebView* web_view = blink::WebView::Create(
-      this, blink::mojom::PageVisibilityState::kVisible, nullptr);
+      this, this, blink::mojom::PageVisibilityState::kVisible, nullptr);
   owns_web_view_ = true;
   content::RenderView::ApplyWebPreferences(prefs, web_view);
   blink::WebLocalFrame* main_frame =
@@ -523,7 +526,7 @@ void PrepareFrameAndViewForPrint::CopySelection(
 
   // When loading is done this will call DidStopLoading() and that will do the
   // actual printing.
-  frame()->LoadRequest(blink::WebURLRequest(GURL(url_str)));
+  frame()->StartNavigation(blink::WebURLRequest(GURL(url_str)));
 }
 
 bool PrepareFrameAndViewForPrint::AllowsBrokenNullLayerTreeView() const {

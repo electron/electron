@@ -28,6 +28,9 @@ env-release-build: &env-release-build
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
 
+env-stack-dumping: &env-stack-dumping
+  ELECTRON_ENABLE_STACK_DUMPING: '1'
+
 env-browsertests: &env-browsertests
   GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
   BUILD_TARGET: electron:chromium_browsertests
@@ -606,7 +609,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
-          (cd electron && npm run test -- --ci --enable-logging)
+          (cd electron && npm run test -- --ci)
     - run:
         name: Check test results existence
         command: |
@@ -944,6 +947,7 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-headless-testing
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   linux-x64-release-tests:
@@ -965,6 +969,7 @@ jobs:
     environment:
       <<: *env-ia32
       <<: *env-headless-testing
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   linux-ia32-release-tests:
@@ -985,10 +990,14 @@ jobs:
 
   osx-testing-tests:
     <<: *machine-mac
+    environment:
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   mas-testing-tests:
     <<: *machine-mac
+    environment:
+      <<: *env-stack-dumping
     <<: *steps-tests
 
   # Layer 4: Summary.
@@ -1077,14 +1086,14 @@ workflows:
             - mas-testing
 
   nightly-release-test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-                - *chromium-upgrade-branches
+#    triggers:
+#      - schedule:
+#          cron: "0 0 * * *"
+#          filters:
+#            branches:
+#              only:
+#                - master
+#                - *chromium-upgrade-branches
     jobs:
       - linux-checkout
 
