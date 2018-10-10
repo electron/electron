@@ -3,7 +3,7 @@ jobs:
   displayName: Build
   # Build Electron only if we are NOT going to use artifacts produced by a different build.
   condition: eq(variables['Custom.UseArtifacts.BuildId'], '')
-  timeoutInMinutes: 100
+  timeoutInMinutes: 120
   variables:
     CI: true
   steps:
@@ -12,6 +12,7 @@ jobs:
     displayName: 'Copy Files to: src/electron'
     inputs:
       TargetFolder: src/electron
+    timeoutInMinutes: 1
 
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
@@ -32,6 +33,7 @@ jobs:
       export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
       echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]`pwd`/buildtools"
     displayName: gclient sync
+    timeoutInMinutes: 25  # Usually takes about 10-15 minutes.
 
   - bash: |
       cd src
@@ -46,6 +48,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: $(SCCACHE_AWS_SECRET)
     displayName: GN gen with sccache
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 1  # Shouldn't take more than 10 seconds.
 
   - bash: |
       cd src
@@ -53,16 +56,19 @@ jobs:
       gn gen out/Default --args='import("'$GN_CONFIG'")'" $GN_EXTRA_ARGS"
     displayName: GN gen without sccache
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 1  # Shouldn't take more than 10 seconds.
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_app
     displayName: Ninja build app
+    timeoutInMinutes: 100  # Can take up to 80 minutes without compiler cache.
 
   - bash: |
       cd src
       ninja -C out/Default third_party/electron_node:headers
     displayName: Build Node.js headers for testing
+    timeoutInMinutes: 1  # Usually takes less than 10 seconds.
 
   - bash: |
       cd src
@@ -70,6 +76,7 @@ jobs:
       ninja -C out/ffmpeg electron:electron_ffmpeg_zip
     displayName: Non proprietary ffmpeg build
     condition: and(succeeded(), or(eq(variables['RUN_TESTS'], '1'), eq(variables['ELECTRON_RELEASE'], '1')))
+    timeoutInMinutes: 2  # Usually takes less than 30 seconds.
 
   - bash: |
       cd src
@@ -83,11 +90,13 @@ jobs:
       electron/script/zip-symbols.py
     displayName: Collect symbols
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 5  # Usually takes less than two.
 
   - bash: |
       "$SCCACHE_BINARY" --stop-server
     displayName: Check sccache stats after build
     condition: and(succeeded(), ne(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 1
 
   - bash: |
       cd src
@@ -100,22 +109,26 @@ jobs:
       cd src
       ninja -C out/Default electron:electron_dist_zip
     displayName: Build dist zip
+    timeoutInMinutes: 2  # Usually takes less than 20 seconds.
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_chromedriver_zip
     displayName: Build chromedriver and zip
+    timeoutInMinutes: 3  # Normally less than one minute.
 
   - bash: |
       cd src
       ninja -C out/Default electron:electron_mksnapshot_zip
     displayName: Build mksnapshot and zip
+    timeoutInMinutes: 1  # Normally less than 10 seconds.
 
   - bash: |
       cd src/electron
       npm run create-typescript-definitions
     displayName: Generate type declarations
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 2  # Normally takes about 10-15 seconds.
 
   - bash: |
       cd src/electron
@@ -135,34 +148,40 @@ jobs:
       fi
     displayName: Upload distribution
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
+    timeoutInMinutes: 5  # Normally takes about two minutes.
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts (application zip)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/dist.zip'
       ArtifactName: Default
+    timeoutInMinutes: 2  # The file is relatively big, so it takes about 20 seconds.
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts (Node.js headers)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/gen/node_headers.tar.gz'
       ArtifactName: Default
+    timeoutInMinutes: 1
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts (chromedriver.zip)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
       ArtifactName: Default
+    timeoutInMinutes: 1
 
   - bash: |
       echo $BUILD_SOURCEVERSION > revision
     displayName: Save exact revision
+    timeoutInMinutes: 1
 
   - task: PublishBuildArtifacts@1
     displayName: Publish Build Artifacts (revision)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/revision'
       ArtifactName: Default
+    timeoutInMinutes: 1
 
   # Notify about success only if we are supposed to, and we don't have to run tests first.
   - bash: |
@@ -172,6 +191,7 @@ jobs:
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: Post Slack Notification on success
     condition: and(succeeded(), and(eq(variables['NOTIFY_SLACK'], '1'), ne(variables['RUN_TESTS'], '1')))
+    timeoutInMinutes: 1
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
@@ -180,6 +200,7 @@ jobs:
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: 'Post Slack Notification on Failure'
     condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
+    timeoutInMinutes: 1
 
 - job: run_tests
   displayName: Run Tests
@@ -200,6 +221,7 @@ jobs:
     displayName: Copy Electron sources to "src/electron"
     inputs:
       TargetFolder: src/electron
+    timeoutInMinutes: 1
 
   # Use Electron built in the current job, if a user didn't specify a build id.
   - task: DownloadBuildArtifacts@0
@@ -208,6 +230,7 @@ jobs:
       buildType: 'current'
       artifactName: Default
     condition: and(succeeded(), eq(variables['Custom.UseArtifacts.BuildId'], ''))
+    timeoutInMinutes: 1
 
   # Use Electron built in a different job.
   - task: DownloadBuildArtifacts@0
@@ -220,6 +243,7 @@ jobs:
       buildId: $(Custom.UseArtifacts.BuildId)
       artifactName: Default
     condition: and(succeeded(), ne(variables['Custom.UseArtifacts.BuildId'], ''))
+    timeoutInMinutes: 1
 
   - bash: |
       TESTS_REVISION=$BUILD_SOURCEVERSION
@@ -229,29 +253,34 @@ jobs:
         exit 1
       fi
     displayName: Check if revisions of build sources and test sources match
+    timeoutInMinutes: 1
 
   - task: ExtractFiles@1
     displayName: Extract Electron app
     inputs:
       archiveFilePatterns: $(System.ArtifactsDirectory)/Default/dist.zip
       destinationFolder: src/out/Default
+    timeoutInMinutes: 1
 
   - task: ExtractFiles@1
     displayName: Extract Node.js headers
     inputs:
       archiveFilePatterns: $(System.ArtifactsDirectory)/Default/node_headers.tar.gz
       destinationFolder: src/out/Default/gen
+    timeoutInMinutes: 1
 
 #  TODO(alexeykuzmin): Install Node when tests are run on Microsoft-hosted agents.
 #  - task: NodeTool@0
 #    displayName: Install Node.js 10.x
 #    inputs:
 #      versionSpec: '10.x'
+#    timeoutInMinutes: 2  # Should take less than a minute.
 
   - bash: |
       cd src/electron
       npm install
     displayName: Install Node.js modules
+    timeoutInMinutes: 4  # Should take about 30 seconds.
 
   - bash: |
       if pgrep Electron; then
@@ -260,6 +289,7 @@ jobs:
       rm -rf ~/Library/Saved\ Application\ State/com.github.electron.savedState
       rm -rf ~/Library/Application\ Support/Electron
     displayName: Make sure Electron isn't running from previous tests
+    timeoutInMinutes: 1
 
   - bash: |
       export ELECTRON_OUT_DIR=Default
@@ -273,6 +303,7 @@ jobs:
         exit 1
       fi
     displayName: Check test results existence
+    timeoutInMinutes: 1
 
   - task: PublishTestResults@2
     displayName: Publish Test Results
@@ -280,6 +311,7 @@ jobs:
       testResultsFiles: '*.xml'
       searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
     condition: and(always(), eq(variables['MOCHA_FILE'], 'junit/test-results.xml'))
+    timeoutInMinutes: 1
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
@@ -288,6 +320,7 @@ jobs:
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"#FC5C3C\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: Post Slack Notification on failure
     condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
+    timeoutInMinutes: 1
 
   - bash: |
       export BUILD_URL="${SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${SYSTEM_TEAMPROJECT}/_build/results?buildId=${BUILD_BUILDID}"
@@ -296,3 +329,4 @@ jobs:
       -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$BUILD_DEFINITIONNAME nightly build results\",\"title_link\": \"$BUILD_URL\"}]}" $(slack_webhook)
     displayName: Post Slack Notification on success
     condition: and(succeeded(), eq(variables['NOTIFY_SLACK'], '1'))
+    timeoutInMinutes: 1
