@@ -1829,20 +1829,6 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) const {
   return gfx::Size();
 }
 
-void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
-  CommonWebContentsDelegate::SetOwnerWindow(owner_window);
-#if BUILDFLAG(ENABLE_OSR)
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (osr_rwhv)
-    osr_rwhv->SetNativeWindow(owner_window);
-#endif
-}
-
-void WebContents::SetOwnerWindow(content::WebContents* web_contents,
-                                 NativeWindow* owner_window) {
-  CommonWebContentsDelegate::SetOwnerWindow(web_contents, owner_window);
-}
-
 void WebContents::SetZoomLevel(double level) {
   zoom_controller_->SetZoomLevel(level);
 }

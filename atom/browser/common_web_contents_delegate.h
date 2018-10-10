@@ -16,6 +16,7 @@
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
+#include "electron/buildflags/buildflags.h"
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
@@ -30,6 +31,10 @@ namespace atom {
 class AtomBrowserContext;
 class NativeWindow;
 class WebDialogHelper;
+
+#if BUILDFLAG(ENABLE_OSR)
+class OffScreenRenderWidgetHostView;
+#endif
 
 class CommonWebContentsDelegate
     : public content::WebContentsDelegate,
@@ -46,9 +51,9 @@ class CommonWebContentsDelegate
                            bool is_guest);
 
   // Set the window as owner window.
-  virtual void SetOwnerWindow(NativeWindow* owner_window);
-  virtual void SetOwnerWindow(content::WebContents* web_contents,
-                              NativeWindow* owner_window);
+  void SetOwnerWindow(NativeWindow* owner_window);
+  void SetOwnerWindow(content::WebContents* web_contents,
+                      NativeWindow* owner_window);
 
   // Returns the WebContents managed by this delegate.
   content::WebContents* GetWebContents() const;
@@ -65,6 +70,10 @@ class CommonWebContentsDelegate
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
  protected:
+#if BUILDFLAG(ENABLE_OSR)
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
+#endif
+
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,

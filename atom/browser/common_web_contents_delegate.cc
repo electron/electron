@@ -39,6 +39,10 @@
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
+#if BUILDFLAG(ENABLE_OSR)
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#endif
+
 using content::BrowserThread;
 
 namespace atom {
@@ -201,6 +205,11 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     web_contents->RemoveUserData(
         NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
+#if BUILDFLAG(ENABLE_OSR)
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (osr_rwhv)
+    osr_rwhv->SetNativeWindow(owner_window);
+#endif
 }
 
 void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
@@ -235,6 +244,18 @@ content::WebContents* CommonWebContentsDelegate::GetDevToolsWebContents()
     return nullptr;
   return web_contents_->GetDevToolsWebContents();
 }
+
+#if BUILDFLAG(ENABLE_OSR)
+OffScreenRenderWidgetHostView*
+CommonWebContentsDelegate::GetOffScreenRenderWidgetHostView() const {
+  if (GetWebContents()) {
+    return static_cast<OffScreenRenderWidgetHostView*>(
+        GetWebContents()->GetRenderWidgetHostView());
+  } else {
+    return nullptr;
+  }
+}
+#endif
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
     content::WebContents* source,
