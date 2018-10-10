@@ -52,7 +52,6 @@ class FrameSubscriber;
 
 #if BUILDFLAG(ENABLE_OSR)
 class OffScreenWebContentsView;
-class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -221,9 +220,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 #endif
   void Invalidate();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
-  void SetOwnerWindow(NativeWindow* owner_window) override;
-  void SetOwnerWindow(content::WebContents* web_contents,
-                      NativeWindow* owner_window) override;
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
@@ -428,7 +424,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
-  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
   // Called when we receive a CursorChange message from chromium.

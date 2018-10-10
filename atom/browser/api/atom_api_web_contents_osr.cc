@@ -22,12 +22,6 @@ OffScreenWebContentsView* WebContents::GetOffScreenWebContentsView() const {
   return static_cast<OffScreenWebContentsView*>(impl->GetView());
 }
 
-OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
-    const {
-  return static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
-}
-
 }  // namespace api
 
 }  // namespace atom
