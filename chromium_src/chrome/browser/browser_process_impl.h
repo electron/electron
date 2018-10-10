@@ -21,6 +21,9 @@ namespace printing {
 class PrintJobManager;
 }
 
+// Empty definition for std::unique_ptr
+class BackgroundModeManager {};
+
 // NOT THREAD SAFE, call only from the main thread.
 // These functions shouldn't return NULL unless otherwise noted.
 class BrowserProcessImpl : public BrowserProcess {

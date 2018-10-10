@@ -53,6 +53,12 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
 
+// clang-format off
+// This header should be declared at the end to avoid
+// redefinition errors.
+#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
+// clang-format on
+
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/jump_list.h"
 #include "base/strings/utf_string_conversions.h"
@@ -61,8 +67,6 @@
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
-
-#include "atom/common/node_includes.h"
 
 using atom::Browser;
 
