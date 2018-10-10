@@ -893,8 +893,8 @@ std::string App::GetRegion() {
     region = tmp;
   }
 #elif defined(OS_MACOSX)
-  auto locale = CFLocaleCopyCurrent();
-  auto value = CFStringRef(
+  CFLocaleRef locale = CFLocaleCopyCurrent();
+  CFStringRef value = CFStringRef(
       static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
   const CFIndex kCStringSize = 128;
   char temporaryCString[kCStringSize];
