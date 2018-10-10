@@ -450,9 +450,11 @@ gfx::Rect Window::GetContentBounds() {
 }
 
 void Window::SetSize(int width, int height, mate::Arguments* args) {
+  gfx::Size size = window_->GetMinimumSize();
+  size.SetToMax(gfx::Size(width, height));
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetSize(gfx::Size(width, height), animate);
+  window_->SetSize(size, animate);
 }
 
 std::vector<int> Window::GetSize() {

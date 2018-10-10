@@ -870,7 +870,9 @@ Disable or enable the window.
 * `height` Integer
 * `animate` Boolean (optional) _macOS_
 
-Resizes the window to `width` and `height`.
+Resizes the window to `width` and `height`. If `width` or `height`
+are below any set minimum size constraints the window will snap to
+its minimum size.
 
 #### `win.getSize()`
 
