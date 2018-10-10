@@ -864,7 +864,8 @@ height areas you have within the overall content view.
 Calling this function with a value of `0` will remove any previously set aspect
 ratios.
 
-#### `win.setBackgroundColor(backgroundColor)
+#### `win.setBackgroundColor(backgroundColor)`
+
 * `backgroundColor` String - Window's background color as a hexadecimal value,
   like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if `transparent`
   is `true`). Default is `#FFF` (white).
