@@ -1276,6 +1276,12 @@ describe('chromium feature', () => {
   })
 
   describe('SpeechSynthesis', () => {
+    before(function () {
+      if (isCI || !features.isTtsEnabled()) {
+        this.skip()
+      }
+    })
+
     it('should emit lifecycle events', async () => {
       const sentence = `long sentence which will take at least a few seconds to
           utter so that it's possible to pause and resume before the end`
