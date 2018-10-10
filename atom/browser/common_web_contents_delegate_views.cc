@@ -24,12 +24,15 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
+  // Check if the webContents has preferences and to ignore shortcuts
+  auto* web_preferences = WebContentsPreferences::From(source);
+  if (web_preferences &&
+      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+    return;
+
   // Let the NativeWindow handle other parts.
-  if (auto* web_preferences = WebContentsPreferences::From(source)) {
-    if (owner_window() &&
-        !web_preferences->IsEnabled("ignoreMenuShortcuts", false)) {
-      owner_window()->HandleKeyboardEvent(source, event);
-    }
+  if (owner_window()) {
+    owner_window()->HandleKeyboardEvent(source, event);
   }
 }
 
