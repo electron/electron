@@ -282,6 +282,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
 
+  current_device_scale_factor_ = 1;
+
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
 #if defined(OS_MACOSX)
