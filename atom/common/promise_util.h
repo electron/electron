@@ -34,14 +34,24 @@ class Promise : public base::RefCounted<Promise> {
 
   template <typename T>
   v8::Maybe<bool> Resolve(const T& value) {
-    return GetInner()->Resolve(isolate()->GetCurrentContext(),
-                               mate::ConvertToV8(isolate(), value));
+    const auto result = GetInner()->Resolve(
+        isolate()->GetCurrentContext(), mate::ConvertToV8(isolate(), value));
+    // Promises are microtasks
+    // v8 Microtasks are run based on the MicrotasksScope Policy
+    // We use explicit policy for browser process and scope for other processes
+    // PerformCheckpoint needs to be called for explicit policy
+    // For other processes, we can either create a MicrotasksScope or
+    // call PerformCheckpoint directly here.
+    v8::MicrotasksScope::PerformCheckpoint(isolate());
+    return result;
   }
 
   template <typename T>
   v8::Maybe<bool> Reject(const T& value) {
-    return GetInner()->Reject(isolate()->GetCurrentContext(),
-                              mate::ConvertToV8(isolate(), value));
+    const auto result = GetInner()->Reject(isolate()->GetCurrentContext(),
+                                           mate::ConvertToV8(isolate(), value));
+    v8::MicrotasksScope::PerformCheckpoint(isolate());
+    return result;
   }
 
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
