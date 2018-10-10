@@ -484,3 +484,10 @@ patches:
     Pass idle quit closure for main message loop, so that pending tasks are
     run before shutdown. This is required to cleanup WebContents asynchronously
     in atom::CommonWebContentsDelegate::ResetManageWebContents.
+-
+  author: Samuel Attard <samuel.r.attard@gmail.com>
+  file: dump_syms.patch
+  description: |
+    dylib currently fails to resolve Squirrel.framework on OSX, we need to fix
+    this but it is not a blocker for releasing Electron.  This patch removes
+    the hard fail on dylib resolve failure from dump_syms
