@@ -8,8 +8,6 @@
 #include <memory>
 #include <vector>
 
-#include "electron/buildflags/buildflags.h"
-
 #include "base/compiler_specific.h"
 #include "content/public/utility/content_utility_client.h"
 #include "electron/buildflags/buildflags.h"

@@ -4,6 +4,8 @@
 
 #include "atom/utility/atom_content_utility_client.h"
 
+#include <utility>
+
 #include "base/command_line.h"
 #include "content/public/child/child_thread.h"
 #include "content/public/common/service_manager_connection.h"
