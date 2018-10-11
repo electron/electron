@@ -125,9 +125,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME: this is broken on mac in the M69 upgrade, fix & re-enable before
-  // release
-  xdescribe('isCurrentlyAudible() API', () => {
+  describe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
       const webContents = remote.getCurrentWebContents()
       const context = new window.AudioContext()
