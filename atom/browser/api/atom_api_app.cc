@@ -877,7 +877,6 @@ std::string App::GetLocale() {
 
 std::string App::GetRegion() {
   std::string region;
-
 #if defined(OS_WIN)
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
@@ -886,12 +885,8 @@ std::string App::GetRegion() {
                       sizeof(locale_name) / sizeof(WCHAR)) ||
       GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
                       (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))) {
-    char tmp[LOCALE_NAME_MAX_LENGTH * 4];
-    WideCharToMultiByte(CP_ACP, 0, locale_name, -1, tmp, sizeof(locale_name),
-                        NULL, NULL);
-    region = tmp;
-  }
+                      sizeof(locale_name) / sizeof(WCHAR)))
+    base::WideToUTF8(locale_name, wcslen(locale_name), &region);
 #elif defined(OS_MACOSX)
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
@@ -903,24 +898,25 @@ std::string App::GetRegion() {
                      kCFStringEncodingUTF8);
   region = temporaryCString;
 #else
-  std::string locale = setlocale(LC_TIME, NULL);
-  if (locale.empty())
-    locale = setlocale(LC_NUMERIC, NULL);
+  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  if (locale_ptr == NULL)
+    locale_ptr = setlocale(LC_NUMERIC, NULL);
 
-  if (!locale.empty()) {
+  if (locale_ptr) {
+    std::string locale = locale_ptr;
     std::string::size_type rpos = locale.rfind('.');
     if (rpos != std::string::npos)
-      locale = locale.substr(0, locale.rfind('.'));
+      locale = locale.substr(0, rpos);
 
     rpos = locale.rfind('_');
-    if (rpos != std::string::npos && region.size() > rpos)
+    if (rpos != std::string::npos && rpos + 1 < locale.size())
       region = locale.substr(rpos + 1, 2);
   }
 #endif
-  if (!region.empty() && region.size() == 2)
+  if (region.size() == 2)
     return region;
 
-  return "";
+  return std::string();
 }
 
 void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
