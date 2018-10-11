@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_ATOM_PRINT_PREVIEW_MESSAGE_HANDLER_H_
 #define ATOM_BROWSER_ATOM_PRINT_PREVIEW_MESSAGE_HANDLER_H_
 
+#include <map>
+
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/printing/print_preview_message_handler.h"
 #include "content/public/browser/web_contents_user_data.h"
