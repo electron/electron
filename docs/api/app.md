@@ -960,7 +960,7 @@ Returns `Object`:
     the app as a login item. Defaults to `false`.
   * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
-    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
+    `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
   * `path` String (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
