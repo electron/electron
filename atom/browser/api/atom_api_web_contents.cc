@@ -79,6 +79,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
+#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
@@ -99,8 +100,8 @@
 #include "ui/gfx/font_render_params.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
-#include "chrome/browser/printing/print_preview_message_handler.h"
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "atom/browser/atom_print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #endif
 
@@ -1427,7 +1428,7 @@ bool WebContents::IsCurrentlyAudible() {
 }
 
 void WebContents::Print(mate::Arguments* args) {
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
+#if BUILDFLAG(ENABLE_PRINTING)
   PrintSettings settings = {false, false, base::string16()};
   if (args->Length() >= 1 && !args->GetNext(&settings)) {
     args->ThrowError();
@@ -1446,13 +1447,15 @@ void WebContents::Print(mate::Arguments* args) {
   print_view_manager_basic_ptr->PrintNow(
       web_contents()->GetMainFrame(), settings.silent,
       settings.print_background, settings.device_name);
+#else
+  LOG(ERROR) << "Printing is disabled";
 #endif
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
 
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
+#if BUILDFLAG(ENABLE_PRINTING)
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   print_backend->EnumeratePrinters(&printers);
@@ -1463,8 +1466,8 @@ std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
 
 void WebContents::PrintToPDF(const base::DictionaryValue& setting,
                              const PrintToPDFCallback& callback) {
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
-  printing::PrintPreviewMessageHandler::FromWebContents(web_contents())
+#if BUILDFLAG(ENABLE_PRINTING)
+  AtomPrintPreviewMessageHandler::FromWebContents(web_contents())
       ->PrintToPDF(setting, callback);
 #endif
 }

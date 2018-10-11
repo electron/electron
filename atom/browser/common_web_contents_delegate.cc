@@ -36,15 +36,15 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
-#include "electron/buildflags/buildflags.h"
+#include "printing/buildflags/buildflags.h"
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_OSR)
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
-#include "chrome/browser/printing/print_preview_message_handler.h"
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "atom/browser/atom_print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
 #endif
 
@@ -177,9 +177,9 @@ void CommonWebContentsDelegate::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
+#if BUILDFLAG(ENABLE_PRINTING)
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
-  printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
+  AtomPrintPreviewMessageHandler::CreateForWebContents(web_contents);
 #endif
 
   // Determien whether the WebContents is offscreen.

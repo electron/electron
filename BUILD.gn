@@ -428,7 +428,7 @@ static_library("electron_lib") {
     ]
   }
 
-  if (enable_printing) {
+  if (enable_basic_printing) {
     deps += [
       "//chrome/common:mojo_bindings",
       "//chrome/services/printing:lib",
@@ -461,8 +461,6 @@ static_library("electron_lib") {
       "//chrome/browser/printing/printer_manager_dialog_win.cc",
       "//chrome/browser/printing/printer_query.cc",
       "//chrome/browser/printing/printer_query.h",
-      "//chrome/browser/printing/printing_init.cc",
-      "//chrome/browser/printing/printing_init.h",
       "//chrome/browser/printing/printing_message_filter.cc",
       "//chrome/browser/printing/printing_message_filter.h",
       "//chrome/renderer/prerender/prerender_dispatcher.cc",
@@ -475,6 +473,8 @@ static_library("electron_lib") {
       "//chrome/renderer/prerender/prerenderer_client.h",
       "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.cc",
       "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h",
+      "//electron/atom/browser/atom_print_preview_message_handler.cc",
+      "//electron/atom/browser/atom_print_preview_message_handler.h",
     ]
 
     if (is_win) {
@@ -846,7 +846,7 @@ group("chromium_unittests") {
     "//v8/test/unittests:unittests",
   ]
 
-  if (enable_printing) {
+  if (enable_basic_printing) {
     deps += [ "//printing:printing_unittests" ]
   }
 
@@ -992,7 +992,7 @@ service_manifest("electron_content_packaged_services_manifest_overlay") {
   source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
   packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
 
-  if (enable_printing) {
+  if (enable_basic_printing) {
     packaged_services += [ "//chrome/services/printing:manifest" ]
   }
 }
