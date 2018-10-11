@@ -24,6 +24,9 @@ vars = {
   'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
 
+  # To be able to build clean Chromium from sources.
+  'apply_patches': True,
+
   # Python interface to Amazon Web Services. Is used for releases only.
   'checkout_boto': False,
 
@@ -68,6 +71,7 @@ deps = {
 hooks = [
   {
     'name': 'patch_chromium',
+    'condition': 'apply_patches',
     'pattern': 'src/electron',
     'action': [
       'python',
