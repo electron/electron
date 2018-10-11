@@ -3,12 +3,14 @@
 # found in the LICENSE file.
 
 import("//electron/buildflags/buildflags.gni")
+import("//third_party/widevine/cdm/widevine.gni")
 
-# Builds some of the chrome sources that Electron depends
-# on unconditionally.
-source_set("chrome") {
+# Builds some of the chrome sources that Electron depends on.
+static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/browser_process.cc",
+    "//chrome/browser/browser_process.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/extensions/global_shortcut_listener_mac.h",
@@ -31,18 +33,15 @@ source_set("chrome") {
     "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
-    "//chrome/common/chrome_constants.cc",
-    "//chrome/common/chrome_constants.h",
-    "//chrome/common/chrome_switches.cc",
-    "//chrome/common/chrome_switches.h",
-    "//chrome/common/secure_origin_whitelist.cc",
-    "//chrome/common/secure_origin_whitelist.h",
+    "//extensions/browser/app_window/size_constraints.cc",
+    "//extensions/browser/app_window/size_constraints.h",
   ]
   public_deps = [
     "//content/public/browser",
   ]
   deps = [
-    "//chrome/common:constants",
+    "//chrome/common",
+    "//components/keyed_service/content",
     "//components/proxy_config",
     "//components/security_state/content",
   ]
@@ -65,5 +64,39 @@ source_set("chrome") {
       "//chrome/browser/media/webrtc/native_desktop_media_list.h",
     ]
     deps += [ "//ui/snapshot" ]
+  }
+
+  if (enable_tts) {
+    sources += [
+      "//chrome/browser/speech/tts_controller.h",
+      "//chrome/browser/speech/tts_controller_impl.cc",
+      "//chrome/browser/speech/tts_controller_impl.h",
+      "//chrome/browser/speech/tts_mac.mm",
+      "//chrome/browser/speech/tts_message_filter.cc",
+      "//chrome/browser/speech/tts_message_filter.h",
+      "//chrome/browser/speech/tts_platform.cc",
+      "//chrome/browser/speech/tts_platform.h",
+      "//chrome/browser/speech/tts_win.cc",
+      "//chrome/common/tts_messages.h",
+      "//chrome/common/tts_utterance_request.cc",
+      "//chrome/common/tts_utterance_request.h",
+      "//chrome/renderer/tts_dispatcher.cc",
+      "//chrome/renderer/tts_dispatcher.h",
+    ]
+
+    if (is_linux) {
+      sources += [ "//chrome/browser/speech/tts_linux.cc" ]
+      deps += [ "//third_party/speech-dispatcher" ]
+    }
+  }
+
+  if (enable_widevine) {
+    sources += [
+      "//chrome/renderer/media/chrome_key_systems.cc",
+      "//chrome/renderer/media/chrome_key_systems.h",
+      "//chrome/renderer/media/chrome_key_systems_provider.cc",
+      "//chrome/renderer/media/chrome_key_systems_provider.h",
+    ]
+    deps += [ "//components/cdm/renderer" ]
   }
 }

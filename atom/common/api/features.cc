@@ -30,6 +30,10 @@ bool IsViewApiEnabled() {
   return BUILDFLAG(ENABLE_VIEW_API);
 }
 
+bool IsTtsEnabled() {
+  return BUILDFLAG(ENABLE_TTS);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -41,6 +45,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
+  dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
 }
 
 }  // namespace

@@ -380,7 +380,7 @@ patches:
   file: allow_nested_error_trackers.patch
   description: |
     Only one X11ErrorTracker should exist at a time, but upstream has a bug
-    where two can exist if running in headless mode -- 
+    where two can exist if running in headless mode --
       ui::(anonymous namespace)::SupportsEWMH() [inner tracker is created]
       ui::WmSupportsHint()
       ui::IsX11WindowFullScreen()
@@ -430,11 +430,6 @@ patches:
   description: |
     Compilation of those files fails with the Chromium 68.
     Remove the patch during the Chromium 69 upgrade.
--
-  author: deepak1556 <hop2deep@gmail.com>
-  file: disable_extensions_gn.patch
-  description: |
-    Fix build files generation when chrome extensions are disabled.
 -
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: crashpad_http_status.patch
@@ -503,3 +498,12 @@ patches:
     (and aren't compiling command.cc), it's safe to duplicate the
     definition. A candidate for upstreaming would be to move the IsMediaKey
     function into //ui.
+-
+  author: Heilig Benedek <benecene@gmail.com>
+  file: tts.patch
+  description:  |
+    * Adds patch in //chrome/browser/speech/tts_controller_impl.cc
+      to disable calls using chrome profile class.
+    * Adds patch in //chrome/browser/speech/tts_message_filter.cc
+      to remove reference to browser context when its signaled for
+      destruction from content layer.

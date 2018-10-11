@@ -107,7 +107,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #endif
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
-  std::unique_ptr<BrowserProcess> fake_browser_process_;
+  std::unique_ptr<BrowserProcessImpl> fake_browser_process_;
 
   // Pointer to exit code.
   int* exit_code_ = nullptr;
