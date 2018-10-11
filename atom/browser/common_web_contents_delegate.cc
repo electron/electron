@@ -30,6 +30,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -38,6 +39,10 @@
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
 #include "storage/browser/fileapi/isolated_context.h"
+
+#if BUILDFLAG(ENABLE_OSR)
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#endif
 
 using content::BrowserThread;
 
@@ -201,6 +206,11 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     web_contents->RemoveUserData(
         NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
+#if BUILDFLAG(ENABLE_OSR)
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (osr_rwhv)
+    osr_rwhv->SetNativeWindow(owner_window);
+#endif
 }
 
 void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
@@ -235,6 +245,13 @@ content::WebContents* CommonWebContentsDelegate::GetDevToolsWebContents()
     return nullptr;
   return web_contents_->GetDevToolsWebContents();
 }
+
+#if BUILDFLAG(ENABLE_OSR)
+OffScreenRenderWidgetHostView*
+CommonWebContentsDelegate::GetOffScreenRenderWidgetHostView() const {
+  return nullptr;
+}
+#endif
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
     content::WebContents* source,
