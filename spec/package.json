@@ -3,6 +3,9 @@
   "productName": "Electron Test",
   "main": "static/main.js",
   "version": "0.1.0",
+  "scripts": {
+    "postinstall": "node ../tools/run-if-exists.js node_modules/robotjs node-gyp rebuild"
+  },
   "devDependencies": {
     "basic-auth": "^2.0.0",
     "bluebird": "^3.5.1",
@@ -25,6 +28,7 @@
     "yargs": "^11.0.0"
   },
   "optionalDependencies": {
+    "robotjs": "^0.5.1",
     "runas": "3.x"
   },
   "standard": {
