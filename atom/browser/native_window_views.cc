@@ -899,14 +899,17 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 
 void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
 #if defined(USE_X11)
-  if (menu_model == nullptr)
+  if (menu_model == nullptr) {
     global_menu_bar_.reset();
+    root_view_->UnregisterAcceleratorsWithFocusManager();
+  }
 
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
     global_menu_bar_.reset(new GlobalMenuBarX11(this));
 
   // Use global application menu bar when possible.
   if (global_menu_bar_ && global_menu_bar_->IsServerStarted()) {
+    root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
     global_menu_bar_->SetMenu(menu_model);
     return;
   }
