@@ -42,7 +42,7 @@ gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
   auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay)
     return gfx::NativeView();
-  return relay->window->GetNativeView();
+  return relay->GetNativeWindow()->GetNativeView();
 }
 
 gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
@@ -52,7 +52,7 @@ gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
   auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay)
     return gfx::NativeView();
-  return relay->window->GetNativeView();
+  return relay->GetNativeWindow()->GetNativeView();
 }
 
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
@@ -62,7 +62,7 @@ gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
   auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
   if (!relay)
     return gfx::NativeWindow();
-  return relay->window->GetNativeWindow();
+  return relay->GetNativeWindow()->GetNativeWindow();
 }
 #endif
 
@@ -102,17 +102,14 @@ OffScreenWebContentsView::CreateViewForWidget(
         render_widget_host->GetView());
   }
 
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
   return new OffScreenRenderWidgetHostView(
       transparent_, painting_, GetFrameRate(), callback_, render_widget_host,
-      nullptr, relay->window.get());
+      nullptr, nullptr);
 }
 
 content::RenderWidgetHostViewBase*
 OffScreenWebContentsView::CreateViewForPopupWidget(
     content::RenderWidgetHost* render_widget_host) {
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
-
   content::WebContentsImpl* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
@@ -123,9 +120,9 @@ OffScreenWebContentsView::CreateViewForPopupWidget(
                     ->GetRenderWidgetHostView()
               : web_contents_impl->GetRenderWidgetHostView());
 
-  return new OffScreenRenderWidgetHostView(
-      transparent_, true, view->GetFrameRate(), callback_, render_widget_host,
-      view, relay->window.get());
+  return new OffScreenRenderWidgetHostView(transparent_, true,
+                                           view->GetFrameRate(), callback_,
+                                           render_widget_host, view, nullptr);
 }
 
 void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}
@@ -140,8 +137,11 @@ void OffScreenWebContentsView::RenderViewCreated(
 #endif
 }
 
-void OffScreenWebContentsView::RenderViewSwappedIn(
-    content::RenderViewHost* host) {}
+void OffScreenWebContentsView::RenderViewReady() {}
+
+void OffScreenWebContentsView::RenderViewHostChanged(
+    content::RenderViewHost* old_host,
+    content::RenderViewHost* new_host) {}
 
 void OffScreenWebContentsView::SetOverscrollControllerEnabled(bool enabled) {}
 
