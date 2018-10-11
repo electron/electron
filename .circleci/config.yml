@@ -24,6 +24,7 @@ env-testing-build: &env-testing-build
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
+  STRIP_BINARIES: true
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
@@ -160,12 +161,14 @@ step-electron-build: &step-electron-build
       cd src
       ninja -C out/Default electron -j18
 
-step-electron-dist-strip: &step-electron-dist-strip
+step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      cd src
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+      if [ "$STRIP_BINARIES" == "true" ]; then
+        cd src
+        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+      fi
 
 step-electron-dist-build: &step-electron-dist-build
   run:
@@ -440,6 +443,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
 
@@ -472,7 +476,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
-    - *step-electron-dist-strip
+    - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
     - *step-generate-breakpad-symbols
