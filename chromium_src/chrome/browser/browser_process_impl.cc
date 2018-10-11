@@ -8,9 +8,8 @@
 #include "printing/buildflags/buildflags.h"
 #include "ui/base/l10n/l10n_util.h"
 
-BrowserProcessImpl::BrowserProcessImpl()
-    : print_job_manager_(nullptr) {
-#if BUILDFLAG(ENABLE_PRINTING_ELECTRON)
+BrowserProcessImpl::BrowserProcessImpl() : print_job_manager_(nullptr) {
+#if BUILDFLAG(ENABLE_PRINTING)
   print_job_manager_.reset(new printing::PrintJobManager());
 #endif
   g_browser_process = this;
