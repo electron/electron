@@ -15,3 +15,7 @@ rtc_use_h264 = proprietary_codecs
 # who have an LGPL requirement to ship ffmpeg as a dynamically linked library,
 # we build ffmpeg as a shared library.
 is_component_ffmpeg = true
+
+# FIXME: Temporary args for debugging
+dcheck_always_on = true
+symbol_level = 1
