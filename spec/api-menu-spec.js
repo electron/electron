@@ -741,5 +741,28 @@ describe('Menu module', () => {
       Menu.setApplicationMenu(null)
       expect(Menu.getApplicationMenu()).to.be.null()
     })
+
+    it('provides working menu accelerators', (done) => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Test',
+          submenu: [
+            {
+              label: 'Test Item',
+              accelerator: 'Ctrl+T',
+              click: () => {
+                // Test will succeed, only when the menu accelerator action
+                // is triggered
+                done()
+              },
+              id: 'test'
+            }
+          ]
+        }
+      ])
+      Menu.setApplicationMenu(menu)
+      expect(Menu.getApplicationMenu()).to.not.be.null()
+      require('robotjs').keyTap('t', 'control')
+    })
   })
 })
