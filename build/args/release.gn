@@ -19,3 +19,4 @@ is_component_ffmpeg = true
 # FIXME: Temporary args for debugging
 dcheck_always_on = true
 symbol_level = 1
+enable_swiftshader = false
