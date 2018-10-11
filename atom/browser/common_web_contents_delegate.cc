@@ -277,7 +277,11 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
     content::WebContents* web_contents,
     SkColor color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
+#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
   return chrome::ShowColorChooser(web_contents, color);
+#else
+  return nullptr;
+#endif
 }
 
 void CommonWebContentsDelegate::RunFileChooser(
