@@ -9,6 +9,12 @@ import("//electron/buildflags/buildflags.gni")
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/extensions/global_shortcut_listener.cc",
+    "//chrome/browser/extensions/global_shortcut_listener.h",
+    "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+    "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+    "//chrome/browser/extensions/global_shortcut_listener_win.cc",
+    "//chrome/browser/extensions/global_shortcut_listener_win.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_loader_mac.mm",
@@ -43,6 +49,10 @@ source_set("chrome") {
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    sources += [
+      "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
+      "//chrome/browser/extensions/global_shortcut_listener_x11.h",
+    ]
   }
 
   if (enable_desktop_capturer) {
