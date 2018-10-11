@@ -24,6 +24,7 @@
     "husky": "^0.14.3",
     "lint": "^1.1.2",
     "minimist": "^1.2.0",
+    "mocha-appveyor-reporter": "^0.4.1",
     "node-fetch": "^2.1.2",
     "nugget": "^2.0.1",
     "octicons": "^7.3.0",
