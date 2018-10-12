@@ -311,20 +311,30 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-generate-breakpad-symbols: &step-generate-breakpad-symbols
+step-build-dump-syms: &step-build-dump-syms
   run:
-    name: Generate breakpad symbols
-    environment:
-      # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
-      ELECTRON_OUT_DIR: Default
+    name: Build dump_syms binary
     command: |
       cd src
-
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
 
-      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
-      electron/script/zip-symbols.py
+step-generate-breakpad-symbols: &step-generate-breakpad-symbols
+  run:
+    name: Generate breakpad symbols
+    command: |
+      cd src
+      export BUILD_PATH="$PWD/out/Default"
+      export DEST_PATH="$BUILD_PATH/electron.breakpad.syms"
+      electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
+
+step-zip-breakpad-symbols: &step-zip-breakpad-symbols
+  run:
+    name: Generate breakpad symbols
+    command: |
+      cd src
+      export BUILD_PATH="$PWD/out/Default"
+      electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
   run:
@@ -458,7 +468,9 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     # Breakpad symbols.
     # TODO(alexeykuzmin): We should do it only in nightly builds.
+    - *step-build-dump-syms
     - *step-generate-breakpad-symbols
+    - *step-zip-breakpad-symbols
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -479,7 +491,9 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-build-dump-syms
     - *step-generate-breakpad-symbols
+    - *step-zip-breakpad-symbols
 
     # mksnapshot
     - *step-mksnapshot-build
