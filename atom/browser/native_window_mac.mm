@@ -339,6 +339,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   if (!useStandardWindow || transparent() || !has_frame()) {
     styleMask |= NSTexturedBackgroundWindowMask;
   }
+  if (resizable_) {
+    styleMask |= NSResizableWindowMask;
+  }
 
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
