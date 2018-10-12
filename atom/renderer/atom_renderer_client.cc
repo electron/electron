@@ -16,6 +16,7 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
+#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/WebKit/public/web/WebDocument.h"
@@ -84,6 +85,15 @@ void AtomRendererClient::DidCreateScriptContext(
   // Only allow node integration for the main frame, unless it is a devtools
   // extension page.
   if (!render_frame->IsMainFrame() && !IsDevToolsExtension(render_frame))
+    return;
+
+  // Don't allow node integration if this is a child window and it does not have
+  // node integration enabled.  Otherwise we would have memory leak in the child
+  // window since we don't clean up node environments.
+  //
+  // TODO(zcbenz): We shouldn't allow node integration even for the top frame.
+  if (!render_frame->GetWebkitPreferences().node_integration &&
+      render_frame->GetWebFrame()->Opener())
     return;
 
   injected_frames_.insert(render_frame);
