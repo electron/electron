@@ -122,6 +122,12 @@ describe('app module', () => {
     })
   })
 
+  describe('app.getLocaleCountryCode()', () => {
+    it('should be empty or have length of two', () => {
+      expect(app.getLocaleCountryCode()).to.have.lengthOf.oneOf([0, 2])
+    })
+  })
+
   describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
       expect(app.isPackaged).to.be.false()
