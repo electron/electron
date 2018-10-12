@@ -10,6 +10,7 @@ tests:
           - RTLTest*
           - SysStrings*
           - UTFOffsetStringConversionsTest*
+          - WeakPtrDeathTest*
   - cc_unittests
   - cc_blink_unittests
   - content_unittests:
