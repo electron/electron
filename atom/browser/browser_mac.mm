@@ -253,7 +253,6 @@ void RemoveFromLoginItems() {
   }
 
   if (GetLoginItemForApp() != NULL) {
-    CFURLRef url_ref = NULL;
     base::scoped_nsobject<NSArray> login_items_array(
         base::mac::CFToNSCast(LSSharedFileListCopySnapshot(list, NULL)));
 
@@ -265,6 +264,7 @@ void RemoveFromLoginItems() {
     for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
       LSSharedFileListItemRef item =
           reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
+      CFURLRef url_ref = NULL;
       if (LSSharedFileListItemResolve(item, 0, &url_ref, NULL) == noErr &&
           item) {
         base::ScopedCFTypeRef<CFURLRef> url(url_ref);
