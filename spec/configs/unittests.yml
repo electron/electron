@@ -75,8 +75,7 @@ tests:
         # TODO(alexeykuzmin): Should it be fixed?
         - LiveRangeUnitTest*
   # Blink
-# TODO: Enable in Ch68.
-#  - blink_common_unittests
+  - blink_common_unittests
   - blink_heap_unittests
   - blink_platform_unittests:
       disabled:
