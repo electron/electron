@@ -2,9 +2,6 @@
 
 > Create and control views.
 
-**Note:** The BrowserView API is currently experimental and may change or be
-removed in future Electron releases.
-
 Process: [Main](../glossary.md#main-process)
 
 A `BrowserView` can be used to embed additional web content into a
