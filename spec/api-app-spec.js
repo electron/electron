@@ -466,6 +466,21 @@ describe('app module', () => {
       }, delay)
     })
 
+    it('correctly sets and unsets the LoginItem as hidden', function () {
+      if (process.platform !== 'darwin' || process.mas) this.skip()
+
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.true()
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
+    })
+
     it('allows you to pass a custom executable and arguments', function () {
       if (process.platform !== 'win32') {
         // FIXME(alexeykuzmin): Skip the test.
