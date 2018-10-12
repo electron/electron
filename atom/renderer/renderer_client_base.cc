@@ -179,7 +179,7 @@ void RendererClientBase::RenderFrameCreated(
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   content::RenderView* render_view = render_frame->GetRenderView();
-  if (render_view) {
+  if (render_frame->IsMainFrame() && render_view) {
     blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
     if (web_frame_widget) {
       base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
