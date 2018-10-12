@@ -206,9 +206,9 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
 #if defined(MAS_BUILD)
-  settings.open_at_login = platform_util::GetLoginItemEnabled();
+  settings.is_login_item = platform_util::GetLoginItemEnabled();
 #else
-  settings.open_at_login =
+  settings.is_login_item =
       base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
@@ -217,14 +217,64 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   return settings;
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+void Browser::AddToLoginItems(LoginItemSettings settings) {
 #if defined(MAS_BUILD)
-  platform_util::SetLoginItemEnabled(settings.open_at_login);
+  platform_util::SetLoginItemEnabled(true);
 #else
-  if (settings.open_at_login)
-    base::mac::AddToLoginItems(settings.open_as_hidden);
-  else
+  base::mac::AddToLoginItems(settings.open_as_hidden);
+#endif
+}
+
+static LSSharedFileListItemRef findItemWithURLInFileList(
+    NSURL* wantedURL,
+    LSSharedFileListRef fileList) {
+  if (wantedURL == NULL || fileList == NULL)
+    return NULL;
+
+  if (@available(macOS 10.10, *)) {
+    CFArrayRef listSnapshot = LSSharedFileListCopySnapshot(fileList, NULL);
+    for (id itemObject in (__bridge NSArray*)listSnapshot) {
+      LSSharedFileListItemRef item =
+          (__bridge LSSharedFileListItemRef)itemObject;
+      UInt32 resolutionFlags = kLSSharedFileListNoUserInteraction |
+                               kLSSharedFileListDoNotMountVolumes;
+      CFURLRef currentItemURL =
+          LSSharedFileListItemCopyResolvedURL(item, resolutionFlags, NULL);
+      if (currentItemURL &&
+          CFEqual(currentItemURL, (__bridge CFTypeRef)(wantedURL))) {
+        CFRetain(item);
+        CFRelease(currentItemURL);
+        CFRelease(listSnapshot);
+        return item;
+      }
+      if (currentItemURL)
+        CFRelease(currentItemURL);
+    }
+
+    if (listSnapshot)
+      CFRelease(listSnapshot);
+  }
+
+  return NULL;
+}
+
+void Browser::RemoveFromLoginItems() {
+#if defined(MAS_BUILD)
+  platform_util::SetLoginItemEnabled(false);
+#else
+  if (@available(macOS 10.10, *)) {
+    LSSharedFileListRef loginItems =
+        LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL);
+    LSSharedFileListItemRef item = findItemWithURLInFileList(
+        [NSURL fileURLWithPath:[[NSBundle mainBundle] bundlePath]], loginItems);
+    if (item != NULL) {
+      LSSharedFileListItemRemove(loginItems, item);
+      CFRelease(item);
+    }
+    CFRelease(loginItems);
+  } else {
     base::mac::RemoveFromLoginItems();
+  }
 #endif
 }
 

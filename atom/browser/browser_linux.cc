@@ -123,7 +123,8 @@ bool Browser::SetBadgeCount(int count) {
   }
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
+void Browser::AddToLoginItems(LoginItemSettings settings) {}
+void Browser::RemoveFromLoginItems() {}
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
