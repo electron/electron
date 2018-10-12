@@ -714,6 +714,12 @@ jobs:
     <<: *machine-linux-2xlarge
     <<: *steps-checkout
 
+  linux-x64-checkout-no-patches:
+    <<: *machine-linux-2xlarge
+    environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False'
+    <<: *steps-checkout
+
   # Layer 2: Builds.
   linux-x64-debug:
     <<: *machine-linux-2xlarge
@@ -944,6 +950,15 @@ jobs:
 
   # Layer 3: Tests.
   linux-x64-unittests:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-unittests
+      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-headless-testing
+    <<: *steps-native-tests
+
+  linux-x64-chromium-unittests:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-unittests
@@ -1225,3 +1240,9 @@ workflows:
       - linux-x64-unittests:
           requires:
             - linux-x64-checkout
+
+      - linux-x64-checkout-no-patches
+
+      - linux-x64-chromium-unittests:
+          requires:
+            - linux-x64-checkout-no-patches
