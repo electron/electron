@@ -15,6 +15,10 @@ namespace atom {
 
 // Microtasks like promise resolution, are run at the end of the current
 // task. This class implements a task observer that runs tells v8 to run them.
+// Microtasks runner implementation is based on the EndOfTaskRunner in blink.
+// Node follows the kExplicit MicrotasksPolicy, and we do the same in browser
+// process. Hence, we need to have this task observer to flush the queued
+// microtasks.
 class MicrotasksRunner : public base::MessageLoop::TaskObserver {
  public:
   explicit MicrotasksRunner(v8::Isolate* isolate);

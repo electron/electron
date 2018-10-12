@@ -32,21 +32,18 @@ class Promise : public base::RefCounted<Promise> {
                               v8::Undefined(isolate()));
   }
 
+  // Promise resolution is a microtask
+  // We use the MicrotasksRunner to trigger the running of pending microtasks
   template <typename T>
   v8::Maybe<bool> Resolve(const T& value) {
-    const auto result = GetInner()->Resolve(
-        isolate()->GetCurrentContext(), mate::ConvertToV8(isolate(), value));
-    // Promise resolution is a microtask
-    // We use the EndOfTaskRunner to trigger the running of pending microtasks
-    return result;
+    return GetInner()->Resolve(isolate()->GetCurrentContext(),
+                               mate::ConvertToV8(isolate(), value));
   }
 
   template <typename T>
   v8::Maybe<bool> Reject(const T& value) {
-    const auto result = GetInner()->Reject(isolate()->GetCurrentContext(),
-                                           mate::ConvertToV8(isolate(), value));
-    v8::MicrotasksScope::PerformCheckpoint(isolate());
-    return result;
+    return GetInner()->Reject(isolate()->GetCurrentContext(),
+                              mate::ConvertToV8(isolate(), value));
   }
 
   v8::Maybe<bool> RejectWithErrorMessage(const std::string& error);
