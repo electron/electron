@@ -1,24 +1,18 @@
+#!/usr/bin/env node
+
 const { GitProcess } = require('dugite')
 const Entities = require('html-entities').AllHtmlEntities
 const fetch = require('node-fetch')
 const fs = require('fs')
 const GitHub = require('github')
+const minimist = require('minimist')
 const path = require('path')
-const semver = require('semver')
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
-// Fill this with tags to ignore if you are generating release notes for older
-// versions
-//
-// E.g. ['v3.0.0-beta.1'] to generate the release notes for 3.0.0-beta.1 :) from
-//      the current 3-0-x branch
-const EXCLUDE_TAGS = []
-
 const entities = new Entities()
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
-let currentBranch
 
 const semanticMap = new Map()
 for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-map.csv'), 'utf8').split('\n')) {
@@ -28,80 +22,22 @@ for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-m
   semanticMap.set(bits[0], bits[1])
 }
 
-const getCurrentBranch = async () => {
-  if (currentBranch) return currentBranch
-  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
-  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (branchDetails.exitCode === 0) {
-    currentBranch = branchDetails.stdout.trim()
-    return currentBranch
-  }
-  throw GitProcess.parseError(branchDetails.stderr)
-}
-
-const getBranchOffPoint = async (branchName) => {
-  const gitArgs = ['merge-base', branchName, 'master']
-  const commitDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (commitDetails.exitCode === 0) {
-    return commitDetails.stdout.trim()
-  }
-  throw GitProcess.parseError(commitDetails.stderr)
-}
-
-const getTagsOnBranch = async (branchName) => {
-  const gitArgs = ['tag', '--merged', branchName]
-  const tagDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (tagDetails.exitCode === 0) {
-    return tagDetails.stdout.trim().split('\n').filter(tag => !EXCLUDE_TAGS.includes(tag))
-  }
-  throw GitProcess.parseError(tagDetails.stderr)
-}
-
 const memLastKnownRelease = new Map()
 
 const getLastKnownReleaseOnBranch = async (branchName) => {
   if (memLastKnownRelease.has(branchName)) {
     return memLastKnownRelease.get(branchName)
   }
-  const tags = await getTagsOnBranch(branchName)
-  if (!tags.length) {
-    throw new Error(`Branch ${branchName} has no tags, we have no idea what the last release was`)
-  }
-  const branchOffPointTags = await getTagsOnBranch(await getBranchOffPoint(branchName))
-  if (branchOffPointTags.length >= tags.length) {
-    // No release on this branch
-    return null
-  }
-  memLastKnownRelease.set(branchName, tags[tags.length - 1])
-  // Latest tag is the latest release
-  return tags[tags.length - 1]
-}
 
-const getBranches = async () => {
-  const gitArgs = ['branch', '--remote']
-  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (branchDetails.exitCode === 0) {
-    return branchDetails.stdout.trim().split('\n').map(b => b.trim()).filter(branch => branch !== 'origin/HEAD -> origin/master')
+  const gitArgs = ['describe', '--abbrev=0', branchName]
+  const response = await GitProcess.exec(gitArgs, gitDir)
+  if (response.exitCode !== 0) {
+    throw GitProcess.parseError(response.stderr)
   }
-  throw GitProcess.parseError(branchDetails.stderr)
-}
 
-const semverify = (v) => v.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.')
-
-const getLastReleaseBranch = async () => {
-  const current = await getCurrentBranch()
-  const allBranches = await getBranches()
-  const releaseBranches = allBranches
-    .filter(branch => /^origin\/[0-9]+-[0-9]+-x$/.test(branch))
-    .filter(branch => branch !== current && branch !== `origin/${current}`)
-  let latest = null
-  for (const b of releaseBranches) {
-    if (latest === null) latest = b
-    if (semver.gt(semverify(b), semverify(latest))) {
-      latest = b
-    }
-  }
-  return latest
+  const tag = response.stdout.trim()
+  memLastKnownRelease.set(branchName, tag)
+  return tag
 }
 
 const commitBeforeTag = async (commit, tag) => {
@@ -113,8 +49,32 @@ const commitBeforeTag = async (commit, tag) => {
   throw GitProcess.parseError(tagDetails.stderr)
 }
 
-const getCommitsMergedIntoCurrentBranchSincePoint = async (point) => {
-  return getCommitsBetween(point, 'HEAD')
+const getPreviousPoint = async (point) => {
+  point = point || 'HEAD'
+  const gitArgs = ['describe', '--abbrev=0', `${point}^`]
+  const response = await GitProcess.exec(gitArgs, gitDir)
+  if (response.exitCode === 0) {
+    return response.stdout.trim()
+  } else {
+    console.log(`unable to find closest tag for ${point}; assuming new branch from master`)
+    return 'master'
+  }
+}
+
+const parseCommandLine = async () => {
+  let help
+  const opts = minimist(process.argv.slice(2), {
+    string: [ 'from', 'to' ],
+    alias: { 'to': [ 'version', 'new' ], 'from': [ 'baseline', 'old' ] },
+    default: { 'to': 'HEAD' },
+    unknown: arg => { help = true }
+  })
+  if (help || opts.help) {
+    console.log('Usage: script/release-notes/index.js [--version newVersion, default: HEAD]')
+    process.exit(0)
+  }
+  if (!opts.from) opts.from = await getPreviousPoint(opts.to)
+  return opts
 }
 
 const getCommitsBetween = async (point1, point2) => {
@@ -128,7 +88,25 @@ const getCommitsBetween = async (point1, point2) => {
 
 const TITLE_PREFIX = 'Merged Pull Request: '
 
-const getCommitDetails = async (commitHash) => {
+// try to get the commit details from the local commit
+const getCommitDetailsFromLocal = async (id) => {
+  const gitArgs = ['show', '--no-patch', '--format=%s', id]
+  const response = await GitProcess.exec(gitArgs, gitDir)
+  if (response.exitCode === 0) {
+    const body = response.stdout.trim()
+    const match = body.match(/^(.*)\s\(#(\d+)\)$/)
+    if (match && match.length >= 3) {
+      const prTitle = match[1].trim()
+      const mergedFrom = parseInt(match[2])
+      if (prTitle && mergedFrom) {
+        return { prTitle, mergedFrom }
+      }
+    }
+  }
+  return null
+}
+
+const getCommitDetailsFromGitHub = async (commitHash) => {
   const commitInfo = await (await fetch(`https://github.com/electron/electron/branch_commits/${commitHash}`)).text()
   const bits = commitInfo.split('</a>)')[0].split('>')
   const prIdent = bits[bits.length - 1].trim()
@@ -142,9 +120,15 @@ const getCommitDetails = async (commitHash) => {
     return null
   }
   return {
-    mergedFrom: prIdent,
+    mergedFrom: parseInt(prIdent.replace('#', '')),
     prTitle: entities.decode(title.substr(TITLE_PREFIX.length))
   }
+}
+
+const getCommitDetails = async (commitHash) => {
+  let details = await getCommitDetailsFromLocal(commitHash)
+  if (!details) details = await getCommitDetailsFromGitHub(commitHash)
+  return details
 }
 
 const doWork = async (items, fn, concurrent = 5) => {
@@ -182,6 +166,7 @@ const NoteType = {
 
 class Note {
   constructor (trueTitle, prNumber, ignoreIfInVersion) {
+    console.log({ trueTitle, prNumber, ignoreIfInVersion })
     // Self bindings
     this.guessType = this.guessType.bind(this)
     this.fetchPrInfo = this.fetchPrInfo.bind(this)
@@ -235,7 +220,7 @@ class Note {
       return NoteType.FEATURE
     }
 
-    const n = this.prNumber.replace('#', '')
+    const n = this.prNumber
     if (semanticMap.has(n)) {
       switch (semanticMap.get(n)) {
         case 'feat':
@@ -259,7 +244,7 @@ class Note {
   }
 
   async _getPr (n) {
-    const cachePath = path.resolve(CACHE_DIR, n)
+    const cachePath = path.resolve(CACHE_DIR, n.toString())
     if (fs.existsSync(cachePath)) {
       return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
     } else {
@@ -278,11 +263,37 @@ class Note {
     }
   }
 
+  _getReleaseNoteFromPR (pr) {
+    // see if user provided a release note in the PR body
+    const NOTE_PREFIX = 'Notes: '
+    const note = pr.data.body
+      .split('\n')
+      .map(x => x.trim())
+      .find(x => x.startsWith(NOTE_PREFIX))
+      .slice(NOTE_PREFIX.length)
+      .trim()
+
+    if (note) {
+      return note.match(/^[Nn]o[ _-][Nn]otes\.?$/, '') ? null : note
+    }
+
+    // fallback: use the title
+    if (pr.data.title) {
+      return pr.data.title.trim()
+    }
+
+    return null
+  }
+
   async fetchPrInfo () {
+    console.log(`fetchPrInfo ${this.prNumber}`)
     if (this.pr) return
-    const n = this.prNumber.replace('#', '')
+    const n = this.prNumber
     this.pr = await this._getPr(n)
-    if (this.pr.data.labels.find(label => label.name === `merged/${this._ignoreIfInVersion.replace('origin/', '')}`)) {
+    this.note = this._getReleaseNoteFromPR(this.pr)
+
+    if (this.pr.data.labels.some(label => label.name === `merged/${this._ignoreIfInVersion.replace('origin/', '')}`)) {
+      console.log('this is probably a backport')
       // This means we probably backported this PR, let's try figure out what
       // the corresponding backport PR would be by searching through comments
       // for trop
@@ -392,14 +403,27 @@ class ReleaseNotes {
     }, 20)
   }
 
-  list (notes) {
+  renderNote (note) {
+    // clean up the note
+    let s = note.note || note.title
+    s = s.trim()
+    if (s.length !== 0) {
+      s = s[0].toUpperCase() + s.substr(1)
+      if (!s.endsWith('.')) s = s + '.'
+    }
+
+    return `${s} (#${note.prNumber})`
+  }
+
+  list (notes, emptyMessage) {
     if (notes.length === 0) {
-      return '_There are no items in this section this release_'
+      return emptyMessage || '_None._'
     }
     return notes
       .filter(note => !note.reverted)
-      .sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()))
-      .map((note) => `* ${note.title.trim()} ${note.prNumber}`).join('\n')
+      .map((note) => `* ${this.renderNote(note)}`)
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
+      .join('\n')
   }
 
   render () {
@@ -408,11 +432,11 @@ class ReleaseNotes {
 
 ## Breaking Changes
 
-${this.list(this.breakingChanges)}
+${this.list(this.breakingChanges, '_No breaking changes._')}
 
 ## Features
 
-${this.list(this.features)}
+${this.list(this.features, '_No new features._')}
 
 ## Fixes
 
@@ -441,27 +465,14 @@ async function main () {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR)
   }
-  const lastReleaseBranch = await getLastReleaseBranch()
 
-  const notes = new ReleaseNotes(lastReleaseBranch)
-  const lastKnownReleaseInCurrentStream = await getLastKnownReleaseOnBranch(await getCurrentBranch())
-  const currentBranchOff = await getBranchOffPoint(await getCurrentBranch())
+  const opts = await parseCommandLine()
+  console.log(opts)
+  const commits = await getCommitsBetween(opts.from, opts.to)
+  console.log(commits)
 
-  const commits = await getCommitsMergedIntoCurrentBranchSincePoint(
-    lastKnownReleaseInCurrentStream || currentBranchOff
-  )
-
-  if (!lastKnownReleaseInCurrentStream) {
-    // This means we are the first release in our stream
-    // FIXME: This will not work for minor releases!!!!
-
-    const lastReleaseBranch = await getLastReleaseBranch()
-    const lastBranchOff = await getBranchOffPoint(lastReleaseBranch)
-    commits.push(...await getCommitsBetween(lastBranchOff, currentBranchOff))
-  }
-
+  const notes = new ReleaseNotes(opts.from)
   await notes.parseCommits(commits)
-
   console.log(notes.render())
 
   const badNotes = notes.unknown.filter(n => !n.reverted).length
