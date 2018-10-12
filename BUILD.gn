@@ -361,7 +361,6 @@ static_library("electron_lib") {
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
-    sources += filenames.lib_sources_win
     libs += [ "dwmapi.lib" ]
   }
   if (is_linux || is_win) {
