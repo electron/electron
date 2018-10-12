@@ -78,8 +78,7 @@ def generate_posix_symbols(binary, source_root, build_dir, destination):
 def parse_args():
   parser = argparse.ArgumentParser(description='Create breakpad symbols')
   parser.add_argument('-b', '--build-dir',
-                      help='Path to an Electron build folder. \
-                          Relative to the --source-root.',
+                      help='Path to an Electron build folder.',
                       default=RELEASE_PATH,
                       required=False)
   parser.add_argument('-d', '--destination',
