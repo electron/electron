@@ -19,6 +19,7 @@ namespace atom {
 class PowerObserverLinux : public base::PowerObserver {
  public:
   PowerObserverLinux();
+  ~PowerObserverLinux() override;
 
  protected:
   void BlockSleep();
@@ -39,7 +40,6 @@ class PowerObserverLinux : public base::PowerObserver {
 
   base::Callback<bool()> should_shutdown_;
 
-  scoped_refptr<dbus::Bus> bus_;
   scoped_refptr<dbus::ObjectProxy> logind_;
   std::string lock_owner_name_;
   base::ScopedFD sleep_lock_;
