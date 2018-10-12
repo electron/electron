@@ -253,6 +253,7 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+  js_env_->OnMessageLoopCreated();
   exit_code_ = result_code;
   return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
 }

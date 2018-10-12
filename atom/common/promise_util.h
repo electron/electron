@@ -36,13 +36,8 @@ class Promise : public base::RefCounted<Promise> {
   v8::Maybe<bool> Resolve(const T& value) {
     const auto result = GetInner()->Resolve(
         isolate()->GetCurrentContext(), mate::ConvertToV8(isolate(), value));
-    // Promises are microtasks
-    // v8 Microtasks are run based on the MicrotasksScope Policy
-    // We use explicit policy for browser process and scope for other processes
-    // PerformCheckpoint needs to be called for explicit policy
-    // For other processes, we can either create a MicrotasksScope or
-    // call PerformCheckpoint directly here.
-    v8::MicrotasksScope::PerformCheckpoint(isolate());
+    // Promise resolution is a microtask
+    // We use the EndOfTaskRunner to trigger the running of pending microtasks
     return result;
   }
 
