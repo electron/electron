@@ -15,6 +15,7 @@
 
 #include "base/macros.h"
 #include "chrome/browser/browser_process.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 
 namespace printing {
@@ -98,7 +99,9 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintJobManager* print_job_manager() override;
 
  private:
+#if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
+#endif
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);

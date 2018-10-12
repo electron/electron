@@ -22,8 +22,13 @@
 #include "content/public/common/favicon_url.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
-#include "printing/backend/print_backend.h"
+#include "printing/buildflags/buildflags.h"
 #include "ui/gfx/image/image.h"
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "atom/browser/printing/print_preview_message_handler.h"
+#include "printing/backend/print_backend.h"
+#endif
 
 namespace blink {
 struct WebDeviceEmulationParams;
@@ -74,10 +79,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
     WEB_VIEW,         // Used by <webview>.
     OFF_SCREEN,       // Used for offscreen rendering
   };
-
-  // For node.js callback function type: function(error, buffer)
-  using PrintToPDFCallback =
-      base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
   // Create a new WebContents and return the V8 wrapper of it.
   static mate::Handle<WebContents> Create(v8::Isolate* isolate,
@@ -162,15 +163,18 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   bool IsCurrentlyAudible();
-  void Print(mate::Arguments* args);
-  std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView() const;
 
+#if BUILDFLAG(ENABLE_PRINTING)
+  void Print(mate::Arguments* args);
+  std::vector<printing::PrinterBasicInfo> GetPrinterList();
   // Print current page as PDF.
-  void PrintToPDF(const base::DictionaryValue& setting,
-                  const PrintToPDFCallback& callback);
+  void PrintToPDF(
+      const base::DictionaryValue& settings,
+      const PrintPreviewMessageHandler::PrintToPDFCallback& callback);
+#endif
 
   // DevTools workspace api.
   void AddWorkSpace(mate::Arguments* args, const base::FilePath& path);
@@ -498,7 +502,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   std::unique_ptr<AtomJavaScriptDialogManager> dialog_manager_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
-
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
 
   // The host webcontents that may contain this webcontents.
