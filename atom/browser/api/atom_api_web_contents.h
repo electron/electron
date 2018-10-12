@@ -101,6 +101,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Notifies to destroy any guest web contents before destroying self.
   void DestroyWebContents(bool async);
 
+  void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   Type GetType() const;
