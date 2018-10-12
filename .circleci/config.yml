@@ -328,9 +328,9 @@ step-generate-breakpad-symbols: &step-generate-breakpad-symbols
       export DEST_PATH="$BUILD_PATH/electron.breakpad.syms"
       electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
 
-step-zip-breakpad-symbols: &step-zip-breakpad-symbols
+step-zip-symbols: &step-zip-symbols
   run:
-    name: Generate breakpad symbols
+    name: Zip symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
@@ -470,7 +470,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     # TODO(alexeykuzmin): We should do it only in nightly builds.
     - *step-build-dump-syms
     - *step-generate-breakpad-symbols
-    - *step-zip-breakpad-symbols
+    - *step-zip-symbols
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -493,7 +493,7 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
     - *step-electron-dist-store
     - *step-build-dump-syms
     - *step-generate-breakpad-symbols
-    - *step-zip-breakpad-symbols
+    - *step-zip-symbols
 
     # mksnapshot
     - *step-mksnapshot-build
