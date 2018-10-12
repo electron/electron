@@ -25,6 +25,9 @@ def parse_args():
                       help='binaries to run')
   parser.add_argument('-c', '--config', required=True,
                       help='path to a tests config')
+  parser.add_argument('--run-only-disabled-tests',
+                      action='store_true', default=False,
+                      help='if disabled tests should be run')
   parser.add_argument('-t', '--tests-dir', required=False,
                       help='path to a directory with test binaries')
   parser.add_argument('-o', '--output-dir', required=False,
@@ -82,9 +85,11 @@ def main():
 
   if args.command == Command.RUN:
     if args.binary is not None:
-      return tests_list.run(args.binary, args.output_dir, args.verbosity)
+      return tests_list.run(args.binary, args.output_dir, args.verbosity,
+                            args.run_only_disabled_tests)
     else:
-      return tests_list.run_all(args.output_dir, args.verbosity)
+      return tests_list.run_all(args.output_dir, args.verbosity,
+                                args.run_only_disabled_tests)
 
   assert False, "unexpected command '{}'".format(args.command)
 
