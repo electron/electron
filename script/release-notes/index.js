@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite')
-const Entities = require('html-entities').AllHtmlEntities
 const fetch = require('node-fetch')
 const fs = require('fs')
 const GitHub = require('github')
@@ -9,7 +8,6 @@ const minimist = require('minimist')
 const path = require('path')
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
-const entities = new Entities()
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
@@ -86,49 +84,44 @@ const getCommitsBetween = async (point1, point2) => {
   return commitsDetails.stdout.trim().split('\n')
 }
 
-const TITLE_PREFIX = 'Merged Pull Request: '
+const getCommitDetails = async (hash, owner = 'electron', repo = 'electron') => {
+  const commit = await getCommit(hash, owner, repo)
+  if (!commit || !commit.commit || !commit.commit.message) { return null }
 
-// try to get the commit details from the local commit
-const getCommitDetailsFromLocal = async (id) => {
-  const gitArgs = ['show', '--no-patch', '--format=%s', id]
-  const response = await GitProcess.exec(gitArgs, gitDir)
-  if (response.exitCode === 0) {
-    const body = response.stdout.trim()
-    const match = body.match(/^(.*)\s\(#(\d+)\)$/)
-    if (match && match.length >= 3) {
-      const prTitle = match[1].trim()
-      const mergedFrom = parseInt(match[2])
-      if (prTitle && mergedFrom) {
-        return { prTitle, mergedFrom }
-      }
+  const [ title ] = commit.commit.message.split('\n', 2).map(x => x.trim())
+  const titleRe = /^(.*)\s\(#(\d+)\)$/
+  const match = title.match(titleRe)
+  if (match) {
+    return {
+      prEmail: commit.commit.author.email,
+      prTitle: match[1],
+      mergedFrom: parseInt(match[2])
     }
   }
+
   return null
 }
 
-const getCommitDetailsFromGitHub = async (commitHash) => {
-  const commitInfo = await (await fetch(`https://github.com/electron/electron/branch_commits/${commitHash}`)).text()
-  const bits = commitInfo.split('</a>)')[0].split('>')
-  const prIdent = bits[bits.length - 1].trim()
-  if (!prIdent || commitInfo.indexOf('href="/electron/electron/pull') === -1) {
-    console.warn(`WARNING: Could not track commit "${commitHash}" to a pull request, it may have been committed directly to the branch`)
-    return null
+const getCommit = async (hash, owner = 'electron', repo = 'electron') => {
+  const cachePath = path.resolve(CACHE_DIR, `${owner}-${repo}-commit-${hash}`)
+  if (fs.existsSync(cachePath)) {
+    return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
   }
-  const title = commitInfo.split('title="')[1].split('"')[0]
-  if (!title.startsWith(TITLE_PREFIX)) {
-    console.warn(`WARNING: Unknown PR title for commit "${commitHash}" in PR "${prIdent}"`)
-    return null
-  }
-  return {
-    mergedFrom: parseInt(prIdent.replace('#', '')),
-    prTitle: entities.decode(title.substr(TITLE_PREFIX.length))
-  }
+  const url = `https://api.github.com/repos/${owner}/${repo}/commits/${hash}`
+  const response = await (await fetch(url)).json()
+  fs.writeFileSync(cachePath, JSON.stringify(response, null, 2))
+  return response
 }
 
-const getCommitDetails = async (commitHash) => {
-  let details = await getCommitDetailsFromLocal(commitHash)
-  if (!details) details = await getCommitDetailsFromGitHub(commitHash)
-  return details
+const getPullRequest = async (number, owner = 'electron', repo = 'electron') => {
+  const cachePath = path.resolve(CACHE_DIR, `${owner}-${repo}-pull-${number}`)
+  console.log({ cachePath })
+  if (fs.existsSync(cachePath)) {
+    return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
+  }
+  const response = await github.pullRequests.get({ number, owner, repo })
+  fs.writeFileSync(cachePath, JSON.stringify({ data: response.data }))
+  return response
 }
 
 const doWork = async (items, fn, concurrent = 5) => {
@@ -165,12 +158,11 @@ const NoteType = {
 }
 
 class Note {
-  constructor (trueTitle, prNumber, ignoreIfInVersion) {
+  constructor (trueTitle, prNumber, ignoreIfInVersion, owner, repo) {
     console.log({ trueTitle, prNumber, ignoreIfInVersion })
     // Self bindings
     this.guessType = this.guessType.bind(this)
     this.fetchPrInfo = this.fetchPrInfo.bind(this)
-    this._getPr = this._getPr.bind(this)
 
     if (!trueTitle.trim()) console.error(prNumber)
 
@@ -186,6 +178,8 @@ class Note {
     this.originalTitle = trueTitle
     this.title = trueTitle
     this.prNumber = prNumber
+    this.owner = owner
+    this.repo = repo
     this.stripColon = true
     if (this.guessType() !== NoteType.UNKNOWN && this.stripColon) {
       this.title = trueTitle.split(':').slice(1).join(':').trim()
@@ -193,6 +187,7 @@ class Note {
   }
 
   guessType () {
+    console.log({ originalTitle: this.originalTitle })
     if (this.originalTitle.startsWith('fix:') ||
         this.originalTitle.startsWith('Fix:')) return NoteType.FIX
     if (this.originalTitle.startsWith('feat:')) return NoteType.FEATURE
@@ -243,27 +238,7 @@ class Note {
     return NoteType.UNKNOWN
   }
 
-  async _getPr (n) {
-    const cachePath = path.resolve(CACHE_DIR, n.toString())
-    if (fs.existsSync(cachePath)) {
-      return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
-    } else {
-      try {
-        const pr = await github.pullRequests.get({
-          number: n,
-          owner: 'electron',
-          repo: 'electron'
-        })
-        fs.writeFileSync(cachePath, JSON.stringify({ data: pr.data }))
-        return pr
-      } catch (err) {
-        console.info('#### FAILED:', `#${n}`)
-        throw err
-      }
-    }
-  }
-
-  _getReleaseNoteFromPR (pr) {
+  _getTextFromPr (pr) {
     // see if user provided a release note in the PR body
     const NOTE_PREFIX = 'Notes: '
     const note = pr.data.body
@@ -278,20 +253,18 @@ class Note {
     }
 
     // fallback: use the title
-    if (pr.data.title) {
-      return pr.data.title.trim()
+    if (pr.title) {
+      return pr.title.trim()
     }
 
     return null
   }
 
   async fetchPrInfo () {
-    console.log(`fetchPrInfo ${this.prNumber}`)
     if (this.pr) return
     const n = this.prNumber
-    this.pr = await this._getPr(n)
-    this.note = this._getReleaseNoteFromPR(this.pr)
-
+    this.pr = await getPullRequest(n, this.owner, this.repo)
+    this.text = this._getTextFromPr(this.pr)
     if (this.pr.data.labels.some(label => label.name === `merged/${this._ignoreIfInVersion.replace('origin/', '')}`)) {
       console.log('this is probably a backport')
       // This means we probably backported this PR, let's try figure out what
@@ -321,7 +294,7 @@ class Note {
         const commentBits = tropComment.body.split('#')
         const tropPrNumber = commentBits[commentBits.length - 1]
 
-        const tropPr = await this._getPr(tropPrNumber)
+        const tropPr = await getPullRequest(tropPrNumber, this.owner, this.repo)
         if (tropPr.data.merged && tropPr.data.merge_commit_sha) {
           if (await commitBeforeTag(tropPr.data.merge_commit_sha, await getLastKnownReleaseOnBranch(this._ignoreIfInVersion))) {
             this.reverted = true
@@ -348,71 +321,97 @@ class ReleaseNotes {
     this.unknown = []
   }
 
+  _createNoteFromDetails (details, owner = 'electron', repo = 'electron') {
+    // Strip the trop backport prefix
+    const trueTitle = details.prTitle.replace(/^Backport \([0-9]+-[0-9]+-x\) - /, '')
+    if (this._revertedPrs.has(trueTitle)) return null
+
+    // Handle PRs that revert other PRs
+    if (trueTitle.startsWith('Revert "')) {
+      const revertedTrueTitle = trueTitle.substr(8, trueTitle.length - 9)
+      this._revertedPrs.add(revertedTrueTitle)
+      const existingNote = Note.findByTrueTitle(revertedTrueTitle)
+      if (existingNote) {
+        existingNote.reverted = true
+      }
+      return null
+    }
+
+    return new Note(trueTitle, details.mergedFrom, this._ignoreIfInVersion, owner, repo)
+  }
+
+  async _addNote (note) {
+    if (!note) return
+    try {
+      await note.fetchPrInfo()
+    } catch (err) {
+      console.error(note, err)
+      throw err
+    }
+
+    switch (note.guessType()) {
+      case NoteType.FIX:
+        this.fixes.push(note)
+        break
+      case NoteType.FEATURE:
+        this.features.push(note)
+        break
+      case NoteType.BREAKING_CHANGE:
+        this.breakingChanges.push(note)
+        break
+      case NoteType.OTHER:
+        this.other.push(note)
+        break
+      case NoteType.DOCUMENTATION:
+        this.docs.push(note)
+        break
+      case NoteType.UNKNOWN:
+      default:
+        this.unknown.push(note)
+        break
+    }
+  }
+
   async parseCommits (commitHashes) {
     await doWork(commitHashes, async (commit) => {
-      const info = await getCommitDetails(commit)
-      if (!info) return
+      const details = await getCommitDetails(commit)
+      if (!details) return
+
       // Only handle each PR once
-      if (this._handledPrs.has(info.mergedFrom)) return
-      this._handledPrs.add(info.mergedFrom)
+      if (this._handledPrs.has(details.mergedFrom)) return
+      this._handledPrs.add(details.mergedFrom)
 
-      // Strip the trop backport prefix
-      const trueTitle = info.prTitle.replace(/^Backport \([0-9]+-[0-9]+-x\) - /, '')
-      if (this._revertedPrs.has(trueTitle)) return
-
-      // Handle PRs that revert other PRs
-      if (trueTitle.startsWith('Revert "')) {
-        const revertedTrueTitle = trueTitle.substr(8, trueTitle.length - 9)
-        this._revertedPrs.add(revertedTrueTitle)
-        const existingNote = Note.findByTrueTitle(revertedTrueTitle)
-        if (existingNote) {
-          existingNote.reverted = true
+      // handle roller-bot PRs
+      if (details.prEmail.includes('roller-bot')) {
+        const pr = await getPullRequest(details.mergedFrom)
+        if (!pr || !pr.data || !pr.data.body || !pr.data.body.includes('Changes since the last roll:')) { return }
+        // https://github.com/electron/roller/blob/d0bbe852f2ed91e1f3098445567f54c8ffcc867b/src/pr.ts#L33
+        // `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}
+        const re = /https:\/\/github.com\/([^/]+)\/([^/]+)\/commit\/+([0-9A-Fa-f]+)/
+        for (const change of pr.data.body.split('\n').map(x => x.trim().match(re)).filter(x => x && x.length >= 3)) {
+          const [ , owner, repo, hash ] = change
+          const rollDetails = await getCommitDetails(hash, owner, repo)
+          await this._addNote(this._createNoteFromDetails(rollDetails, owner, repo))
         }
         return
       }
 
-      // Add a note for this PR
-      const note = new Note(trueTitle, info.mergedFrom, this._ignoreIfInVersion)
-      try {
-        await note.fetchPrInfo()
-      } catch (err) {
-        console.error(commit, info)
-        throw err
-      }
-      switch (note.guessType()) {
-        case NoteType.FIX:
-          this.fixes.push(note)
-          break
-        case NoteType.FEATURE:
-          this.features.push(note)
-          break
-        case NoteType.BREAKING_CHANGE:
-          this.breakingChanges.push(note)
-          break
-        case NoteType.OTHER:
-          this.other.push(note)
-          break
-        case NoteType.DOCUMENTATION:
-          this.docs.push(note)
-          break
-        case NoteType.UNKNOWN:
-        default:
-          this.unknown.push(note)
-          break
-      }
+      await this._addNote(this._createNoteFromDetails(details))
     }, 20)
   }
 
   renderNote (note) {
     // clean up the note
-    let s = note.note || note.title
+    let s = note.text || note.title
     s = s.trim()
     if (s.length !== 0) {
       s = s[0].toUpperCase() + s.substr(1)
       if (!s.endsWith('.')) s = s + '.'
     }
 
-    return `${s} (#${note.prNumber})`
+    if (note.owner === 'electron' && note.repo === 'electron') { return `${s} (#${note.prNumber})` }
+
+    return `${s} ([#${note.prNumber}](https://github.com/${note.owner}/${note.repo}/pull/${note.prNumber}))`
   }
 
   list (notes, emptyMessage) {
