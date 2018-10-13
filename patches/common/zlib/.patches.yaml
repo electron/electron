@@ -1,7 +1,0 @@
-repo: src
-patches:
--
-  author: Andy Dill <adill@discordapp.com>
-  file: fix-export_zlib_symbols.patch
-  description: |
-    Set ZLIB_DLL so that we export zlib symbols.
