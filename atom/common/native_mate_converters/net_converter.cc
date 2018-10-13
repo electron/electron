@@ -181,36 +181,44 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
   if (!val->IsObject()) {
     return false;
   }
+
+  auto addHeaderFromValue = [&isolate, &out](
+                                const std::string& key,
+                                const v8::Local<v8::Value>& localVal) {
+    auto context = isolate->GetCurrentContext();
+    v8::Local<v8::String> localStrVal;
+    if (!localVal->ToString(context).ToLocal(&localStrVal)) {
+      return false;
+    }
+    std::string value;
+    mate::ConvertFromV8(isolate, localStrVal, &value);
+    out->AddHeader(key + ": " + value);
+    return true;
+  };
+
   auto context = isolate->GetCurrentContext();
   auto headers = v8::Local<v8::Object>::Cast(val);
   auto keys = headers->GetOwnPropertyNames();
   for (uint32_t i = 0; i < keys->Length(); i++) {
-    v8::Local<v8::String> key, value;
-    if (!keys->Get(i)->ToString(context).ToLocal(&key)) {
+    v8::Local<v8::String> keyVal;
+    if (!keys->Get(i)->ToString(context).ToLocal(&keyVal)) {
       return false;
     }
+    std::string key;
+    mate::ConvertFromV8(isolate, keyVal, &key);
 
-    if (headers->Get(key)->IsArray()) {
-      auto values = v8::Local<v8::Array>::Cast(headers->Get(key));
+    auto localVal = headers->Get(keyVal);
+    if (localVal->IsArray()) {
+      auto values = v8::Local<v8::Array>::Cast(localVal);
       for (uint32_t j = 0; j < values->Length(); j++) {
-        if (!values->Get(j)->ToString(context).ToLocal(&value)) {
+        if (!addHeaderFromValue(key, values->Get(j))) {
           return false;
         }
-
-        std::string k, v;
-        mate::ConvertFromV8(isolate, key, &k);
-        mate::ConvertFromV8(isolate, value, &v);
-        out->AddHeader(k + ": " + v);
       }
     } else {
-      if (!headers->Get(key)->ToString(context).ToLocal(&value)) {
+      if (!addHeaderFromValue(key, localVal)) {
         return false;
       }
-
-      std::string k, v;
-      mate::ConvertFromV8(isolate, key, &k);
-      mate::ConvertFromV8(isolate, value, &v);
-      out->AddHeader(k + ": " + v);
     }
   }
   return true;
