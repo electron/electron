@@ -126,6 +126,15 @@ integration and can use node APIs like `require` and `process` to access low
 level system resources. Node integration is disabled by default in the guest
 page.
 
+### `enableremotemodule`
+
+```html
+<webview src="http://www.google.com/" enableremotemodule="false"></webview>
+```
+
+When this attribute is `false` the guest page in `webview` will not have access
+to the [`remote`](remote.md) module. The remote module is avaiable by default.
+
 ### `plugins`
 
 ```html
@@ -612,6 +621,9 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 Returns [`WebContents`](web-contents.md) - The web contents associated with
 this `webview`.
+
+It depends on the [`remote`](remote.md) module,
+it is therefore not available when this module is disabled.
 
 ## DOM events
 

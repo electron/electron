@@ -24,6 +24,10 @@ win.loadURL('https://github.com')
 **Note:** For the reverse (access the renderer process from the main process),
 you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
 
+**Note:** The remote module can be disabled for security reasons in the following contexts:
+- [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
+- [`<webview>`](webview-tag.md) - by setting the `enableremotemodule` attribute to `false`.
+
 ## Remote Objects
 
 Each object (including functions) returned by the `remote` module represents an
@@ -180,7 +184,7 @@ belongs.
 **Note:** Do not use `removeAllListeners` on [`BrowserWindow`](browser-window.md).
 Use of this can remove all [`blur`](https://developer.mozilla.org/en-US/docs/Web/Events/blur)
 listeners, disable click events on touch bar buttons, and other unintended
-consequences.  
+consequences.
 
 ### `remote.getCurrentWebContents()`
 

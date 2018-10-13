@@ -68,6 +68,7 @@ filenames = {
     "lib/renderer/init.js",
     "lib/renderer/inspector.js",
     "lib/renderer/ipc-renderer-internal.js",
+    "lib/renderer/remote.js",
     "lib/renderer/override.js",
     "lib/renderer/security-warnings.js",
     "lib/renderer/web-frame-init.js",
