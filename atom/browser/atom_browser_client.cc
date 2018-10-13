@@ -60,6 +60,7 @@
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
@@ -84,6 +85,10 @@
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "atom/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/services/printing/public/mojom/constants.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 using content::BrowserThread;
 
@@ -212,8 +217,9 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   if (IsProcessObserved(process_id))
     return;
 
+#if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
-  host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
+#endif
 
   ProcessPreferences prefs;
   auto* web_preferences =
@@ -537,6 +543,12 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
   (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
       base::BindRepeating(&l10n_util::GetStringUTF16,
                           IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
+
+#if BUILDFLAG(ENABLE_PRINTING)
+  (*services)[printing::mojom::kChromePrintingServiceName] =
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);
+#endif
 }
 
 std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(

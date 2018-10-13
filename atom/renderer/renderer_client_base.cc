@@ -19,7 +19,6 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
@@ -27,6 +26,7 @@
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
+#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -50,6 +50,11 @@
 #if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/renderer/pepper/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
+#include "components/printing/renderer/print_render_frame_helper.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
 
@@ -182,7 +187,10 @@ void RendererClientBase::RenderFrameCreated(
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);
-  new printing::PrintWebViewHelper(render_frame);
+#if BUILDFLAG(ENABLE_PRINTING)
+  new printing::PrintRenderFrameHelper(
+      render_frame, std::make_unique<ChromePrintRenderFrameHelperDelegate>());
+#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
