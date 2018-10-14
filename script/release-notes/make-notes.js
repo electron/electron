@@ -73,26 +73,36 @@ const getCommitDetails = async (hash, owner = 'electron', repo = 'electron') => 
   return null
 }
 
-const getCommit = async (hash, owner = 'electron', repo = 'electron') => {
-  const cachePath = path.resolve(CACHE_DIR, `${owner}-${repo}-commit-${hash}`)
-  if (fs.existsSync(cachePath)) {
-    return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
+const checkCache = async (name, operation) => {
+  const filename = path.resolve(CACHE_DIR, name)
+  if (fs.existsSync(filename)) {
+    return JSON.parse(fs.readFileSync(filename, 'utf8'))
   }
-  const url = `https://api.github.com/repos/${owner}/${repo}/commits/${hash}`
-  const response = await (await fetch(url)).json()
-  fs.writeFileSync(cachePath, JSON.stringify(response, null, 2))
+  const response = await operation()
+  fs.writeFileSync(filename, JSON.stringify(response))
   return response
 }
 
+const getCommit = async (hash, owner = 'electron', repo = 'electron') => {
+  const name = `${owner}-${repo}-commit-${hash}`
+  return checkCache(name, async () => {
+    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${hash}`
+    return (await fetch(url)).json()
+  })
+}
+
 const getPullRequest = async (number, owner = 'electron', repo = 'electron') => {
-  const cachePath = path.resolve(CACHE_DIR, `${owner}-${repo}-pull-${number}`)
-  console.log({ cachePath })
-  if (fs.existsSync(cachePath)) {
-    return JSON.parse(fs.readFileSync(cachePath, 'utf8'))
-  }
-  const response = await github.pullRequests.get({ number, owner, repo })
-  fs.writeFileSync(cachePath, JSON.stringify({ data: response.data }))
-  return response
+  const name = `${owner}-${repo}-pull-${number}`
+  return checkCache(name, async () => {
+    return github.pullRequests.get({ number, owner, repo })
+  })
+}
+
+const getComments = async (number, owner = 'electron', repo = 'electron') => {
+  const name = `${owner}-${repo}-pull-${number}-comments`
+  return checkCache(name, async () => {
+    return github.issues.getComments({ number, owner, repo, per_page: 100 })
+  })
 }
 
 const doWork = async (items, fn, concurrent = 5) => {
@@ -241,20 +251,7 @@ class Note {
       // This means we probably backported this PR, let's try figure out what
       // the corresponding backport PR would be by searching through comments
       // for trop
-      let comments
-      const cacheCommentsPath = path.resolve(CACHE_DIR, `${n}-comments`)
-      if (fs.existsSync(cacheCommentsPath)) {
-        comments = JSON.parse(fs.readFileSync(cacheCommentsPath, 'utf8'))
-      } else {
-        comments = await github.issues.getComments({
-          number: n,
-          owner: 'electron',
-          repo: 'electron',
-          per_page: 100
-        })
-        fs.writeFileSync(cacheCommentsPath, JSON.stringify({ data: comments.data }))
-      }
-
+      const comments = getComments(n, this.owner, this.repo)
       const tropComment = comments.data.find(
         c => (
           new RegExp(`We have automatically backported this PR to "${this._ignoreIfInVersion.replace('origin/', '')}", please check out #[0-9]+`)

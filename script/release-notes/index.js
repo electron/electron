@@ -118,7 +118,8 @@ const parseCommandLine = async () => {
 async function main () {
   const opts = await parseCommandLine()
   console.log(opts)
-  const notes = makeNotes(opts.from, opts.to)
+  const notes = await makeNotes(opts.from, opts.to)
+  console.log(notes)
   console.log(notes.render())
   const badNotes = notes.unknown.filter(n => !n.reverted).length
   if (badNotes > 0) {
