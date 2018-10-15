@@ -27,7 +27,8 @@
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 
-// Must be the last in the includes list.
+// Must be the last in the includes list, otherwise the definition of chromium
+// macros conflicts with node macros.
 #include "atom/common/node_includes.h"
 
 namespace atom {
@@ -68,7 +69,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   dict.SetMethod("getHeapStatistics", &GetHeapStatistics);
   dict.SetMethod("getCreationTime", &GetCreationTime);
   dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
-  dict.SetMethod("getMemoryFootprint", &GetMemoryFootprint);
+  dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
                                            base::Unretained(metrics_.get())));
   dict.SetMethod("getIOCounters", &GetIOCounters);
@@ -217,14 +218,15 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 }
 
 // static
-v8::Local<v8::Promise> AtomBindings::GetMemoryFootprint(v8::Isolate* isolate) {
+v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
+    v8::Isolate* isolate) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
   node::Environment* env = node::Environment::GetCurrent(isolate);
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(base::GetCurrentProcId(),
-                                base::AdaptCallbackForRepeating(base::BindOnce(
-                                    &AtomBindings::DidReceiveMemoryDump,
-                                    base::Unretained(env), promise)));
+                                std::vector<std::string>(),
+                                base::Bind(&AtomBindings::DidReceiveMemoryDump,
+                                           base::Unretained(env), promise));
   return promise->GetHandle();
 }
 
@@ -241,21 +243,31 @@ void AtomBindings::DidReceiveMemoryDump(
                                    v8::MicrotasksScope::kRunMicrotasks);
   v8::Context::Scope context_scope(env->context());
 
-  if (success) {
-    bool resolved = false;
-    for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
-         global_dump->process_dumps()) {
-      if (base::GetCurrentProcId() == dump.pid()) {
-        promise->Resolve(dump.os_dump().private_footprint_kb);
-        resolved = true;
-      }
-    }
-    if (!resolved) {
-      promise->RejectWithErrorMessage(
-          R"(Failed to find current process memory details in memory dump)");
-    }
-  } else {
+  if (!success) {
     promise->RejectWithErrorMessage("Failed to receive memory dump");
+    return;
+  }
+
+  bool resolved = false;
+  for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
+       global_dump->process_dumps()) {
+    if (base::GetCurrentProcId() == dump.pid()) {
+      mate::Dictionary dict = mate::Dictionary::CreateEmpty(env->isolate());
+      const auto& osdump = dump.os_dump();
+#if defined(OS_LINUX)
+      dict.Set("residentSetBytes", osdump.resident_set_kb);
+#elif defined(OS_WIN)
+      dict.Set("workingSetSize", osdump.resident_set_kb);
+#endif
+      dict.Set("privateBytes", osdump.private_footprint_kb);
+      dict.Set("sharedBytes", osdump.shared_footprint_kb);
+      promise->Resolve(dict.GetHandle());
+      resolved = true;
+    }
+  }
+  if (!resolved) {
+    promise->RejectWithErrorMessage(
+        R"(Failed to find current process memory details in memory dump)");
   }
 }
 
