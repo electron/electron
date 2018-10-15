@@ -55,7 +55,7 @@ deps = {
   'src':
     (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
   'src/third_party/electron_node':
-    (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'https://github.com/discordapp/electron_node.git@' + (Var("node_version")),
   'src/electron/vendor/pyyaml':
     (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
   'src/electron/vendor/boto': {
