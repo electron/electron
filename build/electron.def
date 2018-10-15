@@ -1,0 +1,6 @@
+; This is to support renaming of electron.exe. node-gyp has hard-coded
+; executable names which it will recognise as node. This module definition
+; file claims that the electron executable is in fact named "node.exe",
+; which is one of the executable names that node-gyp recognizes.
+; See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
+NAME node.exe
