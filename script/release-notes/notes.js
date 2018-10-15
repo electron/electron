@@ -14,6 +14,13 @@ const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
 
+const breakTypes = new Set(['breaking-change'])
+const docTypes = new Set(['doc', 'docs'])
+const featTypes = new Set(['feat', 'feature'])
+const fixTypes = new Set(['fix'])
+const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci'])
+const knownTypes = new Set([...breakTypes.keys(), ...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()])
+
 const semanticMap = new Map()
 for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-map.csv'), 'utf8').split('\n')) {
   if (!line) continue
@@ -52,7 +59,8 @@ const setPullRequest = (o, owner, repo, number) => {
  * 'Backport of #99999' -- sets pr
  */
 const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
-  console.log({ commitMessage })
+  // console.log({ commitMessage })
+
   // split commitMessage into subject & body
   let subject = commitMessage
   let body = ''
@@ -96,6 +104,14 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
     if (!o.type) o.type = 'fix'
   }
 
+  // look for 'fixes' in markdown; e.g. 'Fixes [#8952](https://github.com/electron/electron/issues/8952)'
+  if (!o.issueNumber && ((match = commitMessage.match(/Fixes \[#(\d+)\]\(https:\/\/github.com\/(\w+)\/(\w+)\/issues\/(\d+)\)/)))) {
+    o.issueNumber = parseInt(match[1])
+    if (o.pr && o.pr.number === o.issueNumber) o.pr = null
+    if (o.originalPr && o.originalPr.number === o.issueNumber) o.originalPr = null
+    if (!o.type) o.type = 'fix'
+  }
+
   // https://www.conventionalcommits.org/en
   if (body.split('\n').map(x => x.trim()).some(x => x.startsWith('BREAKING CHANGE'))) {
     o.breakingChange = true
@@ -116,12 +132,16 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
   // Legacy commits: pre-semantic commits
   if (!o.type) {
     const s = commitMessage.toLocaleLowerCase()
-    if (s.match(/\b(?:fix|fixes|fixed)/)) {
+    if ((match = s.match(/\bchore\((\w+)\):/))) {
+      // example: 'Chore(docs): description'
+      o.type = knownTypes.has(match[1]) ? match[1] : 'chore'
+    } else if (s.match(/\b(?:fix|fixes|fixed)/)) {
+      // example: 'fix a bug'
       o.type = 'fix'
-    } else if (s.match(/\[(?:docs|doc)\]/)) { // '[docs]'
+    } else if (s.match(/\[(?:docs|doc)\]/)) {
+      // example: '[docs]
       o.type = 'doc'
     }
-    console.log({foo: 'bar', s, type: o.type})
   }
 
   o.subject = subject.trim()
@@ -155,12 +175,14 @@ const getLocalCommitDetails = async (point1, point2) => {
 
 const checkCache = async (name, operation) => {
   const filename = path.resolve(CACHE_DIR, name)
-  console.log({ filename })
+  // console.log({ filename })
   if (fs.existsSync(filename)) {
     return JSON.parse(fs.readFileSync(filename, 'utf8'))
   }
   const response = await operation()
-  fs.writeFileSync(filename, JSON.stringify(response))
+  if (response) {
+    fs.writeFileSync(filename, JSON.stringify(response))
+  }
   return response
 }
 
@@ -175,7 +197,14 @@ const getCommit = async (hash, owner, repo) => {
 const getPullRequest = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}`
   return checkCache(name, async () => {
-    return github.pullRequests.get({ number, owner, repo })
+    try {
+      return await github.pullRequests.get({ number, owner, repo })
+    } catch (e) {
+      // Silently eat 404s.
+      // We can get a bad pull number if someone manually lists
+      // an issue number in PR number notation, e.g. 'fix: foo (#123)'
+      if (e.code !== 404) throw e
+    }
   })
 }
 
@@ -193,13 +222,20 @@ const getNoteFromPull = pull => {
     .find(x => x.startsWith(NOTE_PREFIX))
 
   if (note) {
+    const placeholder = '<!-- One-line Change Summary Here-->'
     note = note
       .slice(NOTE_PREFIX.length)
+      .replace(placeholder, '')
       .trim()
   }
 
-  if (note && note.match(/^[Nn]o[ _-][Nn]otes\.?$/, '')) {
-    return NO_NOTES
+  if (note) {
+    if (note.match(/^[Nn]o[ _-][Nn]otes\.?$/)) {
+      return NO_NOTES
+    }
+    if (note.match(/^[Nn]one\.?$/)) {
+      return NO_NOTES
+    }
   }
 
   return note
@@ -246,7 +282,7 @@ const getRollerCommits = async (pr) => {
     }
   }
 
-  console.log('rollerCommits', { commits })
+  // console.log('rollerCommits', { commits })
   return commits
 }
 
@@ -259,11 +295,20 @@ const getNotes = async (fromRef, toRef) => {
   const commonAncestor = await getCommonAncestor(fromRef, toRef)
   let commits = await getLocalCommitDetails(commonAncestor, toRef)
 
-  // remove commit + revert commit pairs
-  const revertedHashes = new Set(commits.filter(x => !!x.revertHash).map(x => x.revertHash))
-  commits = commits.filter(x => !x.revertHash && !revertedHashes.has(x.hash))
+  // add old commits to the processed set
+  const oldCommits = await getLocalCommitDetails(commonAncestor, fromRef)
+  const processedHashes = new Set(oldCommits.map(x => x.hash))
+  // add commit + revert commit pairs to the processed set
+  commits.forEach(x => {
+    if (x.revertHash) {
+      processedHashes.add(x.revertHash)
+      processedHashes.add(x.hash)
+    }
+  })
+  // remove the pre-processed commits
+  commits = commits.filter(x => !processedHashes.has(x.hash))
 
-  // console.log(JSON.stringify(commits, null, 2))
+  // console.log(JSON.stringify(commits, null, 6))
 
   // process all the commits' pull requests
   const queue = commits
@@ -272,9 +317,20 @@ const getNotes = async (fromRef, toRef) => {
     const commit = queue.shift()
     if (commit.pr) {
       const pr = await getPullRequest(commit.pr.number, commit.pr.owner, commit.pr.repo)
+      if (!pr || !pr.data || processedHashes.has(pr.data.merge_commit_sha)) {
+        continue
+      }
+      if (pr.data.merge_commit_sha !== commit.hash) {
+        console.log(`bad PR reference: expected hash ${commit.hash} got ${pr.data.merge_commit_sha}`, JSON.stringify(commit, null, 2), JSON.stringify(pr, null, 2))
+        continue
+      }
+
+      processedHashes.add(commit.hash)
 
       const note = getNoteFromPull(pr)
-      if (note) commit.note = note
+      if (note) {
+        commit.note = note
+      }
 
       const rollerCommits = await getRollerCommits(pr)
       if (rollerCommits.length) {
@@ -285,9 +341,7 @@ const getNotes = async (fromRef, toRef) => {
 
       if (pr.data && pr.data.title) {
         const number = commit.pr ? commit.pr.number : 0
-        console.log('before', commit)
         parseCommitMessage([pr.data.title, pr.data.body].join('\n'), commit.pr.owner, commit.pr.repo, commit)
-        console.log('after', commit)
         if (number !== commit.pr.number) {
           console.log(`prNumber changed from ${number} to ${commit.pr.number} ... re-running`)
           queue.push(commit)
@@ -301,7 +355,7 @@ const getNotes = async (fromRef, toRef) => {
 
   // remove unininteresting commits
   commits = commits.filter(x => !shouldIgnore(x))
-  console.log(JSON.stringify(commits, null, 2))
+  // console.log(JSON.stringify(commits, null, 2))
 
   const o = {
     breaks: [],
@@ -312,24 +366,18 @@ const getNotes = async (fromRef, toRef) => {
     unknown: []
   }
 
-  const breakTypes = ['breaking-change']
-  const docTypes = ['doc', 'docs']
-  const featTypes = ['feat', 'feature']
-  const fixTypes = ['fix']
-  const otherTypes = ['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci']
-
   commits.forEach(x => {
     const str = x.type
     if (!str) o.unknown.push(x)
-    else if (breakTypes.includes(str)) o.breaks.push(x)
-    else if (docTypes.includes(str)) o.docs.push(x)
-    else if (featTypes.includes(str)) o.feat.push(x)
-    else if (fixTypes.includes(str)) o.fix.push(x)
-    else if (otherTypes.includes(str)) o.other.push(x)
+    else if (breakTypes.has(str)) o.breaks.push(x)
+    else if (docTypes.has(str)) o.docs.push(x)
+    else if (featTypes.has(str)) o.feat.push(x)
+    else if (fixTypes.has(str)) o.fix.push(x)
+    else if (otherTypes.has(str)) o.other.push(x)
     else o.unknown.push(x)
   })
 
-  console.log(JSON.stringify(o, null, 2))
+  // console.log(JSON.stringify(o, null, 2))
 
   return o
 }
@@ -360,7 +408,7 @@ const renderCommit = commit => {
 
   // no pull request!
   // someone may have pushed this without a PR
-  return `${note} ([${commit.hash.slice(0,8)}](https://github.com/electron/electron/commit/${commit.hash}))`
+  return `${note} (https://github.com/electron/electron/commit/${commit.hash})`
 }
 
 const renderNotes = notes => {
@@ -378,8 +426,11 @@ const renderNotes = notes => {
   renderSection('Other Changes', notes.other)
 
   if (notes.docs.length) {
-    const line = notes.docs.map(x => `#${x.pr.number}`).join(', ')
-    rendered.push('## Documentation\n\n', ` * Documentation changes: ${line}\n`, '\n')
+    const docs = notes.docs.map(x => {
+      if (x.pr && x.pr.number) return `#${x.pr.number}`
+      return `https://github.com/electron/electron/commit/${x.hash}`
+    })
+    rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n')
   }
 
   renderSection('Unknown', notes.unknown)
