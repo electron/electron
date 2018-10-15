@@ -852,10 +852,9 @@ describe('app module', () => {
       await verifyBasicGPUInfo(gpuInfo)
     })
 
-    // FIXME: this broke with the M69 upgrade.
-    xit('succeeds with complete GPUInfo', async () => {
+    it('succeeds with complete GPUInfo', async () => {
       const completeInfo = await getGPUInfo('complete')
-      if (process.platform === 'linux' || process.platform === 'darwin') {
+      if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo)
         const basicInfo = await getGPUInfo('basic')
@@ -872,11 +871,8 @@ describe('app module', () => {
 
     it('fails for invalid info_type', () => {
       const invalidType = 'invalid'
-      const errorMessage =
-          `app.getGPUInfo() didn't fail for the "${invalidType}" info type`
-      return app.getGPUInfo(invalidType).then(
-        () => Promise.reject(new Error(errorMessage)),
-        () => Promise.resolve())
+      const expectedErrorMessage = "Invalid info type. Use 'basic' or 'complete'"
+      return expect(app.getGPUInfo(invalidType)).to.eventually.be.rejectedWith(expectedErrorMessage)
     })
   })
 
