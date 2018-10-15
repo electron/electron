@@ -114,7 +114,7 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
 
   // https://www.conventionalcommits.org/en
   if (body.split('\n').map(x => x.trim()).some(x => x.startsWith('BREAKING CHANGE'))) {
-    o.breakingChange = true
+    o.type = 'breaking-change'
   }
 
   // Check for a reversion commit
@@ -308,7 +308,7 @@ const getNotes = async (fromRef, toRef) => {
   // remove the pre-processed commits
   commits = commits.filter(x => !processedHashes.has(x.hash))
 
-  // console.log(JSON.stringify(commits, null, 6))
+  // console.log(JSON.stringify(commits, null, 2))
 
   // process all the commits' pull requests
   const queue = commits
@@ -317,35 +317,29 @@ const getNotes = async (fromRef, toRef) => {
     const commit = queue.shift()
     if (commit.pr) {
       const pr = await getPullRequest(commit.pr.number, commit.pr.owner, commit.pr.repo)
-      if (!pr || !pr.data || processedHashes.has(pr.data.merge_commit_sha)) {
-        continue
-      }
-      if (pr.data.merge_commit_sha !== commit.hash) {
-        console.log(`bad PR reference: expected hash ${commit.hash} got ${pr.data.merge_commit_sha}`, JSON.stringify(commit, null, 2), JSON.stringify(pr, null, 2))
-        continue
-      }
+      if (pr && pr.data) {
+        processedHashes.add(commit.hash)
 
-      processedHashes.add(commit.hash)
+        const note = getNoteFromPull(pr)
+        if (note) {
+          commit.note = note
+        }
 
-      const note = getNoteFromPull(pr)
-      if (note) {
-        commit.note = note
-      }
-
-      const rollerCommits = await getRollerCommits(pr)
-      if (rollerCommits.length) {
-        rollerCommits.forEach(x => { x.originalPr = commit.originalPr })
-        queue.push(...rollerCommits)
-        continue
-      }
-
-      if (pr.data && pr.data.title) {
-        const number = commit.pr ? commit.pr.number : 0
-        parseCommitMessage([pr.data.title, pr.data.body].join('\n'), commit.pr.owner, commit.pr.repo, commit)
-        if (number !== commit.pr.number) {
-          console.log(`prNumber changed from ${number} to ${commit.pr.number} ... re-running`)
-          queue.push(commit)
+        const rollerCommits = await getRollerCommits(pr)
+        if (rollerCommits.length) {
+          rollerCommits.forEach(x => { x.originalPr = commit.originalPr })
+          queue.push(...rollerCommits)
           continue
+        }
+
+        if (pr.data && pr.data.title) {
+          const number = commit.pr ? commit.pr.number : 0
+          parseCommitMessage([pr.data.title, pr.data.body].join('\n'), commit.pr.owner, commit.pr.repo, commit)
+          if (number !== commit.pr.number) {
+            console.log(`prNumber changed from ${number} to ${commit.pr.number} ... re-running`)
+            queue.push(commit)
+            continue
+          }
         }
       }
     }
@@ -363,7 +357,8 @@ const getNotes = async (fromRef, toRef) => {
     feat: [],
     fix: [],
     other: [],
-    unknown: []
+    unknown: [],
+    ref: toRef
   }
 
   commits.forEach(x => {
@@ -402,8 +397,8 @@ const renderCommit = commit => {
   const pr = commit.originalPr
   if (pr) {
     return pr.owner === DEFAULT_OWNER && pr.repo === DEFAULT_REPO
-      ? `${note} (#${pr.number})`
-      : `${note} ([#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}))`
+      ? `${note} #${pr.number}`
+      : `${note} [#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
   }
 
   // no pull request!
@@ -412,11 +407,11 @@ const renderCommit = commit => {
 }
 
 const renderNotes = notes => {
-  const rendered = [ '# Release Notes\n\n' ]
+  const rendered = [ `# Release Notes for ${notes.ref}\n\n` ]
 
   const renderSection = (title, commits) => {
     if (commits.length === 0) return
-    const lines = commits.map(x => ` * ${renderCommit(x)}\n`)
+    const lines = commits.map(x => ` * ${renderCommit(x)}\n`).sort()
     rendered.push(`## ${title}\n\n`, ...lines, '\n')
   }
 
@@ -429,7 +424,7 @@ const renderNotes = notes => {
     const docs = notes.docs.map(x => {
       if (x.pr && x.pr.number) return `#${x.pr.number}`
       return `https://github.com/electron/electron/commit/${x.hash}`
-    })
+    }).sort()
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n')
   }
 

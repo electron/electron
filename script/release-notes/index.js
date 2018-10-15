@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite')
-const minimist = require('minimist')
 const path = require('path')
 const semver = require('semver')
 
@@ -99,25 +98,18 @@ const getPreviousPoint = async (point) => {
   }
 }
 
-const parseCommandLine = async () => {
-  let help
-  const opts = minimist(process.argv.slice(2), {
-    string: [ 'from', 'to' ],
-    alias: { 'to': [ 'version', 'new' ], 'from': [ 'baseline', 'old' ] },
-    default: { 'to': 'HEAD' },
-    unknown: arg => { help = true }
-  })
-  if (help || opts.help) {
-    console.log('Usage: script/release-notes/index.js [--version newVersion, default: HEAD]')
-    process.exit(0)
-  }
-  if (!opts.from) opts.from = await getPreviousPoint(opts.to)
-  return opts
-}
-
 async function main () {
-  const opts = await parseCommandLine()
-  console.log(opts)
+  console.log(process.argv)
+  if (process.argv.length !== 3) {
+    console.log('Use: script/release-notes/index.js {tag | tag1..tag2}')
+    return 1
+  }
+
+  const opts = {}
+  const range = process.argv.length === 3 ? process.argv[2].split('..') : ['HEAD']
+  opts.to = range.pop()
+  opts.from = range.pop() || (await getPreviousPoint(opts.to))
+
   const n = await notes.get(opts.from, opts.to)
   console.log(notes.render(n))
   if (n.unknown.length) {
