@@ -380,7 +380,7 @@ patches:
   file: allow_nested_error_trackers.patch
   description: |
     Only one X11ErrorTracker should exist at a time, but upstream has a bug
-    where two can exist if running in headless mode -- 
+    where two can exist if running in headless mode --
       ui::(anonymous namespace)::SupportsEWMH() [inner tracker is created]
       ui::WmSupportsHint()
       ui::IsX11WindowFullScreen()
@@ -500,3 +500,9 @@ patches:
 
     This is required by the nativeWindowOpen option, which put multiple main
     frames in one renderer process.
+-
+  author: John Kleinschmidt <jkleinsc@github.com>
+  file: verbose_generate_breakpad_symbols.patch
+  description:  |
+    Temporarily add additional debugging statements to
+    generate_breakpad_symbols.py to determine why it is hanging.
