@@ -34,12 +34,10 @@ const getCommonAncestor = async (point1, point2) => {
 }
 
 const setPullRequest = (o, owner, repo, number) => {
-  console.log('before', { original: o.originalPr, pr: o.pr })
   if (!owner || !repo || !number) throw new Error(JSON.stringify({ owner, repo, number }, null, 2))
   if (!o.originalPr) o.originalPr = o.pr
   o.pr = { owner, repo, number }
   if (!o.originalPr) o.originalPr = o.pr
-  console.log('after', { original: o.originalPr, pr: o.pr })
 }
 
 /**
@@ -85,13 +83,11 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
   if ((match = subject.match(/^Merge pull request #(\d+) from (.*)$/))) {
     setPullRequest(o, owner, repo, parseInt(match[1]))
     o.pr.branch = match[2].trim()
-    o.type = 'chore'
   }
 
   // Check for a trop comment
   if ((match = commitMessage.match(/\bBackport of #(\d+)\b/))) {
     setPullRequest(o, owner, repo, parseInt(match[1]))
-    o.type = 'chore'
   }
 
   // https://help.github.com/articles/closing-issues-using-keywords/
@@ -117,7 +113,19 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
     setPullRequest(o, owner, repo, number)
   }
 
+  // Legacy commits: pre-semantic commits
+  if (!o.type) {
+    const s = commitMessage.toLocaleLowerCase()
+    if (s.match(/\b(?:fix|fixes|fixed)/)) {
+      o.type = 'fix'
+    } else if (s.match(/\[(?:docs|doc)\]/)) { // '[docs]'
+      o.type = 'doc'
+    }
+    console.log({foo: 'bar', s, type: o.type})
+  }
+
   o.subject = subject.trim()
+  // console.log('parse returning', JSON.stringify(o, null, 2))
   return o
 }
 
@@ -199,7 +207,7 @@ const getNoteFromPull = pull => {
 
 const shouldIgnore = details => {
   // skip bump commits
-  if (details.email === 'electron@github.com' && details.subject.match(/Bump v\d+\.\d+\.\d+/)) {
+  if (details.subject.match(/^Bump v\d+\.\d+\.\d+/)) {
     return true
   }
 
@@ -343,17 +351,16 @@ const renderCommit = commit => {
     }
   }
 
-  /*
-  if (commit.owner === DEFAULT_OWNER && commit.repo === DEFAULT_REPO) {
-    return `${note} (#${commit.prNumber})`
-  } else {
-*/
   const pr = commit.originalPr
-  const url = `https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}`
-  return `${note} ([#${pr.number}](${url}))`
-/*
+  if (pr) {
+    return pr.owner === DEFAULT_OWNER && pr.repo === DEFAULT_REPO
+      ? `${note} (#${pr.number})`
+      : `${note} ([#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number}))`
   }
-*/
+
+  // no pull request!
+  // someone may have pushed this without a PR
+  return `${note} ([${commit.hash.slice(0,8)}](https://github.com/electron/electron/commit/${commit.hash}))`
 }
 
 const renderNotes = notes => {
