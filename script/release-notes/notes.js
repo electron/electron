@@ -388,31 +388,56 @@ const renderCommit = commit => {
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1)
     if (!note.endsWith('.')) note = note + '.'
-
-    for (const key of ['Fix ', 'Fixes ']) {
-      if (note.startsWith(key)) note = 'Fixed ' + note.slice(key.length)
+    const commonTenses = {
+      'Made': [ 'Make' ],
+      'Fixed': [ 'Fix', 'Fixes' ],
+      'Added': [ 'Add' ],
+      'Updated': [ 'Update' ],
+      'Handled': [ 'Handle' ],
+      'Improved': [ 'Improve' ]
+    }
+    for (const [key, values] of Object.entries(commonTenses)) {
+      for (const value of values) {
+        const start = `${value} `
+        if (note.startsWith(start)) {
+          note = `${key} ${note.slice(start.length)}`
+        }
+      }
     }
   }
 
+  let link
   const pr = commit.originalPr
-  if (pr) {
-    return pr.owner === DEFAULT_OWNER && pr.repo === DEFAULT_REPO
-      ? `${note} #${pr.number}`
-      : `${note} [#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
+  if (!pr) {
+    link = `https://github.com/electron/electron/commit/${commit.hash}`
+  } else if (pr.owner === DEFAULT_OWNER && pr.repo === DEFAULT_REPO) {
+    link = `#${pr.number}`
+  } else {
+    link = `[#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
   }
 
-  // no pull request!
-  // someone may have pushed this without a PR
-  return `${note} (https://github.com/electron/electron/commit/${commit.hash})`
+  return { note, link }
 }
 
 const renderNotes = notes => {
   const rendered = [ `# Release Notes for ${notes.ref}\n\n` ]
 
   const renderSection = (title, commits) => {
-    if (commits.length === 0) return
-    const lines = commits.map(x => ` * ${renderCommit(x)}\n`).sort()
-    rendered.push(`## ${title}\n\n`, ...lines, '\n')
+    if (commits.length === 0) {
+      return
+    }
+    const notes = new Map()
+    for (const note of commits.map(x => renderCommit(x))) {
+      if (!notes.has(note.note)) {
+        notes.set(note.note, [note.link])
+      } else {
+        notes.get(note.note).push(note.link)
+      }
+    }
+    rendered.push(`## ${title}\n\n`)
+    const lines = []
+    notes.forEach((links, key) => lines.push(` * ${key} ${links.map(x => x.toString()).sort().join(', ')}\n`))
+    rendered.push(...lines.sort(), '\n')
   }
 
   renderSection('Breaking Changes', notes.breaks)
