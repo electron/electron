@@ -27,20 +27,19 @@ describe('modules support', () => {
       })
       if (process.platform === 'win32') {
         it('can be required if electron.exe is renamed', () => {
-          const {execPath} = remote.process
+          const { execPath } = remote.process
           const testExecPath = path.join(path.dirname(execPath), 'test.exe')
           fs.copyFileSync(execPath, testExecPath)
           try {
             const runasFixture = path.join(fixtures, 'module', 'runas-renamed.js')
             assert.ok(fs.existsSync(runasFixture))
             const child = require('child_process').spawnSync(testExecPath, [runasFixture])
-            assert.equal(child.status, 0)
+            assert.strictEqual(child.status, 0)
           } finally {
             fs.unlinkSync(testExecPath)
           }
         })
       }
-
     })
 
     // TODO(alexeykuzmin): Disabled during the Chromium 62 (Node.js 9) upgrade.
