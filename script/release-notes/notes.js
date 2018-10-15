@@ -87,13 +87,13 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
     subject = match[2]
   }
 
-  // Check for trop subject
+  // Check for GitHub commit message that indicates a PR
   if ((match = subject.match(/^Merge pull request #(\d+) from (.*)$/))) {
     setPullRequest(o, owner, repo, parseInt(match[1]))
     o.pr.branch = match[2].trim()
   }
 
-  // Check for a trop comment
+  // Check for a trop comment that indicates a PR
   if ((match = commitMessage.match(/\bBackport of #(\d+)\b/))) {
     setPullRequest(o, owner, repo, parseInt(match[1]))
   }
