@@ -422,7 +422,7 @@ describe('app module', () => {
       // Wait because login item settings are not applied immediately in MAS build
       const delay = process.mas ? 150 : 0
       setTimeout(() => {
-        assert.equal(app.getLoginItemSettings(), {
+        assert.deepEqual(app.getLoginItemSettings(), {
           openAtLogin: true,
           openAsHidden: false,
           wasOpenedAtLogin: false,
@@ -435,7 +435,7 @@ describe('app module', () => {
 
     it('adds a login item that loads in hidden mode', () => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
-      assert.equal(app.getLoginItemSettings(), {
+      assert.deepEqual(app.getLoginItemSettings(), {
         openAtLogin: true,
         openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
         wasOpenedAtLogin: false,
