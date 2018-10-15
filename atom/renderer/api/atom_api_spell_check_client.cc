@@ -4,7 +4,7 @@
 
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 
-#include <algorithm>
+#include <map>
 #include <vector>
 
 #include "atom/common/native_mate_converters/string16_converter.h"
@@ -52,7 +52,7 @@ class SpellCheckClient::SpellcheckRequest {
   }
   ~SpellcheckRequest() {}
 
-  base::string16& text() { return text_; }
+  const base::string16& text() const { return text_; }
   blink::WebTextCheckingCompletion* completion() { return completion_; }
   WordMap& wordmap() { return word_map_; }
 
@@ -146,14 +146,14 @@ void SpellCheckClient::SpellCheckText() {
 
   SpellCheckScope scope(*this);
   base::string16 word;
-  int word_start;
-  int word_length;
   std::vector<base::string16> words;
   auto& word_map = pending_request_param_->wordmap();
-  for (auto status =
-           text_iterator_.GetNextWord(&word, &word_start, &word_length);
-       status != SpellcheckWordIterator::IS_END_OF_TEXT;
-       status = text_iterator_.GetNextWord(&word, &word_start, &word_length)) {
+  blink::WebTextCheckingResult result;
+  for (;;) {  // Run until end of text
+    const auto status =
+        text_iterator_.GetNextWord(&word, &result.location, &result.length);
+    if (status == SpellcheckWordIterator::IS_END_OF_TEXT)
+      break;
     if (status == SpellcheckWordIterator::IS_SKIPPABLE)
       continue;
 
@@ -161,20 +161,14 @@ void SpellCheckClient::SpellCheckText() {
     // (e.g. "hello:hello"), we should treat it as a valid word.
     std::vector<base::string16> contraction_words;
     if (!IsContraction(scope, word, &contraction_words)) {
-      blink::WebTextCheckingResult result;
-      result.location = word_start;
-      result.length = word_length;
       words.push_back(word);
       word_map[word].push_back(result);
     } else {
       // For a contraction, we want check the spellings of each individual
-      // part, but mark the entire word incorrect if any part is misspelt
+      // part, but mark the entire word incorrect if any part is misspelled
       // Hence, we use the same word_start and word_length values for every
       // part of the contraction.
       for (const auto& w : contraction_words) {
-        blink::WebTextCheckingResult result;
-        result.location = word_start;
-        result.length = word_length;
         words.push_back(w);
         word_map[w].push_back(result);
       }
@@ -186,15 +180,20 @@ void SpellCheckClient::SpellCheckText() {
 }
 
 void SpellCheckClient::OnSpellCheckDone(
-    const std::vector<base::string16>& misspelt_words) {
+    const std::vector<base::string16>& misspelled_words) {
   std::vector<blink::WebTextCheckingResult> results;
   auto* const completion_handler = pending_request_param_->completion();
 
   auto& word_map = pending_request_param_->wordmap();
 
-  for (const auto& word : misspelt_words) {
+  // Take each word from the list of misspelled words received, find their
+  // corresponding WebTextCheckingResult that's stored in the map and pass
+  // all the results to blink through the completion callback.
+  for (const auto& word : misspelled_words) {
     auto iter = word_map.find(word);
     if (iter != word_map.end()) {
+      // Word found in map, now gather all the occurrences of the word
+      // from the map value
       auto& words = iter->second;
       results.insert(results.end(), words.begin(), words.end());
       words.clear();

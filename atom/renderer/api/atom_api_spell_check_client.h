@@ -5,7 +5,6 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -67,7 +66,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
 
   // Call JavaScript to check spelling a word.
   // The javascript function will callback OnSpellCheckDone
-  // with the results of all the misspelt words.
+  // with the results of all the misspelled words.
   void SpellCheckWords(const SpellCheckScope& scope,
                        const std::vector<base::string16>& words);
 
@@ -79,8 +78,8 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                      const base::string16& word,
                      std::vector<base::string16>* contraction_words);
 
-  // Callback for the JS API which returns the list of misspelt words.
-  void OnSpellCheckDone(const std::vector<base::string16>& misspelt_words);
+  // Callback for the JS API which returns the list of misspelled words.
+  void OnSpellCheckDone(const std::vector<base::string16>& misspelled_words);
 
   // Represents character attributes used for filtering out characters which
   // are not supported by this SpellCheck object.
