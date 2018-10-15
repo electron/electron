@@ -270,7 +270,7 @@ const getNotes = async (fromRef, toRef) => {
 
       const rollerCommits = await getRollerCommits(pr)
       if (rollerCommits.length) {
-        rollerCommits.forEach(x => { x.originalPr = commit.pr.originalPr })
+        rollerCommits.forEach(x => { x.originalPr = commit.originalPr })
         queue.push(...rollerCommits)
         continue
       }
