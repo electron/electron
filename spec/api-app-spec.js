@@ -417,31 +417,13 @@ describe('app module', () => {
       app.setLoginItemSettings({openAtLogin: false, path: updateExe, args: processStartArgs})
     })
 
-    it('returns the login item status of the app', (done) => {
-      app.setLoginItemSettings({openAtLogin: true})
-      assert.deepEqual(app.getLoginItemSettings(), {
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
-
-      app.setLoginItemSettings({openAtLogin: true, openAsHidden: true})
-      assert.deepEqual(app.getLoginItemSettings(), {
-        openAtLogin: true,
-        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
-
-      app.setLoginItemSettings({})
+    it('sets and returns the app as a login item', done => {
+      app.setLoginItemSettings({ openAtLogin: true })
       // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 100 : 0
+      const delay = process.mas ? 150 : 0
       setTimeout(() => {
         assert.deepEqual(app.getLoginItemSettings(), {
-          openAtLogin: false,
+          openAtLogin: true,
           openAsHidden: false,
           wasOpenedAtLogin: false,
           wasOpenedAsHidden: false,
@@ -449,6 +431,32 @@ describe('app module', () => {
         })
         done()
       }, delay)
+    })
+
+    it('adds a login item that loads in hidden mode', () => {
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
+      assert.deepEqual(app.getLoginItemSettings(), {
+        openAtLogin: true,
+        openAsHidden: process.platform === 'darwin' && !process.mas, // Only available on macOS
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false
+      })
+    })
+
+    it('correctly sets and unsets the LoginItem as hidden', function () {
+      if (process.platform !== 'darwin' || process.mas) this.skip()
+
+      assert.equal(app.getLoginItemSettings().openAtLogin, false)
+      assert.equal(app.getLoginItemSettings().openAsHidden, false)
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
+      assert.equal(app.getLoginItemSettings().openAtLogin, true)
+      assert.equal(app.getLoginItemSettings().openAsHidden, true)
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false })
+      assert.equal(app.getLoginItemSettings().openAtLogin, true)
+      assert.equal(app.getLoginItemSettings().openAsHidden, false)
     })
 
     it('allows you to pass a custom executable and arguments', function () {
