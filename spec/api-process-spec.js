@@ -38,10 +38,18 @@ describe('process module', () => {
     })
   })
 
-  describe('process.getMemoryFootprint()', () => {
+  describe('process.getProcessMemoryInfo()', async () => {
     it('resolves promise successfully with non zero value', async () => {
-      let memoryFootprint = await process.getMemoryFootprint()
-      expect(memoryFootprint).to.be.a('number').greaterThan(0)
+      const memoryInfo = await process.getProcessMemoryInfo()
+      expect(memoryInfo).to.be.an('object')
+      if (process.platform === 'linux') {
+        expect(memoryInfo.residentSetBytes).to.be.a('number').greaterThan(0)
+      }
+      if (process.platform === 'windows') {
+        expect(memoryInfo.workingSetSize).to.be.a('number').greaterThan(0)
+      }
+      expect(memoryInfo.privateBytes).to.be.a('number').greaterThan(0)
+      expect(memoryInfo.sharedBytes).to.be.a('number').greaterThan(0)
     })
   })
 
