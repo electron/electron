@@ -16,6 +16,8 @@ declare_args() {
 
   enable_tts = true
 
+  enable_color_chooser = true
+
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
   # need to test with chromium's location provider.

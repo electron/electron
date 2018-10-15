@@ -507,3 +507,25 @@ patches:
     * Adds patch in //chrome/browser/speech/tts_message_filter.cc
       to remove reference to browser context when its signaled for
       destruction from content layer.
+-
+  author: Heilig Benedek <benecene@gmail.com>
+  file: color_chooser.patch
+  description:  |
+    Removes a couple of stuff from the chromium implementation of ColorChooser
+    to decouple it from dependencies.
+
+    Most of the stuff removed is actually related to other dialog types that
+    we don't currently support, but chrome/browser/ui/browser_dialogs.h has
+    a function for them to create them. Also disables a DCHECK that crashes
+    the ColorChooser on Windows, that DCHECK most likely is an artifact that
+    remained in chromium from a long time ago (last update of that part of the
+    code was around 2012-2013, and this is purely UI, I don't think they have
+    automated tests for it).
+-
+  author: Heilig Benedek <benecene@gmail.com>
+  file: printing.patch
+  description:  |
+    Add changeset that was previously applied to sources in chromium_src. The
+    majority of changes originally come from these PRs:
+      * https://github.com/electron/electron/pull/1835
+      * https://github.com/electron/electron/pull/8596

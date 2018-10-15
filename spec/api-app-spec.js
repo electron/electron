@@ -432,16 +432,23 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs })
     })
 
-    it('returns the login item status of the app', done => {
+    it('sets and returns the app as a login item', done => {
       app.setLoginItemSettings({ openAtLogin: true })
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false
-      })
+      // Wait because login item settings are not applied immediately in MAS build
+      const delay = process.mas ? 150 : 0
+      setTimeout(() => {
+        expect(app.getLoginItemSettings()).to.deep.equal({
+          openAtLogin: true,
+          openAsHidden: false,
+          wasOpenedAtLogin: false,
+          wasOpenedAsHidden: false,
+          restoreState: false
+        })
+        done()
+      }, delay)
+    })
 
+    it('adds a login item that loads in hidden mode', () => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
@@ -450,20 +457,21 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false
       })
+    })
 
-      app.setLoginItemSettings({})
-      // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 100 : 0
-      setTimeout(() => {
-        expect(app.getLoginItemSettings()).to.deep.equal({
-          openAtLogin: false,
-          openAsHidden: false,
-          wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
-          restoreState: false
-        })
-        done()
-      }, delay)
+    it('correctly sets and unsets the LoginItem as hidden', function () {
+      if (process.platform !== 'darwin' || process.mas) this.skip()
+
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.true()
+
+      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      expect(app.getLoginItemSettings().openAsHidden).to.be.false()
     })
 
     it('allows you to pass a custom executable and arguments', function () {
@@ -844,10 +852,9 @@ describe('app module', () => {
       await verifyBasicGPUInfo(gpuInfo)
     })
 
-    // FIXME: this broke with the M69 upgrade.
-    xit('succeeds with complete GPUInfo', async () => {
+    it('succeeds with complete GPUInfo', async () => {
       const completeInfo = await getGPUInfo('complete')
-      if (process.platform === 'linux' || process.platform === 'darwin') {
+      if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo)
         const basicInfo = await getGPUInfo('basic')
@@ -864,11 +871,8 @@ describe('app module', () => {
 
     it('fails for invalid info_type', () => {
       const invalidType = 'invalid'
-      const errorMessage =
-          `app.getGPUInfo() didn't fail for the "${invalidType}" info type`
-      return app.getGPUInfo(invalidType).then(
-        () => Promise.reject(new Error(errorMessage)),
-        () => Promise.resolve())
+      const expectedErrorMessage = "Invalid info type. Use 'basic' or 'complete'"
+      return expect(app.getGPUInfo(invalidType)).to.eventually.be.rejectedWith(expectedErrorMessage)
     })
   })
 
