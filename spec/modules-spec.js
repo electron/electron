@@ -27,13 +27,14 @@ describe('modules support', () => {
       })
       if (process.platform === 'win32') {
         it('can be required if electron.exe is renamed', () => {
-          const testExecPath = path.join(path.dirname(remote.process.execPath), "test.exe")
-          fs.copyFileSync(process.execPath, testExecPath)
+          const {execPath} = remote.process
+          const testExecPath = path.join(path.dirname(execPath), 'test.exe')
+          fs.copyFileSync(execPath, testExecPath)
           try {
             const runasFixture = path.join(fixtures, 'module', 'runas-renamed.js')
             assert.ok(fs.existsSync(runasFixture))
             const child = require('child_process').spawnSync(testExecPath, [runasFixture])
-            assert.strictEqual(child.stdout.toString().trim(), "good")
+            assert.equal(child.status, 0)
           } finally {
             fs.unlinkSync(testExecPath)
           }
