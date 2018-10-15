@@ -25,6 +25,7 @@ describe('modules support', () => {
           done()
         })
       })
+
       if (process.platform === 'win32') {
         it('can be required if electron.exe is renamed', () => {
           const { execPath } = remote.process
