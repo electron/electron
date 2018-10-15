@@ -741,8 +741,19 @@ describe('Menu module', () => {
       Menu.setApplicationMenu(null)
       expect(Menu.getApplicationMenu()).to.be.null()
     })
+  })
 
-    it('provides working menu accelerators', (done) => {
+  describe('menu accelerators', () => {
+    let testFn = it
+    try {
+      // We have other tests that check if native modules work, if we fail to require
+      // robotjs let's skip this test to avoid false negatives
+      require('robotjs')
+    } catch (err) {
+      testFn = it.skip
+    }
+
+    testFn('menu accelerators perform the specified action', (done) => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'Test',
