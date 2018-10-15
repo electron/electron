@@ -6,4 +6,3 @@ try {
 }
 console.log('good')
 process.exit(0)
-  
