@@ -5,7 +5,7 @@ const minimist = require('minimist')
 const path = require('path')
 const semver = require('semver')
 
-const makeNotes = require(path.resolve(__dirname, 'make-notes.js'))
+const notes = require(path.resolve(__dirname, 'notes.js'))
 
 const gitDir = path.resolve(__dirname, '..', '..')
 
@@ -118,12 +118,10 @@ const parseCommandLine = async () => {
 async function main () {
   const opts = await parseCommandLine()
   console.log(opts)
-  const notes = await makeNotes(opts.from, opts.to)
-  console.log(notes)
-  console.log(notes.render())
-  const badNotes = notes.unknown.filter(n => !n.reverted).length
-  if (badNotes > 0) {
-    throw new Error(`You have ${badNotes.length} unknown release notes, please fix them before releasing`)
+  const n = await notes.get(opts.from, opts.to)
+  console.log(notes.render(n))
+  if (n.unknown.length) {
+    throw new Error(`You have ${n.unknown.length} unknown release notes. Please fix them before releasing.`)
   }
 }
 
