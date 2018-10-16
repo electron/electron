@@ -14,7 +14,7 @@ const { desktopCapturer } = require('electron')
 
 desktopCapturer.getSources({ types: ['window', 'screen'] }, async (error, sources) => {
   if (error) throw error
-  for (const source in sources) {
+  for (const source of sources) {
     if (source.name === 'Electron') {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
