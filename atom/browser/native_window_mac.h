@@ -199,6 +199,7 @@ class NativeWindowMac : public NativeWindow {
   bool was_maximizable_ = false;
   bool was_movable_ = false;
   NSRect original_frame_;
+  NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
 
   base::scoped_nsobject<NSColor> background_color_before_vibrancy_;

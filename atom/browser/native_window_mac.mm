@@ -469,6 +469,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Default content view.
   SetContentView(new views::View());
   AddContentViewLayers();
+
+  original_frame_ = [window_ frame];
+  original_level_ = [window_ level];
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -859,8 +862,9 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   if (simple_fullscreen && !is_simple_fullscreen_) {
     is_simple_fullscreen_ = true;
 
-    // Take note of the current window size
+    // Take note of the current window size and level
     original_frame_ = [window frame];
+    original_level_ = [window level];
 
     simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
     simple_fullscreen_mask_ = [window styleMask];
@@ -876,6 +880,13 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     was_movable_ = IsMovable();
 
     NSRect fullscreenFrame = [window.screen frame];
+
+    // If our app has dock hidden, set the window level higher so another app's
+    // menu bar doesn't appear on top of our fullscreen app.
+    if ([[NSRunningApplication currentApplication] activationPolicy] !=
+        NSApplicationActivationPolicyRegular) {
+      window.level = NSPopUpMenuWindowLevel;
+    }
 
     if (!fullscreen_window_title()) {
       // Hide the titlebar
@@ -912,6 +923,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     }
 
     [window setFrame:original_frame_ display:YES animate:YES];
+    window.level = original_level_;
 
     [NSApp setPresentationOptions:simple_fullscreen_options_];
 
