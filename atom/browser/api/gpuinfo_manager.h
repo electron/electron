@@ -24,7 +24,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
 
   GPUInfoManager();
   ~GPUInfoManager() override;
-  bool NeedsCompleteGpuInfoCollection();
+  bool NeedsCompleteGpuInfoCollection() const;
   void FetchCompleteInfo(scoped_refptr<util::Promise> promise);
   void FetchBasicInfo(scoped_refptr<util::Promise> promise);
   void OnGpuInfoUpdate() override;

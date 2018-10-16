@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/browser/microtasks_runner.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task_scheduler/initialization_util.h"
@@ -62,7 +63,15 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   return isolate;
 }
 
+void JavascriptEnvironment::OnMessageLoopCreated() {
+  DCHECK(!microtasks_runner_);
+  microtasks_runner_.reset(new MicrotasksRunner(isolate()));
+  base::MessageLoopCurrent::Get()->AddTaskObserver(microtasks_runner_.get());
+}
+
 void JavascriptEnvironment::OnMessageLoopDestroying() {
+  DCHECK(microtasks_runner_);
+  base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
   platform_->UnregisterIsolate(isolate_);
 }
 
