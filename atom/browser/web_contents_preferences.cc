@@ -336,6 +336,11 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (self->web_preferences_.GetString("defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
+
+  bool node_integration = false;
+  self->web_preferences_.GetBoolean(options::kNodeIntegration,
+                                    &node_integration);
+  prefs->node_integration = node_integration;
 }
 
 bool WebContentsPreferences::GetInteger(const std::string& attributeName,
