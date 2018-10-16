@@ -112,6 +112,7 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
+  void SetHasChildModal(bool has_modal) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -189,6 +190,10 @@ class NativeWindowViews : public NativeWindow,
                                         WPARAM w_param,
                                         LPARAM l_param);
 #endif
+
+  // Enable/disable:
+  bool ShouldBeEnabled();
+  void SetEnabledInternal(bool enabled);
 
   // NativeWindow:
   void HandleKeyboardEvent(
@@ -273,8 +278,8 @@ class NativeWindowViews : public NativeWindow,
   // has to been explicitly provided.
   std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
-  // How many times the Disable has been called.
-  int disable_count_ = 0;
+  // Whether the window should be enabled based on user calls to SetEnabled()
+  bool is_enabled_ = true;
 
   bool use_content_size_ = false;
   bool movable_ = true;

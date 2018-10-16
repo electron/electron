@@ -344,7 +344,7 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
       !widget()->native_widget_private()->IsVisible())
-    NativeWindow::parent()->SetEnabled(false);
+    NativeWindow::parent()->SetHasChildModal(true);
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
@@ -369,7 +369,7 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    NativeWindow::parent()->SetEnabled(true);
+    NativeWindow::parent()->SetHasChildModal(false);
 
   widget()->Hide();
 
@@ -393,16 +393,29 @@ bool NativeWindowViews::IsEnabled() {
 #endif
 }
 
+void NativeWindowViews::SetHasChildModal(bool has_modal) {
+  if (has_modal != has_child_modal_) {
+    has_child_modal_ = has_modal;
+    SetEnabledInternal(ShouldBeEnabled());
+  }
+}
+
 void NativeWindowViews::SetEnabled(bool enable) {
-  // Handle multiple calls of SetEnabled correctly.
-  if (enable) {
-    --disable_count_;
-    if (disable_count_ != 0)
-      return;
-  } else {
-    ++disable_count_;
-    if (disable_count_ != 1)
-      return;
+  if (enable != is_enabled_) {
+    is_enabled_ = enable;
+    SetEnabledInternal(ShouldBeEnabled());
+  }
+}
+
+bool NativeWindowViews::ShouldBeEnabled() {
+  return is_enabled_ && !has_child_modal_;
+}
+
+void NativeWindowViews::SetEnabledInternal(bool enable) {
+  if (enable && IsEnabled()) {
+    return;
+  } else if (!enable && !IsEnabled()) {
+    return;
   }
 
 #if defined(OS_WIN)
@@ -1164,7 +1177,7 @@ void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && NativeWindow::parent()) {
     auto* parent = NativeWindow::parent();
     // Enable parent window after current window gets closed.
-    parent->SetEnabled(true);
+    parent->SetHasChildModal(false);
     // Focus on parent window.
     parent->Focus(true);
   }
