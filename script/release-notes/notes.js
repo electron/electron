@@ -7,6 +7,7 @@ const path = require('path')
 
 const { GitProcess } = require('dugite')
 const GitHub = require('github')
+const semver = require('semver')
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
@@ -177,7 +178,7 @@ const getLocalCommitDetails = async (module, point1, point2) => {
   // console.log({ point1, point2 })
   const fieldSep = '||'
   const format = ['%H', '%P', '%aE', '%B'].join(fieldSep)
-  const args = ['log', '-z', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
+  const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
   const commits = (await runGit(dir, args)).split(`\0`).map(x => x.trim())
   const details = []
   for (const commit of commits) {
@@ -186,6 +187,8 @@ const getLocalCommitDetails = async (module, point1, point2) => {
     details.push(parseCommitMessage(commitMessage, owner, repo, {
       email,
       hash,
+      owner,
+      repo,
       parentHashes: parentHashes.split()
     }))
   }
@@ -368,14 +371,18 @@ const getNotes = async (fromRef, toRef) => {
   const electron = { owner: 'electron', repo: 'electron', dir: gitDir }
   await addRepoToPool(pool, electron, fromRef, toRef)
 
-  console.log(`before adding dependencies, pool.commits.length is ${pool.commits.length}`)
-  // add the electron/node, electron/libchromiumcontent commits
-  await getDependencyCommits(pool, fromRef, toRef)
-  console.log(`after adding dependencies, pool.commits.length is ${pool.commits.length}`)
+  // Don't include submodules if comparing across major versions;
+  // there's just too much churn otherwise.
+  const includeDeps = semver.valid(fromRef) &&
+                      semver.valid(toRef) &&
+                      semver.major(fromRef) === semver.major(toRef)
+
+  if (includeDeps) {
+    await getDependencyCommits(pool, fromRef, toRef)
+  }
 
   // remove any old commits
   pool.commits = pool.commits.filter(x => !pool.processedHashes.has(x.hash))
-  console.log(`after pruning, pool.commits.length is ${pool.commits.length}`)
 
   // if a commmit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
@@ -411,7 +418,7 @@ const getNotes = async (fromRef, toRef) => {
   // remove uninteresting commits
   pool.commits = pool.commits
     .filter(x => x.note !== NO_NOTES)
-    .filter(x => !((x.note || x.subject).toLocaleLowerCase().match(/^[Bb]ump v\d+\.\d+\.\d+/)))
+    .filter(x => !((x.note || x.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
   // console.log(JSON.stringify(commits, null, 2))
 
@@ -425,15 +432,15 @@ const getNotes = async (fromRef, toRef) => {
     ref: toRef
   }
 
-  pool.commits.forEach(x => {
-    const str = x.type
-    if (!str) o.unknown.push(x)
-    else if (breakTypes.has(str)) o.breaks.push(x)
-    else if (docTypes.has(str)) o.docs.push(x)
-    else if (featTypes.has(str)) o.feat.push(x)
-    else if (fixTypes.has(str)) o.fix.push(x)
-    else if (otherTypes.has(str)) o.other.push(x)
-    else o.unknown.push(x)
+  pool.commits.forEach(commit => {
+    const str = commit.type
+    if (!str) o.unknown.push(commit)
+    else if (breakTypes.has(str)) o.breaks.push(commit)
+    else if (docTypes.has(str)) o.docs.push(commit)
+    else if (featTypes.has(str)) o.feat.push(commit)
+    else if (fixTypes.has(str)) o.fix.push(commit)
+    else if (otherTypes.has(str)) o.other.push(commit)
+    else o.unknown.push(commit)
   })
 
   // console.log(JSON.stringify(o, null, 2))
@@ -452,18 +459,25 @@ const renderCommit = commit => {
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1)
     if (!note.endsWith('.')) note = note + '.'
-    const commonTenses = {
+    const commonVerbs = {
       'Added': [ 'Add' ],
       'Backported': [ 'Backport' ],
+      'Cleaned': [ 'Clean' ],
+      'Disabled': [ 'Disable' ],
+      'Ensured': [ 'Ensure' ],
       'Exported': [ 'Export' ],
       'Fixed': [ 'Fix', 'Fixes' ],
       'Handled': [ 'Handle' ],
       'Improved': [ 'Improve' ],
       'Made': [ 'Make' ],
+      'Removed': [ 'Remove' ],
+      'Repaired': [ 'Repair' ],
+      'Reverted': [ 'Revert' ],
       'Stopped': [ 'Stop' ],
-      'Updated': [ 'Update' ]
+      'Updated': [ 'Update' ],
+      'Upgraded': [ 'Upgrade' ]
     }
-    for (const [key, values] of Object.entries(commonTenses)) {
+    for (const [key, values] of Object.entries(commonVerbs)) {
       for (const value of values) {
         const start = `${value} `
         if (note.startsWith(start)) {
@@ -477,7 +491,7 @@ const renderCommit = commit => {
   let link
   const pr = commit.originalPr
   if (!pr) {
-    link = `https://github.com/electron/electron/commit/${commit.hash}`
+    link = `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`
   } else if (pr.owner === 'electron' && pr.repo === 'electron') {
     link = `#${pr.number}`
   } else {
