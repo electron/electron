@@ -12,7 +12,7 @@ vars = {
   'chromium_version':
     '69.0.3497.106',
   'node_version':
-    'f14ddf9d7e07739dc1dc0cbe2f7a5ba8b44906d1',
+    '036b5290b26438e42ffa809b29d858f42eecf1a3',
 
   'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
   'pyyaml_version': '3.12',
@@ -55,7 +55,7 @@ deps = {
   'src':
     (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
   'src/third_party/electron_node':
-    (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'https://github.com/discordapp/electron_node.git@' + (Var("node_version")),
   'src/electron/vendor/pyyaml':
     (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
   'src/electron/vendor/boto': {
