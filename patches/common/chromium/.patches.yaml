@@ -491,3 +491,12 @@ patches:
     dylib currently fails to resolve Squirrel.framework on OSX, we need to fix
     this but it is not a blocker for releasing Electron.  This patch removes
     the hard fail on dylib resolve failure from dump_syms
+-
+  author: zcbenz <zcbenz@gmail.com>
+  file: web_preferences.patch
+  description: |
+    Add a node_integration field to WebPreferences so we can determine whether
+    a frame has node integration in renderer process.
+
+    This is required by the nativeWindowOpen option, which put multiple main
+    frames in one renderer process.
