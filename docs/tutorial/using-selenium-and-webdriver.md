@@ -27,25 +27,26 @@ var app = new Application({
   path: '/Applications/MyApp.app/Contents/MacOS/MyApp'
 })
 
-app.start().then(function () {
-  // Check if the window is visible
-  return app.browserWindow.isVisible()
-}).then(function (isVisible) {
-  // Verify the window is visible
-  assert.strictEqual(isVisible, true)
-}).then(function () {
-  // Get the window's title
-  return app.client.getTitle()
-}).then(function (title) {
-  // Verify the window's title
-  assert.strictEqual(title, 'My App')
-}).catch(function (error) {
-  // Log any failures
-  console.error('Test failed', error.message)
-}).then(function () {
-  // Stop the application
-  return app.stop()
-})
+(
+  async ()=>{
+    await app.start()
+    try{
+      // Check if the window is visible
+      const isVisible = await app.browserWindow.isVisible()
+      // Verify the window is visible
+      assert.strictEqual(isVisible, true)
+      // Get the window's title
+      const title = await app.client.getTitle()
+      // Verify the window's title
+      assert.strictEqual(title, 'My App')
+    }
+    catch(error){
+      console.error('Test failed', error.message)
+    }
+    // Stop the application
+    await app.stop()
+  }
+)()
 ```
 
 ## Setting up with WebDriverJs
