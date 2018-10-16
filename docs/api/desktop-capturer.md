@@ -15,12 +15,12 @@ const { desktopCapturer } = require('electron')
 desktopCapturer.getSources({ types: ['window', 'screen'] }, async (error, sources) => {
   if (error) throw error
   for (const source in sources) {
-    if(source.name=='Electron'){
-      try{
+    if (source.name === 'Electron') {
+      try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio:false,
-          video:{
-            mandatory:{
+          audio: false,
+          video: {
+            mandatory: {
               chromeMediaSource: 'desktop',
               chromeMediaSourceId: source.id,
               minWidth: 1280,
@@ -31,15 +31,13 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }, async (error, source
           }
         })
         handleStream(stream)
-      }
-      catch(e){
+      } catch (e) {
         handleError(e)
       }
       return
     }
   }
 })
-
 
 function handleStream (stream) {
   const video = document.querySelector('video')

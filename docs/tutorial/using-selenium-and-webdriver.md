@@ -25,28 +25,25 @@ var assert = require('assert')
 
 var app = new Application({
   path: '/Applications/MyApp.app/Contents/MacOS/MyApp'
-})
+});
 
-(
-  async ()=>{
-    await app.start()
-    try{
-      // Check if the window is visible
-      const isVisible = await app.browserWindow.isVisible()
-      // Verify the window is visible
-      assert.strictEqual(isVisible, true)
-      // Get the window's title
-      const title = await app.client.getTitle()
-      // Verify the window's title
-      assert.strictEqual(title, 'My App')
-    }
-    catch(error){
-      console.error('Test failed', error.message)
-    }
-    // Stop the application
-    await app.stop()
+(async () => {
+  await app.start()
+  try {
+    // Check if the window is visible
+    const isVisible = await app.browserWindow.isVisible()
+    // Verify the window is visible
+    assert.strictEqual(isVisible, true)
+    // Get the window's title
+    const title = await app.client.getTitle()
+    // Verify the window's title
+    assert.strictEqual(title, 'My App')
+  } catch (error) {
+    console.error('Test failed', error.message)
   }
-)()
+  // Stop the application
+  await app.stop()
+})()
 ```
 
 ## Setting up with WebDriverJs
