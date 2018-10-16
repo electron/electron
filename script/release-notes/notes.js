@@ -161,6 +161,11 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
   return o
 }
 
+const getLocalCommitHashes = async (dir, ref) => {
+  const args = ['log', '-z', `--format=%H`, ref]
+  return (await runGit(dir, args)).split(`\0`).map(x => x.trim())
+}
+
 /*
  * possible properties:
  * breakingChange, email, hash, issueNumber, originalSubject, parentHashes,
@@ -247,6 +252,14 @@ const getNoteFromPull = pull => {
   return note
 }
 
+const addRepoToPool = async (pool, repo, from, to) => {
+  const commonAncestor = await getCommonAncestor(repo.dir, from, to)
+  const oldHashes = await getLocalCommitHashes(repo.dir, from)
+  oldHashes.forEach(hash => { pool.processedHashes.add(hash) })
+  const commits = await getLocalCommitDetails(repo, commonAncestor, to)
+  pool.commits.push(...commits)
+}
+
 /***
 ****  Other Repos
 ***/
@@ -263,14 +276,14 @@ const getGypSubmoduleRef = async (dir, point) => {
   const line = response.split('\n').filter(x => x.startsWith('160000')).shift()
   const tokens = line ? line.split(/\s/).map(x => x.trim()) : null
   const ref = tokens && tokens.length >= 3 ? tokens[2] : null
-  console.log({ dir, point, line, tokens, ref })
+  // console.log({ dir, point, line, tokens, ref })
   return ref
 }
 
-const getDependencyCommitsGyp = async (fromRef, toRef) => {
+const getDependencyCommitsGyp = async (pool, fromRef, toRef) => {
   const commits = []
 
-  const modules = [{
+  const repos = [{
     owner: 'electron',
     repo: 'libchromiumcontent',
     dir: path.resolve(gitDir, 'vendor', 'libchromiumcontent')
@@ -280,10 +293,10 @@ const getDependencyCommitsGyp = async (fromRef, toRef) => {
     dir: path.resolve(gitDir, 'vendor', 'node')
   }]
 
-  for (const module of modules) {
-    const from = await getGypSubmoduleRef(module.dir, fromRef)
-    const to = await getGypSubmoduleRef(module.dir, toRef)
-    commits.push(...(await getLocalCommitDetails(module, from, to)))
+  for (const repo of repos) {
+    const from = await getGypSubmoduleRef(repo.dir, fromRef)
+    const to = await getGypSubmoduleRef(repo.dir, toRef)
+    await addRepoToPool(pool, repo, from, to)
   }
 
   return commits
@@ -309,36 +322,32 @@ const getDepsVariable = async (ref, key) => {
   return response.stdout.trim()
 }
 
-const getDependencyCommitsGN = async (fromRef, toRef) => {
-  const commits = []
-
-  const dependencies = [{ // just node
+const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
+  const repos = [{ // just node
     owner: 'electron',
     repo: 'node',
     dir: path.resolve(gitDir, '..', 'third_party', 'electron_node'),
     deps_variable_name: 'node_version'
   }]
 
-  for (const dependency of dependencies) {
+  for (const repo of repos) {
     // the 'DEPS' file holds the dependency reference point
-    const key = dependency.deps_variable_name
+    const key = repo.deps_variable_name
     const from = await getDepsVariable(fromRef, key)
     const to = await getDepsVariable(toRef, key)
-    commits.push(...(await getLocalCommitDetails(dependency, from, to)))
+    await addRepoToPool(pool, repo, from, to)
   }
-
-  return commits
 }
 
 // other repos - controller
 
-const getDependencyCommits = async (from, to) => {
+const getDependencyCommits = async (pool, from, to) => {
   const filename = path.resolve(gitDir, 'vendor', 'libchromiumcontent')
   const useGyp = fs.existsSync(filename)
 
   return useGyp
-    ? getDependencyCommitsGyp(from, to)
-    : getDependencyCommitsGN(from, to)
+    ? getDependencyCommitsGyp(pool, from, to)
+    : getDependencyCommitsGN(pool, from, to)
 }
 
 /***
@@ -350,62 +359,57 @@ const getNotes = async (fromRef, toRef) => {
     fs.mkdirSync(CACHE_DIR)
   }
 
+  const pool = {
+    processedHashes: new Set(),
+    commits: []
+  }
+
   // get the electron/electron commits
   const electron = { owner: 'electron', repo: 'electron', dir: gitDir }
-  const commonAncestor = await getCommonAncestor(gitDir, fromRef, toRef)
-  let commits = await getLocalCommitDetails(electron, commonAncestor, toRef)
+  await addRepoToPool(pool, electron, fromRef, toRef)
 
-  // get the dependency commits
-  commits.push(...(await getDependencyCommits(fromRef, toRef)))
+  console.log(`before adding dependencies, pool.commits.length is ${pool.commits.length}`)
+  // add the electron/node, electron/libchromiumcontent commits
+  await getDependencyCommits(pool, fromRef, toRef)
+  console.log(`after adding dependencies, pool.commits.length is ${pool.commits.length}`)
 
-  // add old commits to the processed set
-  const oldCommits = await getLocalCommitDetails(electron, commonAncestor, fromRef)
-  const processedHashes = new Set(oldCommits.map(x => x.hash))
-  // add commit + revert commit pairs to the processed set
-  commits.forEach(x => {
-    if (x.revertHash) {
-      processedHashes.add(x.revertHash)
-      processedHashes.add(x.hash)
+  // remove any old commits
+  pool.commits = pool.commits.filter(x => !pool.processedHashes.has(x.hash))
+  console.log(`after pruning, pool.commits.length is ${pool.commits.length}`)
+
+  // if a commmit _and_ revert occurred in the unprocessed set, skip them both
+  for (const commit of pool.commits) {
+    const revertHash = commit.revertHash
+    if (!revertHash) continue
+
+    const revert = pool.commits.find(x => x.hash === revertHash)
+    if (!revert) continue
+
+    commit.note = NO_NOTES
+    revert.note = NO_NOTES
+    pool.processedHashes.add(commit.hash)
+    pool.processedHashes.add(revertHash)
+  }
+
+  // scrape PRs for release note 'Notes:' comments
+  for (const commit of pool.commits) {
+    let pr = commit.pr
+    while (pr && !commit.note) {
+      const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
+      if (!prData || !prData) break
+
+      // try to pull a release note from the pull comment
+      commit.note = getNoteFromPull(prData)
+      if (commit.note) break
+
+      // if the PR references another PR, maybe follow it
+      parseCommitMessage(`${prData.data.title}\n${prData.data.body}`, pr.owner, pr.repo, commit)
+      pr = pr.number !== commit.pr.number ? commit.pr : null
     }
-  })
-  // remove the pre-processed commits
-  commits = commits.filter(x => !processedHashes.has(x.hash))
-
-  // console.log(JSON.stringify(commits, null, 2))
-
-  // process all the commits' pull requests
-  const queue = commits
-  commits = []
-  while (queue.length) {
-    const commit = queue.shift()
-    if (commit.pr) {
-      const pr = await getPullRequest(commit.pr.number, commit.pr.owner, commit.pr.repo)
-      if (pr && pr.data) {
-        // processedHashes.add(commit.hash)
-
-        const note = getNoteFromPull(pr)
-        if (note) {
-          commit.note = note
-          parseCommitMessage(note, commit.pr.owner, commit.pr.repro, commit)
-        }
-
-        if (pr.data && pr.data.title) {
-          const number = commit.pr ? commit.pr.number : 0
-          parseCommitMessage([pr.data.title, pr.data.body].join('\n'), commit.pr.owner, commit.pr.repo, commit)
-          if (number !== commit.pr.number) {
-            console.log(`prNumber changed from ${number} to ${commit.pr.number} ... re-running`)
-            queue.push(commit)
-            continue
-          }
-        }
-      }
-    }
-
-    commits.push(commit)
   }
 
   // remove uninteresting commits
-  commits = commits
+  pool.commits = pool.commits
     .filter(x => x.note !== NO_NOTES)
     .filter(x => !((x.note || x.subject).toLocaleLowerCase().match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
@@ -421,7 +425,7 @@ const getNotes = async (fromRef, toRef) => {
     ref: toRef
   }
 
-  commits.forEach(x => {
+  pool.commits.forEach(x => {
     const str = x.type
     if (!str) o.unknown.push(x)
     else if (breakTypes.has(str)) o.breaks.push(x)
@@ -469,6 +473,7 @@ const renderCommit = commit => {
     }
   }
 
+  // make a GH-markdown-friendly link
   let link
   const pr = commit.originalPr
   if (!pr) {
