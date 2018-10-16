@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 
-const { GitProcess } = require('dugite')
-const fetch = require('node-fetch')
+const childProcess = require('child_process')
 const fs = require('fs')
-const GitHub = require('github')
+const os = require('os')
 const path = require('path')
 
+const { GitProcess } = require('dugite')
+const GitHub = require('github')
+
 const CACHE_DIR = path.resolve(__dirname, '.cache')
-const DEFAULT_OWNER = 'electron'
 const NO_NOTES = 'No notes'
-const DEFAULT_REPO = 'electron'
+const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
 github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
@@ -29,15 +30,15 @@ for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-m
   semanticMap.set(bits[0], bits[1])
 }
 
-const runGit = async (args) => {
-  // console.log('runGit', args)
-  const response = await GitProcess.exec(args, gitDir)
+const runGit = async (dir, args) => {
+  // console.log('runGit', dir, args)
+  const response = await GitProcess.exec(args, dir)
   if (response.exitCode !== 0) throw new Error(response.stderr.trim())
   return response.stdout.trim()
 }
 
-const getCommonAncestor = async (point1, point2) => {
-  return runGit(['merge-base', point1, point2])
+const getCommonAncestor = async (dir, point1, point2) => {
+  return runGit(dir, ['merge-base', point1, point2])
 }
 
 const setPullRequest = (o, owner, repo, number) => {
@@ -59,7 +60,7 @@ const setPullRequest = (o, owner, repo, number) => {
  * 'Backport of #99999' -- sets pr
  */
 const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
-  // console.log({ commitMessage })
+  // console.log('parse receiving', { o })
 
   // split commitMessage into subject & body
   let subject = commitMessage
@@ -122,15 +123,26 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
     o.revertHash = match[1]
   }
 
+  // Edge case: manual backport where commit has `owner/repo#pull` notation
+  if (commitMessage.includes('ackport') &&
+      ((match = commitMessage.match(/\b(\w+)\/(\w+)#(\d+)\b/)))) {
+    const [ , owner, repo, number ] = match
+    if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
+      setPullRequest(o, owner, repo, number)
+    }
+  }
+
   // Edge case: manual backport where commit has a link to the backport PR
   if (commitMessage.includes('ackport') &&
       ((match = commitMessage.match(/https:\/\/github\.com\/(\w+)\/(\w+)\/pull\/(\d+)/)))) {
     const [ , owner, repo, number ] = match
-    setPullRequest(o, owner, repo, number)
+    if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
+      setPullRequest(o, owner, repo, number)
+    }
   }
 
   // Legacy commits: pre-semantic commits
-  if (!o.type) {
+  if (!o.type || o.type === 'chore') {
     const s = commitMessage.toLocaleLowerCase()
     if ((match = s.match(/\bchore\((\w+)\):/))) {
       // example: 'Chore(docs): description'
@@ -154,17 +166,19 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
  * breakingChange, email, hash, issueNumber, originalSubject, parentHashes,
  * pr { owner, repo, number, branch }, revertHash, subject, type
  */
-const getLocalCommitDetails = async (point1, point2) => {
+const getLocalCommitDetails = async (module, point1, point2) => {
+  const { owner, repo, dir } = module
+
   // console.log({ point1, point2 })
   const fieldSep = '||'
   const format = ['%H', '%P', '%aE', '%B'].join(fieldSep)
   const args = ['log', '-z', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
-  const commits = (await runGit(args)).split(`\0`).map(x => x.trim())
+  const commits = (await runGit(dir, args)).split(`\0`).map(x => x.trim())
   const details = []
   for (const commit of commits) {
     if (!commit) continue
     const [ hash, parentHashes, email, commitMessage ] = commit.split(fieldSep, 4).map(x => x.trim())
-    details.push(parseCommitMessage(commitMessage, DEFAULT_OWNER, DEFAULT_REPO, {
+    details.push(parseCommitMessage(commitMessage, owner, repo, {
       email,
       hash,
       parentHashes: parentHashes.split()
@@ -184,14 +198,6 @@ const checkCache = async (name, operation) => {
     fs.writeFileSync(filename, JSON.stringify(response))
   }
   return response
-}
-
-const getCommit = async (hash, owner, repo) => {
-  const name = `${owner}-${repo}-commit-${hash}`
-  return checkCache(name, async () => {
-    const url = `https://api.github.com/repos/${owner}/${repo}/commits/${hash}`
-    return (await fetch(url)).json()
-  })
 }
 
 const getPullRequest = async (number, owner, repo) => {
@@ -241,62 +247,119 @@ const getNoteFromPull = pull => {
   return note
 }
 
-const shouldIgnore = details => {
-  // skip bump commits
-  if (details.subject.match(/^Bump v\d+\.\d+\.\d+/)) {
-    return true
-  }
+/***
+****  Other Repos
+***/
 
-  // skip procedural commits
-  if (details.note === NO_NOTES) {
-    return true
-  }
+// other repos - gyp
 
-  return false
+const getGypSubmoduleRef = async (dir, point) => {
+  // example: '160000 commit 028b0af83076cec898f4ebce208b7fadb715656e libchromiumcontent'
+  const response = await runGit(
+    path.dirname(dir),
+    ['ls-tree', '-t', point, path.basename(dir)]
+  )
+
+  const line = response.split('\n').filter(x => x.startsWith('160000')).shift()
+  const tokens = line ? line.split(/\s/).map(x => x.trim()) : null
+  const ref = tokens && tokens.length >= 3 ? tokens[2] : null
+  console.log({ dir, point, line, tokens, ref })
+  return ref
 }
 
-const getRollerCommits = async (pr) => {
+const getDependencyCommitsGyp = async (fromRef, toRef) => {
   const commits = []
-  if (pr && pr.data && pr.data.user &&
-      pr.data.user.login === 'roller-bot' &&
-      pr.data.body.includes('Changes since the last roll:')) {
-    // https://github.com/electron/roller/blob/d0bbe852f2ed91e1f3098445567f54c8ffcc867b/src/pr.ts#L33
-    // `* [\`${commit.sha.substr(0, 8)}\`](${COMMIT_URL_BASE}/${commit.sha}) ${commit.message}`).join('\n')}
-    for (const line of pr.data.body.split('\n').map(x => x.trim()).filter(x => !!x)) {
-      const match = line.match(/^\*\s\[`[0-9a-f]{8}`\]\(https:\/\/github.com\/(\w+)\/(\w+)\/commit\/+([0-9a-f]{40})\)\s(.*)$/)
-      if (!match) continue
 
-      const [ , owner, repo, hash, message ] = match
-      const o = parseCommitMessage(message, owner, repo)
+  const modules = [{
+    owner: 'electron',
+    repo: 'libchromiumcontent',
+    dir: path.resolve(gitDir, 'vendor', 'libchromiumcontent')
+  }, {
+    owner: 'electron',
+    repo: 'node',
+    dir: path.resolve(gitDir, 'vendor', 'node')
+  }]
 
-      const commitData = await getCommit(hash, owner, repo)
-      if (commitData && commitData.commit && commitData.commit.message) {
-        parseCommitMessage(commitData.commit.message, owner, repo, {
-          email: commitData.commit.author.email,
-          hash: commitData.sha,
-          ...o
-        })
-      }
-
-      commits.push(o)
-    }
+  for (const module of modules) {
+    const from = await getGypSubmoduleRef(module.dir, fromRef)
+    const to = await getGypSubmoduleRef(module.dir, toRef)
+    commits.push(...(await getLocalCommitDetails(module, from, to)))
   }
 
-  // console.log('rollerCommits', { commits })
   return commits
 }
+
+// other repos - gn
+
+const getDepsVariable = async (ref, key) => {
+  // get a copy of that reference point's DEPS file
+  const deps = await runGit(gitDir, ['show', `${ref}:DEPS`])
+  const filename = path.resolve(os.tmpdir(), 'DEPS')
+  fs.writeFileSync(filename, deps)
+
+  // query the DEPS file
+  const response = childProcess.spawnSync(
+    'gclient',
+    ['getdep', '--deps-file', filename, '--var', key],
+    { encoding: 'utf8' }
+  )
+
+  // cleanup
+  fs.unlinkSync(filename)
+  return response.stdout.trim()
+}
+
+const getDependencyCommitsGN = async (fromRef, toRef) => {
+  const commits = []
+
+  const dependencies = [{ // just node
+    owner: 'electron',
+    repo: 'node',
+    dir: path.resolve(gitDir, '..', 'third_party', 'electron_node'),
+    deps_variable_name: 'node_version'
+  }]
+
+  for (const dependency of dependencies) {
+    // the 'DEPS' file holds the dependency reference point
+    const key = dependency.deps_variable_name
+    const from = await getDepsVariable(fromRef, key)
+    const to = await getDepsVariable(toRef, key)
+    commits.push(...(await getLocalCommitDetails(dependency, from, to)))
+  }
+
+  return commits
+}
+
+// other repos - controller
+
+const getDependencyCommits = async (from, to) => {
+  const filename = path.resolve(gitDir, 'vendor', 'libchromiumcontent')
+  const useGyp = fs.existsSync(filename)
+
+  return useGyp
+    ? getDependencyCommitsGyp(from, to)
+    : getDependencyCommitsGN(from, to)
+}
+
+/***
+****  Main
+***/
 
 const getNotes = async (fromRef, toRef) => {
   if (!fs.existsSync(CACHE_DIR)) {
     fs.mkdirSync(CACHE_DIR)
   }
 
-  // get the relevant commits
-  const commonAncestor = await getCommonAncestor(fromRef, toRef)
-  let commits = await getLocalCommitDetails(commonAncestor, toRef)
+  // get the electron/electron commits
+  const electron = { owner: 'electron', repo: 'electron', dir: gitDir }
+  const commonAncestor = await getCommonAncestor(gitDir, fromRef, toRef)
+  let commits = await getLocalCommitDetails(electron, commonAncestor, toRef)
+
+  // get the dependency commits
+  commits.push(...(await getDependencyCommits(fromRef, toRef)))
 
   // add old commits to the processed set
-  const oldCommits = await getLocalCommitDetails(commonAncestor, fromRef)
+  const oldCommits = await getLocalCommitDetails(electron, commonAncestor, fromRef)
   const processedHashes = new Set(oldCommits.map(x => x.hash))
   // add commit + revert commit pairs to the processed set
   commits.forEach(x => {
@@ -318,18 +381,12 @@ const getNotes = async (fromRef, toRef) => {
     if (commit.pr) {
       const pr = await getPullRequest(commit.pr.number, commit.pr.owner, commit.pr.repo)
       if (pr && pr.data) {
-        processedHashes.add(commit.hash)
+        // processedHashes.add(commit.hash)
 
         const note = getNoteFromPull(pr)
         if (note) {
           commit.note = note
-        }
-
-        const rollerCommits = await getRollerCommits(pr)
-        if (rollerCommits.length) {
-          rollerCommits.forEach(x => { x.originalPr = commit.originalPr })
-          queue.push(...rollerCommits)
-          continue
+          parseCommitMessage(note, commit.pr.owner, commit.pr.repro, commit)
         }
 
         if (pr.data && pr.data.title) {
@@ -347,8 +404,11 @@ const getNotes = async (fromRef, toRef) => {
     commits.push(commit)
   }
 
-  // remove unininteresting commits
-  commits = commits.filter(x => !shouldIgnore(x))
+  // remove uninteresting commits
+  commits = commits
+    .filter(x => x.note !== NO_NOTES)
+    .filter(x => !((x.note || x.subject).toLocaleLowerCase().match(/^[Bb]ump v\d+\.\d+\.\d+/)))
+
   // console.log(JSON.stringify(commits, null, 2))
 
   const o = {
@@ -389,12 +449,15 @@ const renderCommit = commit => {
     note = note[0].toUpperCase() + note.substr(1)
     if (!note.endsWith('.')) note = note + '.'
     const commonTenses = {
-      'Made': [ 'Make' ],
-      'Fixed': [ 'Fix', 'Fixes' ],
       'Added': [ 'Add' ],
-      'Updated': [ 'Update' ],
+      'Backported': [ 'Backport' ],
+      'Exported': [ 'Export' ],
+      'Fixed': [ 'Fix', 'Fixes' ],
       'Handled': [ 'Handle' ],
-      'Improved': [ 'Improve' ]
+      'Improved': [ 'Improve' ],
+      'Made': [ 'Make' ],
+      'Stopped': [ 'Stop' ],
+      'Updated': [ 'Update' ]
     }
     for (const [key, values] of Object.entries(commonTenses)) {
       for (const value of values) {
@@ -410,10 +473,10 @@ const renderCommit = commit => {
   const pr = commit.originalPr
   if (!pr) {
     link = `https://github.com/electron/electron/commit/${commit.hash}`
-  } else if (pr.owner === DEFAULT_OWNER && pr.repo === DEFAULT_REPO) {
+  } else if (pr.owner === 'electron' && pr.repo === 'electron') {
     link = `#${pr.number}`
   } else {
-    link = `[#${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
+    link = `[${pr.owner}/${pr.repo}:${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
   }
 
   return { note, link }

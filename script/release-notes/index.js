@@ -99,7 +99,6 @@ const getPreviousPoint = async (point) => {
 }
 
 async function main () {
-  console.log(process.argv)
   if (process.argv.length !== 3) {
     console.log('Use: script/release-notes/index.js {tag | tag1..tag2}')
     return 1
