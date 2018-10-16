@@ -1,3 +1,22 @@
+# The config expects the following environment variables to be set:
+#  - "Custom.UseArtifacts.BuildId" aka "CUSTOM_USEARTIFACTS_BUILDID"
+#      Set it to a build number, e.g. 15912, to download artifacts
+#      from that build and only run the tests, instead of building from scratch.
+#  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
+#  - "GN_CONFIG" Full path to a build config, e.g. '//electron/build/args/testing.gn'.
+#  - "GN_EXTRA_ARGS" Additional gn args, e.g. 'is_mas_build=true'.
+#  - "NOTIFY_SLACK" Set it to '1' to enable Slack notifications.
+#  - "RUN_TESTS" Set it to '1' to run Electron's tests.
+#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#      Otherwise the release will be uploaded to the Github Releases.
+#      (The value is only checked if "ELECTRON_RELEASE" is defined.)
+#
+# The publishing scripts expect access tokens to be defined as env vars,
+# but those are not covered here.
+#
+# VSTS docs on variables:
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables
+
 jobs:
 - job: build
   displayName: Build

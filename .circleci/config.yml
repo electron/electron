@@ -1,3 +1,12 @@
+# The config expects the following environment variables to be set:
+#  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
+#
+# The publishing scripts expect access tokens to be defined as env vars,
+# but those are not covered here.
+#
+# CircleCI docs on variables:
+# https://circleci.com/docs/2.0/env-vars/
+
 # Build machines configs.
 docker-image: &docker-image
   docker:
