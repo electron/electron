@@ -89,3 +89,17 @@ Sends a message to a window with `windowid` via `channel`.
 
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
 the host page instead of the main process.
+
+## Event object
+
+The `event` object passed to the `callback` has the following methods:
+
+### `event.senderId`
+
+Returns the `webContents.id` that sent the message, you can call
+`event.sender.sendTo(event.senderId, ...)` to reply to the message, see
+[ipcRenderer.sendTo][ipc-renderer-sendto] for more information.
+This only applies to messages sent from a different renderer.
+Messages sent directly from the main process set `event.senderId` to `0`.
+
+[ipc-renderer-sendto]: #ipcrenderersendtowindowid-channel--arg1-arg2-

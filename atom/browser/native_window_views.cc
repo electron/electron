@@ -9,6 +9,8 @@
 #include <wrl/client.h>
 #endif
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -562,6 +564,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
   return content_view() ? content_view()->size() : gfx::Size();
 }
 
+gfx::Rect NativeWindowViews::GetNormalBounds() {
+  return widget()->GetRestoredBounds();
+}
+
 void NativeWindowViews::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   NativeWindow::SetContentSizeConstraints(size_constraints);
@@ -585,6 +591,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
+      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
       resizable_ = false;
@@ -597,7 +604,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
   if (has_frame() && thick_frame_)
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
-
   resizable_ = resizable;
 }
 
@@ -700,6 +706,9 @@ void NativeWindowViews::SetAlwaysOnTop(bool top,
                                        const std::string& level,
                                        int relativeLevel,
                                        std::string* error) {
+  if (top != widget()->IsAlwaysOnTop())
+    NativeWindow::NotifyWindowAlwaysOnTopChanged();
+
   widget()->SetAlwaysOnTop(top);
 }
 
@@ -788,6 +797,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
+  InvalidateRect(GetAcceleratedWidget(), NULL, 1);
 #endif
 }
 
@@ -1002,7 +1012,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
-void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowViews::SetVisibleOnAllWorkspaces(bool visible,
+                                                  bool visibleOnFullScreen) {
   widget()->SetVisibleOnAllWorkspaces(visible);
 }
 
@@ -1104,12 +1115,10 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   if (changed_widget != widget())
     return;
 
-  // Post the notification to next tick.
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(active ? &NativeWindow::NotifyWindowFocus
-                        : &NativeWindow::NotifyWindowBlur,
-                 GetWeakPtr()));
+  if (active)
+    NativeWindow::NotifyWindowFocus();
+  else
+    NativeWindow::NotifyWindowBlur();
 
   // Hide menu bar when window is blured.
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())

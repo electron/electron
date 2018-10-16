@@ -5,24 +5,21 @@ import glob
 import sys
 
 from lib.config import PLATFORM, s3_config, enable_verbose_mode
-from lib.util import electron_gyp, execute, rm_rf, safe_mkdir, s3put
-
+from lib.util import get_electron_branding, execute, rm_rf, safe_mkdir, s3put, \
+                     get_out_dir
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
-RELEASE_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
+RELEASE_DIR = get_out_dir()
 
-PROJECT_NAME = electron_gyp()['project_name%']
-PRODUCT_NAME = electron_gyp()['product_name%']
 
-if PLATFORM == 'win32':
-  SYMBOLS_DIR = os.path.join(DIST_DIR, 'symbols')
-else:
-  SYMBOLS_DIR = os.path.join(DIST_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
+PROJECT_NAME = get_electron_branding()['project_name']
+PRODUCT_NAME = get_electron_branding()['product_name']
+SYMBOLS_DIR = os.path.join(
+  RELEASE_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME)
+)
 
 PDB_LIST = [
-  os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME)),
-  os.path.join(RELEASE_DIR, 'node.dll.pdb')
+  os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))
 ]
 
 

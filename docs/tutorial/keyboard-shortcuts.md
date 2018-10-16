@@ -9,7 +9,7 @@ be triggered only when the app is focused. To do so, specify an
 [`accelerator`] property when creating a [MenuItem].
 
 ```js
-const {Menu, MenuItem} = require('electron')
+const { Menu, MenuItem } = require('electron')
 const menu = new Menu()
 
 menu.append(new MenuItem({
@@ -33,7 +33,7 @@ You can use the [globalShortcut] module to detect keyboard events even when
 the application does not have keyboard focus.
 
 ```js
-const {app, globalShortcut} = require('electron')
+const { app, globalShortcut } = require('electron')
 
 app.on('ready', () => {
   globalShortcut.register('CommandOrControl+X', () => {

@@ -4,6 +4,7 @@
 
 #include "atom/renderer/renderer_client_base.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,25 +15,24 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/atom_render_view_observer.h"
 #include "atom/renderer/content_settings_observer.h"
-#include "atom/renderer/guest_view_container.h"
 #include "atom/renderer/preferences_manager.h"
 #include "base/command_line.h"
-#include "base/process/process_handle.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/media/chrome_key_systems.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
-#include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
+#include "content/public/common/content_switches.h"
+#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
-#include "third_party/WebKit/Source/platform/weborigin/SchemeRegistry.h"
-#include "third_party/WebKit/public/web/WebCustomElement.h"  // NOLINT(build/include_alpha)
-#include "third_party/WebKit/public/web/WebFrameWidget.h"
-#include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebPluginParams.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
-#include "third_party/WebKit/public/web/WebSecurityPolicy.h"
+#include "printing/buildflags/buildflags.h"
+#include "third_party/blink/public/web/blink.h"
+#include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
+#include "third_party/blink/public/web/web_frame_widget.h"
+#include "third_party/blink/public/web/web_plugin_params.h"
+#include "third_party/blink/public/web/web_script_source.h"
+#include "third_party/blink/public/web/web_security_policy.h"
+#include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
 
 #if defined(OS_MACOSX)
 #include "base/strings/sys_string_conversions.h"
@@ -42,21 +42,22 @@
 #include <shlobj.h>
 #endif
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/common/atom_constants.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
 #include "chrome/renderer/pepper/pepper_helper.h"
-#endif  // defined(ENABLE_PEPPER_FLASH)
+#endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
-// This is defined in later versions of Chromium, remove this if you see
-// compiler complaining duplicate defines.
-#if defined(OS_WIN) || defined(OS_FUCHSIA)
-#define CrPRIdPid "ld"
-#else
-#define CrPRIdPid "d"
-#endif
+#if BUILDFLAG(ENABLE_TTS)
+#include "chrome/renderer/tts_dispatcher.h"
+#endif  // BUILDFLAG(ENABLE_TTS)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
+#include "components/printing/renderer/print_render_frame_helper.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 namespace atom {
 
@@ -71,23 +72,40 @@ v8::Local<v8::Value> GetRenderProcessPreferences(
     return v8::Null(isolate);
 }
 
-std::vector<std::string> ParseSchemesCLISwitch(const char* switch_name) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
+                                               const char* switch_name) {
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
+void SetHiddenValue(v8::Handle<v8::Context> context,
+                    const base::StringPiece& key,
+                    v8::Local<v8::Value> value) {
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::Private> privateKey =
+      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
+  context->Global()->SetPrivate(context, privateKey, value);
+}
+
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
-      ParseSchemesCLISwitch(switches::kStandardSchemes);
+      ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
   for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITHOUT_PORT);
+    url::AddStandardScheme(scheme.c_str(), url::SCHEME_WITH_HOST);
   isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
       switches::kContextIsolation);
+  // We rely on the unique process host id which is notified to the
+  // renderer process via command line switch from the content layer,
+  // if this switch is removed from the content layer for some reason,
+  // we should define our own.
+  DCHECK(command_line->HasSwitch(::switches::kRendererClientId));
+  renderer_client_id_ =
+      command_line->GetSwitchValueASCII(::switches::kRendererClientId);
 }
 
 RendererClientBase::~RendererClientBase() {}
@@ -95,14 +113,17 @@ RendererClientBase::~RendererClientBase() {}
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processId}-${++next_context_id_}`)
-  std::string context_id = base::StringPrintf(
-      "%" CrPRIdPid "-%d", base::GetCurrentProcId(), ++next_context_id_);
+  // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
+  auto context_id = base::StringPrintf(
+      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
-  v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
-  v8::Local<v8::Value> value = mate::ConvertToV8(isolate, context_id);
-  context->Global()->SetPrivate(context, private_key, value);
+  SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  bool enableRemoteModule =
+      !command_line->HasSwitch(switches::kDisableRemoteModule);
+  SetHiddenValue(context, "enableRemoteModule",
+                 mate::ConvertToV8(isolate, enableRemoteModule));
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -115,6 +136,8 @@ void RendererClientBase::AddRenderBindings(
 }
 
 void RendererClientBase::RenderThreadStarted() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
@@ -136,7 +159,7 @@ void RendererClientBase::RenderThreadStarted() {
 
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(switches::kSecureSchemes);
+      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
@@ -150,7 +173,6 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   base::string16 app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
@@ -164,36 +186,40 @@ void RendererClientBase::RenderFrameCreated(
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame);
 #endif
-#if defined(ENABLE_PEPPER_FLASH)
+#if BUILDFLAG(ENABLE_PEPPER_FLASH)
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);
-  new printing::PrintWebViewHelper(render_frame);
+#if BUILDFLAG(ENABLE_PRINTING)
+  new printing::PrintRenderFrameHelper(
+      render_frame, std::make_unique<ChromePrintRenderFrameHelperDelegate>());
+#endif
 
-  // This is required for widevine plugin detection provided during runtime.
-  blink::ResetPluginCache();
-
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+  content::RenderView* render_view = render_frame->GetRenderView();
+  if (render_frame->IsMainFrame() && render_view) {
+    blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
+    if (web_frame_widget) {
+      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+        web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
+      } else {  // normal window.
+        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+        SkColor color =
+            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
+        web_frame_widget->SetBaseBackgroundColor(color);
+      }
+    }
+  }
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view);
-  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
-  if (!web_frame_widget)
-    return;
-
-  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-  } else {  // normal window.
-    std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-    SkColor color = name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-    web_frame_widget->SetBaseBackgroundColor(color);
-  }
 }
 
 void RendererClientBase::DidClearWindowObject(
@@ -205,7 +231,11 @@ void RendererClientBase::DidClearWindowObject(
 std::unique_ptr<blink::WebSpeechSynthesizer>
 RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
+#if BUILDFLAG(ENABLE_TTS)
   return std::make_unique<TtsDispatcher>(client);
+#else
+  return nullptr;
+#endif
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
@@ -214,9 +244,9 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
       command_line->HasSwitch(switches::kEnablePlugins))
     return false;
 
@@ -224,20 +254,19 @@ bool RendererClientBase::OverrideCreatePlugin(
   return true;
 }
 
-content::BrowserPluginDelegate* RendererClientBase::CreateBrowserPluginDelegate(
-    content::RenderFrame* render_frame,
-    const std::string& mime_type,
-    const GURL& original_url) {
-  if (mime_type == content::kBrowserPluginMimeType) {
-    return new GuestViewContainer(render_frame);
-  } else {
-    return nullptr;
-  }
-}
-
 void RendererClientBase::AddSupportedKeySystems(
     std::vector<std::unique_ptr<::media::KeySystemProperties>>* key_systems) {
-  AddChromeKeySystems(key_systems);
+#if defined(WIDEVINE_CDM_AVAILABLE)
+  key_systems_provider_.AddSupportedKeySystems(key_systems);
+#endif
+}
+
+bool RendererClientBase::IsKeySystemsUpdateNeeded() {
+#if defined(WIDEVINE_CDM_AVAILABLE)
+  return key_systems_provider_.IsKeySystemsUpdateNeeded();
+#else
+  return false;
+#endif
 }
 
 v8::Local<v8::Context> RendererClientBase::GetContext(

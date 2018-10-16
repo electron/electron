@@ -1,11 +1,12 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  const {ipcRenderer} = require('electron')
-  ipcRenderer.on('ping', function (event, id) {
-    ipcRenderer.sendTo(id, 'pong', id)
+  ipcRenderer.on('ping', function (event, payload) {
+    ipcRenderer.sendTo(event.senderId, 'pong', payload)
+  })
+  ipcRenderer.on('ping-æøåü', function (event, payload) {
+    ipcRenderer.sendTo(event.senderId, 'pong-æøåü', payload)
   })
 </script>
 </body>
 </html>
-

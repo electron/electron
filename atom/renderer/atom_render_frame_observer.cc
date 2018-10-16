@@ -9,9 +9,11 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/event_emitter_caller.h"
+#include "atom/common/heap_snapshot.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
@@ -19,12 +21,12 @@
 #include "native_mate/dictionary.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
-#include "third_party/WebKit/public/web/WebDocument.h"
-#include "third_party/WebKit/public/web/WebDraggableRegion.h"
-#include "third_party/WebKit/public/web/WebElement.h"
-#include "third_party/WebKit/public/web/WebKit.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
-#include "third_party/WebKit/public/web/WebScriptSource.h"
+#include "third_party/blink/public/web/blink.h"
+#include "third_party/blink/public/web/web_document.h"
+#include "third_party/blink/public/web/web_draggable_region.h"
+#include "third_party/blink/public/web/web_element.h"
+#include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_script_source.h"
 #include "ui/base/resource/resource_bundle.h"
 
 namespace atom {
@@ -33,8 +35,10 @@ namespace {
 
 bool GetIPCObject(v8::Isolate* isolate,
                   v8::Local<v8::Context> context,
+                  bool internal,
                   v8::Local<v8::Object>* ipc) {
-  v8::Local<v8::String> key = mate::StringToV8(isolate, "ipc");
+  v8::Local<v8::String> key =
+      mate::StringToV8(isolate, internal ? "ipc-internal" : "ipc");
   v8::Local<v8::Private> privateKey = v8::Private::ForApi(isolate, key);
   v8::Local<v8::Object> global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -139,7 +143,7 @@ void AtomRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, &source, 1);
+  frame->ExecuteScriptInIsolatedWorld(World::ISOLATED_WORLD, source);
 }
 
 bool AtomRenderFrameObserver::IsMainWorld(int world_id) {
@@ -161,15 +165,18 @@ bool AtomRenderFrameObserver::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(AtomRenderFrameObserver, message)
     IPC_MESSAGE_HANDLER(AtomFrameMsg_Message, OnBrowserMessage)
+    IPC_MESSAGE_HANDLER(AtomFrameMsg_TakeHeapSnapshot, OnTakeHeapSnapshot)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
 
   return handled;
 }
 
-void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
-                                               const base::string16& channel,
-                                               const base::ListValue& args) {
+void AtomRenderFrameObserver::OnBrowserMessage(bool internal,
+                                               bool send_to_all,
+                                               const std::string& channel,
+                                               const base::ListValue& args,
+                                               int32_t sender_id) {
   // Don't handle browser messages before document element is created.
   // When we receive a message from the browser, we try to transfer it
   // to a web page, and when we do that Blink creates an empty
@@ -182,21 +189,40 @@ void AtomRenderFrameObserver::OnBrowserMessage(bool send_to_all,
   if (!frame || !render_frame_->IsMainFrame())
     return;
 
-  EmitIPCEvent(frame, channel, args);
+  EmitIPCEvent(frame, internal, channel, args, sender_id);
 
   // Also send the message to all sub-frames.
   if (send_to_all) {
     for (blink::WebFrame* child = frame->FirstChild(); child;
          child = child->NextSibling())
       if (child->IsWebLocalFrame()) {
-        EmitIPCEvent(child->ToWebLocalFrame(), channel, args);
+        EmitIPCEvent(child->ToWebLocalFrame(), internal, channel, args,
+                     sender_id);
       }
   }
 }
 
+void AtomRenderFrameObserver::OnTakeHeapSnapshot(
+    IPC::PlatformFileForTransit file_handle,
+    const std::string& channel) {
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+
+  auto file = IPC::PlatformFileForTransitToFile(file_handle);
+  bool success = TakeHeapSnapshot(blink::MainThreadIsolate(), &file);
+
+  base::ListValue args;
+  args.AppendString(channel);
+  args.AppendBoolean(success);
+
+  render_frame_->Send(new AtomFrameHostMsg_Message(
+      render_frame_->GetRoutingID(), "ipc-message", args));
+}
+
 void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
-                                           const base::string16& channel,
-                                           const base::ListValue& args) {
+                                           bool internal,
+                                           const std::string& channel,
+                                           const base::ListValue& args,
+                                           int32_t sender_id) {
   if (!frame)
     return;
 
@@ -212,12 +238,13 @@ void AtomRenderFrameObserver::EmitIPCEvent(blink::WebLocalFrame* frame,
     return;
 
   v8::Local<v8::Object> ipc;
-  if (GetIPCObject(isolate, context, &ipc)) {
+  if (GetIPCObject(isolate, context, internal, &ipc)) {
     TRACE_EVENT0("devtools.timeline", "FunctionCall");
     auto args_vector = ListValueToVector(isolate, args);
     // Insert the Event object, event.sender is ipc.
     mate::Dictionary event = mate::Dictionary::CreateEmpty(isolate);
     event.Set("sender", ipc);
+    event.Set("senderId", sender_id);
     args_vector.insert(args_vector.begin(), event.GetHandle());
     mate::EmitEvent(isolate, ipc, channel, args_vector);
   }

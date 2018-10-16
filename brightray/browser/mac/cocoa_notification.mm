@@ -156,6 +156,13 @@ void CocoaNotification::NotificationActivated(
   this->LogAction("button clicked");
 }
 
+void CocoaNotification::NotificationDismissed() {
+  if (delegate())
+    delegate()->NotificationClosed();
+
+  this->LogAction("dismissed");
+}
+
 void CocoaNotification::LogAction(const char* action) {
   if (getenv("ELECTRON_DEBUG_NOTIFICATIONS")) {
     NSString* identifier = [notification_ valueForKey:@"identifier"];

@@ -1,0 +1,16 @@
+diff --git a/rtc_base/thread.cc b/rtc_base/thread.cc
+index 1bc0c0cd8..51208e4f0 100644
+--- a/rtc_base/thread.cc
++++ b/rtc_base/thread.cc
+@@ -23,7 +23,10 @@
+ #include "rtc_base/stringutils.h"
+ #include "rtc_base/timeutils.h"
+ #include "rtc_base/trace_event.h"
+-
++#ifdef _WIN32
++//Warning on windows because ThreadManager destructor never returns
++#pragma warning(disable:4722)
++#endif
+ namespace rtc {
+ 
+ ThreadManager* ThreadManager::Instance() {

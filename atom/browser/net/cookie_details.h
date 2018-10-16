@@ -6,7 +6,11 @@
 #define ATOM_BROWSER_NET_COOKIE_DETAILS_H_
 
 #include "base/macros.h"
-#include "net/cookies/cookie_change_dispatcher.h"
+#include "services/network/public/mojom/cookie_manager.mojom.h"
+
+namespace net {
+class CanonicalCookie;
+}
 
 namespace atom {
 
@@ -14,12 +18,12 @@ struct CookieDetails {
  public:
   CookieDetails(const net::CanonicalCookie* cookie_copy,
                 bool is_removed,
-                net::CookieChangeCause cause)
+                network::mojom::CookieChangeCause cause)
       : cookie(cookie_copy), removed(is_removed), cause(cause) {}
 
   const net::CanonicalCookie* cookie;
   bool removed;
-  net::CookieChangeCause cause;
+  network::mojom::CookieChangeCause cause;
 };
 
 }  // namespace atom

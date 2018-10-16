@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_web_request.h"
 
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/net/atom_network_delegate.h"
@@ -42,17 +43,15 @@ namespace {
 
 template <typename Method, typename Event, typename Listener>
 void CallNetworkDelegateMethod(
-    brightray::URLRequestContextGetter* url_request_context_getter,
+    URLRequestContextGetter* url_request_context_getter,
     Method method,
     Event type,
     URLPatterns patterns,
     Listener listener) {
   // Force creating network delegate.
-  net::URLRequestContext* context =
-      url_request_context_getter->GetURLRequestContext();
+  url_request_context_getter->GetURLRequestContext();
   // Then call the method.
-  AtomNetworkDelegate* network_delegate =
-      static_cast<AtomNetworkDelegate*>(context->network_delegate());
+  auto* network_delegate = url_request_context_getter->network_delegate();
   (network_delegate->*method)(type, std::move(patterns), std::move(listener));
 }
 
@@ -94,8 +93,8 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
     return;
   }
 
-  brightray::URLRequestContextGetter* url_request_context_getter =
-      browser_context_->url_request_context_getter();
+  auto* url_request_context_getter = static_cast<URLRequestContextGetter*>(
+      browser_context_->GetRequestContext());
   if (!url_request_context_getter)
     return;
   BrowserThread::PostTask(

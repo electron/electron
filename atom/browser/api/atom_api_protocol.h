@@ -6,7 +6,9 @@
 #define ATOM_BROWSER_API_ATOM_API_PROTOCOL_H_
 
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
@@ -78,13 +80,13 @@ class Protocol : public mate::TrackableObject<Protocol> {
         net::URLRequest* request,
         net::NetworkDelegate* network_delegate) const override {
       RequestJob* request_job = new RequestJob(request, network_delegate);
-      request_job->SetHandlerInfo(isolate_, request_context_.get(), handler_);
+      request_job->SetHandlerInfo(isolate_, request_context_, handler_);
       return request_job;
     }
 
    private:
     v8::Isolate* isolate_;
-    scoped_refptr<net::URLRequestContextGetter> request_context_;
+    net::URLRequestContextGetter* request_context_;
     Protocol::Handler handler_;
 
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
@@ -100,7 +102,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
                         mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto* getter = browser_context_->GetRequestContext();
+    auto* getter = static_cast<URLRequestContextGetter*>(
+        browser_context_->GetRequestContext());
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::RegisterProtocolInIO<RequestJob>,
@@ -109,12 +112,11 @@ class Protocol : public mate::TrackableObject<Protocol> {
   }
   template <typename RequestJob>
   static ProtocolError RegisterProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = request_context_getter->job_factory();
     if (job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_REGISTERED;
     auto protocol_handler = std::make_unique<CustomProtocolHandler<RequestJob>>(
@@ -128,14 +130,14 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Unregister the protocol handler that handles |scheme|.
   void UnregisterProtocol(const std::string& scheme, mate::Arguments* args);
   static ProtocolError UnregisterProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Whether the protocol has handler registered.
   void IsProtocolHandled(const std::string& scheme,
                          const BooleanCallback& callback);
   static bool IsProtocolHandledInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Replace the protocol handler with a new one.
@@ -145,7 +147,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
                          mate::Arguments* args) {
     CompletionCallback callback;
     args->GetNext(&callback);
-    auto* getter = browser_context_->GetRequestContext();
+    auto* getter = static_cast<URLRequestContextGetter*>(
+        browser_context_->GetRequestContext());
     content::BrowserThread::PostTaskAndReplyWithResult(
         content::BrowserThread::IO, FROM_HERE,
         base::BindOnce(&Protocol::InterceptProtocolInIO<RequestJob>,
@@ -154,12 +157,11 @@ class Protocol : public mate::TrackableObject<Protocol> {
   }
   template <typename RequestJob>
   static ProtocolError InterceptProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       v8::Isolate* isolate,
       const std::string& scheme,
       const Handler& handler) {
-    auto* job_factory = static_cast<AtomURLRequestJobFactory*>(
-        request_context_getter->job_factory());
+    auto* job_factory = request_context_getter->job_factory();
     if (!job_factory->IsHandledProtocol(scheme))
       return PROTOCOL_NOT_REGISTERED;
     // It is possible a protocol is handled but can not be intercepted.
@@ -175,7 +177,7 @@ class Protocol : public mate::TrackableObject<Protocol> {
   // Restore the |scheme| to its original protocol handler.
   void UninterceptProtocol(const std::string& scheme, mate::Arguments* args);
   static ProtocolError UninterceptProtocolInIO(
-      scoped_refptr<brightray::URLRequestContextGetter> request_context_getter,
+      scoped_refptr<URLRequestContextGetter> request_context_getter,
       const std::string& scheme);
 
   // Convert error code to JS exception and call the callback.

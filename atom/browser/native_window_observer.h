@@ -70,6 +70,8 @@ class NativeWindowObserver {
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
+  virtual void OnWindowWillMove(const gfx::Rect& new_bounds,
+                                bool* prevent_default) {}
   virtual void OnWindowMove() {}
   virtual void OnWindowMoved() {}
   virtual void OnWindowScrollTouchBegin() {}
@@ -81,6 +83,7 @@ class NativeWindowObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
+  virtual void OnWindowAlwaysOnTopChanged() {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictionaryValue& details) {}
   virtual void OnNewWindowForTab() {}

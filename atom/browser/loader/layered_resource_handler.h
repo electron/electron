@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_LOADER_LAYERED_RESOURCE_HANDLER_H_
 #define ATOM_BROWSER_LOADER_LAYERED_RESOURCE_HANDLER_H_
 
+#include <memory>
+
 #include "content/browser/loader/layered_resource_handler.h"
 #include "services/network/public/cpp/resource_response.h"
 

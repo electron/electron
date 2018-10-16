@@ -1,4 +1,4 @@
-var app = require('electron').app
+const { app } = require('electron')
 
 app.on('ready', function () {
   // This setImmediate call gets the spec passing on Linux

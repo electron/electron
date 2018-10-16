@@ -8,7 +8,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/renderer/render_frame.h"
-#include "third_party/WebKit/public/web/WebLocalFrame.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 
 using blink::WebLocalFrame;
 
@@ -56,7 +56,7 @@ void RemoteObjectFreer::RunDestructor() {
   if (!render_frame)
     return;
 
-  base::string16 channel = base::ASCIIToUTF16("ipc-message");
+  auto* channel = "ipc-internal-message";
   base::ListValue args;
   args.AppendString("ELECTRON_BROWSER_DEREFERENCE");
   args.AppendString(context_id_);

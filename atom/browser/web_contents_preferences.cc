@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/native_window.h"
@@ -23,6 +24,7 @@
 #include "content/public/common/web_preferences.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
+#include "services/service_manager/sandbox/switches.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -169,6 +171,34 @@ bool WebContentsPreferences::GetPreference(const base::StringPiece& name,
   return GetAsString(&preference_, name, value);
 }
 
+bool WebContentsPreferences::IsRemoteModuleEnabled() const {
+  return IsEnabled(options::kEnableRemoteModule, true);
+}
+
+bool WebContentsPreferences::GetPreloadPath(
+    base::FilePath::StringType* path) const {
+  DCHECK(path);
+  base::FilePath::StringType preload;
+  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
+    if (base::FilePath(preload).IsAbsolute()) {
+      *path = std::move(preload);
+      return true;
+    } else {
+      LOG(ERROR) << "preload script must have absolute path.";
+    }
+  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
+    // Translate to file path if there is "preload-url" option.
+    base::FilePath preload_path;
+    if (net::FileURLToFilePath(GURL(preload), &preload_path)) {
+      *path = std::move(preload_path.value());
+      return true;
+    } else {
+      LOG(ERROR) << "preload url must be file:// protocol.";
+    }
+  }
+  return false;
+}
+
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
@@ -220,7 +250,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (IsEnabled(options::kSandbox))
     command_line->AppendSwitch(switches::kEnableSandbox);
   else if (!command_line->HasSwitch(switches::kEnableSandbox))
-    command_line->AppendSwitch(::switches::kNoSandbox);
+    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
 
   // Check if nativeWindowOpen is enabled.
   if (IsEnabled(options::kNativeWindowOpen))
@@ -228,19 +258,8 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   // The preload script.
   base::FilePath::StringType preload;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload)) {
-    if (base::FilePath(preload).IsAbsolute())
-      command_line->AppendSwitchNative(switches::kPreloadScript, preload);
-    else
-      LOG(ERROR) << "preload script must have absolute path.";
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload)) {
-    // Translate to file path if there is "preload-url" option.
-    base::FilePath preload_path;
-    if (net::FileURLToFilePath(GURL(preload), &preload_path))
-      command_line->AppendSwitchPath(switches::kPreloadScript, preload_path);
-    else
-      LOG(ERROR) << "preload url must be file:// protocol.";
-  }
+  if (GetPreloadPath(&preload))
+    command_line->AppendSwitchNative(switches::kPreloadScript, preload);
 
   // Custom args for renderer process
   auto* customArgs =
@@ -252,14 +271,23 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
+  // Whether to enable the remote module
+  if (!IsRemoteModuleEnabled())
+    command_line->AppendSwitch(switches::kDisableRemoteModule);
+
   // Run Electron APIs and preload script in isolated world
   if (IsEnabled(options::kContextIsolation))
     command_line->AppendSwitch(switches::kContextIsolation);
 
   // --background-color.
   std::string s;
-  if (GetAsString(&preference_, options::kBackgroundColor, &s))
+  if (GetAsString(&preference_, options::kBackgroundColor, &s)) {
     command_line->AppendSwitchASCII(switches::kBackgroundColor, s);
+  } else if (!IsEnabled(options::kOffscreen)) {
+    // For non-OSR WebContents, we expect to have white background, see
+    // https://github.com/electron/electron/issues/13764 for more.
+    command_line->AppendSwitchASCII(switches::kBackgroundColor, "#fff");
+  }
 
   // --guest-instance-id, which is used to identify guest WebContents.
   int guest_instance_id = 0;
@@ -309,7 +337,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
       if (embedder) {
         auto* relay = NativeWindowRelay::FromWebContents(embedder);
         if (relay) {
-          auto* window = relay->window.get();
+          auto* window = relay->GetNativeWindow();
           if (window) {
             const bool visible = window->IsVisible() && !window->IsMinimized();
             if (!visible) {

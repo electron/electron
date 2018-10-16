@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 #define ATOM_BROWSER_API_ATOM_API_WEB_CONTENTS_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -19,6 +20,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/favicon_url.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "printing/backend/print_backend.h"
 #include "ui/gfx/image/image.h"
@@ -42,16 +44,14 @@ class ResourceRequestBody;
 
 namespace atom {
 
-struct SetSizeParams;
 class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 class FrameSubscriber;
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
 class OffScreenWebContentsView;
-class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -178,9 +178,16 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void TabTraverse(bool reverse);
 
   // Send messages to browser.
-  bool SendIPCMessage(bool all_frames,
-                      const base::string16& channel,
+  bool SendIPCMessage(bool internal,
+                      bool send_to_all,
+                      const std::string& channel,
                       const base::ListValue& args);
+
+  bool SendIPCMessageWithSender(bool internal,
+                                bool send_to_all,
+                                const std::string& channel,
+                                const base::ListValue& args,
+                                int32_t sender_id = 0);
 
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
@@ -197,29 +204,33 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
-  void SetSize(const SetSizeParams& params);
   bool IsGuest() const;
+  void AttachToIframe(content::WebContents* embedder_web_contents,
+                      int embedder_frame_id);
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
+#if BUILDFLAG(ENABLE_OSR)
   void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
+#endif
   void Invalidate();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) const override;
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
-  double GetZoomLevel();
+  double GetZoomLevel() const;
   void SetZoomFactor(double factor);
-  double GetZoomFactor();
+  double GetZoomFactor() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(content::WebContents* source,
                                    const GURL& origin,
+                                   const blink::WebFullscreenOptions& options,
                                    bool allowed);
 
   // Create window with the given disposition.
@@ -230,16 +241,24 @@ class WebContents : public mate::TrackableObject<WebContents>,
                       const std::vector<std::string>& features,
                       const scoped_refptr<network::ResourceRequestBody>& body);
 
+  // Returns the preload script path of current WebContents.
+  v8::Local<v8::Value> GetPreloadPath(v8::Isolate* isolate) const;
+
   // Returns the web preferences of current WebContents.
-  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate);
-  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
+  v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
+
+  bool IsRemoteModuleEnabled() const;
 
   // Returns the owner window.
-  v8::Local<v8::Value> GetOwnerBrowserWindow();
+  v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
   // Grants the child process the capability to access URLs with the origin of
   // the specified URL.
   void GrantOriginAccess(const GURL& url);
+
+  bool TakeHeapSnapshot(const base::FilePath& file_path,
+                        const std::string& channel);
 
   // Properties.
   int32_t ID() const;
@@ -256,6 +275,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void RemoveObserver(ExtendedWebContentsObserver* obs) {
     observers_.RemoveObserver(obs);
   }
+
+  bool EmitNavigationEvent(const std::string& event,
+                           content::NavigationHandle* navigation_handle);
 
  protected:
   WebContents(v8::Isolate* isolate,
@@ -282,7 +304,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
                           const GURL& target_url,
                           content::WebContents* new_contents) override;
   void AddNewContents(content::WebContents* source,
-                      content::WebContents* new_contents,
+                      std::unique_ptr<content::WebContents> new_contents,
                       WindowOpenDisposition disposition,
                       const gfx::Rect& initial_rect,
                       bool user_gesture,
@@ -293,24 +315,26 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
-  void MoveContents(content::WebContents* source,
-                    const gfx::Rect& pos) override;
+  void SetContentsBounds(content::WebContents* source,
+                         const gfx::Rect& pos) override;
   void CloseContents(content::WebContents* source) override;
   void ActivateContents(content::WebContents* contents) override;
   void UpdateTargetURL(content::WebContents* source, const GURL& url) override;
-  bool IsPopupOrPanel(const content::WebContents* source) const override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;
-  void EnterFullscreenModeForTab(content::WebContents* source,
-                                 const GURL& origin) override;
+  void EnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::WebFullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   void RendererUnresponsive(
       content::WebContents* source,
-      content::RenderWidgetHost* render_widget_host) override;
+      content::RenderWidgetHost* render_widget_host,
+      base::RepeatingClosure hang_monitor_restarter) override;
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
@@ -322,13 +346,13 @@ class WebContents : public mate::TrackableObject<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
-  bool CheckMediaAccessPermission(content::WebContents* web_contents,
+  bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
                                   content::MediaStreamType type) override;
   void RequestMediaAccessPermission(
       content::WebContents* web_contents,
       const content::MediaStreamRequest& request,
-      const content::MediaResponseCallback& callback) override;
+      content::MediaResponseCallback callback) override;
   void RequestToLockMouse(content::WebContents* web_contents,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
@@ -337,8 +361,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
       const content::BluetoothChooser::EventHandler& handler) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
-  void ResizeDueToAutoResize(content::WebContents* web_contents,
-                             const gfx::Size& new_size) override;
+  void OnAudioStateChanged(bool audible) override;
 
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
@@ -356,6 +379,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void DidStartLoading() override;
   void DidStopLoading() override;
   void DidStartNavigation(
+      content::NavigationHandle* navigation_handle) override;
+  void DidRedirectNavigation(
       content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
@@ -399,9 +424,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   uint32_t GetNextRequestId() { return ++request_id_; }
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
-  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const override;
 #endif
 
   // Called when we receive a CursorChange message from chromium.
@@ -409,14 +435,22 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Called when received a message from renderer.
   void OnRendererMessage(content::RenderFrameHost* frame_host,
-                         const base::string16& channel,
+                         const std::string& channel,
                          const base::ListValue& args);
 
   // Called when received a synchronous message from renderer.
   void OnRendererMessageSync(content::RenderFrameHost* frame_host,
-                             const base::string16& channel,
+                             const std::string& channel,
                              const base::ListValue& args,
                              IPC::Message* message);
+
+  // Called when received a message from renderer to be forwarded.
+  void OnRendererMessageTo(content::RenderFrameHost* frame_host,
+                           bool internal,
+                           bool send_to_all,
+                           int32_t web_contents_id,
+                           const std::string& channel,
+                           const base::ListValue& args);
 
   // Called when received a synchronous message from renderer to
   // set temporary zoom level.

@@ -7,11 +7,11 @@ Thanks for opening an issue! A few things to keep in mind:
 - If you need general advice, join our Slack: http://atom-slack.herokuapp.com
 -->
 
-* Electron version:
-* Operating system:
+* Output of `node_modules/.bin/electron --version`:
+* Operating System (Platform and Version):
 
 <!-- If this used to work -->
-* Last known working Electron version: 
+* Output of `node_modules/.bin/electron --version` on last known working Electron version (if applicable):
 
 ### Expected behavior
 

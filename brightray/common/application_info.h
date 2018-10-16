@@ -23,6 +23,7 @@ std::string GetApplicationVersion();
 PCWSTR GetRawAppUserModelID();
 bool GetAppUserModelID(ScopedHString* app_id);
 void SetAppUserModelID(const base::string16& name);
+bool IsRunningInDesktopBridge();
 #endif
 
 }  // namespace brightray

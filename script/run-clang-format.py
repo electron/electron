@@ -105,12 +105,15 @@ def run_clang_format_diff(args, file_name):
     except IOError as exc:
         raise DiffError(str(exc))
     invocation = [args.clang_format_executable, file_name]
+    if args.fix:
+        invocation.append('-i')
     try:
         proc = subprocess.Popen(
-            invocation,
+            ' '.join(invocation),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True)
+            universal_newlines=True,
+            shell=True)
     except OSError as exc:
         raise DiffError(str(exc))
     proc_stdout = proc.stdout
@@ -128,6 +131,8 @@ def run_clang_format_diff(args, file_name):
     if proc.returncode:
         raise DiffError("clang-format exited with status {}: '{}'".format(
             proc.returncode, file_name), errs)
+    if args.fix:
+        return None, errs
     return make_diff(file_name, original, outs), errs
 
 
@@ -189,6 +194,10 @@ def main():
         help='comma separated list of file extensions (default: {})'.format(
             DEFAULT_EXTENSIONS),
         default=DEFAULT_EXTENSIONS)
+    parser.add_argument(
+        '--fix',
+        help='if specified, reformat files in-place',
+        action='store_true')
     parser.add_argument(
         '-r',
         '--recursive',
@@ -252,9 +261,10 @@ def main():
     parse_files = []
     if args.changed:
         popen = subprocess.Popen(
-            ["git", "diff", "--name-only", "--cached"],
+            'git diff --name-only --cached',
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
+            shell=True
         )
         for line in popen.stdout:
             file_name = line.rstrip()
@@ -278,6 +288,10 @@ def main():
     if njobs == 0:
         njobs = multiprocessing.cpu_count() + 1
     njobs = min(len(files), njobs)
+
+    if not args.fix:
+        patch_file = tempfile.NamedTemporaryFile(delete=False,
+                                                 prefix='electron-format-')
 
     if njobs == 1:
         # execute directly instead of in a pool,
@@ -311,16 +325,23 @@ def main():
             sys.stderr.writelines(errs)
             if outs == []:
                 continue
-            if not args.quiet:
-                print_diff(outs, use_color=colored_stdout)
-                with tempfile.NamedTemporaryFile(delete=False) as patch_file:
+            if not args.fix:
+                if not args.quiet:
+                    print_diff(outs, use_color=colored_stdout)
                     for line in outs:
                         patch_file.write(line)
                     patch_file.write('\n')
-                    print("\nTo apply this patch, run:\n$ git apply {}\n"
-                          .format(patch_file.name))
-            if retcode == ExitStatus.SUCCESS:
-                retcode = ExitStatus.DIFF
+                if retcode == ExitStatus.SUCCESS:
+                    retcode = ExitStatus.DIFF
+
+    if not args.fix:
+        if patch_file.tell() == 0:
+          patch_file.close()
+          os.unlink(patch_file.name)
+        else:
+          print("\nTo patch these files, run:\n$ git apply {}\n"
+                .format(patch_file.name))
+
     return retcode
 
 

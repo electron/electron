@@ -1,5 +1,5 @@
 import("//build/config/locales.gni")
-import("//printing/features/features.gni")
+import("//printing/buildflags/buildflags.gni")
 import("//tools/grit/repack.gni")
 import("//ui/base/ui_features.gni")
 
@@ -17,16 +17,16 @@ template("electron_repack_percent") {
 
     # All sources should also have deps for completeness.
     sources = [
-      "$root_gen_dir/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
       "$root_gen_dir/components/components_resources_${percent}_percent.pak",
       "$root_gen_dir/content/app/resources/content_resources_${percent}_percent.pak",
+      "$root_gen_dir/third_party/blink/public/resources/blink_scaled_resources_${percent}_percent.pak",
       "$root_gen_dir/ui/resources/ui_resources_${percent}_percent.pak",
     ]
 
     deps = [
       "//components/resources",
       "//content/app/resources",
-      "//third_party/WebKit/public:scaled_resources_${percent}_percent",
+      "//third_party/blink/public:scaled_resources_${percent}_percent",
       "//ui/resources",
     ]
 
@@ -53,20 +53,22 @@ template("electron_extra_paks") {
                            ])
     output = "${invoker.output_dir}/resources.pak"
     sources = [
-      "$root_gen_dir/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
       "$root_gen_dir/content/content_resources.pak",
       "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
       "$root_gen_dir/net/net_resources.pak",
+      "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
+      "$target_gen_dir/electron_resources.pak",
     ]
     deps = [
       "//components/resources",
       "//content:resources",
       "//content/browser/tracing:resources",
+      "//electron:resources",
       "//mojo/public/js:resources",
       "//net:net_resources",
-      "//third_party/WebKit/public:resources",
+      "//third_party/blink/public:resources",
     ]
     if (defined(invoker.deps)) {
       deps += invoker.deps
@@ -141,11 +143,13 @@ template("electron_paks") {
     }
 
     source_patterns = [
+      "${root_gen_dir}/components/strings/components_strings_",
       "${root_gen_dir}/content/app/strings/content_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
     deps = [
+      "//components/strings:components_strings",
       "//content/app/strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ui_strings",

@@ -28,10 +28,11 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
   mate::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
-  int x, y;
+  double x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
     return false;
-  *out = gfx::Point(x, y);
+  *out = gfx::Point(static_cast<int>(std::round(x)),
+                    static_cast<int>(std::round(y)));
   return true;
 }
 

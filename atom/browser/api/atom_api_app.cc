@@ -10,6 +10,7 @@
 #include "atom/browser/api/atom_api_menu.h"
 #include "atom/browser/api/atom_api_session.h"
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/api/gpuinfo_manager.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/login_handler.h"
@@ -22,7 +23,6 @@
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/network_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
-#include "atom/common/node_includes.h"
 #include "atom/common/options_switches.h"
 #include "base/command_line.h"
 #include "base/environment.h"
@@ -49,8 +49,15 @@
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/gfx/image/image.h"
+
+// clang-format off
+// This header should be declared at the end to avoid
+// redefinition errors.
+#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
+// clang-format on
 
 #if defined(OS_WIN)
 #include "atom/browser/ui/win/jump_list.h"
@@ -480,7 +487,7 @@ void OnClientCertificateSelected(
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (size_t i = 0; i < identities->size(); ++i) {
-      if (cert->Equals((*identities)[i]->certificate())) {
+      if (cert->EqualsExcludingChain((*identities)[i]->certificate())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
             std::move((*identities)[i]),
             base::Bind(&GotPrivateKey, delegate, std::move(cert)));
@@ -548,6 +555,7 @@ App::App(v8::Isolate* isolate) {
   static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())->set_delegate(this);
   Browser::Get()->AddObserver(this);
   content::GpuDataManager::GetInstance()->AddObserver(this);
+
   base::ProcessId pid = base::GetCurrentProcId();
   auto process_metric = std::make_unique<atom::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, pid,
@@ -667,17 +675,17 @@ void App::OnNewWindowForTab() {
 }
 #endif
 
-void App::OnLogin(LoginHandler* login_handler,
+void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
                   const base::DictionaryValue& request_details) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = false;
   content::WebContents* web_contents = login_handler->GetWebContents();
   if (web_contents) {
-    prevent_default =
-        Emit("login", WebContents::CreateFrom(isolate(), web_contents),
-             request_details, login_handler->auth_info(),
-             base::Bind(&PassLoginInformation, WrapRefCounted(login_handler)));
+    prevent_default = Emit(
+        "login", WebContents::CreateFrom(isolate(), web_contents),
+        request_details, login_handler->auth_info(),
+        base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
   }
 
   // Default behavior is to always cancel the auth.
@@ -784,18 +792,21 @@ void App::BrowserChildProcessHostDisconnected(
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessCrashed(const content::ChildProcessData& data,
-                                     int exit_code) {
+void App::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
-void App::BrowserChildProcessKilled(const content::ChildProcessData& data,
-                                    int exit_code) {
+void App::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(base::GetProcId(data.handle));
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetHandle());
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
+                       host->GetProcess().Handle());
 }
 
 void App::RenderProcessDisconnected(base::ProcessId host_pid) {
@@ -834,7 +845,7 @@ base::FilePath App::GetPath(mate::Arguments* args, const std::string& name) {
   base::FilePath path;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::Get(key, &path);
+    succeed = base::PathService::Get(key, &path);
   if (!succeed)
     args->ThrowError("Failed to get '" + name + "' path");
   return path;
@@ -851,7 +862,8 @@ void App::SetPath(mate::Arguments* args,
   bool succeed = false;
   int key = GetPathConstant(name);
   if (key >= 0)
-    succeed = PathService::OverrideAndCreateIfNeeded(key, path, true, false);
+    succeed =
+        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
   if (!succeed)
     args->ThrowError("Failed to set path");
 }
@@ -883,7 +895,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  base::PathService::Get(brightray::DIR_USER_DATA, &user_dir);
 
   auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
 
@@ -932,7 +944,7 @@ bool App::Relaunch(mate::Arguments* js_args) {
 
   if (exec_path.empty()) {
     base::FilePath current_exe_path;
-    PathService::Get(base::FILE_EXE, &current_exe_path);
+    base::PathService::Get(base::FILE_EXE, &current_exe_path);
     argv.push_back(current_exe_path.value());
   } else {
     argv.push_back(exec_path.value());
@@ -1093,7 +1105,7 @@ void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
     return;
   }
 
-  auto* icon_manager = g_browser_process->GetIconManager();
+  auto* icon_manager = AtomBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
@@ -1112,30 +1124,11 @@ std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 
   for (const auto& process_metric : app_metrics_) {
     mate::Dictionary pid_dict = mate::Dictionary::CreateEmpty(isolate);
-    mate::Dictionary memory_dict = mate::Dictionary::CreateEmpty(isolate);
     mate::Dictionary cpu_dict = mate::Dictionary::CreateEmpty(isolate);
 
     pid_dict.SetHidden("simple", true);
-    memory_dict.SetHidden("simple", true);
     cpu_dict.SetHidden("simple", true);
 
-    memory_dict.Set(
-        "workingSetSize",
-        static_cast<double>(
-            process_metric.second->metrics->GetWorkingSetSize() >> 10));
-    memory_dict.Set(
-        "peakWorkingSetSize",
-        static_cast<double>(
-            process_metric.second->metrics->GetPeakWorkingSetSize() >> 10));
-
-    size_t private_bytes, shared_bytes;
-    if (process_metric.second->metrics->GetMemoryBytes(&private_bytes,
-                                                       &shared_bytes)) {
-      memory_dict.Set("privateBytes", static_cast<double>(private_bytes >> 10));
-      memory_dict.Set("sharedBytes", static_cast<double>(shared_bytes >> 10));
-    }
-
-    pid_dict.Set("memory", memory_dict);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1167,6 +1160,62 @@ v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
   return mate::ConvertToV8(isolate, status ? *status : temp);
 }
 
+v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
+                                       const std::string& info_type) {
+  auto* const gpu_data_manager = content::GpuDataManagerImpl::GetInstance();
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+  if (info_type != "basic" && info_type != "complete") {
+    promise->RejectWithErrorMessage(
+        "Invalid info type. Use 'basic' or 'complete'");
+    return promise->GetHandle();
+  }
+  std::string reason;
+  if (!gpu_data_manager->GpuAccessAllowed(&reason)) {
+    promise->RejectWithErrorMessage("GPU access not allowed. Reason: " +
+                                    reason);
+    return promise->GetHandle();
+  }
+
+  auto* const info_mgr = GPUInfoManager::GetInstance();
+  if (info_type == "complete") {
+#if defined(OS_WIN) || defined(OS_MACOSX)
+    info_mgr->FetchCompleteInfo(promise);
+#else
+    info_mgr->FetchBasicInfo(promise);
+#endif
+  } else /* (info_type == "basic") */ {
+    info_mgr->FetchBasicInfo(promise);
+  }
+  return promise->GetHandle();
+}
+
+static void RemoveNoSandboxSwitch(base::CommandLine* command_line) {
+  if (command_line->HasSwitch(service_manager::switches::kNoSandbox)) {
+    const base::CommandLine::CharType* noSandboxArg =
+        FILE_PATH_LITERAL("--no-sandbox");
+    base::CommandLine::StringVector modified_command_line;
+    for (auto& arg : command_line->argv()) {
+      if (arg.compare(noSandboxArg) != 0) {
+        modified_command_line.push_back(arg);
+      }
+    }
+    command_line->InitFromArgv(modified_command_line);
+  }
+}
+
+void App::EnableSandbox(mate::Arguments* args) {
+  if (Browser::Get()->is_ready()) {
+    args->ThrowError(
+        "app.enableSandbox() can only be called "
+        "before app is ready");
+    return;
+  }
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  RemoveNoSandboxSwitch(command_line);
+  command_line->AppendSwitch(switches::kEnableSandbox);
+}
+
 void App::EnableMixedSandbox(mate::Arguments* args) {
   if (Browser::Get()->is_ready()) {
     args->ThrowError(
@@ -1176,22 +1225,7 @@ void App::EnableMixedSandbox(mate::Arguments* args) {
   }
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(::switches::kNoSandbox)) {
-#if defined(OS_WIN)
-    const base::CommandLine::CharType* noSandboxArg = L"--no-sandbox";
-#else
-    const base::CommandLine::CharType* noSandboxArg = "--no-sandbox";
-#endif
-
-    // Remove the --no-sandbox switch
-    base::CommandLine::StringVector modified_command_line;
-    for (auto& arg : command_line->argv()) {
-      if (arg.compare(noSandboxArg) != 0) {
-        modified_command_line.push_back(arg);
-      }
-    }
-    command_line->InitFromArgv(modified_command_line);
-  }
+  RemoveNoSandboxSwitch(command_line);
   command_line->AppendSwitch(switches::kEnableMixedSandbox);
 }
 
@@ -1289,6 +1323,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
+      .SetMethod("getGPUInfo", &App::GetGPUInfo)
 // TODO(juturu): Remove in 2.0, deprecate before then with warnings
 #if defined(OS_MACOSX)
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
@@ -1298,6 +1333,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif
+      .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("enableMixedSandbox", &App::EnableMixedSandbox);
 }
 

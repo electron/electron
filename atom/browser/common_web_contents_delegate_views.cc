@@ -6,6 +6,7 @@
 
 #include "atom/browser/api/atom_api_web_contents_view.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/browser/web_contents_preferences.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
@@ -23,9 +24,16 @@ void CommonWebContentsDelegate::HandleKeyboardEvent(
   if (event.windows_key_code == ui::VKEY_ESCAPE && is_html_fullscreen())
     ExitFullscreenModeForTab(source);
 
+  // Check if the webContents has preferences and to ignore shortcuts
+  auto* web_preferences = WebContentsPreferences::From(source);
+  if (web_preferences &&
+      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+    return;
+
   // Let the NativeWindow handle other parts.
-  if (!ignore_menu_shortcuts_ && owner_window())
+  if (owner_window()) {
     owner_window()->HandleKeyboardEvent(source, event);
+  }
 }
 
 void CommonWebContentsDelegate::ShowAutofillPopup(

@@ -1,0 +1,120 @@
+tests:
+  - base_unittests:
+      # "disabled" dict can have arbitrary named properties
+      # with lists of disabled tests. Those properties' names
+      # are used only to explain why a group of tests is disabled.
+      disabled:
+        undecided:
+          - FilePathTest*
+          - PartitionReallocReturnNullTest.RepeatedReturnNullDirect
+          - RTLTest*
+          - SysStrings*
+          - UTFOffsetStringConversionsTest*
+  - cc_unittests
+  - cc_blink_unittests
+  - content_unittests:
+      disabled:
+        # TODO(alexeykuzmin): Should those be fixed?
+        - _/DOMStorageMapParamTest.EnforcesQuota/0
+        - _/DOMStorageMapParamTest.EnforcesQuota/1
+  - crypto_unittests
+  - device_unittests
+  - gin_unittests
+  - gpu_unittests
+  - ipc_tests
+  - media_unittests
+  - capture_unittests
+  - midi_unittests
+  - media_mojo_unittests
+  - mojo_unittests
+  - mojo_common_unittests
+  - net_unittests:
+      disabled:
+        # TODO(alexeykuzmin): Should those be fixed?
+        - EndToEndTestsWithTls*
+        - FilenameUtilTest*
+        - HTTPSAIATest.AIAFetching
+        - HTTPSCRLSetTest*
+        - HTTPSEVCRLSetTest*
+        - HTTPSFallbackTest*
+        - HTTPSHardFailTest.FailsOnOCSPInvalid
+        - HTTPSOCSPTest*
+        - HTTPSRequestTest*
+        - HTTPSSessionTest*
+        - OCSPVerify*
+        - ProxyConfigServiceLinuxTest*
+        - SSLClientSocketCertRequestInfoTest*
+        - SSLClientSocketChannelIDTest*
+        - SSLClientSocketFalseStartTest*
+        - SSLClientSocketReadTest*
+        - SSLClientSocketTest*
+        - TokenBindingURLRequestTest*
+        - UDPSocketTest*
+        - URLRequestTestFTP*
+        - URLRequestTestHTTP*
+        - WebSocketEndToEndTest*
+  - ppapi_unittests
+  - printing_unittests
+  - skia_unittests
+  - sql_unittests
+  - storage_unittests
+  - gn_unittests
+  - ui_base_unittests:
+      disabled:
+        # TODO(alexeykuzmin): Should it be fixed?
+        - AcceleratorTest.GetShortcutText
+  - compositor_unittests
+  - display_unittests
+  - events_unittests
+  - gl_unittests
+  - url_unittests
+  - url_ipc_unittests
+  # V8
+  - unittests:
+      disabled:
+        # TODO(alexeykuzmin): Should it be fixed?
+        - LiveRangeUnitTest*
+  # Blink
+# TODO: Enable in Ch68.
+#  - blink_common_unittests
+  - blink_heap_unittests
+  - blink_platform_unittests:
+      disabled:
+        # TODO(alexeykuzmin): Should those be fixed?
+        - AnimatedPNGTests*
+        - AnimatedWebPTests*
+        - AnimatedWEBPTests.clearCacheExceptFrameWithAncestors
+        - BitmapImageTest*
+        - BMPImageDecoderTest*
+        - DecodedImageOrientationHistogramTest*
+        - DecodedImageTypeHistogramTest*
+        - DeferredImageDecoderTestWoPlatform*
+        - GIFImageDecoderTest*
+        - HighContrastImageClassifierTest*
+        - ICOImageDecoderTests*
+        - JPEGImageDecoderTest*
+        - FilePathConversionTest*
+        - PNGTests*
+        - StaticPNGTests*
+        - StaticWebPTests*
+  - webkit_unit_tests
+  - wtf_unittests
+  # Third party
+  - angle_unittests
+  - env_chromium_unittests
+# TODO(alexeykuzmin): Should be run somehow differently.
+#  - disk_cache_memory_test:
+#      platform: linux
+  - sandbox_linux_unittests:
+      platform: linux
+      disabled:
+        # TODO(alexeykuzmin): Should these be fixed?
+        - BrokerProcess*
+        - SandboxBPF.SigBus
+  - dbus_unittests:
+      platform: linux
+      disabled:
+        # TODO(alexeykuzmin): Should these be fixed?
+        - EndToEndAsyncTest.InvalidServiceName
+        - EndToEndSyncTest.InvalidServiceName
+        - MessageTest.SetInvalidHeaders

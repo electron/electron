@@ -5,8 +5,8 @@
 #include "brightray/browser/browser_client.h"
 
 #include "base/lazy_instance.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
-#include "brightray/browser/browser_context.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "brightray/browser/devtools_manager_delegate.h"
 #include "brightray/browser/media/media_capture_devices_dispatcher.h"
@@ -26,7 +26,7 @@ BrowserClient* g_browser_client;
 base::LazyInstance<std::string>::DestructorAtExit
     g_io_thread_application_locale = LAZY_INSTANCE_INITIALIZER;
 
-std::string g_application_locale;
+base::NoDestructor<std::string> g_application_locale;
 
 void SetApplicationLocaleOnIOThread(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
@@ -39,12 +39,13 @@ void SetApplicationLocaleOnIOThread(const std::string& locale) {
 void BrowserClient::SetApplicationLocale(const std::string& locale) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  if (!BrowserThread::PostTask(
+  if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
+      !BrowserThread::PostTask(
           BrowserThread::IO, FROM_HERE,
           base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
     g_io_thread_application_locale.Get() = locale;
   }
-  g_application_locale = locale;
+  *g_application_locale = locale;
 }
 
 BrowserClient* BrowserClient::Get() {
@@ -106,14 +107,10 @@ void BrowserClient::GetAdditionalWebUISchemes(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
-NetLog* BrowserClient::GetNetLog() {
-  return &net_log_;
-}
-
 base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
   // ~/Downloads
   base::FilePath path;
-  if (PathService::Get(base::DIR_HOME, &path))
+  if (base::PathService::Get(base::DIR_HOME, &path))
     path = path.Append(FILE_PATH_LITERAL("Downloads"));
 
   return path;
@@ -126,7 +123,7 @@ content::DevToolsManagerDelegate* BrowserClient::GetDevToolsManagerDelegate() {
 std::string BrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
-  return g_application_locale;
+  return *g_application_locale;
 }
 
 }  // namespace brightray

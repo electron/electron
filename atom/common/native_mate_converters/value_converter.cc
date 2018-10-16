@@ -4,6 +4,8 @@
 
 #include "atom/common/native_mate_converters/value_converter.h"
 
+#include <memory>
+
 #include "atom/common/native_mate_converters/v8_value_converter.h"
 #include "base/values.h"
 

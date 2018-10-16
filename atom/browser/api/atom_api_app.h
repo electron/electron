@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -99,7 +100,7 @@ class App : public AtomBrowserClient::Delegate,
   void OnActivate(bool has_visible_windows) override;
   void OnWillFinishLaunching() override;
   void OnFinishLaunching(const base::DictionaryValue& launch_info) override;
-  void OnLogin(LoginHandler* login_handler,
+  void OnLogin(scoped_refptr<LoginHandler> login_handler,
                const base::DictionaryValue& request_details) override;
   void OnAccessibilitySupportChanged() override;
   void OnPreMainMessageLoopRun() override;
@@ -161,10 +162,12 @@ class App : public AtomBrowserClient::Delegate,
       const content::ChildProcessData& data) override;
   void BrowserChildProcessHostDisconnected(
       const content::ChildProcessData& data) override;
-  void BrowserChildProcessCrashed(const content::ChildProcessData& data,
-                                  int exit_code) override;
-  void BrowserChildProcessKilled(const content::ChildProcessData& data,
-                                 int exit_code) override;
+  void BrowserChildProcessCrashed(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
+  void BrowserChildProcessKilled(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
 
  private:
   void SetAppPath(const base::FilePath& app_path);
@@ -198,6 +201,9 @@ class App : public AtomBrowserClient::Delegate,
 
   std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
+  v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
+                                    const std::string& info_type);
+  void EnableSandbox(mate::Arguments* args);
   void EnableMixedSandbox(mate::Arguments* args);
 
 #if defined(OS_MACOSX)

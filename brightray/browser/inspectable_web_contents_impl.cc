@@ -3,6 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
+#include <memory>
 #include <utility>
 
 #include "brightray/browser/inspectable_web_contents_impl.h"
@@ -18,7 +19,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/browser_context.h"
 #include "brightray/browser/browser_main_parts.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_view.h"
@@ -26,13 +26,16 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
+#include "net/base/io_buffer.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/url_fetcher.h"
 #include "net/url_request/url_fetcher_response_writer.h"
@@ -202,15 +205,17 @@ void InspectableWebContentsImpl::RegisterPrefs(PrefRegistrySimple* registry) {
 }
 
 InspectableWebContentsImpl::InspectableWebContentsImpl(
-    content::WebContents* web_contents)
+    content::WebContents* web_contents,
+    PrefService* pref_service,
+    bool is_guest)
     : frontend_loaded_(false),
       can_dock_(true),
       delegate_(nullptr),
+      pref_service_(pref_service),
       web_contents_(web_contents),
+      is_guest_(is_guest),
+      view_(CreateInspectableContentsView(this)),
       weak_factory_(this) {
-  auto* context =
-      static_cast<BrowserContext*>(web_contents_->GetBrowserContext());
-  pref_service_ = context->prefs();
   auto* bounds_dict = pref_service_->GetDictionary(kDevToolsBoundsPref);
   if (bounds_dict) {
     DictionaryToRect(*bounds_dict, &devtools_bounds_);
@@ -221,7 +226,7 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
     }
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
-      if (web_contents->GetNativeView()) {
+      if (!is_guest && web_contents->GetNativeView()) {
         display = display::Screen::GetScreen()
                       ->GetDisplayNearestView(web_contents->GetNativeView())
                       .bounds();
@@ -235,8 +240,6 @@ InspectableWebContentsImpl::InspectableWebContentsImpl(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
-
-  view_.reset(CreateInspectableContentsView(this));
 }
 
 InspectableWebContentsImpl::~InspectableWebContentsImpl() {
@@ -268,7 +271,7 @@ content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents()
 }
 
 void InspectableWebContentsImpl::InspectElement(int x, int y) {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
 }
 
@@ -280,6 +283,14 @@ void InspectableWebContentsImpl::SetDelegate(
 InspectableWebContentsDelegate* InspectableWebContentsImpl::GetDelegate()
     const {
   return delegate_;
+}
+
+bool InspectableWebContentsImpl::IsGuest() const {
+  return is_guest_;
+}
+
+void InspectableWebContentsImpl::ReleaseWebContents() {
+  web_contents_.release();
 }
 
 void InspectableWebContentsImpl::SetDockState(const std::string& state) {
@@ -310,9 +321,8 @@ void InspectableWebContentsImpl::ShowDevTools() {
       DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
 
   if (!external_devtools_web_contents_) {  // no external devtools
-    managed_devtools_web_contents_.reset(
-        content::WebContents::Create(content::WebContents::CreateParams(
-            web_contents_->GetBrowserContext())));
+    managed_devtools_web_contents_ = content::WebContents::Create(
+        content::WebContents::CreateParams(web_contents_->GetBrowserContext()));
     managed_devtools_web_contents_->SetDelegate(this);
   }
 
@@ -332,7 +342,8 @@ void InspectableWebContentsImpl::CloseDevTools() {
       managed_devtools_web_contents_.reset();
     }
     embedder_message_dispatcher_.reset();
-    web_contents_->Focus();
+    if (!IsGuest())
+      web_contents_->Focus();
   }
 }
 
@@ -342,17 +353,25 @@ bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
 
 void InspectableWebContentsImpl::AttachTo(
     scoped_refptr<content::DevToolsAgentHost> host) {
-  if (agent_host_.get())
-    Detach();
+  Detach();
   agent_host_ = std::move(host);
-  // Terminate existing debugging connections and start debugging.
-  agent_host_->ForceAttachClient(this);
+  // We could use ForceAttachClient here if problem arises with
+  // devtools multiple session support.
+  agent_host_->AttachClient(this);
 }
 
 void InspectableWebContentsImpl::Detach() {
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DetachClient(this);
   agent_host_ = nullptr;
+}
+
+void InspectableWebContentsImpl::Reattach(const DispatchCallback& callback) {
+  if (agent_host_) {
+    agent_host_->DetachClient(this);
+    agent_host_->AttachClient(this);
+  }
+  callback.Run(nullptr);
 }
 
 void InspectableWebContentsImpl::CallClientFunction(
@@ -466,13 +485,14 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto* browser_context = static_cast<BrowserContext*>(
-      GetDevToolsWebContents()->GetBrowserContext());
+  auto* browser_context = GetDevToolsWebContents()->GetBrowserContext();
 
   net::URLFetcher* fetcher =
       (net::URLFetcher::Create(gurl, net::URLFetcher::GET, this)).release();
   pending_requests_[fetcher] = callback;
-  fetcher->SetRequestContext(browser_context->url_request_context_getter());
+  fetcher->SetRequestContext(
+      content::BrowserContext::GetDefaultStoragePartition(browser_context)
+          ->GetURLRequestContext());
   fetcher->SetExtraRequestHeaders(headers);
   fetcher->SaveResponseWithWriter(
       std::unique_ptr<net::URLFetcherResponseWriter>(
@@ -516,11 +536,9 @@ void InspectableWebContentsImpl::RequestFileSystems() {
     delegate_->DevToolsRequestFileSystems();
 }
 
-void InspectableWebContentsImpl::AddFileSystem(
-    const std::string& file_system_path) {
+void InspectableWebContentsImpl::AddFileSystem(const std::string& type) {
   if (delegate_)
-    delegate_->DevToolsAddFileSystem(
-        base::FilePath::FromUTF8Unsafe(file_system_path));
+    delegate_->DevToolsAddFileSystem(type, base::FilePath());
 }
 
 void InspectableWebContentsImpl::RemoveFileSystem(
@@ -535,9 +553,11 @@ void InspectableWebContentsImpl::UpgradeDraggedFileSystemPermissions(
 
 void InspectableWebContentsImpl::IndexPath(
     int request_id,
-    const std::string& file_system_path) {
+    const std::string& file_system_path,
+    const std::string& excluded_folders) {
   if (delegate_)
-    delegate_->DevToolsIndexPath(request_id, file_system_path);
+    delegate_->DevToolsIndexPath(request_id, file_system_path,
+                                 excluded_folders);
 }
 
 void InspectableWebContentsImpl::StopIndexing(int request_id) {
@@ -608,7 +628,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessageFromDevToolsFrontend(
     return;
   }
 
-  if (agent_host_.get())
+  if (agent_host_)
     agent_host_->DispatchProtocolMessage(this, message);
 }
 

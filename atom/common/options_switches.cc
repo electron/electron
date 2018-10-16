@@ -110,6 +110,9 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
+// Enable the remote module
+const char kEnableRemoteModule[] = "enableRemoteModule";
+
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
@@ -191,9 +194,9 @@ const char kAppPath[] = "app-path";
 // The command line switch versions of the options.
 const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
-const char kPreloadURL[] = "preload-url";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
+const char kDisableRemoteModule[] = "disable-remote-module";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[] = "opener-id";
@@ -210,6 +213,19 @@ const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
 const char kWidevineCdmPath[] = "widevine-cdm-path";
 // Widevine CDM version.
 const char kWidevineCdmVersion[] = "widevine-cdm-version";
+
+// Forces the maximum disk space to be used by the disk cache, in bytes.
+const char kDiskCacheSize[] = "disk-cache-size";
+
+// Ignore the limit of 6 connections per host.
+const char kIgnoreConnectionsLimit[] = "ignore-connections-limit";
+
+// Whitelist containing servers for which Integrated Authentication is enabled.
+const char kAuthServerWhitelist[] = "auth-server-whitelist";
+
+// Whitelist containing servers for which Kerberos delegation is allowed.
+const char kAuthNegotiateDelegateWhitelist[] =
+    "auth-negotiate-delegate-whitelist";
 
 }  // namespace switches
 

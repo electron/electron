@@ -87,6 +87,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual gfx::Size GetContentSize();
   virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
   virtual gfx::Rect GetContentBounds();
+  virtual bool IsNormal();
+  virtual gfx::Rect GetNormalBounds() = 0;
   virtual void SetSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints() const;
@@ -165,7 +167,9 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen = false) = 0;
+
   virtual bool IsVisibleOnAllWorkspaces() = 0;
 
   virtual void SetAutoHideCursor(bool auto_hide);
@@ -239,6 +243,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
                               bool* prevent_default);
   void NotifyWindowResize();
+  void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
   void NotifyWindowScrollTouchBegin();
   void NotifyWindowScrollTouchEnd();
@@ -249,6 +254,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
+  void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteWindowsCommand(const std::string& command);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      const base::DictionaryValue& details);
@@ -340,18 +346,20 @@ class NativeWindow : public base::SupportsUserData,
 class NativeWindowRelay
     : public content::WebContentsUserData<NativeWindowRelay> {
  public:
-  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+  static const void* const kNativeWindowRelayUserDataKey;
+
+  static void CreateForWebContents(content::WebContents*,
+                                   base::WeakPtr<NativeWindow>);
+
   ~NativeWindowRelay() override;
 
-  static void* UserDataKey() {
-    return content::WebContentsUserData<NativeWindowRelay>::UserDataKey();
-  }
-
-  void* key;
-  base::WeakPtr<NativeWindow> window;
+  NativeWindow* GetNativeWindow() const { return native_window_.get(); }
 
  private:
   friend class content::WebContentsUserData<NativeWindow>;
+  explicit NativeWindowRelay(base::WeakPtr<NativeWindow> window);
+
+  base::WeakPtr<NativeWindow> native_window_;
 };
 
 }  // namespace atom

@@ -16,10 +16,20 @@ import subprocess
 import sys
 import threading
 
+SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
+
+# Duplicated as this script lives in tools not script
+def get_out_dir():
+  out_dir = 'Debug'
+  override = os.environ.get('ELECTRON_OUT_DIR')
+  if override is not None:
+    out_dir = override
+  return os.path.join(SRC_DIR, 'out', out_dir)
+
 
 CONCURRENT_TASKS=4
-SOURCE_ROOT=os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-DUMP_SYMS=os.path.join(SOURCE_ROOT, 'vendor', 'breakpad', 'dump_syms.exe')
+OUT_DIR=get_out_dir()
+DUMP_SYMS=os.path.join(OUT_DIR, 'dump_syms.exe')
 
 
 def GetCommandOutput(command):

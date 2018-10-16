@@ -239,14 +239,12 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
-      const ui::PlatformAcceleratorCocoa* platformAccelerator =
-          static_cast<const ui::PlatformAcceleratorCocoa*>(
-              accelerator.platform_accelerator());
-      if (platformAccelerator) {
-        [item setKeyEquivalent:platformAccelerator->characters()];
-        [item
-            setKeyEquivalentModifierMask:platformAccelerator->modifier_mask()];
-      }
+      NSString* key_equivalent;
+      NSUInteger modifier_mask;
+      GetKeyEquivalentAndModifierMaskFromAccelerator(
+          accelerator, &key_equivalent, &modifier_mask);
+      [item setKeyEquivalent:key_equivalent];
+      [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
     // Set menu item's role.
@@ -279,18 +277,10 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (model) {
     BOOL checked = model->IsItemCheckedAt(modelIndex);
     DCHECK([(id)item isKindOfClass:[NSMenuItem class]]);
+
     [(id)item setState:(checked ? NSOnState : NSOffState)];
     [(id)item setHidden:(!model->IsVisibleAt(modelIndex))];
-    if (model->IsItemDynamicAt(modelIndex)) {
-      // Update the label and the icon.
-      NSString* label =
-          l10n_util::FixUpWindowsStyleLabel(model->GetLabelAt(modelIndex));
-      [(id)item setTitle:label];
 
-      gfx::Image icon;
-      model->GetIconAt(modelIndex, &icon);
-      [(id)item setImage:icon.IsEmpty() ? nil : icon.ToNSImage()];
-    }
     return model->IsEnabledAt(modelIndex);
   }
   return NO;

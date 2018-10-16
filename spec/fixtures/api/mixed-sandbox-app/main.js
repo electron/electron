@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const net = require('net')
 const path = require('path')
 
@@ -6,31 +6,40 @@ process.on('uncaughtException', () => {
   app.exit(1)
 })
 
-if (!process.argv.includes('--enable-mixed-sandbox')) {
+if (process.argv.includes('--app-enable-sandbox')) {
+  app.enableSandbox()
+}
+
+if (process.argv.includes('--app-enable-mixed-sandbox')) {
   app.enableMixedSandbox()
 }
 
-let sandboxWindow
-let noSandboxWindow
+let currentWindowSandboxed = false
 
 app.once('ready', () => {
-  sandboxWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
-      sandbox: true
-    }
-  })
-  sandboxWindow.loadURL('about:blank')
-
-  noSandboxWindow = new BrowserWindow({
-    show: false,
-    webPreferences: {
-      preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
-      sandbox: false
-    }
-  })
-  noSandboxWindow.loadURL('about:blank')
+  function testWindow (isSandboxed, callback) {
+    currentWindowSandboxed = isSandboxed
+    const currentWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
+        sandbox: isSandboxed
+      }
+    })
+    currentWindow.loadURL('about:blank')
+    currentWindow.webContents.once('devtools-opened', () => {
+      if (isSandboxed) {
+        argv.sandboxDevtools = true
+      } else {
+        argv.noSandboxDevtools = true
+      }
+      if (callback) {
+        callback()
+      }
+      finish()
+    })
+    currentWindow.webContents.openDevTools()
+  }
 
   const argv = {
     sandbox: null,
@@ -40,6 +49,10 @@ app.once('ready', () => {
   }
 
   let connected = false
+
+  testWindow(true, () => {
+    testWindow()
+  })
 
   function finish () {
     if (connected && argv.sandbox != null && argv.noSandbox != null &&
@@ -57,22 +70,10 @@ app.once('ready', () => {
     finish()
   })
 
-  noSandboxWindow.webContents.once('devtools-opened', () => {
-    argv.noSandboxDevtools = true
-    finish()
-  })
-  noSandboxWindow.webContents.openDevTools()
-
-  sandboxWindow.webContents.once('devtools-opened', () => {
-    argv.sandboxDevtools = true
-    finish()
-  })
-  sandboxWindow.webContents.openDevTools()
-
   ipcMain.on('argv', (event, value) => {
-    if (event.sender === sandboxWindow.webContents) {
+    if (currentWindowSandboxed) {
       argv.sandbox = value
-    } else if (event.sender === noSandboxWindow.webContents) {
+    } else {
       argv.noSandbox = value
     }
     finish()

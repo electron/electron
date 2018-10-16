@@ -4,11 +4,14 @@
 
 #include "atom/browser/atom_permission_manager.h"
 
+#include <memory>
 #include <vector>
 
 #include "atom/browser/atom_browser_client.h"
+#include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -43,12 +46,25 @@ class AtomPermissionManager::PendingRequest {
                  const StatusesCallback& callback)
       : render_process_id_(render_frame_host->GetProcess()->GetID()),
         callback_(callback),
+        permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
         remaining_results_(permissions.size()) {}
 
   void SetPermissionStatus(int permission_id,
                            blink::mojom::PermissionStatus status) {
     DCHECK(!IsComplete());
+
+    if (status == blink::mojom::PermissionStatus::GRANTED) {
+      const auto permission = permissions_[permission_id];
+      if (permission == content::PermissionType::MIDI_SYSEX) {
+        content::ChildProcessSecurityPolicy::GetInstance()
+            ->GrantSendMidiSysExMessage(render_process_id_);
+      } else if (permission == content::PermissionType::GEOLOCATION) {
+        AtomBrowserMainParts::Get()
+            ->GetGeolocationControl()
+            ->UserDidOptIntoLocationServices();
+      }
+    }
 
     results_[permission_id] = status;
     --remaining_results_;
@@ -63,6 +79,7 @@ class AtomPermissionManager::PendingRequest {
  private:
   int render_process_id_;
   const StatusesCallback callback_;
+  std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
   size_t remaining_results_;
 };
@@ -85,12 +102,18 @@ void AtomPermissionManager::SetPermissionRequestHandler(
   request_handler_ = handler;
 }
 
+void AtomPermissionManager::SetPermissionCheckHandler(
+    const CheckHandler& handler) {
+  check_handler_ = handler;
+}
+
 int AtomPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const StatusCallback& response_callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>&
+        response_callback) {
   return RequestPermissionWithDetails(permission, render_frame_host,
                                       requesting_origin, user_gesture, nullptr,
                                       response_callback);
@@ -129,7 +152,7 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
     const StatusesCallback& response_callback) {
   if (permissions.empty()) {
     response_callback.Run(std::vector<blink::mojom::PermissionStatus>());
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   if (request_handler_.is_null()) {
@@ -139,11 +162,15 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
                 render_frame_host->GetProcess()->GetID());
+      } else if (permission == content::PermissionType::GEOLOCATION) {
+        AtomBrowserMainParts::Get()
+            ->GetGeolocationControl()
+            ->UserDidOptIntoLocationServices();
       }
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     response_callback.Run(statuses);
-    return kNoPendingOperation;
+    return content::PermissionController::kNoPendingOperation;
   }
 
   auto* web_contents =
@@ -153,10 +180,6 @@ int AtomPermissionManager::RequestPermissionsWithDetails(
 
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
-    if (permission == content::PermissionType::MIDI_SYSEX) {
-      content::ChildProcessSecurityPolicy::GetInstance()
-          ->GrantSendMidiSysExMessage(render_frame_host->GetProcess()->GetID());
-    }
     const auto callback =
         base::Bind(&AtomPermissionManager::OnPermissionResponse,
                    base::Unretained(this), request_id, i);
@@ -186,7 +209,6 @@ void AtomPermissionManager::OnPermissionResponse(
   }
 }
 
-
 void AtomPermissionManager::ResetPermission(content::PermissionType permission,
                                             const GURL& requesting_origin,
                                             const GURL& embedding_origin) {}
@@ -202,11 +224,33 @@ int AtomPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin,
-    const StatusCallback& callback) {
+    const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   return -1;
 }
 
 void AtomPermissionManager::UnsubscribePermissionStatusChange(
     int subscription_id) {}
+
+bool AtomPermissionManager::CheckPermissionWithDetails(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin,
+    const base::DictionaryValue* details) const {
+  if (check_handler_.is_null()) {
+    return true;
+  }
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  return check_handler_.Run(web_contents, permission, requesting_origin,
+                            *details);
+}
+
+blink::mojom::PermissionStatus
+AtomPermissionManager::GetPermissionStatusForFrame(
+    content::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const GURL& requesting_origin) {
+  return blink::mojom::PermissionStatus::GRANTED;
+}
 
 }  // namespace atom

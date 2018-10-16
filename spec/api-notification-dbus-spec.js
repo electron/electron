@@ -2,19 +2,20 @@
 // with the session bus. This requires python-dbusmock to be installed and
 // running at $DBUS_SESSION_BUS_ADDRESS.
 //
-// script/test.py spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
+// script/spec-runner.js spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
-const {expect} = require('chai')
+const { expect } = require('chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const {remote} = require('electron')
-const {app} = remote.require('electron')
+const { remote } = require('electron')
+const { app } = remote.require('electron')
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
+             process.arch.indexOf('arm') === 0 ||
              !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
@@ -34,10 +35,10 @@ const skip = process.platform !== 'linux' ||
     const bus = dbus.sessionBus()
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
     const service = bus.getService(serviceName)
-    const getInterface = Promise.promisify(service.getInterface, {context: service})
+    const getInterface = Promise.promisify(service.getInterface, { context: service })
     mock = await getInterface(path, iface)
-    getCalls = Promise.promisify(mock.GetCalls, {context: mock})
-    reset = Promise.promisify(mock.Reset, {context: mock})
+    getCalls = Promise.promisify(mock.GetCalls, { context: mock })
+    reset = Promise.promisify(mock.Reset, { context: mock })
   })
 
   after(async () => {
@@ -62,10 +63,10 @@ const skip = process.platform !== 'linux' ||
     }
 
     function unmarshalDBusNotifyHints (dbusHints) {
-      let o = {}
-      for (let hint of dbusHints) {
-        let key = hint[0]
-        let value = hint[1][1][0]
+      const o = {}
+      for (const hint of dbusHints) {
+        const key = hint[0]
+        const value = hint[1][1][0]
         o[key] = value
       }
       return o
@@ -102,11 +103,11 @@ const skip = process.platform !== 'linux' ||
       const calls = await getCalls()
       expect(calls).to.be.an('array').of.lengthOf.at.least(1)
 
-      let lastCall = calls[calls.length - 1]
-      let methodName = lastCall[1]
+      const lastCall = calls[calls.length - 1]
+      const methodName = lastCall[1]
       expect(methodName).to.equal('Notify')
 
-      let args = unmarshalDBusNotifyArgs(lastCall[2])
+      const args = unmarshalDBusNotifyArgs(lastCall[2])
       expect(args).to.deep.equal({
         app_name: appName,
         replaces_id: 0,

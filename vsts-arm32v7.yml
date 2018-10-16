@@ -1,0 +1,12 @@
+resources:
+  containers:
+  - container: arm32v7-test-container
+    image: electronbuilds/arm32v7:0.0.2
+
+jobs:
+- job: Test_Arm32v7
+  container: arm32v7-test-container
+  displayName: Test Arm on Arm32v7 hardware
+  timeoutInMinutes: 30
+  steps:
+  - template: vsts-arm-test-steps.yml

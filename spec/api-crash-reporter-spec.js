@@ -1,16 +1,16 @@
 const assert = require('assert')
 const childProcess = require('child_process')
-const {expect} = require('chai')
+const { expect } = require('chai')
 const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
 const temp = require('temp').track()
 const url = require('url')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
 
-const {remote} = require('electron')
-const {app, BrowserWindow, crashReporter} = remote.require('electron')
+const { remote } = require('electron')
+const { app, BrowserWindow, crashReporter } = remote.require('electron')
 
 describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
@@ -64,12 +64,7 @@ describe('crashReporter module', () => {
 
         stopServer = startServer({
           callback (port) {
-            const crashUrl = url.format({
-              protocol: 'file',
-              pathname: path.join(fixtures, 'api', 'crash.html'),
-              search: '?port=' + port
-            })
-            w.loadURL(crashUrl)
+            w.loadFile(path.join(fixtures, 'api', 'crash.html'), { query: { port } })
           },
           processType: 'renderer',
           done: done
@@ -102,7 +97,7 @@ describe('crashReporter module', () => {
               remote.process.crashServicePid = crashServiceProcess.pid
             }
 
-            childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
+            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
           },
           processType: 'browser',
           done: done
@@ -134,7 +129,7 @@ describe('crashReporter module', () => {
             const dumps = files.filter((file) => /\.dmp$/.test(file) && !existingDumpFiles.has(file))
             if (!dumps.length) return
 
-            assert.equal(1, dumps.length)
+            assert.strictEqual(1, dumps.length)
             dumpFile = path.join(crashesDir, dumps[0])
             clearInterval(pollInterval)
             // dump file should not be deleted when not uploading, so we wait
@@ -152,7 +147,7 @@ describe('crashReporter module', () => {
                 }
               }
             }
-            event.returnValue = null  // allow the renderer to crash
+            event.returnValue = null // allow the renderer to crash
             pollInterval = setInterval(pollDumpFile, 100)
           })
         })
@@ -200,29 +195,27 @@ describe('crashReporter module', () => {
       preload: path.join(fixtures, 'module', 'preload-sandbox.js')
     }
   })
+  generateSpecs('with remote module disabled', {
+    webPreferences: {
+      enableRemoteModule: false
+    }
+  })
 
   describe('getProductName', () => {
     it('returns the product name if one is specified', () => {
       const name = crashReporter.getProductName()
       const expectedName = (process.platform === 'darwin') ? 'Electron Test' : 'Zombies'
-      assert.equal(name, expectedName)
-    })
-  })
-
-  describe('getTempDirectory', () => {
-    it('returns temp directory for app if one is specified', () => {
-      const tempDir = crashReporter.getTempDirectory()
-      assert.equal(tempDir, app.getPath('temp'))
+      assert.strictEqual(name, expectedName)
     })
   })
 
   describe('start(options)', () => {
     it('requires that the companyName and submitURL options be specified', () => {
       assert.throws(() => {
-        crashReporter.start({companyName: 'Missing submitURL'})
+        crashReporter.start({ companyName: 'Missing submitURL' })
       }, /submitURL is a required option to crashReporter\.start/)
       assert.throws(() => {
-        crashReporter.start({submitURL: 'Missing companyName'})
+        crashReporter.start({ submitURL: 'Missing companyName' })
       }, /companyName is a required option to crashReporter\.start/)
     })
     it('can be called multiple times', () => {
@@ -249,7 +242,7 @@ describe('crashReporter module', () => {
       } else {
         dir = `${app.getPath('temp')}/Electron Test Crashes`
       }
-      assert.equal(crashesDir, dir)
+      assert.strictEqual(crashesDir, dir)
     })
   })
 
@@ -268,13 +261,13 @@ describe('crashReporter module', () => {
       const reports = crashReporter.getUploadedReports()
       expect(reports).to.be.an('array')
       expect(reports).to.have.lengthOf.at.least(2,
-          'There are not enough reports for this test')
+        'There are not enough reports for this test')
 
       const lastReport = crashReporter.getLastCrashReport()
       expect(lastReport).to.be.an('object').that.includes.a.key('date')
 
       // Let's find the newest report.
-      const {report: newestReport} = reports.reduce((acc, cur) => {
+      const { report: newestReport } = reports.reduce((acc, cur) => {
         const timestamp = new Date(cur.date).getTime()
         return (timestamp > acc.timestamp)
           ? { report: cur, timestamp: timestamp }
@@ -283,8 +276,8 @@ describe('crashReporter module', () => {
       assert(newestReport, 'Hey!')
 
       expect(lastReport.date.getTime()).to.be.equal(
-          newestReport.date.getTime(),
-          'Last report is not the newest.')
+        newestReport.date.getTime(),
+        'Last report is not the newest.')
     })
   })
 
@@ -304,7 +297,7 @@ describe('crashReporter module', () => {
         submitURL: 'http://127.0.0.1/crashes',
         uploadToServer: true
       })
-      assert.equal(crashReporter.getUploadToServer(), true)
+      assert.strictEqual(crashReporter.getUploadToServer(), true)
     })
     it('returns false when uploadToServer is set to false', function () {
       if (process.platform !== 'darwin') {
@@ -319,7 +312,7 @@ describe('crashReporter module', () => {
         uploadToServer: true
       })
       crashReporter.setUploadToServer(false)
-      assert.equal(crashReporter.getUploadToServer(), false)
+      assert.strictEqual(crashReporter.getUploadToServer(), false)
     })
   })
 
@@ -340,7 +333,7 @@ describe('crashReporter module', () => {
         uploadToServer: true
       })
       crashReporter.setUploadToServer(false)
-      assert.equal(crashReporter.getUploadToServer(), false)
+      assert.strictEqual(crashReporter.getUploadToServer(), false)
     })
     it('sets uploadToServer true when called with true', function () {
       if (process.platform !== 'darwin') {
@@ -355,7 +348,7 @@ describe('crashReporter module', () => {
         uploadToServer: false
       })
       crashReporter.setUploadToServer(true)
-      assert.equal(crashReporter.getUploadToServer(), true)
+      assert.strictEqual(crashReporter.getUploadToServer(), true)
     })
   })
 
@@ -422,31 +415,31 @@ const waitForCrashReport = () => {
   })
 }
 
-const startServer = ({callback, processType, done}) => {
+const startServer = ({ callback, processType, done }) => {
   let called = false
-  let server = http.createServer((req, res) => {
+  const server = http.createServer((req, res) => {
     const form = new multiparty.Form()
     form.parse(req, (error, fields) => {
       if (error) throw error
       if (called) return
       called = true
-      assert.equal(fields.prod, 'Electron')
-      assert.equal(fields.ver, process.versions.electron)
-      assert.equal(fields.process_type, processType)
-      assert.equal(fields.platform, process.platform)
-      assert.equal(fields.extra1, 'extra1')
-      assert.equal(fields.extra2, 'extra2')
-      assert.equal(fields.extra3, undefined)
-      assert.equal(fields._productName, 'Zombies')
-      assert.equal(fields._companyName, 'Umbrella Corporation')
-      assert.equal(fields._version, app.getVersion())
+      assert.deepStrictEqual(String(fields.prod), 'Electron')
+      assert.strictEqual(String(fields.ver), process.versions.electron)
+      assert.strictEqual(String(fields.process_type), processType)
+      assert.strictEqual(String(fields.platform), process.platform)
+      assert.strictEqual(String(fields.extra1), 'extra1')
+      assert.strictEqual(String(fields.extra2), 'extra2')
+      assert.strictEqual(fields.extra3, undefined)
+      assert.strictEqual(String(fields._productName), 'Zombies')
+      assert.strictEqual(String(fields._companyName), 'Umbrella Corporation')
+      assert.strictEqual(String(fields._version), app.getVersion())
 
       const reportId = 'abc-123-def-456-abc-789-abc-123-abcd'
       res.end(reportId, () => {
         waitForCrashReport().then(() => {
-          assert.equal(crashReporter.getLastCrashReport().id, reportId)
-          assert.notEqual(crashReporter.getUploadedReports().length, 0)
-          assert.equal(crashReporter.getUploadedReports()[0].id, reportId)
+          assert.strictEqual(crashReporter.getLastCrashReport().id, reportId)
+          assert.notStrictEqual(crashReporter.getUploadedReports().length, 0)
+          assert.strictEqual(crashReporter.getUploadedReports()[0].id, reportId)
           req.socket.destroy()
           done()
         }, done)
@@ -462,7 +455,7 @@ const startServer = ({callback, processType, done}) => {
     })
   })
 
-  let {port} = remote.process
+  let { port } = remote.process
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
     remote.process.port = port
@@ -486,7 +479,7 @@ const startServer = ({callback, processType, done}) => {
 }
 
 const stopCrashService = () => {
-  const {crashServicePid} = remote.process
+  const { crashServicePid } = remote.process
   if (crashServicePid) {
     remote.process.crashServicePid = 0
     try {

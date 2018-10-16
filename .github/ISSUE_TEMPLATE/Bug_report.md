@@ -4,9 +4,9 @@ about: Create a report to help us improve Electron
 
 ---
 
-* Electron Version:
+* Output of `node_modules/.bin/electron --version`:
 * Operating System (Platform and Version):
-* Last known working Electron version: 
+* Output of `node_modules/.bin/electron --version` on last known working Electron version (if applicable):
 
 **Expected Behavior**
 A clear and concise description of what you expected to happen.

@@ -4,13 +4,14 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
-const {closeWindow} = require('./window-helpers')
+const { closeWindow } = require('./window-helpers')
+const { emittedOnce } = require('./events-helpers')
 
-const {expect} = chai
+const { expect } = chai
 chai.use(dirtyChai)
 
-const {ipcRenderer, remote} = require('electron')
-const {ipcMain, webContents, BrowserWindow} = remote
+const { ipcRenderer, remote } = require('electron')
+const { ipcMain, webContents, BrowserWindow } = remote
 
 describe('ipc renderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures')
@@ -69,7 +70,7 @@ describe('ipc renderer module', () => {
     })
 
     it('does not crash on external objects (regression)', done => {
-      const request = http.request({port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/'})
+      const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
       const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
       request.on('error', () => {})
       ipcRenderer.once('message', (event, requestValue, externalStreamValue) => {
@@ -83,9 +84,9 @@ describe('ipc renderer module', () => {
     })
 
     it('can send objects that both reference the same object', done => {
-      const child = {hello: 'world'}
-      const foo = {name: 'foo', child: child}
-      const bar = {name: 'bar', child: child}
+      const child = { hello: 'world' }
+      const foo = { name: 'foo', child: child }
+      const bar = { name: 'bar', child: child }
       const array = [foo, bar]
 
       ipcRenderer.once('message', (event, arrayValue, fooValue, barValue, childValue) => {
@@ -102,7 +103,7 @@ describe('ipc renderer module', () => {
       const array = [5]
       array.push(array)
 
-      const child = {hello: 'world'}
+      const child = { hello: 'world' }
       child.child = child
 
       ipcRenderer.once('message', (event, arrayValue, childValue) => {
@@ -132,8 +133,6 @@ describe('ipc renderer module', () => {
   describe('ipcRenderer.sendTo', () => {
     let contents = null
 
-    beforeEach(() => { contents = webContents.create({}) })
-
     afterEach(() => {
       ipcRenderer.removeAllListeners('pong')
       contents.destroy()
@@ -141,18 +140,61 @@ describe('ipc renderer module', () => {
     })
 
     it('sends message to WebContents', done => {
-      const webContentsId = remote.getCurrentWebContents().id
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+      })
 
-      ipcRenderer.once('pong', (event, id) => {
-        expect(webContentsId).to.equal(id)
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong', (event, data) => {
+        expect(payload).to.equal(data)
         done()
       })
 
       contents.once('did-finish-load', () => {
-        ipcRenderer.sendTo(contents.id, 'ping', webContentsId)
+        ipcRenderer.sendTo(contents.id, 'ping', payload)
       })
 
-      contents.loadURL(`file://${path.join(fixtures, 'pages', 'ping-pong.html')}`)
+      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
+    })
+
+    it('sends message to WebContents (sanboxed renderer)', done => {
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js'),
+        sandbox: true
+      })
+
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong', (event, data) => {
+        expect(payload).to.equal(data)
+        done()
+      })
+
+      contents.once('did-finish-load', () => {
+        ipcRenderer.sendTo(contents.id, 'ping', payload)
+      })
+
+      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
+    })
+
+    it('sends message to WebContents (channel has special chars)', done => {
+      contents = webContents.create({
+        preload: path.join(fixtures, 'module', 'preload-inject-ipc.js')
+      })
+
+      const payload = 'Hello World!'
+
+      ipcRenderer.once('pong-æøåü', (event, data) => {
+        expect(payload).to.equal(data)
+        done()
+      })
+
+      contents.once('did-finish-load', () => {
+        ipcRenderer.sendTo(contents.id, 'ping-æøåü', payload)
+      })
+
+      contents.loadFile(path.join(fixtures, 'pages', 'ping-pong.html'))
     })
   })
 
@@ -180,19 +222,20 @@ describe('ipc renderer module', () => {
 
         w.webContents.reload()
       })
-      w.loadURL(`file://${path.join(fixtures, 'api', 'remote-event-handler.html')}`)
+      w.loadFile(path.join(fixtures, 'api', 'remote-event-handler.html'))
     })
   })
 
-  it('throws an error when removing all the listeners', () => {
-    ipcRenderer.on('test-event', () => {})
-    expect(ipcRenderer.listenerCount('test-event')).to.equal(1)
+  describe('ipcRenderer.on', () => {
+    it('is not used for internals', async () => {
+      w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
 
-    expect(() => {
-      ipcRenderer.removeAllListeners()
-    }).to.throw(/Removing all listeners from ipcRenderer will make Electron internals stop working/)
+      await emittedOnce(w.webContents, 'did-finish-load')
 
-    ipcRenderer.removeAllListeners('test-event')
-    expect(ipcRenderer.listenerCount('test-event')).to.equal(0)
+      const script = `require('electron').ipcRenderer.eventNames()`
+      const result = await w.webContents.executeJavaScript(script)
+      expect(result).to.deep.equal([])
+    })
   })
 })

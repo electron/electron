@@ -5,6 +5,7 @@
 #ifndef ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 #define ATOM_RENDERER_API_ATOM_API_SPELL_CHECK_CLIENT_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -12,9 +13,9 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
 #include "native_mate/scoped_persistent.h"
-#include "third_party/WebKit/public/platform/WebSpellCheckPanelHostClient.h"
-#include "third_party/WebKit/public/platform/WebVector.h"
-#include "third_party/WebKit/public/web/WebTextCheckClient.h"
+#include "third_party/blink/public/platform/web_spell_check_panel_host_client.h"
+#include "third_party/blink/public/platform/web_vector.h"
+#include "third_party/blink/public/web/web_text_check_client.h"
 
 namespace blink {
 struct WebTextCheckingResult;

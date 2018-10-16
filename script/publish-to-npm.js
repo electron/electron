@@ -3,9 +3,14 @@ const fs = require('fs')
 const path = require('path')
 const childProcess = require('child_process')
 const GitHubApi = require('github')
+const { GitProcess } = require('dugite')
 const request = require('request')
-const assert = require('assert')
 const rootPackageJson = require('../package.json')
+
+if (!process.env.ELECTRON_NPM_OTP) {
+  console.error('Please set ELECTRON_NPM_OTP')
+  process.exit(1)
+}
 
 const github = new GitHubApi({
   // debug: true,
@@ -14,7 +19,7 @@ const github = new GitHubApi({
 })
 
 let tempDir
-temp.track()   // track and cleanup files at exit
+temp.track() // track and cleanup files at exit
 
 const files = [
   'cli.js',
@@ -46,82 +51,107 @@ new Promise((resolve, reject) => {
     }
   })
 })
-.then((dirPath) => {
-  tempDir = dirPath
-  // copy files from `/npm` to temp directory
-  files.forEach((name) => {
-    const noThirdSegment = name === 'README.md' || name === 'LICENSE'
+  .then((dirPath) => {
+    tempDir = dirPath
+    // copy files from `/npm` to temp directory
+    files.forEach((name) => {
+      const noThirdSegment = name === 'README.md' || name === 'LICENSE'
+      fs.writeFileSync(
+        path.join(tempDir, name),
+        fs.readFileSync(path.join(__dirname, '..', noThirdSegment ? '' : 'npm', name))
+      )
+    })
+    // copy from root package.json to temp/package.json
+    const packageJson = require(path.join(tempDir, 'package.json'))
+    jsonFields.forEach((fieldName) => {
+      packageJson[fieldName] = rootPackageJson[fieldName]
+    })
     fs.writeFileSync(
-      path.join(tempDir, name),
-      fs.readFileSync(path.join(__dirname, '..', noThirdSegment ? '' : 'npm', name))
+      path.join(tempDir, 'package.json'),
+      JSON.stringify(packageJson, null, 2)
     )
-  })
-  // copy from root package.json to temp/package.json
-  const packageJson = require(path.join(tempDir, 'package.json'))
-  jsonFields.forEach((fieldName) => {
-    packageJson[fieldName] = rootPackageJson[fieldName]
-  })
-  fs.writeFileSync(
-    path.join(tempDir, 'package.json'),
-    JSON.stringify(packageJson, null, 2)
-  )
 
-  return github.repos.getReleases({
-    owner: 'electron',
-    repo: 'electron'
+    return github.repos.getReleases({
+      owner: 'electron',
+      repo: rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
+    })
   })
-})
-.then((releases) => {
+  .then((releases) => {
   // download electron.d.ts from release
-  const release = releases.data.find(
-    (release) => release.tag_name === `v${rootPackageJson.version}`
-  )
-  if (!release) {
-    throw new Error(`cannot find release with tag v${rootPackageJson.version}`)
-  }
-  return release
-})
-.then((release) => {
-  const tsdAsset = release.assets.find((asset) => asset.name === 'electron.d.ts')
-  if (!tsdAsset) {
-    throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`)
-  }
-  return new Promise((resolve, reject) => {
-    request.get({
-      url: tsdAsset.url,
-      headers: {
-        'accept': 'application/octet-stream',
-        'user-agent': 'electron-npm-publisher'
-      }
-    }, (err, response, body) => {
-      if (err || response.statusCode !== 200) {
-        reject(err || new Error('Cannot download electron.d.ts'))
+    const release = releases.data.find(
+      (release) => release.tag_name === `v${rootPackageJson.version}`
+    )
+    if (!release) {
+      throw new Error(`cannot find release with tag v${rootPackageJson.version}`)
+    }
+    return release
+  })
+  .then((release) => {
+    const tsdAsset = release.assets.find((asset) => asset.name === 'electron.d.ts')
+    if (!tsdAsset) {
+      throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`)
+    }
+    return new Promise((resolve, reject) => {
+      request.get({
+        url: tsdAsset.url,
+        headers: {
+          'accept': 'application/octet-stream',
+          'user-agent': 'electron-npm-publisher'
+        }
+      }, (err, response, body) => {
+        if (err || response.statusCode !== 200) {
+          reject(err || new Error('Cannot download electron.d.ts'))
+        } else {
+          fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body)
+          resolve(release)
+        }
+      })
+    })
+  })
+  .then(async (release) => {
+    if (release.tag_name.indexOf('nightly') > 0) {
+      const currentBranch = await getCurrentBranch()
+      if (currentBranch === 'master') {
+        npmTag = 'nightly'
       } else {
-        fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body)
-        resolve(release)
+        npmTag = `nightly-${currentBranch}`
       }
-    })
+    } else {
+      npmTag = release.prerelease ? 'beta' : 'latest'
+    }
   })
-})
-.then((release) => {
-  npmTag = release.prerelease ? 'beta' : 'latest'
-})
-.then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
-.then(() => {
+  .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
+  .then(() => {
   // test that the package can install electron prebuilt from github release
-  const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${rootPackageJson.version}.tgz`)
-  return new Promise((resolve, reject) => {
-    childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
-      env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
-      cwd: tempDir
+    const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${rootPackageJson.version}.tgz`)
+    return new Promise((resolve, reject) => {
+      childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
+        env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
+        cwd: tempDir
+      })
+      resolve(tarballPath)
     })
-    const checkVersion = childProcess.execSync(`${path.join(tempDir, 'node_modules', '.bin', 'electron')} -v`)
-    assert.ok((`v${rootPackageJson.version}`.indexOf(checkVersion.toString().trim()) === 0), `Version is correct`)
-    resolve(tarballPath)
   })
-})
-.then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag}`))
-.catch((err) => {
-  console.error(`Error: ${err}`)
-  process.exit(1)
-})
+  .then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
+  .catch((err) => {
+    console.error(`Error: ${err}`)
+    process.exit(1)
+  })
+
+async function getCurrentBranch () {
+  const gitDir = path.resolve(__dirname, '..')
+  console.log(`Determining current git branch`)
+  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
+  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
+  if (branchDetails.exitCode === 0) {
+    const currentBranch = branchDetails.stdout.trim()
+    console.log(`Successfully determined current git branch is ` +
+      `${currentBranch}`)
+    return currentBranch
+  } else {
+    const error = GitProcess.parseError(branchDetails.stderr)
+    console.log(`Could not get details for the current branch,
+      error was ${branchDetails.stderr}`, error)
+    process.exit(1)
+  }
+}

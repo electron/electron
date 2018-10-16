@@ -4,14 +4,18 @@
 
 #include "atom/browser/browser.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/browser_observer.h"
+#include "atom/browser/login_handler.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
@@ -20,6 +24,9 @@
 #include "brightray/common/application_info.h"
 
 namespace atom {
+
+// Null until/unless the default main message loop is running.
+base::NoDestructor<base::OnceClosure> g_quit_main_message_loop;
 
 Browser::LoginItemSettings::LoginItemSettings() = default;
 Browser::LoginItemSettings::~LoginItemSettings() = default;
@@ -88,9 +95,8 @@ void Browser::Shutdown() {
   for (BrowserObserver& observer : observers_)
     observer.OnQuit();
 
-  if (base::ThreadTaskRunnerHandle::IsSet()) {
-    base::ThreadTaskRunnerHandle::Get()->PostTask(
-        FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+  if (*g_quit_main_message_loop) {
+    std::move(*g_quit_main_message_loop).Run();
   } else {
     // There is no message loop available so we are in early stage.
     exit(0);
@@ -150,7 +156,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
-  if (PathService::Get(brightray::DIR_USER_DATA, &user_data))
+  if (base::PathService::Get(brightray::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;
@@ -177,7 +183,7 @@ void Browser::OnAccessibilitySupportChanged() {
 }
 
 void Browser::RequestLogin(
-    LoginHandler* login_handler,
+    scoped_refptr<LoginHandler> login_handler,
     std::unique_ptr<base::DictionaryValue> request_details) {
   for (BrowserObserver& observer : observers_)
     observer.OnLogin(login_handler, *(request_details.get()));
@@ -187,6 +193,10 @@ void Browser::PreMainMessageLoopRun() {
   for (BrowserObserver& observer : observers_) {
     observer.OnPreMainMessageLoopRun();
   }
+}
+
+void Browser::SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure) {
+  *g_quit_main_message_loop = std::move(quit_closure);
 }
 
 void Browser::NotifyAndShutdown() {

@@ -1,0 +1,41 @@
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index e099fd3f03e5..4b362843e4f8 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -46,7 +46,8 @@ IsolateHolder::IsolateHolder(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+     AccessMode access_mode,
+     AllowAtomicsWaitMode atomics_wait_mode,
+-    IsolateCreationMode isolate_creation_mode)
++    IsolateCreationMode isolate_creation_mode,
++    v8::Isolate* isolate)
+     : access_mode_(access_mode) {
+   DCHECK(task_runner);
+   DCHECK(task_runner->BelongsToCurrentThread());
+@@ -54,7 +55,11 @@ IsolateHolder::IsolateHolder(
+   v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
+   CHECK(allocator) << "You need to invoke gin::IsolateHolder::Initialize first";
+ 
+-  isolate_ = v8::Isolate::Allocate();
++  if (!isolate) {
++    isolate_ = v8::Isolate::Allocate();
++  } else {
++    isolate_ = isolate;
++  }
+   isolate_data_.reset(
+       new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
+   if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 84cf66e6e9cd..cc0d65e4e4be 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -66,7 +66,8 @@ class GIN_EXPORT IsolateHolder {
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+       AccessMode access_mode,
+       AllowAtomicsWaitMode atomics_wait_mode,
+-      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal);
++      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
++      v8::Isolate* isolate = nullptr);
+   ~IsolateHolder();
+ 
+   // Should be invoked once before creating IsolateHolder instances to

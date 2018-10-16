@@ -5,6 +5,7 @@
 #include "atom/browser/ui/x/x_window_utils.h"
 
 #include <X11/Xatom.h>
+#include <memory>
 
 #include "base/environment.h"
 #include "base/strings/string_util.h"

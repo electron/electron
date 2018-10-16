@@ -34,15 +34,15 @@ RemoteCallbackFreer::RemoteCallbackFreer(v8::Isolate* isolate,
 RemoteCallbackFreer::~RemoteCallbackFreer() {}
 
 void RemoteCallbackFreer::RunDestructor() {
-  base::string16 channel =
-      base::ASCIIToUTF16("ELECTRON_RENDERER_RELEASE_CALLBACK");
+  auto* channel = "ELECTRON_RENDERER_RELEASE_CALLBACK";
   base::ListValue args;
+  int32_t sender_id = 0;
   args.AppendString(context_id_);
   args.AppendInteger(object_id_);
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), false,
-                                              channel, args));
+    frame_host->Send(new AtomFrameMsg_Message(frame_host->GetRoutingID(), true,
+                                              false, channel, args, sender_id));
   }
 
   Observe(nullptr);

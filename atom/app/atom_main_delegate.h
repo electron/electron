@@ -5,6 +5,7 @@
 #ifndef ATOM_APP_ATOM_MAIN_DELEGATE_H_
 #define ATOM_APP_ATOM_MAIN_DELEGATE_H_
 
+#include <memory>
 #include <string>
 
 #include "brightray/common/content_client.h"
@@ -21,6 +22,7 @@ class AtomMainDelegate : public brightray::MainDelegate {
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
   void PreSandboxStartup() override;
+  void PreContentInitialization() override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;

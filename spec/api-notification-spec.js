@@ -1,6 +1,10 @@
-const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 
-const {Notification} = require('electron').remote
+const { expect } = chai
+chai.use(dirtyChai)
+
+const { Notification } = require('electron').remote
 
 describe('Notification module', () => {
   it('inits, gets and sets basic string properties correctly', () => {
@@ -13,29 +17,29 @@ describe('Notification module', () => {
       closeButtonText: 'closeButtonText'
     })
 
-    assert.equal(n.title, 'title')
+    expect(n.title).to.equal('title')
     n.title = 'title1'
-    assert.equal(n.title, 'title1')
+    expect(n.title).to.equal('title1')
 
-    assert.equal(n.subtitle, 'subtitle')
+    expect(n.subtitle).equal('subtitle')
     n.subtitle = 'subtitle1'
-    assert.equal(n.subtitle, 'subtitle1')
+    expect(n.subtitle).equal('subtitle1')
 
-    assert.equal(n.body, 'body')
+    expect(n.body).to.equal('body')
     n.body = 'body1'
-    assert.equal(n.body, 'body1')
+    expect(n.body).to.equal('body1')
 
-    assert.equal(n.replyPlaceholder, 'replyPlaceholder')
+    expect(n.replyPlaceholder).to.equal('replyPlaceholder')
     n.replyPlaceholder = 'replyPlaceholder1'
-    assert.equal(n.replyPlaceholder, 'replyPlaceholder1')
+    expect(n.replyPlaceholder).to.equal('replyPlaceholder1')
 
-    assert.equal(n.sound, 'sound')
+    expect(n.sound).to.equal('sound')
     n.sound = 'sound1'
-    assert.equal(n.sound, 'sound1')
+    expect(n.sound).to.equal('sound1')
 
-    assert.equal(n.closeButtonText, 'closeButtonText')
+    expect(n.closeButtonText).to.equal('closeButtonText')
     n.closeButtonText = 'closeButtonText1'
-    assert.equal(n.closeButtonText, 'closeButtonText1')
+    expect(n.closeButtonText).to.equal('closeButtonText1')
   })
 
   it('inits, gets and sets basic boolean properties correctly', () => {
@@ -44,13 +48,13 @@ describe('Notification module', () => {
       hasReply: true
     })
 
-    assert.equal(n.silent, true)
+    expect(n.silent).to.be.true()
     n.silent = false
-    assert.equal(n.silent, false)
+    expect(n.silent).to.be.false()
 
-    assert.equal(n.hasReply, true)
+    expect(n.hasReply).to.be.true()
     n.hasReply = false
-    assert.equal(n.hasReply, false)
+    expect(n.hasReply).to.be.false()
   })
 
   it('inits, gets and sets actions correctly', () => {
@@ -66,10 +70,11 @@ describe('Notification module', () => {
       ]
     })
 
-    assert.equal(n.actions[0].type, 'button')
-    assert.equal(n.actions[0].text, '1')
-    assert.equal(n.actions[1].type, 'button')
-    assert.equal(n.actions[1].text, '2')
+    expect(n.actions.length).to.equal(2)
+    expect(n.actions[0].type).to.equal('button')
+    expect(n.actions[0].text).to.equal('1')
+    expect(n.actions[1].type).to.equal('button')
+    expect(n.actions[1].text).to.equal('2')
 
     n.actions = [
       {
@@ -81,10 +86,11 @@ describe('Notification module', () => {
       }
     ]
 
-    assert.equal(n.actions[0].type, 'button')
-    assert.equal(n.actions[0].text, '3')
-    assert.equal(n.actions[1].type, 'button')
-    assert.equal(n.actions[1].text, '4')
+    expect(n.actions.length).to.equal(2)
+    expect(n.actions[0].type).to.equal('button')
+    expect(n.actions[0].text).to.equal('3')
+    expect(n.actions[1].type).to.equal('button')
+    expect(n.actions[1].text).to.equal('4')
   })
 
   // TODO(sethlu): Find way to test init with notification icon?

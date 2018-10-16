@@ -14,6 +14,7 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/handle.h"
 
 namespace atom {
@@ -63,6 +64,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowWillResize(const gfx::Rect& new_bounds,
                           bool* prevent_default) override;
   void OnWindowResize() override;
+  void OnWindowWillMove(const gfx::Rect& new_bounds,
+                        bool* prevent_default) override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
   void OnWindowScrollTouchBegin() override;
@@ -74,6 +77,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
+  void OnWindowAlwaysOnTopChanged() override;
   void OnExecuteWindowsCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::DictionaryValue& details) override;
@@ -110,6 +114,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   std::vector<int> GetContentSize();
   void SetContentBounds(const gfx::Rect& bounds, mate::Arguments* args);
   gfx::Rect GetContentBounds();
+  bool IsNormal();
+  gfx::Rect GetNormalBounds();
   void SetMinimumSize(int width, int height);
   std::vector<int> GetMinimumSize();
   void SetMaximumSize(int width, int height);
@@ -163,7 +169,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible);
+  void SetVisibleOnAllWorkspaces(bool visible, mate::Arguments* args);
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
@@ -217,6 +223,14 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
+
+  template <typename... Args>
+  void EmitEventSoon(base::StringPiece eventName) {
+    content::BrowserThread::PostTask(
+        content::BrowserThread::UI, FROM_HERE,
+        base::BindOnce(base::IgnoreResult(&TopLevelWindow::Emit<Args...>),
+                       weak_factory_.GetWeakPtr(), eventName));
+  }
 
 #if defined(OS_WIN)
   typedef std::map<UINT, MessageCallback> MessageCallbackMap;

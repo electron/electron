@@ -16,13 +16,17 @@ similar to Java's [RMI][rmi]. An example of creating a browser window from a
 renderer process:
 
 ```javascript
-const {BrowserWindow} = require('electron').remote
-let win = new BrowserWindow({width: 800, height: 600})
+const { BrowserWindow } = require('electron').remote
+let win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com')
 ```
 
 **Note:** For the reverse (access the renderer process from the main process),
 you can use [webContents.executeJavaScript](web-contents.md#contentsexecutejavascriptcode-usergesture-callback).
+
+**Note:** The remote module can be disabled for security reasons in the following contexts:
+- [`BrowserWindow`](browser-window.md) - by setting the `enableRemoteModule` option to `false`.
+- [`<webview>`](webview-tag.md) - by setting the `enableremotemodule` attribute to `false`.
 
 ## Remote Objects
 
@@ -158,7 +162,7 @@ project/
 
 ```js
 // main process: main/index.js
-const {app} = require('electron')
+const { app } = require('electron')
 app.on('ready', () => { /* ... */ })
 ```
 
@@ -180,7 +184,7 @@ belongs.
 **Note:** Do not use `removeAllListeners` on [`BrowserWindow`](browser-window.md).
 Use of this can remove all [`blur`](https://developer.mozilla.org/en-US/docs/Web/Events/blur)
 listeners, disable click events on touch bar buttons, and other unintended
-consequences.  
+consequences.
 
 ### `remote.getCurrentWebContents()`
 

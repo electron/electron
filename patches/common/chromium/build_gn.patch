@@ -1,0 +1,54 @@
+From aca453bd9e35003bc70adfc77a576492f05c5954 Mon Sep 17 00:00:00 2001
+From: Ales Pergl <alpergl@microsoft.com>
+Date: Thu, 20 Sep 2018 17:44:29 -0700
+Subject: build_gn.patch
+
+
+diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
+index fcc00ee0e49f..3232a0360e94 100644
+--- a/build/config/BUILDCONFIG.gn
++++ b/build/config/BUILDCONFIG.gn
+@@ -123,6 +123,9 @@ if (current_os == "") {
+ #   even if the value is overridden, which is wasteful. See first bullet.
+ 
+ declare_args() {
++  is_electron_build = false
++  is_mas_build = false
++
+   # Set to enable the official build level of optimization. This has nothing
+   # to do with branding, but enables an additional level of optimization above
+   # release (!is_debug). This might be better expressed as a tri-state
+@@ -536,6 +539,7 @@ default_compiler_configs = [
+   "//build/config/compiler:thin_archive",
+   "//build/config/coverage:default_coverage",
+   "//build/config/sanitizers:default_sanitizer_flags",
++  "//electron/build/config:mas_build",
+ ]
+ 
+ if (is_win) {
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 959a59231746..48f1285c4657 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -634,12 +634,12 @@ config("compiler") {
+ 
+     # TODO(pcc): Re-enable this flag on Android. This will require libc++ to be
+     # built with ThinLTO (see https://crbug.com/767901) as well as the GVR shim.
+-    if (!is_android) {
+-      cflags += [ "-fwhole-program-vtables" ]
+-      if (!is_win) {
+-        ldflags += [ "-fwhole-program-vtables" ]
+-      }
+-    }
++    # if (!is_android) {
++    #   cflags += [ "-fwhole-program-vtables" ]
++    #   if (!is_win) {
++    #     ldflags += [ "-fwhole-program-vtables" ]
++    #   }
++    # }
+ 
+     # Work-around for http://openradar.appspot.com/20356002
+     if (is_mac) {
+-- 
+2.17.0
+

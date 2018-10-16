@@ -6,6 +6,18 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+# Planned Breaking API Changes (5.0)
+
+## `new BrowserWindow({ webPreferences })`
+
+The following `webPreferences` option default values are deprecated in favor of the new defaults listed below.
+
+| Property | Deprecated Default | New Default |
+|----------|--------------------|-------------|
+| `contextIsolation` | `false` | `true` |
+| `nodeIntegration` | `true` | `false` |
+| `webviewTag` | `nodeIntegration` if set else `true` | `false` |
+
 
 # Planned Breaking API Changes (4.0)
 
@@ -34,6 +46,14 @@ app.releaseSingleInstance()
 app.releaseSingleInstanceLock()
 ```
 
+## `app.getGPUInfo`
+
+```js
+app.getGPUInfo('complete')
+// Now behaves the same with `basic` on macOS
+app.getGPUInfo('basic')
+```
+
 
 # Breaking API Changes (3.0)
 
@@ -49,19 +69,17 @@ app.getAppMetrics()
 
 // Deprecated
 const metrics = app.getAppMetrics()
-const {memory} = metrics[0]
-memory.privateBytes  // Deprecated property
-memory.sharedBytes  // Deprecated property
+const { memory } = metrics[0] // Deprecated property
 ```
 
 ## `BrowserWindow`
 
 ```js
 // Deprecated
-let optionsA = {webPreferences: {blinkFeatures: ''}}
+let optionsA = { webPreferences: { blinkFeatures: '' } }
 let windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = {webPreferences: {enableBlinkFeatures: ''}}
+let optionsB = { webPreferences: { enableBlinkFeatures: '' } }
 let windowB = new BrowserWindow(optionsB)
 
 // Deprecated
@@ -135,8 +153,6 @@ nativeImage.createFromBuffer(buffer, {
 ```js
 // Deprecated
 const info = process.getProcessMemoryInfo()
-const privateBytes = info.privateBytes // deprecated property
-const sharedBytes = info.sharedBytes // deprecated property
 ```
 
 ## `screen`
@@ -179,9 +195,13 @@ tray.setHighlightMode('off')
 
 ```js
 // Deprecated
-webContents.openDevTools({detach: true})
+webContents.openDevTools({ detach: true })
 // Replace with
-webContents.openDevTools({mode: 'detach'})
+webContents.openDevTools({ mode: 'detach' })
+
+// Removed
+webContents.setSize(options)
+// There is no replacement for this API
 ```
 
 ## `webFrame`
@@ -190,12 +210,28 @@ webContents.openDevTools({mode: 'detach'})
 // Deprecated
 webFrame.registerURLSchemeAsSecure('app')
 // Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
+protocol.registerStandardSchemes(['app'], { secure: true })
 
 // Deprecated
-webFrame.registerURLSchemeAsPrivileged('app', {secure: true})
+webFrame.registerURLSchemeAsPrivileged('app', { secure: true })
 // Replace with
-protocol.registerStandardSchemes(['app'], {secure: true})
+protocol.registerStandardSchemes(['app'], { secure: true })
+```
+
+## `<webview>`
+
+```js
+// Removed
+webview.setAttribute('disableguestresize', '')
+// There is no replacement for this API
+
+// Removed
+webview.setAttribute('guestinstance', instanceId)
+// There is no replacement for this API
+
+// Keyboard listeners no longer work on webview tag
+webview.onkeydown = () => { /* handler */ }
+webview.onkeyup = () => { /* handler */ }
 ```
 
 ## Node Headers URL
@@ -216,10 +252,10 @@ The following list includes the breaking API changes made in Electron 2.0.
 
 ```js
 // Deprecated
-let optionsA = {titleBarStyle: 'hidden-inset'}
+let optionsA = { titleBarStyle: 'hidden-inset' }
 let windowA = new BrowserWindow(optionsA)
 // Replace with
-let optionsB = {titleBarStyle: 'hiddenInset'}
+let optionsB = { titleBarStyle: 'hiddenInset' }
 let windowB = new BrowserWindow(optionsB)
 ```
 
@@ -229,7 +265,7 @@ let windowB = new BrowserWindow(optionsB)
 // Removed
 menu.popup(browserWindow, 100, 200, 2)
 // Replaced with
-menu.popup(browserWindow, {x: 100, y: 200, positioningItem: 2})
+menu.popup(browserWindow, { x: 100, y: 200, positioningItem: 2 })
 ```
 
 ## `nativeImage`

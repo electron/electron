@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_API_ATOM_API_SYSTEM_PREFERENCES_H_
 #define ATOM_BROWSER_API_ATOM_API_SYSTEM_PREFERENCES_H_
 
+#include <memory>
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
@@ -88,6 +89,12 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
                       mate::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
+
+  // TODO(MarshallOfSound): Write tests for these methods once we
+  // are running tests on a Mojave machine
+  v8::Local<v8::Value> GetEffectiveAppearance(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetAppLevelAppearance(v8::Isolate* isolate);
+  void SetAppLevelAppearance(mate::Arguments* args);
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();

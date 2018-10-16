@@ -10,8 +10,11 @@
 
 #include "base/compiler_specific.h"
 #include "content/public/utility/content_utility_client.h"
+#include "printing/buildflags/buildflags.h"
 
-class UtilityMessageHandler;
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+#include "chrome/utility/printing_handler.h"
+#endif
 
 namespace atom {
 
@@ -20,13 +23,16 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   AtomContentUtilityClient();
   ~AtomContentUtilityClient() override;
 
+  void UtilityThreadStarted() override;
   bool OnMessageReceived(const IPC::Message& message) override;
+  void RegisterServices(StaticServiceMap* services) override;
 
  private:
-#if defined(OS_WIN)
-  typedef std::vector<std::unique_ptr<UtilityMessageHandler>> Handlers;
-  Handlers handlers_;
+#if BUILDFLAG(ENABLE_PRINTING) && defined(OS_WIN)
+  std::unique_ptr<printing::PrintingHandler> printing_handler_;
 #endif
+
+  bool elevated_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomContentUtilityClient);
 };

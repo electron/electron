@@ -4,11 +4,11 @@ import argparse
 import hashlib
 import os
 import shutil
+import sys
 import tempfile
 
 from lib.config import s3_config
 from lib.util import download, rm_rf, s3put, safe_mkdir
-
 
 DIST_URL = 'https://atom.io/download/electron/'
 
@@ -51,12 +51,15 @@ def parse_args():
 def get_files_list(version):
   return [
     { "filename": 'node-{0}.tar.gz'.format(version), "required": True },
+    { "filename": 'node-{0}-headers.tar.gz'.format(version), "required": True },
     { "filename": 'iojs-{0}.tar.gz'.format(version), "required": True },
     { "filename": 'iojs-{0}-headers.tar.gz'.format(version), "required": True },
     { "filename": 'node.lib', "required": False },
     { "filename": 'x64/node.lib', "required": False },
     { "filename": 'win-x86/iojs.lib', "required": False },
-    { "filename": 'win-x64/iojs.lib', "required": False }
+    { "filename": 'win-x64/iojs.lib', "required": False },
+    { "filename": 'win-x86/node.lib', "required": False },
+    { "filename": 'win-x64/node.lib', "required": False }
   ]
 
 
@@ -95,5 +98,4 @@ def copy_files(source_files, output_dir):
     shutil.copy2(source_file, output_path)
 
 if __name__ == '__main__':
-  import sys
   sys.exit(main())

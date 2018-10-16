@@ -1,4 +1,4 @@
-const {app} = require('electron')
+const { app } = require('electron')
 const net = require('net')
 
 const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch'
@@ -8,7 +8,7 @@ process.on('uncaughtException', () => {
 })
 
 app.once('ready', () => {
-  let lastArg = process.argv[process.argv.length - 1]
+  const lastArg = process.argv[process.argv.length - 1]
   const client = net.connect(socketPath)
   client.once('connect', () => {
     client.end(String(lastArg === '--second'))
@@ -18,6 +18,6 @@ app.once('ready', () => {
   })
 
   if (lastArg !== '--second') {
-    app.relaunch({args: process.argv.slice(1).concat('--second')})
+    app.relaunch({ args: process.argv.slice(1).concat('--second') })
   }
 })

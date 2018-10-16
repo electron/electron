@@ -7,13 +7,14 @@
 #define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/devtools_contents_resizing_strategy.h"
-#include "brightray/browser/devtools_embedder_message_dispatcher.h"
 #include "brightray/browser/inspectable_web_contents.h"
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -39,7 +40,9 @@ class InspectableWebContentsImpl
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  explicit InspectableWebContentsImpl(content::WebContents*);
+  InspectableWebContentsImpl(content::WebContents* web_contents,
+                             PrefService* pref_service,
+                             bool is_guest);
   ~InspectableWebContentsImpl() override;
 
   InspectableWebContentsView* GetView() const override;
@@ -48,6 +51,8 @@ class InspectableWebContentsImpl
 
   void SetDelegate(InspectableWebContentsDelegate* delegate) override;
   InspectableWebContentsDelegate* GetDelegate() const override;
+  bool IsGuest() const override;
+  void ReleaseWebContents() override;
   void SetDevToolsWebContents(content::WebContents* devtools) override;
   void SetDockState(const std::string& state) override;
   void ShowDevTools() override;
@@ -90,12 +95,13 @@ class InspectableWebContentsImpl
   void AppendToFile(const std::string& url,
                     const std::string& content) override;
   void RequestFileSystems() override;
-  void AddFileSystem(const std::string& file_system_path) override;
+  void AddFileSystem(const std::string& type) override;
   void RemoveFileSystem(const std::string& file_system_path) override;
   void UpgradeDraggedFileSystemPermissions(
       const std::string& file_system_url) override;
   void IndexPath(int index_request_id,
-                 const std::string& file_system_path) override;
+                 const std::string& file_system_path,
+                 const std::string& excluded_folders) override;
   void StopIndexing(int index_request_id) override;
   void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
@@ -131,6 +137,12 @@ class InspectableWebContentsImpl
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
+  void Reattach(const DispatchCallback& callback) override;
+  void RecordEnumeratedHistogram(const std::string& name,
+                                 int sample,
+                                 int boundary_value) override {}
+  void ReadyForTest() override {}
+  void SetOpenNewWindowForPopups(bool value) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(const std::string& message);
@@ -214,6 +226,7 @@ class InspectableWebContentsImpl
   // The external devtools assigned by SetDevToolsWebContents.
   content::WebContents* external_devtools_web_contents_ = nullptr;
 
+  bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
 
   using ExtensionsAPIs = std::map<std::string, std::string>;

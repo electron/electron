@@ -5,6 +5,7 @@
 #include "atom/common/node_bindings.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,7 +16,6 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/environment.h"
-#include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -23,6 +23,7 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
@@ -39,7 +40,6 @@
   V(atom_browser_in_app_purchase)            \
   V(atom_browser_menu)                       \
   V(atom_browser_net)                        \
-  V(atom_browser_net_log)                    \
   V(atom_browser_power_monitor)              \
   V(atom_browser_power_save_blocker)         \
   V(atom_browser_protocol)                   \
@@ -81,10 +81,10 @@
 // implementation when calling the NODE_BUILTIN_MODULE_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
 ELECTRON_BUILTIN_MODULES(V)
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
 ELECTRON_VIEW_MODULES(V)
 #endif
-#if defined(ENABLE_DESKTOP_CAPTURER)
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
@@ -135,7 +135,7 @@ std::unique_ptr<const char* []> StringVectorToArgArray(
 base::FilePath GetResourcesPath(bool is_browser) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   base::FilePath exec_path(command_line->GetProgram());
-  PathService::Get(base::FILE_EXE, &exec_path);
+  base::PathService::Get(base::FILE_EXE, &exec_path);
 
   base::FilePath resources_path =
 #if defined(OS_MACOSX)
@@ -182,10 +182,10 @@ NodeBindings::~NodeBindings() {
 void NodeBindings::RegisterBuiltinModules() {
 #define V(modname) _register_##modname();
   ELECTRON_BUILTIN_MODULES(V)
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
   ELECTRON_VIEW_MODULES(V)
 #endif
-#if defined(ENABLE_DESKTOP_CAPTURER)
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
 #undef V
@@ -193,6 +193,10 @@ void NodeBindings::RegisterBuiltinModules() {
 
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
+}
+
+base::FilePath::StringType NodeBindings::GetHelperResourcesPath() {
+  return GetResourcesPath(false).value();
 }
 
 void NodeBindings::Initialize() {
@@ -211,7 +215,12 @@ void NodeBindings::Initialize() {
 
   // Init node.
   // (we assume node::Init would not modify the parameters under embedded mode).
-  node::Init(nullptr, nullptr, nullptr, nullptr);
+  // NOTE: If you change this line, please ping @codebytere or @MarshallOfSound
+  int argc = 0;
+  int exec_argc = 0;
+  const char** argv = nullptr;
+  const char** exec_argv = nullptr;
+  node::Init(&argc, argv, &exec_argc, &exec_argv);
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -279,7 +288,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     process.Set("_noBrowserGlobals", resources_path);
   // The path to helper app.
   base::FilePath helper_exec_path;
-  PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
+  base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
   return env;

@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_
 #define ATOM_BROWSER_OSR_OSR_OUTPUT_DEVICE_H_
 
+#include <memory>
+
 #include "base/callback.h"
 #include "components/viz/service/display/software_output_device.h"
 #include "third_party/skia/include/core/SkBitmap.h"

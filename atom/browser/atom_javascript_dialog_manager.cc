@@ -5,6 +5,7 @@
 #include "atom/browser/atom_javascript_dialog_manager.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/browser/api/atom_api_web_contents.h"
@@ -71,7 +72,7 @@ void AtomJavaScriptDialogManager::RunJavaScriptDialog(
   if (web_preferences && !web_preferences->IsEnabled(options::kOffscreen)) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents);
     if (relay)
-      window = relay->window.get();
+      window = relay->GetNativeWindow();
   }
 
   atom::ShowMessageBox(

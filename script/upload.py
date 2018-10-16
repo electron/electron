@@ -6,6 +6,7 @@ import errno
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -13,19 +14,19 @@ import tempfile
 from io import StringIO
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
-from lib.util import electron_gyp, execute, get_electron_version, \
-                     parse_version, scoped_cwd, s3put
+from lib.util import get_electron_branding, execute, get_electron_version, \
+                     parse_version, scoped_cwd, s3put, get_electron_exec, \
+                     get_out_dir, SRC_DIR
 
 
 ELECTRON_REPO = 'electron/electron'
 ELECTRON_VERSION = get_electron_version()
 
-PROJECT_NAME = electron_gyp()['project_name%']
-PRODUCT_NAME = electron_gyp()['product_name%']
+PROJECT_NAME = get_electron_branding()['project_name']
+PRODUCT_NAME = get_electron_branding()['product_name']
 
 SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-OUT_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
-DIST_DIR = os.path.join(SOURCE_ROOT, 'dist')
+OUT_DIR = get_out_dir()
 
 DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
@@ -38,9 +39,6 @@ def main():
   if  args.upload_to_s3:
     utcnow = datetime.datetime.utcnow()
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
-
-  if not dist_newer_than_head():
-    run_python_script('create-dist.py')
 
   build_version = get_electron_build_version()
   if not ELECTRON_VERSION.startswith(build_version):
@@ -61,36 +59,58 @@ def main():
           'You have to pass --overwrite to overwrite a published release'
 
   # Upload Electron files.
-  upload_electron(release, os.path.join(DIST_DIR, DIST_NAME), args)
+  # Rename dist.zip to  get_zip_name('electron', version, suffix='')
+  electron_zip = os.path.join(OUT_DIR, DIST_NAME)
+  shutil.copy2(os.path.join(OUT_DIR, 'dist.zip'), electron_zip)
+  upload_electron(release, electron_zip, args)
   if get_target_arch() != 'mips64el':
-    upload_electron(release, os.path.join(DIST_DIR, SYMBOLS_NAME), args)
+    symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
+    upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
-    upload_electron(release, os.path.join(DIST_DIR, 'electron-api.json'), args)
-    upload_electron(release, os.path.join(DIST_DIR, 'electron.d.ts'), args)
-    upload_electron(release, os.path.join(DIST_DIR, DSYM_NAME), args)
+    api_path = os.path.join(SOURCE_ROOT, 'electron-api.json')
+    upload_electron(release, api_path, args)
+
+    ts_defs_path = os.path.join(SOURCE_ROOT, 'electron.d.ts')
+    upload_electron(release, ts_defs_path, args)
+    dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
+    upload_electron(release, dsym_zip, args)
   elif PLATFORM == 'win32':
-    upload_electron(release, os.path.join(DIST_DIR, PDB_NAME), args)
+    pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
+    shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
+    upload_electron(release, pdb_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
-  upload_electron(release, os.path.join(DIST_DIR, ffmpeg), args)
+  ffmpeg_zip = os.path.join(OUT_DIR, ffmpeg)
+  ffmpeg_build_path = os.path.join(SRC_DIR, 'out', 'ffmpeg', 'ffmpeg.zip')
+  shutil.copy2(ffmpeg_build_path, ffmpeg_zip)
+  upload_electron(release, ffmpeg_zip, args)
 
   chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
-  upload_electron(release, os.path.join(DIST_DIR, chromedriver), args)
-  mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
-  upload_electron(release, os.path.join(DIST_DIR, mksnapshot), args)
+  chromedriver_zip = os.path.join(OUT_DIR, chromedriver)
+  shutil.copy2(os.path.join(OUT_DIR, 'chromedriver.zip'), chromedriver_zip)
+  upload_electron(release, chromedriver_zip, args)
 
+  mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
+  mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
   if get_target_arch().startswith('arm'):
+    # Upload the native mksnapshot as mksnapshot.zip
+    shutil.copy2(os.path.join(SRC_DIR, 'out', 'native_mksnapshot',
+                              'mksnapshot.zip'), mksnapshot_zip)
+    upload_electron(release, mksnapshot_zip, args)
     # Upload the x64 binary for arm/arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
-    upload_electron(release, os.path.join(DIST_DIR, mksnapshot), args)
+    mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
+
+  shutil.copy2(os.path.join(OUT_DIR, 'mksnapshot.zip'), mksnapshot_zip)
+  upload_electron(release, mksnapshot_zip, args)
 
   if not tag_exists and not args.upload_to_s3:
     # Upload symbols to symbol server.
     run_python_script('upload-symbols.py')
     if PLATFORM == 'win32':
-      # Upload node headers.
-      run_python_script('create-node-headers.py', '-v', args.version)
       run_python_script('upload-node-headers.py', '-v', args.version)
 
 
@@ -122,31 +142,8 @@ def get_electron_build_version():
   if get_target_arch().startswith('arm') or os.environ.has_key('CI'):
     # In CI we just build as told.
     return ELECTRON_VERSION
-  if PLATFORM == 'darwin':
-    electron = os.path.join(SOURCE_ROOT, 'out', 'R',
-                              '{0}.app'.format(PRODUCT_NAME), 'Contents',
-                              'MacOS', PRODUCT_NAME)
-  elif PLATFORM == 'win32':
-    electron = os.path.join(SOURCE_ROOT, 'out', 'R',
-                              '{0}.exe'.format(PROJECT_NAME))
-  else:
-    electron = os.path.join(SOURCE_ROOT, 'out', 'R', PROJECT_NAME)
-
+  electron = get_electron_exec()
   return subprocess.check_output([electron, '--version']).strip()
-
-
-def dist_newer_than_head():
-  with scoped_cwd(SOURCE_ROOT):
-    try:
-      head_time = subprocess.check_output(['git', 'log', '--pretty=format:%at',
-                                           '-n', '1']).strip()
-      dist_time = os.path.getmtime(os.path.join(DIST_DIR, DIST_NAME))
-    except OSError as e:
-      if e.errno != errno.ENOENT:
-        raise
-      return False
-
-  return dist_time > int(head_time)
 
 
 def upload_electron(release, file_path, args):
@@ -165,17 +162,18 @@ def upload_electron(release, file_path, args):
     return
 
   # Upload the file.
-  upload_io_to_github(release, filename, file_path)
+  upload_io_to_github(release, filename, file_path, args.version)
 
   # Upload the checksum file.
   upload_sha256_checksum(args.version, file_path)
 
 
-def upload_io_to_github(release, filename, filepath):
+def upload_io_to_github(release, filename, filepath, version):
   print 'Uploading %s to Github' % \
       (filename)
   script_path = os.path.join(SOURCE_ROOT, 'script', 'upload-to-github.js')
-  execute(['node', script_path, filepath, filename, str(release['id'])])
+  execute(['node', script_path, filepath, filename, str(release['id']),
+          version])
 
 
 def upload_sha256_checksum(version, file_path, key_prefix=None):
@@ -209,5 +207,4 @@ def get_release(version):
   return release
 
 if __name__ == '__main__':
-  import sys
   sys.exit(main())

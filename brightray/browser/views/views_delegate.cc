@@ -4,6 +4,8 @@
 
 #include "brightray/browser/views/views_delegate.h"
 
+#include <memory>
+
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/widget/native_widget_aura.h"
 
@@ -83,12 +85,6 @@ views::NonClientFrameView* ViewsDelegate::CreateDefaultNonClientFrameView(
 void ViewsDelegate::AddRef() {}
 
 void ViewsDelegate::ReleaseRef() {}
-
-content::WebContents* ViewsDelegate::CreateWebContents(
-    content::BrowserContext* browser_context,
-    content::SiteInstance* site_instance) {
-  return NULL;
-}
 
 void ViewsDelegate::OnBeforeWidgetInit(
     views::Widget::InitParams* params,

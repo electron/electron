@@ -1,8 +1,8 @@
-const {expect} = require('chai')
+const { expect } = require('chai')
 const path = require('path')
-const {Buffer} = require('buffer')
+const { Buffer } = require('buffer')
 
-const {clipboard, nativeImage} = require('electron')
+const { clipboard, nativeImage } = require('electron')
 
 describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -70,7 +70,7 @@ describe('clipboard module', () => {
       const p = path.join(fixtures, 'assets', 'logo.png')
       const i = nativeImage.createFromPath(p)
       const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
-      const bookmark = {title: 'a title', url: 'test'}
+      const bookmark = { title: 'a title', url: 'test' }
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',

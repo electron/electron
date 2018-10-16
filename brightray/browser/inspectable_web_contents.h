@@ -13,6 +13,8 @@ namespace content {
 class DevToolsAgentHost;
 }
 
+class PrefService;
+
 namespace brightray {
 
 class InspectableWebContentsDelegate;
@@ -20,12 +22,11 @@ class InspectableWebContentsView;
 
 class InspectableWebContents {
  public:
-  static InspectableWebContents* Create(
-      const content::WebContents::CreateParams&);
-
   // The returned InspectableWebContents takes ownership of the passed-in
   // WebContents.
-  static InspectableWebContents* Create(content::WebContents*);
+  static InspectableWebContents* Create(content::WebContents* web_contents,
+                                        PrefService* pref_service,
+                                        bool is_guest);
 
   virtual ~InspectableWebContents() {}
 
@@ -37,6 +38,8 @@ class InspectableWebContents {
   virtual void SetDelegate(InspectableWebContentsDelegate* delegate) = 0;
   virtual InspectableWebContentsDelegate* GetDelegate() const = 0;
 
+  virtual bool IsGuest() const = 0;
+  virtual void ReleaseWebContents() = 0;
   virtual void SetDevToolsWebContents(content::WebContents* devtools) = 0;
   virtual void SetDockState(const std::string& state) = 0;
   virtual void ShowDevTools() = 0;

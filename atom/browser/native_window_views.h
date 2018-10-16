@@ -7,6 +7,7 @@
 
 #include "atom/browser/native_window.h"
 
+#include <memory>
 #include <set>
 #include <string>
 
@@ -67,6 +68,7 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect GetBounds() override;
   gfx::Rect GetContentBounds() override;
   gfx::Size GetContentSize() override;
+  gfx::Rect GetNormalBounds() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
@@ -119,7 +121,10 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
-  void SetVisibleOnAllWorkspaces(bool visible) override;
+
+  void SetVisibleOnAllWorkspaces(bool visible,
+                                 bool visibleOnFullScreen) override;
+
   bool IsVisibleOnAllWorkspaces() override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;

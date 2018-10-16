@@ -55,6 +55,12 @@ class WebContentsPreferences
   // Return true if the particular preference value exists.
   bool GetPreference(const base::StringPiece& name, std::string* value) const;
 
+  // Whether to enable the remote module
+  bool IsRemoteModuleEnabled() const;
+
+  // Returns the preload script path.
+  bool GetPreloadPath(base::FilePath::StringType* path) const;
+
   // Returns the web preferences.
   base::Value* preference() { return &preference_; }
   base::Value* last_preference() { return &last_preference_; }

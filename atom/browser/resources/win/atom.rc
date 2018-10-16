@@ -1,12 +1,6 @@
 // Microsoft Visual C++ generated resource script.
 //
-#include "ui\\resources\\grit\\ui_unscaled_resources.h"
 #include "resource.h"
-#include <winresrc.h>
-#ifdef IDC_STATIC
-#undef IDC_STATIC
-#endif
-#define IDC_STATIC (-1)
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -56,8 +50,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,0,0,0
- PRODUCTVERSION 0,0,0,0
+ FILEVERSION 4,0,0,20181010
+ PRODUCTVERSION 4,0,0,20181010
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -74,12 +68,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "GitHub, Inc."
             VALUE "FileDescription", "Electron"
-            VALUE "FileVersion", "0.0.0"
+            VALUE "FileVersion", "4.0.0"
             VALUE "InternalName", "electron.exe"
             VALUE "LegalCopyright", "Copyright (C) 2015 GitHub, Inc. All rights reserved."
             VALUE "OriginalFilename", "electron.exe"
             VALUE "ProductName", "Electron"
-            VALUE "ProductVersion", "0.0.0"
+            VALUE "ProductVersion", "4.0.0"
             VALUE "SquirrelAwareVersion", "1"
         END
     END
@@ -110,30 +104,4 @@ END
 //
 
 IDR_MAINFRAME           ICON                    "atom.ico"
-/////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Cursors
-//
-IDC_ALIAS          CURSOR             "ui\\resources\\cursors\\aliasb.cur"
-IDC_CELL           CURSOR             "ui\\resources\\cursors\\cell.cur"
-IDC_COLRESIZE      CURSOR             "ui\\resources\\cursors\\col_resize.cur"
-IDC_COPYCUR        CURSOR             "ui\\resources\\cursors\\copy.cur"
-IDC_CURSOR_NONE    CURSOR             "ui\\resources\\cursors\\none.cur"
-IDC_HAND_GRAB      CURSOR             "ui\\resources\\cursors\\hand_grab.cur"
-IDC_HAND_GRABBING  CURSOR             "ui\\resources\\cursors\\hand_grabbing.cur"
-IDC_PAN_EAST       CURSOR             "ui\\resources\\cursors\\pan_east.cur"
-IDC_PAN_MIDDLE     CURSOR             "ui\\resources\\cursors\\pan_middle.cur"
-IDC_PAN_NORTH      CURSOR             "ui\\resources\\cursors\\pan_north.cur"
-IDC_PAN_NORTH_EAST CURSOR             "ui\\resources\\cursors\\pan_north_east.cur"
-IDC_PAN_NORTH_WEST CURSOR             "ui\\resources\\cursors\\pan_north_west.cur"
-IDC_PAN_SOUTH      CURSOR             "ui\\resources\\cursors\\pan_south.cur"
-IDC_PAN_SOUTH_EAST CURSOR             "ui\\resources\\cursors\\pan_south_east.cur"
-IDC_PAN_SOUTH_WEST CURSOR             "ui\\resources\\cursors\\pan_south_west.cur"
-IDC_PAN_WEST       CURSOR             "ui\\resources\\cursors\\pan_west.cur"
-IDC_ROWRESIZE      CURSOR             "ui\\resources\\cursors\\row_resize.cur"
-IDC_VERTICALTEXT   CURSOR             "ui\\resources\\cursors\\vertical_text.cur"
-IDC_ZOOMIN         CURSOR             "ui\\resources\\cursors\\zoom_in.cur"
-IDC_ZOOMOUT        CURSOR             "ui\\resources\\cursors\\zoom_out.cur"
 /////////////////////////////////////////////////////////////////////////////

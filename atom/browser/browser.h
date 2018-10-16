@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_BROWSER_H_
 #define ATOM_BROWSER_BROWSER_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -34,7 +35,6 @@ class Image;
 namespace atom {
 
 class AtomMenuModel;
-class LoginHandler;
 
 // This class is used for control application-wide operations.
 class Browser : public WindowListObserver {
@@ -234,10 +234,14 @@ class Browser : public WindowListObserver {
   void OnAccessibilitySupportChanged();
 
   // Request basic auth login.
-  void RequestLogin(LoginHandler* login_handler,
+  void RequestLogin(scoped_refptr<LoginHandler> login_handler,
                     std::unique_ptr<base::DictionaryValue> request_details);
 
   void PreMainMessageLoopRun();
+
+  // Stores the supplied |quit_closure|, to be run when the last Browser
+  // instance is destroyed.
+  static void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
 
   void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
 

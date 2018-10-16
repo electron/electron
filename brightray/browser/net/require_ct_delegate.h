@@ -22,7 +22,10 @@ class RequireCTDelegate
   void ClearCTExcludedHostsList();
 
   // net::TransportSecurityState::RequireCTDelegate:
-  CTRequirementLevel IsCTRequiredForHost(const std::string& host) override;
+  CTRequirementLevel IsCTRequiredForHost(
+      const std::string& host,
+      const net::X509Certificate* chain,
+      const net::HashValueVector& hashes) override;
 
  private:
   std::set<std::string> ct_excluded_hosts_;

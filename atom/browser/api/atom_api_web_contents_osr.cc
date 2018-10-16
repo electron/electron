@@ -17,15 +17,23 @@ namespace atom {
 namespace api {
 
 OffScreenWebContentsView* WebContents::GetOffScreenWebContentsView() const {
-  const auto* impl =
-      static_cast<const content::WebContentsImpl*>(web_contents());
-  return static_cast<OffScreenWebContentsView*>(impl->GetView());
+  if (IsOffScreen()) {
+    const auto* impl =
+        static_cast<const content::WebContentsImpl*>(web_contents());
+    return static_cast<OffScreenWebContentsView*>(impl->GetView());
+  } else {
+    return nullptr;
+  }
 }
 
 OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
     const {
-  return static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents()->GetRenderWidgetHostView());
+  if (IsOffScreen()) {
+    return static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents()->GetRenderWidgetHostView());
+  } else {
+    return nullptr;
+  }
 }
 
 }  // namespace api

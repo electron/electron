@@ -41,9 +41,15 @@ const CGFloat kVerticalTitleMargin = 2;
 
 @implementation StatusItemView
 
-- (id)initWithImage:(NSImage*)image icon:(atom::TrayIconCocoa*)icon {
-  image_.reset([image copy]);
+- (void)dealloc {
+  trayIcon_ = nil;
+  menuController_ = nil;
+  [super dealloc];
+}
+
+- (id)initWithIcon:(atom::TrayIconCocoa*)icon {
   trayIcon_ = icon;
+  menuController_ = nil;
   highlight_mode_ = atom::TrayIcon::HighlightMode::SELECTION;
   ignoreDoubleClickEvents_ = NO;
   forceHighlight_ = NO;
@@ -89,6 +95,7 @@ const CGFloat kVerticalTitleMargin = 2;
     trackingArea_.reset();
   }
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
+  [statusItem_ setView:nil];
   statusItem_.reset();
 }
 
@@ -156,6 +163,8 @@ const CGFloat kVerticalTitleMargin = 2;
 
 // The width of the icon.
 - (CGFloat)iconWidth {
+  if (!image_ && title_)
+    return kHorizontalMargin;
   CGFloat thickness = [[NSStatusBar systemStatusBar] thickness];
   CGFloat imageHeight = [image_ size].height;
   CGFloat imageWidth = [image_ size].width;
@@ -424,7 +433,9 @@ const CGFloat kVerticalTitleMargin = 2;
 
 namespace atom {
 
-TrayIconCocoa::TrayIconCocoa() {}
+TrayIconCocoa::TrayIconCocoa() {
+  status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
+}
 
 TrayIconCocoa::~TrayIconCocoa() {
   [status_item_view_ removeItem];
@@ -433,12 +444,7 @@ TrayIconCocoa::~TrayIconCocoa() {
 }
 
 void TrayIconCocoa::SetImage(const gfx::Image& image) {
-  if (status_item_view_) {
-    [status_item_view_ setImage:image.AsNSImage()];
-  } else {
-    status_item_view_.reset(
-        [[StatusItemView alloc] initWithImage:image.AsNSImage() icon:this]);
-  }
+  [status_item_view_ setImage:image.IsEmpty() ? nil : image.AsNSImage()];
 }
 
 void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
@@ -474,11 +480,18 @@ void TrayIconCocoa::SetContextMenu(AtomMenuModel* menu_model) {
   // Substribe to MenuClosed event.
   if (menu_model_)
     menu_model_->RemoveObserver(this);
-  menu_model->AddObserver(this);
 
-  // Create native menu.
-  menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
-                                  useDefaultAccelerator:NO]);
+  menu_model_ = menu_model;
+
+  if (menu_model) {
+    menu_model->AddObserver(this);
+    // Create native menu.
+    menu_.reset([[AtomMenuController alloc] initWithModel:menu_model
+                                    useDefaultAccelerator:NO]);
+  } else {
+    menu_.reset();
+  }
+
   [status_item_view_ setMenuController:menu_.get()];
 }
 

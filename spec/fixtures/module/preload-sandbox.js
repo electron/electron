@@ -1,6 +1,6 @@
 (function () {
-  const {setImmediate} = require('timers')
-  const {ipcRenderer} = require('electron')
+  const { setImmediate } = require('timers')
+  const { ipcRenderer } = require('electron')
   window.ipcRenderer = ipcRenderer
   window.setImmediate = setImmediate
   window.require = require
@@ -11,7 +11,14 @@
       window.test = {
         env: process.env,
         execPath: process.execPath,
-        platform: process.platform
+        pid: process.pid,
+        arch: process.arch,
+        platform: process.platform,
+        resourcesPath: process.resourcesPath,
+        sandboxed: process.sandboxed,
+        type: process.type,
+        version: process.version,
+        versions: process.versions
       }
     }
   } else if (location.href !== 'about:blank') {

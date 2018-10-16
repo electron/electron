@@ -1,7 +1,7 @@
-const {app} = require('electron')
+const { app } = require('electron')
 
 app.once('ready', () => {
-  console.log('started')  // ping parent
+  console.log('started') // ping parent
 })
 
 const gotTheLock = app.requestSingleInstanceLock()

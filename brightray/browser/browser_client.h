@@ -5,10 +5,10 @@
 #ifndef BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 #define BRIGHTRAY_BROWSER_BROWSER_CLIENT_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "brightray/browser/net_log.h"
 #include "content/public/browser/content_browser_client.h"
 
 namespace brightray {
@@ -45,7 +45,6 @@ class BrowserClient : public content::ContentBrowserClient {
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  NetLog* GetNetLog() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   std::string GetApplicationLocale() override;
@@ -59,7 +58,6 @@ class BrowserClient : public content::ContentBrowserClient {
 
  private:
   BrowserMainParts* browser_main_parts_;
-  NetLog net_log_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;

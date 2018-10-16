@@ -6,72 +6,66 @@
 #define ATOM_BROWSER_LOGIN_HANDLER_H_
 
 #include "base/callback.h"
-#include "base/optional.h"
+#include "base/memory/ref_counted.h"
+#include "base/memory/weak_ptr.h"
+#include "base/sequenced_task_runner_helpers.h"
 #include "base/strings/string16.h"
-#include "base/synchronization/lock.h"
-#include "content/public/browser/resource_dispatcher_host_login_delegate.h"
 #include "content/public/browser/resource_request_info.h"
+#include "net/base/network_delegate.h"
 
 namespace content {
 class WebContents;
 }
 
-namespace net {
-class AuthChallengeInfo;
-class AuthCredentials;
-}  // namespace net
-
 namespace atom {
 
 // Handles the HTTP basic auth, must be created on IO thread.
-class LoginHandler : public content::ResourceDispatcherHostLoginDelegate {
+class LoginHandler : public base::RefCountedThreadSafe<LoginHandler> {
  public:
-  LoginHandler(
-      net::AuthChallengeInfo* auth_info,
-      content::ResourceRequestInfo::WebContentsGetter web_contents_getter,
-      const GURL& url,
-      const base::Callback<void(const base::Optional<net::AuthCredentials>&)>&
-          auth_required_callback);
+  LoginHandler(net::URLRequest* request,
+               const net::AuthChallengeInfo& auth_info,
+               net::NetworkDelegate::AuthCallback callback,
+               net::AuthCredentials* credentials,
+               const content::ResourceRequestInfo* resource_request_info);
+
+  // The auth is cancelled, must be called on UI thread.
+  void CancelAuth();
+
+  // The URLRequest associated with the auth is destroyed.
+  void NotifyRequestDestroyed();
+
+  // Login with |username| and |password|, must be called on UI thread.
+  void Login(const base::string16& username, const base::string16& password);
 
   // Returns the WebContents associated with the request, must be called on UI
   // thread.
   content::WebContents* GetWebContents() const;
 
-  // The auth is cancelled, must be called on UI thread.
-  void CancelAuth();
-
-  // Login with |username| and |password|, must be called on UI thread.
-  void Login(const base::string16& username, const base::string16& password);
-
   const net::AuthChallengeInfo* auth_info() const { return auth_info_.get(); }
 
- protected:
-  ~LoginHandler() override;
-
-  // content::ResourceDispatcherHostLoginDelegate:
-  void OnRequestCancelled() override;
-
  private:
+  friend class base::RefCountedThreadSafe<LoginHandler>;
+  friend class base::DeleteHelper<LoginHandler>;
+
+  ~LoginHandler();
+
   // Must be called on IO thread.
   void DoCancelAuth();
   void DoLogin(const base::string16& username, const base::string16& password);
 
-  // Marks authentication as handled and returns the previous handled
-  // state.
-  bool TestAndSetAuthHandled();
-
-  // True if we've handled auth (Login or CancelAuth has been called).
-  bool handled_auth_ = false;
-  mutable base::Lock handled_auth_lock_;
+  // Credentials to be used for the auth.
+  net::AuthCredentials* credentials_;
 
   // Who/where/what asked for the authentication.
-  scoped_refptr<net::AuthChallengeInfo> auth_info_;
+  scoped_refptr<const net::AuthChallengeInfo> auth_info_;
 
   // WebContents associated with the login request.
   content::ResourceRequestInfo::WebContentsGetter web_contents_getter_;
 
-  base::Callback<void(const base::Optional<net::AuthCredentials>&)>
-      auth_required_callback_;
+  // Called with preferred value of net::NetworkDelegate::AuthRequiredResponse.
+  net::NetworkDelegate::AuthCallback auth_callback_;
+
+  base::WeakPtrFactory<LoginHandler> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };

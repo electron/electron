@@ -35,14 +35,14 @@
 #include "atom/common/atom_command_line.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
+#include "electron/buildflags/buildflags.h"
 
 namespace {
 
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 #endif
 
-#if defined(ENABLE_RUN_AS_NODE) || defined(OS_WIN)
 bool IsEnvSet(const char* name) {
 #if defined(OS_WIN)
   size_t required_size;
@@ -53,7 +53,6 @@ bool IsEnvSet(const char* name) {
   return indicator && indicator[0] != '\0';
 #endif
 }
-#endif
 
 }  // namespace
 
@@ -93,7 +92,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   }
 #endif
 
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   bool run_as_node = IsEnvSet(kRunAsNode);
 #else
   bool run_as_node = false;
@@ -120,7 +119,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   atexit([]() { OnThreadExit(nullptr, DLL_THREAD_DETACH, nullptr); });
 #endif
 
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (run_as_node) {
     std::vector<char*> argv(arguments.argc);
     std::transform(
@@ -156,7 +155,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 
 int main(int argc, char* argv[]) {
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (IsEnvSet(kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
@@ -175,7 +174,7 @@ int main(int argc, char* argv[]) {
 #else  // defined(OS_LINUX)
 
 int main(int argc, char* argv[]) {
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (IsEnvSet(kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, argv);
   }

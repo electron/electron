@@ -2,6 +2,8 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include <VersionHelpers.h>
+#include <appmodel.h>
 #include <shlobj.h>
 
 #include <memory>
@@ -60,6 +62,48 @@ PCWSTR GetRawAppUserModelID() {
 bool GetAppUserModelID(ScopedHString* app_id) {
   app_id->Reset(GetRawAppUserModelID());
   return app_id->success();
+}
+
+bool IsRunningInDesktopBridgeImpl() {
+  if (IsWindows8OrGreater()) {
+    // GetPackageFamilyName is not available on Windows 7
+    using GetPackageFamilyNameFuncPtr = decltype(&GetPackageFamilyName);
+
+    static bool initialize_get_package_family_name = true;
+    static GetPackageFamilyNameFuncPtr get_package_family_namePtr = NULL;
+
+    if (initialize_get_package_family_name) {
+      initialize_get_package_family_name = false;
+      HMODULE kernel32_base = GetModuleHandle(L"Kernel32.dll");
+      if (!kernel32_base) {
+        NOTREACHED() << " " << __FUNCTION__ << "(): Can't open Kernel32.dll";
+        return false;
+      }
+
+      get_package_family_namePtr =
+          reinterpret_cast<GetPackageFamilyNameFuncPtr>(
+              GetProcAddress(kernel32_base, "GetPackageFamilyName"));
+
+      if (!get_package_family_namePtr) {
+        return false;
+      }
+    }
+
+    UINT32 length;
+    wchar_t packageFamilyName[PACKAGE_FAMILY_NAME_MAX_LENGTH + 1];
+    HANDLE proc = GetCurrentProcess();
+    LONG result =
+        (*get_package_family_namePtr)(proc, &length, packageFamilyName);
+
+    return result == ERROR_SUCCESS;
+  } else {
+    return false;
+  }
+}
+
+bool IsRunningInDesktopBridge() {
+  static bool result = IsRunningInDesktopBridgeImpl();
+  return result;
 }
 
 }  // namespace brightray

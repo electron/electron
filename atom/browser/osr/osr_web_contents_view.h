@@ -50,7 +50,9 @@ class OffScreenWebContentsView : public content::WebContentsView,
       content::RenderWidgetHost* render_widget_host) override;
   void SetPageTitle(const base::string16& title) override;
   void RenderViewCreated(content::RenderViewHost* host) override;
-  void RenderViewSwappedIn(content::RenderViewHost* host) override;
+  void RenderViewReady() override;
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
 
 #if defined(OS_MACOSX)

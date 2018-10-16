@@ -70,13 +70,15 @@
 - (id)initWithFrame:(NSRect)frame {
   self = [super initWithFrame:frame];
 
-  NSButton* close_button = [NSWindow standardWindowButton:NSWindowCloseButton
-                                             forStyleMask:NSTitledWindowMask];
+  NSButton* close_button =
+      [NSWindow standardWindowButton:NSWindowCloseButton
+                        forStyleMask:NSWindowStyleMaskTitled];
   NSButton* miniaturize_button =
       [NSWindow standardWindowButton:NSWindowMiniaturizeButton
-                        forStyleMask:NSTitledWindowMask];
-  NSButton* zoom_button = [NSWindow standardWindowButton:NSWindowZoomButton
-                                            forStyleMask:NSTitledWindowMask];
+                        forStyleMask:NSWindowStyleMaskTitled];
+  NSButton* zoom_button =
+      [NSWindow standardWindowButton:NSWindowZoomButton
+                        forStyleMask:NSWindowStyleMaskTitled];
 
   CGFloat x = 0;
   const CGFloat space_between = 20;
@@ -319,18 +321,18 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
     useStandardWindow = false;
   }
 
-  NSUInteger styleMask = NSTitledWindowMask;
+  NSUInteger styleMask = NSWindowStyleMaskTitled;
   if (@available(macOS 10.10, *)) {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER &&
         (!useStandardWindow || transparent() || !has_frame())) {
-      styleMask = NSFullSizeContentViewWindowMask;
+      styleMask = NSWindowStyleMaskFullSizeContentView;
     }
   }
   if (minimizable) {
     styleMask |= NSMiniaturizableWindowMask;
   }
   if (closable) {
-    styleMask |= NSClosableWindowMask;
+    styleMask |= NSWindowStyleMaskClosable;
   }
   if (title_bar_style_ != NORMAL) {
     // The window without titlebar is treated the same with frameless window.
@@ -469,6 +471,9 @@ NativeWindowMac::NativeWindowMac(const mate::Dictionary& options,
   // Default content view.
   SetContentView(new views::View());
   AddContentViewLayers();
+
+  original_frame_ = [window_ frame];
+  original_level_ = [window_ level];
 }
 
 NativeWindowMac::~NativeWindowMac() {
@@ -594,6 +599,9 @@ void NativeWindowMac::Maximize() {
   if (IsMaximized())
     return;
 
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ zoom:nil];
 }
 
@@ -605,7 +613,7 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSResizableWindowMask) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
     return [window_ isZoomed];
   } else {
     NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
@@ -618,6 +626,12 @@ bool NativeWindowMac::IsMaximized() {
 }
 
 void NativeWindowMac::Minimize() {
+  if (IsMinimized())
+    return;
+
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ miniaturize:nil];
 }
 
@@ -633,11 +647,14 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (fullscreen == IsFullscreen())
     return;
 
+  // Take note of the current window size
+  if (IsNormal())
+    original_frame_ = [window_ frame];
   [window_ toggleFullScreenMode:nil];
 }
 
 bool NativeWindowMac::IsFullscreen() const {
-  return [window_ styleMask] & NSFullScreenWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskFullScreen;
 }
 
 void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
@@ -666,6 +683,23 @@ gfx::Rect NativeWindowMac::GetBounds() {
   NSScreen* screen = [[NSScreen screens] firstObject];
   bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
   return bounds;
+}
+
+bool NativeWindowMac::IsNormal() {
+  return NativeWindow::IsNormal() && !IsSimpleFullScreen();
+}
+
+gfx::Rect NativeWindowMac::GetNormalBounds() {
+  if (IsNormal()) {
+    return GetBounds();
+  }
+  NSRect frame = original_frame_;
+  gfx::Rect bounds(frame.origin.x, 0, NSWidth(frame), NSHeight(frame));
+  NSScreen* screen = [[NSScreen screens] firstObject];
+  bounds.set_y(NSHeight([screen frame]) - NSMaxY(frame));
+  return bounds;
+  // Works on OS_WIN !
+  // return widget()->GetRestoredBounds();
 }
 
 void NativeWindowMac::SetContentSizeConstraints(
@@ -699,11 +733,11 @@ void NativeWindowMac::MoveTop() {
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
-  SetStyleMask(resizable, NSResizableWindowMask);
+  SetStyleMask(resizable, NSWindowStyleMaskResizable);
 }
 
 bool NativeWindowMac::IsResizable() {
-  return [window_ styleMask] & NSResizableWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskResizable;
 }
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
@@ -769,11 +803,11 @@ bool NativeWindowMac::IsFullScreenable() {
 }
 
 void NativeWindowMac::SetClosable(bool closable) {
-  SetStyleMask(closable, NSClosableWindowMask);
+  SetStyleMask(closable, NSWindowStyleMaskClosable);
 }
 
 bool NativeWindowMac::IsClosable() {
-  return [window_ styleMask] & NSClosableWindowMask;
+  return [window_ styleMask] & NSWindowStyleMaskClosable;
 }
 
 void NativeWindowMac::SetAlwaysOnTop(bool top,
@@ -859,8 +893,11 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   if (simple_fullscreen && !is_simple_fullscreen_) {
     is_simple_fullscreen_ = true;
 
-    // Take note of the current window size
-    original_frame_ = [window frame];
+    // Take note of the current window size and level
+    if (IsNormal()) {
+      original_frame_ = [window_ frame];
+      original_level_ = [window_ level];
+    }
 
     simple_fullscreen_options_ = [NSApp currentSystemPresentationOptions];
     simple_fullscreen_mask_ = [window styleMask];
@@ -877,9 +914,16 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     NSRect fullscreenFrame = [window.screen frame];
 
+    // If our app has dock hidden, set the window level higher so another app's
+    // menu bar doesn't appear on top of our fullscreen app.
+    if ([[NSRunningApplication currentApplication] activationPolicy] !=
+        NSApplicationActivationPolicyRegular) {
+      window.level = NSPopUpMenuWindowLevel;
+    }
+
     if (!fullscreen_window_title()) {
       // Hide the titlebar
-      SetStyleMask(false, NSTitledWindowMask);
+      SetStyleMask(false, NSWindowStyleMaskTitled);
 
       // Resize the window to accomodate the _entire_ screen size
       fullscreenFrame.size.height -=
@@ -904,7 +948,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
 
     if (!fullscreen_window_title()) {
       // Restore the titlebar
-      SetStyleMask(true, NSTitledWindowMask);
+      SetStyleMask(true, NSWindowStyleMaskTitled);
     }
 
     // Restore window controls visibility state
@@ -917,6 +961,7 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
         setHidden:window_button_hidden];
 
     [window setFrame:original_frame_ display:YES animate:YES];
+    window.level = original_level_;
 
     [NSApp setPresentationOptions:simple_fullscreen_options_];
 
@@ -965,15 +1010,7 @@ bool NativeWindowMac::IsKiosk() {
 void NativeWindowMac::SetBackgroundColor(SkColor color) {
   base::ScopedCFTypeRef<CGColorRef> cgcolor(
       skia::CGColorCreateFromSkColor(color));
-  // views::Widget adds a layer for the content view.
-  auto* bridge = views::NativeWidgetMac::GetBridgeForNativeWindow(window_);
-  NSView* compositor_superview =
-      static_cast<ui::AcceleratedWidgetMacNSView*>(bridge)
-          ->AcceleratedWidgetGetNSView();
-  [[compositor_superview layer] setBackgroundColor:cgcolor];
-  // When using WebContents as content view, the contentView also has layer.
-  if ([[window_ contentView] wantsLayer])
-    [[[window_ contentView] layer] setBackgroundColor:cgcolor];
+  [[[window_ contentView] layer] setBackgroundColor:cgcolor];
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
@@ -1024,6 +1061,9 @@ void NativeWindowMac::SetContentProtection(bool enable) {
 }
 
 void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+
   if (browser_view()) {
     [browser_view()->GetInspectableWebContentsView()->GetNativeView()
             removeFromSuperview];
@@ -1031,6 +1071,7 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
   }
 
   if (!view) {
+    [CATransaction commit];
     return;
   }
 
@@ -1040,6 +1081,8 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
                          positioned:NSWindowAbove
                          relativeTo:nil];
   native_view.hidden = NO;
+
+  [CATransaction commit];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
@@ -1100,8 +1143,11 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
+                                                bool visibleOnFullScreen) {
   SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+  SetCollectionBehavior(visibleOnFullScreen,
+                        NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
 bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
@@ -1314,10 +1360,16 @@ void NativeWindowMac::AddContentViewLayers() {
   // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
   // window, otherwise a semi-transparent frame would show.
   if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
-    base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
-    [background_layer
-        setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
-    [[window_ contentView] setLayer:background_layer];
+    // For normal window, we need to explicitly set layer for contentView to
+    // make setBackgroundColor work correctly.
+    // There is no need to do so for frameless window, and doing so would make
+    // titleBarStyle stop working.
+    if (has_frame()) {
+      base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+      [background_layer
+          setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
+      [[window_ contentView] setLayer:background_layer];
+    }
     [[window_ contentView] setWantsLayer:YES];
   }
 

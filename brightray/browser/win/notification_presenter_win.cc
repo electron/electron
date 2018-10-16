@@ -6,6 +6,7 @@
 
 #include "brightray/browser/win/notification_presenter_win.h"
 
+#include <memory>
 #include <string>
 #include <vector>
 

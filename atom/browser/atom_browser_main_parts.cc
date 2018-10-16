@@ -4,12 +4,14 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include <utility>
+
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
-#include "atom/browser/bridge_task_runner.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/common/api/atom_bindings.h"
@@ -17,11 +19,17 @@
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/browser/browser_process.h"
+#include "chrome/browser/browser_process_impl.h"
+#include "chrome/browser/icon_manager.h"
+#include "chrome/browser/net/chrome_net_log_helper.h"
+#include "components/net_log/chrome_net_log.h"
+#include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/mojom/constants.mojom.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -31,9 +39,9 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "atom/browser/atom_web_ui_controller_factory.h"
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/views_delegate_mac.h"
@@ -58,12 +66,13 @@ void Erase(T* container, typename T::iterator iter) {
 // static
 AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
-AtomBrowserMainParts::AtomBrowserMainParts()
-    : fake_browser_process_(new BrowserProcess),
+AtomBrowserMainParts::AtomBrowserMainParts(
+    const content::MainFunctionParams& params)
+    : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),
-      gc_timer_(true, true) {
+      main_function_params_(params) {
   DCHECK(!self_) << "Cannot have two AtomBrowserMainParts";
   self_ = this;
   // Register extension scheme as web safe scheme.
@@ -112,31 +121,28 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
 
 int AtomBrowserMainParts::PreEarlyInitialization() {
   const int result = brightray::BrowserMainParts::PreEarlyInitialization();
-  if (result != content::RESULT_CODE_NORMAL_EXIT)
+  if (result != service_manager::RESULT_CODE_NORMAL_EXIT)
     return result;
 
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return service_manager::RESULT_CODE_NORMAL_EXIT;
 }
 
 void AtomBrowserMainParts::PostEarlyInitialization() {
   brightray::BrowserMainParts::PostEarlyInitialization();
 
-  // Temporary set the bridge_task_runner_ as current thread's task runner,
-  // so we can fool gin::PerIsolateData to use it as its task runner, instead
-  // of getting current message loop's task runner, which is null for now.
-  bridge_task_runner_ = new BridgeTaskRunner;
-  base::ThreadTaskRunnerHandle handle(bridge_task_runner_);
+  // A workaround was previously needed because there was no ThreadTaskRunner
+  // set.  If this check is failing we may need to re-add that workaround
+  DCHECK(base::ThreadTaskRunnerHandle::IsSet());
 
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
-  js_env_.reset(new JavascriptEnvironment);
+  js_env_.reset(new JavascriptEnvironment(node_bindings_->uv_loop()));
 
   node_bindings_->Initialize();
-
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->context(), js_env_->platform());
@@ -144,7 +150,7 @@ void AtomBrowserMainParts::PostEarlyInitialization() {
 
   // Enable support for v8 inspector
   node_debugger_.reset(new NodeDebugger(env));
-  node_debugger_->Start(js_env_->platform());
+  node_debugger_->Start();
 
   // Add Electron extended APIs.
   atom_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -175,7 +181,30 @@ int AtomBrowserMainParts::PreCreateThreads() {
   ui::InitIdleMonitor();
 #endif
 
+  net_log_ = std::make_unique<net_log::ChromeNetLog>();
+  auto& command_line = main_function_params_.command_line;
+  // start net log trace if --log-net-log is passed in the command line.
+  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
+    base::FilePath log_file =
+        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
+    if (!log_file.empty()) {
+      net_log_->StartWritingToFile(
+          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          command_line.GetCommandLineString(), std::string());
+    }
+  }
+  // Initialize net log file exporter.
+  net_log_->net_export_file_writer()->Initialize();
+
+  // Manage global state of net and other IO thread related.
+  io_thread_ = std::make_unique<IOThread>(net_log_.get());
+
   return result;
+}
+
+void AtomBrowserMainParts::PostDestroyThreads() {
+  brightray::BrowserMainParts::PostDestroyThreads();
+  io_thread_.reset();
 }
 
 void AtomBrowserMainParts::ToolkitInitialized() {
@@ -188,8 +217,6 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 }
 
 void AtomBrowserMainParts::PreMainMessageLoopRun() {
-  js_env_->OnMessageLoopCreated();
-
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -204,14 +231,12 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                   base::Bind(&v8::Isolate::LowMemoryNotification,
                              base::Unretained(js_env_->isolate())));
 
-#if defined(ENABLE_PDF_VIEWER)
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
-#endif  // defined(ENABLE_PDF_VIEWER)
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   brightray::BrowserMainParts::PreMainMessageLoopRun();
-  bridge_task_runner_->MessageLoopIsReady();
-  bridge_task_runner_ = nullptr;
 
 #if defined(USE_X11)
   libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());
@@ -228,8 +253,14 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
 }
 
 bool AtomBrowserMainParts::MainMessageLoopRun(int* result_code) {
+  js_env_->OnMessageLoopCreated();
   exit_code_ = result_code;
   return brightray::BrowserMainParts::MainMessageLoopRun(result_code);
+}
+
+void AtomBrowserMainParts::PreDefaultMainMessageLoopRun(
+    base::OnceClosure quit_closure) {
+  Browser::SetMainMessageLoopQuitClosure(std::move(quit_closure));
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopStart() {
@@ -237,9 +268,6 @@ void AtomBrowserMainParts::PostMainMessageLoopStart() {
 #if defined(OS_POSIX)
   HandleShutdownSignals();
 #endif
-  // TODO(deepak1556): Enable this optionally based on response
-  // from AtomPermissionManager.
-  GetGeolocationControl()->UserDidOptIntoLocationServices();
 }
 
 void AtomBrowserMainParts::PostMainMessageLoopRun() {
@@ -277,6 +305,13 @@ AtomBrowserMainParts::GetGeolocationControl() {
       content::ServiceManagerConnection::GetForProcess()->GetConnector();
   connector->BindInterface(device::mojom::kServiceName, std::move(request));
   return geolocation_control_.get();
+}
+
+IconManager* AtomBrowserMainParts::GetIconManager() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (!icon_manager_.get())
+    icon_manager_.reset(new IconManager);
+  return icon_manager_.get();
 }
 
 }  // namespace atom

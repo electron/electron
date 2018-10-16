@@ -86,7 +86,7 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   auto* relay =
       web_contents ? NativeWindowRelay::FromWebContents(web_contents) : nullptr;
   if (relay)
-    window = relay->window.get();
+    window = relay->GetNativeWindow();
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   bool offscreen =
@@ -150,8 +150,8 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
   if (!save_path.empty()) {
     callback.Run(save_path,
                  download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
-                 download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                 save_path, download::DOWNLOAD_INTERRUPT_REASON_NONE);
+                 download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, save_path,
+                 download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 

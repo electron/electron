@@ -21,8 +21,6 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::NativeWindowRelay);
-
 namespace atom {
 
 namespace {
@@ -60,7 +58,10 @@ NativeWindow::NativeWindow(const mate::Dictionary& options,
 
 NativeWindow::~NativeWindow() {
   // It's possible that the windows gets destroyed before it's closed, in that
-  // case we need to ensure the OnWindowClosed message is still notified.
+  // case we need to ensure the Widget delegate gets destroyed and
+  // OnWindowClosed message is still notified.
+  if (widget_->widget_delegate())
+    widget_->OnNativeWidgetDestroyed();
   NotifyWindowClosed();
 }
 
@@ -206,6 +207,10 @@ void NativeWindow::SetContentBounds(const gfx::Rect& bounds, bool animate) {
 
 gfx::Rect NativeWindow::GetContentBounds() {
   return WindowBoundsToContentBounds(GetBounds());
+}
+
+bool NativeWindow::IsNormal() {
+  return !IsMinimized() && !IsMaximized() && !IsFullscreen();
 }
 
 void NativeWindow::SetSizeConstraints(
@@ -464,6 +469,12 @@ void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
     observer.OnWindowWillResize(new_bounds, prevent_default);
 }
 
+void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
+                                        bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowWillMove(new_bounds, prevent_default);
+}
+
 void NativeWindow::NotifyWindowResize() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
@@ -524,6 +535,11 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
     observer.OnWindowLeaveHtmlFullScreen();
 }
 
+void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowAlwaysOnTopChanged();
+}
+
 void NativeWindow::NotifyWindowExecuteWindowsCommand(
     const std::string& command) {
   for (NativeWindowObserver& observer : observers_)
@@ -559,8 +575,22 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
+// static
+const void* const NativeWindowRelay::kNativeWindowRelayUserDataKey =
+    &NativeWindowRelay::kNativeWindowRelayUserDataKey;
+
+// static
+void NativeWindowRelay::CreateForWebContents(
+    content::WebContents* web_contents,
+    base::WeakPtr<NativeWindow> window) {
+  DCHECK(web_contents);
+  DCHECK(!web_contents->GetUserData(kNativeWindowRelayUserDataKey));
+  web_contents->SetUserData(kNativeWindowRelayUserDataKey,
+                            base::WrapUnique(new NativeWindowRelay(window)));
+}
+
 NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
-    : key(UserDataKey()), window(window) {}
+    : native_window_(window) {}
 
 NativeWindowRelay::~NativeWindowRelay() = default;
 

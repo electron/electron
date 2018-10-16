@@ -5,7 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 ```javascript
-const {systemPreferences} = require('electron')
+const { systemPreferences } = require('electron')
 console.log(systemPreferences.isDarkMode())
 ```
 
@@ -34,6 +34,14 @@ Returns:
 * `event` Event
 * `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
   a high contrast theme, is being used, `false` otherwise.
+
+### Event: 'appearance-changed' _macOS_
+
+Returns:
+
+* `newAppearance` String - Can be `dark` or `light`
+
+**NOTE:** This event is only emitted after you have called `startAppLevelAppearanceTrackingOS`
 
 ## Methods
 
@@ -185,8 +193,8 @@ An example of using it to determine if you should create a transparent window or
 not (transparent windows won't work correctly when DWM composition is disabled):
 
 ```javascript
-const {BrowserWindow, systemPreferences} = require('electron')
-let browserOptions = {width: 1000, height: 800}
+const { BrowserWindow, systemPreferences } = require('electron')
+let browserOptions = { width: 1000, height: 800 }
 
 // Make the window transparent only if the platform supports it.
 if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
@@ -274,3 +282,34 @@ Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast
 theme, is active, `false` otherwise.
 
 [windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
+
+### `systemPreferences.getEffectiveAppearance()` _macOS_
+
+Returns `String` - Can be `dark`, `light` or `unknown`.
+
+Gets the macOS appearance setting that is currently applied to your application,
+maps to [NSApplication.effectiveAppearance](https://developer.apple.com/documentation/appkit/nsapplication/2967171-effectiveappearance?language=objc)
+
+Please note that until Electron is built targeting the 10.14 SDK, your application's
+`effectiveAppearance` will default to 'light' and won't inherit the OS preference. In
+the interim in order for your application to inherit the OS preference you must set the
+`NSRequiresAquaSystemAppearance` key in your apps `Info.plist` to `false`.  If you are
+using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode`
+packager option to `true`.  See the [Electron Packager API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
+for more details.
+
+
+### `systemPreferences.getAppLevelAppearance()` _macOS_
+
+Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
+
+Gets the macOS appearance setting that you have declared you want for
+your application, maps to [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc).
+You can use the `setAppLevelAppearance` API to set this value.
+
+### `systemPreferences.setAppLevelAppearance(appearance)` _macOS_
+
+* `appearance` String | null - Can be `dark` or `light`
+
+Sets the appearance setting for your application, this should override the
+system default and override the value of `getEffectiveAppearance`.

@@ -5,6 +5,7 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include "atom/app/atom_content_client.h"
@@ -21,7 +22,7 @@
 #include "base/logging.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
-#include "ipc/ipc_features.h"
+#include "ipc/ipc_buildflags.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -32,6 +33,10 @@
 #define IPC_LOG_TABLE_ADD_ENTRY(msg_id, logger) \
   content::RegisterIPCLogger(msg_id, logger)
 #include "atom/common/common_message_generator.h"
+#endif
+
+#if defined(OS_MACOSX)
+#include "atom/app/atom_main_delegate_mac.h"
 #endif
 
 namespace atom {
@@ -144,7 +149,7 @@ void AtomMainDelegate::PreSandboxStartup() {
           service_manager::switches::kDisableSetuidSandbox);
     } else {
       // Disable renderer sandbox for most of node's functions.
-      command_line->AppendSwitch(::switches::kNoSandbox);
+      command_line->AppendSwitch(service_manager::switches::kNoSandbox);
     }
   }
 
@@ -154,6 +159,12 @@ void AtomMainDelegate::PreSandboxStartup() {
 #if defined(OS_MACOSX)
   // Enable AVFoundation.
   command_line->AppendSwitch("enable-avfoundation");
+#endif
+}
+
+void AtomMainDelegate::PreContentInitialization() {
+#if defined(OS_MACOSX)
+  RegisterAtomCrApp();
 #endif
 }
 
@@ -167,7 +178,7 @@ AtomMainDelegate::CreateContentRendererClient() {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kEnableSandbox) ||
       !base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ::switches::kNoSandbox)) {
+          service_manager::switches::kNoSandbox)) {
     renderer_client_.reset(new AtomSandboxedRendererClient);
   } else {
     renderer_client_.reset(new AtomRendererClient);

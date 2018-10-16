@@ -1,0 +1,31 @@
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+steps:
+- bash: |
+    # "depot_tools" has to be checkout into "//third_party/depot_tools" so pylint.py can a "pylintrc" file.
+    git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
+    echo "##vso[task.setvariable variable=PATH]$PATH:${AGENT_BUILDDIRECTORY}/third_party/depot_tools"
+  displayName: Setup Depot Tools
+
+- bash: |
+    chromium_revision="$(grep -A1 chromium_version DEPS | tr -d '\n' | cut -d\' -f4)"
+    buildtools_revision="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep buildtools_revision -A1 | tr -d '\n' | cut -d\' -f4)"
+
+    git clone https://chromium.googlesource.com/chromium/buildtools "${AGENT_TEMPDIRECTORY}/buildtools"
+    (cd "${AGENT_TEMPDIRECTORY}/buildtools" && git checkout "$buildtools_revision")
+    echo "##vso[task.setvariable variable=CHROMIUM_BUILDTOOLS_PATH]$AGENT_TEMPDIRECTORY/buildtools"
+
+    download_from_google_storage --bucket chromium-gn -s "${AGENT_TEMPDIRECTORY}/buildtools/linux64/gn.sha1"
+  displayName: Download gn binary
+
+- bash: |
+    # gn.py tries to find a gclient root folder starting from the current dir.
+    # When it fails and returns "None" path, the whole script fails. Let's "fix" it.
+    touch .gclient
+    # Another option would be to checkout "buildtools" inside the Electron checkout,
+    # but then we would lint its contents (at least gn format), and it doesn't pass it.
+
+    npm install
+    npm run lint
+  displayName: Run Lint

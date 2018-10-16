@@ -10,6 +10,7 @@
 
 #include <sys/stat.h>
 #include <string>
+#include <utility>
 
 #if defined(OS_LINUX)
 #include <glib.h>  // for g_setenv()
@@ -22,13 +23,13 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/browser_context.h"
 #include "brightray/browser/devtools_manager_delegate.h"
 #include "brightray/browser/media/media_capture_devices_dispatcher.h"
 #include "brightray/browser/web_ui_controller_factory.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "media/base/localized_strings.h"
@@ -93,12 +94,12 @@ const int kWaitForUIThreadSeconds = 10;
 
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
-  if (PathService::Get(DIR_APP_DATA, &path))
+  if (base::PathService::Get(DIR_APP_DATA, &path))
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
-  PathService::Override(DIR_APP_DATA, path);
+  base::PathService::Override(DIR_APP_DATA, path);
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
@@ -135,7 +136,7 @@ int BrowserX11IOErrorHandler(Display* d) {
   g_in_x11_io_error_handler = true;
   LOG(ERROR) << "X IO error received (X server probably went away)";
   base::ThreadTaskRunnerHandle::Get()->PostTask(
-      FROM_HERE, base::MessageLoop::QuitWhenIdleClosure());
+      FROM_HERE, base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
 
   return 0;
 }
@@ -171,26 +172,33 @@ BrowserMainParts::~BrowserMainParts() {}
 #if defined(OS_WIN) || defined(OS_LINUX)
 void OverrideAppLogsPath() {
   base::FilePath path;
-  if (PathService::Get(brightray::DIR_APP_DATA, &path)) {
+  if (base::PathService::Get(brightray::DIR_APP_DATA, &path)) {
     path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    PathService::Override(DIR_APP_LOGS, path);
+    base::PathService::Override(DIR_APP_LOGS, path);
   }
 }
 #endif
 
 void BrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  const auto enable_features =
+  auto enable_features =
       cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
+  // Node depends on SharedArrayBuffer support, which was temporarily disabled
+  // by https://chromium-review.googlesource.com/c/chromium/src/+/849429 (in
+  // M64) and reenabled by
+  // https://chromium-review.googlesource.com/c/chromium/src/+/1159358 (in
+  // M70). Once Electron upgrades to M70, we can remove this.
+  enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
-
-  // TODO(deepak1556): Disable guest webcontents based on OOPIF feature.
-  // Disable surface synchronization and async wheel events to make OSR work.
-  disable_features +=
-      ",GuestViewCrossProcessFrames,SurfaceSynchronization,AsyncWheelEvents";
-
+#if defined(OS_MACOSX)
+  // Disable the V2 sandbox on macOS.
+  // Chromium is going to use the system sandbox API of macOS for the sandbox
+  // implmentation, we may have to deprecate --mixed-sandbox for macOS once
+  // Chromium drops support for the old sandbox implmentation.
+  disable_features += std::string(",") + features::kMacV2Sandbox.name;
+#endif
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
@@ -213,7 +221,7 @@ int BrowserMainParts::PreEarlyInitialization() {
   ui::SetX11ErrorHandlers(nullptr, nullptr);
 #endif
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return service_manager::RESULT_CODE_NORMAL_EXIT;
 }
 
 void BrowserMainParts::ToolkitInitialized() {
@@ -317,9 +325,6 @@ int BrowserMainParts::PreCreateThreads() {
   BrowserClient::SetApplicationLocale(
       l10n_util::GetApplicationLocale(custom_locale_));
 
-  // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>();
-
   return 0;
 }
 
@@ -328,8 +333,6 @@ void BrowserMainParts::PostDestroyThreads() {
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
 #endif
-
-  io_thread_.reset();
 }
 
 }  // namespace brightray

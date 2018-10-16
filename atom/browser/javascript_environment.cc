@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "atom/browser/microtasks_runner.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/task_scheduler/initialization_util.h"
@@ -19,10 +20,13 @@
 
 namespace atom {
 
-JavascriptEnvironment::JavascriptEnvironment()
-    : initialized_(Initialize()),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get()),
-      isolate_(isolate_holder_.isolate()),
+JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
+    : isolate_(Initialize(event_loop)),
+      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+                      gin::IsolateHolder::kSingleThread,
+                      gin::IsolateHolder::kAllowAtomicsWait,
+                      gin::IsolateHolder::IsolateCreationMode::kNormal,
+                      isolate_),
       isolate_scope_(isolate_),
       locker_(isolate_),
       handle_scope_(isolate_),
@@ -31,15 +35,7 @@ JavascriptEnvironment::JavascriptEnvironment()
 
 JavascriptEnvironment::~JavascriptEnvironment() = default;
 
-void JavascriptEnvironment::OnMessageLoopCreated() {
-  isolate_holder_.AddRunMicrotasksObserver();
-}
-
-void JavascriptEnvironment::OnMessageLoopDestroying() {
-  isolate_holder_.RemoveRunMicrotasksObserver();
-}
-
-bool JavascriptEnvironment::Initialize() {
+v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
@@ -49,16 +45,34 @@ bool JavascriptEnvironment::Initialize() {
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
+  auto* tracing_controller = new v8::TracingController();
+  node::tracing::TraceEventHelper::SetTracingController(tracing_controller);
   platform_ = node::CreatePlatform(
-      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0), nullptr);
+      base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
+      tracing_controller);
+
   v8::V8::InitializePlatform(platform_);
-  node::tracing::TraceEventHelper::SetTracingController(
-      new v8::TracingController());
   gin::IsolateHolder::Initialize(
       gin::IsolateHolder::kNonStrictMode, gin::IsolateHolder::kStableV8Extras,
       gin::ArrayBufferAllocator::SharedInstance(),
       nullptr /* external_reference_table */, false /* create_v8_platform */);
-  return true;
+
+  v8::Isolate* isolate = v8::Isolate::Allocate();
+  platform_->RegisterIsolate(isolate, event_loop);
+
+  return isolate;
+}
+
+void JavascriptEnvironment::OnMessageLoopCreated() {
+  DCHECK(!microtasks_runner_);
+  microtasks_runner_.reset(new MicrotasksRunner(isolate()));
+  base::MessageLoopCurrent::Get()->AddTaskObserver(microtasks_runner_.get());
+}
+
+void JavascriptEnvironment::OnMessageLoopDestroying() {
+  DCHECK(microtasks_runner_);
+  base::MessageLoopCurrent::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  platform_->UnregisterIsolate(isolate_);
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}

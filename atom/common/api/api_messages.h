@@ -10,6 +10,7 @@
 #include "content/public/common/common_param_traits.h"
 #include "content/public/common/referrer.h"
 #include "ipc/ipc_message_macros.h"
+#include "ipc/ipc_platform_file.h"
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/ipc/gfx_param_traits.h"
 #include "url/gurl.h"
@@ -25,18 +26,27 @@ IPC_STRUCT_TRAITS_BEGIN(atom::DraggableRegion)
 IPC_STRUCT_TRAITS_END()
 
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_Message,
-                    base::string16 /* channel */,
+                    std::string /* channel */,
                     base::ListValue /* arguments */)
 
 IPC_SYNC_MESSAGE_ROUTED2_1(AtomFrameHostMsg_Message_Sync,
-                           base::string16 /* channel */,
+                           std::string /* channel */,
                            base::ListValue /* arguments */,
                            base::ListValue /* result */)
 
-IPC_MESSAGE_ROUTED3(AtomFrameMsg_Message,
+IPC_MESSAGE_ROUTED5(AtomFrameHostMsg_Message_To,
+                    bool /* internal */,
                     bool /* send_to_all */,
-                    base::string16 /* channel */,
+                    int32_t /* web_contents_id */,
+                    std::string /* channel */,
                     base::ListValue /* arguments */)
+
+IPC_MESSAGE_ROUTED5(AtomFrameMsg_Message,
+                    bool /* internal */,
+                    bool /* send_to_all */,
+                    std::string /* channel */,
+                    base::ListValue /* arguments */,
+                    int32_t /* sender_id */)
 
 IPC_MESSAGE_ROUTED0(AtomViewMsg_Offscreen)
 
@@ -69,3 +79,7 @@ IPC_SYNC_MESSAGE_ROUTED0_1(AtomFrameHostMsg_GetZoomLevel, double /* result */)
 IPC_MESSAGE_ROUTED2(AtomFrameHostMsg_PDFSaveURLAs,
                     GURL /* url */,
                     content::Referrer /* referrer */)
+
+IPC_MESSAGE_ROUTED2(AtomFrameMsg_TakeHeapSnapshot,
+                    IPC::PlatformFileForTransit /* file_handle */,
+                    std::string /* channel */)

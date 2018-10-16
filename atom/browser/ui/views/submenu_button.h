@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 #define ATOM_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 
+#include <memory>
+
 #include "ui/views/animation/ink_drop_highlight.h"
 #include "ui/views/controls/button/menu_button.h"
 

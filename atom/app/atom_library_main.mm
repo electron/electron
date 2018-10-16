@@ -23,7 +23,7 @@ int AtomMain(int argc, char* argv[]) {
   return content::ContentMain(params);
 }
 
-#ifdef ENABLE_RUN_AS_NODE
+#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int AtomInitializeICUandStartNode(int argc, char* argv[]) {
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;

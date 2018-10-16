@@ -1,0 +1,12 @@
+resources:
+  containers:
+  - container: arm64v8-test-container
+    image: electronbuilds/arm64v8:0.0.4
+
+jobs:
+- job: Test_Arm64
+  container: arm64v8-test-container
+  displayName: Test Arm64 on Arm64 hardware
+  timeoutInMinutes: 30
+  steps:
+  - template: vsts-arm-test-steps.yml

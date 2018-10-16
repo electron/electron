@@ -4,7 +4,9 @@
 
 #include "atom/browser/web_contents_permission_helper.h"
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
@@ -14,14 +16,30 @@
 
 DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
 
+namespace {
+
+std::string MediaStreamTypeToString(content::MediaStreamType type) {
+  switch (type) {
+    case content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE:
+      return "audio";
+    case content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE:
+      return "video";
+    default:
+      return "unknown";
+  }
+}
+
+}  // namespace
+
 namespace atom {
 
 namespace {
 
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
-                        const content::MediaResponseCallback& callback,
+                        content::MediaResponseCallback callback,
                         bool allowed) {
-  brightray::MediaStreamDevicesController controller(request, callback);
+  brightray::MediaStreamDevicesController controller(request,
+                                                     std::move(callback));
   if (allowed)
     controller.TakeAction();
   else
@@ -33,7 +51,7 @@ void OnPointerLockResponse(content::WebContents* web_contents, bool allowed) {
     web_contents->GotResponseToLockMouseRequest(allowed);
 }
 
-void OnPermissionResponse(const base::Callback<void(bool)>& callback,
+void OnPermissionResponse(base::Callback<void(bool)> callback,
                           blink::mojom::PermissionStatus status) {
   if (status == blink::mojom::PermissionStatus::GRANTED)
     callback.Run(true);
@@ -56,11 +74,22 @@ void WebContentsPermissionHelper::RequestPermission(
     const base::DictionaryValue* details) {
   auto* rfh = web_contents_->GetMainFrame();
   auto* permission_manager = static_cast<AtomPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionManager());
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
   permission_manager->RequestPermissionWithDetails(
       permission, rfh, origin, false, details,
-      base::Bind(&OnPermissionResponse, callback));
+      base::Bind(&OnPermissionResponse, std::move(callback)));
+}
+
+bool WebContentsPermissionHelper::CheckPermission(
+    content::PermissionType permission,
+    const base::DictionaryValue* details) const {
+  auto* rfh = web_contents_->GetMainFrame();
+  auto* permission_manager = static_cast<AtomPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  auto origin = web_contents_->GetLastCommittedURL();
+  return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,
+                                                        details);
 }
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
@@ -72,11 +101,26 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
-    const content::MediaResponseCallback& response_callback) {
-  auto callback = base::Bind(&MediaAccessAllowed, request, response_callback);
+    content::MediaResponseCallback response_callback) {
+  auto callback = base::AdaptCallbackForRepeating(base::BindOnce(
+      &MediaAccessAllowed, request, std::move(response_callback)));
+
+  base::DictionaryValue details;
+  std::unique_ptr<base::ListValue> media_types(new base::ListValue);
+  if (request.audio_type ==
+      content::MediaStreamType::MEDIA_DEVICE_AUDIO_CAPTURE) {
+    media_types->AppendString("audio");
+  }
+  if (request.video_type ==
+      content::MediaStreamType::MEDIA_DEVICE_VIDEO_CAPTURE) {
+    media_types->AppendString("video");
+  }
+  details.SetList("mediaTypes", std::move(media_types));
+
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
-  RequestPermission(content::PermissionType::AUDIO_CAPTURE, callback);
+  RequestPermission(content::PermissionType::AUDIO_CAPTURE, std::move(callback),
+                    false, &details);
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
@@ -100,6 +144,17 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
   RequestPermission(
       static_cast<content::PermissionType>(PermissionType::OPEN_EXTERNAL),
       callback, user_gesture, &details);
+}
+
+bool WebContentsPermissionHelper::CheckMediaAccessPermission(
+    const GURL& security_origin,
+    content::MediaStreamType type) const {
+  base::DictionaryValue details;
+  details.SetString("securityOrigin", security_origin.spec());
+  details.SetString("mediaType", MediaStreamTypeToString(type));
+  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
+  // are presented as same type in content_converter.h.
+  return CheckPermission(content::PermissionType::AUDIO_CAPTURE, &details);
 }
 
 }  // namespace atom

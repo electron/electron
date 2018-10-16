@@ -5,6 +5,7 @@
 #include "atom/browser/net/asar/url_request_asar_job.h"
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "atom/common/asar/archive.h"
@@ -141,7 +142,8 @@ int URLRequestAsarJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
 }
 
 bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
-                                           int* http_status_code) {
+                                           int* http_status_code,
+                                           bool* insecure_scheme_was_upgraded) {
   if (type_ != TYPE_FILE)
     return false;
 #if defined(OS_WIN)
@@ -160,6 +162,7 @@ bool URLRequestAsarJob::IsRedirectResponse(GURL* location,
 
   *location = net::FilePathToFileURL(new_path);
   *http_status_code = 301;
+  *insecure_scheme_was_upgraded = false;
   return true;
 #else
   return false;

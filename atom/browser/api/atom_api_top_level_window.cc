@@ -19,6 +19,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 
@@ -79,7 +80,7 @@ TopLevelWindow::TopLevelWindow(v8::Isolate* isolate,
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
-#if defined(ENABLE_OSR)
+#if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
   mate::Dictionary web_preferences;
   bool offscreen;
@@ -142,6 +143,11 @@ void TopLevelWindow::WillCloseWindow(bool* prevent_default) {
 }
 
 void TopLevelWindow::OnWindowClosed() {
+  // Invalidate weak ptrs before the Javascript object is destroyed,
+  // there might be some delayed emit events which shouldn't be
+  // triggered after this.
+  weak_factory_.InvalidateWeakPtrs();
+
   RemoveFromWeakMap();
   window_->RemoveObserver(this);
 
@@ -163,11 +169,11 @@ void TopLevelWindow::OnWindowEndSession() {
 }
 
 void TopLevelWindow::OnWindowBlur() {
-  Emit("blur");
+  EmitEventSoon("blur");
 }
 
 void TopLevelWindow::OnWindowFocus() {
-  Emit("focus");
+  EmitEventSoon("focus");
 }
 
 void TopLevelWindow::OnWindowShow() {
@@ -203,6 +209,13 @@ void TopLevelWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
 
 void TopLevelWindow::OnWindowResize() {
   Emit("resize");
+}
+
+void TopLevelWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
+                                      bool* prevent_default) {
+  if (Emit("will-move", new_bounds)) {
+    *prevent_default = true;
+  }
 }
 
 void TopLevelWindow::OnWindowMove() {
@@ -247,6 +260,10 @@ void TopLevelWindow::OnWindowEnterHtmlFullScreen() {
 
 void TopLevelWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
+}
+
+void TopLevelWindow::OnWindowAlwaysOnTopChanged() {
+  Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
 void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
@@ -365,6 +382,14 @@ gfx::Rect TopLevelWindow::GetBounds() {
   return window_->GetBounds();
 }
 
+bool TopLevelWindow::IsNormal() {
+  return window_->IsNormal();
+}
+
+gfx::Rect TopLevelWindow::GetNormalBounds() {
+  return window_->GetNormalBounds();
+}
+
 void TopLevelWindow::SetContentBounds(const gfx::Rect& bounds,
                                       mate::Arguments* args) {
   bool animate = false;
@@ -378,8 +403,10 @@ gfx::Rect TopLevelWindow::GetContentBounds() {
 
 void TopLevelWindow::SetSize(int width, int height, mate::Arguments* args) {
   bool animate = false;
+  gfx::Size size = window_->GetMinimumSize();
+  size.SetToMax(gfx::Size(width, height));
   args->GetNext(&animate);
-  window_->SetSize(gfx::Size(width, height), animate);
+  window_->SetSize(size, animate);
 }
 
 std::vector<int> TopLevelWindow::GetSize() {
@@ -691,8 +718,13 @@ void TopLevelWindow::SetOverlayIcon(const gfx::Image& overlay,
   window_->SetOverlayIcon(overlay, description);
 }
 
-void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible) {
-  return window_->SetVisibleOnAllWorkspaces(visible);
+void TopLevelWindow::SetVisibleOnAllWorkspaces(bool visible,
+                                               mate::Arguments* args) {
+  mate::Dictionary options;
+  bool visibleOnFullScreen = false;
+  args->GetNext(&options) &&
+      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen);
 }
 
 bool TopLevelWindow::IsVisibleOnAllWorkspaces() {
@@ -967,6 +999,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isFullScreen", &TopLevelWindow::IsFullscreen)
       .SetMethod("setBounds", &TopLevelWindow::SetBounds)
       .SetMethod("getBounds", &TopLevelWindow::GetBounds)
+      .SetMethod("isNormal", &TopLevelWindow::IsNormal)
+      .SetMethod("getNormalBounds", &TopLevelWindow::GetNormalBounds)
       .SetMethod("setSize", &TopLevelWindow::SetSize)
       .SetMethod("getSize", &TopLevelWindow::GetSize)
       .SetMethod("setContentBounds", &TopLevelWindow::SetContentBounds)

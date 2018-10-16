@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-
-export TARGET_ARCH=arm
-
-script/cibuild-linux

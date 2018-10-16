@@ -60,11 +60,12 @@ bool OpenExternal(
     const GURL& url,
 #endif
     mate::Arguments* args) {
-  bool activate = true;
+  platform_util::OpenExternalOptions options;
   if (args->Length() >= 2) {
-    mate::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("activate", &activate);
+    mate::Dictionary obj;
+    if (args->GetNext(&obj)) {
+      obj.Get("activate", &options.activate);
+      obj.Get("workingDirectory", &options.working_dir);
     }
   }
 
@@ -72,13 +73,13 @@ bool OpenExternal(
     base::Callback<void(v8::Local<v8::Value>)> callback;
     if (args->GetNext(&callback)) {
       platform_util::OpenExternal(
-          url, activate,
+          url, options,
           base::Bind(&OnOpenExternalFinished, args->isolate(), callback));
       return true;
     }
   }
 
-  return platform_util::OpenExternal(url, activate);
+  return platform_util::OpenExternal(url, options);
 }
 
 #if defined(OS_WIN)

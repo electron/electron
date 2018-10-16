@@ -430,7 +430,7 @@ Some documentation updates, fixes and reworks: ${
     : this.docs.sort((a, b) => a.prNumber.localeCompare(b.prNumber)).map(note => note.prNumber).join(', ')
 }
 ${this.unknown.filter(n => !n.reverted).length > 0
-? `## Unknown (fix these before publishing release)
+    ? `## Unknown (fix these before publishing release)
 
 ${this.list(this.unknown)}
 ` : ''}`

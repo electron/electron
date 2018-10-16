@@ -1,0 +1,13 @@
+diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
+index 2032f1991ada..58646a10591a 100755
+--- a/components/crash/content/tools/generate_breakpad_symbols.py
++++ b/components/crash/content/tools/generate_breakpad_symbols.py
+@@ -159,7 +159,7 @@ def GetSharedLibraryDependenciesMac(binary, exe_path):
+             'ERROR: failed to resolve %s, exe_path %s, loader_path %s, '
+             'rpaths %s' % (m.group(1), exe_path, loader_path,
+                            ', '.join(rpaths)))
+-        sys.exit(1)
++        # sys.exit(1)
+   return deps
+ 
+ 

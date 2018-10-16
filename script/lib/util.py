@@ -2,50 +2,32 @@
 
 import atexit
 import contextlib
+import datetime
 import errno
+import json
+import os
 import platform
 import re
 import shutil
 import ssl
+import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
 import urllib2
-import os
 import zipfile
 
-from config import is_verbose_mode, PLATFORM
-from env_util import get_vs_env
+from lib.config import is_verbose_mode, PLATFORM
+from lib.env_util import get_vs_env
 
+SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 BOTO_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', 'vendor',
                                         'boto'))
 
 NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
   NPM += '.cmd'
-
-
-def get_host_arch():
-  """Returns the host architecture with a predictable string."""
-  host_arch = platform.machine()
-
-  # Convert machine type to format recognized by gyp.
-  if re.match(r'i.86', host_arch) or host_arch == 'i86pc':
-    host_arch = 'ia32'
-  elif host_arch in ['x86_64', 'amd64']:
-    host_arch = 'x64'
-  elif host_arch.startswith('arm'):
-    host_arch = 'arm'
-
-  # platform.machine is based on running kernel. It's possible to use 64-bit
-  # kernel with 32-bit userland, e.g. to give linker slightly more memory.
-  # Distinguish between different userland bitness by querying
-  # the python binary.
-  if host_arch == 'x64' and platform.architecture()[0] == '32bit':
-    host_arch = 'ia32'
-
-  return host_arch
 
 
 def tempdir(prefix=''):
@@ -82,6 +64,7 @@ def download(text, url, path):
     if hasattr(ssl, '_create_unverified_context'):
       ssl._create_default_https_context = ssl._create_unverified_context
 
+    print "Downloading %s to %s" % (url, path)
     web_file = urllib2.urlopen(url)
     file_size = int(web_file.info().getheaders("Content-Length")[0])
     downloaded_size = 0
@@ -161,11 +144,14 @@ def safe_mkdir(path):
       raise
 
 
-def execute(argv, env=os.environ, cwd=None):
+def execute(argv, env=None, cwd=None):
+  if env is None:
+    env = os.environ
   if is_verbose_mode():
     print ' '.join(argv)
   try:
-    output = subprocess.check_output(argv, stderr=subprocess.STDOUT, env=env, cwd=cwd)
+    output = subprocess.check_output(argv, stderr=subprocess.STDOUT,
+                                     env=env, cwd=cwd)
     if is_verbose_mode():
       print output
     return output
@@ -174,7 +160,9 @@ def execute(argv, env=os.environ, cwd=None):
     raise e
 
 
-def execute_stdout(argv, env=os.environ, cwd=None):
+def execute_stdout(argv, env=None, cwd=None):
+  if env is None:
+    env = os.environ
   if is_verbose_mode():
     print ' '.join(argv)
     try:
@@ -185,35 +173,17 @@ def execute_stdout(argv, env=os.environ, cwd=None):
   else:
     execute(argv, env, cwd)
 
-
-def electron_gyp():
+def get_electron_branding():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  gyp = os.path.join(SOURCE_ROOT, 'electron.gyp')
-  with open(gyp) as f:
-    obj = eval(f.read());
-    return obj['variables']
-
-def electron_features():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  gyp = os.path.join(SOURCE_ROOT, 'features.gypi')
-  with open(gyp) as f:
-    obj = eval(f.read());
-    return obj['variables']['variables']
+  branding_file_path = os.path.join(SOURCE_ROOT, 'atom', 'app', 'BRANDING.json')
+  with open(branding_file_path) as f:
+    return json.load(f)
 
 def get_electron_version():
-  return 'v' + electron_gyp()['version%']
-
-
-def parse_version(version):
-  if version[0] == 'v':
-    version = version[1:]
-
-  vs = version.split('.')
-  if len(vs) > 4:
-    return vs[0:4]
-  else:
-    return vs + ['0'] * (4 - len(vs))
-
+  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
+  version_file = os.path.join(SOURCE_ROOT, 'VERSION')
+  with open(version_file) as f:
+    return 'v' + f.read().strip()
 
 def boto_path_dirs():
   return [
@@ -244,52 +214,109 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
   run_boto_script(access_key, secret_key, 's3put', *args)
 
 
-def import_vs_env(target_arch):
-  if sys.platform != 'win32':
-    return
+def add_exec_bit(filename):
+  os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
 
-  if target_arch == 'ia32':
-    vs_arch = 'amd64_x86'
+def parse_version(version):
+  if version[0] == 'v':
+    version = version[1:]
+
+  vs = version.split('.')
+  if len(vs) > 4:
+    return vs[0:4]
   else:
-    vs_arch = 'x86_amd64'
-  env = get_vs_env('[15.0,16.0)', vs_arch)
-  os.environ.update(env)
+    return vs + ['0'] * (4 - len(vs))
 
+def clean_parse_version(v):
+  return parse_version(v.split("-")[0])        
 
-def set_clang_env(env):
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  llvm_dir = os.path.join(SOURCE_ROOT, 'vendor', 'llvm-build',
-                          'Release+Asserts', 'bin')
-  env['CC']  = os.path.join(llvm_dir, 'clang')
-  env['CXX'] = os.path.join(llvm_dir, 'clang++')
+def is_stable(v):
+  return len(v.split(".")) == 3    
 
+def is_beta(v):
+  return 'beta' in v
 
-def update_electron_modules(dirname, target_arch, nodedir):
-  env = os.environ.copy()
-  version = get_electron_version()
-  env['npm_config_arch']    = target_arch
-  env['npm_config_target']  = version
-  env['npm_config_nodedir'] = nodedir
-  update_node_modules(dirname, env)
-  execute_stdout([NPM, 'rebuild'], env, dirname)
+def is_nightly(v):
+  return 'nightly' in v
 
+def get_nightly_date():
+  return datetime.datetime.today().strftime('%Y%m%d')
 
-def update_node_modules(dirname, env=None):
-  if env is None:
-    env = os.environ.copy()
-  if PLATFORM == 'linux':
-    # Use prebuilt clang for building native modules.
-    set_clang_env(env)
-    env['npm_config_clang'] = '1'
-  with scoped_cwd(dirname):
-    args = [NPM, 'install']
-    if is_verbose_mode():
-      args += ['--verbose']
-    # Ignore npm install errors when running in CI.
-    if os.environ.has_key('CI'):
-      try:
-        execute_stdout(args, env)
-      except subprocess.CalledProcessError:
-        pass
-    else:
-      execute_stdout(args, env)
+def get_last_major():
+  return execute(['node', 'script/get-last-major-for-master.js'])
+
+def get_next_nightly(v):
+  pv = clean_parse_version(v)
+  (major, minor, patch) = pv[0:3]
+
+  if (is_stable(v)):
+    patch = str(int(pv[2]) + 1)
+
+  if execute(['git', 'rev-parse', '--abbrev-ref', 'HEAD']) == "master":
+    major = str(get_last_major() + 1)
+    minor = '0'
+    patch = '0'
+
+  pre = 'nightly.' + get_nightly_date()
+  return make_version(major, minor, patch, pre)
+
+def non_empty(thing):
+  return thing.strip() != ''
+
+def beta_tag_compare(tag1, tag2):
+  p1 = parse_version(tag1)
+  p2 = parse_version(tag2)
+  return int(p1[3]) - int(p2[3])
+
+def get_next_beta(v):
+  pv = clean_parse_version(v)
+  tag_pattern = 'v' + pv[0] + '.' + pv[1] + '.' + pv[2] + '-beta.*'
+  tag_list = sorted(filter(
+    non_empty,
+    execute(['git', 'tag', '--list', '-l', tag_pattern]).strip().split('\n')
+  ), cmp=beta_tag_compare)
+  if len(tag_list) == 0:
+    return make_version(pv[0] , pv[1],  pv[2], 'beta.1')
+
+  lv = parse_version(tag_list[-1])
+  return make_version(pv[0] , pv[1],  pv[2], 'beta.' + str(int(lv[3]) + 1))
+
+def get_next_stable_from_pre(v):
+  pv = clean_parse_version(v)
+  (major, minor, patch) = pv[0:3]
+  return make_version(major, minor, patch)
+
+def get_next_stable_from_stable(v):
+  pv = clean_parse_version(v)
+  (major, minor, patch) = pv[0:3]
+  return make_version(major, minor, str(int(patch) + 1))
+
+def make_version(major, minor, patch, pre = None):
+  if pre is None:
+    return major + '.' + minor + '.' + patch
+  return major + "." + minor + "." + patch + '-' + pre
+
+def get_out_dir():
+  out_dir = 'Debug'
+  override = os.environ.get('ELECTRON_OUT_DIR')
+  if override is not None:
+    out_dir = override
+  return os.path.join(SRC_DIR, 'out', out_dir)
+
+# NOTE: This path is not created by gn, it is used as a scratch zone by our
+#       upload scripts
+def get_dist_dir():
+  return os.path.join(get_out_dir(), 'gen', 'electron_dist')
+
+def get_electron_exec():
+  out_dir = get_out_dir()
+
+  if sys.platform == 'darwin':
+    return '{0}/Electron.app/Contents/MacOS/Electron'.format(out_dir)
+  elif sys.platform == 'win32':
+    return '{0}/electron.exe'.format(out_dir)
+  elif sys.platform == 'linux':
+    return '{0}/electron'.format(out_dir)
+
+  raise Exception(
+      "get_electron_exec: unexpected platform '{0}'".format(sys.platform))

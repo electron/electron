@@ -1,16 +1,41 @@
+gclient_gn_args_file = 'src/build/config/gclient_args.gni'
+gclient_gn_args = [
+  'build_with_chromium',
+  'checkout_android',
+  'checkout_android_native_support',
+  'checkout_libaom',
+  'checkout_nacl',
+  'checkout_oculus_sdk'
+]
+
 vars = {
   'chromium_version':
-    '66.0.3359.181',
-  'libchromiumcontent_revision':
-    'd24e0218be60fcfa64ce372f8a21c971f9da066c',
+    '69.0.3497.106',
   'node_version':
-    'v10.2.0-37-gbf0e061ddc',
+    'f14ddf9d7e07739dc1dc0cbe2f7a5ba8b44906d1',
 
-  'chromium_git':
-    'https://chromium.googlesource.com',
+  'boto_version': 'f7574aa6cc2c819430c1f05e9a1a1a666ef8169b',
+  'pyyaml_version': '3.12',
+  'requests_version': 'e4d59bedfd3c7f4f254f4f5d036587bcd8152458',
 
-  'electron_git':
-    'https://github.com/electron',
+  'boto_git': 'https://github.com/boto',
+  'chromium_git': 'https://chromium.googlesource.com',
+  'electron_git': 'https://github.com/electron',
+  'requests_git': 'https://github.com/kennethreitz',
+  'yaml_git': 'https://github.com/yaml',
+
+  # To be able to build clean Chromium from sources.
+  'apply_patches': True,
+
+  # Python interface to Amazon Web Services. Is used for releases only.
+  'checkout_boto': False,
+
+  # Python "requests" module is used for releases only.
+  'checkout_requests': False,
+
+  # It is always needed for normal Electron builds,
+  # but might be impossible for custom in-house builds.
+  'download_external_binaries': True,
 
   'checkout_nacl':
     False,
@@ -18,57 +43,85 @@ vars = {
     True,
   'checkout_oculus_sdk':
     False,
+  'build_with_chromium':
+    True,
+  'checkout_android':
+    False,
+  'checkout_android_native_support':
+    False,
 }
 
 deps = {
   'src':
     (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
-  'src/libchromiumcontent':
-    (Var("electron_git")) + '/libchromiumcontent.git@' + (Var("libchromiumcontent_revision")),
   'src/third_party/electron_node':
     (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+  'src/electron/vendor/pyyaml':
+    (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
+  'src/electron/vendor/boto': {
+    'url': Var('boto_git') + '/boto.git' + '@' +  Var('boto_version'),
+    'condition': 'checkout_boto',
+  },
+  'src/electron/vendor/requests': {
+    'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
+    'condition': 'checkout_requests',
+  },
 }
 
 hooks = [
   {
+    'name': 'patch_chromium',
+    'condition': 'apply_patches',
+    'pattern': 'src/electron',
     'action': [
       'python',
-      'src/libchromiumcontent/script/apply-patches'
+      'src/electron/script/apply-patches',
+      '--project-root=.',
+      '--commit',
     ],
-    'pattern':
-      'src/libchromiumcontent',
-    'name':
-      'patch_chromium'
   },
   {
+    'name': 'electron_external_binaries',
+    'pattern': 'src/electron/script/update-external-binaries.py',
+    'condition': 'download_external_binaries',
     'action': [
       'python',
-      'src/electron/script/update-external-binaries.py'
-    ],
-    'pattern':
       'src/electron/script/update-external-binaries.py',
-    'name':
-      'electron_external_binaries'
+      '--root-url=http://github.com/electron/electron-frameworks/releases/download',
+      '--version=v1.4.0',
+    ],
   },
   {
+    'name': 'electron_npm_deps',
+    'pattern': 'src/electron/package.json',
     'action': [
       'python',
       '-c',
       'import os; os.chdir("src"); os.chdir("electron"); os.system("npm install")',
     ],
-    'pattern': 'src/electron/package.json',
-    'name': 'electron_npm_deps'
   },
+  {
+    'name': 'setup_boto',
+    'pattern': 'src/electron',
+    'condition': 'checkout_boto',
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("boto"); os.system("python setup.py build");',
+    ],
+  },
+  {
+    'name': 'setup_requests',
+    'pattern': 'src/electron',
+    'condition': 'checkout_requests',
+    'action': [
+      'python',
+      '-c',
+      'import os; os.chdir("src"); os.chdir("electron"); os.chdir("vendor"); os.chdir("requests"); os.system("python setup.py build");',
+    ],
+  }
 ]
 
 recursedeps = [
   'src',
-  'src/libchromiumcontent',
 ]
-
-gclient_gn_args = [
-  'checkout_libaom',
-  'checkout_nacl',
-  'checkout_oculus_sdk'
-]
-gclient_gn_args_file =  'src/build/config/gclient_args.gni'

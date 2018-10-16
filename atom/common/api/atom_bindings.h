@@ -6,7 +6,9 @@
 #define ATOM_COMMON_API_ATOM_BINDINGS_H_
 
 #include <list>
+#include <memory>
 
+#include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
@@ -36,11 +38,14 @@ class AtomBindings {
   static void Crash();
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
-  static v8::Local<v8::Value> GetProcessMemoryInfo(v8::Isolate* isolate);
+  static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   mate::Arguments* args);
-  v8::Local<v8::Value> GetCPUUsage(v8::Isolate* isolate);
+  static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,
+                                          v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
+  static bool TakeHeapSnapshot(v8::Isolate* isolate,
+                               const base::FilePath& file_path);
 
  private:
   void ActivateUVLoop(v8::Isolate* isolate);

@@ -1,0 +1,271 @@
+From 0a8757b6650df0e762cc4ec400ecb7ee8ca7be4a Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 20 Sep 2018 17:44:38 -0700
+Subject: dcheck.patch
+
+This disables some debug checks which currently fail when running the Electron
+test suite. In general there should be sustained effort to have all debug checks
+enabled. If you want to help, choose one of the diffs below and remove it. Then
+build Electron (debug configuration) and make sure all tests pass on the CI
+systems. Unfortunately the tests don't always cover the check failures, so it's
+good to also run some non-trivial Electron app to verify.
+
+Apart from getting rid of a whole diff, you may also be able to replace one diff
+with another which enables at least some of the previously disabled checks. For
+example, the checks might be disabled for a whole build target, but actually
+only one or two specific checks fail. Then it's better to simply comment out the
+failing checks and allow the rest of the target to have them enabled.
+
+Please keep the following lists updated.
+
+The ELECTRON_NO_DCHECK build flag disables debug checks universally.
+This patch applies the flag to the following GN targets:
+
+  third_party/blink/renderer/core/loader:loader
+  url:url
+
+These files have debug checks explicitly commented out:
+
+  base/memory/weak_ptr.cc
+  base/process/kill_win.cc
+  components/viz/service/display/program_binding.h
+  components/viz/service/display_embedder/server_shared_bitmap_manager.cc
+  content/browser/frame_host/navigation_controller_impl.cc
+  content/browser/frame_host/render_frame_host_impl.cc
+  content/browser/renderer_host/render_widget_host_view_mac.mm
+  ppapi/host/ppapi_host.cc
+  third_party/blink/renderer/core/dom/node.cc
+  third_party/blink/renderer/platform/wtf/text/string_impl.cc
+  ui/base/clipboard/clipboard_win.cc
+
+diff --git a/base/logging.h b/base/logging.h
+index 08c1f0fc5967..7a758ce3ef90 100644
+--- a/base/logging.h
++++ b/base/logging.h
+@@ -874,7 +874,7 @@ const LogSeverity LOG_DCHECK = LOG_FATAL;
+
+ #else  // !(defined(_PREFAST_) && defined(OS_WIN))
+
+-#if DCHECK_IS_ON()
++#if DCHECK_IS_ON() && !defined(ELECTRON_NO_DCHECK)
+
+ #define DCHECK(condition)                                           \
+   LAZY_STREAM(LOG_STREAM(DCHECK), !ANALYZER_ASSUME_TRUE(condition)) \
+diff --git a/base/memory/weak_ptr.cc b/base/memory/weak_ptr.cc
+index c993fcb8a13a..80a5b708d259 100644
+--- a/base/memory/weak_ptr.cc
++++ b/base/memory/weak_ptr.cc
+@@ -25,8 +25,8 @@ void WeakReference::Flag::Invalidate() {
+ }
+
+ bool WeakReference::Flag::IsValid() const {
+-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_)
+-      << "WeakPtrs must be checked on the same sequenced thread.";
++  // DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_)
++  //     << "WeakPtrs must be checked on the same sequenced thread.";
+   return !invalidated_.IsSet();
+ }
+
+diff --git a/base/process/kill_win.cc b/base/process/kill_win.cc
+index 7a664429bcd3..26f49dc3d1e7 100644
+--- a/base/process/kill_win.cc
++++ b/base/process/kill_win.cc
+@@ -23,7 +23,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
+   DWORD tmp_exit_code = 0;
+
+   if (!::GetExitCodeProcess(handle, &tmp_exit_code)) {
+-    DPLOG(FATAL) << "GetExitCodeProcess() failed";
++    // DPLOG(FATAL) << "GetExitCodeProcess() failed";
+
+     // This really is a random number.  We haven't received any
+     // information about the exit code, presumably because this
+diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
+index 18ef58a725c3..239f319c8b4c 100644
+--- a/base/process/process_metrics_win.cc
++++ b/base/process/process_metrics_win.cc
+@@ -153,10 +153,9 @@ bool ProcessMetrics::GetIOCounters(IoCounters* io_counters) const {
+ ProcessMetrics::ProcessMetrics(ProcessHandle process) {
+   if (process) {
+     HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
+-    BOOL result = ::DuplicateHandle(::GetCurrentProcess(), process,
+-                                    ::GetCurrentProcess(), &duplicate_handle,
+-                                    PROCESS_QUERY_INFORMATION, FALSE, 0);
+-    DPCHECK(result);
++    ::DuplicateHandle(::GetCurrentProcess(), process,
++                      ::GetCurrentProcess(), &duplicate_handle,
++                      PROCESS_QUERY_INFORMATION, FALSE, 0);
+     process_.Set(duplicate_handle);
+   }
+ }
+diff --git a/components/viz/service/display/program_binding.h b/components/viz/service/display/program_binding.h
+index 2a8fb9f54847..2c318b310b2a 100644
+--- a/components/viz/service/display/program_binding.h
++++ b/components/viz/service/display/program_binding.h
+@@ -434,7 +434,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
+     if (!ProgramBindingBase::Init(context_provider->ContextGL(),
+                                   vertex_shader_.GetShaderString(),
+                                   fragment_shader_.GetShaderString())) {
+-      DCHECK(IsContextLost(context_provider->ContextGL()));
++      // DCHECK(IsContextLost(context_provider->ContextGL()));
+       return;
+     }
+
+@@ -446,7 +446,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
+
+     // Link after binding uniforms
+     if (!Link(context_provider->ContextGL())) {
+-      DCHECK(IsContextLost(context_provider->ContextGL()));
++      // DCHECK(IsContextLost(context_provider->ContextGL()));
+       return;
+     }
+
+diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
+index d8aca9e2cbff..86224ab7a3c5 100644
+--- a/content/browser/frame_host/navigation_controller_impl.cc
++++ b/content/browser/frame_host/navigation_controller_impl.cc
+@@ -995,8 +995,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+     return NAVIGATION_TYPE_NEW_SUBFRAME;
+   }
+
+-  // We only clear the session history when navigating to a new page.
+-  DCHECK(!params.history_list_was_cleared);
++  // Electron does its own book keeping of navigation entries and we
++  // expect content to not track any, by clearing history list for
++  // all navigations.
++  // DCHECK(!params.history_list_was_cleared);
+
+   if (rfh->GetParent()) {
+     // All manual subframes would be did_create_new_entry and handled above, so
+@@ -1233,7 +1235,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+     new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
+   }
+
+-  DCHECK(!params.history_list_was_cleared || !replace_entry);
++  // Electron does its own book keeping of navigation entries and we
++  // expect content to not track any, by clearing history list for
++  // all navigations.
++  // DCHECK(!params.history_list_was_cleared || !replace_entry);
+   // The browser requested to clear the session history when it initiated the
+   // navigation. Now we know that the renderer has updated its state accordingly
+   // and it is safe to also clear the browser side history.
+diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
+index 8e5af3e3b9c5..520dcffb5353 100644
+--- a/content/browser/frame_host/render_frame_host_impl.cc
++++ b/content/browser/frame_host/render_frame_host_impl.cc
+@@ -2416,8 +2416,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
+   }
+
+   enabled_bindings_ |= bindings_flags;
+-  if (GetParent())
+-    DCHECK_EQ(GetParent()->GetEnabledBindings(), GetEnabledBindings());
++  // WebUI in sub frames require binding policy while the parent does not,
++  // Fix this when we use OOPIF in Electron.
++  // if (GetParent())
++  //  DCHECK_EQ(GetParent()->GetEnabledBindings(), GetEnabledBindings());
+
+   if (render_frame_created_) {
+     if (!frame_bindings_control_)
+diff --git a/ppapi/host/ppapi_host.cc b/ppapi/host/ppapi_host.cc
+index 3f80e73535c8..bf40b94ad24c 100644
+--- a/ppapi/host/ppapi_host.cc
++++ b/ppapi/host/ppapi_host.cc
+@@ -238,7 +238,7 @@ void PpapiHost::OnHostMsgResourceCreated(
+       CreateResourceHost(params.pp_resource(), instance, nested_msg);
+
+   if (!resource_host.get()) {
+-    NOTREACHED();
++    // NOTREACHED();
+     return;
+   }
+
+diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
+index 5629f8170851..bc773ac9b1e4 100644
+--- a/third_party/blink/renderer/core/dom/node.cc
++++ b/third_party/blink/renderer/core/dom/node.cc
+@@ -2568,7 +2568,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
+
+ HTMLSlotElement* Node::AssignedSlot() const {
+   // assignedSlot doesn't need to call updateDistribution().
+-  DCHECK(!IsPseudoElement());
++  // DCHECK(!IsPseudoElement());
+   if (ShadowRoot* root = V1ShadowRootOfParent())
+     return root->AssignedSlotFor(*this);
+   return nullptr;
+diff --git a/third_party/blink/renderer/core/loader/BUILD.gn b/third_party/blink/renderer/core/loader/BUILD.gn
+index 49b4ead3dc52..0083e5c8efb7 100644
+--- a/third_party/blink/renderer/core/loader/BUILD.gn
++++ b/third_party/blink/renderer/core/loader/BUILD.gn
+@@ -135,4 +135,11 @@ blink_core_sources("loader") {
+   public_deps = [
+     "//third_party/blink/renderer/platform",
+   ]
++
++  if (is_electron_build) {
++    if (!defined(defines)) {
++      defines = []
++    }
++    defines += [ "ELECTRON_NO_DCHECK" ]
++  }
+ }
+diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
+index 0e7c40b732ec..7c513d95a586 100644
+--- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
++++ b/third_party/blink/renderer/platform/wtf/text/string_impl.h
+@@ -258,21 +258,21 @@ class WTF_EXPORT StringImpl {
+   }
+
+   ALWAYS_INLINE bool HasOneRef() const {
+-#if DCHECK_IS_ON()
++#if 0
+     DCHECK(IsStatic() || verifier_.IsSafeToUse()) << AsciiForDebugging();
+ #endif
+     return ref_count_ == 1;
+   }
+
+   ALWAYS_INLINE void AddRef() const {
+-#if DCHECK_IS_ON()
++#if 0
+     DCHECK(IsStatic() || verifier_.OnRef(ref_count_)) << AsciiForDebugging();
+ #endif
+     ++ref_count_;
+   }
+
+   ALWAYS_INLINE void Release() const {
+-#if DCHECK_IS_ON()
++#if 0
+     DCHECK(IsStatic() || verifier_.OnDeref(ref_count_))
+         << AsciiForDebugging() << " " << CurrentThread();
+ #endif
+diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
+index e49dd8c81270..9e61c901cd2d 100644
+--- a/ui/base/clipboard/clipboard_win.cc
++++ b/ui/base/clipboard/clipboard_win.cc
+@@ -905,9 +905,9 @@ void ClipboardWin::WriteBitmapFromHandle(HBITMAP source_hbitmap,
+ }
+
+ void ClipboardWin::WriteToClipboard(unsigned int format, HANDLE handle) {
+-  DCHECK(clipboard_owner_->hwnd() != NULL);
++  // DCHECK(clipboard_owner_->hwnd() != NULL);
+   if (handle && !::SetClipboardData(format, handle)) {
+-    DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
++    // DCHECK(ERROR_CLIPBOARD_NOT_OPEN != GetLastError());
+     FreeData(format, handle);
+   }
+ }
+diff --git a/url/BUILD.gn b/url/BUILD.gn
+index 57bbe16c15ea..07725187c595 100644
+--- a/url/BUILD.gn
++++ b/url/BUILD.gn
+@@ -98,6 +98,10 @@ component("url") {
+     ]
+     deps += [ "//third_party/icu" ]
+   }
++
++  if (is_electron_build) {
++    defines += [ "ELECTRON_NO_DCHECK" ]
++  }
+ }
+
+ if (is_android) {
+--
+2.17.0

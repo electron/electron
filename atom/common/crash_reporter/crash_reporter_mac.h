@@ -6,6 +6,7 @@
 #define ATOM_COMMON_CRASH_REPORTER_CRASH_REPORTER_MAC_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 

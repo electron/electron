@@ -1,48 +1,60 @@
-const {app, dialog, shell, Menu} = require('electron')
+const { app, dialog } = require('electron')
 
 const fs = require('fs')
 const Module = require('module')
 const path = require('path')
 const url = require('url')
 
+const { setDefaultApplicationMenu } = require('./menu')
+
 // Parse command line options.
 const argv = process.argv.slice(1)
 
 const option = {
   file: null,
-  help: null,
-  default: null,
+  noHelp: Boolean(process.env.ELECTRON_NO_HELP),
   version: null,
   webdriver: null,
   modules: []
 }
 
-for (let i = 0; i < argv.length; i++) {
-  if (argv[i] === '--version' || argv[i] === '-v') {
+let nextArgIsRequire = false
+
+for (const arg of argv) {
+  if (nextArgIsRequire) {
+    option.modules.push(arg)
+    nextArgIsRequire = false
+    continue
+  } else if (arg === '--version' || arg === '-v') {
     option.version = true
     break
-  } else if (argv[i].match(/^--app=/)) {
-    option.file = argv[i].split('=')[1]
+  } else if (arg.match(/^--app=/)) {
+    option.file = arg.split('=')[1]
     break
-  } else if (argv[i] === '--default' || argv[i] === '-d') {
-    option.default = true
-    break
-  } else if (argv[i] === '--interactive' || argv[i] === '-i' || argv[i] === '-repl') {
+  } else if (arg === '--interactive' || arg === '-i' || arg === '-repl') {
     option.interactive = true
-  } else if (argv[i] === '--test-type=webdriver') {
+  } else if (arg === '--test-type=webdriver') {
     option.webdriver = true
-  } else if (argv[i] === '--require' || argv[i] === '-r') {
-    option.modules.push(argv[++i])
+  } else if (arg === '--require' || arg === '-r') {
+    nextArgIsRequire = true
     continue
-  } else if (argv[i] === '--abi' || argv[i] === '-a') {
+  } else if (arg === '--abi' || arg === '-a') {
     option.abi = true
     continue
-  } else if (argv[i][0] === '-') {
+  } else if (arg === '--no-help') {
+    option.noHelp = true
+    continue
+  } else if (arg[0] === '-') {
     continue
   } else {
-    option.file = argv[i]
+    option.file = arg
     break
   }
+}
+
+if (nextArgIsRequire) {
+  console.error('Invalid Usage: --require [file]\n\n"file" is required')
+  process.exit(1)
 }
 
 // Quit when all windows are closed and no other one is listening to this.
@@ -54,201 +66,21 @@ app.on('window-all-closed', () => {
 
 // Create default menu.
 app.once('ready', () => {
-  if (Menu.getApplicationMenu()) return
-
-  const template = [
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          role: 'undo'
-        },
-        {
-          role: 'redo'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'cut'
-        },
-        {
-          role: 'copy'
-        },
-        {
-          role: 'paste'
-        },
-        {
-          role: 'pasteandmatchstyle'
-        },
-        {
-          role: 'delete'
-        },
-        {
-          role: 'selectall'
-        }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        {
-          role: 'reload'
-        },
-        {
-          role: 'forcereload'
-        },
-        {
-          role: 'toggledevtools'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'resetzoom'
-        },
-        {
-          role: 'zoomin'
-        },
-        {
-          role: 'zoomout'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'togglefullscreen'
-        }
-      ]
-    },
-    {
-      role: 'window',
-      submenu: [
-        {
-          role: 'minimize'
-        },
-        {
-          role: 'close'
-        }
-      ]
-    },
-    {
-      role: 'help',
-      submenu: [
-        {
-          label: 'Learn More',
-          click () {
-            shell.openExternal('https://electronjs.org')
-          }
-        },
-        {
-          label: 'Documentation',
-          click () {
-            shell.openExternal(
-              `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
-            )
-          }
-        },
-        {
-          label: 'Community Discussions',
-          click () {
-            shell.openExternal('https://discuss.atom.io/c/electron')
-          }
-        },
-        {
-          label: 'Search Issues',
-          click () {
-            shell.openExternal('https://github.com/electron/electron/issues')
-          }
-        }
-      ]
-    }
-  ]
-
-  if (process.platform === 'darwin') {
-    template.unshift({
-      label: 'Electron',
-      submenu: [
-        {
-          role: 'about'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'services',
-          submenu: []
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'hide'
-        },
-        {
-          role: 'hideothers'
-        },
-        {
-          role: 'unhide'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'quit'
-        }
-      ]
-    })
-    template[1].submenu.push({
-      type: 'separator'
-    }, {
-      label: 'Speech',
-      submenu: [
-        {
-          role: 'startspeaking'
-        },
-        {
-          role: 'stopspeaking'
-        }
-      ]
-    })
-    template[3].submenu = [
-      {
-        role: 'close'
-      },
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'zoom'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'front'
-      }
-    ]
-  } else {
-    template.unshift({
-      label: 'File',
-      submenu: [{
-        role: 'quit'
-      }]
-    })
-  }
-
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  setDefaultApplicationMenu()
 })
 
+// Set up preload modules
 if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
 
 function loadApplicationPackage (packagePath) {
   // Add a flag indicating app is started from default app.
-  process.defaultApp = true
+  Object.defineProperty(process, 'defaultApp', {
+    configurable: false,
+    enumerable: true,
+    value: true
+  })
 
   try {
     // Override app name and version.
@@ -323,7 +155,11 @@ if (option.file && !option.webdriver) {
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     loadApplicationByUrl(file)
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByUrl('file://' + path.resolve(file))
+    loadApplicationByUrl(url.format({
+      protocol: 'file:',
+      slashes: true,
+      pathname: path.resolve(file)
+    }))
   } else {
     loadApplicationPackage(file)
   }
@@ -333,31 +169,34 @@ if (option.file && !option.webdriver) {
 } else if (option.abi) {
   console.log(process.versions.modules)
   process.exit(0)
-} else if (option.default) {
-  const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(`file://${indexPath}`)
 } else if (option.interactive) {
   startRepl()
 } else {
-  const welcomeMessage = `
-  Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
-  Usage: electron [options] [path]
+  if (!option.noHelp) {
+    const welcomeMessage = `
+Electron ${process.versions.electron} - Build cross platform desktop apps with JavaScript, HTML, and CSS
+Usage: electron [options] [path]
 
-  A path to an Electron app may be specified. It must be one of the following:
-    - index.js file.
-    - Folder containing a package.json file.
-    - Folder containing an index.js file.
-    - .html/.htm file.
-    - http://, https://, or file:// URL.
+A path to an Electron app may be specified. It must be one of the following:
+  - index.js file.
+  - Folder containing a package.json file.
+  - Folder containing an index.js file.
+  - .html/.htm file.
+  - http://, https://, or file:// URL.
 
-  Options:
-    -d, --default         Run the default bundled Electron app.
-    -i, --interactive     Open a REPL to the main process.
-    -r, --require         Module to preload (option can be repeated).
-    -v, --version         Print the version.
-    -a, --abi             Print the Node ABI version.`
+Options:
+  -i, --interactive     Open a REPL to the main process.
+  -r, --require         Module to preload (option can be repeated).
+  -v, --version         Print the version.
+  -a, --abi             Print the Node ABI version.`
 
-  console.log(welcomeMessage)
+    console.log(welcomeMessage)
+  }
+
   const indexPath = path.join(__dirname, '/index.html')
-  loadApplicationByUrl(`file://${indexPath}`)
+  loadApplicationByUrl(url.format({
+    protocol: 'file:',
+    slashes: true,
+    pathname: indexPath
+  }))
 }

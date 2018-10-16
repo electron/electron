@@ -32,6 +32,7 @@ def main():
         ' files within docs directory and its ' +
         str(totalDirs) + ' subdirectories.')
   print('Found ' + str(totalBrokenLinks) + ' broken relative links.')
+  return totalBrokenLinks
 
 
 def getBrokenLinks(filepath):
@@ -57,29 +58,28 @@ def getBrokenLinks(filepath):
 
   for link in links:
     sections = link.split('#')
-    if len(sections) > 1:
-      if str(link).startswith('#'):
-        if not checkSections(sections, lines):
-          brokenLinks.append(link)
-      else:
-        tempFile = os.path.join(currentDir, sections[0])
-        if os.path.isfile(tempFile):
-          try:
-            newFile = open(tempFile, 'r')
-            newLines = newFile.readlines()
-          except KeyboardInterrupt:
-            print('Keyboard interruption whle parsing. Please try again.')
-          finally:
-            newFile.close()
-
-          if not checkSections(sections, newLines):
-            brokenLinks.append(link)
-        else:
-          brokenLinks.append(link)
-
-    else:
+    if len(sections) < 2:
       if not os.path.isfile(os.path.join(currentDir, link)):
         brokenLinks.append(link)
+    elif str(link).startswith('#'):
+      if not checkSections(sections, lines):
+        brokenLinks.append(link)
+    else:
+      tempFile = os.path.join(currentDir, sections[0])
+      if os.path.isfile(tempFile):
+        try:
+          newFile = open(tempFile, 'r')
+          newLines = newFile.readlines()
+        except KeyboardInterrupt:
+          print('Keyboard interruption whle parsing. Please try again.')
+        finally:
+          newFile.close()
+
+        if not checkSections(sections, newLines):
+          brokenLinks.append(link)
+      else:
+        brokenLinks.append(link)
+
 
   print_errors(filepath, brokenLinks)
   return len(brokenLinks)

@@ -4,6 +4,8 @@
 
 #include "atom/browser/api/trackable_object.h"
 
+#include <memory>
+
 #include "atom/browser/atom_browser_main_parts.h"
 #include "base/bind.h"
 #include "base/supports_user_data.h"

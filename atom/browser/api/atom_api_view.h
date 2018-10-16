@@ -8,7 +8,8 @@
 #include <memory>
 #include <vector>
 
-#include "atom/browser/api/atom_api_layout_manager.h"
+#include "atom/browser/api/views/atom_api_layout_manager.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/handle.h"
 #include "ui/views/view.h"
 
@@ -23,7 +24,7 @@ class View : public mate::TrackableObject<View> {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-#if defined(ENABLE_VIEW_API)
+#if BUILDFLAG(ENABLE_VIEW_API)
   void SetLayoutManager(mate::Handle<LayoutManager> layout_manager);
   void AddChildView(mate::Handle<View> view);
   void AddChildViewAt(mate::Handle<View> view, size_t index);

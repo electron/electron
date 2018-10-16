@@ -10,6 +10,7 @@
 
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_blob_reader.h"
+#include "atom/browser/net/resolve_proxy_helper.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "native_mate/handle.h"
@@ -39,8 +40,6 @@ namespace api {
 class Session : public mate::TrackableObject<Session>,
                 public content::DownloadManager::Observer {
  public:
-  using ResolveProxyCallback = base::Callback<void(std::string)>;
-
   enum class CacheAction {
     CLEAR,
     STATS,
@@ -63,18 +62,21 @@ class Session : public mate::TrackableObject<Session>,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Methods.
-  void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
+  void ResolveProxy(const GURL& url,
+                    const ResolveProxyHelper::ResolveProxyCallback& callback);
   template <CacheAction action>
   void DoCacheAction(const net::CompletionCallback& callback);
   void ClearStorageData(mate::Arguments* args);
   void FlushStorageData();
-  void SetProxy(const net::ProxyConfig& config, const base::Closure& callback);
+  void SetProxy(const mate::Dictionary& options, const base::Closure& callback);
   void SetDownloadPath(const base::FilePath& path);
   void EnableNetworkEmulation(const mate::Dictionary& options);
   void DisableNetworkEmulation();
   void SetCertVerifyProc(v8::Local<v8::Value> proc, mate::Arguments* args);
   void SetPermissionRequestHandler(v8::Local<v8::Value> val,
                                    mate::Arguments* args);
+  void SetPermissionCheckHandler(v8::Local<v8::Value> val,
+                                 mate::Arguments* args);
   void ClearHostResolverCache(mate::Arguments* args);
   void ClearAuthCache(mate::Arguments* args);
   void AllowNTLMCredentialsForDomains(const std::string& domains);
@@ -88,6 +90,7 @@ class Session : public mate::TrackableObject<Session>,
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
+  v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
 
  protected:
   Session(v8::Isolate* isolate, AtomBrowserContext* browser_context);
@@ -102,9 +105,10 @@ class Session : public mate::TrackableObject<Session>,
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> web_request_;
+  v8::Global<v8::Value> net_log_;
 
-  // The X-DevTools-Emulate-Network-Conditions-Client-Id.
-  std::string devtools_network_emulation_client_id_;
+  // The client id to enable the network throttler.
+  base::UnguessableToken network_emulation_token_;
 
   scoped_refptr<AtomBrowserContext> browser_context_;
 

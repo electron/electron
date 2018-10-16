@@ -6,20 +6,21 @@
 #define ATOM_BROWSER_COMMON_WEB_CONTENTS_DELEGATE_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "brightray/browser/devtools_file_system_indexer.h"
+#include "base/memory/weak_ptr.h"
 #include "brightray/browser/inspectable_web_contents_delegate.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/inspectable_web_contents_view_delegate.h"
+#include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
+#include "electron/buildflags/buildflags.h"
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
 #endif
-
-using brightray::DevToolsFileSystemIndexer;
 
 namespace base {
 class SequencedTaskRunner;
@@ -30,6 +31,10 @@ namespace atom {
 class AtomBrowserContext;
 class NativeWindow;
 class WebDialogHelper;
+
+#if BUILDFLAG(ENABLE_OSR)
+class OffScreenRenderWidgetHostView;
+#endif
 
 class CommonWebContentsDelegate
     : public content::WebContentsDelegate,
@@ -42,7 +47,8 @@ class CommonWebContentsDelegate
   // Creates a InspectableWebContents object and takes onwership of
   // |web_contents|.
   void InitWithWebContents(content::WebContents* web_contents,
-                           AtomBrowserContext* browser_context);
+                           AtomBrowserContext* browser_context,
+                           bool is_guest);
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);
@@ -61,13 +67,14 @@ class CommonWebContentsDelegate
 
   NativeWindow* owner_window() const { return owner_window_.get(); }
 
-  void set_ignore_menu_shortcuts(bool ignore) {
-    ignore_menu_shortcuts_ = ignore;
-  }
-
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
  protected:
+#if BUILDFLAG(ENABLE_OSR)
+  virtual OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const;
+#endif
+
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
@@ -83,8 +90,10 @@ class CommonWebContentsDelegate
   void EnumerateDirectory(content::WebContents* web_contents,
                           int request_id,
                           const base::FilePath& path) override;
-  void EnterFullscreenModeForTab(content::WebContents* source,
-                                 const GURL& origin) override;
+  void EnterFullscreenModeForTab(
+      content::WebContents* source,
+      const GURL& origin,
+      const blink::WebFullscreenOptions& options) override;
   void ExitFullscreenModeForTab(content::WebContents* source) override;
   bool IsFullscreenForTabOrPending(
       const content::WebContents* source) const override;
@@ -113,11 +122,13 @@ class CommonWebContentsDelegate
   void DevToolsAppendToFile(const std::string& url,
                             const std::string& content) override;
   void DevToolsRequestFileSystems() override;
-  void DevToolsAddFileSystem(const base::FilePath& path) override;
+  void DevToolsAddFileSystem(const std::string& type,
+                             const base::FilePath& file_system_path) override;
   void DevToolsRemoveFileSystem(
       const base::FilePath& file_system_path) override;
   void DevToolsIndexPath(int request_id,
-                         const std::string& file_system_path) override;
+                         const std::string& file_system_path,
+                         const std::string& excluded_folders_message) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
@@ -156,7 +167,6 @@ class CommonWebContentsDelegate
   base::WeakPtr<NativeWindow> owner_window_;
 
   bool offscreen_ = false;
-  bool ignore_menu_shortcuts_ = false;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
@@ -192,6 +202,8 @@ class CommonWebContentsDelegate
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
   scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+
+  base::WeakPtrFactory<CommonWebContentsDelegate> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(CommonWebContentsDelegate);
 };

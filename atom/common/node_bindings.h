@@ -5,6 +5,7 @@
 #ifndef ATOM_COMMON_NODE_BINDINGS_H_
 #define ATOM_COMMON_NODE_BINDINGS_H_
 
+#include "base/files/file_path.h"
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/single_thread_task_runner.h"
@@ -33,6 +34,7 @@ class NodeBindings {
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
   static bool IsInitialized();
+  static base::FilePath::StringType GetHelperResourcesPath();
 
   virtual ~NodeBindings();
 

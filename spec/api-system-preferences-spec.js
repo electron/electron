@@ -1,6 +1,6 @@
 const assert = require('assert')
-const {remote} = require('electron')
-const {systemPreferences} = remote
+const { remote } = require('electron')
+const { systemPreferences } = remote
 
 describe('systemPreferences module', () => {
   describe('systemPreferences.getAccentColor', () => {
@@ -11,8 +11,8 @@ describe('systemPreferences module', () => {
     })
 
     it('should return a non-empty string', () => {
-      let accentColor = systemPreferences.getAccentColor()
-      assert.notEqual(accentColor, null)
+      const accentColor = systemPreferences.getAccentColor()
+      assert.notStrictEqual(accentColor, null)
       assert(accentColor.length > 0)
     })
   })
@@ -31,7 +31,7 @@ describe('systemPreferences module', () => {
     })
 
     it('returns a hex RGB color string', () => {
-      assert.equal(/^#[0-9A-F]{6}$/i.test(systemPreferences.getColor('window')), true)
+      assert.strictEqual(/^#[0-9A-F]{6}$/i.test(systemPreferences.getColor('window')), true)
     })
   })
 
@@ -57,7 +57,7 @@ describe('systemPreferences module', () => {
       for (const userDefault of defaultsMap) {
         const { key, value: expectedValue, type } = userDefault
         const actualValue = systemPreferences.getUserDefault(key, type)
-        assert.deepEqual(actualValue, expectedValue)
+        assert.deepStrictEqual(actualValue, expectedValue)
       }
     })
 
@@ -86,7 +86,7 @@ describe('systemPreferences module', () => {
 
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
-      assert.equal(typeof locale, 'string')
+      assert.strictEqual(typeof locale, 'string')
       assert(locale.length > 0)
 
       const languages = systemPreferences.getUserDefault('AppleLanguages', 'array')
@@ -95,15 +95,15 @@ describe('systemPreferences module', () => {
     })
 
     it('returns values for unknown user defaults', () => {
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean'), false)
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer'), 0)
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float'), 0)
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double'), 0)
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string'), '')
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url'), '')
-      assert.equal(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype'), undefined)
-      assert.deepEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array'), [])
-      assert.deepEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary'), {})
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean'), false)
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer'), 0)
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float'), 0)
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double'), 0)
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string'), '')
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url'), '')
+      assert.strictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype'), undefined)
+      assert.deepStrictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array'), [])
+      assert.deepStrictEqual(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary'), {})
     })
   })
 
@@ -117,7 +117,7 @@ describe('systemPreferences module', () => {
       ['integer', 11],
       ['url', 'https://github.com/electron'],
       ['array', [1, 2, 3]],
-      ['dictionary', {'a': 1, 'b': 2}]
+      ['dictionary', { 'a': 1, 'b': 2 }]
     ]
 
     before(function () {
@@ -130,7 +130,7 @@ describe('systemPreferences module', () => {
       for (const [type, value] of TEST_CASES) {
         systemPreferences.setUserDefault(KEY, type, value)
         const retrievedValue = systemPreferences.getUserDefault(KEY, type)
-        assert.deepEqual(retrievedValue, value)
+        assert.deepStrictEqual(retrievedValue, value)
       }
     })
 
@@ -160,7 +160,7 @@ describe('systemPreferences module', () => {
       const KEY = 'SystemPreferencesTest'
       systemPreferences.setUserDefault(KEY, 'string', 'foo')
       systemPreferences.removeUserDefault(KEY)
-      assert.equal(systemPreferences.getUserDefault(KEY, 'string'), '')
+      assert.strictEqual(systemPreferences.getUserDefault(KEY, 'string'), '')
     })
 
     it('does not throw for missing keys', () => {
@@ -170,7 +170,7 @@ describe('systemPreferences module', () => {
 
   describe('systemPreferences.isInvertedColorScheme()', () => {
     it('returns a boolean', () => {
-      assert.equal(typeof systemPreferences.isInvertedColorScheme(), 'boolean')
+      assert.strictEqual(typeof systemPreferences.isInvertedColorScheme(), 'boolean')
     })
   })
 })

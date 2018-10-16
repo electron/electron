@@ -1,0 +1,12 @@
+{
+  "extends": "standard",
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "no-var": "error",
+    "prefer-const": ["error", {
+      "destructuring": "all"
+    }]
+  }
+}

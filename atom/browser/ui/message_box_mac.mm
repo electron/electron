@@ -97,17 +97,17 @@ NSAlert* CreateNSAlert(NativeWindow* parent_window,
   NSArray* ns_buttons = [alert buttons];
   int button_count = static_cast<int>([ns_buttons count]);
 
-  // Bind cancel id button to escape key if there is more than one button
-  if (button_count > 1 && cancel_id >= 0 && cancel_id < button_count) {
-    [[ns_buttons objectAtIndex:cancel_id] setKeyEquivalent:@"\e"];
-  }
-
   if (default_id >= 0 && default_id < button_count) {
     // Focus the button at default_id if the user opted to do so.
     // The first button added gets set as the default selected.
     // So remove that default, and make the requested button the default.
     [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
     [[ns_buttons objectAtIndex:default_id] setKeyEquivalent:@"\r"];
+  }
+
+  // Bind cancel id button to escape key if there is more than one button
+  if (button_count > 1 && cancel_id >= 0 && cancel_id < button_count) {
+    [[ns_buttons objectAtIndex:cancel_id] setKeyEquivalent:@"\e"];
   }
 
   if (!checkbox_label.empty()) {

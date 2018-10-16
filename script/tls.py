@@ -13,7 +13,7 @@ ctx.verify_mode = ssl.CERT_NONE
 
 def check_tls(verbose):
   process = subprocess.Popen(
-    'node tls.js',
+    'node lib/tls',
     cwd=os.path.dirname(os.path.realpath(__file__)),
     shell=True,
     stdout=subprocess.PIPE,
@@ -30,7 +30,7 @@ def check_tls(verbose):
   if sys.platform == "linux" or sys.platform == "linux2":
     tutorial = "./docs/development/build-instructions-linux.md"
   elif sys.platform == "darwin":
-    tutorial = "./docs/development/build-instructions-osx.md"
+    tutorial = "./docs/development/build-instructions-macos.md"
   elif sys.platform == "win32":
     tutorial = "./docs/development/build-instructions-windows.md"
   else:

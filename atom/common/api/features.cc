@@ -2,33 +2,36 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "atom/common/node_includes.h"
+#include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
+// clang-format off
+#include "atom/common/node_includes.h"  // NOLINT(build/include_alpha)
+// clang-format on
 
 namespace {
 
 bool IsDesktopCapturerEnabled() {
-#if defined(ENABLE_DESKTOP_CAPTURER)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_DESKTOP_CAPTURER);
 }
 
 bool IsOffscreenRenderingEnabled() {
-#if defined(ENABLE_OSR)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_OSR);
 }
 
 bool IsPDFViewerEnabled() {
-#if defined(ENABLE_PDF_VIEWER)
-  return true;
-#else
-  return false;
-#endif
+  return BUILDFLAG(ENABLE_PDF_VIEWER);
+}
+
+bool IsFakeLocationProviderEnabled() {
+  return BUILDFLAG(OVERRIDE_LOCATION_PROVIDER);
+}
+
+bool IsViewApiEnabled() {
+  return BUILDFLAG(ENABLE_VIEW_API);
+}
+
+bool IsTtsEnabled() {
+  return BUILDFLAG(ENABLE_TTS);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -39,6 +42,10 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
+  dict.SetMethod("isFakeLocationProviderEnabled",
+                 &IsFakeLocationProviderEnabled);
+  dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
+  dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
 }
 
 }  // namespace

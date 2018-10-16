@@ -1,27 +1,6 @@
-[submodule "vendor/node"]
-	path = vendor/node
-	url = https://github.com/electron/node.git
-[submodule "vendor/depot_tools"]
-	path = vendor/depot_tools
-	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
-[submodule "vendor/breakpad"]
-	path = vendor/breakpad
-	url = https://github.com/electron/chromium-breakpad.git
-[submodule "vendor/crashpad"]
-	path = vendor/crashpad
-	url = https://github.com/electron/crashpad.git
 [submodule "vendor/requests"]
 	path = vendor/requests
 	url = https://github.com/kennethreitz/requests
 [submodule "vendor/boto"]
 	path = vendor/boto
 	url = https://github.com/boto/boto.git
-[submodule "vendor/pdf_viewer"]
-	path = vendor/pdf_viewer
-	url = https://github.com/electron/pdf-viewer.git
-[submodule "vendor/gyp"]
-	path = vendor/gyp
-	url = https://github.com/electron/gyp
-[submodule "vendor/libchromiumcontent"]
-	path = vendor/libchromiumcontent
-	url = https://github.com/electron/libchromiumcontent
