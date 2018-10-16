@@ -34,6 +34,9 @@ class RootView : public views::View {
   bool IsMenuBarVisible() const;
   void HandleKeyEvent(const content::NativeWebKeyboardEvent& event);
   void ResetAltState();
+  // Register/Unregister accelerators supported by the menu model.
+  void RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model);
+  void UnregisterAcceleratorsWithFocusManager();
 
   // views::View:
   void Layout() override;
@@ -42,9 +45,6 @@ class RootView : public views::View {
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
 
  private:
-  // Register accelerators supported by the menu model.
-  void RegisterAccelerators(AtomMenuModel* menu_model);
-
   // Parent window, weak ref.
   NativeWindow* window_;
 

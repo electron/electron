@@ -44,15 +44,14 @@ RootView::~RootView() {}
 void RootView::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {
     // Remove accelerators
-    accelerator_table_.clear();
-    GetFocusManager()->UnregisterAccelerators(this);
+    UnregisterAcceleratorsWithFocusManager();
     // and menu bar.
     SetMenuBarVisibility(false);
     menu_bar_.reset();
     return;
   }
 
-  RegisterAccelerators(menu_model);
+  RegisterAcceleratorsWithFocusManager(menu_model);
 
   // Do not show menu bar in frameless window.
   if (!window_->has_frame())
@@ -178,18 +177,23 @@ bool RootView::AcceleratorPressed(const ui::Accelerator& accelerator) {
                                                           accelerator);
 }
 
-void RootView::RegisterAccelerators(AtomMenuModel* menu_model) {
+void RootView::RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model) {
   // Clear previous accelerators.
-  views::FocusManager* focus_manager = GetFocusManager();
-  accelerator_table_.clear();
-  focus_manager->UnregisterAccelerators(this);
+  UnregisterAcceleratorsWithFocusManager();
 
+  views::FocusManager* focus_manager = GetFocusManager();
   // Register accelerators with focus manager.
   accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
   for (const auto& iter : accelerator_table_) {
     focus_manager->RegisterAccelerator(
         iter.first, ui::AcceleratorManager::kNormalPriority, this);
   }
+}
+
+void RootView::UnregisterAcceleratorsWithFocusManager() {
+  views::FocusManager* focus_manager = GetFocusManager();
+  accelerator_table_.clear();
+  focus_manager->UnregisterAccelerators(this);
 }
 
 }  // namespace atom
