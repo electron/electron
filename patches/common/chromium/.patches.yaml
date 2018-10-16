@@ -536,3 +536,12 @@ patches:
   description:  |
     Temporarily add additional debugging statements to
     generate_breakpad_symbols.py to determine why it is hanging.
+-
+  author: zcbenz <zcbenz@gmail.com>
+  file: web_preferences.patch
+  description: |
+    Add a node_integration field to WebPreferences so we can determine whether
+    a frame has node integration in renderer process.
+
+    This is required by the nativeWindowOpen option, which put multiple main
+    frames in one renderer process.
