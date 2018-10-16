@@ -275,10 +275,6 @@ class NativeWindow : public base::SupportsUserData,
  protected:
   NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
 
-  // Whether or not this window has a modal child;
-  // used to determine enabled state
-  bool has_child_modal_ = false;
-
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
