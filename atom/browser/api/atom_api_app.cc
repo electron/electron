@@ -1338,7 +1338,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
-      .SetMethod("getRegion", &App::GetRegion)
+      .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)

@@ -581,9 +581,9 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** On Windows you have to call it after the `ready` events gets emitted.
 
 ### `app.GetLocaleCountryCode()`
-Returns `String` - User operating system´s region in ISO3166 [here](https://www.iso.org/iso-3166-country-codes.html). The value is taken from native OS APIs.
+Returns `String` - User operating system´s locale country code in ISO3166 [here](https://www.iso.org/iso-3166-country-codes.html). The value is taken from native OS APIs.
 
-**Note:** When unable to detect region, it returns empty string.
+**Note:** When unable to detect locale country code, it returns empty string.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
