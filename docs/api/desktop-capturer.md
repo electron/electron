@@ -17,7 +17,7 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }, async (error, source
   for (const source in sources) {
     if(source.name=='Electron'){
       try{
-        const stream = await navigator.mediDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio:false,
           video:{
             mandatory:{
