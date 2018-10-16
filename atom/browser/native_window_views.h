@@ -280,6 +280,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;
+  // Whether or not this window has a modal child;
+  // used to determine enabled state
+  bool has_child_modal_ = false;
 
   bool use_content_size_ = false;
   bool movable_ = true;
