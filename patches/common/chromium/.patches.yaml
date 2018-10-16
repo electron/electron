@@ -529,3 +529,10 @@ patches:
     majority of changes originally come from these PRs:
       * https://github.com/electron/electron/pull/1835
       * https://github.com/electron/electron/pull/8596
+
+-
+  author: John Kleinschmidt <jkleinsc@github.com>
+  file: verbose_generate_breakpad_symbols.patch
+  description:  |
+    Temporarily add additional debugging statements to
+    generate_breakpad_symbols.py to determine why it is hanging.
