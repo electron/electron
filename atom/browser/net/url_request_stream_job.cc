@@ -153,13 +153,17 @@ void URLRequestStreamJob::OnData(std::vector<char>&& buffer) {  // NOLINT
   if (pending_buf_) {
     int len = BufferCopy(&write_buffer_, pending_buf_.get(), pending_buf_size_);
     write_buffer_.erase(write_buffer_.begin(), write_buffer_.begin() + len);
+    pending_buf_ = nullptr;
+    pending_buf_size_ = 0;
     ReadRawDataComplete(len);
   }
 }
 
 void URLRequestStreamJob::OnEnd() {
   ended_ = true;
-  ReadRawDataComplete(0);
+  if (pending_buf_) {
+    ReadRawDataComplete(0);
+  }
 }
 
 void URLRequestStreamJob::OnError(int error) {
