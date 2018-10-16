@@ -300,10 +300,15 @@ void BrowserWindow::Blur() {
 }
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
+  background_color = color_name;
   TopLevelWindow::SetBackgroundColor(color_name);
   auto* view = web_contents()->GetRenderWidgetHostView();
   if (view)
     view->SetBackgroundColor(ParseHexColor(color_name));
+}
+
+std::string BrowserWindow::GetBackgroundColor() {
+  return background_color;
 }
 
 void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
@@ -417,7 +422,9 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
       .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetProperty("webContents", &BrowserWindow::GetWebContents)
+      .SetProperty("setBackgroundColor", &BrowserWindow::SetBackgroundColor)
+      .SetProperty("getBackgroundColor", &BrowserWindow::GetBackgroundColor);
 }
 
 // static

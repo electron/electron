@@ -31,6 +31,9 @@ class BrowserWindow : public TopLevelWindow,
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
 
+  void SetBackgroundColor(const std::string& color_name) override;
+  std::string GetBackgroundColor();
+
   base::WeakPtr<BrowserWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -70,7 +73,6 @@ class BrowserWindow : public TopLevelWindow,
   void OnWindowLeaveFullScreen() override;
   void Focus() override;
   void Blur() override;
-  void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(v8::Local<v8::Value> value) override;
   void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) override;
 
@@ -107,6 +109,8 @@ class BrowserWindow : public TopLevelWindow,
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
+
+  std::string background_color;
 
 #if defined(OS_MACOSX)
   std::vector<DraggableRegion> draggable_regions_;
