@@ -112,7 +112,8 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  void SetHasChildModal(bool has_modal) override;
+  void IncrementChildModals() override;
+  void DecrementChildModals() override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -280,9 +281,9 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;
-  // Whether or not this window has a modal child;
+  // How many modal children this window has;
   // used to determine enabled state
-  bool has_child_modal_ = false;
+  uint num_modal_children_ = 0;
 
   bool use_content_size_ = false;
   bool movable_ = true;
