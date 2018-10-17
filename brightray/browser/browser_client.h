@@ -14,8 +14,6 @@
 namespace brightray {
 
 class BrowserMainParts;
-class NotificationPresenter;
-class PlatformNotificationService;
 
 class BrowserClient : public content::ContentBrowserClient {
  public:
@@ -27,20 +25,11 @@ class BrowserClient : public content::ContentBrowserClient {
 
   BrowserMainParts* browser_main_parts() { return browser_main_parts_; }
 
-  NotificationPresenter* GetNotificationPresenter();
-
-  // Subclasses should override this to enable or disable WebNotification.
-  virtual void WebNotificationAllowed(
-      int render_process_id,
-      const base::Callback<void(bool, bool)>& callback);
-
   // Subclasses that override this (e.g., to provide their own protocol
   // handlers) should call this implementation after doing their own work.
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   content::MediaObserver* GetMediaObserver() override;
-  content::PlatformNotificationService* GetPlatformNotificationService()
-      override;
   void GetAdditionalAllowedSchemesForFileSystem(
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
@@ -58,9 +47,6 @@ class BrowserClient : public content::ContentBrowserClient {
 
  private:
   BrowserMainParts* browser_main_parts_;
-
-  std::unique_ptr<PlatformNotificationService> notification_service_;
-  std::unique_ptr<NotificationPresenter> notification_presenter_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserClient);
 };

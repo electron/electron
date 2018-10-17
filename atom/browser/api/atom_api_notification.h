@@ -10,10 +10,10 @@
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/notifications/notification.h"
+#include "atom/browser/notifications/notification_delegate.h"
+#include "atom/browser/notifications/notification_presenter.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/notification.h"
-#include "brightray/browser/notification_delegate.h"
-#include "brightray/browser/notification_presenter.h"
 #include "native_mate/handle.h"
 #include "ui/gfx/image/image.h"
 
@@ -22,7 +22,7 @@ namespace atom {
 namespace api {
 
 class Notification : public mate::TrackableObject<Notification>,
-                     public brightray::NotificationDelegate {
+                     public NotificationDelegate {
  public:
   static mate::WrappableBase* New(mate::Arguments* args);
   static bool IsSupported();
@@ -55,7 +55,7 @@ class Notification : public mate::TrackableObject<Notification>,
   bool GetHasReply() const;
   base::string16 GetReplyPlaceholder() const;
   base::string16 GetSound() const;
-  std::vector<brightray::NotificationAction> GetActions() const;
+  std::vector<atom::NotificationAction> GetActions() const;
   base::string16 GetCloseButtonText() const;
 
   // Prop Setters
@@ -66,7 +66,7 @@ class Notification : public mate::TrackableObject<Notification>,
   void SetHasReply(bool new_has_reply);
   void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
   void SetSound(const base::string16& sound);
-  void SetActions(const std::vector<brightray::NotificationAction>& actions);
+  void SetActions(const std::vector<atom::NotificationAction>& actions);
   void SetCloseButtonText(const base::string16& text);
 
  private:
@@ -80,12 +80,12 @@ class Notification : public mate::TrackableObject<Notification>,
   bool has_reply_ = false;
   base::string16 reply_placeholder_;
   base::string16 sound_;
-  std::vector<brightray::NotificationAction> actions_;
+  std::vector<atom::NotificationAction> actions_;
   base::string16 close_button_text_;
 
-  brightray::NotificationPresenter* presenter_;
+  atom::NotificationPresenter* presenter_;
 
-  base::WeakPtr<brightray::Notification> notification_;
+  base::WeakPtr<atom::Notification> notification_;
 
   DISALLOW_COPY_AND_ASSIGN(Notification);
 };

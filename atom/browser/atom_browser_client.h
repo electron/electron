@@ -27,6 +27,8 @@ class SSLCertRequestInfo;
 namespace atom {
 
 class AtomResourceDispatcherHostDelegate;
+class NotificationPresenter;
+class PlatformNotificationService;
 
 class AtomBrowserClient : public brightray::BrowserClient,
                           public content::RenderProcessHostObserver {
@@ -47,6 +49,12 @@ class AtomBrowserClient : public brightray::BrowserClient,
   static void SetCustomServiceWorkerSchemes(
       const std::vector<std::string>& schemes);
 
+  NotificationPresenter* GetNotificationPresenter();
+
+  void WebNotificationAllowed(int render_process_id,
+                              const base::Callback<void(bool, bool)>& callback);
+
+  // content::NavigatorDelegate
   std::vector<std::unique_ptr<content::NavigationThrottle>>
   CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
 
@@ -117,13 +125,12 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::unique_ptr<base::Value> GetServiceManifestOverlay(
       base::StringPiece name) override;
   net::NetLog* GetNetLog() override;
+  content::PlatformNotificationService* GetPlatformNotificationService()
+      override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
       const content::MainFunctionParams&) override;
-  void WebNotificationAllowed(
-      int render_process_id,
-      const base::Callback<void(bool, bool)>& callback) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -169,6 +176,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
+
+  std::unique_ptr<PlatformNotificationService> notification_service_;
+  std::unique_ptr<NotificationPresenter> notification_presenter_;
 
   Delegate* delegate_ = nullptr;
 

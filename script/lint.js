@@ -13,6 +13,7 @@ const BLACKLIST = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
   ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
   ['atom', 'browser', 'resources', 'win', 'resource.h'],
+  ['atom', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
@@ -28,15 +29,6 @@ const BLACKLIST = new Set([
   ['atom', 'node', 'osfhandle.cc'],
   ['brightray', 'browser', 'mac', 'bry_inspectable_web_contents_view.h'],
   ['brightray', 'browser', 'mac', 'event_dispatching_window.h'],
-  ['brightray', 'browser', 'mac', 'notification_center_delegate.h'],
-  ['brightray', 'browser', 'win', 'notification_presenter_win7.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'common.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
-    'desktop_notification_controller.cc'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
-    'desktop_notification_controller.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'toast.h'],
-  ['brightray', 'browser', 'win', 'win32_notification.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
