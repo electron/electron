@@ -1,13 +1,17 @@
-#include "brightray/browser/mac/bry_inspectable_web_contents_view.h"
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
-#include "brightray/browser/inspectable_web_contents_view_mac.h"
-#include "brightray/browser/mac/event_dispatching_window.h"
+#include "atom/browser/ui/cocoa/atom_inspectable_web_contents_view.h"
+
+#include "atom/browser/ui/cocoa/event_dispatching_window.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
+#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "atom/browser/ui/inspectable_web_contents_view_mac.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
-@implementation BRYInspectableWebContentsView
+@implementation AtomInspectableWebContentsView
 
 - (instancetype)initWithInspectableWebContentsViewMac:
     (InspectableWebContentsViewMac*)view {

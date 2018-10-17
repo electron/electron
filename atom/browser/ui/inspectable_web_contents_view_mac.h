@@ -1,13 +1,18 @@
-#ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
-#define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 Adam Roben <adam@roben.org>. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/inspectable_web_contents_view.h"
+#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+
+#include "atom/browser/ui/inspectable_web_contents_view.h"
 
 #include "base/mac/scoped_nsobject.h"
 
-@class BRYInspectableWebContentsView;
+@class AtomInspectableWebContentsView;
 
-namespace brightray {
+namespace atom {
 
 class InspectableWebContentsImpl;
 
@@ -35,11 +40,11 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   // Owns us.
   InspectableWebContentsImpl* inspectable_web_contents_;
 
-  base::scoped_nsobject<BRYInspectableWebContentsView> view_;
+  base::scoped_nsobject<AtomInspectableWebContentsView> view_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewMac);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_
+#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_MAC_H_

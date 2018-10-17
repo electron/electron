@@ -30,12 +30,7 @@ class BrowserClient : public content::ContentBrowserClient {
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   content::MediaObserver* GetMediaObserver() override;
-  void GetAdditionalAllowedSchemesForFileSystem(
-      std::vector<std::string>* additional_schemes) override;
-  void GetAdditionalWebUISchemes(
-      std::vector<std::string>* additional_schemes) override;
   base::FilePath GetDefaultDownloadDirectory() override;
-  content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   std::string GetApplicationLocale() override;
 
  protected:

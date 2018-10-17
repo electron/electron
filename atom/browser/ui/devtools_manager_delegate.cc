@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/devtools_manager_delegate.h"
+#include "atom/browser/ui/devtools_manager_delegate.h"
 
 #include <memory>
 #include <vector>
@@ -28,7 +28,7 @@
 #include "net/socket/tcp_server_socket.h"
 #include "ui/base/resource/resource_bundle.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -116,4 +116,4 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
   return true;
 }
 
-}  // namespace brightray
+}  // namespace atom

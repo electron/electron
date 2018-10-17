@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/devtools_ui.h"
+#include "atom/browser/ui/devtools_ui.h"
 
 #include <string>
 
@@ -14,7 +14,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -117,4 +117,4 @@ DevToolsUI::DevToolsUI(content::BrowserContext* browser_context,
   content::URLDataSource::Add(browser_context, new BundledDataSource());
 }
 
-}  // namespace brightray
+}  // namespace atom

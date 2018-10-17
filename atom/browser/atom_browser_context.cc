@@ -15,6 +15,7 @@
 #include "atom/browser/net/resolve_proxy_helper.h"
 #include "atom/browser/pref_store_delegate.h"
 #include "atom/browser/special_storage_policy.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -27,7 +28,6 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
 #include "brightray/browser/brightray_paths.h"
-#include "brightray/browser/inspectable_web_contents_impl.h"
 #include "brightray/browser/zoom_level_delegate.h"
 #include "brightray/common/application_info.h"
 #include "chrome/common/chrome_paths.h"
@@ -152,7 +152,7 @@ void AtomBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
-  brightray::InspectableWebContentsImpl::RegisterPrefs(registry.get());
+  InspectableWebContentsImpl::RegisterPrefs(registry.get());
   brightray::MediaDeviceIDSalt::RegisterPrefs(registry.get());
   brightray::ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());

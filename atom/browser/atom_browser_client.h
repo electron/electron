@@ -111,7 +111,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
   void GetAdditionalAllowedSchemesForFileSystem(
-      std::vector<std::string>* schemes) override;
+      std::vector<std::string>* additional_schemes) override;
+  void GetAdditionalWebUISchemes(
+      std::vector<std::string>* additional_schemes) override;
   void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
       content::ResourceContext* resource_context) override;
@@ -125,6 +127,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::unique_ptr<base::Value> GetServiceManifestOverlay(
       base::StringPiece name) override;
   net::NetLog* GetNetLog() override;
+  content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService()
       override;
 

@@ -1,11 +1,16 @@
-#ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
-#define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 Adam Roben <adam@roben.org>. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
+
+#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
 
 #include <string>
 
 #include "ui/gfx/image/image_skia.h"
 
-namespace brightray {
+namespace atom {
 
 class InspectableWebContentsViewDelegate {
  public:
@@ -25,6 +30,6 @@ class InspectableWebContentsViewDelegate {
 #endif
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_

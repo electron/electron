@@ -4,8 +4,8 @@
 
 #include "atom/browser/native_browser_view_mac.h"
 
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
+#include "atom/browser/ui/inspectable_web_contents.h"
+#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/geometry/rect.h"
 
@@ -158,7 +158,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 namespace atom {
 
 NativeBrowserViewMac::NativeBrowserViewMac(
-    brightray::InspectableWebContents* inspectable_web_contents)
+    InspectableWebContents* inspectable_web_contents)
     : NativeBrowserView(inspectable_web_contents) {
   auto* view = GetInspectableWebContentsView()->GetNativeView();
   view.autoresizingMask = kDefaultAutoResizingMask;
@@ -233,7 +233,7 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
 
 // static
 NativeBrowserView* NativeBrowserView::Create(
-    brightray::InspectableWebContents* inspectable_web_contents) {
+    InspectableWebContents* inspectable_web_contents) {
   return new NativeBrowserViewMac(inspectable_web_contents);
 }
 

@@ -1,18 +1,25 @@
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
+
+#ifndef ATOM_BROWSER_UI_COCOA_BRY_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+#define ATOM_BROWSER_UI_COCOA_BRY_INSPECTABLE_WEB_CONTENTS_VIEW_H_
+
 #import <AppKit/AppKit.h>
 
 #include "base/mac/scoped_nsobject.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
 
-namespace brightray {
+namespace atom {
 class InspectableWebContentsViewMac;
 }
 
-using brightray::InspectableWebContentsViewMac;
+using atom::InspectableWebContentsViewMac;
 
-@interface BRYInspectableWebContentsView : BaseView <NSWindowDelegate> {
+@interface AtomInspectableWebContentsView : BaseView <NSWindowDelegate> {
  @private
-  brightray::InspectableWebContentsViewMac* inspectableWebContentsView_;
+  atom::InspectableWebContentsViewMac* inspectableWebContentsView_;
 
   base::scoped_nsobject<NSView> fake_view_;
   base::scoped_nsobject<NSWindow> devtools_window_;
@@ -36,3 +43,5 @@ using brightray::InspectableWebContentsViewMac;
 - (void)setTitle:(NSString*)title;
 
 @end
+
+#endif  // ATOM_BROWSER_UI_COCOA_BRY_INSPECTABLE_WEB_CONTENTS_VIEW_H_

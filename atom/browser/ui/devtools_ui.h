@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_DEVTOOLS_UI_H_
-#define BRIGHTRAY_BROWSER_DEVTOOLS_UI_H_
+#ifndef ATOM_BROWSER_UI_DEVTOOLS_UI_H_
+#define ATOM_BROWSER_UI_DEVTOOLS_UI_H_
 
 #include "base/compiler_specific.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/web_ui_controller.h"
 
-namespace brightray {
+namespace atom {
 
 class BrowserContext;
 
@@ -22,6 +22,6 @@ class DevToolsUI : public content::WebUIController {
   DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_DEVTOOLS_UI_H_
+#endif  // ATOM_BROWSER_UI_DEVTOOLS_UI_H_

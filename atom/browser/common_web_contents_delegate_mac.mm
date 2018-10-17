@@ -6,8 +6,8 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include "atom/browser/ui/cocoa/event_dispatching_window.h"
 #include "atom/browser/web_contents_preferences.h"
-#include "brightray/browser/mac/event_dispatching_window.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 

@@ -10,10 +10,12 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/node_debugger.h"
+#include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/common/api/atom_bindings.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
@@ -25,6 +27,8 @@
 #include "components/net_log/chrome_net_log.h"
 #include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/web_ui_controller_factory.h"
+#include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
 #include "electron/buildflags/buildflags.h"
@@ -39,14 +43,10 @@
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #endif
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "atom/browser/atom_web_ui_controller_factory.h"
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-
 #if defined(OS_MACOSX)
 #include "atom/browser/ui/cocoa/views_delegate_mac.h"
 #else
-#include "brightray/browser/views/views_delegate.h"
+#include "atom/browser/ui/views/atom_views_delegate.h"
 #endif
 
 // Must be included after all other headers.
@@ -212,7 +212,7 @@ void AtomBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_MACOSX)
   views_delegate_.reset(new ViewsDelegateMac);
 #else
-  views_delegate_.reset(new brightray::ViewsDelegate);
+  views_delegate_.reset(new ViewsDelegate);
 #endif
 }
 
@@ -231,12 +231,13 @@ void AtomBrowserMainParts::PreMainMessageLoopRun() {
                   base::Bind(&v8::Isolate::LowMemoryNotification,
                              base::Unretained(js_env_->isolate())));
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
   content::WebUIControllerFactory::RegisterFactory(
       AtomWebUIControllerFactory::GetInstance());
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
-  brightray::BrowserMainParts::PreMainMessageLoopRun();
+  // --remote-debugging-port
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
+    DevToolsManagerDelegate::StartHttpHandler();
 
 #if defined(USE_X11)
   libgtkui::GtkInitFromCommandLine(*base::CommandLine::ForCurrentProcess());

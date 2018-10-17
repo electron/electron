@@ -8,7 +8,6 @@ static_library("brightray") {
     "//content/shell:copy_shell_resources",
     "//net:extras",
     "//net:net_with_v8",
-    "//skia",
     "//ui/views",
   ]
 
@@ -18,17 +17,6 @@ static_library("brightray") {
     deps += [ "//build/config/linux/gtk" ]
   }
 
-  extra_source_filters = []
-  if (is_mac) {
-    extra_source_filters += [
-      "*_views.cc",
-      "*_views.h",
-      "*\bviews/*",
-    ]
-  }
-
-  set_sources_assignment_filter(
-      sources_assignment_filter + extra_source_filters)
   sources = [
     "browser/brightray_paths.h",
     "browser/browser_client.cc",
@@ -36,24 +24,6 @@ static_library("brightray") {
     "browser/browser_main_parts.cc",
     "browser/browser_main_parts.h",
     "browser/browser_main_parts_mac.mm",
-    "browser/devtools_manager_delegate.cc",
-    "browser/devtools_manager_delegate.h",
-    "browser/devtools_ui.cc",
-    "browser/devtools_ui.h",
-    "browser/inspectable_web_contents.cc",
-    "browser/inspectable_web_contents.h",
-    "browser/inspectable_web_contents_delegate.h",
-    "browser/inspectable_web_contents_impl.cc",
-    "browser/inspectable_web_contents_impl.h",
-    "browser/inspectable_web_contents_view.h",
-    "browser/inspectable_web_contents_view_delegate.cc",
-    "browser/inspectable_web_contents_view_delegate.h",
-    "browser/inspectable_web_contents_view_mac.h",
-    "browser/inspectable_web_contents_view_mac.mm",
-    "browser/mac/bry_inspectable_web_contents_view.h",
-    "browser/mac/bry_inspectable_web_contents_view.mm",
-    "browser/mac/event_dispatching_window.h",
-    "browser/mac/event_dispatching_window.mm",
     "browser/media/media_capture_devices_dispatcher.cc",
     "browser/media/media_capture_devices_dispatcher.h",
     "browser/media/media_device_id_salt.cc",
@@ -62,12 +32,6 @@ static_library("brightray") {
     "browser/media/media_stream_devices_controller.h",
     "browser/net/require_ct_delegate.cc",
     "browser/net/require_ct_delegate.h",
-    "browser/views/inspectable_web_contents_view_views.cc",
-    "browser/views/inspectable_web_contents_view_views.h",
-    "browser/views/views_delegate.cc",
-    "browser/views/views_delegate.h",
-    "browser/web_ui_controller_factory.cc",
-    "browser/web_ui_controller_factory.h",
     "browser/win/scoped_hstring.cc",
     "browser/win/scoped_hstring.h",
     "browser/zoom_level_delegate.cc",
@@ -85,15 +49,5 @@ static_library("brightray") {
     "common/main_delegate_mac.mm",
     "common/platform_util.h",
     "common/platform_util_linux.cc",
-  ]
-  set_sources_assignment_filter(sources_assignment_filter)
-
-  sources += [
-    "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
-    "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
-    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
-    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.h",
-    "//chrome/browser/devtools/devtools_file_system_indexer.cc",
-    "//chrome/browser/devtools/devtools_file_system_indexer.h",
   ]
 }

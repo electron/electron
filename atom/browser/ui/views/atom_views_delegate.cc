@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/views/views_delegate.h"
+#include "atom/browser/ui/views/atom_views_delegate.h"
 
 #include <memory>
 
@@ -28,7 +28,7 @@ bool IsDesktopEnvironmentUnity() {
 
 }  // namespace
 
-namespace brightray {
+namespace atom {
 
 ViewsDelegate::ViewsDelegate() {}
 
@@ -115,4 +115,4 @@ bool ViewsDelegate::WindowManagerProvidesTitleBar(bool maximized) {
 #endif
 }
 
-}  // namespace brightray
+}  // namespace atom

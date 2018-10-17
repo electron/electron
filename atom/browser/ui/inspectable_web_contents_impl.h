@@ -3,16 +3,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
-#define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
+#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_
+#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_
 
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "atom/browser/ui/inspectable_web_contents.h"
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/inspectable_web_contents.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -25,7 +25,7 @@
 class PrefService;
 class PrefRegistrySimple;
 
-namespace brightray {
+namespace atom {
 
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
@@ -237,6 +237,6 @@ class InspectableWebContentsImpl
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsImpl);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_IMPL_H_
+#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_IMPL_H_

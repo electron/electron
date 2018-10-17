@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_
-#define BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_
+#ifndef ATOM_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
+#define ATOM_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
 
 #include <string>
 
 #include "base/compiler_specific.h"
 #include "ui/views/views_delegate.h"
 
-namespace brightray {
+namespace atom {
 
 class ViewsDelegate : public views::ViewsDelegate {
  public:
@@ -55,6 +55,6 @@ class ViewsDelegate : public views::ViewsDelegate {
   DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_VIEWS_VIEWS_DELEGATE_H_
+#endif  // ATOM_BROWSER_UI_VIEWS_ATOM_VIEWS_DELEGATE_H_
