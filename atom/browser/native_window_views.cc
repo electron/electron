@@ -342,8 +342,7 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
       !widget()->native_widget_private()->IsVisible())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())
-        ->IncrementChildModals();
+    static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
@@ -368,8 +367,7 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    static_cast<NativeWindowViews*>(NativeWindow::parent())
-        ->DecrementChildModals();
+    static_cast<NativeWindowViews*>(parent())->DecrementChildModals();
 
   widget()->Hide();
 
@@ -1175,8 +1173,8 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::DeleteDelegate() {
-  if (is_modal() && NativeWindow::parent()) {
-    auto* parent = NativeWindow::parent();
+  if (is_modal() && this->parent()) {
+    auto* parent = this->parent();
     // Enable parent window after current window gets closed.
     static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
     // Focus on parent window.
