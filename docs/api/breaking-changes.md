@@ -18,6 +18,9 @@ The following `webPreferences` option default values are deprecated in favor of 
 | `nodeIntegration` | `true` | `false` |
 | `webviewTag` | `nodeIntegration` if set else `true` | `false` |
 
+## `nativeWindowOpen`
+
+Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled.
 
 # Planned Breaking API Changes (4.0)
 
