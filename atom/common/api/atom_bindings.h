@@ -10,6 +10,7 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
