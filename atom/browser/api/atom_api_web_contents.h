@@ -125,6 +125,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetIgnoreMenuShortcuts(bool ignore);
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
+  bool IsDOMReady() const;
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
@@ -429,6 +430,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_;
+
+  // Whether page's document is ready.
+  bool is_dom_ready_;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
