@@ -16,7 +16,6 @@
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
-#include "content/public/common/web_preferences.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/web_document.h"

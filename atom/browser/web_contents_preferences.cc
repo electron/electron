@@ -405,8 +405,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
-
-  prefs->node_integration = IsEnabled(options::kNodeIntegration);
 }
 
 }  // namespace atom
