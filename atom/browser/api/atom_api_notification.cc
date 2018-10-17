@@ -5,13 +5,13 @@
 #include "atom/browser/api/atom_api_notification.h"
 
 #include "atom/browser/api/atom_api_menu.h"
+#include "atom/browser/atom_browser_client.h"
 #include "atom/browser/browser.h"
 #include "atom/common/native_mate_converters/gfx_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/browser_client.h"
 #include "native_mate/constructor.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -22,10 +22,10 @@
 
 namespace mate {
 template <>
-struct Converter<brightray::NotificationAction> {
+struct Converter<atom::NotificationAction> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     brightray::NotificationAction* out) {
+                     atom::NotificationAction* out) {
     mate::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
@@ -38,7 +38,7 @@ struct Converter<brightray::NotificationAction> {
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   brightray::NotificationAction val) {
+                                   atom::NotificationAction val) {
     mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
@@ -56,7 +56,8 @@ Notification::Notification(v8::Isolate* isolate,
                            mate::Arguments* args) {
   InitWith(isolate, wrapper);
 
-  presenter_ = brightray::BrowserClient::Get()->GetNotificationPresenter();
+  presenter_ = static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+                   ->GetNotificationPresenter();
 
   mate::Dictionary opts;
   if (args->GetNext(&opts)) {
@@ -119,7 +120,7 @@ base::string16 Notification::GetSound() const {
   return sound_;
 }
 
-std::vector<brightray::NotificationAction> Notification::GetActions() const {
+std::vector<atom::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
@@ -157,7 +158,7 @@ void Notification::SetSound(const base::string16& new_sound) {
 }
 
 void Notification::SetActions(
-    const std::vector<brightray::NotificationAction>& actions) {
+    const std::vector<atom::NotificationAction>& actions) {
   actions_ = actions;
 }
 
@@ -200,7 +201,7 @@ void Notification::Show() {
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this, base::GenerateGUID());
     if (notification_) {
-      brightray::NotificationOptions options;
+      atom::NotificationOptions options;
       options.title = title_;
       options.subtitle = subtitle_;
       options.msg = body_;
@@ -218,7 +219,8 @@ void Notification::Show() {
 }
 
 bool Notification::IsSupported() {
-  return !!brightray::BrowserClient::Get()->GetNotificationPresenter();
+  return !!static_cast<AtomBrowserClient*>(AtomBrowserClient::Get())
+               ->GetNotificationPresenter();
 }
 
 // static
