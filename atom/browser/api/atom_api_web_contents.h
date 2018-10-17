@@ -141,6 +141,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   bool IsCurrentlyAudible();
+  bool IsDOMReady() const;
   void Print(mate::Arguments* args);
   std::vector<printing::PrinterBasicInfo> GetPrinterList();
   void SetEmbedder(const WebContents* embedder);
@@ -490,6 +491,9 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Whether to enable devtools.
   bool enable_devtools_ = true;
+
+  // Whether page's document is ready.
+  bool is_dom_ready_ = false;
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
