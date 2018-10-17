@@ -278,7 +278,7 @@ class NativeWindowViews : public NativeWindow,
   bool is_enabled_ = true;
   // How many modal children this window has;
   // used to determine enabled state
-  uint num_modal_children_ = 0;
+  unsigned int num_modal_children_ = 0;
 
   bool use_content_size_ = false;
   bool movable_ = true;

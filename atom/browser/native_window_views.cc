@@ -397,7 +397,9 @@ void NativeWindowViews::IncrementChildModals() {
 }
 
 void NativeWindowViews::DecrementChildModals() {
-  num_modal_children_--;
+  if (num_modal_children_ > 0) {
+    num_modal_children_--;
+  }
   SetEnabledInternal(ShouldBeEnabled());
 }
 
