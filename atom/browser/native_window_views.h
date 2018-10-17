@@ -112,8 +112,6 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
-  void IncrementChildModals() override;
-  void DecrementChildModals() override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -135,6 +133,9 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
   void UpdateDraggableRegions(std::unique_ptr<SkRegion> region);
+
+  void IncrementChildModals();
+  void DecrementChildModals();
 
 #if defined(OS_WIN)
   void SetIcon(HICON small_icon, HICON app_icon);
