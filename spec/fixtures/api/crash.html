@@ -20,7 +20,7 @@
     })
 
     if (process.platform === 'win32') {
-      ipcRenderer.sendSync('crash-service-pid', crashReporter._crashServiceProcess.pid)
+      ipcRenderer.sendSync('crash-service-pid', crashReporter.crashServicePid)
     }
 
     if (!uploadToServer) {
