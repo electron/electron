@@ -98,22 +98,33 @@ const getPreviousPoint = async (point) => {
   }
 }
 
+async function getReleaseNotes (range) {
+  const rangeList = range.split('..') || ['HEAD']
+  const to = rangeList.pop()
+  const from = rangeList.pop() || (await getPreviousPoint(to))
+
+  const n = await notes.get(from, to)
+  const ret = {
+    text: notes.render(n)
+  }
+
+  if (n.unknown.length) {
+    ret.warning = `You have ${n.unknown.length} unknown release notes. Please fix them before releasing.`
+  }
+
+  return ret
+}
+
 async function main () {
   if (process.argv.length !== 3) {
     console.log('Use: script/release-notes/index.js {tag | tag1..tag2}')
     return 1
   }
 
-  const opts = {}
-  const range = process.argv.length === 3 ? process.argv[2].split('..') : ['HEAD']
-  opts.to = range.pop()
-  opts.from = range.pop() || (await getPreviousPoint(opts.to))
-
-  const n = await notes.get(opts.from, opts.to)
-  console.log(notes.render(n))
-  if (n.unknown.length) {
-    throw new Error(`You have ${n.unknown.length} unknown release notes. Please fix them before releasing.`)
-  }
+  const range = process.argv[2]
+  const notes = await getReleaseNotes(range)
+  console.log(notes.text)
+  if (notes.warning) throw new Error(notes.warning)
 }
 
 if (process.mainModule === module) {
@@ -122,3 +133,5 @@ if (process.mainModule === module) {
     process.exit(1)
   })
 }
+
+module.exports = getReleaseNotes
