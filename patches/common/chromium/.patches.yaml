@@ -101,10 +101,6 @@ patches:
   file: compositor_delegate.patch
   description: null
 -
-  author: null
-  file: desktop_screen_win.patch
-  description: null
--
   author: Cheng Zhao <zcbenz@gmail.com>
   file: disable_hidden.patch
   description: null
