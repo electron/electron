@@ -683,7 +683,7 @@ void App::OnLogin(scoped_refptr<LoginHandler> login_handler,
   content::WebContents* web_contents = login_handler->GetWebContents();
   if (web_contents) {
     prevent_default = Emit(
-        "login", WebContents::CreateFrom(isolate(), web_contents),
+        "login", WebContents::FromOrCreate(isolate(), web_contents),
         request_details, login_handler->auth_info(),
         base::Bind(&PassLoginInformation, base::RetainedRef(login_handler)));
   }
@@ -714,9 +714,12 @@ bool App::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   if (web_contents) {
-    auto api_web_contents = WebContents::CreateFrom(isolate(), web_contents);
-    api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
-                                     disposition, additional_features, body);
+    auto api_web_contents = WebContents::From(isolate(), web_contents);
+    // No need to emit any event if the WebContents is not available in JS.
+    if (!api_web_contents.IsEmpty()) {
+      api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
+                                       disposition, additional_features, body);
+    }
   }
 
   return false;
@@ -735,7 +738,7 @@ void App::AllowCertificateError(
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   bool prevent_default = Emit(
-      "certificate-error", WebContents::CreateFrom(isolate(), web_contents),
+      "certificate-error", WebContents::FromOrCreate(isolate(), web_contents),
       request_url, net::ErrorToString(cert_error), ssl_info.cert, callback);
 
   // Deny the certificate by default.
@@ -762,7 +765,7 @@ void App::SelectClientCertificate(
 
   bool prevent_default =
       Emit("select-client-certificate",
-           WebContents::CreateFrom(isolate(), web_contents),
+           WebContents::FromOrCreate(isolate(), web_contents),
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
            base::Bind(&OnClientCertificateSelected, isolate(), shared_delegate,
                       shared_identities));

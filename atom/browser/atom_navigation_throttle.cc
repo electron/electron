@@ -29,9 +29,9 @@ AtomNavigationThrottle::WillRedirectRequest() {
   }
 
   auto api_contents =
-      atom::api::WebContents::CreateFrom(v8::Isolate::GetCurrent(), contents);
+      atom::api::WebContents::From(v8::Isolate::GetCurrent(), contents);
   if (api_contents.IsEmpty()) {
-    NOTREACHED();
+    // No need to emit any event if the WebContents is not available in JS.
     return PROCEED;
   }
 
