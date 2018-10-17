@@ -56,10 +56,6 @@ patches:
   file: accelerator.patch
   description: null
 -
-  author: Ales Pergl <alpergl@microsoft.com>
-  file: allow_new_privs.patch
-  description: null
--
   author: null
   file: app_indicator_icon_menu.patch
   description: null
