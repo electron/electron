@@ -1,10 +1,6 @@
 repo: src/third_party/skia
 patches:
 -
-  author: Ales Pergl <alpergl@microsoft.com>
-  file: dcheck.patch
-  description: null
--
   author: Shelley Vohr <shelley.vohr@gmail.com>
   file: fix_font_thickness.patch
   description: |
