@@ -1997,6 +1997,16 @@ describe('BrowserWindow module', () => {
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
         })
       })
+
+      it('should have nodeIntegration disabled in child windows', async () => {
+        return new Promise((resolve, reject) => {
+          ipcMain.once('answer', (event, typeofProcess) => {
+            assert.strictEqual(typeofProcess, 'undefined')
+            resolve()
+          })
+          w.loadFile(path.join(fixtures, 'api', 'native-window-open-argv.html'))
+        })
+      })
     })
   })
 
