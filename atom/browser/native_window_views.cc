@@ -342,7 +342,7 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
       !widget()->native_widget_private()->IsVisible())
-    NativeWindow::parent()->SetHasChildModal(true);
+    NativeWindow::parent()->IncrementChildModals();
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
@@ -367,7 +367,7 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    NativeWindow::parent()->SetHasChildModal(false);
+    NativeWindow::parent()->DecrementChildModals();
 
   widget()->Hide();
 
@@ -391,11 +391,14 @@ bool NativeWindowViews::IsEnabled() {
 #endif
 }
 
-void NativeWindowViews::SetHasChildModal(bool has_modal) {
-  if (has_modal != has_child_modal_) {
-    has_child_modal_ = has_modal;
-    SetEnabledInternal(ShouldBeEnabled());
-  }
+void NativeWindowViews::IncrementChildModals() {
+  num_modal_children_++;
+  SetEnabledInternal(ShouldBeEnabled());
+}
+
+void NativeWindowViews::DecrementChildModals() {
+  num_modal_children_--;
+  SetEnabledInternal(ShouldBeEnabled());
 }
 
 void NativeWindowViews::SetEnabled(bool enable) {
@@ -406,7 +409,7 @@ void NativeWindowViews::SetEnabled(bool enable) {
 }
 
 bool NativeWindowViews::ShouldBeEnabled() {
-  return is_enabled_ && !has_child_modal_;
+  return is_enabled_ && (num_modal_children_ == 0);
 }
 
 void NativeWindowViews::SetEnabledInternal(bool enable) {
@@ -1171,7 +1174,7 @@ void NativeWindowViews::DeleteDelegate() {
   if (is_modal() && NativeWindow::parent()) {
     auto* parent = NativeWindow::parent();
     // Enable parent window after current window gets closed.
-    parent->SetHasChildModal(false);
+    parent->DecrementChildModals();
     // Focus on parent window.
     parent->Focus(true);
   }
