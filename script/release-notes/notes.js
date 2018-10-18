@@ -49,6 +49,37 @@ const setPullRequest = (o, owner, repo, number) => {
   if (!o.originalPr) o.originalPr = o.pr
 }
 
+const getNoteFromBody = body => {
+  if (!body) return null
+
+  const NOTE_PREFIX = 'Notes: '
+
+  let note = body
+    .split(/\r?\n\r?\n/) // split into paragraphs
+    .map(x => x.trim())
+    .find(x => x.startsWith(NOTE_PREFIX))
+
+  if (note) {
+    const placeholder = '<!-- One-line Change Summary Here-->'
+    note = note
+      .slice(NOTE_PREFIX.length)
+      .replace(placeholder, '')
+      .replace(/\r?\n/, ' ') // remove newlines
+      .trim()
+  }
+
+  if (note) {
+    if (note.match(/^[Nn]o[ _-][Nn]otes\.?$/)) {
+      return NO_NOTES
+    }
+    if (note.match(/^[Nn]one\.?$/)) {
+      return NO_NOTES
+    }
+  }
+
+  return note
+}
+
 /**
  * Looks for our project's conventions in the commit message:
  *
@@ -74,7 +105,12 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
 
   if (!o.originalSubject) o.originalSubject = subject
 
-  if (body) o.body = body
+  if (body) {
+    o.body = body
+
+    const note = getNoteFromBody(body)
+    if (note) { o.note = note }
+  }
 
   // if the subject ends in ' (#dddd)', treat it as a pull request id
   let match
@@ -220,39 +256,6 @@ const getPullRequest = async (number, owner, repo) => {
       if (e.code !== 404) throw e
     }
   })
-}
-
-// see if user provided a release note in the PR body
-const getNoteFromPull = pull => {
-  const NOTE_PREFIX = 'Notes: '
-
-  if (!pull || !pull.data || !pull.data.body) {
-    return null
-  }
-
-  let note = pull.data.body
-    .split('\n')
-    .map(x => x.trim())
-    .find(x => x.startsWith(NOTE_PREFIX))
-
-  if (note) {
-    const placeholder = '<!-- One-line Change Summary Here-->'
-    note = note
-      .slice(NOTE_PREFIX.length)
-      .replace(placeholder, '')
-      .trim()
-  }
-
-  if (note) {
-    if (note.match(/^[Nn]o[ _-][Nn]otes\.?$/)) {
-      return NO_NOTES
-    }
-    if (note.match(/^[Nn]one\.?$/)) {
-      return NO_NOTES
-    }
-  }
-
-  return note
 }
 
 const addRepoToPool = async (pool, repo, from, to) => {
@@ -403,14 +406,14 @@ const getNotes = async (fromRef, toRef) => {
     let pr = commit.pr
     while (pr && !commit.note) {
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
-      if (!prData || !prData) break
+      if (!prData || !prData.data) break
 
       // try to pull a release note from the pull comment
-      commit.note = getNoteFromPull(prData)
+      commit.note = getNoteFromBody(prData.data.body)
       if (commit.note) break
 
       // if the PR references another PR, maybe follow it
-      parseCommitMessage(`${prData.data.title}\n${prData.data.body}`, pr.owner, pr.repo, commit)
+      parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, commit)
       pr = pr.number !== commit.pr.number ? commit.pr : null
     }
   }
