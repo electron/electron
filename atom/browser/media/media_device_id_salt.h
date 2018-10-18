@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
-#define BRIGHTRAY_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#ifndef ATOM_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#define ATOM_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
 
 #include <string>
 
@@ -13,7 +13,7 @@
 class PrefRegistrySimple;
 class PrefService;
 
-namespace brightray {
+namespace atom {
 
 // MediaDeviceIDSalt is responsible for creating and retrieving a salt string
 // that is used for creating MediaSource IDs that can be cached by a web
@@ -34,6 +34,6 @@ class MediaDeviceIDSalt {
   DISALLOW_COPY_AND_ASSIGN(MediaDeviceIDSalt);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#endif  // ATOM_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_

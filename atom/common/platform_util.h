@@ -64,6 +64,12 @@ bool GetLoginItemEnabled();
 void SetLoginItemEnabled(bool enabled);
 #endif
 
+#if defined(OS_LINUX)
+// Returns a success flag.
+// Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
+bool GetDesktopName(std::string* setme);
+#endif
+
 }  // namespace platform_util
 
 #endif  // ATOM_COMMON_PLATFORM_UTIL_H_

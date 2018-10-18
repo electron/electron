@@ -1,7 +1,8 @@
 // Copyright 2013 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
-#include "brightray/browser/media/media_device_id_salt.h"
+
+#include "atom/browser/media/media_device_id_salt.h"
 
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -10,7 +11,7 @@
 
 using content::BrowserThread;
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -50,4 +51,4 @@ void MediaDeviceIDSalt::Reset(PrefService* pref_service) {
       content::BrowserContext::CreateRandomMediaDeviceIDSalt());
 }
 
-}  // namespace brightray
+}  // namespace atom

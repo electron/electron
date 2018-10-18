@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_ZOOM_LEVEL_DELEGATE_H_
-#define BRIGHTRAY_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#ifndef ATOM_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#define ATOM_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -20,7 +20,7 @@ class DictionaryValue;
 
 class PrefRegistrySimple;
 
-namespace brightray {
+namespace atom {
 
 // A class to manage per-partition default and per-host zoom levels.
 // It implements an interface between the content/ zoom
@@ -59,6 +59,6 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#endif  // ATOM_BROWSER_ZOOM_LEVEL_DELEGATE_H_

@@ -2,12 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
-#define BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#ifndef ATOM_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#define ATOM_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 
 #include "content/public/browser/web_contents_delegate.h"
 
-namespace brightray {
+namespace atom {
 
 class MediaStreamDevicesController {
  public:
@@ -40,6 +40,6 @@ class MediaStreamDevicesController {
   DISALLOW_COPY_AND_ASSIGN(MediaStreamDevicesController);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#endif  // ATOM_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_

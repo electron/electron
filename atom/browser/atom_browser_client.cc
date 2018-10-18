@@ -22,6 +22,7 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/io_thread.h"
+#include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/notifications/notification_presenter.h"
 #include "atom/browser/notifications/platform_notification_service.h"
@@ -681,6 +682,10 @@ AtomBrowserClient::CreateThrottlesForNavigation(
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
   throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
   return throttles;
+}
+
+content::MediaObserver* AtomBrowserClient::GetMediaObserver() {
+  return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
 content::DevToolsManagerDelegate*

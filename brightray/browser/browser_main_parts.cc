@@ -23,7 +23,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/media/media_capture_devices_dispatcher.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
@@ -302,9 +301,6 @@ int BrowserMainParts::PreCreateThreads() {
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
 #endif
-
-  // Force MediaCaptureDevicesDispatcher to be created on UI thread.
-  MediaCaptureDevicesDispatcher::GetInstance();
 
   if (!views::LayoutProvider::Get())
     layout_provider_.reset(new views::LayoutProvider());

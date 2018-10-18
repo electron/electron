@@ -12,6 +12,7 @@
 #include "base/nix/xdg_util.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
+#include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "url/gurl.h"
 
 #define ELECTRON_TRASH "ELECTRON_TRASH"
@@ -143,6 +144,20 @@ void Beep() {
     return;
   fprintf(console, "\a");
   fclose(console);
+}
+
+bool GetDesktopName(std::string* setme) {
+  bool found = false;
+
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  std::string desktop_id = libgtkui::GetDesktopName(env.get());
+  constexpr char const* libcc_default_id = "chromium-browser.desktop";
+  if (!desktop_id.empty() && (desktop_id != libcc_default_id)) {
+    *setme = desktop_id;
+    found = true;
+  }
+
+  return found;
 }
 
 }  // namespace platform_util

@@ -9,12 +9,12 @@
 #include <vector>
 
 #include "atom/browser/notifications/notification_delegate.h"
+#include "atom/common/platform_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/common/application_info.h"
-#include "brightray/common/platform_util.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -127,7 +127,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // Send the desktop name to identify the application
   // The desktop-entry is the part before the .desktop
   std::string desktop_id;
-  if (brightray::platform_util::GetDesktopName(&desktop_id)) {
+  if (platform_util::GetDesktopName(&desktop_id)) {
     const std::string suffix{".desktop"};
     if (base::EndsWith(desktop_id, suffix,
                        base::CompareCase::INSENSITIVE_ASCII)) {

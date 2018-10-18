@@ -8,7 +8,6 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "brightray/browser/browser_main_parts.h"
-#include "brightray/browser/media/media_capture_devices_dispatcher.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/url_constants.h"
 
@@ -66,10 +65,6 @@ content::BrowserMainParts* BrowserClient::CreateBrowserMainParts(
   DCHECK(!browser_main_parts_);
   browser_main_parts_ = OverrideCreateBrowserMainParts(parameters);
   return browser_main_parts_;
-}
-
-content::MediaObserver* BrowserClient::GetMediaObserver() {
-  return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
 base::FilePath BrowserClient::GetDefaultDownloadDirectory() {
