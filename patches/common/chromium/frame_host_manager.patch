@@ -1,4 +1,4 @@
-From 4730f77f43c648f6168db58897b4569326a75627 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Wed, 14 Nov 2018 20:38:46 +0530
 Subject: frame_host_manager.patch
@@ -7,10 +7,10 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance. 
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 872e4609c94f..a59676004f24 100644
+index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..a59676004f2411631418bf12e2978623b9b27b53 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1960,6 +1960,18 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1960,6 +1960,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    bool was_server_redirect = request.navigation_handle() &&
                               request.navigation_handle()->WasServerRedirect();
  
@@ -23,13 +23,12 @@ index 872e4609c94f..a59676004f24 100644
 +  scoped_refptr<SiteInstance> candidate_site_instance =
 +      speculative_render_frame_host_
 +          ? speculative_render_frame_host_->GetSiteInstance()
-+          : content::SiteInstance::CreateForURL(browser_context,
-+                                                request.common_params().url);
++          : nullptr;
 +
    if (frame_tree_node_->IsMainFrame()) {
      // Renderer-initiated main frame navigations that may require a
      // SiteInstance swap are sent to the browser via the OpenURL IPC and are
-@@ -1979,6 +1991,19 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1979,6 +1990,23 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
                                                 request.common_params().url));
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
@@ -39,17 +38,21 @@ index 872e4609c94f..a59676004f24 100644
 +         request.state() == NavigationRequest::FAILED) &&
 +        !speculative_render_frame_host_;
 +    // Gives user a chance to choose a custom site instance.
++    scoped_refptr<SiteInstance> override_candidate_instance = candidate_site_instance
++        ? candidate_site_instance
++        : content::SiteInstance::CreateForURL(browser_context,
++                                              request.common_params().url);
 +    SiteInstance* client_custom_instance = nullptr;
 +    GetContentClient()->browser()->OverrideSiteInstanceForNavigation(
 +        render_frame_host_.get(), browser_context, request.common_params().url,
-+        has_response_started, candidate_site_instance.get(),
++        has_response_started, override_candidate_instance.get(),
 +        &client_custom_instance);
 +    if (client_custom_instance)
 +      return scoped_refptr<SiteInstance>(client_custom_instance);
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -1990,18 +2015,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -1990,18 +2018,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
    if (no_renderer_swap_allowed)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
@@ -70,7 +73,7 @@ index 872e4609c94f..a59676004f24 100644
        request.state() == NavigationRequest::FAILED,
        request.restore_type() != RestoreType::NONE, request.is_view_source(),
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3be31602689c..2c22cb1cfe0d 100644
+index 3be31602689cb93b965729cc4e35cf6d23a8ec2f..2c22cb1cfe0dddc97c00e5f4ff89de6b18bc232f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -196,6 +196,15 @@ class CONTENT_EXPORT ContentBrowserClient {

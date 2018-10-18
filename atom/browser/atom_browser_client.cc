@@ -198,7 +198,11 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     return false;
 
   int process_id = current_instance->GetProcess()->GetID();
-  if (!IsRendererSandboxed(process_id)) {
+  if (IsRendererSandboxed(process_id)) {
+    // Renderer is sandboxed, delegate the decision to the content layer for all
+    // origins.
+    return false;
+  } else {
     if (!RendererUsesNativeWindowOpen(process_id)) {
       // non-sandboxed renderers without native window.open should always create
       // a new SiteInstance
