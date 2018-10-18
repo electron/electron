@@ -8,11 +8,16 @@ jobs:
     CI: true
   steps:
 
+  - bash: |
+      git clean -fdx
+    displayName: Clean unneeded git directories
+    timeoutInMinutes: 2
+
   - task: CopyFiles@2
     displayName: 'Copy Files to: src/electron'
     inputs:
       TargetFolder: src/electron
-    timeoutInMinutes: 1
+    timeoutInMinutes: 2
 
   - bash: |
       export PATH="$PATH:/Users/electron/depot_tools"
