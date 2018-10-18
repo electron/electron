@@ -39,7 +39,7 @@ describe('process module', () => {
   })
 
   describe('process.getProcessMemoryInfo()', async () => {
-    it('resolves promise successfully with non zero value', async () => {
+    it('resolves promise successfully with valid data', async () => {
       const memoryInfo = await process.getProcessMemoryInfo()
       expect(memoryInfo).to.be.an('object')
       if (process.platform === 'linux') {
@@ -49,7 +49,8 @@ describe('process module', () => {
         expect(memoryInfo.workingSetSize).to.be.a('number').greaterThan(0)
       }
       expect(memoryInfo.privateBytes).to.be.a('number').greaterThan(0)
-      expect(memoryInfo.sharedBytes).to.be.a('number').greaterThan(0)
+      // Shared bytes can be zero
+      expect(memoryInfo.sharedBytes).to.be.a('number').greaterThan(-1)
     })
   })
 
