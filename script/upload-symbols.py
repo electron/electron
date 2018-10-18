@@ -34,6 +34,8 @@ def main():
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
   else:
     files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+  # The symbol server needs lowercase paths, it will fail otherwise
+  # So lowercase all the file paths here
   files = [f.lower() for f in files]
 
   bucket, access_key, secret_key = s3_config()
