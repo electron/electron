@@ -239,6 +239,24 @@ describe('node feature', () => {
       child.stdout.on('data', outDataHandler)
     })
 
+    it('does not start the v8 inspector when --inspect is after a -- argument', (done) => {
+      child = ChildProcess.spawn(remote.process.execPath, [path.join(__dirname, 'fixtures', 'module', 'noop.js'), '--', '--inspect'])
+
+      let output = ''
+      function dataListener (data) {
+        output += data
+      }
+      child.stderr.on('data', dataListener)
+      child.stdout.on('data', dataListener)
+      child.on('exit', () => {
+        if (output.trim().startsWith('Debugger listening on ws://')) {
+          done(new Error('Inspector was started when it should not have been'))
+        } else {
+          done()
+        }
+      })
+    })
+
     it('supports js binding', (done) => {
       child = ChildProcess.spawn(process.execPath, ['--inspect', path.join(__dirname, 'fixtures', 'module', 'inspector-binding.js')], {
         env: {
