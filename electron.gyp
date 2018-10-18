@@ -235,16 +235,6 @@
               ],
             },
           ],
-          'link_settings': {
-            'ldflags': [
-              # Build as Position-Independent Executable to mitigate exploitations.
-              '-pie',
-            ],
-          },
-          'cflags_cc': [
-            # Needed for PIE
-            '-fPIC',
-          ]
         }],  # OS=="linux"
       ],
     },  # target <(project_name)
@@ -392,7 +382,6 @@
           # Required settings of using breakpad.
           'cflags_cc': [
             '-Wno-empty-body',
-            '-fPIC',
           ],
           'include_dirs': [
             'vendor/breakpad/src',

@@ -74,8 +74,6 @@
           },
           'cflags': [
             '<!@(<(pkg-config) --cflags <(linux_system_libraries))',
-            # Needed for PIE
-            '-fPIC',
           ],
           'direct_dependent_settings': {
             'cflags': [
