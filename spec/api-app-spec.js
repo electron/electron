@@ -358,6 +358,28 @@ describe('app module', () => {
       })
       w = new BrowserWindow({ show: false })
     })
+
+    it('should emit remote-require event when remote.require() is invoked', (done) => {
+      app.once('remote-require', (event, webContents, moduleName) => {
+        expect(webContents).to.equal(w.webContents)
+        expect(moduleName).to.equal('test')
+        done()
+      })
+      w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
+    })
+
+    it('should emit remote-get-global event when remote.getGlobal() is invoked', (done) => {
+      app.once('remote-get-global', (event, webContents, globalName) => {
+        expect(webContents).to.equal(w.webContents)
+        expect(globalName).to.equal('test')
+        done()
+      })
+      w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
+    })
   })
 
   describe('app.setBadgeCount', () => {
