@@ -3,6 +3,8 @@ From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:00 -0700
 Subject: blink_file_path.patch
 
+This is used by editors to obtain the filesystem path from a dragged file. See
+documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
 index 39831f1902c6..fddb013aa122 100644
