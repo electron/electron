@@ -3,7 +3,7 @@
 if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2), {
-  boolean: ['tag']
+  string: ['tag']
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
@@ -20,7 +20,7 @@ github.authenticate({
 })
 
 function getLastBumpCommit (tag) {
-  const data = execSync(`git log -n1 --grep "Bump ${tag}" --format="format:{hash: %H, message: '%s'}"`)
+  const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
   return JSON.parse(data)
 }
 
@@ -90,9 +90,9 @@ async function deleteTag (tag, targetRepo) {
 
 async function cleanReleaseArtifacts () {
   const tag = args.tag
-  const lastBumpCommit = getLastBumpCommit().message
+  const isNightly = args.tag.includes('nightly')
 
-  if (lastBumpCommit.indexOf('nightly' > 0)) {
+  if (isNightly) {
     await deleteDraft(tag, 'nightlies')
     await deleteTag(tag, 'nightlies')
   } else {
