@@ -36,11 +36,12 @@ const getTagsOnBranch = async (point) => {
 }
 
 const getBranchOf = async (point) => {
-  return (await runGit(['branch', '--remote', '--contains', point]))
+  const branches = (await runGit(['branch', '-a', '--contains', point]))
     .split('\n')
     .map(b => b.trim())
     .filter(b => !!b)
-    .shift()
+  const current = branches.find(b => b.startsWith('* '))
+  return current ? current.slice(2) : branches.shift()
 }
 
 const getAllBranches = async () => {
@@ -61,6 +62,13 @@ const getPreviousStabilizationBranch = async (current) => {
   const stabilizationBranches = (await getStabilizationBranches())
     .filter(b => b !== current && b !== `origin/${current}`)
 
+  if (!semver.valid(current)) {
+    // since we don't seem to be on a stabilization branch right now,
+    // pick a placeholder name that will yield the newest branch
+    // as a comparison point.
+    current = 'v999.999.999'
+  }
+
   let previous = null
   for (const b of stabilizationBranches) {
     if (semver.gte(semverify(b), semverify(current))) continue
@@ -75,6 +83,7 @@ const getPreviousPoint = async (point) => {
   const currentTag = (await getTagsOf(point)).filter(t => tagIsSupported(t)).pop()
   const currentIsStable = tagIsStable(currentTag)
   // console.log({currentBranch, currentTag, currentIsStable})
+
   try {
     // First see if there's an earlier tag on the same branch
     // that can serve as a reference point.
@@ -86,8 +95,8 @@ const getPreviousPoint = async (point) => {
   }
 
   // Otherwise, use the newest stable release that preceeds this branch.
-  // You may have to walk >1 branch, e.g. to get past 2-1-x which never had
-  // a stable release.
+  // To reach that you may have to walk past >1 branch, e.g. to get past
+  // 2-1-x which never had a stable release.
   let branch = currentBranch
   while (branch) {
     const prevBranch = await getPreviousStabilizationBranch(branch)
@@ -116,12 +125,12 @@ async function getReleaseNotes (range) {
 }
 
 async function main () {
-  if (process.argv.length !== 3) {
-    console.log('Use: script/release-notes/index.js {tag | tag1..tag2}')
+  if (process.argv.length > 3) {
+    console.log('Use: script/release-notes/index.js [tag | tag1..tag2]')
     return 1
   }
 
-  const range = process.argv[2]
+  const range = process.argv[2] || 'HEAD'
   const notes = await getReleaseNotes(range)
   console.log(notes.text)
   if (notes.warning) throw new Error(notes.warning)
