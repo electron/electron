@@ -682,6 +682,7 @@ steps-tests: &steps-tests
         command: |
           cd src
           export ELECTRON_OUT_DIR=Default
+          export ELECTRON_SPEC_NO_HEADER_BUILD=1
           (cd electron && npm run test -- --ci)
     - run:
         name: Check test results existence

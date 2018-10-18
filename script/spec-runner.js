@@ -24,6 +24,13 @@ async function main () {
     await getSpecHash().then(saveSpecHash)
   }
 
+  if (!process.env.ELECTRON_SPEC_NO_HEADER_BUILD) {
+    await generateHeaders()
+  }
+  if (process.platform === 'win32') {
+    copyLibFile()
+  }
+
   await runElectronTests()
 }
 
@@ -91,6 +98,32 @@ function getSpecHash () {
       return hash
     })()
   ])
+}
+
+function generateHeaders () {
+  return new Promise((resolve, reject) => {
+    const child = childProcess.spawn('ninja', ['-C', `out/${utils.OUT_DIR}`, 'third_party/electron_node:headers'], {
+      cwd: BASE,
+      stdio: 'inherit'
+    })
+    child.on('exit', (code) => {
+      if (code === 0) return resolve()
+      reject(new Error('ninja failed to generate headers'))
+    })
+  })
+}
+
+function copyLibFile () {
+  const sourceLib = path.resolve(BASE, 'out', utils.OUT_DIR, 'electron.lib')
+  const targetLib = path.resolve(BASE, 'out', utils.OUT_DIR, 'gen', 'node_headers', 'Release', 'node.lib')
+  const targetDir = path.dirname(targetLib)
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(path.dirname(targetLib))
+  }
+  fs.writeFileSync(
+    targetLib,
+    fs.readFileSync(sourceLib)
+  )
 }
 
 main().catch((error) => {
