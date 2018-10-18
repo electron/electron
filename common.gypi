@@ -263,7 +263,6 @@
           ['OS=="linux"', {
             'cflags': [
               '-Wno-empty-body',
-              '-fPIC',
             ],
           }],  # OS=="linux"
           ['OS=="win"', {
