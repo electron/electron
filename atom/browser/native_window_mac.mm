@@ -583,13 +583,13 @@ bool NativeWindowMac::IsEnabled() {
 
 void NativeWindowMac::SetEnabled(bool enable) {
   if (enable) {
+    [window_ endSheet:[window_ attachedSheet]];
+  } else {
     [window_ beginSheet:window_
         completionHandler:^(NSModalResponse returnCode) {
           NSLog(@"modal enabled");
           return;
         }];
-  } else {
-    [window_ endSheet:[window_ attachedSheet]];
   }
 }
 
