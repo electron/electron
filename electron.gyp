@@ -239,8 +239,6 @@
             'ldflags': [
               # Build as Position-Independent Executable to mitigate exploitations.
               '-pie',
-              # Enable BIND_NOW to prevent GOT overwrite attacks.
-              '-Wl,-z,now',
             ],
           },
           'cflags_cc': [
