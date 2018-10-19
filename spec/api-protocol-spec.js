@@ -529,7 +529,7 @@ describe('protocol module', () => {
           cache: false,
           success: (data, _, request) => {
             assert.strictEqual(request.status, 200)
-            assert.strictEqual(request.getResponseHeader('x-electron'), 'a,b')
+            assert.strictEqual(request.getResponseHeader('x-electron'), 'a, b')
             assert.strictEqual(data, text)
             done()
           },
