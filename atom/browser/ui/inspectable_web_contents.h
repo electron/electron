@@ -1,5 +1,10 @@
-#ifndef BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
-#define BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
+// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright (c) 2013 Adam Roben <adam@roben.org>. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
+
+#ifndef ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#define ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
 #include <string>
 
@@ -15,7 +20,7 @@ class DevToolsAgentHost;
 
 class PrefService;
 
-namespace brightray {
+namespace atom {
 
 class InspectableWebContentsDelegate;
 class InspectableWebContentsView;
@@ -54,6 +59,6 @@ class InspectableWebContents {
   virtual void InspectElement(int x, int y) = 0;
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_INSPECTABLE_WEB_CONTENTS_H_
+#endif  // ATOM_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_

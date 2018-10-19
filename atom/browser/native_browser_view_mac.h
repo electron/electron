@@ -17,7 +17,7 @@ namespace atom {
 class NativeBrowserViewMac : public NativeBrowserView {
  public:
   explicit NativeBrowserViewMac(
-      brightray::InspectableWebContents* inspectable_web_contents);
+      InspectableWebContents* inspectable_web_contents);
   ~NativeBrowserViewMac() override;
 
   void SetAutoResizeFlags(uint8_t flags) override;

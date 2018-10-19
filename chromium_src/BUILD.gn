@@ -12,6 +12,12 @@ static_library("chrome") {
   sources = [
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
+    "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
+    "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
+    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
+    "//chrome/browser/devtools/devtools_embedder_message_dispatcher.h",
+    "//chrome/browser/devtools/devtools_file_system_indexer.cc",
+    "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/extensions/global_shortcut_listener_mac.h",

@@ -188,7 +188,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
       !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(brightray::InspectableWebContents::Create(
+  web_contents_.reset(InspectableWebContents::Create(
       web_contents, browser_context->prefs(), is_guest));
   web_contents_->SetDelegate(this);
 }
@@ -229,11 +229,12 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // is required to get the right quit closure for the main message loop.
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
-        base::BindOnce([](scoped_refptr<AtomBrowserContext> browser_context,
-                          std::unique_ptr<brightray::InspectableWebContents>
-                              web_contents) { web_contents.reset(); },
-                       base::RetainedRef(browser_context_),
-                       std::move(web_contents_)));
+        base::BindOnce(
+            [](scoped_refptr<AtomBrowserContext> browser_context,
+               std::unique_ptr<InspectableWebContents> web_contents) {
+              web_contents.reset();
+            },
+            base::RetainedRef(browser_context_), std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }

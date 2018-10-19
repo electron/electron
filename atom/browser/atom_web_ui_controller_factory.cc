@@ -13,11 +13,19 @@
 #include "atom/common/atom_constants.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
-#include "content/public/browser/web_contents.h"
 #include "net/base/escape.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
+#include "atom/browser/ui/devtools_ui.h"
+#include "content/public/browser/web_contents.h"
+
 namespace atom {
+
+namespace {
+
+const char kChromeUIDevToolsBundledHost[] = "devtools";
+
+}  // namespace
 
 // static
 AtomWebUIControllerFactory* AtomWebUIControllerFactory::GetInstance() {
@@ -36,6 +44,9 @@ content::WebUI::TypeID AtomWebUIControllerFactory::GetWebUIType(
     return const_cast<AtomWebUIControllerFactory*>(this);
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+  if (url.host() == kChromeUIDevToolsBundledHost) {
+    return const_cast<AtomWebUIControllerFactory*>(this);
+  }
 
   return content::WebUI::kNoWebUI;
 }
@@ -78,6 +89,10 @@ AtomWebUIControllerFactory::CreateWebUIControllerForURL(content::WebUI* web_ui,
     return new PdfViewerUI(browser_context, web_ui, src);
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+  if (url.host() == kChromeUIDevToolsBundledHost) {
+    auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();
+    return std::make_unique<DevToolsUI>(browser_context, web_ui);
+  }
   return std::unique_ptr<content::WebUIController>();
 }
 

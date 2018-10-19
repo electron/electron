@@ -19,6 +19,8 @@ const BLACKLIST = new Set([
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
@@ -27,8 +29,6 @@ const BLACKLIST = new Set([
   ['atom', 'common', 'common_message_generator.h'],
   ['atom', 'common', 'node_includes.h'],
   ['atom', 'node', 'osfhandle.cc'],
-  ['brightray', 'browser', 'mac', 'bry_inspectable_web_contents_view.h'],
-  ['brightray', 'browser', 'mac', 'event_dispatching_window.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 

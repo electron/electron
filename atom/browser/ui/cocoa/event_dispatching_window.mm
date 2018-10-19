@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "brightray/browser/mac/event_dispatching_window.h"
+#include "atom/browser/ui/cocoa/event_dispatching_window.h"
 
 @implementation EventDispatchingWindow
 

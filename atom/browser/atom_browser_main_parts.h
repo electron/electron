@@ -19,12 +19,6 @@
 class BrowserProcess;
 class IconManager;
 
-#if defined(TOOLKIT_VIEWS)
-namespace brightray {
-class ViewsDelegate;
-}
-#endif
-
 namespace net_log {
 class ChromeNetLog;
 }
@@ -39,6 +33,10 @@ class NodeBindings;
 class NodeDebugger;
 class NodeEnvironment;
 class BridgeTaskRunner;
+
+#if defined(TOOLKIT_VIEWS)
+class ViewsDelegate;
+#endif
 
 #if defined(OS_MACOSX)
 class ViewsDelegateMac;
@@ -103,7 +101,7 @@ class AtomBrowserMainParts : public brightray::BrowserMainParts {
 #if defined(OS_MACOSX)
   std::unique_ptr<ViewsDelegateMac> views_delegate_;
 #else
-  std::unique_ptr<brightray::ViewsDelegate> views_delegate_;
+  std::unique_ptr<ViewsDelegate> views_delegate_;
 #endif
 
   // A fake BrowserProcess object that used to feed the source code from chrome.

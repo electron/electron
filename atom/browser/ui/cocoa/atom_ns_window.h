@@ -5,7 +5,7 @@
 #ifndef ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
 #define ATOM_BROWSER_UI_COCOA_ATOM_NS_WINDOW_H_
 
-#include "brightray/browser/mac/event_dispatching_window.h"
+#include "atom/browser/ui/cocoa/event_dispatching_window.h"
 #include "ui/views/cocoa/native_widget_mac_nswindow.h"
 #include "ui/views/widget/native_widget_mac.h"
 

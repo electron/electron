@@ -6,8 +6,11 @@
 #include <memory>
 #include <utility>
 
-#include "brightray/browser/inspectable_web_contents_impl.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
 
+#include "atom/browser/ui/inspectable_web_contents_delegate.h"
+#include "atom/browser/ui/inspectable_web_contents_view.h"
+#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "atom/common/platform_util.h"
 #include "base/guid.h"
 #include "base/json/json_reader.h"
@@ -18,11 +21,6 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
-#include "brightray/browser/browser_client.h"
-#include "brightray/browser/browser_main_parts.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -42,7 +40,7 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -896,4 +894,4 @@ void InspectableWebContentsImpl::SendMessageAck(int request_id,
   CallClientFunction("DevToolsAPI.embedderMessageAck", &id_value, arg, nullptr);
 }
 
-}  // namespace brightray
+}  // namespace atom

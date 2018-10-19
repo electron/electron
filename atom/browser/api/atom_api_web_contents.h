@@ -29,10 +29,6 @@ namespace blink {
 struct WebDeviceEmulationParams;
 }
 
-namespace brightray {
-class InspectableWebContents;
-}
-
 namespace mate {
 class Arguments;
 class Dictionary;
@@ -46,6 +42,7 @@ namespace atom {
 
 class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
+class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 class FrameSubscriber;
@@ -419,10 +416,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
-  // brightray::InspectableWebContentsDelegate:
+  // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
 
-  // brightray::InspectableWebContentsViewDelegate:
+  // InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;

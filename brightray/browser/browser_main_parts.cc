@@ -23,9 +23,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/browser/browser_client.h"
-#include "brightray/browser/devtools_manager_delegate.h"
 #include "brightray/browser/media/media_capture_devices_dispatcher.h"
-#include "brightray/browser/web_ui_controller_factory.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
@@ -273,16 +271,6 @@ void BrowserMainParts::PreMainMessageLoopStart() {
   InitializeMainNib();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
-}
-
-void BrowserMainParts::PreMainMessageLoopRun() {
-  content::WebUIControllerFactory::RegisterFactory(
-      WebUIControllerFactory::GetInstance());
-
-  // --remote-debugging-port
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kRemoteDebuggingPort))
-    DevToolsManagerDelegate::StartHttpHandler();
 }
 
 void BrowserMainParts::PostMainMessageLoopStart() {

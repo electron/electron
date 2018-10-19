@@ -1,10 +1,14 @@
-#ifndef BRIGHTRAY_BROWSER_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
-#define BRIGHTRAY_BROWSER_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
+
+#ifndef ATOM_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+#define ATOM_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
 
+#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "base/compiler_specific.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/views/view.h"
 
@@ -14,7 +18,7 @@ class Widget;
 class WidgetDelegate;
 }  // namespace views
 
-namespace brightray {
+namespace atom {
 
 class InspectableWebContentsImpl;
 
@@ -63,6 +67,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
+#endif  // ATOM_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_

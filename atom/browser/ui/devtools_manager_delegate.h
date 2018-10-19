@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
-#define BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
+#ifndef ATOM_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_
+#define ATOM_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_
 
 #include <string>
 
@@ -11,7 +11,7 @@
 #include "base/macros.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
-namespace brightray {
+namespace atom {
 
 class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
  public:
@@ -34,6 +34,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   DISALLOW_COPY_AND_ASSIGN(DevToolsManagerDelegate);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_DEVTOOLS_MANAGER_DELEGATE_H_
+#endif  // ATOM_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_

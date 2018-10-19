@@ -1,16 +1,20 @@
-#include "brightray/browser/views/inspectable_web_contents_view_views.h"
+// Copyright (c) 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE-CHROMIUM file.
 
+#include "atom/browser/ui/views/inspectable_web_contents_view_views.h"
+
+#include "atom/browser/ui/inspectable_web_contents_delegate.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
+#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/window/client_view.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -224,4 +228,4 @@ void InspectableWebContentsViewViews::Layout() {
   contents_web_view_->SetBoundsRect(new_contents_bounds);
 }
 
-}  // namespace brightray
+}  // namespace atom

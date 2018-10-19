@@ -15,6 +15,8 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
+#include "atom/browser/ui/inspectable_web_contents.h"
+#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "atom/browser/ui/views/root_view.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
@@ -23,8 +25,6 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
