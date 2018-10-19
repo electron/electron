@@ -85,13 +85,12 @@ def main():
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
     upload_electron(release, os.path.join(DIST_DIR, mksnapshot), args)
 
-  if not tag_exists and not args.upload_to_s3:
-    # Upload symbols to symbol server.
-    run_python_script('upload-symbols.py')
-    if PLATFORM == 'win32':
-      # Upload node headers.
-      run_python_script('create-node-headers.py', '-v', args.version)
-      run_python_script('upload-node-headers.py', '-v', args.version)
+  # Upload symbols to symbol server.
+  run_python_script('upload-symbols.py')
+  if PLATFORM == 'win32':
+    # Upload node headers.
+    run_python_script('create-node-headers.py', '-v', args.version)
+    run_python_script('upload-node-headers.py', '-v', args.version)
 
 
 def parse_args():

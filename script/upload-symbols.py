@@ -15,10 +15,7 @@ RELEASE_DIR = os.path.join(SOURCE_ROOT, 'out', 'R')
 PROJECT_NAME = electron_gyp()['project_name%']
 PRODUCT_NAME = electron_gyp()['product_name%']
 
-if PLATFORM == 'win32':
-  SYMBOLS_DIR = os.path.join(DIST_DIR, 'symbols')
-else:
-  SYMBOLS_DIR = os.path.join(DIST_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
+SYMBOLS_DIR = os.path.join(DIST_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME))
 
 PDB_LIST = [
   os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME)),
