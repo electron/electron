@@ -905,4 +905,31 @@ describe('webContents module', () => {
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
     })
   })
+
+  describe('setBackgroundThrottling()', () => {
+    it('does not crash when allowing', (done) => {
+      w.webContents.setBackgroundThrottling(true)
+      done()
+    })
+
+    it('does not crash when disallowing', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          backgroundThrottling: true
+        }
+      })
+
+      w.webContents.setBackgroundThrottling(false)
+      done()
+    })
+
+    it('does not crash when called via BrowserWindow', (done) => {
+      w.setBackgroundThrottling(true)
+      done()
+    })
+  })
 })
