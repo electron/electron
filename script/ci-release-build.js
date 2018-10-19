@@ -177,7 +177,8 @@ async function buildVSTS (targetBranch, options) {
 async function callVSTSBuild (build, targetBranch, environmentVariables) {
   const buildBody = {
     definition: build,
-    sourceBranch: targetBranch
+    sourceBranch: targetBranch,
+    priority: 'high'
   }
   if (Object.keys(environmentVariables).length !== 0) {
     buildBody.parameters = JSON.stringify(environmentVariables)
