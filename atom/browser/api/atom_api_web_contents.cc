@@ -320,13 +320,13 @@ WebContents::WebContents(v8::Isolate* isolate,
 }
 
 WebContents::WebContents(v8::Isolate* isolate,
-                         content::WebContents* web_contents,
+                         std::unique_ptr<content::WebContents> web_contents,
                          Type type)
-    : content::WebContentsObserver(web_contents), type_(type) {
+    : content::WebContentsObserver(web_contents.get()), type_(type) {
   DCHECK(type != REMOTE) << "Can't take ownership of a remote WebContents";
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
-  InitWithSessionAndOptions(isolate, web_contents, session,
+  InitWithSessionAndOptions(isolate, std::move(web_contents), session,
                             mate::Dictionary::CreateEmpty(isolate));
 }
 
@@ -413,7 +413,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
   }
 
-  InitWithSessionAndOptions(isolate, web_contents.release(), session, options);
+  InitWithSessionAndOptions(isolate, std::move(web_contents), session, options);
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
@@ -425,16 +425,21 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
 }
 
-void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
-                                            content::WebContents* web_contents,
-                                            mate::Handle<api::Session> session,
-                                            const mate::Dictionary& options) {
-  Observe(web_contents);
-  InitWithWebContents(web_contents, session->browser_context(), IsGuest());
+void WebContents::InitWithSessionAndOptions(
+    v8::Isolate* isolate,
+    std::unique_ptr<content::WebContents> owned_web_contents,
+    mate::Handle<api::Session> session,
+    const mate::Dictionary& options) {
+  Observe(owned_web_contents.get());
+  // TODO(zcbenz): Make InitWithWebContents take unique_ptr.
+  // At the time of writing we are going through a refactoring and I don't want
+  // to make other people's work harder.
+  InitWithWebContents(owned_web_contents.release(), session->browser_context(),
+                      IsGuest());
 
   managed_web_contents()->GetView()->SetDelegate(this);
 
-  auto* prefs = web_contents->GetMutableRendererPrefs();
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
   prefs->accept_languages = g_browser_process->GetApplicationLocale();
 
 #if defined(OS_LINUX) || defined(OS_WIN)
@@ -451,17 +456,17 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
 #endif
 
   // Save the preferences in C++.
-  new WebContentsPreferences(web_contents, options);
+  new WebContentsPreferences(web_contents(), options);
 
   // Initialize permission helper.
-  WebContentsPermissionHelper::CreateForWebContents(web_contents);
+  WebContentsPermissionHelper::CreateForWebContents(web_contents());
   // Initialize security state client.
-  SecurityStateTabHelper::CreateForWebContents(web_contents);
+  SecurityStateTabHelper::CreateForWebContents(web_contents());
   // Initialize zoom controller.
-  InitZoomController(web_contents, options);
+  InitZoomController(web_contents(), options);
 
-  web_contents->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
-                                     false);
+  web_contents()->SetUserAgentOverride(GetBrowserContext()->GetUserAgent(),
+                                       false);
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -477,7 +482,7 @@ void WebContents::InitWithSessionAndOptions(v8::Isolate* isolate,
   }
 
   Init(isolate);
-  AttachAsUserData(web_contents);
+  AttachAsUserData(web_contents());
 }
 
 WebContents::~WebContents() {
@@ -558,7 +563,7 @@ void WebContents::AddNewContents(
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   auto api_web_contents =
-      CreateAndTake(isolate(), new_contents.release(), BROWSER_WINDOW);
+      CreateAndTake(isolate(), std::move(new_contents), BROWSER_WINDOW);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name)) {
@@ -2194,10 +2199,10 @@ mate::Handle<WebContents> WebContents::Create(v8::Isolate* isolate,
 // static
 mate::Handle<WebContents> WebContents::CreateAndTake(
     v8::Isolate* isolate,
-    content::WebContents* web_contents,
+    std::unique_ptr<content::WebContents> web_contents,
     Type type) {
-  return mate::CreateHandle(isolate,
-                            new WebContents(isolate, web_contents, type));
+  return mate::CreateHandle(
+      isolate, new WebContents(isolate, std::move(web_contents), type));
 }
 
 // static

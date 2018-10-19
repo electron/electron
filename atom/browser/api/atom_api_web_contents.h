@@ -91,7 +91,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // The lifetime of |web_contents| will be managed by this class.
   static mate::Handle<WebContents> CreateAndTake(
       v8::Isolate* isolate,
-      content::WebContents* web_contents,
+      std::unique_ptr<content::WebContents> web_contents,
       Type type);
 
   // Get the V8 wrapper of |web_content|, return empty handle if not wrapped.
@@ -296,16 +296,17 @@ class WebContents : public mate::TrackableObject<WebContents>,
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
   WebContents(v8::Isolate* isolate,
-              content::WebContents* web_contents,
+              std::unique_ptr<content::WebContents> web_contents,
               Type type);
   // Creates a new content::WebContents.
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents() override;
 
-  void InitWithSessionAndOptions(v8::Isolate* isolate,
-                                 content::WebContents* web_contents,
-                                 mate::Handle<class Session> session,
-                                 const mate::Dictionary& options);
+  void InitWithSessionAndOptions(
+      v8::Isolate* isolate,
+      std::unique_ptr<content::WebContents> web_contents,
+      mate::Handle<class Session> session,
+      const mate::Dictionary& options);
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
