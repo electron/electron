@@ -591,6 +591,26 @@ describe('Menu module', () => {
       const fsc = menu.getMenuItemById('fullScreen')
       expect(menu.items[0].submenu.items[0]).to.equal(fsc)
     })
+
+    it('should return the separator with the given id', () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Item 1',
+          id: 'item_1'
+        },
+        {
+          id: 'separator',
+          type: 'separator'
+        },
+        {
+          label: 'Item 2',
+          id: 'item_2'
+        }
+      ])
+      const separator = menu.getMenuItemById('separator')
+      expect(separator).to.be.an('object')
+      expect(separator).to.equal(menu.items[1])
+    })
   })
 
   describe('Menu.insert', () => {
