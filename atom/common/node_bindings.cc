@@ -227,7 +227,11 @@ void NodeBindings::Initialize() {
   if (env->HasVar("NODE_OPTIONS")) {
     base::FilePath exe_path;
     base::PathService::Get(base::FILE_EXE, &exe_path);
+#if defined(OS_WIN)
+    std::string path = base::UTF16ToUTF8(exe_path.value());
+#else
     std::string path = exe_path.value();
+#endif
     std::transform(path.begin(), path.end(), path.begin(), ::tolower);
 
 #if defined(OS_WIN)
