@@ -570,6 +570,26 @@ describe('Menu module', () => {
       const fsc = menu.getMenuItemById('fullScreen')
       assert.equal(menu.items[0].submenu.items[0], fsc)
     })
+
+    it('should return the separator with the given id', () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Item 1',
+          id: 'item_1'
+        },
+        {
+          id: 'separator',
+          type: 'separator'
+        },
+        {
+          label: 'Item 2',
+          id: 'item_2'
+        }
+      ])
+      const separator = menu.getMenuItemById('separator')
+      assert.equal(typeof separator, 'object')
+      assert.equal(separator, menu.items[1])
+    })
   })
 
   describe('Menu.insert', () => {
