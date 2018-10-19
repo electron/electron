@@ -539,11 +539,10 @@ void WebContents::WebContentsCreated(content::WebContents* source_contents,
                                      const std::string& frame_name,
                                      const GURL& target_url,
                                      content::WebContents* new_contents) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  // Create V8 wrapper for the |new_contents|.
-  auto wrapper = CreateAndTake(isolate(), new_contents, BROWSER_WINDOW);
-  Emit("-web-contents-created", wrapper, target_url, frame_name);
+  ChildWebContentsTracker::CreateForWebContents(new_contents);
+  auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
+  tracker->url = target_url;
+  tracker->frame_name = frame_name;
 }
 
 void WebContents::AddNewContents(
@@ -553,17 +552,16 @@ void WebContents::AddNewContents(
     const gfx::Rect& initial_rect,
     bool user_gesture,
     bool* was_blocked) {
-  new ChildWebContentsTracker(new_contents.get());
+  auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents.get());
+  DCHECK(tracker);
+
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
-  // Note that the ownership of |new_contents| has already been claimed by
-  // the WebContentsCreated method, the release call here completes
-  // the ownership transfer.
-  auto api_web_contents = From(isolate(), new_contents.release());
-  DCHECK(!api_web_contents.IsEmpty());
+  auto api_web_contents =
+      CreateAndTake(isolate(), new_contents.release(), BROWSER_WINDOW);
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
-           initial_rect.height())) {
+           initial_rect.height(), tracker->url, tracker->frame_name)) {
     api_web_contents->DestroyWebContents(true /* async */);
   }
 }
