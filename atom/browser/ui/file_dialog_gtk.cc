@@ -51,9 +51,9 @@ class FileChooserDialog {
     else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
       confirm_text = _("_Open");
 
-    dialog_ = gtk_file_chooser_dialog_new(
-        settings.title.c_str(), NULL, action, _("_Cancel"), GTK_RESPONSE_CANCEL,
-        confirm_text, GTK_RESPONSE_ACCEPT, NULL);
+    dialog_ = gtk_file_chooser_native_new(
+        settings.title.c_str(), NULL, action, _("_Cancel"),
+        confirm_text);
     if (parent_) {
       parent_->SetEnabled(false);
       libgtkui::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
@@ -237,7 +237,7 @@ bool ShowOpenDialog(const DialogSettings& settings,
   open_dialog.SetupProperties(settings.properties);
 
   gtk_widget_show_all(open_dialog.dialog());
-  int response = gtk_dialog_run(GTK_DIALOG(open_dialog.dialog()));
+  int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(open_dialog.dialog()));
   if (response == GTK_RESPONSE_ACCEPT) {
     *paths = open_dialog.GetFileNames();
     return true;
@@ -259,7 +259,7 @@ void ShowOpenDialog(const DialogSettings& settings,
 bool ShowSaveDialog(const DialogSettings& settings, base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
   gtk_widget_show_all(save_dialog.dialog());
-  int response = gtk_dialog_run(GTK_DIALOG(save_dialog.dialog()));
+  int response = gtk_native_dialog_run(GTK_NATIVE_DIALOG(save_dialog.dialog()));
   if (response == GTK_RESPONSE_ACCEPT) {
     *path = save_dialog.GetFileName();
     return true;
