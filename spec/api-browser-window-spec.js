@@ -24,6 +24,24 @@ describe('BrowserWindow module', () => {
   let server
   let postData
 
+  const defaultOptions = {
+    show: false,
+    width: 400,
+    height: 400,
+    webPreferences: {
+      backgroundThrottling: false
+    }
+  }
+
+  const openTheWindow = async (options = defaultOptions) => {
+    // The `afterEach` hook isn't called if a test fails,
+    // we should make sure that the window is closed ourselves.
+    await closeTheWindow()
+
+    w = new BrowserWindow(options)
+    return w
+  }
+
   const closeTheWindow = function () {
     return closeWindow(w).then(() => { w = null })
   }
