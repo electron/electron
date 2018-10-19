@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/media/media_capture_devices_dispatcher.h"
+#include "atom/browser/media/media_capture_devices_dispatcher.h"
 
 #include "base/logging.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/media_capture_devices.h"
 #include "content/public/common/media_stream_request.h"
 
-namespace brightray {
+namespace atom {
 
 using content::BrowserThread;
 using content::MediaStreamDevices;
@@ -149,4 +149,4 @@ void MediaCaptureDevicesDispatcher::OnSetCapturingLinkSecured(
     content::MediaStreamType stream_type,
     bool is_secure) {}
 
-}  // namespace brightray
+}  // namespace atom

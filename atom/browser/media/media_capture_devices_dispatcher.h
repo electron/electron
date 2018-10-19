@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
-#define BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#ifndef ATOM_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#define ATOM_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 
 #include <string>
 
@@ -11,7 +11,7 @@
 #include "content/public/browser/media_observer.h"
 #include "content/public/common/media_stream_request.h"
 
-namespace brightray {
+namespace atom {
 
 // This singleton is used to receive updates about media events from the content
 // layer.
@@ -78,6 +78,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#endif  // ATOM_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_

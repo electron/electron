@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "brightray/browser/zoom_level_delegate.h"
+#include "atom/browser/zoom_level_delegate.h"
 
 #include <functional>
 #include <memory>
@@ -19,7 +19,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/page_zoom.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -164,4 +164,4 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
       &ZoomLevelDelegate::OnZoomLevelChanged, base::Unretained(this)));
 }
 
-}  // namespace brightray
+}  // namespace atom

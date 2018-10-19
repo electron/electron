@@ -7,10 +7,10 @@
 #include <utility>
 
 #include "atom/browser/browser.h"
+#include "atom/browser/net/require_ct_delegate.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "base/containers/linked_list.h"
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/net/require_ct_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/net_errors.h"
 #include "net/cert/cert_verify_result.h"
@@ -150,7 +150,7 @@ class CertVerifierRequest : public AtomCertVerifier::Request {
   base::WeakPtrFactory<CertVerifierRequest> weak_ptr_factory_;
 };
 
-AtomCertVerifier::AtomCertVerifier(brightray::RequireCTDelegate* ct_delegate)
+AtomCertVerifier::AtomCertVerifier(RequireCTDelegate* ct_delegate)
     : default_cert_verifier_(net::CertVerifier::CreateDefault()),
       ct_delegate_(ct_delegate) {}
 

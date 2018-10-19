@@ -29,7 +29,6 @@ class BrowserClient : public content::ContentBrowserClient {
   // handlers) should call this implementation after doing their own work.
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
-  content::MediaObserver* GetMediaObserver() override;
   base::FilePath GetDefaultDownloadDirectory() override;
   std::string GetApplicationLocale() override;
 

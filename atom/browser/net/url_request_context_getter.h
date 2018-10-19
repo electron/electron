@@ -19,15 +19,12 @@
 #include "base/debug/leak_tracker.h"
 #endif
 
-namespace brightray {
-class RequireCTDelegate;
-}  // namespace brightray
-
 namespace atom {
 
 class AtomBrowserContext;
 class AtomNetworkDelegate;
 class AtomURLRequestJobFactory;
+class RequireCTDelegate;
 class ResourceContext;
 
 class URLRequestContextGetter : public net::URLRequestContextGetter {
@@ -96,7 +93,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
   base::debug::LeakTracker<URLRequestContextGetter> leak_tracker_;
 #endif
 
-  std::unique_ptr<brightray::RequireCTDelegate> ct_delegate_;
+  std::unique_ptr<RequireCTDelegate> ct_delegate_;
   std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
   std::unique_ptr<network::mojom::NetworkContext> network_context_;
 

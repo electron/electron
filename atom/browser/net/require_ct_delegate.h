@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
-#define BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
+#ifndef ATOM_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
+#define ATOM_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
 
 #include <set>
 #include <string>
 
 #include "net/http/transport_security_state.h"
 
-namespace brightray {
+namespace atom {
 
 class RequireCTDelegate
     : public net::TransportSecurityState::RequireCTDelegate {
@@ -32,6 +32,6 @@ class RequireCTDelegate
   DISALLOW_COPY_AND_ASSIGN(RequireCTDelegate);
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_NET_REQUIRE_CT_DELEGATE_H_
+#endif  // ATOM_BROWSER_NET_REQUIRE_CT_DELEGATE_H_

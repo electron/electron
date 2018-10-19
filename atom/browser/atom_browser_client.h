@@ -127,6 +127,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::unique_ptr<base::Value> GetServiceManifestOverlay(
       base::StringPiece name) override;
   net::NetLog* GetNetLog() override;
+  content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService()
       override;

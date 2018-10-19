@@ -14,6 +14,7 @@
 #include "atom/browser/browser.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
+#include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/common/api/atom_bindings.h"
@@ -176,6 +177,9 @@ int AtomBrowserMainParts::PreCreateThreads() {
     fake_browser_process_->SetApplicationLocale(
         brightray::BrowserClient::Get()->GetApplicationLocale());
   }
+
+  // Force MediaCaptureDevicesDispatcher to be created on UI thread.
+  MediaCaptureDevicesDispatcher::GetInstance();
 
 #if defined(OS_MACOSX)
   ui::InitIdleMonitor();

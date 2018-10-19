@@ -19,6 +19,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_permission_manager.h"
 #include "atom/browser/browser.h"
+#include "atom/browser/media/media_device_id_salt.h"
 #include "atom/browser/net/atom_cert_verifier.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/common/native_mate_converters/callback.h"
@@ -31,7 +32,6 @@
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "brightray/browser/media/media_device_id_salt.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -440,7 +440,7 @@ void Session::ClearStorageData(mate::Arguments* args) {
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
-    brightray::MediaDeviceIDSalt::Reset(browser_context()->prefs());
+    MediaDeviceIDSalt::Reset(browser_context()->prefs());
   }
   storage_partition->ClearData(
       options.storage_types, options.quota_types, options.origin,
