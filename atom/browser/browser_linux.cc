@@ -9,11 +9,11 @@
 
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/application_info.h"
 #include "atom/common/atom_version.h"
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
-#include "brightray/common/application_info.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
@@ -131,11 +131,11 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 std::string Browser::GetExecutableFileVersion() const {
-  return brightray::GetApplicationVersion();
+  return GetApplicationVersion();
 }
 
 std::string Browser::GetExecutableFileProductName() const {
-  return brightray::GetApplicationName();
+  return GetApplicationName();
 }
 
 bool Browser::IsUnityRunning() {

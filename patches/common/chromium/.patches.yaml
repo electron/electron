@@ -259,7 +259,7 @@ patches:
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: gtk_visibility.patch
   description: |
-    Allow electron and brightray to depend on GTK in the GN build.
+    Allow electron to depend on GTK in the GN build.
 -
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: sysroot.patch

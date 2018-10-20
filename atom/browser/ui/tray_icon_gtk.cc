@@ -5,9 +5,9 @@
 #include "atom/browser/ui/tray_icon_gtk.h"
 
 #include "atom/browser/browser.h"
+#include "atom/common/application_info.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/common/application_info.h"
 #include "chrome/browser/ui/libgtkui/app_indicator_icon.h"
 #include "chrome/browser/ui/libgtkui/gtk_status_icon.h"
 #include "ui/gfx/image/image.h"
@@ -31,7 +31,7 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
     return;
   }
 
-  const auto toolTip = base::UTF8ToUTF16(brightray::GetApplicationName());
+  const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
 
   if (libgtkui::AppIndicatorIcon::CouldOpen()) {
     ++indicators_count;

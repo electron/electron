@@ -4,11 +4,11 @@
 
 #include "atom/browser/atom_browser_main_parts.h"
 
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/mac/atom_application_delegate.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
-#include "brightray/browser/brightray_paths.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 
 namespace atom {
@@ -41,7 +41,7 @@ void AtomBrowserMainParts::OverrideAppLogsPath() {
   NSString* libraryPath =
       [NSHomeDirectory() stringByAppendingPathComponent:logsPath];
 
-  base::PathService::Override(brightray::DIR_APP_LOGS,
+  base::PathService::Override(DIR_APP_LOGS,
                               base::FilePath([libraryPath UTF8String]));
 }
 

@@ -5,6 +5,8 @@
 #include "atom/app/atom_main_delegate.h"
 
 #include "atom/browser/mac/atom_application.h"
+#include "atom/common/application_info.h"
+#include "atom/common/mac/main_application_bundle.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/bundle_locations.h"
@@ -12,8 +14,6 @@
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
-#include "brightray/common/application_info.h"
-#include "brightray/common/mac/main_application_bundle.h"
 #include "content/public/common/content_paths.h"
 
 namespace atom {
@@ -21,9 +21,7 @@ namespace atom {
 namespace {
 
 base::FilePath GetFrameworksPath() {
-  return brightray::MainApplicationBundlePath()
-      .Append("Contents")
-      .Append("Frameworks");
+  return MainApplicationBundlePath().Append("Contents").Append("Frameworks");
 }
 
 base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
@@ -46,8 +44,7 @@ void AtomMainDelegate::OverrideChildProcessPath() {
   base::FilePath helper_path =
       GetHelperAppPath(frameworks_path, ATOM_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
-    helper_path =
-        GetHelperAppPath(frameworks_path, brightray::GetApplicationName());
+    helper_path = GetHelperAppPath(frameworks_path, GetApplicationName());
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
   base::PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
@@ -55,7 +52,7 @@ void AtomMainDelegate::OverrideChildProcessPath() {
 
 void AtomMainDelegate::SetUpBundleOverrides() {
   base::mac::ScopedNSAutoreleasePool pool;
-  NSBundle* bundle = brightray::MainApplicationBundle();
+  NSBundle* bundle = MainApplicationBundle();
   std::string base_bundle_id =
       base::SysNSStringToUTF8([bundle bundleIdentifier]);
   NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];

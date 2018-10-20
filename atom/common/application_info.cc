@@ -1,8 +1,12 @@
-#include "brightray/common/application_info.h"
+// Copyright (c) 2013 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#include "atom/common/application_info.h"
 
 #include "base/no_destructor.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -27,4 +31,4 @@ std::string GetOverriddenApplicationVersion() {
   return *g_overridden_application_version;
 }
 
-}  // namespace brightray
+}  // namespace atom

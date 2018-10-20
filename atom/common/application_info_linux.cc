@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "brightray/common/application_info.h"
+#include "atom/common/application_info.h"
 
 #include <gio/gdesktopappinfo.h>
 #include <gio/gio.h>
@@ -30,7 +30,7 @@ GDesktopAppInfo* get_desktop_app_info() {
 
 }  // namespace
 
-namespace brightray {
+namespace atom {
 
 std::string GetApplicationName() {
   // attempt #1: the string set in app.setName()
@@ -76,4 +76,4 @@ std::string GetApplicationVersion() {
   return ret;
 }
 
-}  // namespace brightray
+}  // namespace atom

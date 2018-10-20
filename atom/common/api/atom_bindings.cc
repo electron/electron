@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/common/api/locker.h"
+#include "atom/common/application_info.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
 #include "atom/common/heap_snapshot.h"
@@ -20,7 +21,6 @@
 #include "base/process/process_metrics_iocounters.h"
 #include "base/sys_info.h"
 #include "base/threading/thread_restrictions.h"
-#include "brightray/common/application_info.h"
 #include "native_mate/dictionary.h"
 
 namespace atom {
@@ -76,7 +76,7 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
 #endif
 
 #if defined(OS_WIN)
-  if (brightray::IsRunningInDesktopBridge())
+  if (IsRunningInDesktopBridge())
     dict.Set("windowsStore", true);
 #endif
 

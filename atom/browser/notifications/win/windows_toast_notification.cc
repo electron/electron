@@ -13,10 +13,10 @@
 
 #include "atom/browser/notifications/notification_delegate.h"
 #include "atom/browser/notifications/win/notification_presenter_win.h"
+#include "atom/browser/win/scoped_hstring.h"
+#include "atom/common/application_info.h"
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/win/scoped_hstring.h"
-#include "brightray/common/application_info.h"
 #include "content/public/browser/browser_thread.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
@@ -58,13 +58,13 @@ bool WindowsToastNotification::Initialize() {
                                                        &toast_manager_)))
     return false;
 
-  if (brightray::IsRunningInDesktopBridge()) {
+  if (IsRunningInDesktopBridge()) {
     // Ironically, the Desktop Bridge / UWP environment
     // requires us to not give Windows an appUserModelId.
     return SUCCEEDED(toast_manager_->CreateToastNotifier(&toast_notifier_));
   } else {
     ScopedHString app_id;
-    if (!brightray::GetAppUserModelID(&app_id))
+    if (!GetAppUserModelID(&app_id))
       return false;
 
     return SUCCEEDED(

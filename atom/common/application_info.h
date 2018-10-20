@@ -1,14 +1,18 @@
-#ifndef BRIGHTRAY_COMMON_APPLICATION_INFO_H_
-#define BRIGHTRAY_COMMON_APPLICATION_INFO_H_
+// Copyright (c) 2013 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ATOM_COMMON_APPLICATION_INFO_H_
+#define ATOM_COMMON_APPLICATION_INFO_H_
 
 #if defined(OS_WIN)
+#include "atom/browser/win/scoped_hstring.h"
 #include "base/strings/string16.h"
-#include "brightray/browser/win/scoped_hstring.h"
 #endif
 
 #include <string>
 
-namespace brightray {
+namespace atom {
 
 void OverrideApplicationName(const std::string& name);
 std::string GetOverriddenApplicationName();
@@ -26,6 +30,6 @@ void SetAppUserModelID(const base::string16& name);
 bool IsRunningInDesktopBridge();
 #endif
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_COMMON_APPLICATION_INFO_H_
+#endif  // ATOM_COMMON_APPLICATION_INFO_H_

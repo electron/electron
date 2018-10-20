@@ -23,9 +23,9 @@ using Microsoft::WRL::Make;
 using Microsoft::WRL::RuntimeClass;
 using Microsoft::WRL::RuntimeClassFlags;
 
-class ScopedHString;
-
 namespace atom {
+
+class ScopedHString;
 
 using DesktopToastActivatedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<

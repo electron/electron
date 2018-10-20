@@ -59,9 +59,9 @@ const char kChromeUIDevToolsRemoteFrontendBase[] =
     "https://chrome-devtools-frontend.appspot.com/";
 const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
-const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
-const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
-const char kDevToolsPreferences[] = "brightray.devtools.preferences";
+const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
+const char kDevToolsZoomPref[] = "electron.devtools.zoom";
+const char kDevToolsPreferences[] = "electron.devtools.preferences";
 
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";

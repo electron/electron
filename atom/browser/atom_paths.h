@@ -2,8 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef BRIGHTRAY_BROWSER_BRIGHTRAY_PATHS_H_
-#define BRIGHTRAY_BROWSER_BRIGHTRAY_PATHS_H_
+#ifndef ATOM_BROWSER_ATOM_PATHS_H_
+#define ATOM_BROWSER_ATOM_PATHS_H_
+
+#include "base/base_paths.h"
 
 #if defined(OS_WIN)
 #include "base/base_paths_win.h"
@@ -15,7 +17,7 @@
 #include "base/base_paths_posix.h"
 #endif
 
-namespace brightray {
+namespace atom {
 
 enum {
   PATH_START = 11000,
@@ -39,6 +41,6 @@ enum {
   PATH_END
 };
 
-}  // namespace brightray
+}  // namespace atom
 
-#endif  // BRIGHTRAY_BROWSER_BRIGHTRAY_PATHS_H_
+#endif  // ATOM_BROWSER_ATOM_PATHS_H_

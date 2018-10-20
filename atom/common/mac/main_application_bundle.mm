@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#import "brightray/common/mac/main_application_bundle.h"
+#import "atom/common/mac/main_application_bundle.h"
 
 #include "base/files/file_path.h"
 #include "base/mac/bundle_locations.h"
@@ -11,7 +11,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -53,4 +53,4 @@ NSBundle* MainApplicationBundle() {
                                       MainApplicationBundlePath())];
 }
 
-}  // namespace brightray
+}  // namespace atom

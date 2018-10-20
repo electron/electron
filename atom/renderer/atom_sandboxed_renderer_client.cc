@@ -6,6 +6,7 @@
 
 #include "atom/common/api/api_messages.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/application_info.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/node_bindings.h"
@@ -17,7 +18,6 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
-#include "brightray/common/application_info.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
@@ -168,7 +168,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
 #endif
 
 #if defined(OS_WIN)
-  if (brightray::IsRunningInDesktopBridge())
+  if (IsRunningInDesktopBridge())
     process.Set("windowsStore", true);
 #endif
 

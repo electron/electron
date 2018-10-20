@@ -9,10 +9,12 @@
 #include <utility>
 
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/browser_observer.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/application_info.h"
 #include "base/files/file_util.h"
 #include "base/message_loop/message_loop.h"
 #include "base/no_destructor.h"
@@ -20,8 +22,6 @@
 #include "base/run_loop.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "brightray/browser/brightray_paths.h"
-#include "brightray/common/application_info.h"
 
 namespace atom {
 
@@ -104,25 +104,25 @@ void Browser::Shutdown() {
 }
 
 std::string Browser::GetVersion() const {
-  std::string ret = brightray::GetOverriddenApplicationVersion();
+  std::string ret = GetOverriddenApplicationVersion();
   if (ret.empty())
     ret = GetExecutableFileVersion();
   return ret;
 }
 
 void Browser::SetVersion(const std::string& version) {
-  brightray::OverrideApplicationVersion(version);
+  OverrideApplicationVersion(version);
 }
 
 std::string Browser::GetName() const {
-  std::string ret = brightray::GetOverriddenApplicationName();
+  std::string ret = GetOverriddenApplicationName();
   if (ret.empty())
     ret = GetExecutableFileProductName();
   return ret;
 }
 
 void Browser::SetName(const std::string& name) {
-  brightray::OverrideApplicationName(name);
+  OverrideApplicationName(name);
 }
 
 int Browser::GetBadgeCount() {
@@ -156,7 +156,7 @@ void Browser::DidFinishLaunching(const base::DictionaryValue& launch_info) {
   // Make sure the userData directory is created.
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   base::FilePath user_data;
-  if (base::PathService::Get(brightray::DIR_USER_DATA, &user_data))
+  if (base::PathService::Get(DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
 
   is_ready_ = true;

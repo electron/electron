@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#include "brightray/browser/win/scoped_hstring.h"
+#include "atom/browser/win/scoped_hstring.h"
 
 #include <winstring.h>
+
+namespace atom {
 
 ScopedHString::ScopedHString(const wchar_t* source) : str_(nullptr) {
   Reset(source);
@@ -36,3 +38,5 @@ void ScopedHString::Reset(const std::wstring& source) {
   Reset();
   WindowsCreateString(source.c_str(), source.length(), &str_);
 }
+
+}  // namespace atom
