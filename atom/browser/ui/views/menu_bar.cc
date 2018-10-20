@@ -202,6 +202,12 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
+void MenuBar::RequestFocus() {
+  if (!HasFocus()) {
+    views::AccessiblePaneView::RequestFocus();
+  }
+}
+
 void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
                                   const gfx::Point& point,
                                   const ui::Event* event) {
