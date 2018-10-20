@@ -129,6 +129,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   base::win::DisableHandleVerifier();
 #endif
 
+  content_client_ = std::make_unique<AtomContentClient>();
+  SetContentClient(content_client_.get());
+
   return brightray::MainDelegate::BasicStartupComplete(exit_code);
 }
 
@@ -211,10 +214,5 @@ bool AtomMainDelegate::DelaySandboxInitialization(
   return process_type == kRelauncherProcess;
 }
 #endif
-
-std::unique_ptr<brightray::ContentClient>
-AtomMainDelegate::CreateContentClient() {
-  return std::make_unique<AtomContentClient>();
-}
 
 }  // namespace atom
