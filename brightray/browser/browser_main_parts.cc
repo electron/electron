@@ -16,6 +16,7 @@
 #include <glib.h>  // for g_setenv()
 #endif
 
+#include "atom/app/atom_main_delegate.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
@@ -23,7 +24,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brightray/common/application_info.h"
-#include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
@@ -264,7 +264,7 @@ void BrowserMainParts::PreMainMessageLoopStart() {
   if (custom_locale_.empty())
     l10n_util::OverrideLocaleWithCocoaLocale();
 #endif
-  LoadResourceBundle(custom_locale_);
+  atom::LoadResourceBundle(custom_locale_);
 #if defined(OS_MACOSX)
   InitializeMainNib();
 #endif
