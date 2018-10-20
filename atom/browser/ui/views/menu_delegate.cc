@@ -99,6 +99,9 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 }
 
 void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
+  for (Observer& obs : observers_)
+    obs.OnMenuClosed();
+
   // Only switch to new menu when current menu is closed.
   if (button_to_open_)
     button_to_open_->Activate(nullptr);

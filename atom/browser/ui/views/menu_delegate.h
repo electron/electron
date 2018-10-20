@@ -31,6 +31,7 @@ class MenuDelegate : public views::MenuDelegate {
   class Observer {
    public:
     virtual void OnBeforeExecuteCommand() = 0;
+    virtual void OnMenuClosed() = 0;
   };
 
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }

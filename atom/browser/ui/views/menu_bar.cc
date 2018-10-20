@@ -5,9 +5,11 @@
 #include "atom/browser/ui/views/menu_bar.h"
 
 #include <memory>
+#include <sstream>
 #include <string>
 
 #include "atom/browser/ui/views/submenu_button.h"
+#include "atom/common/keyboard_util.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
@@ -99,12 +101,17 @@ void MenuBar::OnBeforeExecuteCommand() {
   window_->RestoreFocus();
 }
 
+void MenuBar::OnMenuClosed() {
+  SetAcceleratorVisibility(true);
+}
+
 bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
   views::View* focused_view = GetFocusManager()->GetFocusedView();
   if (!ContainsForFocusSearch(this, focused_view))
     return false;
 
   switch (accelerator.key_code()) {
+    case ui::VKEY_MENU:
     case ui::VKEY_ESCAPE: {
       RemovePaneFocus();
       window_->RestoreFocus();
@@ -124,9 +131,71 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
       GetFocusManager()->SetFocusedViewWithReason(
           GetLastFocusableChild(), views::FocusManager::kReasonFocusTraversal);
       return true;
-    default:
+    default: {
+      auto children = GetChildrenInZOrder();
+      for (int i = 0, n = children.size(); i < n; ++i) {
+        auto* button = static_cast<SubmenuButton*>(children[i]);
+        bool shifted = false;
+        auto keycode =
+            atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+
+        if (keycode == accelerator.key_code()) {
+          const gfx::Point p(0, 0);
+          auto event = accelerator.ToKeyEvent();
+          OnMenuButtonClicked(button, p, &event);
+          return true;
+        }
+      }
+
       return false;
+    }
   }
+}
+
+bool MenuBar::SetPaneFocus(views::View* initial_focus) {
+  bool result = views::AccessiblePaneView::SetPaneFocus(initial_focus);
+
+  if (result) {
+    auto children = GetChildrenInZOrder();
+    for (int i = 0, n = children.size(); i < n; ++i) {
+      auto* button = static_cast<SubmenuButton*>(children[i]);
+      bool shifted = false;
+      auto keycode =
+          atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+
+      // We want the menu items to activate if the user presses the accelerator
+      // key, even without alt, since we are now focused on the menu bar
+      focus_manager()->RegisterAccelerator(
+          ui::Accelerator(keycode, ui::EF_NONE),
+          ui::AcceleratorManager::kNormalPriority, this);
+    }
+
+    // We want to remove focus / hide menu bar when alt is pressed again
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN),
+        ui::AcceleratorManager::kNormalPriority, this);
+  }
+
+  return result;
+}
+
+void MenuBar::RemovePaneFocus() {
+  views::AccessiblePaneView::RemovePaneFocus();
+  SetAcceleratorVisibility(false);
+
+  auto children = GetChildrenInZOrder();
+  for (int i = 0, n = children.size(); i < n; ++i) {
+    auto* button = static_cast<SubmenuButton*>(children[i]);
+    bool shifted = false;
+    auto keycode =
+        atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(keycode, ui::EF_NONE), this);
+  }
+
+  focus_manager()->UnregisterAccelerator(
+      ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN), this);
 }
 
 const char* MenuBar::GetClassName() const {

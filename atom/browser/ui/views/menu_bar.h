@@ -48,9 +48,14 @@ class MenuBar : public views::AccessiblePaneView,
                                     AtomMenuModel** menu_model,
                                     views::MenuButton** button);
 
+  // atom::MenuDelegate::Observer
   void OnBeforeExecuteCommand() override;
+  void OnMenuClosed() override;
 
+  // views::AccessiblePaneView
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
+  bool SetPaneFocus(views::View* initial_focus) override;
+  void RemovePaneFocus() override;
 
  protected:
   // views::View:

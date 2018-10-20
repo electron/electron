@@ -91,10 +91,6 @@ void RootView::SetMenuBarVisibility(bool visible) {
   if (!window_->content_view() || !menu_bar_ || menu_bar_visible_ == visible)
     return;
 
-  // Always show the accelerator when the auto-hide menu bar shows.
-  if (menu_bar_autohide_)
-    menu_bar_->SetAcceleratorVisibility(visible);
-
   menu_bar_visible_ = visible;
   if (visible) {
     DCHECK_EQ(child_count(), 1);
@@ -126,6 +122,10 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
     if (!menu_bar_visible_ &&
         (menu_bar_->HasAccelerator(event.windows_key_code)))
       SetMenuBarVisibility(true);
+
+    View* focused_view = GetFocusManager()->GetFocusedView();
+    last_focused_view_tracker_->SetView(focused_view);
+    menu_bar_->RequestFocus();
     menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;
   }
@@ -140,9 +140,12 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
     menu_bar_alt_pressed_ = false;
     if (menu_bar_autohide_)
       SetMenuBarVisibility(!menu_bar_visible_);
+
     View* focused_view = GetFocusManager()->GetFocusedView();
     last_focused_view_tracker_->SetView(focused_view);
     menu_bar_->RequestFocus();
+    // Show accelerators when menu bar is focused
+    menu_bar_->SetAcceleratorVisibility(true);
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
