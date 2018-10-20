@@ -2747,11 +2747,20 @@ describe('BrowserWindow module', () => {
         c.show()
         assert.equal(w.isEnabled(), false)
       })
-      it('enables parent window when closed', (done) => {
+      it('re-enables an enabled parent window when closed', (done) => {
         c.once('closed', () => {
           assert.equal(w.isEnabled(), true)
           done()
         })
+        c.show()
+        c.close()
+      })
+      it('does not re-enable a disabled parent window when closed', (done) => {
+        c.once('closed', () => {
+          assert.strictEqual(w.isEnabled(), false)
+          done()
+        })
+        w.setEnabled(false)
         c.show()
         c.close()
       })
