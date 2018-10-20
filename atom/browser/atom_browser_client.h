@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "brightray/browser/browser_client.h"
+#include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "net/ssl/client_cert_identity.h"
 
@@ -30,9 +30,12 @@ class AtomResourceDispatcherHostDelegate;
 class NotificationPresenter;
 class PlatformNotificationService;
 
-class AtomBrowserClient : public brightray::BrowserClient,
+class AtomBrowserClient : public content::ContentBrowserClient,
                           public content::RenderProcessHostObserver {
  public:
+  static AtomBrowserClient* Get();
+  static void SetApplicationLocale(const std::string& locale);
+
   AtomBrowserClient();
   ~AtomBrowserClient() override;
 
@@ -58,8 +61,10 @@ class AtomBrowserClient : public brightray::BrowserClient,
   std::vector<std::unique_ptr<content::NavigationThrottle>>
   CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
 
- protected:
   // content::ContentBrowserClient:
+  std::string GetApplicationLocale() override;
+
+ protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
       service_manager::mojom::ServiceRequest* service_request) override;
@@ -131,10 +136,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService()
       override;
-
-  // brightray::BrowserClient:
-  brightray::BrowserMainParts* OverrideCreateBrowserMainParts(
+  content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
+  base::FilePath GetDefaultDownloadDirectory() override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

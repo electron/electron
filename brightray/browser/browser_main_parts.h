@@ -41,6 +41,8 @@ class BrowserMainParts : public content::BrowserMainParts {
 
   void InitializeFeatureList();
 
+  std::string custom_locale_;
+
  private:
 #if defined(OS_MACOSX)
   void InitializeMainNib();
@@ -52,7 +54,6 @@ class BrowserMainParts : public content::BrowserMainParts {
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;
-  std::string custom_locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserMainParts);
 };
