@@ -130,9 +130,6 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
     return;
   }
 
-  if (!menu_bar_autohide_)
-    return;
-
   // Toggle the menu bar only when a single Alt is released.
   if (event.GetType() == blink::WebInputEvent::kRawKeyDown && IsAltKey(event)) {
     // When a single Alt is pressed:
@@ -141,7 +138,8 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
              IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
-    SetMenuBarVisibility(!menu_bar_visible_);
+    if (menu_bar_autohide_)
+      SetMenuBarVisibility(!menu_bar_visible_);
     View* focused_view = GetFocusManager()->GetFocusedView();
     last_focused_view_tracker_->SetView(focused_view);
     menu_bar_->RequestFocus();
