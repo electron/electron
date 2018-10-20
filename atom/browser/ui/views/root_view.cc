@@ -35,7 +35,9 @@ bool IsAltModifier(const content::NativeWebKeyboardEvent& event) {
 
 }  // namespace
 
-RootView::RootView(NativeWindow* window) : window_(window) {
+RootView::RootView(NativeWindow* window)
+    : window_(window),
+      last_focused_view_tracker_(std::make_unique<views::ViewTracker>()) {
   set_owned_by_client();
 }
 
@@ -140,10 +142,23 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     SetMenuBarVisibility(!menu_bar_visible_);
+    View* focused_view = GetFocusManager()->GetFocusedView();
+    last_focused_view_tracker_->SetView(focused_view);
+    menu_bar_->RequestFocus();
   } else {
     // When any other keys except single Alt have been pressed/released:
     menu_bar_alt_pressed_ = false;
   }
+}
+
+void RootView::RestoreFocus() {
+  View* last_focused_view = last_focused_view_tracker_->view();
+  if (last_focused_view) {
+    GetFocusManager()->SetFocusedViewWithReason(
+        last_focused_view, views::FocusManager::kReasonFocusRestore);
+  }
+  if (menu_bar_autohide_)
+    SetMenuBarVisibility(false);
 }
 
 void RootView::ResetAltState() {

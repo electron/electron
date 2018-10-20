@@ -7,11 +7,11 @@
 #include <memory>
 #include <string>
 
-#include "atom/browser/ui/views/menu_delegate.h"
 #include "atom/browser/ui/views/submenu_button.h"
 #include "ui/base/models/menu_model.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
+#include "ui/views/widget/widget.h"
 
 #if defined(USE_X11)
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
@@ -32,18 +32,16 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
-MenuBar::MenuBar(views::View* window)
+MenuBar::MenuBar(RootView* window)
     : background_color_(kDefaultColor), window_(window) {
   RefreshColorCache();
   UpdateViewColors();
+  SetFocusBehavior(FocusBehavior::ALWAYS);
   SetLayoutManager(
       std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
-  window_->GetFocusManager()->AddFocusChangeListener(this);
 }
 
-MenuBar::~MenuBar() {
-  window_->GetFocusManager()->RemoveFocusChangeListener(this);
-}
+MenuBar::~MenuBar() {}
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
@@ -96,6 +94,41 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
   return false;
 }
 
+void MenuBar::OnBeforeExecuteCommand() {
+  RemovePaneFocus();
+  window_->RestoreFocus();
+}
+
+bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
+  views::View* focused_view = GetFocusManager()->GetFocusedView();
+  if (!ContainsForFocusSearch(this, focused_view))
+    return false;
+
+  switch (accelerator.key_code()) {
+    case ui::VKEY_ESCAPE: {
+      RemovePaneFocus();
+      window_->RestoreFocus();
+      return true;
+    }
+    case ui::VKEY_LEFT:
+      GetFocusManager()->AdvanceFocus(true);
+      return true;
+    case ui::VKEY_RIGHT:
+      GetFocusManager()->AdvanceFocus(false);
+      return true;
+    case ui::VKEY_HOME:
+      GetFocusManager()->SetFocusedViewWithReason(
+          GetFirstFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+      return true;
+    case ui::VKEY_END:
+      GetFocusManager()->SetFocusedViewWithReason(
+          GetLastFocusableChild(), views::FocusManager::kReasonFocusTraversal);
+      return true;
+    default:
+      return false;
+  }
+}
+
 const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
@@ -119,9 +152,16 @@ void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
     return;
   }
 
+  GetFocusManager()->SetFocusedViewWithReason(
+      source, views::FocusManager::kReasonFocusTraversal);
+
   // Deleted in MenuDelegate::OnMenuClosed
   MenuDelegate* menu_delegate = new MenuDelegate(this);
-  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source);
+  menu_delegate->RunMenu(menu_model_->GetSubmenuModelAt(id), source,
+                         event != nullptr && event->IsKeyEvent()
+                             ? ui::MENU_SOURCE_KEYBOARD
+                             : ui::MENU_SOURCE_MOUSE);
+  menu_delegate->AddObserver(this);
 }
 
 void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
@@ -152,6 +192,8 @@ void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
 }
 
 void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
+  views::AccessiblePaneView::OnDidChangeFocus(focused_before, focused_now);
+
   // if we've changed focus, update our view
   const auto had_focus = has_focus_;
   has_focus_ = focused_now != nullptr;

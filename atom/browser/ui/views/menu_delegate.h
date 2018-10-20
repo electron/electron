@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "atom/browser/ui/atom_menu_model.h"
+#include "base/observer_list.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace views {
@@ -23,7 +24,18 @@ class MenuDelegate : public views::MenuDelegate {
   explicit MenuDelegate(MenuBar* menu_bar);
   ~MenuDelegate() override;
 
-  void RunMenu(AtomMenuModel* model, views::MenuButton* button);
+  void RunMenu(AtomMenuModel* model,
+               views::MenuButton* button,
+               ui::MenuSourceType source_type);
+
+  class Observer {
+   public:
+    virtual void OnBeforeExecuteCommand() = 0;
+  };
+
+  void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
+
+  void RemoveObserver(const Observer* obs) { observers_.RemoveObserver(obs); }
 
  protected:
   // views::MenuDelegate:
@@ -55,6 +67,9 @@ class MenuDelegate : public views::MenuDelegate {
 
   // The menu button to switch to.
   views::MenuButton* button_to_open_ = nullptr;
+  bool hold_first_switch_;
+
+  base::ObserverList<Observer> observers_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };

@@ -71,6 +71,11 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
   underline_color_ = color;
 }
 
+void SubmenuButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->SetName(accessible_name());
+  node_data->role = ax::mojom::Role::kPopUpButton;
+}
+
 void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   views::MenuButton::PaintButtonContents(canvas);
 

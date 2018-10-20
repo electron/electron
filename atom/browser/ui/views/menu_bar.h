@@ -6,6 +6,9 @@
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
 #include "atom/browser/ui/atom_menu_model.h"
+#include "atom/browser/ui/views/menu_delegate.h"
+#include "atom/browser/ui/views/root_view.h"
+#include "ui/views/accessible_pane_view.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
@@ -16,15 +19,13 @@ class MenuButton;
 
 namespace atom {
 
-class MenuDelegate;
-
-class MenuBar : public views::View,
+class MenuBar : public views::AccessiblePaneView,
                 public views::MenuButtonListener,
-                public views::FocusChangeListener {
+                public atom::MenuDelegate::Observer {
  public:
   static const char kViewClassName[];
 
-  explicit MenuBar(views::View* window);
+  explicit MenuBar(RootView* window);
   ~MenuBar() override;
 
   // Replaces current menu with a new one.
@@ -47,6 +48,10 @@ class MenuBar : public views::View,
                                     AtomMenuModel** menu_model,
                                     views::MenuButton** button);
 
+  void OnBeforeExecuteCommand() override;
+
+  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
+
  protected:
   // views::View:
   const char* GetClassName() const override;
@@ -59,7 +64,6 @@ class MenuBar : public views::View,
 
   // views::FocusChangeListener:
   void OnDidChangeFocus(View* focused_before, View* focused_now) override;
-  void OnWillChangeFocus(View* focused_before, View* focused_now) override {}
 
  private:
   void RebuildChildren();
@@ -72,7 +76,7 @@ class MenuBar : public views::View,
   SkColor disabled_color_;
 #endif
 
-  views::View* window_ = nullptr;
+  RootView* window_ = nullptr;
   AtomMenuModel* menu_model_ = nullptr;
 
   View* FindAccelChild(base::char16 key);

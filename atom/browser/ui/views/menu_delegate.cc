@@ -14,16 +14,23 @@
 
 namespace atom {
 
-MenuDelegate::MenuDelegate(MenuBar* menu_bar) : menu_bar_(menu_bar), id_(-1) {}
+MenuDelegate::MenuDelegate(MenuBar* menu_bar)
+    : menu_bar_(menu_bar), id_(-1), hold_first_switch_(false) {}
 
 MenuDelegate::~MenuDelegate() {}
 
-void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
+void MenuDelegate::RunMenu(AtomMenuModel* model,
+                           views::MenuButton* button,
+                           ui::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
   // Subtract 1 from the height to make the popup flush with the button border.
   gfx::Rect bounds(screen_loc.x(), screen_loc.y(), button->width(),
                    button->height() - 1);
+
+  if (source_type == ui::MENU_SOURCE_KEYBOARD) {
+    hold_first_switch_ = true;
+  }
 
   id_ = button->tag();
   adapter_.reset(new MenuModelAdapter(model));
@@ -35,15 +42,18 @@ void MenuDelegate::RunMenu(AtomMenuModel* model, views::MenuButton* button) {
       item,
       views::MenuRunner::CONTEXT_MENU | views::MenuRunner::HAS_MNEMONICS));
   menu_runner_->RunMenuAt(button->GetWidget()->GetTopLevelWidget(), button,
-                          bounds, views::MENU_ANCHOR_TOPRIGHT,
-                          ui::MENU_SOURCE_MOUSE);
+                          bounds, views::MENU_ANCHOR_TOPRIGHT, source_type);
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
+  for (Observer& obs : observers_)
+    obs.OnBeforeExecuteCommand();
   adapter_->ExecuteCommand(id);
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
+  for (Observer& obs : observers_)
+    obs.OnBeforeExecuteCommand();
   adapter_->ExecuteCommand(id, mouse_event_flags);
 }
 
@@ -101,6 +111,11 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     views::MenuAnchorPosition* anchor,
     bool* has_mnemonics,
     views::MenuButton**) {
+  if (hold_first_switch_) {
+    hold_first_switch_ = false;
+    return nullptr;
+  }
+
   // TODO(zcbenz): We should follow Chromium's logics on implementing the
   // sibling menu switches, this code is almost a hack.
   views::MenuButton* button;
