@@ -1,3 +1,28 @@
+# The config expects the following environment variables to be set:
+#  - "GN_CONFIG" Build type. One of {'debug', 'testing', 'release'}.
+#  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
+#      e.g. 'target_cpu="x86"' to build for a 32bit platform.
+#      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      if you pass a custom value for 'target_cpu'.
+#  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
+#  - "NPM_CONFIG_ARCH" E.g. 'x86'. Is used to build native Node.js modules.
+#      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "TARGET_ARCH" value.
+#  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
+#      Is used in some publishing scripts, but does NOT affect the Electron binary.
+#      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
+#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#      Otherwise the release will be uploaded to the Github Releases.
+#      (The value is only checked if "ELECTRON_RELEASE" is defined.)
+#
+# The publishing scripts expect access tokens to be defined as env vars,
+# but those are not covered here.
+#
+# AppVeyor docs on variables:
+# https://www.appveyor.com/docs/environment-variables/
+# https://www.appveyor.com/docs/build-configuration/#secure-variables
+# https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
+
 version: 1.0.{build}
 build_cloud: libcc-20
 image: libcc-20-vs2017-15.7.4
@@ -29,7 +54,8 @@ build_script:
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
   - cd src
-  - gn gen out/Default "--args=import(\"//electron/build/args/%GN_CONFIG%.gn\") %GN_EXTRA_ARGS%"
+  - ps: $env:BUILD_CONFIG_PATH="//electron/build/args/%GN_CONFIG%.gn"
+  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS%"
   - ninja -C out/Default electron:electron_app
   - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
   - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
