@@ -57,9 +57,6 @@ class MenuBar : public views::AccessiblePaneView,
   bool SetPaneFocus(views::View* initial_focus) override;
   void RemovePaneFocus() override;
 
-  // views::View:
-  void RequestFocus() override;
-
  protected:
   // views::View:
   const char* GetClassName() const override;

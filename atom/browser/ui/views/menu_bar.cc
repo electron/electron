@@ -5,6 +5,7 @@
 #include "atom/browser/ui/views/menu_bar.h"
 
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -157,6 +158,7 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
 
   if (result) {
     auto children = GetChildrenInZOrder();
+    std::set<ui::KeyboardCode> reg;
     for (int i = 0, n = children.size(); i < n; ++i) {
       auto* button = static_cast<SubmenuButton*>(children[i]);
       bool shifted = false;
@@ -165,9 +167,12 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
 
       // We want the menu items to activate if the user presses the accelerator
       // key, even without alt, since we are now focused on the menu bar
-      focus_manager()->RegisterAccelerator(
-          ui::Accelerator(keycode, ui::EF_NONE),
-          ui::AcceleratorManager::kNormalPriority, this);
+      if (keycode != ui::VKEY_UNKNOWN && reg.find(keycode) != reg.end()) {
+        reg.insert(keycode);
+        focus_manager()->RegisterAccelerator(
+            ui::Accelerator(keycode, ui::EF_NONE),
+            ui::AcceleratorManager::kNormalPriority, this);
+      }
     }
 
     // We want to remove focus / hide menu bar when alt is pressed again
@@ -184,14 +189,18 @@ void MenuBar::RemovePaneFocus() {
   SetAcceleratorVisibility(false);
 
   auto children = GetChildrenInZOrder();
+  std::set<ui::KeyboardCode> unreg;
   for (int i = 0, n = children.size(); i < n; ++i) {
     auto* button = static_cast<SubmenuButton*>(children[i]);
     bool shifted = false;
     auto keycode =
         atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
 
-    focus_manager()->UnregisterAccelerator(
-        ui::Accelerator(keycode, ui::EF_NONE), this);
+    if (keycode != ui::VKEY_UNKNOWN && unreg.find(keycode) != unreg.end()) {
+      unreg.insert(keycode);
+      focus_manager()->UnregisterAccelerator(
+          ui::Accelerator(keycode, ui::EF_NONE), this);
+    }
   }
 
   focus_manager()->UnregisterAccelerator(
@@ -200,12 +209,6 @@ void MenuBar::RemovePaneFocus() {
 
 const char* MenuBar::GetClassName() const {
   return kViewClassName;
-}
-
-void MenuBar::RequestFocus() {
-  if (!HasFocus()) {
-    views::AccessiblePaneView::RequestFocus();
-  }
 }
 
 void MenuBar::OnMenuButtonClicked(views::MenuButton* source,
