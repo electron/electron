@@ -81,5 +81,11 @@
   "author": "Electron Community",
   "keywords": [
     "electron"
-  ]
+  ],
+  "optionalDependencies": {
+    "electron-windows-store": "^2.0.0"
+  },
+  "dependencies": {
+    "fs-extra": "^7.0.0"
+  }
 }
