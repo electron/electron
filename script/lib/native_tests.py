@@ -87,7 +87,8 @@ class TestsList():
     supported_binaries = filter(self.__platform_supports, all_binaries)
     return supported_binaries
 
-  def run(self, binaries, output_dir=None, verbosity=Verbosity.CHATTY):
+  def run(self, binaries, output_dir=None, verbosity=Verbosity.CHATTY,
+      run_only_disabled_tests=False):
     # Don't run anything twice.
     binaries = set(binaries)
 
@@ -105,14 +106,19 @@ class TestsList():
                 binary_name, Platform.get_current()))
 
     suite_returncode = sum(
-        [self.__run(binary, output_dir, verbosity) for binary in binaries])
+        [self.__run(binary, output_dir, verbosity, run_only_disabled_tests)
+        for binary in binaries])
     return suite_returncode
 
-  def run_only(self, binary_name, output_dir=None, verbosity=Verbosity.CHATTY):
-    return self.run([binary_name], output_dir, verbosity)
+  def run_only(self, binary_name, output_dir=None, verbosity=Verbosity.CHATTY,
+      run_only_disabled_tests=False):
+    return self.run([binary_name], output_dir, verbosity,
+                    run_only_disabled_tests)
 
-  def run_all(self, output_dir=None, verbosity=Verbosity.CHATTY):
-    return self.run(self.get_for_current_platform(), output_dir, verbosity)
+  def run_all(self, output_dir=None, verbosity=Verbosity.CHATTY,
+      run_only_disabled_tests=False):
+    return self.run(self.get_for_current_platform(), output_dir, verbosity,
+                    run_only_disabled_tests)
 
   @staticmethod
   def __get_tests_list(config_path):
@@ -169,7 +175,7 @@ class TestsList():
 
     binary_name = data_item.keys()[0]
     test_data = {
-      'excluded_tests': None,
+      'excluded_tests': [],
       'platforms': Platform.get_all()
     }
 
@@ -193,16 +199,26 @@ class TestsList():
 
     return (binary_name, test_data)
 
-  def __run(self, binary_name, output_dir, verbosity):
+  def __run(self, binary_name, output_dir, verbosity,
+      run_only_disabled_tests):
     binary_path = os.path.join(self.tests_dir, binary_name)
     test_binary = TestBinary(binary_path)
 
     test_data = self.tests[binary_name]
+    included_tests = []
     excluded_tests = test_data['excluded_tests']
+
+    if run_only_disabled_tests and len(excluded_tests) == 0:
+      # There is nothing to run.
+      return 0
+
+    if run_only_disabled_tests:
+      included_tests, excluded_tests = excluded_tests, included_tests
 
     output_file_path = TestsList.__get_output_path(binary_name, output_dir)
 
-    return test_binary.run(excluded_tests=excluded_tests,
+    return test_binary.run(included_tests=included_tests,
+                           excluded_tests=excluded_tests,
                            output_file_path=output_file_path,
                            verbosity=verbosity)
 
@@ -221,9 +237,10 @@ class TestBinary():
   def __init__(self, binary_path):
     self.binary_path = binary_path
 
-  def run(self, excluded_tests=None, output_file_path=None,
-      verbosity=Verbosity.CHATTY):
-    gtest_filter = TestBinary.__get_gtest_filter(excluded_tests)
+  def run(self, included_tests=None, excluded_tests=None,
+      output_file_path=None, verbosity=Verbosity.CHATTY):
+    gtest_filter = TestBinary.__get_gtest_filter(included_tests,
+                                                 excluded_tests)
     gtest_output = TestBinary.__get_gtest_output(output_file_path)
 
     args = [self.binary_path, gtest_filter, gtest_output]
@@ -241,12 +258,12 @@ class TestBinary():
     return returncode
 
   @staticmethod
-  def __get_gtest_filter(excluded_tests):
-    gtest_filter = ""
-    if excluded_tests is not None and len(excluded_tests) > 0:
-      excluded_tests_string = TestBinary.__format_excluded_tests(
-          excluded_tests)
-      gtest_filter = "--gtest_filter={}".format(excluded_tests_string)
+  def __get_gtest_filter(included_tests, excluded_tests):
+    included_tests_string = TestBinary.__list_tests(included_tests)
+    excluded_tests_string = TestBinary.__list_tests(excluded_tests)
+
+    gtest_filter = "--gtest_filter={}-{}".format(included_tests_string,
+                                                 excluded_tests_string)
     return gtest_filter
 
   @staticmethod
@@ -258,8 +275,10 @@ class TestBinary():
     return gtest_output
 
   @staticmethod
-  def __format_excluded_tests(excluded_tests):
-    return "-" + ":".join(excluded_tests)
+  def __list_tests(tests):
+    if tests is None:
+      return ''
+    return ':'.join(tests)
 
   @staticmethod
   def __get_stdout_and_stderr(verbosity):
