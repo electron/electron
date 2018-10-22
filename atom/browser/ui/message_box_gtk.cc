@@ -66,6 +66,7 @@ class GtkMessageBox : public NativeWindowObserver {
       gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(check_button),
                                    checkbox_checked);
       gtk_container_add(GTK_CONTAINER(message_area), check_button);
+      gtk_widget_show(check_button);
     }
 
     // Add buttons.
@@ -122,7 +123,7 @@ class GtkMessageBox : public NativeWindowObserver {
   }
 
   void Show() {
-    gtk_widget_show_all(dialog_);
+    gtk_widget_show(dialog_);
     // We need to call gtk_window_present after making the widgets visible to
     // make sure window gets correctly raised and gets focus.
     int time = ui::X11EventSource::GetInstance()->GetTimestamp();
