@@ -124,7 +124,7 @@ describe('app module', () => {
 
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
-      expect(app.getLocaleCountryCode()).to.have.lengthOf(2)
+      expect(app.getLocaleCountryCode().length).to.be.oneOf([0, 2])
     })
   })
 
