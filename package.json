@@ -73,5 +73,8 @@
     "replacements": {
       "@electron/internal/(.+)": "./lib/$1"
     }
+  },
+  "optionalDependencies": {
+    "electron-windows-store": "^2.0.0"
   }
 }
