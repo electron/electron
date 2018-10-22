@@ -1,4 +1,4 @@
-const { remote, shell } = require('electron')
+const { remote, shell, ipcRenderer } = require('electron')
 const fs = require('fs')
 const path = require('path')
 const URL = require('url')
@@ -30,7 +30,6 @@ function initialize () {
   document.querySelector('.chrome-version').innerText = `Chromium v${process.versions.chrome}`
   document.querySelector('.node-version').innerText = `Node v${process.versions.node}`
   document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
-  document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
 
   function getOcticonSvg (name) {
     const octiconPath = path.resolve(__dirname, 'node_modules', 'octicons', 'build', 'svg', `${name}.svg`)
@@ -60,6 +59,16 @@ function initialize () {
   for (const element of document.querySelectorAll('.octicon')) {
     loadSVG(element)
   }
+
+  document.querySelector('#open-dev-tools').onclick = () => {
+    remote.getCurrentWindow().webContents.openDevTools()
+  }
+
+  document.querySelector('#run-in-main').onclick = () => {
+    const code = document.querySelector('textarea').value
+    ipcRenderer.send('RUN_IN_MAIN', code)
+  }
+
 }
 
 window.addEventListener('load', initialize)
