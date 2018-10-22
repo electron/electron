@@ -28,23 +28,22 @@
   </Resources>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14316.0" MaxVersionTested="10.0.14395.5" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17692.0" MaxVersionTested="10.0.17692.0" />
   </Dependencies>
 
   <Capabilities>
-    <rescap:Capability Name="runFullTrust" />
-    <Capability Name="internetClient" />
+    <rescap:Capability Name="broadFileSystemAccess"/>
+    <rescap:Capability Name="internetClient"/>
   </Capabilities>
 
   <Applications>
-    <Application Id="Electron" Executable="app\electron.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="electron" Executable="ShimLauncher64.exe" EntryPoint="Windows.PartialTrustApplication">
       <uap:VisualElements
-          DisplayName="Electron"
-          Description="Electron"
-          Square44x44Logo="Assets\Square44x44Logo.png"
-          Square150x150Logo="Assets\Square150x150Logo.png"
-          BackgroundColor="transparent">
-      </uap:VisualElements>
+       BackgroundColor="#464646"
+       DisplayName="Electron"
+       Square150x150Logo="Assets\SquareLogo.150x150.png"
+       Square44x44Logo="Assets\SquareLogo.44x44.png"
+       Description="electron" />
     </Application>
   </Applications>
 </Package>

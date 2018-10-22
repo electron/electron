@@ -1,0 +1,18 @@
+{ 
+    "applications": [
+      {
+        "id": "Electron",
+        "executable": "app\\electron.exe"
+      } 
+    ], 
+    "processes": [ 
+        { 
+            "executable": ".*",
+            "shims": [
+                {
+                    "dll": "ElectronShim.dll"
+                }
+            ]
+        }
+    ]
+}

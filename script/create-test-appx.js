@@ -9,6 +9,8 @@ const OUT_PATH = path.join(__dirname, '../../out/AppContainer')
 const CERT_PATH = path.join(__dirname, 'appcontainer/electrontest.pfx')
 const ASSETS_PATH = path.join(__dirname, 'appcontainer/Assets')
 const MANIFEST_PATH = path.join(__dirname, 'appcontainer/appxmanifest.xml')
+const SHIM_PATH = path.join(__dirname, 'appcontainer/shim')
+const PREAPPX_PATH = path.join(OUT_PATH, 'pre-appx')
 
 /**
  * Do we need to copy this file over?
@@ -90,6 +92,17 @@ async function isPfxInstalled () {
   return result.toLowerCase().trim() === 'true'
 }
 
+async function copyInShim () {
+  const contents = await fs.readdir(SHIM_PATH)
+
+  for (const file of contents) {
+    const source = path.join(SHIM_PATH, file)
+    const desination = path.join(PREAPPX_PATH, file)
+
+    await fs.copy(source, desination)
+  }
+}
+
 async function main () {
   if (!fs.existsSync(DEBUG_PATH)) {
     console.log(`Cannot find ${DEBUG_PATH}`)
@@ -148,7 +161,8 @@ async function convert () {
     assets: ASSETS_PATH,
     devCert: CERT_PATH,
     createPriParams: ['/IndexName', '99999D7F.Electron'],
-    makePri: true
+    makePri: true,
+    finalSay: copyInShim
   })
 }
 
