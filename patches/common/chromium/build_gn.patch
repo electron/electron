@@ -26,29 +26,6 @@ index fcc00ee0e49f..3232a0360e94 100644
  ]
  
  if (is_win) {
-diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 959a59231746..48f1285c4657 100644
---- a/build/config/compiler/BUILD.gn
-+++ b/build/config/compiler/BUILD.gn
-@@ -634,12 +634,12 @@ config("compiler") {
- 
-     # TODO(pcc): Re-enable this flag on Android. This will require libc++ to be
-     # built with ThinLTO (see https://crbug.com/767901) as well as the GVR shim.
--    if (!is_android) {
--      cflags += [ "-fwhole-program-vtables" ]
--      if (!is_win) {
--        ldflags += [ "-fwhole-program-vtables" ]
--      }
--    }
-+    # if (!is_android) {
-+    #   cflags += [ "-fwhole-program-vtables" ]
-+    #   if (!is_win) {
-+    #     ldflags += [ "-fwhole-program-vtables" ]
-+    #   }
-+    # }
- 
-     # Work-around for http://openradar.appspot.com/20356002
-     if (is_mac) {
 -- 
 2.17.0
 
