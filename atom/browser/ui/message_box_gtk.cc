@@ -70,12 +70,11 @@ class GtkMessageBox : public NativeWindowObserver {
     }
 
     // Add buttons.
+    GtkDialog* dialog = GTK_DIALOG(dialog_);
     for (size_t i = 0; i < buttons.size(); ++i) {
-      GtkWidget* button = gtk_dialog_add_button(
-          GTK_DIALOG(dialog_), TranslateToStock(i, buttons[i]), i);
-      if (static_cast<int>(i) == default_id)
-        gtk_widget_grab_focus(button);
+      gtk_dialog_add_button(dialog, TranslateToStock(i, buttons[i]), i);
     }
+    gtk_dialog_set_default_response(dialog, default_id);
 
     // Parent window.
     if (parent_) {
