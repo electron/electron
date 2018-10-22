@@ -167,7 +167,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     }
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
-    if (!ChildWebContentsTracker::IsChildWebContents(web_contents)) {
+    if (!ChildWebContentsTracker::FromWebContents(web_contents)) {
       // Root WebContents should always create new process to make sure
       // native addons are loaded correctly after reload / navigation.
       // (Non-root WebContents opened by window.open() should try to
