@@ -75,9 +75,7 @@ hooks = [
     'pattern': 'src/electron',
     'action': [
       'python',
-      'src/electron/script/apply-patches',
-      '--project-root=.',
-      '--commit',
+      'src/electron/script/apply_all_patches.py',
     ],
   },
   {
