@@ -68,7 +68,7 @@ describe('security warnings', () => {
     w.loadURL(`http://127.0.0.1:8881/base-page-security.html`)
   })
 
-  const generateSpecs = (description, sandbox) => {
+  const generateSpecs = (description, webPreferences) => {
     describe(description, () => {
       it('should warn about disabled webSecurity', (done) => {
         w = new BrowserWindow({
@@ -76,7 +76,7 @@ describe('security warnings', () => {
           webPreferences: {
             webSecurity: false,
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -92,7 +92,7 @@ describe('security warnings', () => {
           show: false,
           webPreferences: {
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
 
@@ -111,7 +111,7 @@ describe('security warnings', () => {
           webPreferences: {
             allowRunningInsecureContent: true,
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -128,7 +128,7 @@ describe('security warnings', () => {
           webPreferences: {
             experimentalFeatures: true,
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -145,7 +145,7 @@ describe('security warnings', () => {
           webPreferences: {
             enableBlinkFeatures: ['my-cool-feature'],
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -161,7 +161,7 @@ describe('security warnings', () => {
           show: false,
           webPreferences: {
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -177,7 +177,7 @@ describe('security warnings', () => {
           show: false,
           webPreferences: {
             nodeIntegration: false,
-            sandbox
+            ...webPreferences
           }
         })
         w.webContents.once('console-message', (e, level, message) => {
@@ -191,6 +191,7 @@ describe('security warnings', () => {
     })
   }
 
-  generateSpecs('without sandbox', false)
-  generateSpecs('with sandbox', true)
+  generateSpecs('without sandbox', {})
+  generateSpecs('with sandbox', { sandbox: true })
+  generateSpecs('with remote module disabled', { enableRemoteModule: false })
 })

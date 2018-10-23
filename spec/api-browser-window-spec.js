@@ -1396,6 +1396,46 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('"enableRemoteModule" option', () => {
+      const generateSpecs = (description, sandbox) => {
+        describe(description, () => {
+          const preload = path.join(fixtures, 'module', 'preload-remote.js')
+
+          it('enables the remote module by default', async () => {
+            const w = await openTheWindow({
+              show: false,
+              webPreferences: {
+                nodeIntegration: false,
+                preload,
+                sandbox
+              }
+            })
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            expect(remote).to.equal('object')
+          })
+
+          it('disables the remote module when false', async () => {
+            const w = await openTheWindow({
+              show: false,
+              webPreferences: {
+                nodeIntegration: false,
+                preload,
+                sandbox,
+                enableRemoteModule: false
+              }
+            })
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            expect(remote).to.equal('undefined')
+          })
+        })
+      }
+
+      generateSpecs('without sandbox', false)
+      generateSpecs('with sandbox', true)
+    })
+
     describe('"sandbox" option', () => {
       function waitForEvents (emitter, events, callback) {
         let count = events.length

@@ -110,6 +110,9 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
+// Enable the remote module
+const char kEnableRemoteModule[] = "enableRemoteModule";
+
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
@@ -193,6 +196,7 @@ const char kBackgroundColor[] = "background-color";
 const char kPreloadScript[] = "preload";
 const char kPreloadScripts[] = "preload-scripts";
 const char kNodeIntegration[] = "node-integration";
+const char kDisableRemoteModule[] = "disable-remote-module";
 const char kContextIsolation[] = "context-isolation";
 const char kGuestInstanceID[] = "guest-instance-id";
 const char kOpenerID[] = "opener-id";
