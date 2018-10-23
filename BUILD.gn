@@ -919,7 +919,7 @@ dist_zip("electron_mksnapshot_zip") {
 }
 
 group("electron") {
-  deps = [
+  public_deps = [
     ":electron_app",
   ]
 }
