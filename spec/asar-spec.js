@@ -192,6 +192,15 @@ describe('asar package', function () {
         assert.strictEqual(stats.size, 0)
       })
 
+      it('returns information of root with stats as bigint', function () {
+        const p = path.join(fixtures, 'asar', 'a.asar')
+        const stats = fs.lstatSync(p, { bigint: false })
+        assert.strictEqual(stats.isFile(), false)
+        assert.strictEqual(stats.isDirectory(), true)
+        assert.strictEqual(stats.isSymbolicLink(), false)
+        assert.strictEqual(stats.size, 0)
+      })
+
       it('returns information of a normal file', function () {
         const ref2 = ['file1', 'file2', 'file3', path.join('dir1', 'file1'), path.join('link2', 'file1')]
         for (let j = 0, len = ref2.length; j < len; j++) {
@@ -266,6 +275,18 @@ describe('asar package', function () {
       it('returns information of root', function (done) {
         const p = path.join(fixtures, 'asar', 'a.asar')
         fs.lstat(p, function (err, stats) {
+          assert.strictEqual(err, null)
+          assert.strictEqual(stats.isFile(), false)
+          assert.strictEqual(stats.isDirectory(), true)
+          assert.strictEqual(stats.isSymbolicLink(), false)
+          assert.strictEqual(stats.size, 0)
+          done()
+        })
+      })
+
+      it('returns information of root with stats as bigint', function (done) {
+        const p = path.join(fixtures, 'asar', 'a.asar')
+        fs.lstat(p, { bigint: false }, function (err, stats) {
           assert.strictEqual(err, null)
           assert.strictEqual(stats.isFile(), false)
           assert.strictEqual(stats.isDirectory(), true)
