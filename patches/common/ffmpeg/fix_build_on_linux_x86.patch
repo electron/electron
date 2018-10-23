@@ -1,5 +1,13 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Mon, 22 Oct 2018 10:45:25 -0700
+Subject: fix_build_on_linux_x86.patch
+
+Builds on Linux x86 fail with a clang error. See https://crbug.com/796379.
+Once it's fixed the patch can be removed.
+
 diff --git a/BUILD.gn b/BUILD.gn
-index 494d33fc04..249f3700f3 100755
+index 947deba96107c931582007ce89917f8896923a6f..7afd535cb5e43762a14c51dd7b3b163571958d9c 100755
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -239,7 +239,7 @@ target(link_target_type, "ffmpeg_internal") {
@@ -11,3 +19,5 @@ index 494d33fc04..249f3700f3 100755
        defines += [ "HAVE_EBP_AVAILABLE=0" ]
      } else {
        defines += [ "HAVE_EBP_AVAILABLE=1" ]
+-- 
+2.17.0

@@ -1,11 +1,11 @@
-From 4b6fd85950701d177879f3a239b19f08c9ff3a66 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:14 -0700
 Subject: browser_compositor_mac.patch
 
 
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index 46be85eea4b5..4c816b7021f8 100644
+index 46be85eea4b52b191d9e717fd34408a6c2445199..4c816b7021f87873a524e0dc2384146193b86e3c 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
 @@ -59,6 +59,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
@@ -26,7 +26,7 @@ index 46be85eea4b5..4c816b7021f8 100644
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
    void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 92afcc779106..42bd6fd7c169 100644
+index 92afcc77910610e53378f55adc003cc1bdf3109a..42bd6fd7c169de36c775471c68b456f1386ff666 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
 @@ -81,6 +81,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {

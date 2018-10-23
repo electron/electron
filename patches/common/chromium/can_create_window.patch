@@ -1,11 +1,11 @@
-From 0809b4654f69adbc8912ad8922465f46b2d3be18 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:32 -0700
 Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 520dcffb5353..783dc705f748 100644
+index 520dcffb53534e76d739cff74ea58d49bdfb682a..783dc705f748bc6c9d3b8630ce12ad39ff2fd7d2 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
 @@ -3142,6 +3142,38 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -56,7 +56,7 @@ index 520dcffb5353..783dc705f748 100644
            &no_javascript_access);
  
 diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
-index e3b04edb5a30..254f94016b97 100644
+index e3b04edb5a301115d894190a64e734eb2c8b3499..254f94016b97620cfbc102cbbc7677cfcfe38e22 100644
 --- a/content/browser/security_exploit_browsertest.cc
 +++ b/content/browser/security_exploit_browsertest.cc
 @@ -313,6 +313,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
@@ -68,7 +68,7 @@ index e3b04edb5a30..254f94016b97 100644
        std::move(params), base::BindOnce([](mojom::CreateNewWindowStatus,
                                             mojom::CreateNewWindowReplyPtr) {}));
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index fb4732e6e666..804086522994 100644
+index fb4732e6e666044233716fc3ae629dedad7b2618..804086522994b038c86a31e7acdcffc1e039c260 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -12,6 +12,8 @@ import "content/public/common/resource_type.mojom";
@@ -117,7 +117,7 @@ index fb4732e6e666..804086522994 100644
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2a896c7072ca..bb54b89bef5c 100644
+index 2a896c7072caae655be1902b536d9172448abddb..bb54b89bef5c6f32e7b4a056336c85494e2a04de 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -435,6 +435,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -130,7 +130,7 @@ index 2a896c7072ca..bb54b89bef5c 100644
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fd5d62fee117..3be31602689c 100644
+index fd5d62fee1172b07a692fcf6ce06a30096d25b03..3be31602689cb93b965729cc4e35cf6d23a8ec2f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -162,6 +162,7 @@ class RenderFrameHost;
@@ -151,7 +151,7 @@ index fd5d62fee117..3be31602689c 100644
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 03d9cda9f95d..edad9fc3198c 100644
+index 03d9cda9f95daa369101b6f922e0978061e0225f..edad9fc3198ca12bd326c9f407a62866373e3b29 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -79,6 +79,7 @@
@@ -210,7 +210,7 @@ index 03d9cda9f95d..edad9fc3198c 100644
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/layout_test/layout_test_content_browser_client.cc b/content/shell/browser/layout_test/layout_test_content_browser_client.cc
-index fe0e3720ea5d..4a31617b5a89 100644
+index fe0e3720ea5d60d65ecbbc3836bc87785997a513..4a31617b5a898b0f6d7e25cc05992d36862678a0 100644
 --- a/content/shell/browser/layout_test/layout_test_content_browser_client.cc
 +++ b/content/shell/browser/layout_test/layout_test_content_browser_client.cc
 @@ -276,6 +276,8 @@ bool LayoutTestContentBrowserClient::CanCreateWindow(
@@ -223,7 +223,7 @@ index fe0e3720ea5d..4a31617b5a89 100644
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/shell/browser/layout_test/layout_test_content_browser_client.h b/content/shell/browser/layout_test/layout_test_content_browser_client.h
-index fa458cf0c92d..cdd95a1d88e5 100644
+index fa458cf0c92d6f75ecd71e296ba1af88ace400dc..cdd95a1d88e582a31aca43cd2fc9001113dcde1c 100644
 --- a/content/shell/browser/layout_test/layout_test_content_browser_client.h
 +++ b/content/shell/browser/layout_test/layout_test_content_browser_client.h
 @@ -66,6 +66,8 @@ class LayoutTestContentBrowserClient : public ShellContentBrowserClient {

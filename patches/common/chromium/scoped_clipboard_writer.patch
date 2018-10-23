@@ -1,11 +1,11 @@
-From 691dce7bf41c6fbc8ce3bf9fc3fb4ec0ef0cca21 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:32 -0700
 Subject: scoped_clipboard_writer.patch
 
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 12680a66d17c..6b95e46e3558 100644
+index 12680a66d17c56aa72edcd7cdf48eb68ff864cf3..6b95e46e35584843c75dae5d784cb606ed31754a 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
 @@ -103,17 +103,16 @@ void ScopedClipboardWriter::WriteImage(const SkBitmap& bitmap) {
@@ -46,7 +46,7 @@ index 12680a66d17c..6b95e46e3558 100644
    objects_.clear();
    bitmap_.reset();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index 385900eb67de..cf1f803ec123 100644
+index 385900eb67dee499afc8591e6acf0c6b5957df7e..cf1f803ec1233c173d11295be05ba0859cae4844 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
 @@ -57,6 +57,11 @@ class UI_BASE_EXPORT ScopedClipboardWriter {

@@ -1,4 +1,4 @@
-From 8fda73933a1a6d1a25b6160bc3629132ba075bfd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@github.com>
 Date: Thu, 20 Sep 2018 17:49:45 -0700
 Subject: windows_cc_wrapper.patch
@@ -6,7 +6,7 @@ Subject: windows_cc_wrapper.patch
 Allow use of cc_wrapper (eg sccache).
 
 diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
-index fdffcdbdbbfe..0b7487e1d288 100644
+index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d47490d57 100644
 --- a/build/toolchain/win/BUILD.gn
 +++ b/build/toolchain/win/BUILD.gn
 @@ -6,6 +6,7 @@ import("//build/config/clang/clang.gni")

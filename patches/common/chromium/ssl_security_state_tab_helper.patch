@@ -1,4 +1,4 @@
-From 87f31d450894df2b00c6a2d6fb7eb2639b595756 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 20 Sep 2018 17:50:34 -0700
 Subject: ssl_security_state_tab_helper.patch
@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index 58066f3a532b..a1643c6492e3 100644
+index 58066f3a532bf227f0445fe0d04a092e4ba6a4ff..a1643c6492e30b81a01105cc0c52483c6400f535 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,17 +13,23 @@
@@ -119,7 +119,7 @@ index 58066f3a532b..a1643c6492e3 100644
    return secure_origin_whitelist::ParseWhitelist(origins_str);
  }
 diff --git a/chrome/common/secure_origin_whitelist.cc b/chrome/common/secure_origin_whitelist.cc
-index 3319df136d4d..fbc6eea480d2 100644
+index 3319df136d4d32aad066fe98bfadacfb3c05322a..fbc6eea480d23e7158bbbfb8dc77926824b94c3d 100644
 --- a/chrome/common/secure_origin_whitelist.cc
 +++ b/chrome/common/secure_origin_whitelist.cc
 @@ -13,7 +13,9 @@

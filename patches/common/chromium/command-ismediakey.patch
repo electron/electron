@@ -1,4 +1,4 @@
-From 2d028f727b68a0aa7f83cc069e1df4d13a9e173e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Wed, 10 Oct 2018 15:07:34 -0700
 Subject: define Command::IsMediaKey on mac
@@ -15,7 +15,7 @@ and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
 diff --git a/chrome/browser/extensions/global_shortcut_listener_mac.mm b/chrome/browser/extensions/global_shortcut_listener_mac.mm
-index f612ba2fb795..77c2c68e6f9b 100644
+index f612ba2fb7952654663cbce596c43b0b65d5ea29..77c2c68e6f9bfec3fc887e2119243cee1321cd17 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_mac.mm
 +++ b/chrome/browser/extensions/global_shortcut_listener_mac.mm
 @@ -20,6 +20,26 @@ using extensions::GlobalShortcutListenerMac;
@@ -46,7 +46,7 @@ index f612ba2fb795..77c2c68e6f9b 100644
  GlobalShortcutListener* GlobalShortcutListener::GetInstance() {
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 65b244d55441..a217f0a1ad96 100644
+index 65b244d55441b07f55e61c7b634d6cec57f2b1e7..a217f0a1ad965331502dc01fde9ff0a2d0399326 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
 @@ -63,6 +63,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
@@ -68,7 +68,7 @@ index 65b244d55441..a217f0a1ad96 100644
    bool success = !!RegisterHotKey(
        gfx::SingletonHwnd::GetInstance()->hwnd(),
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
-index 362811063a42..fc407da7047b 100644
+index 362811063a426c27993563f236b0aa8b7034aa3f..fc407da7047b6d1b57db44eca65da6e1d743431f 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_x11.cc
 @@ -38,6 +38,7 @@ int GetNativeModifiers(const ui::Accelerator& accelerator) {
@@ -89,7 +89,7 @@ index 362811063a42..fc407da7047b 100644
    ui::Accelerator accelerator(
        ui::KeyboardCodeFromXKeyEvent(x_event), modifiers);
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index cd595b0c017d..941c1a76a1c3 100644
+index cd595b0c017d6e36a5d94f7c99fe0a098a52b067..941c1a76a1c3ebe542aebcc9dc301d19bab47057 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
 @@ -30,6 +30,12 @@ ui::KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {

@@ -1,11 +1,11 @@
-From 3fae422b46dec513879ec6d4fd8c8dd4c4cdcd0f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:53 -0700
 Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 26384f823b51..64ad6ca91d93 100644
+index 26384f823b511ca720ae474e950d75fd19b65111..64ad6ca91d9331a09d09f7e29b7c24a0c12852a2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -1931,6 +1931,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -30,7 +30,7 @@ index 26384f823b51..64ad6ca91d93 100644
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 44c68ed25b66..c7b0c747fa41 100644
+index 44c68ed25b664b40b12dd843a18f7fe18d9cdfa9..c7b0c747fa4132a076719f7a4b3aad84f526aee3 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -92,7 +92,7 @@ index 44c68ed25b66..c7b0c747fa41 100644
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 0f82f91e437c..0deb4d93fffb 100644
+index 0f82f91e437c495b92662c9816225687430ec8a4..0deb4d93fffbd7392cc1a391d9503946434ad1ba 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -76,9 +76,12 @@ class BrowserPluginGuestDelegate;
