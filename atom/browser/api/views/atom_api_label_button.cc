@@ -14,6 +14,8 @@ namespace atom {
 
 namespace api {
 
+LabelButton::LabelButton(views::LabelButton* impl) : Button(impl) {}
+
 LabelButton::LabelButton(const std::string& text)
     : Button(new views::LabelButton(this, base::UTF8ToUTF16(text))) {}
 

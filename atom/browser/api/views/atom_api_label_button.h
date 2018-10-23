@@ -23,6 +23,7 @@ class LabelButton : public Button {
                              v8::Local<v8::FunctionTemplate> prototype);
 
  protected:
+  explicit LabelButton(views::LabelButton* impl);
   explicit LabelButton(const std::string& text);
   ~LabelButton() override;
 
