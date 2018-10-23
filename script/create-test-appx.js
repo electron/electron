@@ -48,7 +48,7 @@ console.log(`Packaging ${BUILD_PATH} as appx`)
  * @returns {boolean}
  */
 function isFileNeeded (name) {
-  return !/.*\.(?:(pdb)|(ilk)|(exp)|(lib))$/ig.test(name)
+  return !/.*\.(?:(pdb|ilk|exp|lib))$/ig.test(name)
 }
 
 /**
@@ -74,15 +74,13 @@ function executeChildProcess (fileName, args, options) {
   return new Promise((resolve, reject) => {
     const child = childProcess.spawn(fileName, args, options)
     const data = []
+    const onData = (line) => {
+      data.push(line)
+      console.log(line.toString())
+    }
 
-    child.stdout.on('data', (line) => {
-      data.push(line)
-      console.log(line.toString())
-    })
-    child.stderr.on('data', (line) => {
-      data.push(line)
-      console.log(line.toString())
-    })
+    child.stdout.on('data', onData)
+    child.stderr.on('data', onData)
 
     child.on('exit', (code) => {
       if (code !== 0) {
@@ -152,10 +150,12 @@ async function convert () {
 
   // Install the test certificate
   if (!(await isPfxInstalled())) {
-    console.warn(`The test certificate is not installed!`)
-    console.warn(`We will now try to install it. If this is not an administrative shell,`)
-    console.warn(`this operation will fail. If that's the case, please run this script`)
-    console.warn(`again as administrator`)
+    const warning = `The test certificate is not installed!\n`
+      + `We will now try to install it. If this is not an administrative shell,\n`
+      + `this operation will fail. If that's the case, please run this script\n`
+      + `again as administrator.`;
+
+    console.warning(warning)
 
     await installPfx()
   }
@@ -205,7 +205,7 @@ async function main () {
     const destination = path.join(STAGING_PATH, item)
     const itemStat = fs.statSync(source)
     const isNeededFile = itemStat.isFile() && isFileNeeded(item)
-    const isNeededDir = !isNeededFile && isDirNeeded(item)
+    const isNeededDir = itemStat.isDirectory() && isDirNeeded(item)
 
     if (isNeededFile || isNeededDir) {
       console.log(`Copying ${item}`)
