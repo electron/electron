@@ -222,6 +222,7 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
+    "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
@@ -236,12 +237,6 @@ static_library("electron_lib") {
     "//ui/views",
     "//v8",
   ]
-
-  # TODO: this requires a visibility patch to chromium src. it would be better
-  # to use the publicly-available API, which I think is mojo-based. Once
-  # electron switches to using the public API, we can remove this from the deps
-  # list and remove the visibility patch from chromium.
-  deps += [ "//services/device/wake_lock/power_save_blocker" ]
 
   include_dirs = [
     "chromium_src",
