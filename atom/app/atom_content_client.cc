@@ -21,6 +21,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include)
@@ -191,6 +192,24 @@ std::string AtomContentClient::GetUserAgent() const {
 
 base::string16 AtomContentClient::GetLocalizedString(int message_id) const {
   return l10n_util::GetStringUTF16(message_id);
+}
+
+base::StringPiece AtomContentClient::GetDataResource(
+    int resource_id,
+    ui::ScaleFactor scale_factor) const {
+  return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
+      resource_id, scale_factor);
+}
+
+gfx::Image& AtomContentClient::GetNativeImageNamed(int resource_id) const {
+  return ui::ResourceBundle::GetSharedInstance().GetNativeImageNamed(
+      resource_id);
+}
+
+base::RefCountedMemory* AtomContentClient::GetDataResourceBytes(
+    int resource_id) const {
+  return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
+      resource_id);
 }
 
 void AtomContentClient::AddAdditionalSchemes(Schemes* schemes) {

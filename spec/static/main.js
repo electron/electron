@@ -242,6 +242,24 @@ app.on('ready', function () {
   })
 })
 
+ipcMain.on('handle-next-remote-require', function (event, modulesMap = {}) {
+  event.sender.once('remote-require', (event, moduleName) => {
+    event.preventDefault()
+    if (modulesMap.hasOwnProperty(moduleName)) {
+      event.returnValue = modulesMap[moduleName]
+    }
+  })
+})
+
+ipcMain.on('handle-next-remote-get-global', function (event, globalsMap = {}) {
+  event.sender.once('remote-get-global', (event, globalName) => {
+    event.preventDefault()
+    if (globalsMap.hasOwnProperty(globalName)) {
+      event.returnValue = globalsMap[globalName]
+    }
+  })
+})
+
 ipcMain.on('set-client-certificate-option', function (event, skip) {
   app.once('select-client-certificate', function (event, webContents, url, list, callback) {
     event.preventDefault()

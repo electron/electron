@@ -369,7 +369,6 @@ details.
 
 Returns:
 
-* `event` Event
 * `session` [Session](session.md)
 
 Emitted when Electron has created a new `session`.
@@ -398,6 +397,30 @@ non-minimized.
 
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
+
+### Event: 'remote-require'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `moduleName` String
+
+Emitted when `remote.require()` is called in the renderer process of `webContents`.
+Calling `event.preventDefault()` will prevent the module from being returned.
+Custom value can be returned by setting `event.returnValue`.
+
+### Event: 'remote-get-global'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+* `globalName` String
+
+Emitted when `remote.getGlobal()` is called in the renderer process of `webContents`.
+Calling `event.preventDefault()` will prevent the global from being returned.
+Custom value can be returned by setting `event.returnValue`.
 
 ## Methods
 
@@ -1000,7 +1023,7 @@ Returns `Object`:
     the app as a login item. Defaults to `false`.
   * `openAsHidden` Boolean (optional) _macOS_ - `true` to open the app as hidden. Defaults to
     `false`. The user can edit this setting from the System Preferences so
-    `app.getLoginItemStatus().wasOpenedAsHidden` should be checked when the app
+    `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app
     is opened to know the current value. This setting is not available on [MAS builds][mas-builds].
   * `path` String (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.

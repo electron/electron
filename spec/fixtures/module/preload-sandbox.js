@@ -23,7 +23,7 @@
     }
   } else if (location.href !== 'about:blank') {
     addEventListener('DOMContentLoaded', () => {
-      ipcRenderer.send('child-loaded', window.opener == null, document.body.innerHTML)
+      ipcRenderer.send('child-loaded', window.opener == null, document.body.innerHTML, location.href)
     }, false)
   }
 })()

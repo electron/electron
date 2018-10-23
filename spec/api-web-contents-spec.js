@@ -125,9 +125,7 @@ describe('webContents module', () => {
     })
   })
 
-  // FIXME: this is broken on mac in the M69 upgrade, fix & re-enable before
-  // release
-  xdescribe('isCurrentlyAudible() API', () => {
+  describe('isCurrentlyAudible() API', () => {
     it('returns whether audio is playing', async () => {
       const webContents = remote.getCurrentWebContents()
       const context = new window.AudioContext()
@@ -905,6 +903,33 @@ describe('webContents module', () => {
 
       const promise = w.webContents.takeHeapSnapshot('')
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
+    })
+  })
+
+  describe('setBackgroundThrottling()', () => {
+    it('does not crash when allowing', (done) => {
+      w.webContents.setBackgroundThrottling(true)
+      done()
+    })
+
+    it('does not crash when disallowing', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          backgroundThrottling: true
+        }
+      })
+
+      w.webContents.setBackgroundThrottling(false)
+      done()
+    })
+
+    it('does not crash when called via BrowserWindow', (done) => {
+      w.setBackgroundThrottling(true)
+      done()
     })
   })
 })

@@ -294,15 +294,18 @@ bool OpenItem(const base::FilePath& full_path) {
     return ui::win::OpenFileViaShell(full_path);
 }
 
-bool OpenExternal(const base::string16& url, bool activate) {
+bool OpenExternal(const base::string16& url,
+                  const OpenExternalOptions& options) {
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
   base::string16 escaped_url = L"\"" + url + L"\"";
+  auto working_dir = options.working_dir.value();
 
-  if (reinterpret_cast<ULONG_PTR>(ShellExecuteW(
-          NULL, L"open", escaped_url.c_str(), NULL, NULL, SW_SHOWNORMAL)) <=
-      32) {
+  if (reinterpret_cast<ULONG_PTR>(
+          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
+                        working_dir.empty() ? nullptr : working_dir.c_str(),
+                        SW_SHOWNORMAL)) <= 32) {
     // We fail to execute the call. We could display a message to the user.
     // TODO(nsylvain): we should also add a dialog to warn on errors. See
     // bug 1136923.
@@ -312,10 +315,10 @@ bool OpenExternal(const base::string16& url, bool activate) {
 }
 
 void OpenExternal(const base::string16& url,
-                  bool activate,
+                  const OpenExternalOptions& options,
                   const OpenExternalCallback& callback) {
   // TODO(gabriel): Implement async open if callback is specified
-  callback.Run(OpenExternal(url, activate) ? "" : "Failed to open");
+  callback.Run(OpenExternal(url, options) ? "" : "Failed to open");
 }
 
 bool MoveItemToTrash(const base::FilePath& path) {

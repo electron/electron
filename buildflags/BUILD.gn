@@ -15,6 +15,8 @@ buildflag_header("buildflags") {
     "ENABLE_VIEW_API=$enable_view_api",
     "ENABLE_PEPPER_FLASH=$enable_pepper_flash",
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
+    "ENABLE_TTS=$enable_tts",
+    "ENABLE_COLOR_CHOOSER=$enable_color_chooser",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 }

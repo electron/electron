@@ -72,6 +72,9 @@ $ gclient sync --with_branch_heads --with_tags
 # This will take a while, go get a coffee.
 ```
 
+> Instead of `https://github.com/electron/electron`, you can use your own fork
+> here (something like `https://github.com/<username>/electron`).
+
 #### A note on pulling/pushing
 
 If you intend to `git pull` or `git push` from the official `electron`
@@ -106,6 +109,13 @@ $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
 # this next line is needed only if building with sccache
 $ export GN_EXTRA_ARGS="${GN_EXTRA_ARGS} cc_wrapper=\"${PWD}/electron/external_binaries/sccache\""
 $ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
+```
+
+Or on Windows (without the optional argument):
+```sh
+$ cd src
+$ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
+$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\")"
 ```
 
 This will generate a build directory `out/Debug` under `src/` with

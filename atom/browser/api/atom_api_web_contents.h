@@ -29,10 +29,6 @@ namespace blink {
 struct WebDeviceEmulationParams;
 }
 
-namespace brightray {
-class InspectableWebContents;
-}
-
 namespace mate {
 class Arguments;
 class Dictionary;
@@ -46,13 +42,13 @@ namespace atom {
 
 class AtomBrowserContext;
 class AtomJavaScriptDialogManager;
+class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
 class FrameSubscriber;
 
 #if BUILDFLAG(ENABLE_OSR)
 class OffScreenWebContentsView;
-class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -83,18 +79,29 @@ class WebContents : public mate::TrackableObject<WebContents>,
   using PrintToPDFCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
 
-  // Create from an existing WebContents.
-  static mate::Handle<WebContents> CreateFrom(
-      v8::Isolate* isolate,
-      content::WebContents* web_contents);
-  static mate::Handle<WebContents> CreateFrom(
-      v8::Isolate* isolate,
-      content::WebContents* web_contents,
-      Type type);
-
-  // Create a new WebContents.
+  // Create a new WebContents and return the V8 wrapper of it.
   static mate::Handle<WebContents> Create(v8::Isolate* isolate,
                                           const mate::Dictionary& options);
+
+  // Create a new V8 wrapper for an existing |web_content|.
+  //
+  // The lifetime of |web_contents| will be managed by this class.
+  static mate::Handle<WebContents> CreateAndTake(
+      v8::Isolate* isolate,
+      std::unique_ptr<content::WebContents> web_contents,
+      Type type);
+
+  // Get the V8 wrapper of |web_content|, return empty handle if not wrapped.
+  static mate::Handle<WebContents> From(v8::Isolate* isolate,
+                                        content::WebContents* web_content);
+
+  // Get the V8 wrapper of the |web_contents|, or create one if not existed.
+  //
+  // The lifetime of |web_contents| is NOT managed by this class, and the type
+  // of this wrapper is always REMOTE.
+  static mate::Handle<WebContents> FromOrCreate(
+      v8::Isolate* isolate,
+      content::WebContents* web_contents);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -102,6 +109,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // Notifies to destroy any guest web contents before destroying self.
   void DestroyWebContents(bool async);
 
+  void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   Type GetType() const;
@@ -249,6 +257,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   v8::Local<v8::Value> GetWebPreferences(v8::Isolate* isolate) const;
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
 
+  bool IsRemoteModuleEnabled() const;
+
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow() const;
 
@@ -279,16 +289,21 @@ class WebContents : public mate::TrackableObject<WebContents>,
                            content::NavigationHandle* navigation_handle);
 
  protected:
+  // Does not manage lifetime of |web_contents|.
+  WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
+  // Takes over ownership of |web_contents|.
   WebContents(v8::Isolate* isolate,
-              content::WebContents* web_contents,
+              std::unique_ptr<content::WebContents> web_contents,
               Type type);
+  // Creates a new content::WebContents.
   WebContents(v8::Isolate* isolate, const mate::Dictionary& options);
   ~WebContents() override;
 
-  void InitWithSessionAndOptions(v8::Isolate* isolate,
-                                 content::WebContents* web_contents,
-                                 mate::Handle<class Session> session,
-                                 const mate::Dictionary& options);
+  void InitWithSessionAndOptions(
+      v8::Isolate* isolate,
+      std::unique_ptr<content::WebContents> web_contents,
+      mate::Handle<class Session> session,
+      const mate::Dictionary& options);
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
@@ -402,10 +417,10 @@ class WebContents : public mate::TrackableObject<WebContents>,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor(SkColor theme_color) override;
 
-  // brightray::InspectableWebContentsDelegate:
+  // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
 
-  // brightray::InspectableWebContentsViewDelegate:
+  // InspectableWebContentsViewDelegate:
   void DevToolsFocused() override;
   void DevToolsOpened() override;
   void DevToolsClosed() override;
@@ -425,7 +440,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
 #if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
-  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const override;
 #endif
 
   // Called when we receive a CursorChange message from chromium.

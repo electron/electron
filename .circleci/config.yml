@@ -1,3 +1,12 @@
+# The config expects the following environment variables to be set:
+#  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
+#
+# The publishing scripts expect access tokens to be defined as env vars,
+# but those are not covered here.
+#
+# CircleCI docs on variables:
+# https://circleci.com/docs/2.0/env-vars/
+
 # Build machines configs.
 docker-image: &docker-image
   docker:
@@ -24,6 +33,7 @@ env-testing-build: &env-testing-build
 
 env-release-build: &env-release-build
   GN_CONFIG: //electron/build/args/release.gn
+  STRIP_BINARIES: true
 
 env-headless-testing: &env-headless-testing
   DISPLAY: ':99.0'
@@ -32,13 +42,13 @@ env-stack-dumping: &env-stack-dumping
   ELECTRON_ENABLE_STACK_DUMPING: '1'
 
 env-browsertests: &env-browsertests
-  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
-  BUILD_TARGET: electron:chromium_browsertests
+  GN_CONFIG: //electron/build/args/native_tests.gn
+  BUILD_TARGET: electron/spec:chromium_browsertests
   TESTS_CONFIG: src/electron/spec/configs/browsertests.yml
 
 env-unittests: &env-unittests
-  GN_EXTRA_ARGS: 'is_component_ffmpeg = false'
-  BUILD_TARGET: electron:chromium_unittests
+  GN_CONFIG: //electron/build/args/native_tests.gn
+  BUILD_TARGET: electron/spec:chromium_unittests
   TESTS_CONFIG: src/electron/spec/configs/unittests.yml
 
 # Build targets options.
@@ -160,12 +170,14 @@ step-electron-build: &step-electron-build
       cd src
       ninja -C out/Default electron -j18
 
-step-electron-dist-strip: &step-electron-dist-strip
+step-maybe-electron-dist-strip: &step-maybe-electron-dist-strip
   run:
     name: Strip electron binaries
     command: |
-      cd src
-      electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+      if [ "$STRIP_BINARIES" == "true" ]; then
+        cd src
+        electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH"
+      fi
 
 step-electron-dist-build: &step-electron-dist-build
   run:
@@ -308,20 +320,30 @@ step-mksnapshot-store: &step-mksnapshot-store
     path: src/out/Default/mksnapshot.zip
     destination: mksnapshot.zip
 
-step-generate-breakpad-symbols: &step-generate-breakpad-symbols
+step-build-dump-syms: &step-build-dump-syms
   run:
-    name: Generate breakpad symbols
-    environment:
-      # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
-      ELECTRON_OUT_DIR: Default
+    name: Build dump_syms binary
     command: |
       cd src
-
       # Build needed dump_syms executable
       ninja -C out/Default third_party/breakpad:dump_syms
 
-      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
-      electron/script/zip-symbols.py
+step-generate-breakpad-symbols: &step-generate-breakpad-symbols
+  run:
+    name: Generate breakpad symbols
+    command: |
+      cd src
+      export BUILD_PATH="$PWD/out/Default"
+      export DEST_PATH="$BUILD_PATH/electron.breakpad.syms"
+      electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
+
+step-zip-symbols: &step-zip-symbols
+  run:
+    name: Zip symbols
+    command: |
+      cd src
+      export BUILD_PATH="$PWD/out/Default"
+      electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
   run:
@@ -440,6 +462,7 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     # Electron app
     - *step-electron-build
+    - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
 
@@ -454,7 +477,9 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     # Breakpad symbols.
     # TODO(alexeykuzmin): We should do it only in nightly builds.
+    - *step-build-dump-syms
     - *step-generate-breakpad-symbols
+    - *step-zip-symbols
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
@@ -472,10 +497,12 @@ steps-electron-build-for-publish: &steps-electron-build-for-publish
 
     # Electron app
     - *step-electron-build
-    - *step-electron-dist-strip
+    - *step-maybe-electron-dist-strip
     - *step-electron-dist-build
     - *step-electron-dist-store
+    - *step-build-dump-syms
     - *step-generate-breakpad-symbols
+    - *step-zip-symbols
 
     # mksnapshot
     - *step-mksnapshot-build
@@ -571,7 +598,8 @@ steps-native-tests: &steps-native-tests
           python src/electron/script/native-tests.py run \
             --config $TESTS_CONFIG \
             --tests-dir src/out/Default \
-            --output-dir test_results
+            --output-dir test_results  \
+            $TESTS_ARGS
 
     - store_artifacts:
         path: test_results
@@ -694,6 +722,12 @@ jobs:
 
   linux-x64-checkout:
     <<: *machine-linux-2xlarge
+    <<: *steps-checkout
+
+  linux-x64-checkout-no-patches:
+    <<: *machine-linux-2xlarge
+    environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False'
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -929,7 +963,23 @@ jobs:
     <<: *machine-linux-2xlarge
     environment:
       <<: *env-unittests
-      <<: *env-testing-build
+      <<: *env-enable-sccache
+      <<: *env-headless-testing
+    <<: *steps-native-tests
+
+  linux-x64-disabled-unittests:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-unittests
+      <<: *env-enable-sccache
+      <<: *env-headless-testing
+      TESTS_ARGS: '--run-only-disabled-tests'
+    <<: *steps-native-tests
+
+  linux-x64-chromium-unittests:
+    <<: *machine-linux-2xlarge
+    environment:
+      <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
     <<: *steps-native-tests
@@ -1207,3 +1257,13 @@ workflows:
       - linux-x64-unittests:
           requires:
             - linux-x64-checkout
+
+      - linux-x64-disabled-unittests:
+          requires:
+            - linux-x64-checkout
+
+      - linux-x64-checkout-no-patches
+
+      - linux-x64-chromium-unittests:
+          requires:
+            - linux-x64-checkout-no-patches

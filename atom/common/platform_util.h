@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/callback_forward.h"
+#include "base/files/file_path.h"
 #include "build/build_config.h"
 
 #if defined(OS_WIN)
@@ -15,10 +16,6 @@
 #endif
 
 class GURL;
-
-namespace base {
-class FilePath;
-}
 
 namespace platform_util {
 
@@ -32,6 +29,11 @@ bool ShowItemInFolder(const base::FilePath& full_path);
 // Must be called from the UI thread.
 bool OpenItem(const base::FilePath& full_path);
 
+struct OpenExternalOptions {
+  bool activate = true;
+  base::FilePath working_dir;
+};
+
 // Open the given external protocol URL in the desktop's default manner.
 // (For example, mailto: URLs in the default mail user agent.)
 bool OpenExternal(
@@ -40,7 +42,7 @@ bool OpenExternal(
 #else
     const GURL& url,
 #endif
-    bool activate);
+    const OpenExternalOptions& options);
 
 // The asynchronous version of OpenExternal.
 void OpenExternal(
@@ -49,7 +51,7 @@ void OpenExternal(
 #else
     const GURL& url,
 #endif
-    bool activate,
+    const OpenExternalOptions& options,
     const OpenExternalCallback& callback);
 
 // Move a file to trash.
@@ -60,6 +62,12 @@ void Beep();
 #if defined(OS_MACOSX)
 bool GetLoginItemEnabled();
 void SetLoginItemEnabled(bool enabled);
+#endif
+
+#if defined(OS_LINUX)
+// Returns a success flag.
+// Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
+bool GetDesktopName(std::string* setme);
 #endif
 
 }  // namespace platform_util

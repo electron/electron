@@ -1,11 +1,16 @@
 'use strict'
 
 const assert = require('assert')
+const chai = require('chai')
+const dirtyChai = require('dirty-chai')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
 
-const { remote } = require('electron')
+const { remote, ipcRenderer } = require('electron')
+const { expect } = chai
+
+chai.use(dirtyChai)
 
 const comparePaths = (path1, path2) => {
   if (process.platform === 'win32') {
@@ -22,7 +27,29 @@ describe('remote module', () => {
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
 
+  describe('remote.getGlobal', () => {
+    it('can return custom values', () => {
+      ipcRenderer.send('handle-next-remote-get-global', { test: 'Hello World!' })
+      expect(remote.getGlobal('test')).to.be.equal('Hello World!')
+    })
+
+    it('throws when no returnValue set', () => {
+      ipcRenderer.send('handle-next-remote-get-global')
+      expect(() => remote.getGlobal('process')).to.throw('Invalid global: process')
+    })
+  })
+
   describe('remote.require', () => {
+    it('can return custom values', () => {
+      ipcRenderer.send('handle-next-remote-require', { test: 'Hello World!' })
+      expect(remote.require('test')).to.be.equal('Hello World!')
+    })
+
+    it('throws when no returnValue set', () => {
+      ipcRenderer.send('handle-next-remote-require')
+      expect(() => remote.require('electron')).to.throw('Invalid module: electron')
+    })
+
     it('should returns same object for the same module', () => {
       const dialog1 = remote.require('electron')
       const dialog2 = remote.require('electron')

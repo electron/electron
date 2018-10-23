@@ -1396,6 +1396,46 @@ describe('BrowserWindow module', () => {
       })
     })
 
+    describe('"enableRemoteModule" option', () => {
+      const generateSpecs = (description, sandbox) => {
+        describe(description, () => {
+          const preload = path.join(fixtures, 'module', 'preload-remote.js')
+
+          it('enables the remote module by default', async () => {
+            const w = await openTheWindow({
+              show: false,
+              webPreferences: {
+                nodeIntegration: false,
+                preload,
+                sandbox
+              }
+            })
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            expect(remote).to.equal('object')
+          })
+
+          it('disables the remote module when false', async () => {
+            const w = await openTheWindow({
+              show: false,
+              webPreferences: {
+                nodeIntegration: false,
+                preload,
+                sandbox,
+                enableRemoteModule: false
+              }
+            })
+            w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            expect(remote).to.equal('undefined')
+          })
+        })
+      }
+
+      generateSpecs('without sandbox', false)
+      generateSpecs('with sandbox', true)
+    })
+
     describe('"sandbox" option', () => {
       function waitForEvents (emitter, events, callback) {
         let count = events.length
@@ -1515,41 +1555,42 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      it('should open windows in another domain with cross-scripting disabled', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
+      it('should open windows in another domain with cross-scripting disabled', async () => {
+        const w = await openTheWindow({
           show: false,
           webPreferences: {
             sandbox: true,
-            preload: preload
+            preload
           }
         })
+
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
-        let popupWindow
         w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'window-open-external' })
-        w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
-          assert.strictEqual(url, 'http://www.google.com/#q=electron')
-          assert.strictEqual(options.width, 505)
-          assert.strictEqual(options.height, 605)
-          ipcMain.once('child-loaded', function (event, openerIsNull, html) {
-            assert(openerIsNull)
-            assert.strictEqual(html, '<h1>http://www.google.com/#q=electron</h1>')
-            ipcMain.once('answer', function (event, exceptionMessage) {
-              assert(/Blocked a frame with origin/.test(exceptionMessage))
+        const expectedPopupUrl = 'http://www.google.com/#q=electron' // Set in the "sandbox.html".
 
-              // FIXME this popup window should be closed in sandbox.html
-              closeWindow(popupWindow, { assertSingleWindow: false }).then(() => {
-                popupWindow = null
-                done()
-              })
-            })
-            w.webContents.send('child-loaded')
-          })
-        })
+        // The page is going to open a popup that it won't be able to close.
+        // We have to close it from here later.
+        // XXX(alexeykuzmin): It will leak if the test fails too soon.
+        const [, popupWindow] = await emittedOnce(app, 'browser-window-created')
 
-        app.once('browser-window-created', function (event, window) {
-          popupWindow = window
-        })
+        // Wait for a message from the popup's preload script.
+        const [, openerIsNull, html, locationHref] = await emittedOnce(ipcMain, 'child-loaded')
+        expect(openerIsNull).to.be.true('window.opener is not null')
+        expect(html).to.equal(`<h1>${expectedPopupUrl}</h1>`,
+          'looks like a http: request has not been intercepted locally')
+        expect(locationHref).to.equal(expectedPopupUrl)
+
+        // Ask the page to access the popup.
+        w.webContents.send('touch-the-popup')
+        const [, exceptionMessage] = await emittedOnce(ipcMain, 'answer')
+
+        // We don't need the popup anymore, and its parent page can't close it,
+        // so let's close it from here before we run any checks.
+        await closeWindow(popupWindow, { assertSingleWindow: false })
+
+        expect(exceptionMessage).to.be.a('string',
+          `child's .document is accessible from its parent window`)
+        expect(exceptionMessage).to.match(/^Blocked a frame with origin/)
       })
 
       it('should inherit the sandbox setting in opened windows', (done) => {
@@ -2974,11 +3015,20 @@ describe('BrowserWindow module', () => {
         c.show()
         assert.strictEqual(w.isEnabled(), false)
       })
-      it('enables parent window when closed', (done) => {
+      it('re-enables an enabled parent window when closed', (done) => {
         c.once('closed', () => {
           assert.strictEqual(w.isEnabled(), true)
           done()
         })
+        c.show()
+        c.close()
+      })
+      it('does not re-enable a disabled parent window when closed', (done) => {
+        c.once('closed', () => {
+          assert.strictEqual(w.isEnabled(), false)
+          done()
+        })
+        w.setEnabled(false)
         c.show()
         c.close()
       })

@@ -97,7 +97,7 @@ def main():
 
   with scoped_cwd(SOURCE_ROOT):
     update_version(version, suffix)
-    update_win_rc(version, versions)
+    update_win_rc(version, versions, args.bump == "nightly")
     update_version_h(versions, suffix)
     update_info_plist(version)
     update_package_json(version, suffix)
@@ -120,7 +120,7 @@ def update_version(version, suffix):
     f.write(version + suffix)
 
 
-def update_win_rc(version, versions):
+def update_win_rc(version, versions, is_nightly_version):
   pattern_fv = re.compile(' FILEVERSION [0-9,]+')
   pattern_pv = re.compile(' PRODUCTVERSION [0-9,]+')
   pattern_fvs = re.compile(' *VALUE "FileVersion", "[0-9.]+"')
@@ -134,7 +134,10 @@ def update_win_rc(version, versions):
   for i in range(0, len(lines)):
     line = lines[i]
     if pattern_fv.match(line):
-      lines[i] = ' FILEVERSION {0}\r\n'.format(','.join(versions))
+      versions_64_bit = versions[::]
+      if is_nightly_version:
+        versions_64_bit[3] = '0'
+      lines[i] = ' FILEVERSION {0}\r\n'.format(','.join(versions_64_bit))
     elif pattern_pv.match(line):
       lines[i] = ' PRODUCTVERSION {0}\r\n'.format(','.join(versions))
     elif pattern_fvs.match(line):

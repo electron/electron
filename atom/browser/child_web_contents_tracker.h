@@ -5,19 +5,25 @@
 #ifndef ATOM_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
 #define ATOM_BROWSER_CHILD_WEB_CONTENTS_TRACKER_H_
 
-#include "content/public/browser/web_contents_observer.h"
+#include <string>
+
+#include "content/public/browser/web_contents_user_data.h"
 
 namespace atom {
 
 // ChildWebContentsTracker tracks child WebContents
 // created by native `window.open()`
-class ChildWebContentsTracker : public content::WebContentsObserver {
- public:
-  explicit ChildWebContentsTracker(content::WebContents* web_contents);
-  static bool IsChildWebContents(content::WebContents* web_contents);
+struct ChildWebContentsTracker
+    : public content::WebContentsUserData<ChildWebContentsTracker> {
+  GURL url;
+  std::string frame_name;
 
- protected:
-  void WebContentsDestroyed() override;
+  explicit ChildWebContentsTracker(content::WebContents* web_contents) {}
+
+ private:
+  friend class content::WebContentsUserData<ChildWebContentsTracker>;
+
+  DISALLOW_COPY_AND_ASSIGN(ChildWebContentsTracker);
 };
 
 }  // namespace atom

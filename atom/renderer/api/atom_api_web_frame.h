@@ -58,7 +58,6 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   // Set the provider that will be used by SpellCheckClient for spell check.
   void SetSpellCheckProvider(mate::Arguments* args,
                              const std::string& language,
-                             bool auto_spell_correct_turned_on,
                              v8::Local<v8::Object> provider);
 
   void RegisterURLSchemeAsBypassingCSP(const std::string& scheme);

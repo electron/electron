@@ -13,11 +13,14 @@ const BLACKLIST = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
   ['atom', 'browser', 'mac', 'atom_application_delegate.h'],
   ['atom', 'browser', 'resources', 'win', 'resource.h'],
+  ['atom', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_menu_controller.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_ns_window_delegate.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_preview_item.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'atom_touch_bar.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'atom_inspectable_web_contents_view.h'],
+  ['atom', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'touch_bar_forward_declarations.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
   ['atom', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
@@ -26,17 +29,6 @@ const BLACKLIST = new Set([
   ['atom', 'common', 'common_message_generator.h'],
   ['atom', 'common', 'node_includes.h'],
   ['atom', 'node', 'osfhandle.cc'],
-  ['brightray', 'browser', 'mac', 'bry_inspectable_web_contents_view.h'],
-  ['brightray', 'browser', 'mac', 'event_dispatching_window.h'],
-  ['brightray', 'browser', 'mac', 'notification_center_delegate.h'],
-  ['brightray', 'browser', 'win', 'notification_presenter_win7.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'common.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
-    'desktop_notification_controller.cc'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications',
-    'desktop_notification_controller.h'],
-  ['brightray', 'browser', 'win', 'win32_desktop_notifications', 'toast.h'],
-  ['brightray', 'browser', 'win', 'win32_notification.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js']
 ].map(tokens => path.join(SOURCE_ROOT, ...tokens)))
 
@@ -51,6 +43,11 @@ const LINTERS = [ {
   roots: ['atom', 'brightray'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
+    if (opts.fix) {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames])
+    } else {
+      spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
+    }
     const result = childProcess.spawnSync('cpplint.py', filenames, { encoding: 'utf8' })
     // cpplint.py writes EVERYTHING to stderr, including status messages
     if (result.stderr) {
@@ -61,7 +58,6 @@ const LINTERS = [ {
       }
     }
     if (result.status) {
-      if (opts.fix) spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames])
       process.exit(result.status)
     }
   }
@@ -157,7 +153,7 @@ async function findFiles (args, linter) {
   if (args.changed) {
     whitelist = await findChangedFiles(SOURCE_ROOT)
     if (!whitelist.size) {
-      return filenames
+      return []
     }
   }
 
@@ -183,7 +179,10 @@ async function findFiles (args, linter) {
     filenames = filenames.filter(x => whitelist.has(x))
   }
 
-  return filenames
+  // it's important that filenames be relative otherwise clang-format will
+  // produce patches with absolute paths in them, which `git apply` will refuse
+  // to apply.
+  return filenames.map(x => path.relative(SOURCE_ROOT, x))
 }
 
 async function main () {

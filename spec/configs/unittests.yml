@@ -10,6 +10,7 @@ tests:
           - RTLTest*
           - SysStrings*
           - UTFOffsetStringConversionsTest*
+          - WeakPtrDeathTest*
   - cc_unittests
   - cc_blink_unittests
   - content_unittests:
@@ -75,8 +76,7 @@ tests:
         # TODO(alexeykuzmin): Should it be fixed?
         - LiveRangeUnitTest*
   # Blink
-# TODO: Enable in Ch68.
-#  - blink_common_unittests
+  - blink_common_unittests
   - blink_heap_unittests
   - blink_platform_unittests:
       disabled:

@@ -21,8 +21,6 @@
 #include "base/json/json_reader.h"
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "chrome/browser/printing/print_preview_message_handler.h"
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/common/pref_names.h"
@@ -30,6 +28,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
@@ -37,7 +36,17 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/security_style_explanation.h"
 #include "content/public/browser/security_style_explanations.h"
+#include "printing/buildflags/buildflags.h"
 #include "storage/browser/fileapi/isolated_context.h"
+
+#if BUILDFLAG(ENABLE_OSR)
+#include "atom/browser/osr/osr_render_widget_host_view.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "atom/browser/atom_print_preview_message_handler.h"
+#include "chrome/browser/printing/print_view_manager_basic.h"
+#endif
 
 using content::BrowserThread;
 
@@ -168,8 +177,10 @@ void CommonWebContentsDelegate::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
+#if BUILDFLAG(ENABLE_PRINTING)
   printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
-  printing::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
+  AtomPrintPreviewMessageHandler::CreateForWebContents(web_contents);
+#endif
 
   // Determien whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
@@ -177,7 +188,7 @@ void CommonWebContentsDelegate::InitWithWebContents(
       !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  web_contents_.reset(brightray::InspectableWebContents::Create(
+  web_contents_.reset(InspectableWebContents::Create(
       web_contents, browser_context->prefs(), is_guest));
   web_contents_->SetDelegate(this);
 }
@@ -201,6 +212,11 @@ void CommonWebContentsDelegate::SetOwnerWindow(
     web_contents->RemoveUserData(
         NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
+#if BUILDFLAG(ENABLE_OSR)
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (osr_rwhv)
+    osr_rwhv->SetNativeWindow(owner_window);
+#endif
 }
 
 void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
@@ -213,11 +229,12 @@ void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
     // is required to get the right quit closure for the main message loop.
     base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
         FROM_HERE,
-        base::BindOnce([](scoped_refptr<AtomBrowserContext> browser_context,
-                          std::unique_ptr<brightray::InspectableWebContents>
-                              web_contents) { web_contents.reset(); },
-                       base::RetainedRef(browser_context_),
-                       std::move(web_contents_)));
+        base::BindOnce(
+            [](scoped_refptr<AtomBrowserContext> browser_context,
+               std::unique_ptr<InspectableWebContents> web_contents) {
+              web_contents.reset();
+            },
+            base::RetainedRef(browser_context_), std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }
@@ -235,6 +252,13 @@ content::WebContents* CommonWebContentsDelegate::GetDevToolsWebContents()
     return nullptr;
   return web_contents_->GetDevToolsWebContents();
 }
+
+#if BUILDFLAG(ENABLE_OSR)
+OffScreenRenderWidgetHostView*
+CommonWebContentsDelegate::GetOffScreenRenderWidgetHostView() const {
+  return nullptr;
+}
+#endif
 
 content::WebContents* CommonWebContentsDelegate::OpenURLFromTab(
     content::WebContents* source,
@@ -260,7 +284,11 @@ content::ColorChooser* CommonWebContentsDelegate::OpenColorChooser(
     content::WebContents* web_contents,
     SkColor color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
+#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
   return chrome::ShowColorChooser(web_contents, color);
+#else
+  return nullptr;
+#endif
 }
 
 void CommonWebContentsDelegate::RunFileChooser(

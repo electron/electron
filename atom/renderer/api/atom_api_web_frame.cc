@@ -215,15 +215,14 @@ int WebFrame::GetWebFrameId(v8::Local<v8::Value> content_window) {
 
 void WebFrame::SetSpellCheckProvider(mate::Arguments* args,
                                      const std::string& language,
-                                     bool auto_spell_correct_turned_on,
                                      v8::Local<v8::Object> provider) {
   if (!provider->Has(mate::StringToV8(args->isolate(), "spellCheck"))) {
     args->ThrowError("\"spellCheck\" has to be defined");
     return;
   }
 
-  auto client = std::make_unique<SpellCheckClient>(
-      language, auto_spell_correct_turned_on, args->isolate(), provider);
+  auto client =
+      std::make_unique<SpellCheckClient>(language, args->isolate(), provider);
   // Set spellchecker for all live frames in the same process or
   // in the sandbox mode for all live sub frames to this WebFrame.
   FrameSpellChecker spell_checker(

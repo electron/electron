@@ -82,7 +82,7 @@ class BrowserWindow : public TopLevelWindow,
 
  private:
 #if defined(OS_MACOSX)
-  void OverrideNSWindowContentView(brightray::InspectableWebContents* iwc);
+  void OverrideNSWindowContentView(InspectableWebContents* iwc);
 #endif
 
   // Helpers.

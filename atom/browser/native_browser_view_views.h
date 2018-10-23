@@ -12,7 +12,7 @@ namespace atom {
 class NativeBrowserViewViews : public NativeBrowserView {
  public:
   explicit NativeBrowserViewViews(
-      brightray::InspectableWebContents* inspectable_web_contents);
+      InspectableWebContents* inspectable_web_contents);
   ~NativeBrowserViewViews() override;
 
   uint8_t GetAutoResizeFlags() { return auto_resize_flags_; }

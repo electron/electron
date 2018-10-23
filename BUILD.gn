@@ -8,7 +8,6 @@ import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
 import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
-import("//third_party/widevine/cdm/widevine.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
@@ -207,11 +206,11 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
+    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/printing/common",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
@@ -222,7 +221,6 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
-    "//printing",
     "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
@@ -295,15 +293,7 @@ static_library("electron_lib") {
   sources = filenames.lib_sources
   set_sources_assignment_filter(sources_assignment_filter)
 
-  sources += [
-    "$target_gen_dir/atom_natives.h",
-    "//extensions/browser/app_window/size_constraints.cc",
-    "//extensions/browser/app_window/size_constraints.h",
-    "//extensions/common/constants.cc",
-    "//extensions/common/constants.h",
-    "//extensions/common/url_pattern.cc",
-    "//extensions/common/url_pattern.h",
-  ]
+  sources += [ "$target_gen_dir/atom_natives.h" ]
 
   if (is_component_build) {
     defines += [ "NODE_SHARED_MODE" ]
@@ -367,10 +357,10 @@ static_library("electron_lib") {
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
+
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
-    sources += filenames.lib_sources_win
     libs += [ "dwmapi.lib" ]
   }
   if (is_linux || is_win) {
@@ -437,18 +427,67 @@ static_library("electron_lib") {
     ]
   }
 
-  if (enable_pepper_flash) {
-    deps += [ "components/pepper_flash" ]
+  if (enable_basic_printing) {
+    deps += [
+      "//chrome/common:mojo_bindings",
+      "//chrome/services/printing:lib",
+      "//components/printing/browser",
+      "//components/printing/common",
+      "//components/printing/renderer",
+      "//components/services/pdf_compositor/public/cpp:utils",
+      "//components/services/pdf_compositor/public/interfaces",
+      "//printing",
+    ]
+
+    sources += [
+      "//chrome/browser/printing/print_job.cc",
+      "//chrome/browser/printing/print_job.h",
+      "//chrome/browser/printing/print_job_manager.cc",
+      "//chrome/browser/printing/print_job_manager.h",
+      "//chrome/browser/printing/print_job_worker.cc",
+      "//chrome/browser/printing/print_job_worker.h",
+      "//chrome/browser/printing/print_preview_message_handler.cc",
+      "//chrome/browser/printing/print_preview_message_handler.h",
+      "//chrome/browser/printing/print_view_manager_base.cc",
+      "//chrome/browser/printing/print_view_manager_base.h",
+      "//chrome/browser/printing/print_view_manager_basic.cc",
+      "//chrome/browser/printing/print_view_manager_basic.h",
+      "//chrome/browser/printing/print_view_manager_common.cc",
+      "//chrome/browser/printing/print_view_manager_common.h",
+      "//chrome/browser/printing/printer_manager_dialog.h",
+      "//chrome/browser/printing/printer_manager_dialog_linux.cc",
+      "//chrome/browser/printing/printer_manager_dialog_mac.mm",
+      "//chrome/browser/printing/printer_manager_dialog_win.cc",
+      "//chrome/browser/printing/printer_query.cc",
+      "//chrome/browser/printing/printer_query.h",
+      "//chrome/browser/printing/printing_message_filter.cc",
+      "//chrome/browser/printing/printing_message_filter.h",
+      "//chrome/renderer/prerender/prerender_dispatcher.cc",
+      "//chrome/renderer/prerender/prerender_dispatcher.h",
+      "//chrome/renderer/prerender/prerender_extra_data.cc",
+      "//chrome/renderer/prerender/prerender_extra_data.h",
+      "//chrome/renderer/prerender/prerender_helper.cc",
+      "//chrome/renderer/prerender/prerender_helper.h",
+      "//chrome/renderer/prerender/prerenderer_client.cc",
+      "//chrome/renderer/prerender/prerenderer_client.h",
+      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.cc",
+      "//chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h",
+      "//electron/atom/browser/atom_print_preview_message_handler.cc",
+      "//electron/atom/browser/atom_print_preview_message_handler.h",
+    ]
+
+    if (is_win) {
+      sources += [
+        "//chrome/browser/printing/pdf_to_emf_converter.cc",
+        "//chrome/browser/printing/pdf_to_emf_converter.h",
+        "//chrome/utility/printing_handler.cc",
+        "//chrome/utility/printing_handler.h",
+      ]
+    }
   }
 
-  if (enable_widevine) {
-    sources += [
-      "//chrome/renderer/media/chrome_key_systems.cc",
-      "//chrome/renderer/media/chrome_key_systems.h",
-      "//chrome/renderer/media/chrome_key_systems_provider.cc",
-      "//chrome/renderer/media/chrome_key_systems_provider.h",
-    ]
-    deps += [ "//components/cdm/renderer" ]
+  if (enable_pepper_flash) {
+    deps += [ "components/pepper_flash" ]
   }
 }
 
@@ -750,6 +789,16 @@ if (is_mac) {
         "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
         "/DELAYLOAD:api-ms-win-core-winrt-string-l1-1-0.dll",
       ]
+
+      # This is to support renaming of electron.exe. node-gyp has hard-coded
+      # executable names which it will recognise as node. This module definition
+      # file claims that the electron executable is in fact named "node.exe",
+      # which is one of the executable names that node-gyp recognizes.
+      # See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
+      ldflags += [ "/DEF:" + rebase_path("build/electron.def", root_build_dir) ]
+      inputs = [
+        "build/electron.def",
+      ]
     }
     if (is_linux) {
       ldflags = [ "-pie" ]
@@ -759,72 +808,6 @@ if (is_mac) {
       }
     }
   }
-}
-
-group("electron_tests") {
-  testonly = true
-
-  deps = [
-    ":chromium_browsertests",
-    ":chromium_unittests",
-  ]
-}
-
-group("chromium_unittests") {
-  testonly = true
-
-  deps = [
-    "//base:base_unittests",
-    "//cc:cc_unittests",
-    "//content/test:content_unittests",
-    "//crypto:crypto_unittests",
-    "//device:device_unittests",
-    "//gin:gin_unittests",
-    "//gpu:gpu_unittests",
-    "//ipc:ipc_tests",
-    "//media:media_unittests",
-    "//media/capture:capture_unittests",
-    "//media/midi:midi_unittests",
-    "//media/mojo:media_mojo_unittests",
-    "//mojo:mojo_unittests",
-    "//net:net_unittests",
-    "//ppapi:ppapi_unittests",
-    "//printing:printing_unittests",
-    "//skia:skia_unittests",
-    "//sql:sql_unittests",
-    "//storage:storage_unittests",
-    "//third_party/angle/src/tests:angle_unittests",
-    "//third_party/blink/public:all_blink",
-    "//third_party/blink/public:test_support",
-    "//third_party/leveldatabase:env_chromium_unittests",
-    "//ui/base:ui_base_unittests",
-    "//ui/compositor:compositor_unittests",
-    "//ui/display:display_unittests",
-    "//ui/events:events_unittests",
-    "//ui/gl:gl_unittests",
-    "//url:url_unittests",
-    "//url/ipc:url_ipc_unittests",
-    "//v8/test/unittests:unittests",
-  ]
-
-  if (is_linux) {
-    deps += [
-      "//net:disk_cache_memory_test",
-      "//sandbox/linux:sandbox_linux_unittests",
-    ]
-
-    if (use_dbus) {
-      deps += [ "//dbus:dbus_unittests" ]
-    }
-  }
-}
-
-group("chromium_browsertests") {
-  testonly = true
-
-  deps = [
-    "//content/test:content_browsertests",
-  ]
 }
 
 template("dist_zip") {
@@ -948,6 +931,10 @@ group("electron_content_manifest_overlays") {
 service_manifest("electron_content_packaged_services_manifest_overlay") {
   source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
   packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
+
+  if (enable_basic_printing) {
+    packaged_services += [ "//chrome/services/printing:manifest" ]
+  }
 }
 
 service_manifest("electron_content_browser_manifest_overlay") {

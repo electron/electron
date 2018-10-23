@@ -17,10 +17,10 @@
 #include "atom/browser/net/atom_network_delegate.h"
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
+#include "atom/browser/net/require_ct_delegate.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
-#include "brightray/browser/net/require_ct_delegate.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_constants.h"
 #include "chrome/common/chrome_switches.h"
@@ -317,7 +317,7 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
     network_delegate_ = network_delegate.get();
     builder->set_network_delegate(std::move(network_delegate));
 
-    ct_delegate_.reset(new brightray::RequireCTDelegate);
+    ct_delegate_.reset(new RequireCTDelegate);
     auto cert_verifier = std::make_unique<AtomCertVerifier>(ct_delegate_.get());
     builder->SetCertVerifier(std::move(cert_verifier));
 

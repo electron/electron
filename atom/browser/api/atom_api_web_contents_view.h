@@ -9,11 +9,9 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "native_mate/handle.h"
 
-namespace brightray {
-class InspectableWebContents;
-}
-
 namespace atom {
+
+class InspectableWebContents;
 
 namespace api {
 
@@ -30,7 +28,7 @@ class WebContentsView : public View, public content::WebContentsObserver {
  protected:
   WebContentsView(v8::Isolate* isolate,
                   mate::Handle<WebContents> web_contents,
-                  brightray::InspectableWebContents* iwc);
+                  InspectableWebContents* iwc);
   ~WebContentsView() override;
 
   // content::WebContentsObserver:

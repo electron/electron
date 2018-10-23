@@ -15,6 +15,8 @@
 
 #include "atom/browser/api/atom_api_web_contents.h"
 #include "atom/browser/native_browser_view_views.h"
+#include "atom/browser/ui/inspectable_web_contents.h"
+#include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "atom/browser/ui/views/root_view.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
@@ -23,8 +25,6 @@
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/inspectable_web_contents.h"
-#include "brightray/browser/inspectable_web_contents_view.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "ui/aura/window_tree_host.h"
@@ -344,7 +344,7 @@ bool NativeWindowViews::IsFocused() {
 void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() &&
       !widget()->native_widget_private()->IsVisible())
-    NativeWindow::parent()->SetEnabled(false);
+    static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
   widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
 
@@ -369,7 +369,7 @@ void NativeWindowViews::ShowInactive() {
 
 void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
-    NativeWindow::parent()->SetEnabled(true);
+    static_cast<NativeWindowViews*>(parent())->DecrementChildModals();
 
   widget()->Hide();
 
@@ -393,16 +393,34 @@ bool NativeWindowViews::IsEnabled() {
 #endif
 }
 
+void NativeWindowViews::IncrementChildModals() {
+  num_modal_children_++;
+  SetEnabledInternal(ShouldBeEnabled());
+}
+
+void NativeWindowViews::DecrementChildModals() {
+  if (num_modal_children_ > 0) {
+    num_modal_children_--;
+  }
+  SetEnabledInternal(ShouldBeEnabled());
+}
+
 void NativeWindowViews::SetEnabled(bool enable) {
-  // Handle multiple calls of SetEnabled correctly.
-  if (enable) {
-    --disable_count_;
-    if (disable_count_ != 0)
-      return;
-  } else {
-    ++disable_count_;
-    if (disable_count_ != 1)
-      return;
+  if (enable != is_enabled_) {
+    is_enabled_ = enable;
+    SetEnabledInternal(ShouldBeEnabled());
+  }
+}
+
+bool NativeWindowViews::ShouldBeEnabled() {
+  return is_enabled_ && (num_modal_children_ == 0);
+}
+
+void NativeWindowViews::SetEnabledInternal(bool enable) {
+  if (enable && IsEnabled()) {
+    return;
+  } else if (!enable && !IsEnabled()) {
+    return;
   }
 
 #if defined(OS_WIN)
@@ -1161,10 +1179,10 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::DeleteDelegate() {
-  if (is_modal() && NativeWindow::parent()) {
-    auto* parent = NativeWindow::parent();
+  if (is_modal() && this->parent()) {
+    auto* parent = this->parent();
     // Enable parent window after current window gets closed.
-    parent->SetEnabled(true);
+    static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
     // Focus on parent window.
     parent->Focus(true);
   }

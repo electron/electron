@@ -22,8 +22,12 @@
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/io_thread.h"
+#include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/native_window.h"
+#include "atom/browser/notifications/notification_presenter.h"
+#include "atom/browser/notifications/platform_notification_service.h"
 #include "atom/browser/session_preferences.h"
+#include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
@@ -40,7 +44,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
-#include "chrome/browser/speech/tts_message_filter.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -60,6 +63,7 @@
 #include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
@@ -84,6 +88,14 @@
 #if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 #include "atom/browser/fake_location_provider.h"
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
+
+#if BUILDFLAG(ENABLE_TTS)
+#include "chrome/browser/speech/tts_message_filter.h"
+#endif  // BUILDFLAG(ENABLE_TTS)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/services/printing/public/mojom/constants.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 using content::BrowserThread;
 
@@ -155,7 +167,7 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
     }
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
-    if (!ChildWebContentsTracker::IsChildWebContents(web_contents)) {
+    if (!ChildWebContentsTracker::FromWebContents(web_contents)) {
       // Root WebContents should always create new process to make sure
       // native addons are loaded correctly after reload / navigation.
       // (Non-root WebContents opened by window.open() should try to
@@ -206,8 +218,13 @@ void AtomBrowserClient::RenderProcessWillLaunch(
   if (IsProcessObserved(process_id))
     return;
 
+#if BUILDFLAG(ENABLE_PRINTING)
   host->AddFilter(new printing::PrintingMessageFilter(process_id));
-  host->AddFilter(new TtsMessageFilter(process_id, host->GetBrowserContext()));
+#endif
+
+#if BUILDFLAG(ENABLE_TTS)
+  host->AddFilter(new TtsMessageFilter(host->GetBrowserContext()));
+#endif
 
   ProcessPreferences prefs;
   auto* web_preferences =
@@ -479,6 +496,11 @@ void AtomBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
   additional_schemes->push_back(content::kChromeDevToolsScheme);
 }
 
+void AtomBrowserClient::GetAdditionalWebUISchemes(
+    std::vector<std::string>* additional_schemes) {
+  additional_schemes->push_back(content::kChromeDevToolsScheme);
+}
+
 void AtomBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
   // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
@@ -529,6 +551,12 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
   (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
       base::BindRepeating(&l10n_util::GetStringUTF16,
                           IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
+
+#if BUILDFLAG(ENABLE_PRINTING)
+  (*services)[printing::mojom::kChromePrintingServiceName] =
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);
+#endif
 }
 
 std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
@@ -611,7 +639,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 #else
         escaped_url,
 #endif
-        true);
+        platform_util::OpenExternalOptions());
 }
 
 void HandleExternalProtocolInUI(
@@ -654,6 +682,30 @@ AtomBrowserClient::CreateThrottlesForNavigation(
   std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
   throttles.push_back(std::make_unique<AtomNavigationThrottle>(handle));
   return throttles;
+}
+
+content::MediaObserver* AtomBrowserClient::GetMediaObserver() {
+  return MediaCaptureDevicesDispatcher::GetInstance();
+}
+
+content::DevToolsManagerDelegate*
+AtomBrowserClient::GetDevToolsManagerDelegate() {
+  return new DevToolsManagerDelegate;
+}
+
+NotificationPresenter* AtomBrowserClient::GetNotificationPresenter() {
+  if (!notification_presenter_) {
+    notification_presenter_.reset(NotificationPresenter::Create());
+  }
+  return notification_presenter_.get();
+}
+
+content::PlatformNotificationService*
+AtomBrowserClient::GetPlatformNotificationService() {
+  if (!notification_service_) {
+    notification_service_.reset(new PlatformNotificationService(this));
+  }
+  return notification_service_.get();
 }
 
 }  // namespace atom

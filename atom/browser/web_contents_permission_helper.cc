@@ -9,8 +9,8 @@
 #include <utility>
 
 #include "atom/browser/atom_permission_manager.h"
+#include "atom/browser/media/media_stream_devices_controller.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
-#include "brightray/browser/media/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
 
@@ -38,8 +38,7 @@ namespace {
 void MediaAccessAllowed(const content::MediaStreamRequest& request,
                         content::MediaResponseCallback callback,
                         bool allowed) {
-  brightray::MediaStreamDevicesController controller(request,
-                                                     std::move(callback));
+  MediaStreamDevicesController controller(request, std::move(callback));
   if (allowed)
     controller.TakeAction();
   else

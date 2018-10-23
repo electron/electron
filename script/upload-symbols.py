@@ -29,9 +29,11 @@ def main():
     for pdb in PDB_LIST:
       run_symstore(pdb, SYMBOLS_DIR, PRODUCT_NAME)
     files = glob.glob(SYMBOLS_DIR + '/*.pdb/*/*.pdb')
-    files = [f.lower() for f in files]
   else:
     files = glob.glob(SYMBOLS_DIR + '/*/*/*.sym')
+  # The symbol server needs lowercase paths, it will fail otherwise
+  # So lowercase all the file paths here
+  files = [f.lower() for f in files]
 
   bucket, access_key, secret_key = s3_config()
   upload_symbols(bucket, access_key, secret_key, files)

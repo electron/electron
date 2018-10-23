@@ -81,12 +81,14 @@
       },
       'window-open-external': () => {
         addEventListener('load', () => {
-          ipcRenderer.once('child-loaded', (e) => {
+          ipcRenderer.once('touch-the-popup', () => {
+            let errorMessage = null
             try {
-              let childDoc = popup.document
-            } catch (e) {
-              ipcRenderer.send('answer', e.message)
+              const childDoc = popup.document
+            } catch (error) {
+              errorMessage = error.message
             }
+            ipcRenderer.send('answer', errorMessage)
           })
           popup = open('http://www.google.com/#q=electron', '', 'top=65,left=55,width=505,height=605')
         })

@@ -8,11 +8,15 @@ declare_args() {
   # Allow running Electron as a node binary.
   enable_run_as_node = true
 
-  enable_osr = false
+  enable_osr = true
 
   enable_view_api = false
 
   enable_pdf_viewer = false
+
+  enable_tts = true
+
+  enable_color_chooser = true
 
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you

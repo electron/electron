@@ -32,6 +32,8 @@ class Promise : public base::RefCounted<Promise> {
                               v8::Undefined(isolate()));
   }
 
+  // Promise resolution is a microtask
+  // We use the MicrotasksRunner to trigger the running of pending microtasks
   template <typename T>
   v8::Maybe<bool> Resolve(const T& value) {
     return GetInner()->Resolve(isolate()->GetCurrentContext(),

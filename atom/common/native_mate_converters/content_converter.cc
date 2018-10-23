@@ -206,7 +206,7 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
     content::WebContents* val) {
   if (!val)
     return v8::Null(isolate);
-  return atom::api::WebContents::CreateFrom(isolate, val).ToV8();
+  return atom::api::WebContents::FromOrCreate(isolate, val).ToV8();
 }
 
 // static

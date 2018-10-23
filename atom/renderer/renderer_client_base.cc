@@ -19,14 +19,13 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
-#include "chrome/renderer/tts_dispatcher.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "native_mate/dictionary.h"
+#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -51,6 +50,15 @@
 #include "chrome/renderer/pepper/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
+#if BUILDFLAG(ENABLE_TTS)
+#include "chrome/renderer/tts_dispatcher.h"
+#endif  // BUILDFLAG(ENABLE_TTS)
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
+#include "components/printing/renderer/print_render_frame_helper.h"
+#endif  // BUILDFLAG(ENABLE_PRINTING)
+
 namespace atom {
 
 namespace {
@@ -69,6 +77,15 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
   std::string custom_schemes = command_line->GetSwitchValueASCII(switch_name);
   return base::SplitString(custom_schemes, ",", base::TRIM_WHITESPACE,
                            base::SPLIT_WANT_NONEMPTY);
+}
+
+void SetHiddenValue(v8::Handle<v8::Context> context,
+                    const base::StringPiece& key,
+                    v8::Local<v8::Value> value) {
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::Private> privateKey =
+      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
+  context->Global()->SetPrivate(context, privateKey, value);
 }
 
 }  // namespace
@@ -100,10 +117,13 @@ void RendererClientBase::DidCreateScriptContext(
   auto context_id = base::StringPrintf(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   v8::Isolate* isolate = context->GetIsolate();
-  v8::Local<v8::String> key = mate::StringToSymbol(isolate, "contextId");
-  v8::Local<v8::Private> private_key = v8::Private::ForApi(isolate, key);
-  v8::Local<v8::Value> value = mate::ConvertToV8(isolate, context_id);
-  context->Global()->SetPrivate(context, private_key, value);
+  SetHiddenValue(context, "contextId", mate::ConvertToV8(isolate, context_id));
+
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  bool enableRemoteModule =
+      !command_line->HasSwitch(switches::kDisableRemoteModule);
+  SetHiddenValue(context, "enableRemoteModule",
+                 mate::ConvertToV8(isolate, enableRemoteModule));
 }
 
 void RendererClientBase::AddRenderBindings(
@@ -170,29 +190,36 @@ void RendererClientBase::RenderFrameCreated(
   new PepperHelper(render_frame);
 #endif
   new ContentSettingsObserver(render_frame);
-  new printing::PrintWebViewHelper(render_frame);
+#if BUILDFLAG(ENABLE_PRINTING)
+  new printing::PrintRenderFrameHelper(
+      render_frame, std::make_unique<ChromePrintRenderFrameHelperDelegate>());
+#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Allow access to file scheme from pdf viewer.
   blink::WebSecurityPolicy::AddOriginAccessWhitelistEntry(
       GURL(kPdfViewerUIOrigin), "file", "", true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+  content::RenderView* render_view = render_frame->GetRenderView();
+  if (render_frame->IsMainFrame() && render_view) {
+    blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
+    if (web_frame_widget) {
+      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
+      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
+        web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
+      } else {  // normal window.
+        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
+        SkColor color =
+            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
+        web_frame_widget->SetBaseBackgroundColor(color);
+      }
+    }
+  }
 }
 
 void RendererClientBase::RenderViewCreated(content::RenderView* render_view) {
   new AtomRenderViewObserver(render_view);
-  blink::WebFrameWidget* web_frame_widget = render_view->GetWebFrameWidget();
-  if (!web_frame_widget)
-    return;
-
-  base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-  if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-    web_frame_widget->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-  } else {  // normal window.
-    std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-    SkColor color = name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-    web_frame_widget->SetBaseBackgroundColor(color);
-  }
 }
 
 void RendererClientBase::DidClearWindowObject(
@@ -204,7 +231,11 @@ void RendererClientBase::DidClearWindowObject(
 std::unique_ptr<blink::WebSpeechSynthesizer>
 RendererClientBase::OverrideSpeechSynthesizer(
     blink::WebSpeechSynthesizerClient* client) {
+#if BUILDFLAG(ENABLE_TTS)
   return std::make_unique<TtsDispatcher>(client);
+#else
+  return nullptr;
+#endif
 }
 
 bool RendererClientBase::OverrideCreatePlugin(

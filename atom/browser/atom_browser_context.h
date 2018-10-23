@@ -10,10 +10,10 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/media/media_device_id_salt.h"
 #include "atom/browser/net/url_request_context_getter.h"
 #include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/media/media_device_id_salt.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "content/public/browser/browser_context.h"
 
@@ -152,7 +152,7 @@ class AtomBrowserContext
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
   std::unique_ptr<AtomBlobReader> blob_reader_;
-  std::unique_ptr<brightray::MediaDeviceIDSalt> media_device_id_salt_;
+  std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
 

@@ -10,12 +10,13 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/ui/inspectable_web_contents_delegate.h"
+#include "atom/browser/ui/inspectable_web_contents_impl.h"
+#include "atom/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "base/memory/weak_ptr.h"
-#include "brightray/browser/inspectable_web_contents_delegate.h"
-#include "brightray/browser/inspectable_web_contents_impl.h"
-#include "brightray/browser/inspectable_web_contents_view_delegate.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/public/browser/web_contents_delegate.h"
+#include "electron/buildflags/buildflags.h"
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
 #include "atom/browser/ui/autofill_popup.h"
@@ -31,10 +32,13 @@ class AtomBrowserContext;
 class NativeWindow;
 class WebDialogHelper;
 
-class CommonWebContentsDelegate
-    : public content::WebContentsDelegate,
-      public brightray::InspectableWebContentsDelegate,
-      public brightray::InspectableWebContentsViewDelegate {
+#if BUILDFLAG(ENABLE_OSR)
+class OffScreenRenderWidgetHostView;
+#endif
+
+class CommonWebContentsDelegate : public content::WebContentsDelegate,
+                                  public InspectableWebContentsDelegate,
+                                  public InspectableWebContentsViewDelegate {
  public:
   CommonWebContentsDelegate();
   ~CommonWebContentsDelegate() override;
@@ -56,7 +60,7 @@ class CommonWebContentsDelegate
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
 
-  brightray::InspectableWebContents* managed_web_contents() const {
+  InspectableWebContents* managed_web_contents() const {
     return web_contents_.get();
   }
 
@@ -65,6 +69,11 @@ class CommonWebContentsDelegate
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
  protected:
+#if BUILDFLAG(ENABLE_OSR)
+  virtual OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
+      const;
+#endif
+
   // content::WebContentsDelegate:
   content::WebContents* OpenURLFromTab(
       content::WebContents* source,
@@ -105,7 +114,7 @@ class CommonWebContentsDelegate
   void HideAutofillPopup();
 #endif
 
-  // brightray::InspectableWebContentsDelegate:
+  // InspectableWebContentsDelegate:
   void DevToolsSaveToFile(const std::string& url,
                           const std::string& content,
                           bool save_as) override;
@@ -124,7 +133,7 @@ class CommonWebContentsDelegate
                             const std::string& file_system_path,
                             const std::string& query) override;
 
-  // brightray::InspectableWebContentsViewDelegate:
+  // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MACOSX)
   gfx::ImageSkia GetDevToolsWindowIcon() override;
 #endif
@@ -179,7 +188,7 @@ class CommonWebContentsDelegate
   // Notice that web_contents_ must be placed after dialog_manager_, so we can
   // make sure web_contents_ is destroyed before dialog_manager_, otherwise a
   // crash would happen.
-  std::unique_ptr<brightray::InspectableWebContents> web_contents_;
+  std::unique_ptr<InspectableWebContents> web_contents_;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;

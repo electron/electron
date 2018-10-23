@@ -19,6 +19,7 @@
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/gl_helper.h"
 #include "components/viz/common/quads/render_pass.h"
+#include "content/browser/renderer_host/cursor_manager.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
@@ -264,9 +265,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       callback_(callback),
       frame_rate_(frame_rate),
       scale_factor_(kDefaultScaleFactor),
-      size_(native_window->GetSize()),
+      size_(native_window ? native_window->GetSize() : gfx::Size()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
+      cursor_manager_(new content::CursorManager(this)),
       mouse_wheel_phase_handler_(this),
       weak_ptr_factory_(this) {
   DCHECK(render_widget_host_);
@@ -279,6 +281,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
+
+  current_device_scale_factor_ = 1;
 
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
@@ -308,7 +312,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #endif
   GetCompositor()->SetDelegate(this);
 
-  native_window_->AddObserver(this);
+  if (native_window_)
+    native_window_->AddObserver(this);
 
   ResizeRootLayer(false);
   render_widget_host_->SetView(this);
@@ -351,13 +356,15 @@ OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
 
 void OffScreenRenderWidgetHostView::OnWindowResize() {
   // In offscreen mode call RenderWidgetHostView's SetSize explicitly
-  auto size = native_window_->GetSize();
+  auto size = native_window_ ? native_window_->GetSize() : gfx::Size();
   SetSize(size);
 }
 
 void OffScreenRenderWidgetHostView::OnWindowClosed() {
-  native_window_->RemoveObserver(this);
-  native_window_ = nullptr;
+  if (native_window_) {
+    native_window_->RemoveObserver(this);
+    native_window_ = nullptr;
+  }
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
@@ -445,12 +452,12 @@ void OffScreenRenderWidgetHostView::Show() {
   browser_compositor_->SetRenderWidgetHostIsHidden(false);
 #else
   delegated_frame_host_->SetCompositor(compositor_.get());
-  delegated_frame_host_->WasShown(
-      GetLocalSurfaceId(), GetRootLayer()->bounds().size(), ui::LatencyInfo());
+  delegated_frame_host_->WasShown(GetLocalSurfaceId(),
+                                  GetRootLayer()->bounds().size(), false);
 #endif
 
   if (render_widget_host_)
-    render_widget_host_->WasShown(ui::LatencyInfo());
+    render_widget_host_->WasShown(false);
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
@@ -628,6 +635,10 @@ void OffScreenRenderWidgetHostView::InitAsFullscreen(
 
 void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
 
+content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
+  return cursor_manager_.get();
+}
+
 void OffScreenRenderWidgetHostView::SetIsLoading(bool loading) {}
 
 void OffScreenRenderWidgetHostView::TextInputStateChanged(
@@ -727,10 +738,6 @@ gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize()
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(), scale_factor_);
 }
 
-gfx::Size OffScreenRenderWidgetHostView::GetRequestedRendererSize() const {
-  return GetDelegatedFrameHost()->GetRequestedRendererSize();
-}
-
 content::RenderWidgetHostViewBase*
 OffScreenRenderWidgetHostView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host,
@@ -783,13 +790,14 @@ void OffScreenRenderWidgetHostView::DidReceiveFirstFrameAfterNavigation() {
   render_widget_host_->DidReceiveFirstFrameAfterNavigation();
 }
 
-viz::LocalSurfaceId OffScreenRenderWidgetHostView::GetLocalSurfaceId() const {
+const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
+    const {
   return local_surface_id_;
 }
 
 #endif  // !defined(OS_MACOSX)
 
-viz::FrameSinkId OffScreenRenderWidgetHostView::GetFrameSinkId() {
+const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
   return GetDelegatedFrameHost()->frame_sink_id();
 }
 
@@ -1029,7 +1037,7 @@ void OffScreenRenderWidgetHostView::SynchronizeVisualProperties() {
   ResizeRootLayer(false);
   if (render_widget_host_)
     render_widget_host_->SynchronizeVisualProperties();
-  GetDelegatedFrameHost()->SynchronizeVisualProperties(
+  GetDelegatedFrameHost()->EmbedSurface(
       local_surface_id_, size_, cc::DeadlinePolicy::UseDefaultDeadline());
 }
 
@@ -1240,6 +1248,18 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   }
 }
 
+void OffScreenRenderWidgetHostView::SetNativeWindow(NativeWindow* window) {
+  if (native_window_)
+    native_window_->RemoveObserver(this);
+
+  native_window_ = window;
+
+  if (native_window_)
+    native_window_->AddObserver(this);
+
+  OnWindowResize();
+}
+
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
@@ -1269,7 +1289,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   bool resized = UpdateNSViewAndDisplay();
 #else
   bool resized = true;
-  GetDelegatedFrameHost()->SynchronizeVisualProperties(
+  GetDelegatedFrameHost()->EmbedSurface(
       local_surface_id_, size, cc::DeadlinePolicy::UseDefaultDeadline());
 #endif
 
