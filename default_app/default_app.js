@@ -1,6 +1,8 @@
 const {app, BrowserWindow, ipcMain} = require('electron')
 const path = require('path')
 
+r = require('electron').remote
+
 let mainWindow = null
 
 // Quit when all windows are closed.
@@ -27,6 +29,7 @@ exports.load = (appUrl) => {
     mainWindow = new BrowserWindow(options)
     mainWindow.loadURL(appUrl)
     mainWindow.focus()
+    mainWindow.openDevTools()
   })
 
   ipcMain.on('RUN_IN_MAIN', (event, code) => {
