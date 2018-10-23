@@ -20,12 +20,17 @@
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/logging.h"
+#include "base/mac/bundle_locations.h"
+#include "base/path_service.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "ipc/ipc_buildflags.h"
+#include "services/service_manager/embedder/switches.h"
 #include "services/service_manager/sandbox/switches.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
+#include "ui/base/ui_base_switches.h"
 
 #if BUILDFLAG(IPC_MESSAGE_LOG_ENABLED)
 #define IPC_MESSAGE_MACROS_LOG_ENABLED
@@ -50,6 +55,25 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+// Returns true if this subprocess type needs the ResourceBundle initialized
+// and resources loaded.
+bool SubprocessNeedsResourceBundle(const std::string& process_type) {
+  return
+#if defined(OS_POSIX) && !defined(OS_MACOSX)
+      // The zygote process opens the resources for the renderers.
+      process_type == service_manager::switches::kZygoteProcess ||
+#endif
+#if defined(OS_MACOSX)
+      // Mac needs them too for scrollbar related images and for sandbox
+      // profiles.
+      process_type == ::switches::kPpapiPluginProcess ||
+      process_type == ::switches::kPpapiBrokerProcess ||
+      process_type == ::switches::kGpuProcess ||
+#endif
+      process_type == ::switches::kRendererProcess ||
+      process_type == ::switches::kUtilityProcess;
+}
+
 #if defined(OS_WIN)
 void InvalidParameterHandler(const wchar_t*,
                              const wchar_t*,
@@ -61,6 +85,37 @@ void InvalidParameterHandler(const wchar_t*,
 #endif
 
 }  // namespace
+
+void LoadResourceBundle(const std::string& locale) {
+  const bool initialized = ui::ResourceBundle::HasSharedInstance();
+  if (initialized)
+    ui::ResourceBundle::CleanupSharedInstance();
+
+  // Load other resource files.
+  base::FilePath pak_dir;
+#if defined(OS_MACOSX)
+  pak_dir =
+      base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
+#else
+  base::PathService::Get(base::DIR_MODULE, &pak_dir);
+#endif
+
+  ui::ResourceBundle::InitSharedInstanceWithLocale(
+      locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
+  ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
+  bundle.ReloadLocaleResources(locale);
+  bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
+                             ui::SCALE_FACTOR_NONE);
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  NOTIMPLEMENTED()
+      << "Hi, whoever's fixing PDF support! Thanks! The pdf "
+         "viewer resources haven't been ported over to the GN build yet, so "
+         "you'll probably need to change this bit of code.";
+  bundle.AddDataPackFromPath(
+      pak_dir.Append(FILE_PATH_LITERAL("pdf_viewer_resources.pak")),
+      ui::GetSupportedScaleFactors()[0]);
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+}
 
 AtomMainDelegate::AtomMainDelegate() {}
 
@@ -118,6 +173,8 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   chrome::RegisterPathProvider();
 
 #if defined(OS_MACOSX)
+  OverrideChildProcessPath();
+  OverrideFrameworkBundlePath();
   SetUpBundleOverrides();
 #endif
 
@@ -132,13 +189,22 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   content_client_ = std::make_unique<AtomContentClient>();
   SetContentClient(content_client_.get());
 
-  return brightray::MainDelegate::BasicStartupComplete(exit_code);
+  return false;
 }
 
 void AtomMainDelegate::PreSandboxStartup() {
-  brightray::MainDelegate::PreSandboxStartup();
-
   auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+
+  // Initialize ResourceBundle which handles files loaded from external
+  // sources. The language should have been passed in to us from the
+  // browser process as a command line flag.
+  if (SubprocessNeedsResourceBundle(process_type)) {
+    std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
+    LoadResourceBundle(locale);
+  }
 
   // Only append arguments for browser process.
   if (!IsBrowserProcess(command_line))

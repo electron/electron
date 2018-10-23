@@ -30,8 +30,5 @@ static_library("brightray") {
     "common/application_info_win.cc",
     "common/mac/main_application_bundle.h",
     "common/mac/main_application_bundle.mm",
-    "common/main_delegate.cc",
-    "common/main_delegate.h",
-    "common/main_delegate_mac.mm",
   ]
 }

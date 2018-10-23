@@ -8,12 +8,14 @@
 #include <memory>
 #include <string>
 
-#include "brightray/common/main_delegate.h"
+#include "content/public/app/content_main_delegate.h"
 #include "content/public/common/content_client.h"
 
 namespace atom {
 
-class AtomMainDelegate : public brightray::MainDelegate {
+void LoadResourceBundle(const std::string& locale);
+
+class AtomMainDelegate : public content::ContentMainDelegate {
  public:
   AtomMainDelegate();
   ~AtomMainDelegate() override;
@@ -34,14 +36,10 @@ class AtomMainDelegate : public brightray::MainDelegate {
   bool DelaySandboxInitialization(const std::string& process_type) override;
 #endif
 
-  // brightray::MainDelegate:
-#if defined(OS_MACOSX)
-  void OverrideChildProcessPath() override;
-  void OverrideFrameworkBundlePath() override;
-#endif
-
  private:
 #if defined(OS_MACOSX)
+  void OverrideChildProcessPath();
+  void OverrideFrameworkBundlePath();
   void SetUpBundleOverrides();
 #endif
 
