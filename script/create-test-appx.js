@@ -17,7 +17,6 @@
  * rights and need to restart the script "as administrator".
  */
 
-
 const fs = require('fs-extra')
 const path = require('path')
 const childProcess = require('child_process')
@@ -150,10 +149,10 @@ async function convert () {
 
   // Install the test certificate
   if (!(await isPfxInstalled())) {
-    const warning = `The test certificate is not installed!\n`
-      + `We will now try to install it. If this is not an administrative shell,\n`
-      + `this operation will fail. If that's the case, please run this script\n`
-      + `again as administrator.`;
+    const warning = `The test certificate is not installed!\n` +
+      `We will now try to install it. If this is not an administrative shell,\n` +
+      `this operation will fail. If that's the case, please run this script\n` +
+      `again as administrator.`
 
     console.warning(warning)
 
