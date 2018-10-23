@@ -27,9 +27,9 @@ const electronWindowsStore = require('electron-windows-store')
 const args = process.argv.slice(2)
 
 // Constants
-const BUILD_PATH = args[2]
-  ? path.join(process.cwd, args[2])
-  : path.join(__dirname, `../../out/DEBUG`)
+const BUILD_PATH = args[0]
+  ? path.join(process.cwd(), args[0])
+  : path.join(__dirname, `../../out/Debug`)
 const STAGING_PATH = path.join(__dirname, '../../out/AppContainerStaging')
 const OUT_PATH = path.join(__dirname, '../../out/AppContainer')
 const CERT_PATH = path.join(__dirname, 'appcontainer/electrontest.pfx')
@@ -37,6 +37,9 @@ const ASSETS_PATH = path.join(__dirname, 'appcontainer/Assets')
 const MANIFEST_PATH = path.join(__dirname, 'appcontainer/appxmanifest.xml')
 const SHIM_PATH = path.join(__dirname, 'appcontainer/shim')
 const PREAPPX_PATH = path.join(OUT_PATH, 'pre-appx')
+const WINDOWS_KIT_PATH = `C:\\Program Files (x86)\\Windows Kits\\10\\bin\\10.0.17134.0\\x64`
+
+console.log(`Packaging ${BUILD_PATH} as appx`)
 
 /**
  * Do we need to copy this file over?
@@ -167,6 +170,7 @@ async function convert () {
     devCert: CERT_PATH,
     createPriParams: ['/IndexName', '99999D7F.Electron'],
     makePri: true,
+    windowsKit: WINDOWS_KIT_PATH,
     finalSay: copyInShim
   })
 }
