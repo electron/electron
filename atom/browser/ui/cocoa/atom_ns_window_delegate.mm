@@ -9,6 +9,7 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
+#include "ui/views/cocoa/bridged_native_widget.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 @implementation AtomNSWindowDelegate
@@ -238,7 +239,10 @@
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
   // has been closed.
-  [shell_->GetNativeWindow() setDelegate:nil];
+  views::BridgedNativeWidget* bridged_view =
+      views::NativeWidgetMac::GetBridgeForNativeWindow(
+          shell_->GetNativeWindow());
+  bridged_view->OnWindowWillClose();
 }
 
 - (BOOL)windowShouldClose:(id)window {
