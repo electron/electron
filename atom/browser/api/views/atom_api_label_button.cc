@@ -7,7 +7,6 @@
 #include "atom/common/api/constructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "native_mate/dictionary.h"
-#include "ui/views/controls/button/label_button.h"
 
 #include "atom/common/node_includes.h"
 

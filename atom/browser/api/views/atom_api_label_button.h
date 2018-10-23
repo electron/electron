@@ -8,6 +8,7 @@
 #include <string>
 
 #include "atom/browser/api/views/atom_api_button.h"
+#include "ui/views/controls/button/label_button.h"
 
 namespace atom {
 
@@ -24,6 +25,10 @@ class LabelButton : public Button {
  protected:
   explicit LabelButton(const std::string& text);
   ~LabelButton() override;
+
+  views::LabelButton* label_button() const {
+    return static_cast<views::LabelButton*>(view());
+  }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(LabelButton);
