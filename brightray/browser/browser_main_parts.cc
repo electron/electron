@@ -22,7 +22,6 @@
 #include "base/message_loop/message_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/browser_client.h"
 #include "brightray/common/application_info.h"
 #include "brightray/common/main_delegate.h"
 #include "content/public/browser/browser_thread.h"
@@ -304,10 +303,6 @@ int BrowserMainParts::PreCreateThreads() {
 
   if (!views::LayoutProvider::Get())
     layout_provider_.reset(new views::LayoutProvider());
-
-  // Initialize the app locale.
-  BrowserClient::SetApplicationLocale(
-      l10n_util::GetApplicationLocale(custom_locale_));
 
   return 0;
 }
