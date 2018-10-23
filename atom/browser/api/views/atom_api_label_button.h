@@ -22,6 +22,11 @@ class LabelButton : public Button {
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  const base::string16& GetText() const;
+  void SetText(const base::string16& text);
+  bool IsDefault() const;
+  void SetIsDefault(bool is_default);
+
  protected:
   explicit LabelButton(views::LabelButton* impl);
   explicit LabelButton(const std::string& text);

@@ -21,6 +21,22 @@ LabelButton::LabelButton(const std::string& text)
 
 LabelButton::~LabelButton() {}
 
+const base::string16& LabelButton::GetText() const {
+  return label_button()->GetText();
+}
+
+void LabelButton::SetText(const base::string16& text) {
+  label_button()->SetText(text);
+}
+
+bool LabelButton::IsDefault() const {
+  return label_button()->is_default();
+}
+
+void LabelButton::SetIsDefault(bool is_default) {
+  label_button()->SetIsDefault(is_default);
+}
+
 // static
 mate::WrappableBase* LabelButton::New(mate::Arguments* args,
                                       const std::string& text) {
@@ -34,6 +50,11 @@ mate::WrappableBase* LabelButton::New(mate::Arguments* args,
 void LabelButton::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "LabelButton"));
+  mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("getText", &LabelButton::GetText)
+      .SetMethod("setText", &LabelButton::SetText)
+      .SetMethod("isDefault", &LabelButton::IsDefault)
+      .SetMethod("setIsDefault", &LabelButton::SetIsDefault);
 }
 
 }  // namespace api
