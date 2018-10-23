@@ -33,18 +33,23 @@
 
   <Capabilities>
     <rescap:Capability Name="broadFileSystemAccess"/>
-    <rescap:Capability Name="internetClient"/>
-    <rescap:Capability Name="codeGeneration"/>
-    <uap:Capability Name="musicLibrary"/>
+    <Capability Name="internetClient"/>
+    <Capability Name="internetClientServer"/>
+    <Capability Name="privateNetworkClientServer"/>
+    <Capability Name="allJoyn"/>
+    <uap:Capability Name="documentsLibrary"/>
+    <uap:Capability Name="picturesLibrary"/>
     <uap:Capability Name="videosLibrary"/>
-    <uap:Capability Name="phoneCall"/>
+    <uap:Capability Name="musicLibrary"/>
+    <uap:Capability Name="enterpriseAuthentication"/>
+    <uap:Capability Name="sharedUserCertificates"/>
     <uap:Capability Name="userAccountInformation"/>
     <uap:Capability Name="removableStorage"/>
     <uap:Capability Name="appointments"/>
     <uap:Capability Name="contacts"/>
-    <uap:Capability Name="voipCall"/>
-    <uap:Capability Name="objects3D"/>
+    <uap:Capability Name="phoneCall"/>
     <uap:Capability Name="blockedChatMessages"/>
+    <uap:Capability Name="objects3D"/>
     <DeviceCapability Name="microphone"/>
     <DeviceCapability Name="bluetooth.genericAttributeProfile"/>
     <DeviceCapability Name="bluetooth.rfcomm"/>
