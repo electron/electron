@@ -1,9 +1,35 @@
+/**
+ * @file Creates an appx using the built Electron
+ *
+ * ## Usage
+ *
+ * Take ./out/Debug and turn it into an appx
+ * > node ./script/create-test-appx.js
+ *
+ * Take ./out/Release and turn it into an appx
+ * > node ./script/create-test-appx.js ./out/Release
+ *
+ * ## Certificate
+ *
+ * This script will automatically detect whether or not the development
+ * certificate is installed. If it isn't, it will attempt to install it.
+ * If installation of the certificate fails, you likely don't have enough
+ * rights and need to restart the script "as administrator".
+ */
+
+
 const fs = require('fs-extra')
 const path = require('path')
 const childProcess = require('child_process')
 const electronWindowsStore = require('electron-windows-store')
 
-const DEBUG_PATH = path.join(__dirname, '../../out/Debug')
+// Parse arguments
+const args = process.argv.slice(2)
+
+// Constants
+const BUILD_PATH = args[2]
+  ? path.join(process.cwd, args[2])
+  : path.join(__dirname, `../../out/DEBUG`)
 const STAGING_PATH = path.join(__dirname, '../../out/AppContainerStaging')
 const OUT_PATH = path.join(__dirname, '../../out/AppContainer')
 const CERT_PATH = path.join(__dirname, 'appcontainer/electrontest.pfx')
@@ -82,6 +108,11 @@ async function installPfx () {
   await executeChildProcess('powershell.exe', installPfxArgs)
 }
 
+/**
+ * Is the PFX certificate installed on the current machine?
+ *
+ * @returns {boolean}
+ */
 async function isPfxInstalled () {
   const checkPfxArgs = [
     '[bool](dir cert:\\LocalMachine\\TrustedPeople\\ | ? { $_.subject -like "cn=electrontest" })'
@@ -92,6 +123,11 @@ async function isPfxInstalled () {
   return result.toLowerCase().trim() === 'true'
 }
 
+/**
+ * Copy in our known shim files
+ *
+ * @returns {Promise<void>}
+ */
 async function copyInShim () {
   const contents = await fs.readdir(SHIM_PATH)
 
@@ -103,42 +139,11 @@ async function copyInShim () {
   }
 }
 
-async function main () {
-  if (!fs.existsSync(DEBUG_PATH)) {
-    console.log(`Cannot find ${DEBUG_PATH}`)
-    return
-  }
-
-  fs.emptyDirSync(STAGING_PATH)
-
-  const dirContents = fs.readdirSync(DEBUG_PATH)
-
-  // Copy things over
-  for (const item of dirContents) {
-    const source = path.join(DEBUG_PATH, item)
-    const destination = path.join(STAGING_PATH, item)
-    const itemStat = fs.statSync(source)
-    const isNeededFile = itemStat.isFile() && isFileNeeded(item)
-    const isNeededDir = !isNeededFile && isDirNeeded(item)
-
-    if (isNeededFile || isNeededDir) {
-      console.log(`Copying ${item}`)
-
-      await fs.copy(source, destination)
-    }
-  }
-
-  console.log(`\nCopying done, now converting\n`)
-
-  await convert()
-
-  console.log(`\nConversion done, now cleaning up\n`)
-
-  await cleanup()
-
-  console.log(`\nAll done\n`)
-}
-
+/**
+ * Take the output directory and turn it into an appx
+ *
+ * @returns {Promise<void>}
+ */
 async function convert () {
   fs.emptyDirSync(OUT_PATH)
 
@@ -166,8 +171,54 @@ async function convert () {
   })
 }
 
+/**
+ * Remove staging directories
+ *
+ * @returns {Promise<void>}
+ */
 async function cleanup () {
   await fs.remove(STAGING_PATH)
+}
+
+/**
+ * Main script method: Create an appx
+ *
+ * @returns {Promise<void>}
+ */
+async function main () {
+  if (!fs.existsSync(BUILD_PATH)) {
+    console.log(`Cannot find ${BUILD_PATH}`)
+    return
+  }
+
+  fs.emptyDirSync(STAGING_PATH)
+
+  const dirContents = fs.readdirSync(BUILD_PATH)
+
+  // Copy things over
+  for (const item of dirContents) {
+    const source = path.join(BUILD_PATH, item)
+    const destination = path.join(STAGING_PATH, item)
+    const itemStat = fs.statSync(source)
+    const isNeededFile = itemStat.isFile() && isFileNeeded(item)
+    const isNeededDir = !isNeededFile && isDirNeeded(item)
+
+    if (isNeededFile || isNeededDir) {
+      console.log(`Copying ${item}`)
+
+      await fs.copy(source, destination)
+    }
+  }
+
+  console.log(`\nCopying done, now converting\n`)
+
+  await convert()
+
+  console.log(`\nConversion done, now cleaning up\n`)
+
+  await cleanup()
+
+  console.log(`\nAll done\n`)
 }
 
 main()
