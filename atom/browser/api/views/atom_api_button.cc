@@ -13,8 +13,10 @@ namespace atom {
 
 namespace api {
 
-Button::Button(views::Button* button) : View(button) {
+Button::Button(views::Button* impl) : View(impl) {
   view()->set_owned_by_client();
+  // Make the button focusable as per the platform.
+  button()->SetFocusForPlatform();
 }
 
 Button::~Button() {}
