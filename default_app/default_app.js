@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -36,11 +36,4 @@ exports.load = async (appUrl) => {
 
   mainWindow.loadURL(appUrl)
   mainWindow.focus()
-
-  mainWindow.webContents.openDevTools()
-
-  ipcMain.on('RUN_IN_MAIN', (event, code) => {
-    console.log(code)
-    console.log(eval(code))
-  })
 }
