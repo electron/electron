@@ -1,11 +1,11 @@
-From 402d52b4cf68772c493920f9e4977132918d9b48 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tomas Rycl <torycl@microsoft.com>
 Date: Thu, 20 Sep 2018 17:47:25 -0700
 Subject: browser_plugin_guest.patch
 
 
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index f56ce93c3d5b..19c302c2714f 100644
+index f56ce93c3d5b1b46b706800a12a21f29cabafb33..19c302c2714fb8ce89b261dd44d9939d3345a803 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
 @@ -206,8 +206,11 @@ void BrowserPluginGuest::Init() {

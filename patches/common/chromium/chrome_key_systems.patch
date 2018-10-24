@@ -1,4 +1,4 @@
-From 63fb1abe3afa2b19ac0640b462658e6f286b3c6c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 20 Sep 2018 17:50:13 -0700
 Subject: chrome_key_systems.patch
@@ -7,7 +7,7 @@ Disable persiste licence support check for widevine cdm,
 as its not supported in the current version of chrome.
 
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index 5c38d0b1ce7c..4ffaf2a3301e 100644
+index 5c38d0b1ce7c6d395126b6cc428467d31bb3c0a5..4ffaf2a3301eec188b1b40b06b2152f17b4c7641 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
 @@ -15,7 +15,9 @@

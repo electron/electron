@@ -1,5 +1,11 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ales Pergl <alpergl@microsoft.com>
+Date: Mon, 22 Oct 2018 10:47:12 -0700
+Subject: build_gn.patch
+
+
 diff --git a/BUILD.gn b/BUILD.gn
-index 443694d880..d0ba5ed04e 100644
+index 443694d88075d59d6e8db7fa4bedc3a812fdafc4..d0ba5ed04e7126deae4a0ab9ee8943cda5ea42e3 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -212,7 +212,7 @@ config("internal_config") {
@@ -20,3 +26,6 @@ index 443694d880..d0ba5ed04e 100644
      deps = [
        ":v8_base",
        ":v8_init",
+-- 
+2.17.0
+

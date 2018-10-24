@@ -1,8 +1,16 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Mon, 22 Oct 2018 10:46:33 -0700
+Subject: implement-SSL_get_tlsext_status_type.patch
+
+BoringSSL doesn't implement `SSL_get_tlsext_status_type()`,
+but Node.js expects it to be present cause OpenSSL has it.
+
 diff --git a/include/openssl/ssl.h b/include/openssl/ssl.h
-index d04390df..0b8677ce 100644
+index f693030a8a7c4bf79dd791e1abd0e94f8e97a292..59c1881b34289401e6c998cd266cb1e2fb8f7cc9 100644
 --- a/include/openssl/ssl.h
 +++ b/include/openssl/ssl.h
-@@ -4120,6 +4120,8 @@ extern "C++" OPENSSL_EXPORT void SSL_CTX_sess_set_get_cb(
+@@ -4293,6 +4293,8 @@ OPENSSL_EXPORT int OPENSSL_init_ssl(uint64_t opts,
  // Use |SSL_enable_ocsp_stapling| instead.
  OPENSSL_EXPORT int SSL_set_tlsext_status_type(SSL *ssl, int type);
  
@@ -12,10 +20,10 @@ index d04390df..0b8677ce 100644
  // success and zero on error. On success, |ssl| takes ownership of |resp|, which
  // must have been allocated by |OPENSSL_malloc|.
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 0c004fd4..6c849b5b 100644
+index c68968a514b76717d4c42448ef4b9c440c330fb2..c82ffeaa37268e54c6b142b31706d478ba93ff63 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
-@@ -2723,6 +2723,14 @@ int SSL_set_tlsext_status_type(SSL *ssl, int type) {
+@@ -2896,6 +2896,14 @@ int SSL_set_tlsext_status_type(SSL *ssl, int type) {
    return 1;
  }
  
@@ -30,3 +38,5 @@ index 0c004fd4..6c849b5b 100644
  int SSL_set_tlsext_status_ocsp_resp(SSL *ssl, uint8_t *resp, size_t resp_len) {
    if (SSL_set_ocsp_response(ssl, resp, resp_len)) {
      OPENSSL_free(resp);
+-- 
+2.17.0

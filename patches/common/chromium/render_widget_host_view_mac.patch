@@ -1,11 +1,11 @@
-From 7c728945a2edf66fc4c795b6b61634b30c76bd1e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:46:28 -0700
 Subject: render_widget_host_view_mac.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
-index 8b84322baa80..70d244e01b75 100644
+index 8b84322baa808f66044361d1033ec63805856227..70d244e01b75f98a6ed580475710d7405cae8eee 100644
 --- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
 @@ -174,6 +174,11 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -66,7 +66,7 @@ index 8b84322baa80..70d244e01b75 100644
    return validAttributesForMarkedText_.get();
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 0703dd02c901..7186a054cf55 100644
+index 0703dd02c90106a541acf173ec770e18e01c8841..7186a054cf559c64bb6ed410adcba724284d5735 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -54,6 +54,7 @@

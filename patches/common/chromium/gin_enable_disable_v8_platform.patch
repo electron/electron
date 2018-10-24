@@ -1,11 +1,11 @@
-From eaf64921a97d513151d48ab01975b5ac966a7e34 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:47:44 -0700
 Subject: gin_enable_disable_v8_platform.patch
 
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index e3a23cf30e42..e099fd3f03e5 100644
+index e3a23cf30e42e11da1880c4ef13daf254b931d4b..e099fd3f03e56bbbf3ceab45edb8f4b8eb0b2b0f 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -116,9 +116,10 @@ IsolateHolder::~IsolateHolder() {
@@ -22,7 +22,7 @@ index e3a23cf30e42..e099fd3f03e5 100644
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index a70ad1ce51a9..84cf66e6e9cd 100644
+index a70ad1ce51a9e1ba3f4152bde9f1bb097ffe6341..84cf66e6e9cdbfcdc3d8f0a1f0c122e5994ef1c2 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -83,7 +83,8 @@ class GIN_EXPORT IsolateHolder {
@@ -36,7 +36,7 @@ index a70ad1ce51a9..84cf66e6e9cd 100644
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index be2b9149e440..816e56aa4f6b 100644
+index be2b9149e4407a7a946aa9fd240781fe25e9a51e..816e56aa4f6becbc8840ca567b30e874d72825fb 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -236,12 +236,14 @@ LoadV8FileResult MapOpenedFile(const OpenedFileMap::mapped_type& file_region,
@@ -57,7 +57,7 @@ index be2b9149e440..816e56aa4f6b 100644
    if (base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
      static const char optimize[] = "--opt";
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index 6f3265ba4d06..29f28bebbdcd 100644
+index 6f3265ba4d06e70930630432bf739f89847d0b3c..29f28bebbdcde5a7f1c7b31a625d30f1b8079c39 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
 @@ -21,7 +21,8 @@ class GIN_EXPORT V8Initializer {

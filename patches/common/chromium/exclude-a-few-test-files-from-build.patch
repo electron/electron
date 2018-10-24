@@ -1,13 +1,13 @@
-From 2f416aedbe6580b1ef07a2f76c22bcd9d1ef5942 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Aleksei Kuzmin <alkuzmin@microsoft.com>
 Date: Thu, 20 Sep 2018 17:50:45 -0700
 Subject: exclude-a-few-test-files-from-build.patch
 
-Compilation of those files fails with the Chromium 67.
-Remove the patch during the Chromium 68 upgrade.
+Compilation of those files fails with the Chromium 68.
+Remove the patch during the Chromium 69 upgrade.
 
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index d5d8e48305ba..070c6be426f4 100644
+index d5d8e48305ba20926415a3e94f8732baf327a14b..070c6be426f4affcfb3a08199f8f1bd71ebd5f52 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1790,7 +1790,7 @@ jumbo_source_set("blink_platform_unittests_sources") {

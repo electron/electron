@@ -1,11 +1,11 @@
-From 808f3b08bf415b980b6e47573ca178c333c9c344 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:46:50 -0700
 Subject: use_transparent_window.patch
 
 
 diff --git a/ui/gl/gpu_switching_manager.cc b/ui/gl/gpu_switching_manager.cc
-index be7156465809..4529866b0864 100644
+index be715646580966ddadb762940efd8c627e7a1e65..4529866b08645691e3aa901c57890b11ce2bd829 100644
 --- a/ui/gl/gpu_switching_manager.cc
 +++ b/ui/gl/gpu_switching_manager.cc
 @@ -4,6 +4,12 @@
@@ -39,7 +39,7 @@ index be7156465809..4529866b0864 100644
  
  GpuSwitchingManager::~GpuSwitchingManager() {}
 diff --git a/ui/gl/gpu_switching_manager.h b/ui/gl/gpu_switching_manager.h
-index 4308bbed9398..a7cafcfccdff 100644
+index 4308bbed939898323f26a747330937b7009f11b4..a7cafcfccdffd1b63858d2fc7650eba7d6ec418e 100644
 --- a/ui/gl/gpu_switching_manager.h
 +++ b/ui/gl/gpu_switching_manager.h
 @@ -18,6 +18,9 @@ class GL_EXPORT GpuSwitchingManager {

@@ -1,8 +1,15 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Mon, 22 Oct 2018 10:47:13 -0700
+Subject: build-torque-with-x64-toolchain-on-arm.patch
+
+torque binary has to be run during the build.
+
 diff --git a/BUILD.gn b/BUILD.gn
-index 456a318..af803ff 100644
+index b5eb09cfcb8add19f4de985cbe7b9777c51c4bd3..dbe4338c3a733cb806e420a9bb0b4bcc65cf333b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -870,7 +870,8 @@ action("run_torque") {
+@@ -899,7 +899,8 @@ action("run_torque") {
    # is the target toolchain and, hence, can't be used.
    v8_torque_toolchain = v8_snapshot_toolchain
    if (host_cpu == "x64" &&
@@ -12,7 +19,7 @@ index 456a318..af803ff 100644
      v8_torque_toolchain = "//build/toolchain/linux:clang_x64"
    }
  
-@@ -3079,7 +3080,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+@@ -3149,7 +3150,7 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
    }
  }
  
@@ -21,3 +28,5 @@ index 456a318..af803ff 100644
    v8_executable("torque") {
      visibility = [ ":*" ]  # Only targets in this file can depend on this.
  
+-- 
+2.17.0

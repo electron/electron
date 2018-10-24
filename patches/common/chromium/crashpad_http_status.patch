@@ -1,8 +1,15 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 18 Oct 2018 17:06:46 -0700
+Subject: crashpad_http_status.patch
+
+backport of crashpad f540abb506
+
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport.h b/third_party/crashpad/crashpad/util/net/http_transport.h
-index f91a556..acd4e44 100644
+index f91a55612a2ffc2f4a78ff48ceba6174adc58cbf..acd4e442462b031dd304f303cdaa3664f5cffb64 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport.h
 +++ b/third_party/crashpad/crashpad/util/net/http_transport.h
-@@ -90,7 +90,7 @@
+@@ -90,7 +90,7 @@ class HTTPTransport {
    //!     if the response body is not required.
    //!
    //! \return Whether or not the request was successful, defined as returning
@@ -12,10 +19,10 @@ index f91a556..acd4e44 100644
  
   protected:
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm b/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
-index 8d5f78c..a433bb3 100644
+index 8d5f78cc6efc8b8e349958f51c78921a8c163c4e..a433bb357da5865144ade7d3663b1c9b36199f8e 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_mac.mm
-@@ -293,7 +293,7 @@
+@@ -293,7 +293,7 @@ bool HTTPTransportMac::ExecuteSynchronously(std::string* response_body) {
        return false;
      }
      NSInteger http_status = [http_response statusCode];
@@ -25,7 +32,7 @@ index 8d5f78c..a433bb3 100644
                                         implicit_cast<long>(http_status));
        return false;
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
-index f0e2dc14a8a4..34d8deeb5c25 100644
+index f0e2dc14a8a487b5960d700be57100c9bed4f271..34d8deeb5c25f6b49fd0acadce67a3816869d3da 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_socket.cc
 @@ -457,10 +457,18 @@ bool ReadResponseLine(Stream* stream) {
@@ -49,13 +56,13 @@ index f0e2dc14a8a4..34d8deeb5c25 100644
 +                            &http_status) &&
 +         http_status >= 200 && http_status <= 203;
  }
-
+ 
  bool ReadResponseHeaders(Stream* stream, HTTPHeaders* headers) {
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_test.cc b/third_party/crashpad/crashpad/util/net/http_transport_test.cc
-index 7b5f41d..d73dc99 100644
+index 7b5f41dfd1e18b212d7dd349cff8f4396e20dbc3..d73dc99217e08f7c84ded50868cbef02141a6b9b 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_test.cc
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_test.cc
-@@ -137,7 +137,7 @@
+@@ -137,7 +137,7 @@ class HTTPTransportTestFixture : public MultiprocessExec {
  
      std::string response_body;
      bool success = transport->ExecuteSynchronously(&response_body);
@@ -65,10 +72,10 @@ index 7b5f41d..d73dc99 100644
        std::string expect_response_body = random_string + "\r\n";
        EXPECT_EQ(response_body, expect_response_body);
 diff --git a/third_party/crashpad/crashpad/util/net/http_transport_win.cc b/third_party/crashpad/crashpad/util/net/http_transport_win.cc
-index 18d343c..2919bc1 100644
+index 18d343ccef0396ee6679f4b5fd8316c3109003f4..2919bc11d0ba4bf84a11e146bf2961b830db35fe 100644
 --- a/third_party/crashpad/crashpad/util/net/http_transport_win.cc
 +++ b/third_party/crashpad/crashpad/util/net/http_transport_win.cc
-@@ -375,7 +375,7 @@
+@@ -375,7 +375,7 @@ bool HTTPTransportWin::ExecuteSynchronously(std::string* response_body) {
      return false;
    }
  
@@ -77,3 +84,6 @@ index 18d343c..2919bc1 100644
      LOG(ERROR) << base::StringPrintf("HTTP status %lu", status_code);
      return false;
    }
+-- 
+2.17.0
+

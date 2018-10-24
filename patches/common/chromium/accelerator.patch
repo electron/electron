@@ -1,11 +1,11 @@
-From 61cd6b5bc2068a3740313d7f4680ef3fcaaacb1a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 4 Oct 2018 14:57:02 -0700
 Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 7e55ef366ac8..c3fb98b426cd 100644
+index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff184628bba1 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@

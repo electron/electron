@@ -1,4 +1,4 @@
-From c7042021cfd9d4e50b107e372225a14f7492bce5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:34 -0700
 Subject: mas-lssetapplicationlaunchservicesserverconnectionstatus.patch
@@ -7,7 +7,7 @@ Removes usage of the _LSSetApplicationLaunchServicesServerConnectionStatus
 private API.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index f14c045d47ad..9c8751a6fe0b 100644
+index f14c045d47add3159e9099a8bdb511b233a2911b..9c8751a6fe0bcd0c69cc47dbbcf4fcc8a5c6684f 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
 @@ -274,8 +274,10 @@ int GpuMain(const MainFunctionParams& parameters) {

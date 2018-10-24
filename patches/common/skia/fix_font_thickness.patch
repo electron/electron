@@ -1,8 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 22 Oct 2018 10:45:53 -0700
+Subject: fix_font_thickness.patch
+
+Backports https://skia-review.googlesource.com/c/157566/ to
+fix an issue whereby font rendering weight was too thin compared
+to other fonts present on MacOS Mojave.
+
 diff --git a/src/ports/SkFontHost_mac.cpp b/src/ports/SkFontHost_mac.cpp
-index 3cc51d43f6..c0b606c004 100644
+index 18d09b4ec06a23f8c046d4f08a51296b77e37d8b..fc3902156b65b5875d231ff52101764d7b068f91 100644
 --- a/src/ports/SkFontHost_mac.cpp
 +++ b/src/ports/SkFontHost_mac.cpp
-@@ -377,17 +377,28 @@ static constexpr const uint8_t kSpiderSymbol_ttf[] = {
+@@ -380,17 +380,28 @@ static constexpr const uint8_t kSpiderSymbol_ttf[] = {
      0x00, 0x02, 0x00, 0x00
  };
  
@@ -36,7 +45,7 @@ index 3cc51d43f6..c0b606c004 100644
  
          UniqueCFRef<CGDataProviderRef> data(
                  CGDataProviderCreateWithData(nullptr, kSpiderSymbol_ttf,
-@@ -398,31 +409,39 @@ static bool supports_LCD() {
+@@ -401,31 +412,39 @@ static bool supports_LCD() {
                  CTFontCreateWithGraphicsFont(cgFont.get(), 16, nullptr, nullptr));
          SkASSERT(ctFont);
  
@@ -61,10 +70,9 @@ index 3cc51d43f6..c0b606c004 100644
  
          // For debugging.
 -        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(cgContext.get()));
--
 +        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(noSmoothContext()));
 +        //UniqueCFRef<CGImageRef> image(CGBitmapContextCreateImage(smoothContext()));
-+        
+ 
 +        SmoothBehavior smoothBehavior = SmoothBehavior::none;
          for (int x = 0; x < 16; ++x) {
              for (int y = 0; y < 16; ++y) {
@@ -90,7 +98,7 @@ index 3cc51d43f6..c0b606c004 100644
  }
  
  class Offscreen {
-@@ -1005,7 +1024,7 @@ CGRGBPixel* Offscreen::getCG(const SkScalerContext_Mac& context, const SkGlyph&
+@@ -1008,7 +1027,7 @@ CGRGBPixel* Offscreen::getCG(const SkScalerContext_Mac& context, const SkGlyph&
      if (!fRGBSpace) {
          //It doesn't appear to matter what color space is specified.
          //Regular blends and antialiased text are always (s*a + d*(1-a))
@@ -99,7 +107,7 @@ index 3cc51d43f6..c0b606c004 100644
          fRGBSpace.reset(CGColorSpaceCreateDeviceRGB());
      }
  
-@@ -1260,7 +1279,7 @@ static constexpr uint8_t sk_pow2_table(size_t i) {
+@@ -1264,7 +1283,7 @@ static constexpr uint8_t sk_pow2_table(size_t i) {
   *  This will invert the gamma applied by CoreGraphics, so we can get linear
   *  values.
   *
@@ -108,7 +116,7 @@ index 3cc51d43f6..c0b606c004 100644
   *  The color space used does not appear to affect this choice.
   */
  static constexpr auto gLinearCoverageFromCGLCDValue = SkMakeArray<256>(sk_pow2_table);
-@@ -1350,18 +1369,20 @@ void SkScalerContext_Mac::generateImage(const SkGlyph& glyph) {
+@@ -1354,18 +1373,20 @@ void SkScalerContext_Mac::generateImage(const SkGlyph& glyph) {
      CGGlyph cgGlyph = SkTo<CGGlyph>(glyph.getGlyphID());
  
      // FIXME: lcd smoothed un-hinted rasterization unsupported.
@@ -132,7 +140,7 @@ index 3cc51d43f6..c0b606c004 100644
      {
          const uint8_t* linear = gLinearCoverageFromCGLCDValue.data();
  
-@@ -2257,14 +2278,14 @@ void SkTypeface_Mac::onFilterRec(SkScalerContextRec* rec) const {
+@@ -2261,14 +2282,14 @@ void SkTypeface_Mac::onFilterRec(SkScalerContextRec* rec) const {
  
      rec->fFlags &= ~flagsWeDontSupport;
  
@@ -149,7 +157,7 @@ index 3cc51d43f6..c0b606c004 100644
          hinting = SkPaint::kNo_Hinting;
      } else if (SkPaint::kFull_Hinting == hinting) {
          hinting = SkPaint::kNormal_Hinting;
-@@ -2291,12 +2312,15 @@ void SkTypeface_Mac::onFilterRec(SkScalerContextRec* rec) const {
+@@ -2295,12 +2316,15 @@ void SkTypeface_Mac::onFilterRec(SkScalerContextRec* rec) const {
      // [LCD][yes-hint]: generate LCD using CoreGraphic's LCD output.
  
      if (rec->fMaskFormat == SkMask::kLCD16_Format) {
@@ -166,3 +174,5 @@ index 3cc51d43f6..c0b606c004 100644
          }
      }
  
+-- 
+2.17.0

@@ -1,11 +1,11 @@
-From 22107b997c8c2437e90aeccf4ea795682ebc402a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:21 -0700
 Subject: render_widget_host_view_base.patch
 
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 5561b7a1f386..913b24cff3b2 100644
+index 5561b7a1f3863a0e5b8d02c886bd9bd563095fa9..913b24cff3b2d41545e1d607f45762b8e884fd20 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -567,6 +567,15 @@ viz::FrameSinkId RenderWidgetHostViewBase::FrameSinkIdAtPoint(
@@ -25,7 +25,7 @@ index 5561b7a1f386..913b24cff3b2 100644
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 8ed6ffd3a284..dd7fdbbdee59 100644
+index 8ed6ffd3a284fe58fe5e80a473f6d22f6b5bf8f7..dd7fdbbdee59658d674f93d3a5b769b6081d1813 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -22,8 +22,10 @@

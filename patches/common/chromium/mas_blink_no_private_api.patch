@@ -1,4 +1,4 @@
-From b75117921e735e5d892a7320e1ebec84a2c2fd1a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
 Subject: mas_blink_no_private_api.patch
@@ -7,7 +7,7 @@ Guard usages in chromium code of private Mac APIs by MAS_BUILD, so they can
 be excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
-index 94afefcee81b..2ec7f04c7182 100644
+index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..2ec7f04c71824b47de1ddbf1f0e8625d33e833a8 100644
 --- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 +++ b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 @@ -27,6 +27,7 @@
@@ -73,7 +73,7 @@ index 94afefcee81b..2ec7f04c7182 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/paint/theme_painter_mac.mm b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
-index 7a1260db0a13..bf9cf7046e2f 100644
+index 7a1260db0a139f9f3f8a823af2c220f36162812a..bf9cf7046e2fc9cdfee5b92f2a348185cc00b944 100644
 --- a/third_party/blink/renderer/core/paint/theme_painter_mac.mm
 +++ b/third_party/blink/renderer/core/paint/theme_painter_mac.mm
 @@ -42,6 +42,7 @@

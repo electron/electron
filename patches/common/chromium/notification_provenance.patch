@@ -1,4 +1,4 @@
-From 5c9dd74385e37830bff8918b54868ac37042c513 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Fri, 5 Oct 2018 14:22:06 -0700
 Subject: pass RenderProcessHost through to PlatformNotificationService
@@ -6,7 +6,7 @@ Subject: pass RenderProcessHost through to PlatformNotificationService
 this is so Electron can identify which renderer a notification came from
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index cbcd2b5369fc..1b4066649d92 100644
+index cbcd2b5369fc513bed8190a83431826cba4e7637..1b4066649d926f18c0f1286243bfde848d80f1e3 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -40,9 +40,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -31,7 +31,7 @@ index cbcd2b5369fc..1b4066649d92 100644
  }
  
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 193f5d241c31..3cfcc6b86ae1 100644
+index 193f5d241c314e9921048d592602e5caa362f198..3cfcc6b86ae10102a1cc9e9abb27c529a57511cb 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
 @@ -33,6 +33,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
@@ -51,7 +51,7 @@ index 193f5d241c31..3cfcc6b86ae1 100644
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 618c7bd88cde..f528be53cffe 100644
+index 618c7bd88cde563eaaf93914039b5fb6d81db514..be08e89b5c6d57abf6b61ed9ee4b1c536a6ca134 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -113,7 +113,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -64,7 +64,7 @@ index 618c7bd88cde..f528be53cffe 100644
          mojo::MakeRequest(&notification_service_ptr));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 627e8dbd251d..48c290470e48 100644
+index 627e8dbd251d952f1567847775d8147e78e697b9..48c290470e4854a5e17c70bbfe178a34ffe7d73f 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -122,12 +122,13 @@ void PlatformNotificationContextImpl::ShutdownOnIO() {
@@ -84,7 +84,7 @@ index 627e8dbd251d..48c290470e48 100644
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 7ea92b626202..faa3a1d8069f 100644
+index 7ea92b626202fcc3c1a830e74549ef87c206c4cd..faa3a1d8069f2d87c22cb40f98bc1d96db557464 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -21,6 +21,7 @@
@@ -106,7 +106,7 @@ index 7ea92b626202..faa3a1d8069f 100644
  
    // Removes |service| from the list of owned services, for example because the
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 896f1b27ded7..20a1f86a36fd 100644
+index 896f1b27ded7a73c62ec16d11418dacb0631d976..20a1f86a36fdefe3eeeb56a56eff874e2d6422fd 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
 @@ -168,7 +168,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
@@ -119,7 +119,7 @@ index 896f1b27ded7..20a1f86a36fd 100644
    parameterized_binder_registry_.AddInterface(
        base::BindRepeating(&BackgroundFetchServiceImpl::Create));
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
-index 228fc30240c5..fd3e20c5335a 100644
+index 228fc30240c5251c0a4182f085b41c189e28365d..fd3e20c5335a09ba5bae31a76cc4a2cc3ad0a2f0 100644
 --- a/content/public/browser/platform_notification_service.h
 +++ b/content/public/browser/platform_notification_service.h
 @@ -21,6 +21,7 @@ class GURL;
@@ -139,7 +139,7 @@ index 228fc30240c5..fd3e20c5335a 100644
        const std::string& notification_id,
        const GURL& origin,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 28dc2651a326..646817070e7f 100644
+index 28dc2651a3269a4e7483d7e84a25d85f98083fcf..646817070e7fd831eb6caff5a369357dce2cccec 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -20,6 +20,7 @@ MockPlatformNotificationService::MockPlatformNotificationService() = default;
@@ -151,7 +151,7 @@ index 28dc2651a326..646817070e7f 100644
      const std::string& notification_id,
      const GURL& origin,
 diff --git a/content/test/mock_platform_notification_service.h b/content/test/mock_platform_notification_service.h
-index baf24f9effc9..98a128e5d249 100644
+index baf24f9effc9569f070757832681a82e62322d30..98a128e5d24933fbf98a5cfdda90b0611fce63d8 100644
 --- a/content/test/mock_platform_notification_service.h
 +++ b/content/test/mock_platform_notification_service.h
 @@ -42,6 +42,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {
