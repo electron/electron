@@ -1,4 +1,4 @@
-From 602c08e90102a25894a4d48d236258cae6b982c6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Charles Kerr <charles@charleskerr.com>
 Date: Thu, 20 Sep 2018 17:50:17 -0700
 Subject: allow_nested_error_trackers.patch
@@ -20,7 +20,7 @@ least harm in the interim by removing the check that prevents more than
 one tracker from existing at a time.
 
 diff --git a/ui/gfx/x/x11_error_tracker.cc b/ui/gfx/x/x11_error_tracker.cc
-index af031de356c5..2a5c18dc473a 100644
+index af031de356c5e0938fd3b84a494e48dc9a0e0476..2a5c18dc473a4f88fc0427bec69142917159bbd9 100644
 --- a/ui/gfx/x/x11_error_tracker.cc
 +++ b/ui/gfx/x/x11_error_tracker.cc
 @@ -24,7 +24,7 @@ namespace gfx {
@@ -32,6 +32,3 @@ index af031de356c5..2a5c18dc473a 100644
    g_handler = this;
    XSync(GetXDisplay(), False);
    old_handler_ = XSetErrorHandler(X11ErrorHandler);
--- 
-2.17.0
-

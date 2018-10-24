@@ -1,5 +1,13 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Thu, 18 Oct 2018 17:08:28 -0700
+Subject: verbose_generate_breakpad_symbols.patch
+
+Temporarily add additional debugging statements to
+generate_breakpad_symbols.py to determine why it is hanging.
+
 diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
-index 58646a1..8bf830b 100755
+index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014c0e512b5 100755
 --- a/components/crash/content/tools/generate_breakpad_symbols.py
 +++ b/components/crash/content/tools/generate_breakpad_symbols.py
 @@ -59,7 +59,10 @@ def Resolve(path, exe_path, loader_path, rpaths):
@@ -8,7 +16,7 @@ index 58646a1..8bf830b 100755
  
 -def GetSharedLibraryDependenciesLinux(binary):
 +def GetSharedLibraryDependenciesLinux(binary, options):
-+  if options.verbose:  
++  if options.verbose:
 +    print "GetSharedLibraryDependencies for %s" % binary
 +
    """Return absolute paths to all shared library dependecies of the binary.
@@ -18,8 +26,8 @@ index 58646a1..8bf830b 100755
      m = lib_re.match(line)
      if m:
        result.append(m.group(1))
-+  if options.verbose:  
-+    print "Done GetSharedLibraryDependencies for %s" % binary      
++  if options.verbose:
++    print "Done GetSharedLibraryDependencies for %s" % binary
 +    print result
    return result
  
@@ -38,7 +46,7 @@ index 58646a1..8bf830b 100755
  def GenerateSymbols(options, binaries):
    """Dumps the symbols of binary and places them in the given directory."""
 -
-+  if options.verbose:          
++  if options.verbose:
 +    print "Generating symbols for %s " % (' '.join(binaries))
    queue = Queue.Queue()
    print_lock = threading.Lock()

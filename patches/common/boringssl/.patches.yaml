@@ -1,8 +1,0 @@
-repo: src/third_party/boringssl/src
-patches:
--
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: implement-SSL_get_tlsext_status_type.patch
-  description: |
-    BoringSSL doesn't implement `SSL_get_tlsext_status_type()`,
-    but Node.js expects it to be present cause OpenSSL has it.

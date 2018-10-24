@@ -1,0 +1,495 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Wed, 25 Jul 2018 20:03:35 +0200
+Subject: deps: cherry-pick 0dd3390 from upstream V8
+
+Original commit message:
+
+    Reland "[builtins] Add %IsTraceCategoryEnabled and %Trace builtins"
+
+    This is a reland of 8d4572a22b5d2fa0547195bcc40baa18b7565386
+
+    Original change's description:
+    > [builtins] Add %IsTraceCategoryEnabled and %Trace builtins
+    >
+    > Adds the builtin Trace and IsTraceCategoryEnabled functions
+    > exposed via extra bindings. These are intended to use by
+    > embedders to allow basic trace event support from JavaScript.
+    >
+    > ```js
+    > isTraceCategoryEnabled('v8.some-category')
+    >
+    > trace('e'.charCodeAt(0), 'v8.some-category',
+    >       'Foo', 0, { abc: 'xyz'})
+    > ```
+    >
+    > Bug: v8:7851
+    > Change-Id: I7bfb9bb059efdf87d92a56a0aae326650730c250
+    > Reviewed-on: https://chromium-review.googlesource.com/1103294
+    > Commit-Queue: Yang Guo <yangguo@chromium.org>
+    > Reviewed-by: Yang Guo <yangguo@chromium.org>
+    > Reviewed-by: Fadi Meawad <fmeawad@chromium.org>
+    > Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+    > Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+    > Cr-Commit-Position: refs/heads/master@{#54121}
+
+    TBR=cbruni@chromium.org
+
+    Bug: v8:7851
+    Change-Id: Id063754b2834b3b6a2b2654e76e8637bcd6aa5f8
+    Reviewed-on: https://chromium-review.googlesource.com/1137071
+    Commit-Queue: Yang Guo <yangguo@chromium.org>
+    Reviewed-by: Yang Guo <yangguo@chromium.org>
+    Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+    Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#54532}
+
+Refs: https://github.com/v8/v8/commit/0dd33901a16c7c64290b7e7ddf13945b773c5d79
+
+PR-URL: https://github.com/nodejs/node/pull/21983
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Ujjwal Sharma <usharma1998@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/AUTHORS b/AUTHORS
+index b9391a0d28499985ae6a5b93394c6d5afc9ea1cd..3873f0ca6816ef28dbbaf63944d66f278c9aff4b 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -87,6 +87,7 @@ Jan de Mooij <jandemooij@gmail.com>
+ Jan Krems <jan.krems@gmail.com>
+ Jay Freeman <saurik@saurik.com>
+ James Pike <g00gle@chilon.net>
++James M Snell <jasnell@gmail.com>
+ Jianghua Yang <jianghua.yjh@alibaba-inc.com>
+ Joel Stanley <joel@jms.id.au>
+ Johan Bergström <johan@bergstroem.nu>
+diff --git a/BUILD.gn b/BUILD.gn
+index 1e31acb2771e6e4137524ff4ae6a9e962092cd90..4c8c8acd593c8151798a5187c44f56fee3f07977 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -1588,6 +1588,7 @@ v8_source_set("v8_base") {
+     "src/builtins/builtins-sharedarraybuffer.cc",
+     "src/builtins/builtins-string.cc",
+     "src/builtins/builtins-symbol.cc",
++    "src/builtins/builtins-trace.cc",
+     "src/builtins/builtins-typed-array.cc",
+     "src/builtins/builtins-utils.h",
+     "src/builtins/builtins.cc",
+diff --git a/src/bootstrapper.cc b/src/bootstrapper.cc
+index 6723f3d5d463327cada8477626562a3c27c3e69f..656650cd6498dd82de02e583f5b83ae04a58b0e7 100644
+--- a/src/bootstrapper.cc
++++ b/src/bootstrapper.cc
+@@ -5077,6 +5077,15 @@ bool Genesis::InstallExtraNatives() {
+ 
+   Handle<JSObject> extras_binding =
+       factory()->NewJSObject(isolate()->object_function());
++
++  // binding.isTraceCategoryEnabled(category)
++  SimpleInstallFunction(isolate(), extras_binding, "isTraceCategoryEnabled",
++                        Builtins::kIsTraceCategoryEnabled, 1, true);
++
++  // binding.trace(phase, category, name, id, data)
++  SimpleInstallFunction(isolate(), extras_binding, "trace", Builtins::kTrace, 5,
++                        true);
++
+   native_context()->set_extras_binding_object(*extras_binding);
+ 
+   for (int i = ExtraNatives::GetDebuggerCount();
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index 46b02d88d817199620f02afdac753f12f4829e8f..2d7c780c709c55da93797e45e4352598745d0fd0 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -1308,7 +1308,11 @@ namespace internal {
+   ASM(CallApiGetter)                                                           \
+   ASM(DoubleToI)                                                               \
+   TFC(GetProperty, GetProperty, 1)                                             \
+-  ASM(MathPowInternal)
++  ASM(MathPowInternal)                                                         \
++                                                                               \
++  /* Trace */                                                                  \
++  CPP(IsTraceCategoryEnabled)                                                  \
++  CPP(Trace)
+ 
+ #ifdef V8_INTL_SUPPORT
+ #define BUILTIN_LIST(CPP, API, TFJ, TFC, TFS, TFH, ASM)                \
+diff --git a/src/builtins/builtins-trace.cc b/src/builtins/builtins-trace.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd0f5a77d0a6177069bfa0bd83515f9ded92b491
+--- /dev/null
++++ b/src/builtins/builtins-trace.cc
+@@ -0,0 +1,191 @@
++// Copyright 2018 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "src/api.h"
++#include "src/builtins/builtins-utils.h"
++#include "src/builtins/builtins.h"
++#include "src/counters.h"
++#include "src/json-stringifier.h"
++#include "src/objects-inl.h"
++
++namespace v8 {
++namespace internal {
++
++namespace {
++
++using v8::tracing::TracedValue;
++
++#define MAX_STACK_LENGTH 100
++
++class MaybeUtf8 {
++ public:
++  explicit MaybeUtf8(Isolate* isolate, Handle<String> string) : buf_(data_) {
++    string = String::Flatten(isolate, string);
++    int len;
++    if (string->IsOneByteRepresentation()) {
++      // Technically this allows unescaped latin1 characters but the trace
++      // events mechanism currently does the same and the current consuming
++      // tools are tolerant of it. A more correct approach here would be to
++      // escape non-ascii characters but this is easier and faster.
++      len = string->length();
++      AllocateSufficientSpace(len);
++      if (len > 0) {
++        // Why copy? Well, the trace event mechanism requires null-terminated
++        // strings, the bytes we get from SeqOneByteString are not. buf_ is
++        // guaranteed to be null terminated.
++        memcpy(buf_, Handle<SeqOneByteString>::cast(string)->GetChars(), len);
++      }
++    } else {
++      Local<v8::String> local = Utils::ToLocal(string);
++      len = local->Utf8Length();
++      AllocateSufficientSpace(len);
++      if (len > 0) {
++        local->WriteUtf8(reinterpret_cast<char*>(buf_));
++      }
++    }
++    buf_[len] = 0;
++  }
++  const char* operator*() const { return reinterpret_cast<const char*>(buf_); }
++
++ private:
++  void AllocateSufficientSpace(int len) {
++    if (len + 1 > MAX_STACK_LENGTH) {
++      allocated_.reset(new uint8_t[len + 1]);
++      buf_ = allocated_.get();
++    }
++  }
++
++  // In the most common cases, the buffer here will be stack allocated.
++  // A heap allocation will only occur if the data is more than MAX_STACK_LENGTH
++  // Given that this is used primarily for trace event categories and names,
++  // the MAX_STACK_LENGTH should be more than enough.
++  uint8_t* buf_;
++  uint8_t data_[MAX_STACK_LENGTH];
++  std::unique_ptr<uint8_t> allocated_;
++};
++
++class JsonTraceValue : public ConvertableToTraceFormat {
++ public:
++  explicit JsonTraceValue(Isolate* isolate, Handle<String> object) {
++    // object is a JSON string serialized using JSON.stringify() from within
++    // the BUILTIN(Trace) method. This may (likely) contain UTF8 values so
++    // to grab the appropriate buffer data we have to serialize it out. We
++    // hold on to the bits until the AppendAsTraceFormat method is called.
++    MaybeUtf8 data(isolate, object);
++    data_ = *data;
++  }
++
++  void AppendAsTraceFormat(std::string* out) const override { *out += data_; }
++
++ private:
++  std::string data_;
++};
++
++const uint8_t* GetCategoryGroupEnabled(Isolate* isolate,
++                                       Handle<String> string) {
++  MaybeUtf8 category(isolate, string);
++  return TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(*category);
++}
++
++#undef MAX_STACK_LENGTH
++
++}  // namespace
++
++// Builins::kIsTraceCategoryEnabled(category) : bool
++BUILTIN(IsTraceCategoryEnabled) {
++  HandleScope scope(isolate);
++  Handle<Object> category = args.atOrUndefined(isolate, 1);
++  if (!category->IsString()) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kTraceEventCategoryError));
++  }
++  return isolate->heap()->ToBoolean(
++      *GetCategoryGroupEnabled(isolate, Handle<String>::cast(category)));
++}
++
++// Builtins::kTrace(phase, category, name, id, data) : bool
++BUILTIN(Trace) {
++  HandleScope handle_scope(isolate);
++
++  Handle<Object> phase_arg = args.atOrUndefined(isolate, 1);
++  Handle<Object> category = args.atOrUndefined(isolate, 2);
++  Handle<Object> name_arg = args.atOrUndefined(isolate, 3);
++  Handle<Object> id_arg = args.atOrUndefined(isolate, 4);
++  Handle<Object> data_arg = args.atOrUndefined(isolate, 5);
++
++  const uint8_t* category_group_enabled =
++      GetCategoryGroupEnabled(isolate, Handle<String>::cast(category));
++
++  // Exit early if the category group is not enabled.
++  if (!*category_group_enabled) {
++    return ReadOnlyRoots(isolate).false_value();
++  }
++
++  if (!phase_arg->IsNumber()) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kTraceEventPhaseError));
++  }
++  if (!category->IsString()) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kTraceEventCategoryError));
++  }
++  if (!name_arg->IsString()) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kTraceEventNameError));
++  }
++
++  uint32_t flags = TRACE_EVENT_FLAG_COPY;
++  int32_t id = 0;
++  if (!id_arg->IsNullOrUndefined(isolate)) {
++    if (!id_arg->IsNumber()) {
++      THROW_NEW_ERROR_RETURN_FAILURE(
++          isolate, NewTypeError(MessageTemplate::kTraceEventIDError));
++    }
++    flags |= TRACE_EVENT_FLAG_HAS_ID;
++    id = DoubleToInt32(id_arg->Number());
++  }
++
++  Handle<String> name_str = Handle<String>::cast(name_arg);
++  if (name_str->length() == 0) {
++    THROW_NEW_ERROR_RETURN_FAILURE(
++        isolate, NewTypeError(MessageTemplate::kTraceEventNameLengthError));
++  }
++  MaybeUtf8 name(isolate, name_str);
++
++  // We support passing one additional trace event argument with the
++  // name "data". Any JSON serializable value may be passed.
++  static const char* arg_name = "data";
++  int32_t num_args = 0;
++  uint8_t arg_type;
++  uint64_t arg_value;
++
++  if (!data_arg->IsUndefined(isolate)) {
++    // Serializes the data argument as a JSON string, which is then
++    // copied into an object. This eliminates duplicated code but
++    // could have perf costs. It is also subject to all the same
++    // limitations as JSON.stringify() as it relates to circular
++    // references and value limitations (e.g. BigInt is not supported).
++    JsonStringifier stringifier(isolate);
++    Handle<Object> result;
++    ASSIGN_RETURN_FAILURE_ON_EXCEPTION(
++        isolate, result,
++        stringifier.Stringify(data_arg, isolate->factory()->undefined_value(),
++                              isolate->factory()->undefined_value()));
++    std::unique_ptr<JsonTraceValue> traced_value;
++    traced_value.reset(
++        new JsonTraceValue(isolate, Handle<String>::cast(result)));
++    tracing::SetTraceValue(std::move(traced_value), &arg_type, &arg_value);
++    num_args++;
++  }
++
++  TRACE_EVENT_API_ADD_TRACE_EVENT(
++      static_cast<char>(DoubleToInt32(phase_arg->Number())),
++      category_group_enabled, *name, tracing::kGlobalScope, id, tracing::kNoId,
++      num_args, &arg_name, &arg_type, &arg_value, flags);
++
++  return ReadOnlyRoots(isolate).true_value();
++}
++
++}  // namespace internal
++}  // namespace v8
+diff --git a/src/debug/debug-evaluate.cc b/src/debug/debug-evaluate.cc
+index 0dd23037723ff4ebf1158f7ecd4f813ed53e18e0..d263fa45a9a4ea3f2604f8c47085a39963c12a91 100644
+--- a/src/debug/debug-evaluate.cc
++++ b/src/debug/debug-evaluate.cc
+@@ -567,6 +567,9 @@ DebugInfo::SideEffectState BuiltinGetSideEffectState(Builtins::Name id) {
+     case Builtins::kArrayMap:
+     case Builtins::kArrayReduce:
+     case Builtins::kArrayReduceRight:
++    // Trace builtins.
++    case Builtins::kIsTraceCategoryEnabled:
++    case Builtins::kTrace:
+     // TypedArray builtins.
+     case Builtins::kTypedArrayConstructor:
+     case Builtins::kTypedArrayPrototypeBuffer:
+diff --git a/src/messages.h b/src/messages.h
+index 1d1a07d7b696f32e7c7d56fceda4739bdf30b8ea..68078bb3736023e688a764709566bbc334e77791 100644
+--- a/src/messages.h
++++ b/src/messages.h
+@@ -757,7 +757,14 @@ class ErrorUtils : public AllStatic {
+   T(DataCloneDeserializationError, "Unable to deserialize cloned data.")       \
+   T(DataCloneDeserializationVersionError,                                      \
+     "Unable to deserialize cloned data due to invalid or unsupported "         \
+-    "version.")
++    "version.")                                                                \
++  /* Builtins-Trace Errors */                                                  \
++  T(TraceEventCategoryError, "Trace event category must be a string.")         \
++  T(TraceEventNameError, "Trace event name must be a string.")                 \
++  T(TraceEventNameLengthError,                                                 \
++    "Trace event name must not be an empty string.")                           \
++  T(TraceEventPhaseError, "Trace event phase must be a number.")               \
++  T(TraceEventIDError, "Trace event id must be a number.")
+ 
+ class MessageTemplate {
+  public:
+diff --git a/test/cctest/test-trace-event.cc b/test/cctest/test-trace-event.cc
+index 7b736b907dd9aebc8c0c505ce5a6542b79050c69..47545af37f89c0fcd648293a5bb1c70a5e6360b0 100644
+--- a/test/cctest/test-trace-event.cc
++++ b/test/cctest/test-trace-event.cc
+@@ -75,7 +75,7 @@ class MockTracingController : public v8::TracingController {
+                                 const char* name, uint64_t handle) override {}
+ 
+   const uint8_t* GetCategoryGroupEnabled(const char* name) override {
+-    if (strcmp(name, "v8-cat")) {
++    if (strncmp(name, "v8-cat", 6)) {
+       static uint8_t no = 0;
+       return &no;
+     } else {
+@@ -282,3 +282,135 @@ TEST(TestEventWithTimestamp) {
+   CHECK_EQ(20683, GET_TRACE_OBJECT(3)->timestamp);
+   CHECK_EQ(32832, GET_TRACE_OBJECT(4)->timestamp);
+ }
++
++TEST(BuiltinsIsTraceCategoryEnabled) {
++  CcTest::InitializeVM();
++  MockTracingPlatform platform;
++
++  v8::Isolate* isolate = CcTest::isolate();
++  v8::HandleScope handle_scope(isolate);
++  LocalContext env;
++
++  v8::Local<v8::Object> binding = env->GetExtrasBindingObject();
++  CHECK(!binding.IsEmpty());
++
++  auto undefined = v8::Undefined(isolate);
++  auto isTraceCategoryEnabled =
++      binding->Get(env.local(), v8_str("isTraceCategoryEnabled"))
++          .ToLocalChecked()
++          .As<v8::Function>();
++
++  {
++    // Test with an enabled category
++    v8::Local<v8::Value> argv[] = {v8_str("v8-cat")};
++    auto result = isTraceCategoryEnabled->Call(env.local(), undefined, 1, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(result->BooleanValue());
++  }
++
++  {
++    // Test with a disabled category
++    v8::Local<v8::Value> argv[] = {v8_str("cat")};
++    auto result = isTraceCategoryEnabled->Call(env.local(), undefined, 1, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(!result->BooleanValue());
++  }
++
++  {
++    // Test with an enabled utf8 category
++    v8::Local<v8::Value> argv[] = {v8_str("v8-cat\u20ac")};
++    auto result = isTraceCategoryEnabled->Call(env.local(), undefined, 1, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(result->BooleanValue());
++  }
++}
++
++TEST(BuiltinsTrace) {
++  CcTest::InitializeVM();
++  MockTracingPlatform platform;
++
++  v8::Isolate* isolate = CcTest::isolate();
++  v8::HandleScope handle_scope(isolate);
++  LocalContext env;
++
++  v8::Local<v8::Object> binding = env->GetExtrasBindingObject();
++  CHECK(!binding.IsEmpty());
++
++  auto undefined = v8::Undefined(isolate);
++  auto trace = binding->Get(env.local(), v8_str("trace"))
++                   .ToLocalChecked()
++                   .As<v8::Function>();
++
++  // Test with disabled category
++  {
++    v8::Local<v8::String> category = v8_str("cat");
++    v8::Local<v8::String> name = v8_str("name");
++    v8::Local<v8::Value> argv[] = {
++        v8::Integer::New(isolate, 'b'),                // phase
++        category, name, v8::Integer::New(isolate, 0),  // id
++        undefined                                      // data
++    };
++    auto result = trace->Call(env.local(), undefined, 5, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(!result->BooleanValue());
++    CHECK_EQ(0, GET_TRACE_OBJECTS_LIST->size());
++  }
++
++  // Test with enabled category
++  {
++    v8::Local<v8::String> category = v8_str("v8-cat");
++    v8::Local<v8::String> name = v8_str("name");
++    v8::Local<v8::Context> context = isolate->GetCurrentContext();
++    v8::Local<v8::Object> data = v8::Object::New(isolate);
++    data->Set(context, v8_str("foo"), v8_str("bar")).FromJust();
++    v8::Local<v8::Value> argv[] = {
++        v8::Integer::New(isolate, 'b'),                  // phase
++        category, name, v8::Integer::New(isolate, 123),  // id
++        data                                             // data arg
++    };
++    auto result = trace->Call(env.local(), undefined, 5, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(result->BooleanValue());
++    CHECK_EQ(1, GET_TRACE_OBJECTS_LIST->size());
++
++    CHECK_EQ(123, GET_TRACE_OBJECT(0)->id);
++    CHECK_EQ('b', GET_TRACE_OBJECT(0)->phase);
++    CHECK_EQ("name", GET_TRACE_OBJECT(0)->name);
++    CHECK_EQ(1, GET_TRACE_OBJECT(0)->num_args);
++  }
++
++  // Test with enabled utf8 category
++  {
++    v8::Local<v8::String> category = v8_str("v8-cat\u20ac");
++    v8::Local<v8::String> name = v8_str("name\u20ac");
++    v8::Local<v8::Context> context = isolate->GetCurrentContext();
++    v8::Local<v8::Object> data = v8::Object::New(isolate);
++    data->Set(context, v8_str("foo"), v8_str("bar")).FromJust();
++    v8::Local<v8::Value> argv[] = {
++        v8::Integer::New(isolate, 'b'),                  // phase
++        category, name, v8::Integer::New(isolate, 123),  // id
++        data                                             // data arg
++    };
++    auto result = trace->Call(env.local(), undefined, 5, argv)
++                      .ToLocalChecked()
++                      .As<v8::Boolean>();
++
++    CHECK(result->BooleanValue());
++    CHECK_EQ(2, GET_TRACE_OBJECTS_LIST->size());
++
++    CHECK_EQ(123, GET_TRACE_OBJECT(1)->id);
++    CHECK_EQ('b', GET_TRACE_OBJECT(1)->phase);
++    CHECK_EQ("name\u20ac", GET_TRACE_OBJECT(1)->name);
++    CHECK_EQ(1, GET_TRACE_OBJECT(1)->num_args);
++  }
++}

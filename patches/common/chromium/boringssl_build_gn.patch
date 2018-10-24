@@ -1,4 +1,4 @@
-From 1e77d2109d61aea5270d1026a7df5fb44e639568 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:48:05 -0700
 Subject: boringssl_build_gn.patch
@@ -7,7 +7,7 @@ Build BoringSSL with some extra functions that nodejs needs. Only affects
 the GN build; with the GYP build, nodejs is still built with OpenSSL.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index d31a9f29fa9c..dea5a6403f4c 100644
+index d31a9f29fa9c12e753708b2a1e75c33b70924300..dea5a6403f4c32f94bb58198c467bc7cc87a8217 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
 @@ -46,6 +46,13 @@ config("no_asm_config") {
@@ -24,6 +24,3 @@ index d31a9f29fa9c..dea5a6403f4c 100644
  
  # Windows' assembly is built with Yasm. The other platforms use the platform
  # assembler.
--- 
-2.17.0
-

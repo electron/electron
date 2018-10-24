@@ -1,4 +1,4 @@
-From a767540b22c787e0ec6809f275e7cba5f9048792 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:24 -0700
 Subject: mas-cgdisplayusesforcetogray.patch
@@ -6,7 +6,7 @@ Subject: mas-cgdisplayusesforcetogray.patch
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 99a128511250..7200a5df74e1 100644
+index 99a128511250d594cdac79ebf9b291823db18962..7200a5df74e168b817f7e7598b7fce8b41c6515c 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -106,7 +106,17 @@ Display BuildDisplayForScreen(NSScreen* screen) {
@@ -27,6 +27,3 @@ index 99a128511250..7200a5df74e1 100644
  
    // CGDisplayRotation returns a double. Display::SetRotationAsDegree will
    // handle the unexpected situations were the angle is not a multiple of 90.
--- 
-2.17.0
-

@@ -1,0 +1,754 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexey Kozyatinskiy <kozyatinskiy@chromium.org>
+Date: Fri, 10 Aug 2018 13:09:49 -0700
+Subject: deps: cherry-pick dbfcc48 from upstream V8
+
+Original commit message:
+```
+[inspector] added V8InspectorClient::resourceNameToUrl
+
+Some clients (see Node.js) use platform path as ScriptOrigin.
+Reporting platform path in protocol makes using protocol much harder.
+This CL introduced V8InspectorClient::resourceNameToUrl method that
+is called for any reported using protocol url.
+V8Inspector uses url internally as well so protocol client may generate
+pattern for blackboxing with file urls only and does not need to build
+complicated regexp that covers files urls and platform paths on
+different platforms.
+
+R=lushnikov@chromium.org
+TBR=yangguo@chromium.org
+
+Bug: none
+Change-Id: Iff302e7441df922fa5d689fe510f5a9bfd470b9b
+Reviewed-on: https://chromium-review.googlesource.com/1164624
+Commit-Queue: Aleksey Kozyatinskiy <kozyatinskiy@chromium.org>
+Reviewed-by: Alexei Filippov <alph@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#55029}
+```
+Refs: https://github.com/v8/v8/commit/dbfcc48
+PR-URL: https://github.com/nodejs/node/pull/22251
+Reviewed-By: Eugene Ostroukhov <eostroukhov@google.com>
+Reviewed-By: Tiancheng "Timothy" Gu <timothygu99@gmail.com>
+
+diff --git a/include/v8-inspector.h b/include/v8-inspector.h
+index d879a94373e427892bb6921eafff5139e05509b0..ad04d01bd212583c3ae9c3911c5dcfd0ef07cd79 100644
+--- a/include/v8-inspector.h
++++ b/include/v8-inspector.h
+@@ -215,6 +215,11 @@ class V8_EXPORT V8InspectorClient {
+   virtual bool canExecuteScripts(int contextGroupId) { return true; }
+ 
+   virtual void maxAsyncCallStackDepthChanged(int depth) {}
++
++  virtual std::unique_ptr<StringBuffer> resourceNameToUrl(
++      const StringView& resourceName) {
++    return nullptr;
++  }
+ };
+ 
+ // These stack trace ids are intended to be passed between debuggers and be
+diff --git a/src/inspector/v8-debugger-agent-impl.cc b/src/inspector/v8-debugger-agent-impl.cc
+index e4e6492b67a0c5a2200875340dca4f3e8f3ab1b7..d9cb49b1d4d2ef354fd2478623a4046cd7c25354 100644
+--- a/src/inspector/v8-debugger-agent-impl.cc
++++ b/src/inspector/v8-debugger-agent-impl.cc
+@@ -1396,7 +1396,7 @@ void V8DebuggerAgentImpl::didParseSource(
+         protocol::StringUtil::parseJSON(inspected->auxData()));
+   }
+   bool isLiveEdit = script->isLiveEdit();
+-  bool hasSourceURL = script->hasSourceURL();
++  bool hasSourceURLComment = script->hasSourceURLComment();
+   bool isModule = script->isModule();
+   String16 scriptId = script->scriptId();
+   String16 scriptURL = script->sourceURL();
+@@ -1416,7 +1416,8 @@ void V8DebuggerAgentImpl::didParseSource(
+   Maybe<protocol::DictionaryValue> executionContextAuxDataParam(
+       std::move(executionContextAuxData));
+   const bool* isLiveEditParam = isLiveEdit ? &isLiveEdit : nullptr;
+-  const bool* hasSourceURLParam = hasSourceURL ? &hasSourceURL : nullptr;
++  const bool* hasSourceURLParam =
++      hasSourceURLComment ? &hasSourceURLComment : nullptr;
+   const bool* isModuleParam = isModule ? &isModule : nullptr;
+   std::unique_ptr<V8StackTraceImpl> stack =
+       V8StackTraceImpl::capture(m_inspector->debugger(), contextGroupId, 1);
+diff --git a/src/inspector/v8-debugger-script.cc b/src/inspector/v8-debugger-script.cc
+index c40477ae2af74dfea6a950bc7be6e5b4efa42fe8..d861265e148559a16e27b20b371c4d7bba364add 100644
+--- a/src/inspector/v8-debugger-script.cc
++++ b/src/inspector/v8-debugger-script.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "src/inspector/inspected-context.h"
+ #include "src/inspector/string-util.h"
++#include "src/inspector/v8-inspector-impl.h"
+ #include "src/inspector/wasm-translation.h"
+ #include "src/utils.h"
+ 
+@@ -110,9 +111,9 @@ class ActualScript : public V8DebuggerScript {
+ 
+  public:
+   ActualScript(v8::Isolate* isolate, v8::Local<v8::debug::Script> script,
+-               bool isLiveEdit)
++               bool isLiveEdit, V8InspectorClient* client)
+       : V8DebuggerScript(isolate, String16::fromInteger(script->Id()),
+-                         GetNameOrSourceUrl(script)),
++                         GetScriptURL(script, client)),
+         m_isLiveEdit(isLiveEdit) {
+     Initialize(script);
+   }
+@@ -218,10 +219,18 @@ class ActualScript : public V8DebuggerScript {
+   }
+ 
+  private:
+-  String16 GetNameOrSourceUrl(v8::Local<v8::debug::Script> script) {
+-    v8::Local<v8::String> name;
+-    if (script->Name().ToLocal(&name) || script->SourceURL().ToLocal(&name))
+-      return toProtocolString(name);
++  String16 GetScriptURL(v8::Local<v8::debug::Script> script,
++                        V8InspectorClient* client) {
++    v8::Local<v8::String> sourceURL;
++    if (script->SourceURL().ToLocal(&sourceURL) && sourceURL->Length() > 0)
++      return toProtocolString(sourceURL);
++    v8::Local<v8::String> v8Name;
++    if (script->Name().ToLocal(&v8Name) && v8Name->Length() > 0) {
++      String16 name = toProtocolString(v8Name);
++      std::unique_ptr<StringBuffer> url =
++          client->resourceNameToUrl(toStringView(name));
++      return url ? toString16(url->string()) : name;
++    }
+     return String16();
+   }
+ 
+@@ -231,7 +240,8 @@ class ActualScript : public V8DebuggerScript {
+ 
+   void Initialize(v8::Local<v8::debug::Script> script) {
+     v8::Local<v8::String> tmp;
+-    if (script->SourceURL().ToLocal(&tmp)) m_sourceURL = toProtocolString(tmp);
++    m_hasSourceURLComment =
++        script->SourceURL().ToLocal(&tmp) && tmp->Length() > 0;
+     if (script->SourceMappingURL().ToLocal(&tmp))
+       m_sourceMappingURL = toProtocolString(tmp);
+     m_startLine = script->LineOffset();
+@@ -398,9 +408,9 @@ class WasmVirtualScript : public V8DebuggerScript {
+ 
+ std::unique_ptr<V8DebuggerScript> V8DebuggerScript::Create(
+     v8::Isolate* isolate, v8::Local<v8::debug::Script> scriptObj,
+-    bool isLiveEdit) {
++    bool isLiveEdit, V8InspectorClient* client) {
+   return std::unique_ptr<ActualScript>(
+-      new ActualScript(isolate, scriptObj, isLiveEdit));
++      new ActualScript(isolate, scriptObj, isLiveEdit, client));
+ }
+ 
+ std::unique_ptr<V8DebuggerScript> V8DebuggerScript::CreateWasm(
+@@ -418,12 +428,11 @@ V8DebuggerScript::V8DebuggerScript(v8::Isolate* isolate, String16 id,
+ 
+ V8DebuggerScript::~V8DebuggerScript() {}
+ 
+-const String16& V8DebuggerScript::sourceURL() const {
+-  return m_sourceURL.isEmpty() ? m_url : m_sourceURL;
+-}
+-
+ void V8DebuggerScript::setSourceURL(const String16& sourceURL) {
+-  m_sourceURL = sourceURL;
++  if (sourceURL.length() > 0) {
++    m_hasSourceURLComment = true;
++    m_url = sourceURL;
++  }
+ }
+ 
+ bool V8DebuggerScript::setBreakpoint(const String16& condition,
+@@ -431,5 +440,4 @@ bool V8DebuggerScript::setBreakpoint(const String16& condition,
+   v8::HandleScope scope(m_isolate);
+   return script()->SetBreakpoint(toV8String(m_isolate, condition), loc, id);
+ }
+-
+ }  // namespace v8_inspector
+diff --git a/src/inspector/v8-debugger-script.h b/src/inspector/v8-debugger-script.h
+index e0e7d93b20275221e873f026a9d44e663fad2e30..38e6448f48d8e8dcdde0935c516b45ddc7cf4db5 100644
+--- a/src/inspector/v8-debugger-script.h
++++ b/src/inspector/v8-debugger-script.h
+@@ -40,13 +40,14 @@
+ namespace v8_inspector {
+ 
+ // Forward declaration.
++class V8InspectorClient;
+ class WasmTranslation;
+ 
+ class V8DebuggerScript {
+  public:
+   static std::unique_ptr<V8DebuggerScript> Create(
+       v8::Isolate* isolate, v8::Local<v8::debug::Script> script,
+-      bool isLiveEdit);
++      bool isLiveEdit, V8InspectorClient* client);
+   static std::unique_ptr<V8DebuggerScript> CreateWasm(
+       v8::Isolate* isolate, WasmTranslation* wasmTranslation,
+       v8::Local<v8::debug::WasmScript> underlyingScript, String16 id,
+@@ -55,9 +56,9 @@ class V8DebuggerScript {
+   virtual ~V8DebuggerScript();
+ 
+   const String16& scriptId() const { return m_id; }
+-  const String16& url() const { return m_url; }
+-  bool hasSourceURL() const { return !m_sourceURL.isEmpty(); }
+-  const String16& sourceURL() const;
++  bool hasSourceURLComment() const { return m_hasSourceURLComment; }
++  const String16& sourceURL() const { return m_url; }
++
+   virtual const String16& sourceMappingURL() const = 0;
+   virtual const String16& source() const = 0;
+   virtual const String16& hash() const = 0;
+@@ -95,7 +96,7 @@ class V8DebuggerScript {
+ 
+   String16 m_id;
+   String16 m_url;
+-  String16 m_sourceURL;
++  bool m_hasSourceURLComment = false;
+   int m_executionContextId = 0;
+ 
+   v8::Isolate* m_isolate;
+diff --git a/src/inspector/v8-debugger.cc b/src/inspector/v8-debugger.cc
+index 1ceb4210f7f476ddbc1fc795239d6b2153788a55..7d1f7cefd15db3f5482e27fa47880bb6227bb322 100644
+--- a/src/inspector/v8-debugger.cc
++++ b/src/inspector/v8-debugger.cc
+@@ -226,13 +226,15 @@ void V8Debugger::getCompiledScripts(
+     v8::Local<v8::debug::Script> script = scripts.Get(i);
+     if (!script->WasCompiled()) continue;
+     if (script->IsEmbedded()) {
+-      result.push_back(V8DebuggerScript::Create(m_isolate, script, false));
++      result.push_back(V8DebuggerScript::Create(m_isolate, script, false,
++                                                m_inspector->client()));
+       continue;
+     }
+     int contextId;
+     if (!script->ContextId().To(&contextId)) continue;
+     if (m_inspector->contextGroupId(contextId) != contextGroupId) continue;
+-    result.push_back(V8DebuggerScript::Create(m_isolate, script, false));
++    result.push_back(V8DebuggerScript::Create(m_isolate, script, false,
++                                              m_inspector->client()));
+   }
+ }
+ 
+@@ -585,13 +587,14 @@ void V8Debugger::ScriptCompiled(v8::Local<v8::debug::Script> script,
+         });
+   } else if (m_ignoreScriptParsedEventsCounter == 0) {
+     v8::Isolate* isolate = m_isolate;
++    V8InspectorClient* client = m_inspector->client();
+     m_inspector->forEachSession(
+         m_inspector->contextGroupId(contextId),
+-        [&isolate, &script, &has_compile_error,
+-         &is_live_edited](V8InspectorSessionImpl* session) {
++        [&isolate, &script, &has_compile_error, &is_live_edited,
++         &client](V8InspectorSessionImpl* session) {
+           if (!session->debuggerAgent()->enabled()) return;
+           session->debuggerAgent()->didParseSource(
+-              V8DebuggerScript::Create(isolate, script, is_live_edited),
++              V8DebuggerScript::Create(isolate, script, is_live_edited, client),
+               !has_compile_error);
+         });
+   }
+diff --git a/src/inspector/v8-profiler-agent-impl.cc b/src/inspector/v8-profiler-agent-impl.cc
+index 59a99d79d54c2fb8dee1ff3e950a1c995889a8ac..f14815fdc4b031c640795ce10fb4b963310656be 100644
+--- a/src/inspector/v8-profiler-agent-impl.cc
++++ b/src/inspector/v8-profiler-agent-impl.cc
+@@ -7,6 +7,7 @@
+ #include <vector>
+ 
+ #include "src/base/atomicops.h"
++#include "src/debug/debug-interface.h"
+ #include "src/flags.h"  // TODO(jgruber): Remove include and DEPS entry.
+ #include "src/inspector/protocol/Protocol.h"
+ #include "src/inspector/string-util.h"
+@@ -31,6 +32,15 @@ static const char typeProfileStarted[] = "typeProfileStarted";
+ 
+ namespace {
+ 
++String16 resourceNameToUrl(V8InspectorImpl* inspector,
++                           v8::Local<v8::String> v8Name) {
++  String16 name = toProtocolString(v8Name);
++  if (!inspector) return name;
++  std::unique_ptr<StringBuffer> url =
++      inspector->client()->resourceNameToUrl(toStringView(name));
++  return url ? toString16(url->string()) : name;
++}
++
+ std::unique_ptr<protocol::Array<protocol::Profiler::PositionTickInfo>>
+ buildInspectorObjectForPositionTicks(const v8::CpuProfileNode* node) {
+   unsigned lineCount = node->GetHitLineCount();
+@@ -51,13 +61,14 @@ buildInspectorObjectForPositionTicks(const v8::CpuProfileNode* node) {
+ }
+ 
+ std::unique_ptr<protocol::Profiler::ProfileNode> buildInspectorObjectFor(
+-    v8::Isolate* isolate, const v8::CpuProfileNode* node) {
++    V8InspectorImpl* inspector, const v8::CpuProfileNode* node) {
++  v8::Isolate* isolate = inspector->isolate();
+   v8::HandleScope handleScope(isolate);
+   auto callFrame =
+       protocol::Runtime::CallFrame::create()
+           .setFunctionName(toProtocolString(node->GetFunctionName()))
+           .setScriptId(String16::fromInteger(node->GetScriptId()))
+-          .setUrl(toProtocolString(node->GetScriptResourceName()))
++          .setUrl(resourceNameToUrl(inspector, node->GetScriptResourceName()))
+           .setLineNumber(node->GetLineNumber() - 1)
+           .setColumnNumber(node->GetColumnNumber() - 1)
+           .build();
+@@ -107,18 +118,19 @@ std::unique_ptr<protocol::Array<int>> buildInspectorObjectForTimestamps(
+   return array;
+ }
+ 
+-void flattenNodesTree(v8::Isolate* isolate, const v8::CpuProfileNode* node,
++void flattenNodesTree(V8InspectorImpl* inspector,
++                      const v8::CpuProfileNode* node,
+                       protocol::Array<protocol::Profiler::ProfileNode>* list) {
+-  list->addItem(buildInspectorObjectFor(isolate, node));
++  list->addItem(buildInspectorObjectFor(inspector, node));
+   const int childrenCount = node->GetChildrenCount();
+   for (int i = 0; i < childrenCount; i++)
+-    flattenNodesTree(isolate, node->GetChild(i), list);
++    flattenNodesTree(inspector, node->GetChild(i), list);
+ }
+ 
+ std::unique_ptr<protocol::Profiler::Profile> createCPUProfile(
+-    v8::Isolate* isolate, v8::CpuProfile* v8profile) {
++    V8InspectorImpl* inspector, v8::CpuProfile* v8profile) {
+   auto nodes = protocol::Array<protocol::Profiler::ProfileNode>::create();
+-  flattenNodesTree(isolate, v8profile->GetTopDownRoot(), nodes.get());
++  flattenNodesTree(inspector, v8profile->GetTopDownRoot(), nodes.get());
+   return protocol::Profiler::Profile::create()
+       .setNodes(std::move(nodes))
+       .setStartTime(static_cast<double>(v8profile->GetStartTime()))
+@@ -320,7 +332,7 @@ std::unique_ptr<protocol::Profiler::CoverageRange> createCoverageRange(
+ }
+ 
+ Response coverageToProtocol(
+-    v8::Isolate* isolate, const v8::debug::Coverage& coverage,
++    V8InspectorImpl* inspector, const v8::debug::Coverage& coverage,
+     std::unique_ptr<protocol::Array<protocol::Profiler::ScriptCoverage>>*
+         out_result) {
+   std::unique_ptr<protocol::Array<protocol::Profiler::ScriptCoverage>> result =
+@@ -361,8 +373,10 @@ Response coverageToProtocol(
+     }
+     String16 url;
+     v8::Local<v8::String> name;
+-    if (script->Name().ToLocal(&name) || script->SourceURL().ToLocal(&name)) {
++    if (script->SourceURL().ToLocal(&name) && name->Length()) {
+       url = toProtocolString(name);
++    } else if (script->Name().ToLocal(&name) && name->Length()) {
++      url = resourceNameToUrl(inspector, name);
+     }
+     result->addItem(protocol::Profiler::ScriptCoverage::create()
+                         .setScriptId(String16::fromInteger(script->Id()))
+@@ -384,7 +398,7 @@ Response V8ProfilerAgentImpl::takePreciseCoverage(
+   }
+   v8::HandleScope handle_scope(m_isolate);
+   v8::debug::Coverage coverage = v8::debug::Coverage::CollectPrecise(m_isolate);
+-  return coverageToProtocol(m_isolate, coverage, out_result);
++  return coverageToProtocol(m_session->inspector(), coverage, out_result);
+ }
+ 
+ Response V8ProfilerAgentImpl::getBestEffortCoverage(
+@@ -393,12 +407,12 @@ Response V8ProfilerAgentImpl::getBestEffortCoverage(
+   v8::HandleScope handle_scope(m_isolate);
+   v8::debug::Coverage coverage =
+       v8::debug::Coverage::CollectBestEffort(m_isolate);
+-  return coverageToProtocol(m_isolate, coverage, out_result);
++  return coverageToProtocol(m_session->inspector(), coverage, out_result);
+ }
+ 
+ namespace {
+ std::unique_ptr<protocol::Array<protocol::Profiler::ScriptTypeProfile>>
+-typeProfileToProtocol(v8::Isolate* isolate,
++typeProfileToProtocol(V8InspectorImpl* inspector,
+                       const v8::debug::TypeProfile& type_profile) {
+   std::unique_ptr<protocol::Array<protocol::Profiler::ScriptTypeProfile>>
+       result = protocol::Array<protocol::Profiler::ScriptTypeProfile>::create();
+@@ -426,8 +440,10 @@ typeProfileToProtocol(v8::Isolate* isolate,
+     }
+     String16 url;
+     v8::Local<v8::String> name;
+-    if (script->Name().ToLocal(&name) || script->SourceURL().ToLocal(&name)) {
++    if (script->SourceURL().ToLocal(&name) && name->Length()) {
+       url = toProtocolString(name);
++    } else if (script->Name().ToLocal(&name) && name->Length()) {
++      url = resourceNameToUrl(inspector, name);
+     }
+     result->addItem(protocol::Profiler::ScriptTypeProfile::create()
+                         .setScriptId(String16::fromInteger(script->Id()))
+@@ -462,7 +478,7 @@ Response V8ProfilerAgentImpl::takeTypeProfile(
+   v8::HandleScope handle_scope(m_isolate);
+   v8::debug::TypeProfile type_profile =
+       v8::debug::TypeProfile::Collect(m_isolate);
+-  *out_result = typeProfileToProtocol(m_isolate, type_profile);
++  *out_result = typeProfileToProtocol(m_session->inspector(), type_profile);
+   return Response::OK();
+ }
+ 
+@@ -491,7 +507,7 @@ std::unique_ptr<protocol::Profiler::Profile> V8ProfilerAgentImpl::stopProfiling(
+       m_profiler->StopProfiling(toV8String(m_isolate, title));
+   std::unique_ptr<protocol::Profiler::Profile> result;
+   if (profile) {
+-    if (serialize) result = createCPUProfile(m_isolate, profile);
++    if (serialize) result = createCPUProfile(m_session->inspector(), profile);
+     profile->Delete();
+   }
+   --m_startedProfilesCount;
+diff --git a/src/inspector/v8-stack-trace-impl.cc b/src/inspector/v8-stack-trace-impl.cc
+index 75293c59afee8e09f05a33d8aa806ee79bd01e99..9be0d4fa385f2a02da6ba9865f7d658ac1912a5e 100644
+--- a/src/inspector/v8-stack-trace-impl.cc
++++ b/src/inspector/v8-stack-trace-impl.cc
+@@ -7,6 +7,7 @@
+ #include <algorithm>
+ 
+ #include "src/inspector/v8-debugger.h"
++#include "src/inspector/v8-inspector-impl.h"
+ #include "src/inspector/wasm-translation.h"
+ 
+ namespace v8_inspector {
+@@ -73,7 +74,10 @@ std::unique_ptr<protocol::Runtime::StackTrace> buildInspectorObjectCommon(
+   std::unique_ptr<protocol::Array<protocol::Runtime::CallFrame>>
+       inspectorFrames = protocol::Array<protocol::Runtime::CallFrame>::create();
+   for (size_t i = 0; i < frames.size(); i++) {
+-    inspectorFrames->addItem(frames[i]->buildInspectorObject());
++    V8InspectorClient* client = nullptr;
++    if (debugger && debugger->inspector())
++      client = debugger->inspector()->client();
++    inspectorFrames->addItem(frames[i]->buildInspectorObject(client));
+   }
+   std::unique_ptr<protocol::Runtime::StackTrace> stackTrace =
+       protocol::Runtime::StackTrace::create()
+@@ -117,7 +121,9 @@ StackFrame::StackFrame(v8::Local<v8::StackFrame> v8Frame)
+       m_scriptId(String16::fromInteger(v8Frame->GetScriptId())),
+       m_sourceURL(toProtocolString(v8Frame->GetScriptNameOrSourceURL())),
+       m_lineNumber(v8Frame->GetLineNumber() - 1),
+-      m_columnNumber(v8Frame->GetColumn() - 1) {
++      m_columnNumber(v8Frame->GetColumn() - 1),
++      m_hasSourceURLComment(v8Frame->GetScriptName() !=
++                            v8Frame->GetScriptNameOrSourceURL()) {
+   DCHECK_NE(v8::Message::kNoLineNumberInfo, m_lineNumber + 1);
+   DCHECK_NE(v8::Message::kNoColumnInfo, m_columnNumber + 1);
+ }
+@@ -137,12 +143,20 @@ int StackFrame::lineNumber() const { return m_lineNumber; }
+ 
+ int StackFrame::columnNumber() const { return m_columnNumber; }
+ 
+-std::unique_ptr<protocol::Runtime::CallFrame> StackFrame::buildInspectorObject()
+-    const {
++std::unique_ptr<protocol::Runtime::CallFrame> StackFrame::buildInspectorObject(
++    V8InspectorClient* client) const {
++  String16 frameUrl = m_sourceURL;
++  if (client && !m_hasSourceURLComment && frameUrl.length() > 0) {
++    std::unique_ptr<StringBuffer> url =
++        client->resourceNameToUrl(toStringView(m_sourceURL));
++    if (url) {
++      frameUrl = toString16(url->string());
++    }
++  }
+   return protocol::Runtime::CallFrame::create()
+       .setFunctionName(m_functionName)
+       .setScriptId(m_scriptId)
+-      .setUrl(m_sourceURL)
++      .setUrl(frameUrl)
+       .setLineNumber(m_lineNumber)
+       .setColumnNumber(m_columnNumber)
+       .build();
+diff --git a/src/inspector/v8-stack-trace-impl.h b/src/inspector/v8-stack-trace-impl.h
+index a8f23c48b67231f6015d1004ec14995c65967239..019fd469cdd72e1fd03ed7a0ab8554e054fb8498 100644
+--- a/src/inspector/v8-stack-trace-impl.h
++++ b/src/inspector/v8-stack-trace-impl.h
+@@ -33,7 +33,8 @@ class StackFrame {
+   const String16& sourceURL() const;
+   int lineNumber() const;    // 0-based.
+   int columnNumber() const;  // 0-based.
+-  std::unique_ptr<protocol::Runtime::CallFrame> buildInspectorObject() const;
++  std::unique_ptr<protocol::Runtime::CallFrame> buildInspectorObject(
++      V8InspectorClient* client) const;
+   bool isEqual(StackFrame* frame) const;
+ 
+  private:
+@@ -42,6 +43,7 @@ class StackFrame {
+   String16 m_sourceURL;
+   int m_lineNumber;    // 0-based.
+   int m_columnNumber;  // 0-based.
++  bool m_hasSourceURLComment;
+ };
+ 
+ class V8StackTraceImpl : public V8StackTrace {
+diff --git a/test/inspector/debugger/resource-name-to-url-expected.txt b/test/inspector/debugger/resource-name-to-url-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0ecd0b82ef239072ab20a4d8844fa48b4b477586
+--- /dev/null
++++ b/test/inspector/debugger/resource-name-to-url-expected.txt
+@@ -0,0 +1,122 @@
++Tests V8InspectorClient::resourceNameToUrl.
++Check script with url:
++{
++    method : Debugger.scriptParsed
++    params : {
++        endColumn : 16
++        endLine : 0
++        executionContextId : <executionContextId>
++        hasSourceURL : false
++        hash : 033b33d191ed51ed823355d865eb871d811403e2
++        isLiveEdit : false
++        isModule : false
++        length : 16
++        scriptId : <scriptId>
++        sourceMapURL :
++        startColumn : 0
++        startLine : 0
++        url : prefix://url
++    }
++}
++Check script with sourceURL comment:
++{
++    method : Debugger.scriptParsed
++    params : {
++        endColumn : 37
++        endLine : 0
++        executionContextId : <executionContextId>
++        hasSourceURL : true
++        hash : 06c136ce206c5f505f32af524e6ec71b5baa0bbb
++        isLiveEdit : false
++        isModule : false
++        length : 37
++        scriptId : <scriptId>
++        sourceMapURL :
++        startColumn : 0
++        startLine : 0
++        url : foo.js
++    }
++}
++Check script failed to parse:
++{
++    method : Debugger.scriptFailedToParse
++    params : {
++        endColumn : 15
++        endLine : 0
++        executionContextId : <executionContextId>
++        hasSourceURL : false
++        hash : 033b33d191ed51ed1f44cd0465eb871d811403e2
++        isModule : false
++        length : 15
++        scriptId : <scriptId>
++        sourceMapURL :
++        startColumn : 0
++        startLine : 0
++        url : prefix://url
++    }
++}
++Check script failed to parse with sourceURL comment:
++{
++    method : Debugger.scriptFailedToParse
++    params : {
++        endColumn : 36
++        endLine : 0
++        executionContextId : <executionContextId>
++        hasSourceURL : true
++        hash : 23a2885951475580023e2a742563d78876d8f05e
++        isModule : false
++        length : 36
++        scriptId : <scriptId>
++        sourceMapURL :
++        startColumn : 0
++        startLine : 0
++        url : foo.js
++    }
++}
++Test runtime stack trace:
++{
++    method : Runtime.consoleAPICalled
++    params : {
++        args : [
++            [0] : {
++                description : 42
++                type : number
++                value : 42
++            }
++        ]
++        executionContextId : <executionContextId>
++        stackTrace : {
++            callFrames : [
++                [0] : {
++                    columnNumber : 14
++                    functionName : foo
++                    lineNumber : 2
++                    scriptId : <scriptId>
++                    url : prefix://url
++                }
++                [1] : {
++                    columnNumber : 0
++                    functionName :
++                    lineNumber : 0
++                    scriptId : <scriptId>
++                    url : boo.js
++                }
++                [2] : {
++                    columnNumber : 4
++                    functionName :
++                    lineNumber : 4
++                    scriptId : <scriptId>
++                    url : prefix://url
++                }
++            ]
++        }
++        timestamp : <timestamp>
++        type : log
++    }
++}
++Test debugger stack trace:
++[
++    [0] : prefix://url
++    [1] : boo.js
++    [2] : prefix://url
++]
+diff --git a/test/inspector/debugger/resource-name-to-url.js b/test/inspector/debugger/resource-name-to-url.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..620c7a2864b406539fc7fc0e4b5a89b06a0847f3
+--- /dev/null
++++ b/test/inspector/debugger/resource-name-to-url.js
+@@ -0,0 +1,49 @@
++// Copyright 2018 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let {session, contextGroup, Protocol} = InspectorTest.start(
++  'Tests V8InspectorClient::resourceNameToUrl.');
++
++(async function test(){
++  Protocol.Runtime.enable();
++  await Protocol.Debugger.enable();
++  contextGroup.addScript(`inspector.setResourceNamePrefix('prefix://')`);
++  await Protocol.Debugger.onceScriptParsed();
++
++  InspectorTest.log('Check script with url:');
++  contextGroup.addScript('function foo(){}', 0, 0, 'url');
++  InspectorTest.logMessage(await Protocol.Debugger.onceScriptParsed());
++
++  InspectorTest.log('Check script with sourceURL comment:');
++  contextGroup.addScript('function foo(){} //# sourceURL=foo.js', 0, 0, 'url');
++  InspectorTest.logMessage(await Protocol.Debugger.onceScriptParsed());
++
++  InspectorTest.log('Check script failed to parse:');
++  contextGroup.addScript('function foo(){', 0, 0, 'url');
++  InspectorTest.logMessage(await Protocol.Debugger.onceScriptFailedToParse());
++
++  InspectorTest.log('Check script failed to parse with sourceURL comment:');
++  contextGroup.addScript('function foo(){ //# sourceURL=foo.js', 0, 0, 'url');
++  InspectorTest.logMessage(await Protocol.Debugger.onceScriptFailedToParse());
++
++  InspectorTest.log('Test runtime stack trace:');
++  contextGroup.addScript(`
++    function foo() {
++      console.log(42);
++    }
++    eval('foo(); //# sourceURL=boo.js');
++  `, 0, 0, 'url');
++  InspectorTest.logMessage(await Protocol.Runtime.onceConsoleAPICalled());
++
++  InspectorTest.log('Test debugger stack trace:');
++  contextGroup.addScript(`
++    function foo() {
++      debugger;
++    }
++    eval('foo(); //# sourceURL=boo.js');
++  `, 0, 0, 'url');
++  const {params:{callFrames}} = await Protocol.Debugger.oncePaused();
++  InspectorTest.logMessage(callFrames.map(frame => frame.url));
++  InspectorTest.completeTest();
++})();
+diff --git a/test/inspector/inspector-test.cc b/test/inspector/inspector-test.cc
+index 668a9463d5b9cf7db0981b6907e303425df6c25c..93a8b1d3f2188015aa153cdc15b3b369d1f353d9 100644
+--- a/test/inspector/inspector-test.cc
++++ b/test/inspector/inspector-test.cc
+@@ -712,6 +712,9 @@ class InspectorExtension : public IsolateData::SetupGlobalTask {
+         ToV8String(isolate, "setAllowCodeGenerationFromStrings"),
+         v8::FunctionTemplate::New(
+             isolate, &InspectorExtension::SetAllowCodeGenerationFromStrings));
++    inspector->Set(ToV8String(isolate, "setResourceNamePrefix"),
++                   v8::FunctionTemplate::New(
++                       isolate, &InspectorExtension::SetResourceNamePrefix));
+     global->Set(ToV8String(isolate, "inspector"), inspector);
+   }
+ 
+@@ -973,6 +976,18 @@ class InspectorExtension : public IsolateData::SetupGlobalTask {
+     args.GetIsolate()->GetCurrentContext()->AllowCodeGenerationFromStrings(
+         args[0].As<v8::Boolean>()->Value());
+   }
++
++  static void SetResourceNamePrefix(
++      const v8::FunctionCallbackInfo<v8::Value>& args) {
++    if (args.Length() != 1 || !args[0]->IsString()) {
++      fprintf(stderr, "Internal error: setResourceNamePrefix('prefix').");
++      Exit();
++    }
++    v8::Isolate* isolate = args.GetIsolate();
++    v8::Local<v8::Context> context = isolate->GetCurrentContext();
++    IsolateData* data = IsolateData::FromContext(context);
++    data->SetResourceNamePrefix(v8::Local<v8::String>::Cast(args[0]));
++  }
+ };
+ 
+ bool RunExtraCode(v8::Isolate* isolate, v8::Local<v8::Context> context,
+diff --git a/test/inspector/isolate-data.cc b/test/inspector/isolate-data.cc
+index 15eee89a61faa25d6f635b6983d81bdea943c8e1..a669cc41a1f26a2c6a76c59eb081c8ca0a83bfdd 100644
+--- a/test/inspector/isolate-data.cc
++++ b/test/inspector/isolate-data.cc
+@@ -423,3 +423,32 @@ void IsolateData::maxAsyncCallStackDepthChanged(int depth) {
+   if (!log_max_async_call_stack_depth_changed_) return;
+   fprintf(stdout, "maxAsyncCallStackDepthChanged: %d\n", depth);
+ }
++
++void IsolateData::SetResourceNamePrefix(v8::Local<v8::String> prefix) {
++  resource_name_prefix_.Reset(v8::Isolate::GetCurrent(), prefix);
++}
++
++namespace {
++class StringBufferImpl : public v8_inspector::StringBuffer {
++ public:
++  StringBufferImpl(v8::Isolate* isolate, v8::Local<v8::String> string)
++      : data_(ToVector(string)),
++        view_(data_.start(), data_.length()) {}
++  const v8_inspector::StringView& string() override { return view_; }
++
++ private:
++  v8::internal::Vector<uint16_t> data_;
++  v8_inspector::StringView view_;
++};
++}  // anonymous namespace
++
++std::unique_ptr<v8_inspector::StringBuffer> IsolateData::resourceNameToUrl(
++    const v8_inspector::StringView& resourceName) {
++  if (resource_name_prefix_.IsEmpty()) return nullptr;
++  v8::Isolate* isolate = v8::Isolate::GetCurrent();
++  v8::HandleScope handle_scope(isolate);
++  v8::Local<v8::String> name = ToString(isolate, resourceName);
++  v8::Local<v8::String> prefix = resource_name_prefix_.Get(isolate);
++  v8::Local<v8::String> url = v8::String::Concat(prefix, name);
++  return std::unique_ptr<StringBufferImpl>(new StringBufferImpl(isolate, url));
++}
+diff --git a/test/inspector/isolate-data.h b/test/inspector/isolate-data.h
+index 5eb9803a7416fb67937283960c90269681403c1f..d0a263e573827c3b22810d70b0cf4f0c6f9243f3 100644
+--- a/test/inspector/isolate-data.h
++++ b/test/inspector/isolate-data.h
+@@ -76,6 +76,7 @@ class IsolateData : public v8_inspector::V8InspectorClient {
+   void FireContextCreated(v8::Local<v8::Context> context, int context_group_id);
+   void FireContextDestroyed(v8::Local<v8::Context> context);
+   void FreeContext(v8::Local<v8::Context> context);
++  void SetResourceNamePrefix(v8::Local<v8::String> prefix);
+ 
+  private:
+   struct VectorCompare {
+@@ -114,6 +115,8 @@ class IsolateData : public v8_inspector::V8InspectorClient {
+                          v8_inspector::V8StackTrace*) override;
+   bool isInspectableHeapObject(v8::Local<v8::Object>) override;
+   void maxAsyncCallStackDepthChanged(int depth) override;
++  std::unique_ptr<v8_inspector::StringBuffer> resourceNameToUrl(
++      const v8_inspector::StringView& resourceName) override;
+ 
+   // The isolate gets deleted by its {Dispose} method, not by the default
+   // deleter. Therefore we have to define a custom deleter for the unique_ptr to
+@@ -141,6 +144,7 @@ class IsolateData : public v8_inspector::V8InspectorClient {
+   bool log_console_api_message_calls_ = false;
+   bool log_max_async_call_stack_depth_changed_ = false;
+   v8::Global<v8::Private> not_inspectable_private_;
++  v8::Global<v8::String> resource_name_prefix_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(IsolateData);
+ };

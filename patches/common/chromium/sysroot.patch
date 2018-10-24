@@ -1,10 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 18 Oct 2018 17:03:57 -0700
+Subject: sysroot.patch
+
+Make chrome's install-sysroot scripts point to our custom sysroot builds,
+which include extra deps that Electron needs (e.g. libnotify)
+
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index 58f09950d844..53500a0853a6 100755
+index 58f09950d844f4fa4f8d46718852c4f2c490c391..55dd50187714b596e6ded4f2b302fb497af53ad0 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
-@@ -31,8 +31,8 @@ import urllib2
+@@ -30,9 +30,11 @@ import sys
+ import urllib2
  
  SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
++SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
++SYSTOORS_CONFIG_DIR = os.path.join(SRC_DIR, 'electron', 'script')
  
 -URL_PREFIX = 'https://commondatastorage.googleapis.com'
 -URL_PATH = 'chrome-linux-sysroot/toolchain'
@@ -13,19 +24,6 @@ index 58f09950d844..53500a0853a6 100755
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  
-diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index 53500a0853a6..f38f9a732856 100755
---- a/build/linux/sysroot_scripts/install-sysroot.py
-+++ b/build/linux/sysroot_scripts/install-sysroot.py
-@@ -30,6 +30,8 @@ import sys
- import urllib2
- 
- SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-+SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
-+SYSTOORS_CONFIG_DIR = os.path.join(SRC_DIR, 'electron', 'script')
- 
- URL_PREFIX = 'http://s3.amazonaws.com'
- URL_PATH = 'gh-contractor-zcbenz/toolchain'
 @@ -96,7 +98,7 @@ def GetSysrootDict(target_platform, target_arch):
    if target_arch not in VALID_ARCHS:
      raise Error('Unknown architecture: %s' % target_arch)

@@ -17,6 +17,3 @@ index f772f64d656e..7d13f9f81b6c 100644
    aura::WindowTreeHost* host = window->GetHost();
    return host ? host->GetAcceleratedWidget() : NULL;
  }
--- 
-2.17.0
-

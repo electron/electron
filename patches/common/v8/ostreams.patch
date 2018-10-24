@@ -1,5 +1,11 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Mon, 22 Oct 2018 10:47:12 -0700
+Subject: ostreams.patch
+
+
 diff --git a/src/ostreams.h b/src/ostreams.h
-index c6b64a1cd9..236a73d018 100644
+index c6b64a1cd95b92ed37abe56d71dd6132c4ff9db4..236a73d01800f58a4f37c8abdd8df346d8fcf2c5 100644
 --- a/src/ostreams.h
 +++ b/src/ostreams.h
 @@ -32,7 +32,7 @@ class OFStreamBase : public std::streambuf {

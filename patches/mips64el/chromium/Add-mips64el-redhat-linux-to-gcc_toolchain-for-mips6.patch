@@ -30,6 +30,3 @@ index bd37707..2fbc4d6e 100644
  
    toolchain_args = {
      cc_wrapper = ""
--- 
-2.1.0
-
