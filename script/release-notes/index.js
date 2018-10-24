@@ -26,7 +26,7 @@ const getTagsOf = async (point) => {
   return (await runGit(['tag', '--merged', point]))
     .split('\n')
     .map(tag => tag.trim())
-    .filter(tag => !!tag)
+    .filter(tag => semver.valid(tag))
     .sort(semver.compare)
 }
 
@@ -124,6 +124,7 @@ async function getReleaseNotes (range) {
   const rangeList = range.split('..') || ['HEAD']
   const to = rangeList.pop()
   const from = rangeList.pop() || (await getPreviousPoint(to))
+  console.log(`Generating release notes between ${from} and ${to}`)
 
   const notes = await notesGenerator.get(from, to)
   const ret = {
