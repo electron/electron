@@ -6,7 +6,7 @@ Subject: libgtkui_export.patch
 Export libgtkui symbols for the GN component build.
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209d7d5cf3f 100644
+index 1efb064df26488d9d893e1e58cb17110c10501f3..bb1aea692a356c206baf2750ed4c98fa86d39fb9 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -58,18 +58,18 @@ index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209
  // Renders the border from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
 diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-index e05fbe9d8b2fe537a5eecbd3642dcc9eb848f3d7..3afca9a72ab69fed0144cfff8159aff5a480c4f5 100644
+index bd6ed68a11b0b6c08962f688c799bd0f6b8a8d0e..b1184475e0ab9f381dc3c78b1092e2e0ec59d60b 100644
 --- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 +++ b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-@@ -7,6 +7,7 @@
- 
+@@ -8,6 +8,7 @@
+ #include <gtk/gtk.h>
  #include <stdint.h>
  
 +#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
  #include "third_party/skia/include/core/SkColor.h"
  
- typedef struct _GdkColor GdkColor;
-@@ -41,7 +42,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
+ #if !GTK_CHECK_VERSION(3, 90, 0)
+@@ -48,7 +49,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
  // Convert and copy a SkBitmap to a GdkPixbuf. NOTE: this uses BGRAToRGBA, so
  // it is an expensive operation.  The returned GdkPixbuf will have a refcount of
  // 1, and the caller is responsible for unrefing it when done.

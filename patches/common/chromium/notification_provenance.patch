@@ -6,7 +6,7 @@ Subject: pass RenderProcessHost through to PlatformNotificationService
 this is so Electron can identify which renderer a notification came from
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index cbcd2b5369fc513bed8190a83431826cba4e7637..1b4066649d926f18c0f1286243bfde848d80f1e3 100644
+index 73c5d6b436e0a842d9e18f65d6174ff1ce736deb..85dc547425bbe7b1e2c4575ff8b10d18989d9ad1 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -40,9 +40,11 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -64,10 +64,10 @@ index 618c7bd88cde563eaaf93914039b5fb6d81db514..be08e89b5c6d57abf6b61ed9ee4b1c53
          mojo::MakeRequest(&notification_service_ptr));
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 627e8dbd251d952f1567847775d8147e78e697b9..48c290470e4854a5e17c70bbfe178a34ffe7d73f 100644
+index 13ece81608b6eddd3350c8aef870aa71abd4c7c8..0d7f7731609d690f30da205ff267a0728d00e778 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -122,12 +122,13 @@ void PlatformNotificationContextImpl::ShutdownOnIO() {
+@@ -126,12 +126,13 @@ void PlatformNotificationContextImpl::ShutdownOnIO() {
  }
  
  void PlatformNotificationContextImpl::CreateService(
@@ -84,10 +84,10 @@ index 627e8dbd251d952f1567847775d8147e78e697b9..48c290470e4854a5e17c70bbfe178a34
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 7ea92b626202fcc3c1a830e74549ef87c206c4cd..faa3a1d8069f2d87c22cb40f98bc1d96db557464 100644
+index 653f487b0b0e01de7cdda8483f081550a9077e98..da9e5f53d07eaaf11525efd996be9420f0189a88 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
-@@ -21,6 +21,7 @@
+@@ -22,6 +22,7 @@
  #include "content/common/content_export.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/platform_notification_context.h"
@@ -106,7 +106,7 @@ index 7ea92b626202fcc3c1a830e74549ef87c206c4cd..faa3a1d8069f2d87c22cb40f98bc1d96
  
    // Removes |service| from the list of owned services, for example because the
 diff --git a/content/browser/renderer_interface_binders.cc b/content/browser/renderer_interface_binders.cc
-index 896f1b27ded7a73c62ec16d11418dacb0631d976..20a1f86a36fdefe3eeeb56a56eff874e2d6422fd 100644
+index c3a8bdc572de68e824756f71b1386f2b2058bc01..2a340aa0f629f581ec400c89bea7e706fd73d79b 100644
 --- a/content/browser/renderer_interface_binders.cc
 +++ b/content/browser/renderer_interface_binders.cc
 @@ -168,7 +168,7 @@ void RendererInterfaceBinders::InitializeParameterizedBinderRegistry() {
@@ -117,12 +117,12 @@ index 896f1b27ded7a73c62ec16d11418dacb0631d976..20a1f86a36fdefe3eeeb56a56eff874e
 +            ->CreateService(host, origin, std::move(request));
        }));
    parameterized_binder_registry_.AddInterface(
-       base::BindRepeating(&BackgroundFetchServiceImpl::Create));
+       base::BindRepeating(&BackgroundFetchServiceImpl::CreateForWorker));
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
-index 228fc30240c5251c0a4182f085b41c189e28365d..fd3e20c5335a09ba5bae31a76cc4a2cc3ad0a2f0 100644
+index 0e9ce4383087415d8cd77e5b5e196492845a93cc..672df69c849b0ecbe46a08e9d8b0b34b375d5588 100644
 --- a/content/public/browser/platform_notification_service.h
 +++ b/content/public/browser/platform_notification_service.h
-@@ -21,6 +21,7 @@ class GURL;
+@@ -22,6 +22,7 @@ class GURL;
  namespace content {
  
  class BrowserContext;
@@ -130,7 +130,7 @@ index 228fc30240c5251c0a4182f085b41c189e28365d..fd3e20c5335a09ba5bae31a76cc4a2cc
  struct NotificationResources;
  struct PlatformNotificationData;
  
-@@ -38,6 +39,7 @@ class CONTENT_EXPORT PlatformNotificationService {
+@@ -39,6 +40,7 @@ class CONTENT_EXPORT PlatformNotificationService {
    // Displays the notification described in |notification_data| to the user.
    // This method must be called on the UI thread.
    virtual void DisplayNotification(
@@ -139,7 +139,7 @@ index 228fc30240c5251c0a4182f085b41c189e28365d..fd3e20c5335a09ba5bae31a76cc4a2cc
        const std::string& notification_id,
        const GURL& origin,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 28dc2651a3269a4e7483d7e84a25d85f98083fcf..646817070e7fd831eb6caff5a369357dce2cccec 100644
+index b345a7442d2c64b814548dbfaf88d944a434122e..93b6962c5cac6fd915fbfbc7566fa77d836b45c5 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -20,6 +20,7 @@ MockPlatformNotificationService::MockPlatformNotificationService() = default;
@@ -151,10 +151,10 @@ index 28dc2651a3269a4e7483d7e84a25d85f98083fcf..646817070e7fd831eb6caff5a369357d
      const std::string& notification_id,
      const GURL& origin,
 diff --git a/content/test/mock_platform_notification_service.h b/content/test/mock_platform_notification_service.h
-index baf24f9effc9569f070757832681a82e62322d30..98a128e5d24933fbf98a5cfdda90b0611fce63d8 100644
+index 8741d95ee8b01ff2fe0448d77f1c4fa8fa476376..d7f5fc10a654e87d17e383ae68bfb10740337468 100644
 --- a/content/test/mock_platform_notification_service.h
 +++ b/content/test/mock_platform_notification_service.h
-@@ -42,6 +42,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {
+@@ -43,6 +43,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {
  
    // PlatformNotificationService implementation.
    void DisplayNotification(

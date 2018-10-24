@@ -7,7 +7,7 @@ Expose URLRequestContextGetter::{Add,Remove}Observer.
 This patch should be removed once we switch to using the net service (cc @robo)
 
 diff --git a/net/url_request/url_request_context_getter.h b/net/url_request/url_request_context_getter.h
-index 7a2dcd9de423cca8e39f84e7f6839eefd86c11ae..494526c843b9e39eba46785618960c3e94d06866 100644
+index def76d3902f30ae1384ae5f629fa116b3975fa86..e5ee0bfa93f497f18bdb3ad7cd51a6726dc87f3e 100644
 --- a/net/url_request/url_request_context_getter.h
 +++ b/net/url_request/url_request_context_getter.h
 @@ -79,11 +79,16 @@ class NET_EXPORT URLRequestContextGetter

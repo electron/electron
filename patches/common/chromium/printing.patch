@@ -282,7 +282,7 @@ diff --git a/components/printing/common/print_messages.h b/components/printing/c
 index d29bb6aedecd228e4bc02c84b86cce7151f33746..b489694b2701bddcfa95e187f5fcbf65d9a8ae8c 100644
 --- a/components/printing/common/print_messages.h
 +++ b/components/printing/common/print_messages.h
-@@ -367,7 +367,10 @@ IPC_MESSAGE_ROUTED0(PrintMsg_PrintNodeUnderContextMenu)
+@@ -363,7 +363,10 @@ IPC_MESSAGE_ROUTED0(PrintMsg_PrintNodeUnderContextMenu)
  #if BUILDFLAG(ENABLE_PRINTING)
  // Tells the RenderFrame to switch the CSS to print media type, renders every
  // requested pages and switch back the CSS to display media type.
@@ -452,7 +452,7 @@ diff --git a/components/printing/renderer/print_render_frame_helper.h b/componen
 index 6e2d7e1467b7bc179b1a0fc30dd656de612708cb..8b1516ce5e11d915efdf06cc75f334cd92ce7d99 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
-@@ -186,7 +186,9 @@ class PrintRenderFrameHelper
+@@ -187,7 +187,9 @@ class PrintRenderFrameHelper
    bool OnMessageReceived(const IPC::Message& message) override;
  
    // Message handlers ---------------------------------------------------------
@@ -463,7 +463,7 @@ index 6e2d7e1467b7bc179b1a0fc30dd656de612708cb..8b1516ce5e11d915efdf06cc75f334cd
    void OnPrintForSystemDialog();
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    void OnInitiatePrintPreview(bool has_selection);
-@@ -238,7 +240,10 @@ class PrintRenderFrameHelper
+@@ -239,7 +241,10 @@ class PrintRenderFrameHelper
    // WARNING: |this| may be gone after this method returns.
    void Print(blink::WebLocalFrame* frame,
               const blink::WebNode& node,

@@ -5,7 +5,7 @@ Subject: build_gn.patch
 
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index fcc00ee0e49f101cb1b10629747c4c4fa521776d..3232a0360e94e78621f7f672e3de4bdcc5f7b8d5 100644
+index 387fdb2795a832ba8ee1187f3097f736c69e9839..590d457928ced573a7152a129bbfcf01309ee3c1 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {

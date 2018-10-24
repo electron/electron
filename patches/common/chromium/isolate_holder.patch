@@ -8,20 +8,20 @@ needs to register on an isolate so that it can be used later
 down in the initialization process of an isolate.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index e099fd3f03e56bbbf3ceab45edb8f4b8eb0b2b0f..4b362843e4f8f3a1e2abfa152a51554b1d36dd96 100644
+index 8ec7775b78b3645dbac5ee518404ca9a70122153..c82ca4d00398cb01ffea20b8d8d937329e764e45 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -46,7 +46,8 @@ IsolateHolder::IsolateHolder(
-     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+@@ -52,7 +52,8 @@ IsolateHolder::IsolateHolder(
      AccessMode access_mode,
      AllowAtomicsWaitMode atomics_wait_mode,
+     IsolateType isolate_type,
 -    IsolateCreationMode isolate_creation_mode)
 +    IsolateCreationMode isolate_creation_mode,
 +    v8::Isolate* isolate)
-     : access_mode_(access_mode) {
+     : access_mode_(access_mode), isolate_type_(isolate_type) {
    DCHECK(task_runner);
    DCHECK(task_runner->BelongsToCurrentThread());
-@@ -54,7 +55,11 @@ IsolateHolder::IsolateHolder(
+@@ -60,7 +61,11 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
    CHECK(allocator) << "You need to invoke gin::IsolateHolder::Initialize first";
  
@@ -35,13 +35,13 @@ index e099fd3f03e56bbbf3ceab45edb8f4b8eb0b2b0f..4b362843e4f8f3a1e2abfa152a51554b
        new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 84cf66e6e9cdbfcdc3d8f0a1f0c122e5994ef1c2..cc0d65e4e4be5818d526c0a46a60e1165697cac0 100644
+index 535b0caa02f89f8a0fde841057d35e3834ea087f..c68d45722b50654fb92efeea28f5a0d4c9018b49 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -66,7 +66,8 @@ class GIN_EXPORT IsolateHolder {
-       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+@@ -80,7 +80,8 @@ class GIN_EXPORT IsolateHolder {
        AccessMode access_mode,
        AllowAtomicsWaitMode atomics_wait_mode,
+       IsolateType isolate_type,
 -      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal);
 +      IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
 +      v8::Isolate* isolate = nullptr);
