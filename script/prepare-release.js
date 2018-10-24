@@ -75,7 +75,10 @@ async function getReleaseNotes (currentBranch) {
     return 'Nightlies do not get release notes, please compare tags for info'
   }
   console.log(`Generating release notes for ${currentBranch}.`)
-  return releaseNotesGenerator(currentBranch)
+  const releaseNotes = await releaseNotesGenerator(currentBranch)
+  if (releaseNotes.warning) {
+    console.warn(releaseNotes.warning)
+  }
 }
 
 async function createRelease (branchToTarget, isBeta) {
@@ -126,7 +129,6 @@ async function createRelease (branchToTarget, isBeta) {
       process.exit(1)
     })
   console.log(`${pass} Draft release for ${newVersion} has been created.`)
-  if (releaseNotes.warning) console.warn(releaseNotes.warning)
 }
 
 async function pushRelease (branch) {
@@ -205,7 +207,6 @@ async function prepareRelease (isBeta, notesOnly) {
     if (notesOnly) {
       const releaseNotes = await getReleaseNotes(currentBranch)
       console.log(`Draft release notes are: \n${releaseNotes.text}`)
-      if (releaseNotes.warning) console.warn(releaseNotes.warning)
     } else {
       const changes = await changesToRelease(currentBranch)
       if (changes) {
