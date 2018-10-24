@@ -8,6 +8,7 @@ build-steps: &build-steps
             echo 'Installing Node.js 10 for MacOS'
             brew update
             brew install node@10
+            echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
           fi
     - run:
         name: Check for release
