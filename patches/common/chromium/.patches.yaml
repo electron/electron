@@ -244,13 +244,6 @@ patches:
     In the long term we should investigate why it happened, and take a more
     formal fix. But for now I'm just make this assertion silently pass away.
 -
-  author: Cheng Zhao <zcbenz@gmail.com>
-  file: disable_scroll_begin_dcheck.patch
-  description: |
-    When testing https://github.com/electron/electron/issues/13137 I have met
-    these assertions. I grouped them together since they are all related to the
-    ScrollBegin event.
--
   author: Jeremy Apthorp <nornagon@nornagon.net>
   file: libgtkui_export.patch
   description: |
