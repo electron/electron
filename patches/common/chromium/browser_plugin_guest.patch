@@ -5,10 +5,10 @@ Subject: browser_plugin_guest.patch
 
 
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index f56ce93c3d5b1b46b706800a12a21f29cabafb33..19c302c2714fb8ce89b261dd44d9939d3345a803 100644
+index e5f885ab4bc06672fb1f9ac7f76bd92203894559..d46eee5fcffe2137bdc31bf4a77691af1e091143 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
-@@ -206,8 +206,11 @@ void BrowserPluginGuest::Init() {
+@@ -207,8 +207,11 @@ void BrowserPluginGuest::Init() {
  
    WebContentsImpl* owner_web_contents = static_cast<WebContentsImpl*>(
        delegate_->GetOwnerWebContents());

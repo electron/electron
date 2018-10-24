@@ -5,7 +5,7 @@ Subject: webui_in_subframes.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_delegate.cc b/content/browser/frame_host/render_frame_host_delegate.cc
-index 26b8eec2bb763c6a1e29309abe34c4c068eee609..fb3843168f14fa7b584e2ec52f1c1495aa7dd070 100644
+index 623cd428e20aae5ab7bddf884dd4eb60259b8904..df2ab07f1722550e406e2b283408836131ee49a2 100644
 --- a/content/browser/frame_host/render_frame_host_delegate.cc
 +++ b/content/browser/frame_host/render_frame_host_delegate.cc
 @@ -99,7 +99,9 @@ RenderFrameHostDelegate::GetFocusedFrameIncludingInnerWebContents() {
@@ -20,10 +20,10 @@ index 26b8eec2bb763c6a1e29309abe34c4c068eee609..fb3843168f14fa7b584e2ec52f1c1495
  }
  
 diff --git a/content/browser/frame_host/render_frame_host_delegate.h b/content/browser/frame_host/render_frame_host_delegate.h
-index 7919ac1e579592815fa96e88f30537c51b110fa9..03f33191521354031357a4886fe7ef3417ba17b6 100644
+index 9ac81d17f614b478512e57cd68a7a87b40860a7e..fc62fb1e6b9df0ac742acda08b774d08d71b753f 100644
 --- a/content/browser/frame_host/render_frame_host_delegate.h
 +++ b/content/browser/frame_host/render_frame_host_delegate.h
-@@ -278,7 +278,8 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
+@@ -280,7 +280,8 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
    // Creates a WebUI object for a frame navigating to |url|. If no WebUI
    // applies, returns null.
    virtual std::unique_ptr<WebUIImpl> CreateWebUIForRenderFrameHost(
@@ -34,18 +34,18 @@ index 7919ac1e579592815fa96e88f30537c51b110fa9..03f33191521354031357a4886fe7ef34
    // Called by |frame| to notify that it has received an update on focused
    // element. |bounds_in_root_view| is the rectangle containing the element that
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 783dc705f748bc6c9d3b8630ce12ad39ff2fd7d2..9fa14c824032463cedbbf5db41f1dbe3490c4a69 100644
+index 30b945c417d04106a05a0d3dcb86e5df87845c0c..f3eb67f0fc3bb11760afdd1e2eab587e0d322b5a 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -26,6 +26,7 @@
- #include "base/task_scheduler/post_task.h"
+@@ -27,6 +27,7 @@
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
+ #include "base/trace_event/trace_event_argument.h"
 +#include "base/unguessable_token.h"
  #include "build/build_config.h"
  #include "cc/base/switches.h"
  #include "content/browser/accessibility/browser_accessibility_manager.h"
-@@ -4314,8 +4315,23 @@ bool RenderFrameHostImpl::UpdatePendingWebUI(const GURL& dest_url,
+@@ -4382,8 +4383,23 @@ bool RenderFrameHostImpl::UpdatePendingWebUI(const GURL& dest_url,
        DCHECK(web_ui_);
        should_reuse_web_ui_ = true;
      } else {
@@ -71,10 +71,10 @@ index 783dc705f748bc6c9d3b8630ce12ad39ff2fd7d2..9fa14c824032463cedbbf5db41f1dbe3
        pending_web_ui_type_ = new_web_ui_type;
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..88211169a7d731cb805f34c48ae4caf2fdcd1c84 100644
+index a9e95f9b18bbd5327536499c58362167fa01a583..6120209f61b9643171138ad4a6c14bf18fcfc2ba 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -788,6 +788,25 @@ RenderFrameHostManager* WebContentsImpl::GetRenderManagerForTesting() {
+@@ -790,6 +790,25 @@ RenderFrameHostManager* WebContentsImpl::GetRenderManagerForTesting() {
    return GetRenderManager();
  }
  
@@ -100,7 +100,7 @@ index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..88211169a7d731cb805f34c48ae4caf2
  bool WebContentsImpl::OnMessageReceived(RenderViewHostImpl* render_view_host,
                                          const IPC::Message& message) {
    for (auto& observer : observers_) {
-@@ -823,9 +842,10 @@ bool WebContentsImpl::OnMessageReceived(RenderViewHostImpl* render_view_host,
+@@ -827,9 +846,10 @@ bool WebContentsImpl::OnMessageReceived(RenderViewHostImpl* render_view_host,
  
  bool WebContentsImpl::OnMessageReceived(RenderFrameHostImpl* render_frame_host,
                                          const IPC::Message& message) {
@@ -114,7 +114,7 @@ index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..88211169a7d731cb805f34c48ae4caf2
        return true;
    }
  
-@@ -5974,8 +5994,9 @@ NavigationControllerImpl& WebContentsImpl::GetControllerForRenderManager() {
+@@ -6034,8 +6054,9 @@ NavigationControllerImpl& WebContentsImpl::GetControllerForRenderManager() {
  }
  
  std::unique_ptr<WebUIImpl> WebContentsImpl::CreateWebUIForRenderFrameHost(
@@ -127,7 +127,7 @@ index 64ad6ca91d9331a09d09f7e29b7c24a0c12852a2..88211169a7d731cb805f34c48ae4caf2
  
  NavigationEntry*
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index d16a99122772385e6fcdb13a8080c82ee0695232..907738e0bf80e4a34c5f068e67a6ba15d5d8338d 100644
+index 2687e87ea2da87c09622e03f4f9afcaa649d7a3b..dffc8c9c298bb13c5341f56fb2e8d8136d8fcc81 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -542,7 +542,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

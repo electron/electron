@@ -5,10 +5,10 @@ Subject: can_create_window.patch
 
 
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 520dcffb53534e76d739cff74ea58d49bdfb682a..783dc705f748bc6c9d3b8630ce12ad39ff2fd7d2 100644
+index c5e56bc15cfbf95f7564cc4d080243c48e585f20..30b945c417d04106a05a0d3dcb86e5df87845c0c 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -3142,6 +3142,38 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3163,6 +3163,38 @@ void RenderFrameHostImpl::CreateNewWindow(
                 "frame_tree_node", frame_tree_node_->frame_tree_node_id(), "url",
                 params->target_url.possibly_invalid_spec());
  
@@ -47,7 +47,7 @@ index 520dcffb53534e76d739cff74ea58d49bdfb682a..783dc705f748bc6c9d3b8630ce12ad39
    bool no_javascript_access = false;
  
    // Filter out URLs to which navigation is disallowed from this context.
-@@ -3170,6 +3202,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -3191,6 +3223,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_.GetURL(), params->window_container_type,
            params->target_url, params->referrer, params->frame_name,
            params->disposition, *params->features,
@@ -56,10 +56,10 @@ index 520dcffb53534e76d739cff74ea58d49bdfb682a..783dc705f748bc6c9d3b8630ce12ad39
            &no_javascript_access);
  
 diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
-index e3b04edb5a301115d894190a64e734eb2c8b3499..254f94016b97620cfbc102cbbc7677cfcfe38e22 100644
+index e9cb49ebc81d7b9babe25a0a9c9ddfdf1db843d9..23776e0911f2315b60451d132ddd3cd002a241a2 100644
 --- a/content/browser/security_exploit_browsertest.cc
 +++ b/content/browser/security_exploit_browsertest.cc
-@@ -313,6 +313,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
+@@ -300,6 +300,7 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
  
    mojom::CreateNewWindowParamsPtr params = mojom::CreateNewWindowParams::New();
    params->target_url = GURL("about:blank");
@@ -68,7 +68,7 @@ index e3b04edb5a301115d894190a64e734eb2c8b3499..254f94016b97620cfbc102cbbc7677cf
        std::move(params), base::BindOnce([](mojom::CreateNewWindowStatus,
                                             mojom::CreateNewWindowReplyPtr) {}));
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index fb4732e6e666044233716fc3ae629dedad7b2618..804086522994b038c86a31e7acdcffc1e039c260 100644
+index c2ce967c17ac6a61b3aeb6e26f88212211f7a9f4..8c8d149b9c0de26e050b196a1a2a1bf6e953f121 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -12,6 +12,8 @@ import "content/public/common/resource_type.mojom";
@@ -80,7 +80,7 @@ index fb4732e6e666044233716fc3ae629dedad7b2618..804086522994b038c86a31e7acdcffc1
  import "mojo/public/mojom/base/string16.mojom";
  import "mojo/public/mojom/base/unguessable_token.mojom";
  import "services/network/public/mojom/url_loader.mojom";
-@@ -157,6 +159,24 @@ interface FrameFactory {
+@@ -168,6 +170,24 @@ interface FrameFactory {
    CreateFrame(int32 frame_routing_id, Frame& frame);
  };
  
@@ -105,7 +105,7 @@ index fb4732e6e666044233716fc3ae629dedad7b2618..804086522994b038c86a31e7acdcffc1
  struct CreateNewWindowParams {
    // True if this open request came in the context of a user gesture.
    //
-@@ -196,6 +216,10 @@ struct CreateNewWindowParams {
+@@ -207,6 +227,10 @@ struct CreateNewWindowParams {
  
    // The window features to use for the new window.
    blink.mojom.WindowFeatures features;
@@ -117,10 +117,10 @@ index fb4732e6e666044233716fc3ae629dedad7b2618..804086522994b038c86a31e7acdcffc1
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2a896c7072caae655be1902b536d9172448abddb..bb54b89bef5c6f32e7b4a056336c85494e2a04de 100644
+index 8e652e4b66f08ff86c3184adf0ef9704fab0d11c..12411003ad4d54576117cc719bff804da1706170 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -435,6 +435,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -453,6 +453,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -130,10 +130,10 @@ index 2a896c7072caae655be1902b536d9172448abddb..bb54b89bef5c6f32e7b4a056336c8549
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fd5d62fee1172b07a692fcf6ce06a30096d25b03..3be31602689cb93b965729cc4e35cf6d23a8ec2f 100644
+index bc2b501331e9d628c5285eee003ca3b55f3cb98f..89674a18276e34eebc0038e588ea4629a4eaca6c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -162,6 +162,7 @@ class RenderFrameHost;
+@@ -169,6 +169,7 @@ class RenderFrameHost;
  class RenderProcessHost;
  class RenderViewHost;
  class ResourceContext;
@@ -141,7 +141,7 @@ index fd5d62fee1172b07a692fcf6ce06a30096d25b03..3be31602689cb93b965729cc4e35cf6d
  class ServiceManagerConnection;
  class SiteInstance;
  class SpeechRecognitionManagerDelegate;
-@@ -706,6 +707,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -734,6 +735,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -151,10 +151,10 @@ index fd5d62fee1172b07a692fcf6ce06a30096d25b03..3be31602689cb93b965729cc4e35cf6d
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 03d9cda9f95daa369101b6f922e0978061e0225f..edad9fc3198ca12bd326c9f407a62866373e3b29 100644
+index 215c4a750f046939cb59ba8f53059eb4c3e35ef6..0e6199a8f594fd6c7384147c541e6c06a263f51e 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -79,6 +79,7 @@
+@@ -78,6 +78,7 @@
  #include "content/renderer/ime_event_guard.h"
  #include "content/renderer/internal_document_state_data.h"
  #include "content/renderer/loader/request_extra_data.h"
@@ -162,7 +162,7 @@ index 03d9cda9f95daa369101b6f922e0978061e0225f..edad9fc3198ca12bd326c9f407a62866
  #include "content/renderer/media/audio/audio_device_factory.h"
  #include "content/renderer/media/stream/media_stream_device_observer.h"
  #include "content/renderer/media/video_capture_impl_manager.h"
-@@ -1270,6 +1271,46 @@ WebView* RenderViewImpl::CreateView(WebLocalFrame* creator,
+@@ -1421,6 +1422,46 @@ WebView* RenderViewImpl::CreateView(WebLocalFrame* creator,
    }
    params->features = ConvertWebWindowFeaturesToMojoWindowFeatures(features);
  
@@ -210,10 +210,10 @@ index 03d9cda9f95daa369101b6f922e0978061e0225f..edad9fc3198ca12bd326c9f407a62866
    // moved on send.
    bool is_background_tab =
 diff --git a/content/shell/browser/layout_test/layout_test_content_browser_client.cc b/content/shell/browser/layout_test/layout_test_content_browser_client.cc
-index fe0e3720ea5d60d65ecbbc3836bc87785997a513..4a31617b5a898b0f6d7e25cc05992d36862678a0 100644
+index 7da9182635afa02226a0848d35d7ec372f4fc785..048e1126a31cf5bcaf9e0203af4a0c449db190f5 100644
 --- a/content/shell/browser/layout_test/layout_test_content_browser_client.cc
 +++ b/content/shell/browser/layout_test/layout_test_content_browser_client.cc
-@@ -276,6 +276,8 @@ bool LayoutTestContentBrowserClient::CanCreateWindow(
+@@ -279,6 +279,8 @@ bool LayoutTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -223,7 +223,7 @@ index fe0e3720ea5d60d65ecbbc3836bc87785997a513..4a31617b5a898b0f6d7e25cc05992d36
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/shell/browser/layout_test/layout_test_content_browser_client.h b/content/shell/browser/layout_test/layout_test_content_browser_client.h
-index fa458cf0c92d6f75ecd71e296ba1af88ace400dc..cdd95a1d88e582a31aca43cd2fc9001113dcde1c 100644
+index c601d6e4b28dfb4216b2d7072ba1ac9dd7345f42..00bbd237ff8afd6567218363423538b9e38ae1b0 100644
 --- a/content/shell/browser/layout_test/layout_test_content_browser_client.h
 +++ b/content/shell/browser/layout_test/layout_test_content_browser_client.h
 @@ -66,6 +66,8 @@ class LayoutTestContentBrowserClient : public ShellContentBrowserClient {

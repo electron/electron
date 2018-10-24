@@ -39,10 +39,10 @@ These files have debug checks explicitly commented out:
   ui/base/clipboard/clipboard_win.cc
 
 diff --git a/base/logging.h b/base/logging.h
-index 08c1f0fc59672b2134c634e081f0c4df4d261b75..7a758ce3ef90145d2b68e07e17f00fc30cfb30a6 100644
+index 2ba074ccaeb3f38c7f99748820a2ccf8aa5709eb..217019cf7ef873e2af3a0ec4b046ddb202af13a3 100644
 --- a/base/logging.h
 +++ b/base/logging.h
-@@ -874,7 +874,7 @@ const LogSeverity LOG_DCHECK = LOG_FATAL;
+@@ -880,7 +880,7 @@ const LogSeverity LOG_DCHECK = LOG_FATAL;
  
  #else  // !(defined(_PREFAST_) && defined(OS_WIN))
  
@@ -80,10 +80,10 @@ index 7a664429bcd305b10da8c7317700f9124742f3b8..26f49dc3d1e782e69e74f2d177535b80
      // This really is a random number.  We haven't received any
      // information about the exit code, presumably because this
 diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
-index 18ef58a725c3a87a30413a4676044533f1751c7c..239f319c8b4cf52c115acd6173a15978f6ff3386 100644
+index 01e3d7fc502ba6f6cc6de250023d9f9066d2a845..2e89d05eea817cbae192996d85b675c6883cb573 100644
 --- a/base/process/process_metrics_win.cc
 +++ b/base/process/process_metrics_win.cc
-@@ -153,10 +153,9 @@ bool ProcessMetrics::GetIOCounters(IoCounters* io_counters) const {
+@@ -247,10 +247,9 @@ uint64_t ProcessMetrics::GetCumulativeDiskUsageInBytes() {
  ProcessMetrics::ProcessMetrics(ProcessHandle process) {
    if (process) {
      HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
@@ -149,10 +149,10 @@ index d8aca9e2cbffdfd0bbb0bd67e8adfb53547132bb..86224ab7a3c5637422559da25bc8c104
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 8e5af3e3b9c5b9e5c7a2462600fb2c9582df0c7c..520dcffb53534e76d739cff74ea58d49bdfb682a 100644
+index e67018e0f8099bbe060443425e2d7901246e900f..c5e56bc15cfbf95f7564cc4d080243c48e585f20 100644
 --- a/content/browser/frame_host/render_frame_host_impl.cc
 +++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -2416,8 +2416,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
+@@ -2437,8 +2437,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
    }
  
    enabled_bindings_ |= bindings_flags;
@@ -179,10 +179,10 @@ index 3f80e73535c8b4a2bcff08821e3585306f691c8b..bf40b94ad24c0621cbe093002c335569
    }
  
 diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
-index 5629f8170851f0b58069e2cd0c14ebe093d89d00..bc773ac9b1e462385dcbb8bef2fc4c2d7e6c7b06 100644
+index 32f58a1577bc7866b257eb3a2c3344cb9d730e6c..958d9884f430119e3e448415433d1db7b2d5ea36 100644
 --- a/third_party/blink/renderer/core/dom/node.cc
 +++ b/third_party/blink/renderer/core/dom/node.cc
-@@ -2568,7 +2568,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
+@@ -2565,7 +2565,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
  
  HTMLSlotElement* Node::AssignedSlot() const {
    // assignedSlot doesn't need to call updateDistribution().
@@ -192,10 +192,10 @@ index 5629f8170851f0b58069e2cd0c14ebe093d89d00..bc773ac9b1e462385dcbb8bef2fc4c2d
      return root->AssignedSlotFor(*this);
    return nullptr;
 diff --git a/third_party/blink/renderer/core/loader/BUILD.gn b/third_party/blink/renderer/core/loader/BUILD.gn
-index 49b4ead3dc521796bf3c6a207a072ff5eeff1849..0083e5c8efb71cf2cb097944174dcad8eff1cc3e 100644
+index 7d118b1f5130e472b8ac56461a99d8d212a37ea5..b0f6a5c02e9250de6f75786ecf3fdec9df61fd1b 100644
 --- a/third_party/blink/renderer/core/loader/BUILD.gn
 +++ b/third_party/blink/renderer/core/loader/BUILD.gn
-@@ -135,4 +135,11 @@ blink_core_sources("loader") {
+@@ -132,4 +132,11 @@ blink_core_sources("loader") {
    public_deps = [
      "//third_party/blink/renderer/platform",
    ]
@@ -208,7 +208,7 @@ index 49b4ead3dc521796bf3c6a207a072ff5eeff1849..0083e5c8efb71cf2cb097944174dcad8
 +  }
  }
 diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
-index 0e7c40b732ec283e006b2e3517c42e699d7e3102..7c513d95a586d8ac80e691aa89abaf49793e9a18 100644
+index be183011e7f4e0af6f7676ac8a343ef36d2e7bc2..8b40c554912754b05d3bc5dc4889667f87935a0a 100644
 --- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
 +++ b/third_party/blink/renderer/platform/wtf/text/string_impl.h
 @@ -258,21 +258,21 @@ class WTF_EXPORT StringImpl {
@@ -253,10 +253,10 @@ index e49dd8c81270cdd9794ddee11bad036c2f444af5..9e61c901cd2df168520b83a8522ca8c0
    }
  }
 diff --git a/url/BUILD.gn b/url/BUILD.gn
-index 57bbe16c15ea442963a53f89b009e2c99c7b090a..07725187c595784d9e5f49d45a8835da78144830 100644
+index 1365fcea0c49da8a68c00bb6c96fd18e39ab929a..4667339d8d5d6f6d377af7759545cfd00f3f7196 100644
 --- a/url/BUILD.gn
 +++ b/url/BUILD.gn
-@@ -98,6 +98,10 @@ component("url") {
+@@ -99,6 +99,10 @@ component("url") {
      ]
      deps += [ "//third_party/icu" ]
    }

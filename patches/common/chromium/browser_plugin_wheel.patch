@@ -5,7 +5,7 @@ Subject: browser_plugin_wheel.patch
 
 
 diff --git a/content/renderer/browser_plugin/browser_plugin.cc b/content/renderer/browser_plugin/browser_plugin.cc
-index 4d8251069ae9a45e1be22fa03f23b3196116b612..fbd5cc8099629971d670d087fdee89204e3137e3 100644
+index 95a4d2f30c429e2f427ff5ff0c1bc86a5f36559d..a14725068ab71fd7b85256fa4f3ada24602eab81 100644
 --- a/content/renderer/browser_plugin/browser_plugin.cc
 +++ b/content/renderer/browser_plugin/browser_plugin.cc
 @@ -656,15 +656,11 @@ blink::WebInputEventResult BrowserPlugin::HandleInputEvent(

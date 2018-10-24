@@ -15,7 +15,7 @@ code was around 2012-2013, and this is purely UI, I don't think they have
 automated tests for it).
 
 diff --git a/chrome/browser/ui/browser_dialogs.h b/chrome/browser/ui/browser_dialogs.h
-index f57c1ded416a7a642bdf8502daeb40afe539903b..59fdd948c3c5e57374beef801b96f5bfd1343b1c 100644
+index c0c7c21131c3dd8d197ad1808142915704406d9d..43b5e57e91a451e79c3f77450d99cffc222842fd 100644
 --- a/chrome/browser/ui/browser_dialogs.h
 +++ b/chrome/browser/ui/browser_dialogs.h
 @@ -4,7 +4,7 @@
@@ -44,11 +44,10 @@ index f57c1ded416a7a642bdf8502daeb40afe539903b..59fdd948c3c5e57374beef801b96f5bf
  // Shows or hides the Task Manager. |browser| can be NULL when called from Ash.
  // Returns a pointer to the underlying TableModel, which can be ignored, or used
  // for testing.
-@@ -129,11 +130,11 @@ void ShowBookmarkAppDialog(content::WebContents* web_contents,
- void ShowPWAInstallDialog(content::WebContents* web_contents,
-                           const WebApplicationInfo& web_app_info,
-                           AppInstallationAcceptanceCallback callback);
--
+@@ -138,10 +139,11 @@ void ShowPWAInstallDialog(content::WebContents* web_contents,
+ // user interaction.
+ void SetAutoAcceptPWAInstallDialogForTesting(bool auto_accept);
+ 
 +#endif
  // Shows a color chooser that reports to the given WebContents.
  content::ColorChooser* ShowColorChooser(content::WebContents* web_contents,
@@ -58,7 +57,7 @@ index f57c1ded416a7a642bdf8502daeb40afe539903b..59fdd948c3c5e57374beef801b96f5bf
  #if defined(OS_MACOSX)
  
  // Bridging methods that show/hide the toolkit-views based Task Manager on Mac.
-@@ -301,13 +302,13 @@ void ShowChromeCleanerRebootPrompt(
+@@ -310,13 +312,13 @@ void ShowChromeCleanerRebootPrompt(
      safe_browsing::ChromeCleanerRebootDialogController* dialog_controller);
  
  #endif  // OS_WIN

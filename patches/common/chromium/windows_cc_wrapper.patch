@@ -6,7 +6,7 @@ Subject: windows_cc_wrapper.patch
 Allow use of cc_wrapper (eg sccache).
 
 diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
-index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d47490d57 100644
+index 3c6c9d05d2c86adca43a7a71ab6d2634a49fc4d3..da3eb53291aa3978de0ec0a482a5b7ddb57db0f5 100644
 --- a/build/toolchain/win/BUILD.gn
 +++ b/build/toolchain/win/BUILD.gn
 @@ -6,6 +6,7 @@ import("//build/config/clang/clang.gni")
@@ -32,7 +32,7 @@ index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d
  }
  
  # Copy the VS runtime DLL for the default toolchain to the root build directory
-@@ -392,7 +399,7 @@ if (win_build_host_cpu != "x64") {
+@@ -377,7 +384,7 @@ if (win_build_host_cpu != "x64") {
    msvc_toolchain("win_clang_" + win_build_host_cpu) {
      environment = "environment." + win_build_host_cpu
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)
@@ -41,7 +41,7 @@ index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d
      sys_include_flags = "${build_cpu_toolchain_data.include_flags_imsvc}"
      if (host_os != "win") {
        # For win cross build.
-@@ -441,7 +448,7 @@ template("win_x64_toolchains") {
+@@ -426,7 +433,7 @@ template("win_x64_toolchains") {
    msvc_toolchain("win_clang_" + target_name) {
      environment = "environment.x64"
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)

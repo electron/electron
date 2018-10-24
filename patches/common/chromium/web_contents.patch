@@ -5,10 +5,10 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 26384f823b511ca720ae474e950d75fd19b65111..64ad6ca91d9331a09d09f7e29b7c24a0c12852a2 100644
+index 499c8c0a2e899d9c2a35be461cc8d247f42a6f17..a9e95f9b18bbd5327536499c58362167fa01a583 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -1931,6 +1931,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1940,6 +1940,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -21,7 +21,7 @@ index 26384f823b511ca720ae474e950d75fd19b65111..64ad6ca91d9331a09d09f7e29b7c24a0
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -1946,6 +1952,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1955,6 +1961,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -30,7 +30,7 @@ index 26384f823b511ca720ae474e950d75fd19b65111..64ad6ca91d9331a09d09f7e29b7c24a0
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 44c68ed25b664b40b12dd843a18f7fe18d9cdfa9..c7b0c747fa4132a076719f7a4b3aad84f526aee3 100644
+index 12f6817499eff069f4bc52a775fe1275a332881c..f20fe106c4cb443be8cf4311e531418eb4c80b5c 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
 @@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
@@ -44,7 +44,7 @@ index 44c68ed25b664b40b12dd843a18f7fe18d9cdfa9..c7b0c747fa4132a076719f7a4b3aad84
    // view hierarchy. We add this view as embedder's child here.
    // This would go in WebContentsViewGuest::CreateView, but that is too early to
    // access embedder_web_contents(). Therefore, we do it here.
-   if (features::IsAshInBrowserProcess())
+   if (!features::IsUsingWindowService())
 -    parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
 +    if (parent_view->GetNativeView() != platform_view_->GetNativeView())
 +      parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
@@ -55,7 +55,7 @@ index 44c68ed25b664b40b12dd843a18f7fe18d9cdfa9..c7b0c747fa4132a076719f7a4b3aad84
  #if defined(USE_AURA)
 +  if (!platform_view_->GetNativeView())
 +    return;
-   if (features::IsAshInBrowserProcess()) {
+   if (!features::IsUsingWindowService()) {
 -    old_parent_view->GetNativeView()->RemoveChild(
 -        platform_view_->GetNativeView());
 +    if (old_parent_view->GetNativeView() != platform_view_->GetNativeView())
@@ -92,10 +92,10 @@ index 44c68ed25b664b40b12dd843a18f7fe18d9cdfa9..c7b0c747fa4132a076719f7a4b3aad84
  
  RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 0f82f91e437c495b92662c9816225687430ec8a4..0deb4d93fffbd7392cc1a391d9503946434ad1ba 100644
+index 786eecfcb70cd5145a29f9dc89765930739e0d63..0916329b2bf483381065476108978683ec2e6bf9 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -76,9 +76,12 @@ class BrowserPluginGuestDelegate;
+@@ -77,9 +77,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -108,7 +108,7 @@ index 0f82f91e437c495b92662c9816225687430ec8a4..0deb4d93fffbd7392cc1a391d9503946
  struct CustomContextMenuContext;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -215,6 +218,10 @@ class WebContents : public PageNavigator,
+@@ -216,6 +219,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  

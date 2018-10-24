@@ -5,10 +5,10 @@ Subject: webview_cross_drag.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 713b17948ef79d8d6a2980e647078a215e023339..cd2d022ff53e9976ee350b67988e4f7a82a51915 100644
+index e471459007af1b03f477f6df8c963cc0916b1a66..3df843acdba8470352f90829e502ad10e1616dfe 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -609,6 +609,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
+@@ -622,6 +622,7 @@ gfx::NativeView WebContentsViewAura::GetRenderWidgetHostViewParent() const {
  
  bool WebContentsViewAura::IsValidDragTarget(
      RenderWidgetHostImpl* target_rwh) const {
@@ -20,7 +20,7 @@ diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser
 index cec3bd8a97b8b9bcab176a9bd2c296ec12aba838..7a2b4462bd44176e8e8389499f8c3d5fea647fa0 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -348,6 +348,7 @@ GetRenderWidgetHostAtPoint:(const NSPoint&)viewPoint
+@@ -348,6 +348,7 @@ - (void)setDragStartTrackersForProcess:(int)processID {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

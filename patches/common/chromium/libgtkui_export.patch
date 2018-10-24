@@ -27,7 +27,7 @@ index 7815fbb2cea8d3c3434287fa32c57e095199c217..f17a5c59e64b22ef0b864c3b8dd2dcb8
    // The id uniquely identifies the new status icon from other chrome status
    // icons.
 diff --git a/chrome/browser/ui/libgtkui/gtk_status_icon.h b/chrome/browser/ui/libgtkui/gtk_status_icon.h
-index e4e0da40981ca58964dfdcbd3fc0f730c9c09ec1..af028715ada9b8023f0ff7cf60e0f7e7acd6c042 100644
+index f04120242a00ee85f7e76944479ad6e3347d705c..08327aa7103a694f7742fc132ec7382626555031 100644
 --- a/chrome/browser/ui/libgtkui/gtk_status_icon.h
 +++ b/chrome/browser/ui/libgtkui/gtk_status_icon.h
 @@ -10,6 +10,7 @@
@@ -42,13 +42,13 @@ index e4e0da40981ca58964dfdcbd3fc0f730c9c09ec1..af028715ada9b8023f0ff7cf60e0f7e7
  
  // Status icon implementation which uses the system tray X11 spec (via
  // GtkStatusIcon).
--class Gtk2StatusIcon : public views::StatusIconLinux {
-+class LIBGTKUI_EXPORT Gtk2StatusIcon : public views::StatusIconLinux {
+-class GtkStatusIcon : public views::StatusIconLinux {
++class LIBGTKUI_EXPORT GtkStatusIcon : public views::StatusIconLinux {
   public:
-   Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
-   ~Gtk2StatusIcon() override;
+   GtkStatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
+   ~GtkStatusIcon() override;
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209d7d5cf3f 100644
+index 1efb064df26488d9d893e1e58cb17110c10501f3..bb1aea692a356c206baf2750ed4c98fa86d39fb9 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -79,9 +79,9 @@ index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209
 -void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
 +LIBGTKUI_EXPORT void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
  
- // Gets the transient parent aura window for |dialog|.
- aura::Window* GetAuraTransientParent(GtkWidget* dialog);
-@@ -193,7 +194,7 @@ void RenderBackground(const gfx::Size& size,
+ // Parses |button_string| into |leading_buttons| and
+ // |trailing_buttons|.  The string is of the format
+@@ -186,7 +187,7 @@ void RenderBackground(const gfx::Size& size,
  // Renders a background from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
  // returns the average color.
@@ -91,18 +91,18 @@ index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209
  // Renders the border from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
 diff --git a/chrome/browser/ui/libgtkui/skia_utils_gtk.h b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-index e05fbe9d8b2fe537a5eecbd3642dcc9eb848f3d7..3afca9a72ab69fed0144cfff8159aff5a480c4f5 100644
+index bd6ed68a11b0b6c08962f688c799bd0f6b8a8d0e..b1184475e0ab9f381dc3c78b1092e2e0ec59d60b 100644
 --- a/chrome/browser/ui/libgtkui/skia_utils_gtk.h
 +++ b/chrome/browser/ui/libgtkui/skia_utils_gtk.h
-@@ -7,6 +7,7 @@
- 
+@@ -8,6 +8,7 @@
+ #include <gtk/gtk.h>
  #include <stdint.h>
  
 +#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
  #include "third_party/skia/include/core/SkColor.h"
  
- typedef struct _GdkColor GdkColor;
-@@ -41,7 +42,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
+ #if !GTK_CHECK_VERSION(3, 90, 0)
+@@ -48,7 +49,7 @@ const SkBitmap GdkPixbufToImageSkia(GdkPixbuf* pixbuf);
  // Convert and copy a SkBitmap to a GdkPixbuf. NOTE: this uses BGRAToRGBA, so
  // it is an expensive operation.  The returned GdkPixbuf will have a refcount of
  // 1, and the caller is responsible for unrefing it when done.

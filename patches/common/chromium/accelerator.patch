@@ -5,7 +5,7 @@ Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff184628bba1 100644
+index d2f31e0add278b07da35d91e0222882003413437..2d61a2b38f79b4fe24caa3c3bcc631781692cfdd 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -26,7 +26,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
  
  namespace ui {
  
-@@ -139,7 +138,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -147,7 +146,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
  
@@ -42,7 +42,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -148,17 +155,20 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -156,17 +163,20 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -73,16 +73,16 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
  #endif
    }
  
-@@ -223,7 +233,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -231,7 +241,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
-     shortcut = l10n_util::GetStringFUTF16(IDS_APP_CONTROL_MODIFIER, shortcut);
+     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);
 -  else if (IsAltDown())
 +  if (IsAltDown())
-     shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
+     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_ALT_KEY);
  
    if (IsCmdDown()) {
-@@ -243,14 +253,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
+@@ -251,14 +261,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
      base::string16 shortcut) const {
    const base::char16 kCommandSymbol[] = {0x2318, 0};
    const base::char16 kCtrlSymbol[] = {0x2303, 0};
