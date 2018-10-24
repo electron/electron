@@ -4,7 +4,7 @@ const { GitProcess } = require('dugite')
 const path = require('path')
 const semver = require('semver')
 
-const notes = require(path.resolve(__dirname, 'notes.js'))
+const notes = require('./notes.js')
 
 const gitDir = path.resolve(__dirname, '..', '..')
 
