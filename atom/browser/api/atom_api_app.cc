@@ -13,6 +13,7 @@
 #include "atom/browser/api/gpuinfo_manager.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/login_handler.h"
 #include "atom/browser/relauncher.h"
 #include "atom/common/atom_command_line.h"
@@ -31,7 +32,6 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/sys_info.h"
-#include "brightray/browser/brightray_paths.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_paths.h"
@@ -395,15 +395,15 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 // Return the path constant from string.
 int GetPathConstant(const std::string& name) {
   if (name == "appData")
-    return brightray::DIR_APP_DATA;
+    return DIR_APP_DATA;
   else if (name == "userData")
-    return brightray::DIR_USER_DATA;
+    return DIR_USER_DATA;
   else if (name == "cache")
-    return brightray::DIR_CACHE;
+    return DIR_CACHE;
   else if (name == "userCache")
-    return brightray::DIR_USER_CACHE;
+    return DIR_USER_CACHE;
   else if (name == "logs")
-    return brightray::DIR_APP_LOGS;
+    return DIR_APP_LOGS;
   else if (name == "home")
     return base::DIR_HOME;
   else if (name == "temp")
@@ -898,7 +898,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(brightray::DIR_USER_DATA, &user_dir);
+  base::PathService::Get(DIR_USER_DATA, &user_dir);
 
   auto cb = base::Bind(&App::OnSecondInstance, base::Unretained(this));
 

@@ -11,6 +11,7 @@
 #include <shobjidl.h>
 
 #include "atom/browser/ui/win/jump_list.h"
+#include "atom/common/application_info.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/base_paths.h"
@@ -24,7 +25,6 @@
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
-#include "brightray/common/application_info.h"
 
 namespace atom {
 
@@ -120,7 +120,7 @@ void Browser::ClearRecentDocuments() {
 }
 
 void Browser::SetAppUserModelID(const base::string16& name) {
-  brightray::SetAppUserModelID(name);
+  atom::SetAppUserModelID(name);
 }
 
 bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
@@ -324,7 +324,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 PCWSTR Browser::GetAppUserModelID() {
-  return brightray::GetRawAppUserModelID();
+  return GetRawAppUserModelID();
 }
 
 std::string Browser::GetExecutableFileVersion() const {
@@ -340,7 +340,7 @@ std::string Browser::GetExecutableFileVersion() const {
 }
 
 std::string Browser::GetExecutableFileProductName() const {
-  return brightray::GetApplicationName();
+  return GetApplicationName();
 }
 
 }  // namespace atom

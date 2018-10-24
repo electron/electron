@@ -9,12 +9,12 @@
 #include <vector>
 
 #include "atom/browser/notifications/notification_delegate.h"
+#include "atom/common/application_info.h"
 #include "atom/common/platform_util.h"
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/common/application_info.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -66,7 +66,7 @@ bool LibnotifyNotification::Initialize() {
     return false;
   }
   if (!libnotify_loader_.notify_is_initted() &&
-      !libnotify_loader_.notify_init(brightray::GetApplicationName().c_str())) {
+      !libnotify_loader_.notify_init(GetApplicationName().c_str())) {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }

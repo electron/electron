@@ -1,10 +1,14 @@
-#import "brightray/common/application_info.h"
+// Copyright (c) 2013 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
 
+#import "atom/common/application_info.h"
+
+#import "atom/common/mac/main_application_bundle.h"
 #import "base/mac/foundation_util.h"
 #import "base/strings/sys_string_conversions.h"
-#import "brightray/common/mac/main_application_bundle.h"
 
-namespace brightray {
+namespace atom {
 
 namespace {
 
@@ -27,4 +31,4 @@ std::string GetApplicationVersion() {
   return ApplicationInfoDictionaryValue(@"CFBundleShortVersionString");
 }
 
-}  // namespace brightray
+}  // namespace atom

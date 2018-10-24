@@ -15,6 +15,7 @@
 #include "atom/browser/api/trackable_object.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/atom_paths.h"
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/io_thread.h"
@@ -23,6 +24,7 @@
 #include "atom/browser/node_debugger.h"
 #include "atom/browser/ui/devtools_manager_delegate.h"
 #include "atom/common/api/atom_bindings.h"
+#include "atom/common/application_info.h"
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
 #include "base/base_switches.h"
@@ -32,8 +34,6 @@
 #include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "brightray/browser/brightray_paths.h"
-#include "brightray/common/application_info.h"
 #include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/net/chrome_net_log_helper.h"
@@ -139,12 +139,12 @@ const int kWaitForUIThreadSeconds = 10;
 
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
-  if (base::PathService::Get(brightray::DIR_APP_DATA, &path))
+  if (base::PathService::Get(DIR_APP_DATA, &path))
     return;
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
-  base::PathService::Override(brightray::DIR_APP_DATA, path);
+  base::PathService::Override(DIR_APP_DATA, path);
 }
 
 int BrowserX11ErrorHandler(Display* d, XErrorEvent* error) {
@@ -224,11 +224,10 @@ void AtomBrowserMainParts::InitializeFeatureList() {
 #if !defined(OS_MACOSX)
 void AtomBrowserMainParts::OverrideAppLogsPath() {
   base::FilePath path;
-  if (base::PathService::Get(brightray::DIR_APP_DATA, &path)) {
-    path = path.Append(
-        base::FilePath::FromUTF8Unsafe(brightray::GetApplicationName()));
+  if (base::PathService::Get(DIR_APP_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-    base::PathService::Override(brightray::DIR_APP_LOGS, path);
+    base::PathService::Override(DIR_APP_LOGS, path);
   }
 }
 #endif

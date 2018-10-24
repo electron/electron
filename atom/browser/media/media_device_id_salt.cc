@@ -15,7 +15,7 @@ namespace atom {
 
 namespace {
 
-const char kMediaDeviceIdSalt[] = "brightray.media.device_id_salt";
+const char kMediaDeviceIdSalt[] = "electron.media.device_id_salt";
 
 }  // namespace
 

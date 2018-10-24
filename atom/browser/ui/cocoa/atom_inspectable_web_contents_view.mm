@@ -150,7 +150,7 @@
                     backing:NSBackingStoreBuffered
                       defer:YES]);
     [devtools_window_ setDelegate:self];
-    [devtools_window_ setFrameAutosaveName:@"brightray.devtools"];
+    [devtools_window_ setFrameAutosaveName:@"electron.devtools"];
     [devtools_window_ setTitle:@"Developer Tools"];
     [devtools_window_ setReleasedWhenClosed:NO];
     [devtools_window_ setAutorecalculatesContentBorderThickness:NO

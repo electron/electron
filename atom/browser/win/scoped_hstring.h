@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef BRIGHTRAY_BROWSER_WIN_SCOPED_HSTRING_H_
-#define BRIGHTRAY_BROWSER_WIN_SCOPED_HSTRING_H_
+#ifndef ATOM_BROWSER_WIN_SCOPED_HSTRING_H_
+#define ATOM_BROWSER_WIN_SCOPED_HSTRING_H_
 
 #include <hstring.h>
 #include <windows.h>
@@ -11,6 +11,8 @@
 #include <string>
 
 #include "base/macros.h"
+
+namespace atom {
 
 class ScopedHString {
  public:
@@ -38,4 +40,6 @@ class ScopedHString {
   DISALLOW_COPY_AND_ASSIGN(ScopedHString);
 };
 
-#endif  // BRIGHTRAY_BROWSER_WIN_SCOPED_HSTRING_H_
+}  // namespace atom
+
+#endif  // ATOM_BROWSER_WIN_SCOPED_HSTRING_H_

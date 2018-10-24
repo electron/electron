@@ -10,12 +10,6 @@ arbitrary files from it without unpacking the whole file.
 
 The ASAR format was created primarily to improve performance on Windows... TODO
 
-### Brightray
-
-Brightray [was](https://github.com/electron-archive/brightray) a static library
-that made [libchromiumcontent] easier to use in applications. It is now
-deprecated and has been merged into Electron's codebase.
-
 ### CRT
 
 The C Run-time Library (CRT) is the part of the C++ Standard Library that
@@ -74,7 +68,7 @@ MAS, see the [Mac App Store Submission Guide].
 
 ### Mojo
 
-An IPC system for communicating intra- or inter-process, and that's important because Chrome is keen on being able to split its work into separate processes or not, depending on memory pressures etc. 
+An IPC system for communicating intra- or inter-process, and that's important because Chrome is keen on being able to split its work into separate processes or not, depending on memory pressures etc.
 
 See https://chromium.googlesource.com/chromium/src/+/master/mojo/README.md
 
