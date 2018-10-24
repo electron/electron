@@ -181,8 +181,15 @@ void OverrideAppLogsPath() {
 
 void BrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  const auto enable_features =
+  auto enable_features =
       cmd_line->GetSwitchValueASCII(switches::kEnableFeatures);
+#if defined(OS_WIN)
+  // On Windows, when you set an accelerator with Ctrl and Alt both added as
+  // a modifier, it screws with the event modifiers, and also sets AltGr as
+  // enabled. There is a fix for this in chromium, but it's not enabled by
+  // default in 3-0-x. http://crbug.com/25503
+  enable_features += std::string(",FixAltGraph");
+#endif
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
   auto feature_list = std::make_unique<base::FeatureList>();
