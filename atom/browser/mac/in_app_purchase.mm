@@ -167,7 +167,7 @@ void FinishTransactionByDate(const std::string& date) {
 std::string GetReceiptURL() {
   NSURL* receiptURL = [[NSBundle mainBundle] appStoreReceiptURL];
   if (receiptURL != nil) {
-    return [[receiptURL absoluteString] UTF8String];
+    return std::string([[receiptURL path] UTF8String]);
   } else {
     return "";
   }
