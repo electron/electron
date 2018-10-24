@@ -973,7 +973,7 @@ jobs:
       <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
-      TESTS_ARGS: '--run-only-disabled-tests'
+      TESTS_ARGS: '--only-disabled-tests'
     <<: *steps-native-tests
 
   linux-x64-chromium-unittests:
@@ -982,6 +982,7 @@ jobs:
       <<: *env-unittests
       <<: *env-enable-sccache
       <<: *env-headless-testing
+      TESTS_ARGS: '--include-disabled-tests'
     <<: *steps-native-tests
 
   linux-x64-browsertests:
