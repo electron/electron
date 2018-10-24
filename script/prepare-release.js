@@ -13,7 +13,7 @@ const GitHub = require('github')
 const pass = '\u2713'.green
 const path = require('path')
 const readline = require('readline')
-const ReleaseNotes = require('./release-notes/index.js')
+const releaseNotesGenerator = require('./release-notes/index.js')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 
@@ -75,7 +75,7 @@ async function getReleaseNotes (currentBranch) {
     return 'Nightlies do not get release notes, please compare tags for info'
   }
   console.log(`Generating release notes for ${currentBranch}.`)
-  return ReleaseNotes(currentBranch)
+  return releaseNotesGenerator(currentBranch)
 }
 
 async function createRelease (branchToTarget, isBeta) {
