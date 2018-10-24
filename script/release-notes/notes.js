@@ -161,7 +161,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   }
 
   // Edge case: manual backport where commit has `owner/repo#pull` notation
-  if (commitMessage.includes('ackport') &&
+  if (commitMessage.toLowerCase.includes('backport') &&
       ((match = commitMessage.match(/\b(\w+)\/(\w+)#(\d+)\b/)))) {
     const [ , owner, repo, number ] = match
     if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
