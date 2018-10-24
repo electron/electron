@@ -25,15 +25,21 @@ const knownTypes = new Set([...breakTypes.keys(), ...docTypes.keys(), ...featTyp
 
 const semanticMap = new Map()
 for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-map.csv'), 'utf8').split('\n')) {
-  if (!line) continue
+  if (!line) {
+    continue
+  }
   const bits = line.split(',')
-  if (bits.length !== 2) continue
+  if (bits.length !== 2) {
+    continue
+  }
   semanticMap.set(bits[0], bits[1])
 }
 
 const runGit = async (dir, args) => {
   const response = await GitProcess.exec(args, dir)
-  if (response.exitCode !== 0) throw new Error(response.stderr.trim())
+  if (response.exitCode !== 0) {
+    throw new Error(response.stderr.trim())
+  }
   return response.stdout.trim()
 }
 
@@ -42,14 +48,25 @@ const getCommonAncestor = async (dir, point1, point2) => {
 }
 
 const setPullRequest = (commit, owner, repo, number) => {
-  if (!owner || !repo || !number) throw new Error(JSON.stringify({ owner, repo, number }, null, 2))
-  if (!commit.originalPr) commit.originalPr = commit.pr
+  if (!owner || !repo || !number) {
+    throw new Error(JSON.stringify({ owner, repo, number }, null, 2))
+  }
+
+  if (!commit.originalPr) {
+    commit.originalPr = commit.pr
+  }
+
   commit.pr = { owner, repo, number }
-  if (!commit.originalPr) commit.originalPr = commit.pr
+
+  if (!commit.originalPr) {
+    commit.originalPr = commit.pr
+  }
 }
 
 const getNoteFromBody = body => {
-  if (!body) return null
+  if (!body) {
+    return null
+  }
 
   const NOTE_PREFIX = 'Notes: '
 
@@ -100,7 +117,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     subject = subject.slice(0, pos).trim()
   }
 
-  if (!commit.originalSubject) commit.originalSubject = subject
+  if (!commit.originalSubject) {
+    commit.originalSubject = subject
+  }
 
   if (body) {
     commit.body = body
@@ -136,15 +155,23 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // https://help.github.com/articles/closing-issues-using-keywords/
   if ((match = subject.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/))) {
     commit.issueNumber = parseInt(match[1])
-    if (!commit.type) commit.type = 'fix'
+    if (!commit.type) {
+      commit.type = 'fix'
+    }
   }
 
   // look for 'fixes' in markdown; e.g. 'Fixes [#8952](https://github.com/electron/electron/issues/8952)'
   if (!commit.issueNumber && ((match = commitMessage.match(/Fixes \[#(\d+)\]\(https:\/\/github.com\/(\w+)\/(\w+)\/issues\/(\d+)\)/)))) {
     commit.issueNumber = parseInt(match[1])
-    if (commit.pr && commit.pr.number === commit.issueNumber) commit.pr = null
-    if (commit.originalPr && commit.originalPr.number === commit.issueNumber) commit.originalPr = null
-    if (!commit.type) commit.type = 'fix'
+    if (commit.pr && commit.pr.number === commit.issueNumber) {
+      commit.pr = null
+    }
+    if (commit.originalPr && commit.originalPr.number === commit.issueNumber) {
+      commit.originalPr = null
+    }
+    if (!commit.type) {
+      commit.type = 'fix'
+    }
   }
 
   // https://www.conventionalcommits.org/en
@@ -217,7 +244,9 @@ const getLocalCommitDetails = async (module, point1, point2) => {
   const commits = (await runGit(dir, args)).split(`\0`).map(field => field.trim())
   const details = []
   for (const commit of commits) {
-    if (!commit) continue
+    if (!commit) {
+      continue
+    }
     const [ hash, parentHashes, email, commitMessage ] = commit.split(fieldSep, 4).map(field => field.trim())
     details.push(parseCommitMessage(commitMessage, owner, repo, {
       email,
@@ -251,7 +280,9 @@ const getPullRequest = async (number, owner, repo) => {
       // Silently eat 404s.
       // We can get a bad pull number if someone manually lists
       // an issue number in PR number notation, e.g. 'fix: foo (#123)'
-      if (error.code !== 404) throw error
+      if (error.code !== 404) {
+        throw error
+      }
     }
   })
 }
@@ -388,10 +419,14 @@ const getNotes = async (fromRef, toRef) => {
   // if a commmit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
     const revertHash = commit.revertHash
-    if (!revertHash) continue
+    if (!revertHash) {
+      continue
+    }
 
     const revert = pool.commits.find(commit => commit.hash === revertHash)
-    if (!revert) continue
+    if (!revert) {
+      continue
+    }
 
     commit.note = NO_NOTES
     revert.note = NO_NOTES
@@ -404,11 +439,15 @@ const getNotes = async (fromRef, toRef) => {
     let pr = commit.pr
     while (pr && !commit.note) {
       const prData = await getPullRequest(pr.number, pr.owner, pr.repo)
-      if (!prData || !prData.data) break
+      if (!prData || !prData.data) {
+        break
+      }
 
       // try to pull a release note from the pull comment
       commit.note = getNoteFromBody(prData.data.body)
-      if (commit.note) break
+      if (commit.note) {
+        break
+      }
 
       // if the PR references another PR, maybe follow it
       parseCommitMessage(`${prData.data.title}\n\n${prData.data.body}`, pr.owner, pr.repo, commit)
@@ -433,13 +472,21 @@ const getNotes = async (fromRef, toRef) => {
 
   pool.commits.forEach(commit => {
     const str = commit.type
-    if (!str) notes.unknown.push(commit)
-    else if (breakTypes.has(str)) notes.breaks.push(commit)
-    else if (docTypes.has(str)) notes.docs.push(commit)
-    else if (featTypes.has(str)) notes.feat.push(commit)
-    else if (fixTypes.has(str)) notes.fix.push(commit)
-    else if (otherTypes.has(str)) notes.other.push(commit)
-    else notes.unknown.push(commit)
+    if (!str) {
+      notes.unknown.push(commit)
+    } else if (breakTypes.has(str)) {
+      notes.breaks.push(commit)
+    } else if (docTypes.has(str)) {
+      notes.docs.push(commit)
+    } else if (featTypes.has(str)) {
+      notes.feat.push(commit)
+    } else if (fixTypes.has(str)) {
+      notes.fix.push(commit)
+    } else if (otherTypes.has(str)) {
+      notes.other.push(commit)
+    } else {
+      notes.unknown.push(commit)
+    }
   })
 
   return notes
@@ -455,7 +502,11 @@ const renderCommit = commit => {
   note = note.trim()
   if (note.length !== 0) {
     note = note[0].toUpperCase() + note.substr(1)
-    if (!note.endsWith('.')) note = note + '.'
+
+    if (!note.endsWith('.')) {
+      note = note + '.'
+    }
+
     const commonVerbs = {
       'Added': [ 'Add' ],
       'Backported': [ 'Backport' ],
@@ -526,8 +577,9 @@ const renderNotes = notes => {
 
   if (notes.docs.length) {
     const docs = notes.docs.map(commit => {
-      if (commit.pr && commit.pr.number) return `#${commit.pr.number}`
-      return `https://github.com/electron/electron/commit/${commit.hash}`
+      return commit.pr && commit.pr.number
+        ? `#${commit.pr.number}`
+        : `https://github.com/electron/electron/commit/${commit.hash}`
     }).sort()
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n')
   }

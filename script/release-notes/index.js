@@ -12,7 +12,9 @@ const semverify = version => version.replace(/^origin\//, '').replace('x', '0').
 
 const runGit = async (args) => {
   const response = await GitProcess.exec(args, gitDir)
-  if (response.exitCode !== 0) throw new Error(response.stderr.trim())
+  if (response.exitCode !== 0) {
+    throw new Error(response.stderr.trim())
+  }
   return response.stdout.trim()
 }
 
@@ -30,7 +32,10 @@ const getTagsOf = async (point) => {
 
 const getTagsOnBranch = async (point) => {
   const masterTags = await getTagsOf('master')
-  if (point === 'master') return masterTags
+  if (point === 'master') {
+    return masterTags
+  }
+
   const masterTagsSet = new Set(masterTags)
   return (await getTagsOf(point)).filter(tag => !masterTagsSet.has(tag))
 }
@@ -69,13 +74,17 @@ const getPreviousStabilizationBranch = async (current) => {
     current = 'v999.999.999'
   }
 
-  let previous = null
+  let newestMatch = null
   for (const branch of stabilizationBranches) {
-    if (semver.gte(semverify(branch), semverify(current))) continue
-    if (previous && semver.lte(semverify(branch), semverify(previous))) continue
-    previous = branch
+    if (semver.gte(semverify(branch), semverify(current))) {
+      continue
+    }
+    if (newestMatch && semver.lte(semverify(branch), semverify(newestMatch))) {
+      continue
+    }
+    newestMatch = branch
   }
-  return previous
+  return newestMatch
 }
 
 const getPreviousPoint = async (point) => {
@@ -87,8 +96,12 @@ const getPreviousPoint = async (point) => {
     // First see if there's an earlier tag on the same branch
     // that can serve as a reference point.
     let tags = (await getTagsOnBranch(`${point}^`)).filter(tag => tagIsSupported(tag))
-    if (currentIsStable) tags = tags.filter(tag => tagIsStable(tag))
-    if (tags.length) return tags.pop()
+    if (currentIsStable) {
+      tags = tags.filter(tag => tagIsStable(tag))
+    }
+    if (tags.length) {
+      return tags.pop()
+    }
   } catch (error) {
     console.log('error', error)
   }
@@ -100,7 +113,9 @@ const getPreviousPoint = async (point) => {
   while (branch) {
     const prevBranch = await getPreviousStabilizationBranch(branch)
     const tags = (await getTagsOnBranch(prevBranch)).filter(tag => tagIsStable(tag))
-    if (tags.length) return tags.pop()
+    if (tags.length) {
+      return tags.pop()
+    }
     branch = prevBranch
   }
 }
@@ -131,7 +146,9 @@ async function main () {
   const range = process.argv[2] || 'HEAD'
   const notes = await getReleaseNotes(range)
   console.log(notes.text)
-  if (notes.warning) throw new Error(notes.warning)
+  if (notes.warning) {
+    throw new Error(notes.warning)
+  }
 }
 
 if (process.mainModule === module) {
