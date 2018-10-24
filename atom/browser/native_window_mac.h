@@ -165,8 +165,6 @@ class NativeWindowMac : public NativeWindow {
   void AddContentViewLayers();
 
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
-  void ShowWindowButton(NSWindowButton button);
-
   void SetForwardMouseMessages(bool forward);
 
   AtomNSWindow* window_;  // Weak ref, managed by widget_.

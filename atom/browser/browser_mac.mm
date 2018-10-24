@@ -147,13 +147,9 @@ void Browser::SetUserActivity(const std::string& type,
 }
 
 std::string Browser::GetCurrentActivityType() {
-  if (@available(macOS 10.10, *)) {
-    NSUserActivity* userActivity =
-        [[AtomApplication sharedApplication] getCurrentActivity];
-    return base::SysNSStringToUTF8(userActivity.activityType);
-  } else {
-    return std::string();
-  }
+  NSUserActivity* userActivity =
+      [[AtomApplication sharedApplication] getCurrentActivity];
+  return base::SysNSStringToUTF8(userActivity.activityType);
 }
 
 void Browser::InvalidateCurrentActivity() {

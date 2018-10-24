@@ -178,61 +178,55 @@
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
   // artifacts.
-  if (@available(macOS 10.10, *)) {
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      NSWindow* window = shell_->GetNativeWindow();
-      [window setToolbar:nil];
-    }
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+    NSWindow* window = shell_->GetNativeWindow();
+    [window setToolbar:nil];
   }
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
   shell_->NotifyWindowEnterFullScreen();
 
-  if (@available(macOS 10.10, *)) {
-    // For frameless window we don't show set title for normal mode since the
-    // titlebar is expected to be empty, but after entering fullscreen mode we
-    // have to set one, because title bar is visible here.
-    NSWindow* window = shell_->GetNativeWindow();
-    if ((shell_->transparent() || !shell_->has_frame()) &&
-        // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
-        // fullscreen mode.
-        // Show title if fullscreen_window_title flag is set
-        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-         shell_->fullscreen_window_title())) {
-      [window setTitleVisibility:NSWindowTitleVisible];
-    }
+  // For frameless window we don't show set title for normal mode since the
+  // titlebar is expected to be empty, but after entering fullscreen mode we
+  // have to set one, because title bar is visible here.
+  NSWindow* window = shell_->GetNativeWindow();
+  if ((shell_->transparent() || !shell_->has_frame()) &&
+      // FIXME(zcbenz): Showing titlebar for hiddenInset window is weird under
+      // fullscreen mode.
+      // Show title if fullscreen_window_title flag is set
+      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+       shell_->fullscreen_window_title())) {
+    [window setTitleVisibility:NSWindowTitleVisible];
+  }
 
-    // Restore the native toolbar immediately after entering fullscreen, if we
-    // do this before leaving fullscreen, traffic light buttons will be jumping.
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      base::scoped_nsobject<NSToolbar> toolbar(
-          [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
-      [toolbar setShowsBaselineSeparator:NO];
-      [window setToolbar:toolbar];
+  // Restore the native toolbar immediately after entering fullscreen, if we
+  // do this before leaving fullscreen, traffic light buttons will be jumping.
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+    base::scoped_nsobject<NSToolbar> toolbar(
+        [[NSToolbar alloc] initWithIdentifier:@"titlebarStylingToolbar"]);
+    [toolbar setShowsBaselineSeparator:NO];
+    [window setToolbar:toolbar];
 
-      // Set window style to hide the toolbar, otherwise the toolbar will show
-      // in fullscreen mode.
-      [window setTitlebarAppearsTransparent:NO];
-      shell_->SetStyleMask(true, NSWindowStyleMaskFullSizeContentView);
-    }
+    // Set window style to hide the toolbar, otherwise the toolbar will show
+    // in fullscreen mode.
+    [window setTitlebarAppearsTransparent:NO];
+    shell_->SetStyleMask(true, NSWindowStyleMaskFullSizeContentView);
   }
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  if (@available(macOS 10.10, *)) {
-    // Restore the titlebar visibility.
-    NSWindow* window = shell_->GetNativeWindow();
-    if ((shell_->transparent() || !shell_->has_frame()) &&
-        (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
-         shell_->fullscreen_window_title())) {
-      [window setTitleVisibility:NSWindowTitleHidden];
-    }
+  // Restore the titlebar visibility.
+  NSWindow* window = shell_->GetNativeWindow();
+  if ((shell_->transparent() || !shell_->has_frame()) &&
+      (shell_->title_bar_style() != atom::NativeWindowMac::HIDDEN_INSET ||
+       shell_->fullscreen_window_title())) {
+    [window setTitleVisibility:NSWindowTitleHidden];
+  }
 
-    // Turn off the style for toolbar.
-    if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
-      shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
-    }
+  // Turn off the style for toolbar.
+  if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
+    shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
   }
 }
 

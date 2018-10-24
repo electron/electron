@@ -76,3 +76,4 @@ tts.patch
 color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
+mac_deployment_target.patch

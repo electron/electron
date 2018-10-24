@@ -1,0 +1,423 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Thu, 25 Oct 2018 06:00:40 +0200
+Subject: mac_deployment_target.patch
+
+Set mac_deployment_target to "10.10.0"
+Suppress "-Wdeprecated-declarations" warnings
+
+diff --git a/base/mac/launchd.cc b/base/mac/launchd.cc
+index 0337d2e60970751e467b783f2710c058a937e26d..6f994c8fad6edc1e6b2419369285c5396555eb3a 100644
+--- a/base/mac/launchd.cc
++++ b/base/mac/launchd.cc
+@@ -10,6 +10,9 @@
+ namespace base {
+ namespace mac {
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++
+ // MessageForJob sends a single message to launchd with a simple dictionary
+ // mapping |operation| to |job_label|, and returns the result of calling
+ // launch_msg to send that message. On failure, returns NULL. The caller
+@@ -71,5 +74,7 @@ pid_t PIDForJob(const std::string& job_label) {
+   return launch_data_get_integer(pid_data);
+ }
+ 
++#pragma clang diagnostic pop
++
+ }  // namespace mac
+ }  // namespace base
+diff --git a/base/mac/mac_util.mm b/base/mac/mac_util.mm
+index 82b904701690d3db51968428583c8e0064e15789..3ec02aeffaaa41879751eec81bc05d04cd8a41d2 100644
+--- a/base/mac/mac_util.mm
++++ b/base/mac/mac_util.mm
+@@ -103,7 +103,10 @@ LSSharedFileListItemRef GetLoginItemForApp() {
+     // It seems that LSSharedFileListItemResolve() can return NULL in
+     // item_url_ref even if the function itself returns noErr. See
+     // https://crbug.com/760989
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+     if (LSSharedFileListItemResolve(item, 0, &item_url_ref, NULL) == noErr &&
++#pragma clang diagnostic pop
+         item_url_ref) {
+       ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
+       if (CFEqual(item_url, url)) {
+diff --git a/base/mac/scoped_launch_data.h b/base/mac/scoped_launch_data.h
+index f4db3306d425099682583be156a052124abad5a9..c99b8495c651cdf5d735ffea5713b6d59c238f9b 100644
+--- a/base/mac/scoped_launch_data.h
++++ b/base/mac/scoped_launch_data.h
+@@ -14,11 +14,16 @@ namespace mac {
+ 
+ namespace internal {
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++
+ struct ScopedLaunchDataTraits {
+   static launch_data_t InvalidValue() { return nullptr; }
+   static void Free(launch_data_t ldt) { launch_data_free(ldt); }
+ };
+ 
++#pragma clang diagnostic pop
++
+ }  // namespace internal
+ 
+ // Just like std::unique_ptr<> but for launch_data_t.
+diff --git a/build/config/mac/mac_sdk.gni b/build/config/mac/mac_sdk.gni
+index 544c524d76eb04552559a49521043c24839394ce..1a6d170a7e3a0bf5f85b51567074a73a609ff037 100644
+--- a/build/config/mac/mac_sdk.gni
++++ b/build/config/mac/mac_sdk.gni
+@@ -14,7 +14,7 @@ declare_args() {
+   # additional code changes are required to be compliant with the availability
+   # rules.
+   # Must be of the form x.x.x for Info.plist files.
+-  mac_deployment_target = "10.9.0"
++  mac_deployment_target = "10.10.0"
+ 
+   # The value of the LSMinimmumSystemVersion in Info.plist files. This partially
+   # controls the minimum supported version of macOS for Chromium by
+diff --git a/chrome/common/importer/firefox_importer_utils_mac.mm b/chrome/common/importer/firefox_importer_utils_mac.mm
+index ac9cf412246c7b0af5fbeb0d102a4d96ee2ee428..676f5c43454269077fd6183413305c1b033dda94 100644
+--- a/chrome/common/importer/firefox_importer_utils_mac.mm
++++ b/chrome/common/importer/firefox_importer_utils_mac.mm
+@@ -25,6 +25,8 @@ base::FilePath GetProfilesINI() {
+ }
+ 
+ base::FilePath GetFirefoxDylibPath() {
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   CFURLRef appURL = nil;
+   if (LSFindApplicationForInfo(kLSUnknownCreator,
+                               CFSTR("org.mozilla.firefox"),
+@@ -33,6 +35,7 @@ base::FilePath GetFirefoxDylibPath() {
+                               &appURL) != noErr) {
+     return base::FilePath();
+   }
++#pragma clang diagnostic pop
+   NSBundle *ff_bundle =
+       [NSBundle bundleWithPath:[base::mac::CFToNSCast(appURL) path]];
+   CFRelease(appURL);
+diff --git a/components/download/quarantine/quarantine_mac.mm b/components/download/quarantine/quarantine_mac.mm
+index aa5d013cf92b9b0700099ee6fc6bce40deb3ab63..11b0a4234ba468a1e8d913488b6a0a7a54bb1e73 100644
+--- a/components/download/quarantine/quarantine_mac.mm
++++ b/components/download/quarantine/quarantine_mac.mm
+@@ -22,62 +22,6 @@
+ 
+ namespace {
+ 
+-// Once Chrome no longer supports macOS 10.9, this code will no longer be
+-// necessary. Note that LSCopyItemAttribute was deprecated in macOS 10.8, but
+-// the replacement to kLSItemQuarantineProperties did not exist until macOS
+-// 10.10.
+-#if !defined(MAC_OS_X_VERSION_10_10) || \
+-    MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_10
+-#pragma clang diagnostic push
+-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+-bool GetQuarantinePropertiesDeprecated(
+-    const base::FilePath& file,
+-    base::scoped_nsobject<NSMutableDictionary>* properties) {
+-  const UInt8* path = reinterpret_cast<const UInt8*>(file.value().c_str());
+-  FSRef file_ref;
+-  if (FSPathMakeRef(path, &file_ref, nullptr) != noErr)
+-    return false;
+-
+-  base::ScopedCFTypeRef<CFTypeRef> quarantine_properties;
+-  OSStatus status =
+-      LSCopyItemAttribute(&file_ref, kLSRolesAll, kLSItemQuarantineProperties,
+-                          quarantine_properties.InitializeInto());
+-  if (status != noErr)
+-    return true;
+-
+-  CFDictionaryRef quarantine_properties_dict =
+-      base::mac::CFCast<CFDictionaryRef>(quarantine_properties.get());
+-  if (!quarantine_properties_dict) {
+-    LOG(WARNING) << "kLSItemQuarantineProperties is not a dictionary on file "
+-                 << file.value();
+-    return false;
+-  }
+-
+-  properties->reset(
+-      [base::mac::CFToNSCast(quarantine_properties_dict) mutableCopy]);
+-  return true;
+-}
+-
+-bool SetQuarantinePropertiesDeprecated(const base::FilePath& file,
+-                                       NSDictionary* properties) {
+-  const UInt8* path = reinterpret_cast<const UInt8*>(file.value().c_str());
+-  FSRef file_ref;
+-  if (FSPathMakeRef(path, &file_ref, nullptr) != noErr)
+-    return false;
+-
+-  OSStatus os_error = LSSetItemAttribute(
+-      &file_ref, kLSRolesAll, kLSItemQuarantineProperties, properties);
+-  if (os_error != noErr) {
+-    OSSTATUS_LOG(WARNING, os_error)
+-        << "Unable to set quarantine attributes on file " << file.value();
+-    return false;
+-  }
+-  return true;
+-}
+-#pragma clang diagnostic pop
+-#endif
+-
+-API_AVAILABLE(macos(10.10))
+ bool GetQuarantineProperties(
+     const base::FilePath& file,
+     base::scoped_nsobject<NSMutableDictionary>* properties) {
+@@ -114,7 +58,6 @@ bool GetQuarantineProperties(
+   return true;
+ }
+ 
+-API_AVAILABLE(macos(10.10))
+ bool SetQuarantineProperties(const base::FilePath& file,
+                              NSDictionary* properties) {
+   base::scoped_nsobject<NSURL> file_url([[NSURL alloc]
+@@ -235,12 +178,7 @@ bool AddQuarantineMetadataToFile(const base::FilePath& file,
+                                  const GURL& referrer) {
+   base::AssertBlockingAllowed();
+   base::scoped_nsobject<NSMutableDictionary> properties;
+-  bool success = false;
+-  if (@available(macos 10.10, *)) {
+-    success = GetQuarantineProperties(file, &properties);
+-  } else {
+-    success = GetQuarantinePropertiesDeprecated(file, &properties);
+-  }
++  bool success = GetQuarantineProperties(file, &properties);
+ 
+   if (!success)
+     return false;
+@@ -280,11 +218,7 @@ bool AddQuarantineMetadataToFile(const base::FilePath& file,
+     [properties setValue:origin_url forKey:(NSString*)kLSQuarantineDataURLKey];
+   }
+ 
+-  if (@available(macos 10.10, *)) {
+-    return SetQuarantineProperties(file, properties);
+-  } else {
+-    return SetQuarantinePropertiesDeprecated(file, properties);
+-  }
++  return SetQuarantineProperties(file, properties);
+ }
+ 
+ }  // namespace
+@@ -313,12 +247,7 @@ bool IsFileQuarantined(const base::FilePath& file,
+     return false;
+ 
+   base::scoped_nsobject<NSMutableDictionary> properties;
+-  bool success = false;
+-  if (@available(macos 10.10, *)) {
+-    success = GetQuarantineProperties(file, &properties);
+-  } else {
+-    success = GetQuarantinePropertiesDeprecated(file, &properties);
+-  }
++  bool success = GetQuarantineProperties(file, &properties);
+ 
+   if (!success || !properties)
+     return false;
+diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
+index a63ae0b7b077000ff3509ceb13fa8d86c75fe2f4..2a17608cb2514eb7c2a266f8826e64e52a4c86c5 100644
+--- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
++++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
+@@ -240,6 +240,9 @@ AccessibilityTreeFormatterMac::AccessibilityTreeFormatterMac() {
+ AccessibilityTreeFormatterMac::~AccessibilityTreeFormatterMac() {
+ }
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++
+ void AccessibilityTreeFormatterMac::AddProperties(
+     const BrowserAccessibility& node,
+     base::DictionaryValue* dict) {
+@@ -274,6 +277,8 @@ void AccessibilityTreeFormatterMac::AddProperties(
+   dict->Set(kSizeDictAttr, PopulateSize(cocoa_node));
+ }
+ 
++#pragma clang diagnostic pop
++
+ base::string16 AccessibilityTreeFormatterMac::ProcessTreeForOutput(
+     const base::DictionaryValue& dict,
+     base::DictionaryValue* filtered_dict_result) {
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index efa52aa9de2f819f28109978c8cef518325ef70a..9c63c9195afc7538adb2fcf88ab72d2a4dea9a70 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -2962,7 +2962,10 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+   if (![self instanceActive])
+     return nil;
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   NSArray* fullArray = [self accessibilityAttributeValue:attribute];
++#pragma clang diagnostic pop
+   if (!fullArray)
+     return nil;
+   NSUInteger arrayCount = [fullArray count];
+@@ -2982,7 +2985,10 @@ NSString* const NSAccessibilityRequiredAttributeChrome = @"AXRequired";
+   if (![self instanceActive])
+     return 0;
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   NSArray* fullArray = [self accessibilityAttributeValue:attribute];
++#pragma clang diagnostic pop
+   return [fullArray count];
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_view_cocoa.mm b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
+index 70d244e01b75f98a6ed580475710d7405cae8eee..00d664049b7ecbe16299b215c912435b0bf229b4 100644
+--- a/content/browser/renderer_host/render_widget_host_view_cocoa.mm
++++ b/content/browser/renderer_host/render_widget_host_view_cocoa.mm
+@@ -1319,7 +1319,10 @@ void ExtractUnderlines(NSAttributedString* string,
+ - (NSArray*)accessibilityArrayAttributeValues:(NSString*)attribute
+                                         index:(NSUInteger)index
+                                      maxCount:(NSUInteger)maxCount {
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   NSArray* fullArray = [self accessibilityAttributeValue:attribute];
++#pragma clang diagnostic pop
+   NSUInteger totalLength = [fullArray count];
+   if (index >= totalLength)
+     return nil;
+@@ -1328,7 +1331,10 @@ void ExtractUnderlines(NSAttributedString* string,
+ }
+ 
+ - (NSUInteger)accessibilityArrayAttributeCount:(NSString*)attribute {
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   NSArray* fullArray = [self accessibilityAttributeValue:attribute];
++#pragma clang diagnostic pop
+   return [fullArray count];
+ }
+ 
+diff --git a/services/device/geolocation/wifi_data_provider_mac.mm b/services/device/geolocation/wifi_data_provider_mac.mm
+index ff25310d619e2db0532af85f1ed134512774e343..580e25c91cd4d256da59f38ecb1655b2973b95cc 100644
+--- a/services/device/geolocation/wifi_data_provider_mac.mm
++++ b/services/device/geolocation/wifi_data_provider_mac.mm
+@@ -44,6 +44,9 @@ bool CoreWlanApi::GetAccessPointData(WifiData::AccessPointDataSet* data) {
+   // every AP listed in the scan without any SSID de-duping logic.
+   NSDictionary* params = @{ kCWScanKeyMerge : @NO };
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
++
+   NSSet* supported_interfaces = [CWInterface interfaceNames];
+   NSUInteger interface_error_count = 0;
+   for (NSString* interface_name in supported_interfaces) {
+@@ -55,6 +58,8 @@ bool CoreWlanApi::GetAccessPointData(WifiData::AccessPointDataSet* data) {
+       continue;
+     }
+ 
++#pragma clang diagnostic pop
++
+     const base::TimeTicks start_time = base::TimeTicks::Now();
+ 
+     NSError* err = nil;
+diff --git a/third_party/blink/renderer/platform/text/locale_mac.mm b/third_party/blink/renderer/platform/text/locale_mac.mm
+index 6271af2bc49f1914c4df1c44dfcfd5c1a8b3c76e..a01f988d08fae903a913f7ec3818f43b2b19baa1 100644
+--- a/third_party/blink/renderer/platform/text/locale_mac.mm
++++ b/third_party/blink/renderer/platform/text/locale_mac.mm
+@@ -87,7 +87,7 @@ LocaleMac::LocaleMac(NSLocale* locale)
+     : locale_(locale),
+       gregorian_calendar_(
+           kAdoptNS,
+-          [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar]),
++          [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian]),
+       did_initialize_number_data_(false) {
+   NSArray* available_languages = [NSLocale ISOLanguageCodes];
+   // NSLocale returns a lower case NSLocaleLanguageCode so we don't have care
+diff --git a/third_party/google_toolbox_for_mac/BUILD.gn b/third_party/google_toolbox_for_mac/BUILD.gn
+index ce1669b99c5fb20367f7384566f11ea34af5d2ba..bd9b5c36f41472c0e05fe58bfe9fa9bc815003d0 100644
+--- a/third_party/google_toolbox_for_mac/BUILD.gn
++++ b/third_party/google_toolbox_for_mac/BUILD.gn
+@@ -51,6 +51,8 @@ component("google_toolbox_for_mac") {
+       "src/Foundation/GTMServiceManagement.h",
+     ]
+ 
++    cflags = [ "-Wno-deprecated-declarations" ]
++
+     libs = [
+       "AddressBook.framework",
+       "AppKit.framework",
+diff --git a/third_party/mozilla/NSWorkspace+Utils.m b/third_party/mozilla/NSWorkspace+Utils.m
+index f6aab2c09d5fb3a5ad3d37e8f2b580179b5c19b3..dd0648c4807d20106cae2ba2efbeb8e7a81c1d9a 100644
+--- a/third_party/mozilla/NSWorkspace+Utils.m
++++ b/third_party/mozilla/NSWorkspace+Utils.m
+@@ -115,8 +115,11 @@
+   if (!bundleID)
+     return nil;
+   NSURL* appURL = nil;
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   if (LSFindApplicationForInfo(kLSUnknownCreator, (CFStringRef)bundleID, NULL, NULL, (CFURLRef*)&appURL) == noErr)
+     return [appURL autorelease];
++#pragma clang diagnostic pop
+ 
+   return nil;
+ }
+diff --git a/ui/base/cocoa/a11y_util.mm b/ui/base/cocoa/a11y_util.mm
+index e6a27ad26c32cb2ebcc2b1cc18354aea7772c96b..73012518eaab6e2389b72605c6a048d240fe5d16 100644
+--- a/ui/base/cocoa/a11y_util.mm
++++ b/ui/base/cocoa/a11y_util.mm
+@@ -11,8 +11,11 @@ void HideImageFromAccessibilityOrder(NSImageView* view) {
+   // This is the minimum change necessary to get VoiceOver to skip the image
+   // (instead of reading the word "image"). Accessibility mechanisms in OSX
+   // change once in a while, so this may be fragile.
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   [[view cell] accessibilitySetOverrideValue:@""
+                                 forAttribute:NSAccessibilityRoleAttribute];
++#pragma clang diagnostic pop
+ }
+ 
+ void PlayElementUpdatedSound(id source) {
+diff --git a/ui/base/cocoa/hover_button.mm b/ui/base/cocoa/hover_button.mm
+index 42b3703de2b94e3269f2297c62ec955588ce3e54..a7b0a52111430e754efc653a27bac6d4cacaea12 100644
+--- a/ui/base/cocoa/hover_button.mm
++++ b/ui/base/cocoa/hover_button.mm
+@@ -130,8 +130,11 @@ constexpr CGFloat kDragDistance = 5;
+ 
+ - (void)setAccessibilityTitle:(NSString*)accessibilityTitle {
+   NSCell* cell = [self cell];
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   [cell accessibilitySetOverrideValue:accessibilityTitle
+                          forAttribute:NSAccessibilityTitleAttribute];
++#pragma clang diagnostic pop
+ }
+ 
+ - (void)updateTrackingAreas {
+diff --git a/ui/base/cocoa/nsview_additions.mm b/ui/base/cocoa/nsview_additions.mm
+index 4f37d9e3989ce363bfcfebbf9ea7e724fcc3444b..04298c5a4e9fee3cc95ec9b288ef4a0fe853603f 100644
+--- a/ui/base/cocoa/nsview_additions.mm
++++ b/ui/base/cocoa/nsview_additions.mm
+@@ -118,8 +118,11 @@ static NSView* g_childBeingDrawnTo = nil;
+   if (@available(macOS 10.10, *)) {
+     self.accessibilityLabel = label;
+   } else {
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+     [self accessibilitySetOverrideValue:label
+                            forAttribute:NSAccessibilityDescriptionAttribute];
++#pragma clang diagnostic pop
+   }
+ }
+ 
+diff --git a/ui/views/cocoa/bridged_native_widget.mm b/ui/views/cocoa/bridged_native_widget.mm
+index 8841b59f6b70ac4687adfde61a1fba1424e57e48..b4d1dc795680657128241a5e683ab6b8d3c99b19 100644
+--- a/ui/views/cocoa/bridged_native_widget.mm
++++ b/ui/views/cocoa/bridged_native_widget.mm
+@@ -1383,11 +1383,14 @@ void BridgedNativeWidget::ShowAsModalSheet() {
+   // Since |this| may destroy [window_ delegate], use |window_| itself as the
+   // delegate, which will forward to ViewsNSWindowDelegate if |this| is still
+   // alive (i.e. it has not set the window delegate to nil).
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   [NSApp beginSheet:window_
+       modalForWindow:parent_window
+        modalDelegate:window_
+       didEndSelector:@selector(sheetDidEnd:returnCode:contextInfo:)
+          contextInfo:nullptr];
++#pragma clang diagnostic pop
+ }
+ 
+ NSMutableDictionary* BridgedNativeWidget::GetWindowProperties() const {

@@ -63,15 +63,13 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL {
-  if (@available(macOS 10.10, *)) {
-    currentActivity_ = base::scoped_nsobject<NSUserActivity>(
-        [[NSUserActivity alloc] initWithActivityType:type]);
-    [currentActivity_ setUserInfo:userInfo];
-    [currentActivity_ setWebpageURL:webpageURL];
-    [currentActivity_ setDelegate:self];
-    [currentActivity_ becomeCurrent];
-    [currentActivity_ setNeedsSave:YES];
-  }
+  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
+      [[NSUserActivity alloc] initWithActivityType:type]);
+  [currentActivity_ setUserInfo:userInfo];
+  [currentActivity_ setWebpageURL:webpageURL];
+  [currentActivity_ setDelegate:self];
+  [currentActivity_ becomeCurrent];
+  [currentActivity_ setNeedsSave:YES];
 }
 
 - (NSUserActivity*)getCurrentActivity {
@@ -97,8 +95,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [handoffLock_ unlock];
 }
 
-- (void)userActivityWillSave:(NSUserActivity*)userActivity
-    API_AVAILABLE(macosx(10.10)) {
+- (void)userActivityWillSave:(NSUserActivity*)userActivity {
   __block BOOL shouldWait = NO;
   dispatch_sync_main(^{
     std::string activity_type(
@@ -126,8 +123,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   [userActivity setNeedsSave:YES];
 }
 
-- (void)userActivityWasContinued:(NSUserActivity*)userActivity
-    API_AVAILABLE(macosx(10.10)) {
+- (void)userActivityWasContinued:(NSUserActivity*)userActivity {
   dispatch_async(dispatch_get_main_queue(), ^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
