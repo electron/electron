@@ -173,10 +173,6 @@ patches:
   file: webui_in_subframes.patch
   description: null
 -
-  author: Aleksei Kuzmin <alkuzmin@microsoft.com>
-  file: statically_build_power_save_blocker.patch
-  description: null
--
   author: Tomas Rycl <torycl@microsoft.com>
   file: browser_plugin_guest.patch
   description: null
