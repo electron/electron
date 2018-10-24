@@ -79,6 +79,7 @@ async function getReleaseNotes (currentBranch) {
   if (releaseNotes.warning) {
     console.warn(releaseNotes.warning)
   }
+  return releaseNotes
 }
 
 async function createRelease (branchToTarget, isBeta) {
