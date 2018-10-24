@@ -82,7 +82,6 @@ const getPreviousPoint = async (point) => {
   const currentBranch = await getBranchOf(point)
   const currentTag = (await getTagsOf(point)).filter(t => tagIsSupported(t)).pop()
   const currentIsStable = tagIsStable(currentTag)
-  // console.log({currentBranch, currentTag, currentIsStable})
 
   try {
     // First see if there's an earlier tag on the same branch
@@ -101,7 +100,6 @@ const getPreviousPoint = async (point) => {
   while (branch) {
     const prevBranch = await getPreviousStabilizationBranch(branch)
     const tags = (await getTagsOnBranch(prevBranch)).filter(t => tagIsStable(t))
-    // console.log({prevBranch, tags})
     if (tags.length) return tags.pop()
     branch = prevBranch
   }

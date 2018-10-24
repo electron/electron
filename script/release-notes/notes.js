@@ -32,7 +32,6 @@ for (const line of fs.readFileSync(path.resolve(__dirname, 'legacy-pr-semantic-m
 }
 
 const runGit = async (dir, args) => {
-  // console.log('runGit', dir, args)
   const response = await GitProcess.exec(args, dir)
   if (response.exitCode !== 0) throw new Error(response.stderr.trim())
   return response.stdout.trim()
@@ -92,8 +91,6 @@ const getNoteFromBody = body => {
  * 'Backport of #99999' -- sets pr
  */
 const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
-  // console.log('parse receiving', { o })
-
   // split commitMessage into subject & body
   let subject = commitMessage
   let body = ''
@@ -194,7 +191,7 @@ const parseCommitMessage = (commitMessage, owner, repo, o = {}) => {
   }
 
   o.subject = subject.trim()
-  // console.log('parse returning', JSON.stringify(o, null, 2))
+
   return o
 }
 
@@ -211,7 +208,6 @@ const getLocalCommitHashes = async (dir, ref) => {
 const getLocalCommitDetails = async (module, point1, point2) => {
   const { owner, repo, dir } = module
 
-  // console.log({ point1, point2 })
   const fieldSep = '||'
   const format = ['%H', '%P', '%aE', '%B'].join(fieldSep)
   const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
@@ -233,7 +229,6 @@ const getLocalCommitDetails = async (module, point1, point2) => {
 
 const checkCache = async (name, operation) => {
   const filename = path.resolve(CACHE_DIR, name)
-  // console.log({ filename })
   if (fs.existsSync(filename)) {
     return JSON.parse(fs.readFileSync(filename, 'utf8'))
   }
@@ -282,7 +277,7 @@ const getGypSubmoduleRef = async (dir, point) => {
   const line = response.split('\n').filter(x => x.startsWith('160000')).shift()
   const tokens = line ? line.split(/\s/).map(x => x.trim()) : null
   const ref = tokens && tokens.length >= 3 ? tokens[2] : null
-  // console.log({ dir, point, line, tokens, ref })
+
   return ref
 }
 
@@ -423,8 +418,6 @@ const getNotes = async (fromRef, toRef) => {
     .filter(x => x.note !== NO_NOTES)
     .filter(x => !((x.note || x.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
-  // console.log(JSON.stringify(commits, null, 2))
-
   const o = {
     breaks: [],
     docs: [],
@@ -445,8 +438,6 @@ const getNotes = async (fromRef, toRef) => {
     else if (otherTypes.has(str)) o.other.push(commit)
     else o.unknown.push(commit)
   })
-
-  // console.log(JSON.stringify(o, null, 2))
 
   return o
 }
