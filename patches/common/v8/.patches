@@ -1,14 +1,5 @@
-deps_cherry-pick_0dd3390_from_upstream_v8.patch
-deps_cherry-pick_09bca09_from_upstream_v8.patch
-deps_cherry-pick_c608122_from_upstream_v8.patch
-deps_cherry-pick_e1a7699_from_upstream_v8.patch
-deps_cherry-pick_ba752ea_from_upstream_v8.patch
-deps_cherry-pick_bf5ea81_from_upstream_v8.patch
-deps_cherry-pick_a8f6869_from_upstream_v8.patch
 deps_backport_detailed_line_info_for_cpu_profiler.patch
 deps_cherry-pick_2363cdf_from_upstream_v8.patch
-deps_cherry-pick_dbfcc48_from_upstream_v8.patch
-deps_add_missing_handlescope_in_fieldtype_printto.patch
 add_realloc.patch
 build_gn.patch
 array_buffer.patch
@@ -18,3 +9,8 @@ dcheck.patch
 disable-warning-win.patch
 expose_mksnapshot.patch
 build-torque-with-x64-toolchain-on-arm.patch
+deps_revert_9136dd8088a9_from_upstream_v8.patch
+deps_provide_more_v8_backwards_compatibility.patch
+deps_backport_958b761_from_upstream_v8.patch
+deps_v8_cherry-pick_64-bit_hash_seed_commits.patch
+deps_cherry-pick_b0af309_from_upstream_v8.patch

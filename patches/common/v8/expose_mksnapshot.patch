@@ -6,10 +6,10 @@ Subject: expose_mksnapshot.patch
 Needed in order to build mksnapshot on arm.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index d0ba5ed04e7126deae4a0ab9ee8943cda5ea42e3..b5eb09cfcb8add19f4de985cbe7b9777c51c4bd3 100644
+index ac74cdec115b6cc54d05817f063153628cf5e9fe..c1b08958b500da1910a8067198cdec7650534f20 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -3130,8 +3130,6 @@ if (v8_monolithic) {
+@@ -3237,8 +3237,6 @@ if (v8_monolithic) {
  
  if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
    v8_executable("mksnapshot") {

@@ -5,10 +5,10 @@ Subject: array_buffer.patch
 
 
 diff --git a/include/v8.h b/include/v8.h
-index 6bba7a177e72b54084b2a52e413c5de6edb26b01..b1e192dc009b33484148817be0b0b6bb4dc1bf4b 100644
+index fa3a4dd82c0deeaddba0a84e8bf2841e04bc8483..3070f4aa50eed8722805feaf8d9b9db0d68fbbbf 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -7766,6 +7766,9 @@ class V8_EXPORT Isolate {
+@@ -7737,6 +7737,9 @@ class V8_EXPORT Isolate {
     */
    void SetIdle(bool is_idle);
  
@@ -19,10 +19,10 @@ index 6bba7a177e72b54084b2a52e413c5de6edb26b01..b1e192dc009b33484148817be0b0b6bb
    bool InContext();
  
 diff --git a/src/api.cc b/src/api.cc
-index 9fe5268aa5e615fee058d430b6a137dd40fc9226..5c1f2410bbab4a0d9f4fcd99f19530ba999a66a2 100644
+index 809bbe52178a3f8cbcf0b6eb81fba0910c1fb0e6..c1f863d148243d3988a70959fd91a37788137393 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -8290,6 +8290,13 @@ void Isolate::SetIdle(bool is_idle) {
+@@ -8107,6 +8107,13 @@ void Isolate::SetIdle(bool is_idle) {
    isolate->SetIdle(is_idle);
  }
  
