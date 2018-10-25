@@ -163,13 +163,11 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
-                                    bool is_server_redirect,
-                                    bool* send_referrer) {
+                                    bool is_server_redirect) {
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
-  *send_referrer = true;
   return http_method == "GET";
 }
 
