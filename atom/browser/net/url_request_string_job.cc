@@ -102,11 +102,10 @@ void URLRequestStringJob::GetResponseInfo(net::HttpResponseInfo* info) {
   info->headers = headers;
 }
 
-int URLRequestStringJob::GetData(
-    std::string* mime_type,
-    std::string* charset,
-    std::string* data,
-    const net::CompletionCallback& callback) const {
+int URLRequestStringJob::GetData(std::string* mime_type,
+                                 std::string* charset,
+                                 std::string* data,
+                                 net::CompletionOnceCallback callback) const {
   *mime_type = mime_type_;
   *charset = charset_;
   *data = data_;
