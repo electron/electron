@@ -181,24 +181,45 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
   if (!val->IsObject()) {
     return false;
   }
+
+  auto addHeaderFromValue = [&isolate, &out](
+                                const std::string& key,
+                                const v8::Local<v8::Value>& localVal) {
+    auto context = isolate->GetCurrentContext();
+    v8::Local<v8::String> localStrVal;
+    if (!localVal->ToString(context).ToLocal(&localStrVal)) {
+      return false;
+    }
+    std::string value;
+    mate::ConvertFromV8(isolate, localStrVal, &value);
+    out->AddHeader(key + ": " + value);
+    return true;
+  };
+
   auto context = isolate->GetCurrentContext();
   auto headers = v8::Local<v8::Object>::Cast(val);
   auto keys = headers->GetOwnPropertyNames();
   for (uint32_t i = 0; i < keys->Length(); i++) {
-    v8::Local<v8::String> key, value;
-    if (!keys->Get(i)->ToString(context).ToLocal(&key)) {
+    v8::Local<v8::String> keyVal;
+    if (!keys->Get(i)->ToString(context).ToLocal(&keyVal)) {
       return false;
     }
-    if (!headers->Get(key)->ToString(context).ToLocal(&value)) {
-      return false;
+    std::string key;
+    mate::ConvertFromV8(isolate, keyVal, &key);
+
+    auto localVal = headers->Get(keyVal);
+    if (localVal->IsArray()) {
+      auto values = v8::Local<v8::Array>::Cast(localVal);
+      for (uint32_t j = 0; j < values->Length(); j++) {
+        if (!addHeaderFromValue(key, values->Get(j))) {
+          return false;
+        }
+      }
+    } else {
+      if (!addHeaderFromValue(key, localVal)) {
+        return false;
+      }
     }
-    v8::String::Utf8Value key_utf8(key);
-    v8::String::Utf8Value value_utf8(value);
-    std::string k(*key_utf8, key_utf8.length());
-    std::string v(*value_utf8, value_utf8.length());
-    std::ostringstream tmp;
-    tmp << k << ": " << v;
-    out->AddHeader(tmp.str());
   }
   return true;
 }
