@@ -276,7 +276,9 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
         privileged_scheme);
   }
   if (corsEnabled) {
-    blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled(privileged_scheme);
+    // FIXME: blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled
+    // is removed with C70
+    // https://chromium-review.googlesource.com/c/chromium/src/+/1157364
   }
 }
 
