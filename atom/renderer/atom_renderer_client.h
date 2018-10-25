@@ -51,8 +51,7 @@ class AtomRendererClient : public RendererClientBase {
                   const GURL& url,
                   const std::string& http_method,
                   bool is_initial_navigation,
-                  bool is_server_redirect,
-                  bool* send_referrer) override;
+                  bool is_server_redirect) override;
   void DidInitializeWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
