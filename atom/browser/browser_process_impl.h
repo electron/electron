@@ -102,7 +102,6 @@ class BrowserProcessImpl : public BrowserProcess {
   shell_integration::DefaultWebClientState CachedDefaultWebClientState()
       override;
   prefs::InProcessPrefServiceFactory* pref_service_factory() const override;
-  content::NetworkConnectionTracker* network_connection_tracker() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(

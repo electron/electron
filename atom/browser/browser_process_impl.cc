@@ -313,11 +313,6 @@ prefs::InProcessPrefServiceFactory* BrowserProcessImpl::pref_service_factory()
   return nullptr;
 }
 
-content::NetworkConnectionTracker*
-BrowserProcessImpl::network_connection_tracker() {
-  return nullptr;
-}
-
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
