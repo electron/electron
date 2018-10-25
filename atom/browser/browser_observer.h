@@ -9,6 +9,7 @@
 
 #include "atom/browser/login_handler.h"
 #include "base/memory/scoped_refptr.h"
+#include "base/observer_list_types.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -17,7 +18,7 @@ class DictionaryValue;
 
 namespace atom {
 
-class BrowserObserver {
+class BrowserObserver : public base::CheckedObserver {
  public:
   // The browser is about to close all windows.
   virtual void OnBeforeQuit(bool* prevent_default) {}
@@ -83,7 +84,7 @@ class BrowserObserver {
 #endif
 
  protected:
-  virtual ~BrowserObserver() {}
+  ~BrowserObserver() override {}
 };
 
 }  // namespace atom
