@@ -223,7 +223,7 @@ blink::mojom::PermissionStatus AtomPermissionManager::GetPermissionStatus(
 int AtomPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     const GURL& requesting_origin,
-    const GURL& embedding_origin,
+    content::RenderFrameHost* render_frame_host,
     const base::Callback<void(blink::mojom::PermissionStatus)>& callback) {
   return -1;
 }

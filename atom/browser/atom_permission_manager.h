@@ -97,7 +97,7 @@ class AtomPermissionManager : public content::PermissionControllerDelegate {
   int SubscribePermissionStatusChange(
       content::PermissionType permission,
       const GURL& requesting_origin,
-      const GURL& embedding_origin,
+      content::RenderFrameHost* render_frame_host,
       const base::Callback<void(blink::mojom::PermissionStatus)>& callback)
       override;
   void UnsubscribePermissionStatusChange(int subscription_id) override;
