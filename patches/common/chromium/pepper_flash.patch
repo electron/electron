@@ -489,6 +489,3 @@ index e021c964da3d467530775164a67d5cadaf6dc741..e035f0fb9e2baa6a9148b43765b09c52
   public:
    explicit PepperHelper(content::RenderFrame* render_frame);
    ~PepperHelper() override;
--- 
-2.17.0
-

@@ -38,5 +38,3 @@ index c68968a514b76717d4c42448ef4b9c440c330fb2..c82ffeaa37268e54c6b142b31706d478
  int SSL_set_tlsext_status_ocsp_resp(SSL *ssl, uint8_t *resp, size_t resp_len) {
    if (SSL_set_ocsp_response(ssl, resp, resp_len)) {
      OPENSSL_free(resp);
--- 
-2.17.0

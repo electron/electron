@@ -27,6 +27,3 @@ index 7a2dcd9de423cca8e39f84e7f6839eefd86c11ae..494526c843b9e39eba46785618960c3e
  
    // OnDestruct is used to ensure deletion on the thread on which the request
    // IO happens.
--- 
-2.17.0
-

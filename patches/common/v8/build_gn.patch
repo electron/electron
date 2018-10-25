@@ -26,6 +26,3 @@ index 443694d88075d59d6e8db7fa4bedc3a812fdafc4..d0ba5ed04e7126deae4a0ab9ee8943cd
      deps = [
        ":v8_base",
        ":v8_init",
--- 
-2.17.0
-

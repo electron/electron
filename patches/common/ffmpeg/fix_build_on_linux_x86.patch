@@ -19,5 +19,3 @@ index 947deba96107c931582007ce89917f8896923a6f..7afd535cb5e43762a14c51dd7b3b1635
        defines += [ "HAVE_EBP_AVAILABLE=0" ]
      } else {
        defines += [ "HAVE_EBP_AVAILABLE=1" ]
--- 
-2.17.0

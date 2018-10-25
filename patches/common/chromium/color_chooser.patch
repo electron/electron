@@ -88,6 +88,3 @@ index 06381ef0e5ca34d141363213a846e5a9baa5fd8a..acb3a6e9e6476d9d2e3f445237246e6a
    current_color_chooser_ = NULL;
    if (web_contents_)
      web_contents_->DidEndColorChooser();
--- 
-2.17.0
-

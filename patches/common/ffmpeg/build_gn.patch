@@ -22,6 +22,3 @@ index 494d33fc041c05acc6698e1bfe26cc3f8820bb6b..947deba96107c931582007ce89917f88
      if (is_fuchsia || (is_posix && !is_mac)) {
        # Fixes warnings PIC relocation when building as component.
        ldflags += [
--- 
-2.17.0
-

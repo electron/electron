@@ -70,6 +70,3 @@ index 6f3265ba4d06e70930630432bf739f89847d0b3c..29f28bebbdcde5a7f1c7b31a625d30f1
  
    // Get address and size information for currently loaded snapshot.
    // If no snapshot is loaded, the return values are null for addresses
--- 
-2.17.0
-

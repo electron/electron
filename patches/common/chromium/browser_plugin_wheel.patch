@@ -29,6 +29,3 @@ index 4d8251069ae9a45e1be22fa03f23b3196116b612..fbd5cc8099629971d670d087fdee8920
  
    if (blink::WebInputEvent::IsGestureEventType(event.GetType())) {
      auto gesture_event = static_cast<const blink::WebGestureEvent&>(event);
--- 
-2.17.0
-

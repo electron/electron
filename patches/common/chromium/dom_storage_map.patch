@@ -21,6 +21,3 @@ index fd088fb170bead6452ded14016f21f0c29659e03..a9e4b3375e9b614ed1e8b737a30f4436
  
    (*map_type)[key] = value;
    ResetKeyIterator();
--- 
-2.17.0
-

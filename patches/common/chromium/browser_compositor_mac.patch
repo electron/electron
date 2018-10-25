@@ -42,6 +42,3 @@ index 92afcc77910610e53378f55adc003cc1bdf3109a..42bd6fd7c169de36c775471c68b456f1
  DelegatedFrameHost* BrowserCompositorMac::GetDelegatedFrameHost() {
    DCHECK(delegated_frame_host_);
    return delegated_frame_host_.get();
--- 
-2.17.0
-

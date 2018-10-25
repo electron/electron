@@ -119,6 +119,3 @@ index 0f82f91e437c495b92662c9816225687430ec8a4..0deb4d93fffbd7392cc1a391d9503946
      // Sandboxing flags set on the new WebContents.
      blink::WebSandboxFlags starting_sandbox_flags;
  
--- 
-2.17.0
-

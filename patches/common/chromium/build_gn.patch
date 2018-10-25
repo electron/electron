@@ -26,6 +26,3 @@ index fcc00ee0e49f101cb1b10629747c4c4fa521776d..3232a0360e94e78621f7f672e3de4bdc
  ]
  
  if (is_win) {
--- 
-2.17.0
-

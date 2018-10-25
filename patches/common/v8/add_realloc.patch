@@ -44,6 +44,3 @@ index 6155cbb32579effc500b5c475cd478e77b3ecdf4..9fe5268aa5e615fee058d430b6a137dd
  namespace {
  
  class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
--- 
-2.17.0
-

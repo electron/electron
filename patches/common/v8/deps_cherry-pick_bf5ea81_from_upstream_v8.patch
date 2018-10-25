@@ -67,6 +67,3 @@ index 647306d62790af5f977c3a74ec272f446f3acabf..b4aa7baf724d4f29b4df08f3b57fdc01
    return GetCategoryGroupEnabledInternal(category_group);
  }
  
--- 
-2.17.0
-

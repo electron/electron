@@ -442,6 +442,3 @@ index 69c5f1f44d7e39e8480319b3da02725b5cb89eea..8841b59f6b70ac4687adfde61a1fba14
  namespace {
  constexpr auto kUIPaintTimeout = base::TimeDelta::FromSeconds(5);
  }  // namespace
--- 
-2.17.0
-

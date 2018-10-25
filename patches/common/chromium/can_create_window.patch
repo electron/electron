@@ -235,6 +235,3 @@ index fa458cf0c92d6f75ecd71e296ba1af88ace400dc..cdd95a1d88e582a31aca43cd2fc90011
                         bool user_gesture,
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
--- 
-2.17.0
-

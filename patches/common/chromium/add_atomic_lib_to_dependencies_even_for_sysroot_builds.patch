@@ -17,6 +17,3 @@ index 7fb93868d6e009323eceb2ba0f1ff9c506dc5f3b..53c5744953da460c02b43de1bfd184cd
        host_toolchain != "//build/toolchain/cros:host") {
      libs += [ "atomic" ]
    }
--- 
-2.17.0
-

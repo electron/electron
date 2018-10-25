@@ -18,6 +18,3 @@ index d0ba5ed04e7126deae4a0ab9ee8943cda5ea42e3..b5eb09cfcb8add19f4de985cbe7b9777
      sources = [
        "src/snapshot/mksnapshot.cc",
      ]
--- 
-2.17.0
-

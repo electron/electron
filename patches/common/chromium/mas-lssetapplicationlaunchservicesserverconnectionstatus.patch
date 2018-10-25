@@ -21,6 +21,3 @@ index f14c045d47add3159e9099a8bdb511b233a2911b..9c8751a6fe0bcd0c69cc47dbbcf4fcc8
  #else
      main_message_loop.reset(
          new base::MessageLoop(base::MessageLoop::TYPE_DEFAULT));
--- 
-2.17.0
-

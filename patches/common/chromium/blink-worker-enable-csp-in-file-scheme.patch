@@ -16,6 +16,3 @@ index 6e803af108f310b6df0ff0f3e2f0ddb0cce3cae3..94a72b37ae8ebf7f142b5dfdd0226122
        !response.Url().ProtocolIs("filesystem")) {
      content_security_policy_ = ContentSecurityPolicy::Create();
      content_security_policy_->SetOverrideURLForSelf(response.Url());
--- 
-2.17.0
-

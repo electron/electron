@@ -267,6 +267,3 @@ index 57bbe16c15ea442963a53f89b009e2c99c7b090a..07725187c595784d9e5f49d45a8835da
  }
  
  if (is_android) {
--- 
-2.17.0
-

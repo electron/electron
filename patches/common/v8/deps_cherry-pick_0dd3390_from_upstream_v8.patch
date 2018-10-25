@@ -493,6 +493,3 @@ index 7b736b907dd9aebc8c0c505ce5a6542b79050c69..47545af37f89c0fcd648293a5bb1c70a
 +    CHECK_EQ(1, GET_TRACE_OBJECT(1)->num_args);
 +  }
 +}
--- 
-2.17.0
-

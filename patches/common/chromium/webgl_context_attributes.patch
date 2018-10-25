@@ -115,6 +115,3 @@ index 38ca0f6b6a0c4bcb042887cd168ba8040435875d..90cfe8497daf2db6c3022826b5f1ab4e
      boolean failIfMajorPerformanceCaveat = false;
      [OriginTrialEnabled=WebXR] XRDevice compatibleXRDevice = null;
  };
--- 
-2.17.0
-

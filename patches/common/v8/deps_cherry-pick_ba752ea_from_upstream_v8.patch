@@ -706,6 +706,3 @@ index 9b2d7e3ab2fe9dcc273c0946589a4714768bb86d..b53bf148e615e45581a653438af77d9d
    if (!func_entry) FATAL("%s", name);
    return func_entry->line_number();
  }
--- 
-2.17.0
-

@@ -81,6 +81,3 @@ index 809229caa872789345218538d945f3ed6a871adc..6248ad32d6b045fbd4c863cbdbeb859a
    static void FreeMemory(void*);
    static DataHandle CreateDataHandle(size_t, InitializationPolicy);
    static void Initialize(
--- 
-2.17.0
-

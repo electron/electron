@@ -18,6 +18,3 @@ index 061ad189c46d5f0f1afb09052cc21aeb7e60a744..d64ba4f20d49a57b29e1ad5bc7ac5361
    if (is_shutdown_ || non_web_url_in_guest) {
      url_loader_client->OnComplete(
          network::URLLoaderCompletionStatus(net::ERR_ABORTED));
--- 
-2.17.0
-

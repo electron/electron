@@ -303,6 +303,3 @@ index d5d1ae101b38c22036fb92d4af09f53f9a556649..a018e12853199aaff9d4aa914429baa0
        "result;");
    v8::Local<v8::Object> object = result.As<v8::Object>();
    v8::PropertyFilter default_filter =
--- 
-2.17.0
-

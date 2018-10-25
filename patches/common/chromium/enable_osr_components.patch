@@ -26,6 +26,3 @@ index 305095fc420e1732bdf089dfeee7672f69d85167..f5ca4eda4a663b9297ce69e6a455d755
   public:
    MouseWheelPhaseHandler(RenderWidgetHostViewBase* const host_view);
    ~MouseWheelPhaseHandler() {}
--- 
-2.17.0
-

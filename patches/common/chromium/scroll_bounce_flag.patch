@@ -18,6 +18,3 @@ index c078565cef71d6a27f276b7a34dd9d060ea079d4..5c31ab7654d0168d232e9974105573fa
  }
  
  bool RenderThreadImpl::IsUseZoomForDSFEnabled() {
--- 
-2.17.0
-

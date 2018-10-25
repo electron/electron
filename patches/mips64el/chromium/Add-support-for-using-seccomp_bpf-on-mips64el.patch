@@ -906,6 +906,3 @@ index 784d6b8..ddbf97f 100644
  #error "Including header on wrong architecture"
  #endif
  
--- 
-2.1.0
-

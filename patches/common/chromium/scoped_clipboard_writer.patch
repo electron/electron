@@ -61,6 +61,3 @@ index 385900eb67dee499afc8591e6acf0c6b5957df7e..cf1f803ec1233c173d11295be05ba085
    // Adds arbitrary pickled data to clipboard.
    void WritePickledData(const base::Pickle& pickle,
                          const Clipboard::FormatType& format);
--- 
-2.17.0
-

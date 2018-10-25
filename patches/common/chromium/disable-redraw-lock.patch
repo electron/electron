@@ -74,6 +74,3 @@ index 1b2d98a857385d31b5f401d685fd9524da228726..dd080180aebda193ef885bf7f4158780
    // Returns who we want to be drawing the frame. Either the system (Windows)
    // will handle it or Chrome will custom draw it.
    virtual FrameMode GetFrameMode() const = 0;
--- 
-2.17.0
-

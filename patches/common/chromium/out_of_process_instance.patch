@@ -19,6 +19,3 @@ index 0358d15fb45bb57111ee2af0f791cd99f6f27f70..101763db35d129097bda50af1bfa9f6f
      return false;
  
    // Check if the plugin is full frame. This is passed in from JS.
--- 
-2.17.0
-
