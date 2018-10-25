@@ -787,24 +787,24 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.handle);
+  ChildProcessLaunched(data.process_type, data.GetHandle());
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.handle));
+  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.handle));
+  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.handle));
+  ChildProcessDisconnected(base::GetProcId(data.GetHandle()));
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
