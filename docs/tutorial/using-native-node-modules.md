@@ -32,6 +32,29 @@ export npm_config_build_from_source=true
 HOME=~/.electron-gyp npm install
 ```
 
+For Windows, create a .bat file with the following content (i.e. electron-npm.bat):
+
+```@ECHO OFF
+
+REM May require Windows build tools installed:
+REM npm install --global --production windows-build-tools
+
+REM Electron's version.
+SET npm_config_target="1.2.3"
+REM The architecture of Electron, can be ia32 or x64.
+SET npm_config_arch="x64"
+SET npm_config_target_arch="x64"
+REM Download headers for Electron.
+SET npm_config_disturl="https://atom.io/download/electron"
+REM Tell node-pre-gyp that we are building for Electron.
+SET npm_config_runtime="electron"
+REM Tell node-pre-gyp to build module from source code.
+SET npm_config_build_from_source="true"
+
+REM execute npm to install the requested package, i.e: "electron-npm.bat bcrypt"
+npm install %*
+```
+
 ### Installing modules and rebuilding for Electron
 
 You can also choose to install modules like other Node projects, and then
