@@ -219,7 +219,7 @@ void AtomMainDelegate::PreSandboxStartup() {
 #endif
 }
 
-void AtomMainDelegate::PreContentInitialization() {
+void AtomMainDelegate::PreCreateMainMessageLoop() {
 #if defined(OS_MACOSX)
   RegisterAtomCrApp();
 #endif
