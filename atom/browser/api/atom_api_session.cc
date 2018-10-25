@@ -471,13 +471,14 @@ void Session::SetProxy(const mate::Dictionary& options,
   if (!pac_url.empty()) {
     browser_context_->in_memory_pref_store()->SetValue(
         proxy_config::prefs::kProxy,
-        ProxyConfigDictionary::CreatePacScript(pac_url,
-                                               true /* pac_mandatory */),
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
+            pac_url, true /* pac_mandatory */)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else {
     browser_context_->in_memory_pref_store()->SetValue(
         proxy_config::prefs::kProxy,
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list),
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
+            proxy_rules, bypass_list)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   }
 
