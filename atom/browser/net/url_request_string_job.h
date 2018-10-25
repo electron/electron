@@ -29,7 +29,7 @@ class URLRequestStringJob : public JsAsker, public net::URLRequestSimpleJob {
   int GetData(std::string* mime_type,
               std::string* charset,
               std::string* data,
-              const net::CompletionCallback& callback) const override;
+              net::CompletionOnceCallback callback) const override;
 
  private:
   std::string mime_type_;

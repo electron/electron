@@ -31,7 +31,7 @@ class URLRequestBufferJob : public JsAsker, public net::URLRequestSimpleJob {
   int GetRefCountedData(std::string* mime_type,
                         std::string* charset,
                         scoped_refptr<base::RefCountedMemory>* data,
-                        const net::CompletionCallback& callback) const override;
+                        net::CompletionOnceCallback callback) const override;
 
  private:
   std::string mime_type_;
