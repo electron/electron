@@ -9,7 +9,7 @@
 #include "atom/browser/microtasks_runner.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
-#include "base/task_scheduler/initialization_util.h"
+#include "base/task/task_scheduler/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"

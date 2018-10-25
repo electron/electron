@@ -16,7 +16,7 @@
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/task_scheduler/task_scheduler.h"
+#include "base/task/task_scheduler/task_scheduler.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
