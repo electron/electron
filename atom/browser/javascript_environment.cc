@@ -25,6 +25,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
       isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
                       gin::IsolateHolder::kSingleThread,
                       gin::IsolateHolder::kAllowAtomicsWait,
+                      gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
                       isolate_),
       isolate_scope_(isolate_),
