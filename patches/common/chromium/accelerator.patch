@@ -19,17 +19,17 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
 @@ -21,9 +22,7 @@
  #include <windows.h>
  #endif
- 
+
 -#if !defined(OS_WIN) && (defined(USE_AURA) || defined(OS_MACOSX))
  #include "ui/events/keycodes/keyboard_code_conversion.h"
 -#endif
- 
+
  namespace ui {
- 
+
 @@ -139,7 +138,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
- 
+
 +  unsigned int flags = 0;
    if (shortcut.empty()) {
 +    const uint16_t c = DomCodeToUsLayoutCharacter(
@@ -42,7 +42,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -148,17 +155,20 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -148,18 +155,14 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -60,40 +60,19 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
 -          static_cast<base::string16::value_type>(base::ToUpperASCII(c));
 +      shortcut = key;
 +    }
-+#endif
+ #endif
 +    if (key_code_ > VKEY_F1 && key_code_ <= VKEY_F24)
 +      shortcut = base::UTF8ToUTF16(
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
-+  } else if (IsShiftDown()) {
-+#if defined(OS_MACOSX)
-+    const base::char16 kShiftSymbol[] = {0x21e7, 0};
-+    shortcut = kShiftSymbol;
-+#else
-+    shortcut = l10n_util::GetStringFUTF16(IDS_APP_SHIFT_MODIFIER, shortcut);
- #endif
    }
- 
-@@ -223,7 +233,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+
+   // Checking whether the character used for the accelerator is alphanumeric.
+@@ -223,7 +226,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_CONTROL_MODIFIER, shortcut);
 -  else if (IsAltDown())
 +  if (IsAltDown())
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
- 
+
    if (IsCmdDown()) {
-@@ -243,14 +253,12 @@ base::string16 Accelerator::ApplyShortFormModifiers(
-     base::string16 shortcut) const {
-   const base::char16 kCommandSymbol[] = {0x2318, 0};
-   const base::char16 kCtrlSymbol[] = {0x2303, 0};
--  const base::char16 kShiftSymbol[] = {0x21e7, 0};
-   const base::char16 kOptionSymbol[] = {0x2325, 0};
-   const base::char16 kNoSymbol[] = {0};
- 
-   std::vector<base::string16> parts;
-   parts.push_back(base::string16(IsCtrlDown() ? kCtrlSymbol : kNoSymbol));
-   parts.push_back(base::string16(IsAltDown() ? kOptionSymbol : kNoSymbol));
--  parts.push_back(base::string16(IsShiftDown() ? kShiftSymbol : kNoSymbol));
-   parts.push_back(base::string16(IsCmdDown() ? kCommandSymbol : kNoSymbol));
-   parts.push_back(shortcut);
-   return base::StrCat(parts);
