@@ -377,8 +377,6 @@ bool Converter<blink::WebFindOptions>::FromV8(v8::Isolate* isolate,
   dict.Get("forward", &out->forward);
   dict.Get("matchCase", &out->match_case);
   dict.Get("findNext", &out->find_next);
-  dict.Get("wordStart", &out->word_start);
-  dict.Get("medialCapitalAsWordStart", &out->medial_capital_as_word_start);
   return true;
 }
 
