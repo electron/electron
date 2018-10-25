@@ -40,8 +40,6 @@
 using content::BrowserThread;
 using content::WebContents;
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::AtomPrintPreviewMessageHandler);
-
 namespace atom {
 
 namespace {
