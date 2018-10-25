@@ -7,7 +7,7 @@ rudimentary understanding of your operating system's command line client.
 
 ## Setting up macOS
 
-> Electron supports Mac OS X 10.9 (and all versions named macOS) and up. Apple
+> Electron supports macOS 10.10 (Yosemite) and up. Apple
 does not allow running macOS in virtual machines unless the host computer is
 already an Apple computer, so if you find yourself in need of a Mac, consider
 using a cloud service that rents access to Macs (like [MacInCloud][macincloud]
