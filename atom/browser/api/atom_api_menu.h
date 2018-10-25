@@ -52,7 +52,7 @@ class Menu : public mate::TrackableObject<Menu>,
       bool use_default_accelerator,
       ui::Accelerator* accelerator) const override;
   void ExecuteCommand(int command_id, int event_flags) override;
-  void MenuWillShow(ui::SimpleMenuModel* source) override;
+  void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void PopupAt(TopLevelWindow* window,
                        int x,

@@ -82,7 +82,7 @@ void Menu::ExecuteCommand(int command_id, int flags) {
                        command_id);
 }
 
-void Menu::MenuWillShow(ui::SimpleMenuModel* source) {
+void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
   menu_will_show_.Run(GetWrapper());
