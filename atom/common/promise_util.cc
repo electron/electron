@@ -13,7 +13,8 @@ namespace util {
 Promise::Promise(v8::Isolate* isolate) {
   isolate_ = isolate;
   resolver_.Reset(isolate,
-                  v8::Promise::Resolver::New(isolate->GetCurrentContext()));
+                  v8::Promise::Resolver::New(isolate->GetCurrentContext())
+                      .ToLocalChecked());
 }
 
 Promise::~Promise() = default;
