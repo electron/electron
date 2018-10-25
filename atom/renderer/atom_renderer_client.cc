@@ -196,14 +196,16 @@ void AtomRendererClient::SetupMainWorldOverrides(
   // an argument.
   std::string left = "(function (binding, require) {\n";
   std::string right = "\n})";
-  auto script = v8::Script::Compile(
+  auto maybe_script = v8::Script::Compile(
       context, v8::String::Concat(
                    mate::ConvertToV8(isolate, left)->ToString(),
                    v8::String::Concat(
                        node::isolated_bundle_value.ToStringChecked(isolate),
                        mate::ConvertToV8(isolate, right)->ToString())));
-  auto func =
-      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
+  v8::Local<v8::Script> script;
+  v8::Local<v8::Value> result;
+  if (maybe_script.ToLocal(&script))
+    result = script->Run(context).ToLocalChecked();
 
   auto binding = v8::Object::New(isolate);
   api::Initialize(binding, v8::Null(isolate), context, nullptr);
@@ -221,8 +223,11 @@ void AtomRendererClient::SetupMainWorldOverrides(
   dict.Set(options::kNativeWindowOpen,
            command_line->HasSwitch(switches::kNativeWindowOpen));
 
-  v8::Local<v8::Value> args[] = {binding};
-  ignore_result(func->Call(context, v8::Null(isolate), 1, args));
+  if (result->IsFunction()) {
+    v8::Local<v8::Value> args[] = {binding};
+    ignore_result(
+        result.As<v8::Function>()->Call(context, v8::Null(isolate), 1, args));
+  }
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

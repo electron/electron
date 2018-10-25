@@ -89,9 +89,11 @@ base::FilePath::StringType GetExecPath() {
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
   v8::Local<v8::Context> context(isolate->GetCurrentContext());
-  auto script = v8::Script::Compile(context, preloadSrc);
-  auto func = script->Run(context);
-  return func;
+  auto maybe_script = v8::Script::Compile(context, preloadSrc);
+  v8::Local<v8::Script> script;
+  if (!maybe_script.ToLocal(&script))
+    return v8::Local<v8::Value>();
+  return script->Run(context).ToLocalChecked();
 }
 
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
@@ -209,22 +211,27 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string left = "(function(binding, require) {\n";
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
-  auto script = v8::Script::Compile(
+  auto maybe_script = v8::Script::Compile(
       context, v8::String::Concat(
                    mate::ConvertToV8(isolate, left)->ToString(),
                    v8::String::Concat(
                        node::preload_bundle_value.ToStringChecked(isolate),
                        mate::ConvertToV8(isolate, right)->ToString())));
-  auto func =
-      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
-  // Create and initialize the binding object
-  auto binding = v8::Object::New(isolate);
-  InitializeBindings(binding, context);
-  AddRenderBindings(isolate, binding);
-  v8::Local<v8::Value> args[] = {binding};
-  // Execute the function with proper arguments
-  ignore_result(
-      func->Call(context, v8::Null(isolate), node::arraysize(args), args));
+  v8::Local<v8::Script> script;
+  v8::Local<v8::Value> result;
+  if (maybe_script.ToLocal(&script))
+    result = script->Run(context).ToLocalChecked();
+
+  if (result->IsFunction()) {
+    // Create and initialize the binding object
+    auto binding = v8::Object::New(isolate);
+    InitializeBindings(binding, context);
+    AddRenderBindings(isolate, binding);
+    v8::Local<v8::Value> args[] = {binding};
+    // Execute the function with proper arguments
+    ignore_result(result.As<v8::Function>()->Call(context, v8::Null(isolate),
+                                                  node::arraysize(args), args));
+  }
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(

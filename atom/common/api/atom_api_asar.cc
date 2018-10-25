@@ -127,9 +127,12 @@ void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
   v8::Local<v8::Context> context(isolate->GetCurrentContext());
-  v8::Local<v8::Script> asar_init = v8::Script::Compile(
+  auto maybe_asar_init = v8::Script::Compile(
       context, node::asar_init_value.ToStringChecked(isolate));
-  v8::Local<v8::Value> result = asar_init->Run(context);
+  v8::Local<v8::Script> asar_init;
+  v8::Local<v8::Value> result;
+  if (maybe_asar_init.ToLocal(&asar_init))
+    result = asar_init->Run(context).ToLocalChecked();
 
   // Initialize asar support.
   if (result->IsFunction()) {
