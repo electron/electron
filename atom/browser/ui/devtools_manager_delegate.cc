@@ -93,11 +93,13 @@ DevToolsManagerDelegate::~DevToolsManagerDelegate() {}
 
 void DevToolsManagerDelegate::Inspect(content::DevToolsAgentHost* agent_host) {}
 
-bool DevToolsManagerDelegate::HandleCommand(
+void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHost* agent_host,
     content::DevToolsAgentHostClient* client,
-    base::DictionaryValue* command) {
-  return false;
+    std::unique_ptr<base::DictionaryValue> command,
+    const std::string& message,
+    NotHandledCallback callback) {
+  std::move(callback).Run(std::move(command), message);
 }
 
 scoped_refptr<content::DevToolsAgentHost>

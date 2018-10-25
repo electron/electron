@@ -22,9 +22,11 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
 
   // DevToolsManagerDelegate implementation.
   void Inspect(content::DevToolsAgentHost* agent_host) override;
-  bool HandleCommand(content::DevToolsAgentHost* agent_host,
+  void HandleCommand(content::DevToolsAgentHost* agent_host,
                      content::DevToolsAgentHostClient* client,
-                     base::DictionaryValue* command) override;
+                     std::unique_ptr<base::DictionaryValue> command,
+                     const std::string& message,
+                     NotHandledCallback callback) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url) override;
   std::string GetDiscoveryPageHTML() override;
