@@ -1,5 +1,12 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aleksei Kuzmin <alkuzmin@microsoft.com>
+Date: Mon, 22 Oct 2018 10:47:12 -0700
+Subject: export_platform.patch
+
+v8::Platform::SystemClockTimeMillis must be exported so that node::NodePlatform can call it
+
 diff --git a/include/v8-platform.h b/include/v8-platform.h
-index ddc200abab..046de4e257 100644
+index cfeb13b65829f9e0bad2518b8c4b03a645b6223c..2b38e24e233b5ba7061fd4a3d5e49063b0165f11 100644
 --- a/include/v8-platform.h
 +++ b/include/v8-platform.h
 @@ -11,6 +11,7 @@
@@ -10,7 +17,7 @@ index ddc200abab..046de4e257 100644
  #include "v8config.h"  // NOLINT(build/include)
  
  namespace v8 {
-@@ -465,7 +466,7 @@ class Platform {
+@@ -387,7 +388,7 @@ class Platform {
     * since epoch. Useful for implementing |CurrentClockTimeMillis| if
     * nothing special needed.
     */

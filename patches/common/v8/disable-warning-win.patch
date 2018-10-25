@@ -1,5 +1,12 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nitish Sakhawalkar <nitsakh@icloud.com>
+Date: Mon, 22 Oct 2018 10:47:12 -0700
+Subject: disable-warning-win.patch
+
+Disable unit test windows build warning
+
 diff --git a/test/unittests/base/bits-unittest.cc b/test/unittests/base/bits-unittest.cc
-index 45fb921797..8c9f249609 100644
+index 6f787eb72783570812f7cbda57b836df56b5f2cb..c36dfcc836d6351d11d2178a8e6c3556b3ff3422 100644
 --- a/test/unittests/base/bits-unittest.cc
 +++ b/test/unittests/base/bits-unittest.cc
 @@ -13,7 +13,9 @@

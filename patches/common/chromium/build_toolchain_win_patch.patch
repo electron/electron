@@ -77,6 +77,3 @@ index cb0393ecd507..ee21eb4b194b 100644
  
  if __name__ == '__main__':
    sys.exit(main(sys.argv[1:]))
--- 
-2.17.0
-

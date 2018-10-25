@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Tue, 4 Sep 2018 21:24:03 +0200
+Subject: deps: cherry-pick bf5ea81 from upstream V8
+
+Original commit message:
+
+    [tracing] allow dynamic control of tracing
+
+    If the trace_buffer_ was null, we were returning a pointer to a static
+    flag back that permanently disabled that particular trace point.
+
+    This implied an assumption that tracing will be statically enabled at
+    process startup, and once it is disabled, it will never be enabled
+    again. On Node.js side we want to dynamically enable/disable tracing as per
+    programmer intent.
+
+    Change-Id: Ic7a7839b8450ab5c356d85e8e0826f42824907f4
+    Reviewed-on: https://chromium-review.googlesource.com/1161518
+    Reviewed-by: Yang Guo <yangguo@chromium.org>
+    Commit-Queue: Ali Ijaz Sheikh <ofrobots@google.com>
+    Cr-Commit-Position: refs/heads/master@{#54903}
+
+Refs: https://github.com/v8/v8/commit/bf5ea8138c0726613c9d722a3ccb552a8f477992
+
+PR-URL: https://github.com/nodejs/node/pull/21983
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Ujjwal Sharma <usharma1998@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/src/libplatform/tracing/tracing-controller.cc b/src/libplatform/tracing/tracing-controller.cc
+index 647306d62790af5f977c3a74ec272f446f3acabf..b4aa7baf724d4f29b4df08f3b57fdc018f6a32a7 100644
+--- a/src/libplatform/tracing/tracing-controller.cc
++++ b/src/libplatform/tracing/tracing-controller.cc
+@@ -24,18 +24,17 @@ namespace tracing {
+ // convert internally to determine the category name from the char enabled
+ // pointer.
+ const char* g_category_groups[MAX_CATEGORY_GROUPS] = {
+-    "toplevel", "tracing already shutdown",
++    "toplevel",
+     "tracing categories exhausted; must increase MAX_CATEGORY_GROUPS",
+     "__metadata"};
+ 
+ // The enabled flag is char instead of bool so that the API can be used from C.
+ unsigned char g_category_group_enabled[MAX_CATEGORY_GROUPS] = {0};
+ // Indexes here have to match the g_category_groups array indexes above.
+-const int g_category_already_shutdown = 1;
+-const int g_category_categories_exhausted = 2;
++const int g_category_categories_exhausted = 1;
+ // Metadata category not used in V8.
+-// const int g_category_metadata = 3;
+-const int g_num_builtin_categories = 4;
++// const int g_category_metadata = 2;
++const int g_num_builtin_categories = 3;
+ 
+ // Skip default categories.
+ v8::base::AtomicWord g_category_index = g_num_builtin_categories;
+@@ -103,10 +102,6 @@ void TracingController::UpdateTraceEventDuration(
+ 
+ const uint8_t* TracingController::GetCategoryGroupEnabled(
+     const char* category_group) {
+-  if (!trace_buffer_) {
+-    DCHECK(!g_category_group_enabled[g_category_already_shutdown]);
+-    return &g_category_group_enabled[g_category_already_shutdown];
+-  }
+   return GetCategoryGroupEnabledInternal(category_group);
+ }
+ 

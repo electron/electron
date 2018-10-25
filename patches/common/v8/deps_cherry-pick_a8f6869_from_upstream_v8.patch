@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Tue, 4 Sep 2018 21:24:34 +0200
+Subject: deps: cherry-pick a8f6869 from upstream V8
+
+Original commit message:
+
+    [debug] Fully implement Debug::ArchiveDebug and Debug::RestoreDebug.
+
+    I have a project that embeds V8 and uses a single `Isolate` from multiple
+    threads. The program runs just fine, but sometimes the inspector doesn't
+    stop on the correct line after stepping over a statement that switches
+    threads behind the scenes, even though the original thread is restored by
+    the time the next statement is executed.
+
+    After some digging, I discovered that the `Debug::ArchiveDebug` and
+    `Debug::RestoreDebug` methods, which should be responsible for
+    saving/restoring this `ThreadLocal` information when switching threads,
+    currently don't do anything.
+
+    This commit implements those methods using MemCopy, in the style of other
+    Archive/Restore methods in the V8 codebase.
+
+    Related: https://groups.google.com/forum/#!topic/v8-users/_Qf2rwljRk8
+
+    Note: I believe my employer, Meteor Development Group, has previously
+    signed the CLA using the group email address google-contrib@meteor.com.
+
+    R=yangguo@chromium.org,jgruber@chromium.org
+    CC=info@bnoordhuis.nl
+
+    Bug: v8:7230
+    Change-Id: Id517c873eb81cd53f7216c7efd441b956cf7f943
+    Reviewed-on: https://chromium-review.googlesource.com/833260
+    Commit-Queue: Yang Guo <yangguo@chromium.org>
+    Reviewed-by: Yang Guo <yangguo@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#54902}
+
+Refs: https://github.com/v8/v8/commit/a8f6869177685cfb9c199c454a86f4698c260515
+
+PR-URL: https://github.com/nodejs/node/pull/21983
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Ujjwal Sharma <usharma1998@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/AUTHORS b/AUTHORS
+index 3873f0ca6816ef28dbbaf63944d66f278c9aff4b..6179e2230d8011025fa3202327071c5b05fee86f 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -32,6 +32,7 @@ Facebook, Inc. <*@fb.com>
+ Facebook, Inc. <*@oculus.com>
+ Vewd Software AS <*@vewd.com>
+ Groupon <*@groupon.com>
++Meteor Development Group <*@meteor.com>
+ Cloudflare, Inc. <*@cloudflare.com>
+ 
+ Aaron Bieber <deftly@gmail.com>
+@@ -49,6 +50,7 @@ Andrei Kashcha <anvaka@gmail.com>
+ Anna Henningsen <anna@addaleax.net>
+ Bangfu Tao <bangfu.tao@samsung.com>
+ Ben Coe <ben@npmjs.com>
++Ben Newman <ben@meteor.com>
+ Ben Noordhuis <info@bnoordhuis.nl>
+ Benjamin Tan <demoneaux@gmail.com>
+ Bert Belder <bertbelder@gmail.com>
+diff --git a/src/debug/debug.cc b/src/debug/debug.cc
+index 47de9523a50f84bdcf88d35bed7a3602a160b6cd..3877f156efac34279a9f55c0d335468330867380 100644
+--- a/src/debug/debug.cc
++++ b/src/debug/debug.cc
+@@ -355,19 +355,31 @@ void Debug::ThreadInit() {
+ 
+ 
+ char* Debug::ArchiveDebug(char* storage) {
+-  // Simply reset state. Don't archive anything.
+-  ThreadInit();
++  MemCopy(storage, reinterpret_cast<char*>(&thread_local_),
++          ArchiveSpacePerThread());
+   return storage + ArchiveSpacePerThread();
+ }
+ 
+-
+ char* Debug::RestoreDebug(char* storage) {
+-  // Simply reset state. Don't restore anything.
+-  ThreadInit();
++  MemCopy(reinterpret_cast<char*>(&thread_local_), storage,
++          ArchiveSpacePerThread());
++
++  // Enter the debugger.
++  DebugScope debug_scope(this);
++
++  // Clear any one-shot breakpoints that may have been set by the other
++  // thread, and reapply breakpoints for this thread.
++  ClearOneShot();
++
++  if (thread_local_.last_step_action_ != StepNone) {
++    // Reset the previous step action for this thread.
++    PrepareStep(thread_local_.last_step_action_);
++  }
++
+   return storage + ArchiveSpacePerThread();
+ }
+ 
+-int Debug::ArchiveSpacePerThread() { return 0; }
++int Debug::ArchiveSpacePerThread() { return sizeof(ThreadLocal); }
+ 
+ void Debug::Iterate(RootVisitor* v) {
+   v->VisitRootPointer(Root::kDebug, nullptr, &thread_local_.return_value_);
+diff --git a/src/debug/debug.h b/src/debug/debug.h
+index 31881fe10696abdfc01b4503f78e3778e6297392..13844769c1434955b8c65b762cce771a360cc7f5 100644
+--- a/src/debug/debug.h
++++ b/src/debug/debug.h
+@@ -314,6 +314,7 @@ class Debug {
+   static int ArchiveSpacePerThread();
+   void FreeThreadResources() { }
+   void Iterate(RootVisitor* v);
++  void InitThread(const ExecutionAccess& lock) { ThreadInit(); }
+ 
+   bool CheckExecutionState() { return is_active() && break_id() != 0; }
+ 
+diff --git a/src/v8threads.cc b/src/v8threads.cc
+index db927010ef174916921d5ee03b1f2d1df3269e8a..0fb333c1f37572e688560aa7de7f6e478364b6b6 100644
+--- a/src/v8threads.cc
++++ b/src/v8threads.cc
+@@ -45,7 +45,7 @@ void Locker::Initialize(v8::Isolate* isolate) {
+     } else {
+       internal::ExecutionAccess access(isolate_);
+       isolate_->stack_guard()->ClearThread(access);
+-      isolate_->stack_guard()->InitThread(access);
++      isolate_->thread_manager()->InitThread(access);
+     }
+   }
+   DCHECK(isolate_->thread_manager()->IsLockedByCurrentThread());
+@@ -95,6 +95,10 @@ Unlocker::~Unlocker() {
+ 
+ namespace internal {
+ 
++void ThreadManager::InitThread(const ExecutionAccess& lock) {
++  isolate_->stack_guard()->InitThread(lock);
++  isolate_->debug()->InitThread(lock);
++}
+ 
+ bool ThreadManager::RestoreThread() {
+   DCHECK(IsLockedByCurrentThread());
+@@ -127,7 +131,7 @@ bool ThreadManager::RestoreThread() {
+       isolate_->FindPerThreadDataForThisThread();
+   if (per_thread == nullptr || per_thread->thread_state() == nullptr) {
+     // This is a new thread.
+-    isolate_->stack_guard()->InitThread(access);
++    InitThread(access);
+     return false;
+   }
+   ThreadState* state = per_thread->thread_state();
+diff --git a/src/v8threads.h b/src/v8threads.h
+index bb87afea7d849766e913fbd137142d0d0144ad55..7fde0c9ec494e77dbbcf8bdbeb3817ab1a9d4c00 100644
+--- a/src/v8threads.h
++++ b/src/v8threads.h
+@@ -67,6 +67,7 @@ class ThreadManager {
+   void Lock();
+   void Unlock();
+ 
++  void InitThread(const ExecutionAccess&);
+   void ArchiveThread();
+   bool RestoreThread();
+   void FreeThreadResources();
+diff --git a/test/cctest/test-debug.cc b/test/cctest/test-debug.cc
+index d3c10822ffe49f46ab829aa0ab1e035c4393fa1e..7430fbf06b802e54233edfb94196a806e2b68d6b 100644
+--- a/test/cctest/test-debug.cc
++++ b/test/cctest/test-debug.cc
+@@ -3717,6 +3717,133 @@ TEST(DebugBreakOffThreadTerminate) {
+   CHECK(try_catch.HasTerminated());
+ }
+ 
++class ArchiveRestoreThread : public v8::base::Thread,
++                             public v8::debug::DebugDelegate {
++ public:
++  ArchiveRestoreThread(v8::Isolate* isolate, int spawn_count)
++      : Thread(Options("ArchiveRestoreThread")),
++        isolate_(isolate),
++        debug_(reinterpret_cast<i::Isolate*>(isolate_)->debug()),
++        spawn_count_(spawn_count),
++        break_count_(0) {}
++
++  virtual void Run() {
++    v8::Locker locker(isolate_);
++    isolate_->Enter();
++
++    v8::HandleScope scope(isolate_);
++    v8::Local<v8::Context> context = v8::Context::New(isolate_);
++    v8::Context::Scope context_scope(context);
++
++    v8::Local<v8::Function> test = CompileFunction(isolate_,
++                                                   "function test(n) {\n"
++                                                   "  debugger;\n"
++                                                   "  return n + 1;\n"
++                                                   "}\n",
++                                                   "test");
++
++    debug_->SetDebugDelegate(this);
++    v8::internal::DisableBreak enable_break(debug_, false);
++
++    v8::Local<v8::Value> args[1] = {v8::Integer::New(isolate_, spawn_count_)};
++
++    int result = test->Call(context, context->Global(), 1, args)
++                     .ToLocalChecked()
++                     ->Int32Value(context)
++                     .FromJust();
++
++    // Verify that test(spawn_count_) returned spawn_count_ + 1.
++    CHECK_EQ(spawn_count_ + 1, result);
++
++    isolate_->Exit();
++  }
++
++  void BreakProgramRequested(v8::Local<v8::Context> context,
++                             const std::vector<v8::debug::BreakpointId>&) {
++    auto stack_traces = v8::debug::StackTraceIterator::Create(isolate_);
++    if (!stack_traces->Done()) {
++      v8::debug::Location location = stack_traces->GetSourceLocation();
++
++      i::PrintF("ArchiveRestoreThread #%d hit breakpoint at line %d\n",
++                spawn_count_, location.GetLineNumber());
++
++      switch (location.GetLineNumber()) {
++        case 1:  // debugger;
++          CHECK_EQ(break_count_, 0);
++
++          // Attempt to stop on the next line after the first debugger
++          // statement. If debug->{Archive,Restore}Debug() improperly reset
++          // thread-local debug information, the debugger will fail to stop
++          // before the test function returns.
++          debug_->PrepareStep(StepNext);
++
++          // Spawning threads while handling the current breakpoint verifies
++          // that the parent thread correctly archived and restored the
++          // state necessary to stop on the next line. If not, then control
++          // will simply continue past the `return n + 1` statement.
++          MaybeSpawnChildThread();
++
++          break;
++
++        case 2:  // return n + 1;
++          CHECK_EQ(break_count_, 1);
++          break;
++
++        default:
++          CHECK(false);
++      }
++    }
++
++    ++break_count_;
++  }
++
++  void MaybeSpawnChildThread() {
++    if (spawn_count_ > 1) {
++      v8::Unlocker unlocker(isolate_);
++
++      // Spawn a thread that spawns a thread that spawns a thread (and so
++      // on) so that the ThreadManager is forced to archive and restore
++      // the current thread.
++      ArchiveRestoreThread child(isolate_, spawn_count_ - 1);
++      child.Start();
++      child.Join();
++
++      // The child thread sets itself as the debug delegate, so we need to
++      // usurp it after the child finishes, or else future breakpoints
++      // will be delegated to a destroyed ArchiveRestoreThread object.
++      debug_->SetDebugDelegate(this);
++
++      // This is the most important check in this test, since
++      // child.GetBreakCount() will return 1 if the debugger fails to stop
++      // on the `return n + 1` line after the grandchild thread returns.
++      CHECK_EQ(child.GetBreakCount(), 2);
++    }
++  }
++
++  int GetBreakCount() { return break_count_; }
++
++ private:
++  v8::Isolate* isolate_;
++  v8::internal::Debug* debug_;
++  const int spawn_count_;
++  int break_count_;
++};
++
++TEST(DebugArchiveRestore) {
++  v8::Isolate::CreateParams create_params;
++  create_params.array_buffer_allocator = CcTest::array_buffer_allocator();
++  v8::Isolate* isolate = v8::Isolate::New(create_params);
++
++  ArchiveRestoreThread thread(isolate, 5);
++  // Instead of calling thread.Start() and thread.Join() here, we call
++  // thread.Run() directly, to make sure we exercise archive/restore
++  // logic on the *current* thread as well as other threads.
++  thread.Run();
++  CHECK_EQ(thread.GetBreakCount(), 2);
++
++  isolate->Dispose();
++}
++
+ class DebugEventExpectNoException : public v8::debug::DebugDelegate {
+  public:
+   void ExceptionThrown(v8::Local<v8::Context> paused_context,

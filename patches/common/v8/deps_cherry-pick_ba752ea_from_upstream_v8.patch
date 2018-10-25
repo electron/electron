@@ -1,0 +1,708 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Tue, 4 Sep 2018 21:22:51 +0200
+Subject: deps: cherry-pick ba752ea from upstream V8
+
+Original commit message:
+
+    [cpu-profiler] Use instruction start as the key for the CodeMap
+
+    Previously we used the start address of the AbstractCode object. This
+    doesn't make sense for off-heap builtins, where the code isn't contained
+    in the object itself. It also hides other potential problems - sometimes
+    the sample.pc is inside the AbstractCode object header - this is
+    never valid.
+
+    There were a few changes necessary to make this happen:
+      - Change the interface of CodeMoveEvent. Now 'to' and 'from' are both
+        AbstractCode objects, which is nice because many users were taking
+        'to' and adding the header offset to it to try and find the
+        instruction start address. This isn't valid for off-heap builtins.
+      - Fix a bug in CodeMap::MoveCode where we didn't update the CodeEntry
+        object to reflect the new instruction_start.
+      - Rename the 'start' field in all of the CodeEventRecord sub-classes
+        to make it clear that this is the address of the first instruction.
+      - Fix the confusion in RecordTickSample between 'tos' and 'pc' which
+        caused pc_offset to be calculated incorrectly.
+
+    Bug: v8:7983
+    Change-Id: I3e9dddf74e4b2e96a5f031d216ef7008d6f184d1
+    Reviewed-on: https://chromium-review.googlesource.com/1148457
+    Commit-Queue: Peter Marshall <petermarshall@chromium.org>
+    Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+    Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#54749}
+
+Refs: https://github.com/v8/v8/commit/ba752ea4c50713dff1e94f45a79db3ba968a8d66
+
+PR-URL: https://github.com/nodejs/node/pull/21983
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Ujjwal Sharma <usharma1998@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/src/code-events.h b/src/code-events.h
+index 09cd5a62e00beb4320e3e9cb05e07f019f26ab37..ec07a2e107917bce4a3ea3d1f9973ef54f28a2f0 100644
+--- a/src/code-events.h
++++ b/src/code-events.h
+@@ -83,7 +83,7 @@ class CodeEventListener {
+   virtual void GetterCallbackEvent(Name* name, Address entry_point) = 0;
+   virtual void SetterCallbackEvent(Name* name, Address entry_point) = 0;
+   virtual void RegExpCodeCreateEvent(AbstractCode* code, String* source) = 0;
+-  virtual void CodeMoveEvent(AbstractCode* from, Address to) = 0;
++  virtual void CodeMoveEvent(AbstractCode* from, AbstractCode* to) = 0;
+   virtual void SharedFunctionInfoMoveEvent(Address from, Address to) = 0;
+   virtual void CodeMovingGCEvent() = 0;
+   virtual void CodeDisableOptEvent(AbstractCode* code,
+@@ -154,7 +154,7 @@ class CodeEventDispatcher {
+   void RegExpCodeCreateEvent(AbstractCode* code, String* source) {
+     CODE_EVENT_DISPATCH(RegExpCodeCreateEvent(code, source));
+   }
+-  void CodeMoveEvent(AbstractCode* from, Address to) {
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+     CODE_EVENT_DISPATCH(CodeMoveEvent(from, to));
+   }
+   void SharedFunctionInfoMoveEvent(Address from, Address to) {
+diff --git a/src/heap/mark-compact.cc b/src/heap/mark-compact.cc
+index 48ae74bc5d472a7136ee660af6f100f1f6858bad..2170568e261cbc927bbf217fb67c65dd9e9f191c 100644
+--- a/src/heap/mark-compact.cc
++++ b/src/heap/mark-compact.cc
+@@ -1149,7 +1149,7 @@ class ProfilingMigrationObserver final : public MigrationObserver {
+                    int size) final {
+     if (dest == CODE_SPACE || (dest == OLD_SPACE && dst->IsBytecodeArray())) {
+       PROFILE(heap_->isolate(),
+-              CodeMoveEvent(AbstractCode::cast(src), dst->address()));
++              CodeMoveEvent(AbstractCode::cast(src), AbstractCode::cast(dst)));
+     }
+     heap_->OnMoveEvent(dst, src, size);
+   }
+diff --git a/src/log.cc b/src/log.cc
+index 77d68ef94eb6d5f41e881d434e815a28c121410c..f19897b27b14e3cd96e4b8e91d729981cd09113d 100644
+--- a/src/log.cc
++++ b/src/log.cc
+@@ -270,7 +270,7 @@ class PerfBasicLogger : public CodeEventLogger {
+   explicit PerfBasicLogger(Isolate* isolate);
+   ~PerfBasicLogger() override;
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override {}
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override {}
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override {}
+ 
+@@ -496,7 +496,7 @@ class LowLevelLogger : public CodeEventLogger {
+   LowLevelLogger(Isolate* isolate, const char* file_name);
+   ~LowLevelLogger() override;
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override;
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override;
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override {}
+   void SnapshotPositionEvent(HeapObject* obj, int pos);
+@@ -615,11 +615,10 @@ void LowLevelLogger::LogRecordedBuffer(const wasm::WasmCode* code,
+                 code->instructions().length());
+ }
+ 
+-void LowLevelLogger::CodeMoveEvent(AbstractCode* from, Address to) {
++void LowLevelLogger::CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+   CodeMoveStruct event;
+   event.from_address = from->InstructionStart();
+-  size_t header_size = from->InstructionStart() - from->address();
+-  event.to_address = to + header_size;
++  event.to_address = to->InstructionStart();
+   LogWriteStruct(event);
+ }
+ 
+@@ -641,7 +640,7 @@ class JitLogger : public CodeEventLogger {
+  public:
+   JitLogger(Isolate* isolate, JitCodeEventHandler code_event_handler);
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override;
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override;
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override {}
+   void AddCodeLinePosInfoEvent(void* jit_handler_data, int pc_offset,
+@@ -700,7 +699,7 @@ void JitLogger::LogRecordedBuffer(const wasm::WasmCode* code, const char* name,
+   code_event_handler_(&event);
+ }
+ 
+-void JitLogger::CodeMoveEvent(AbstractCode* from, Address to) {
++void JitLogger::CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+   base::LockGuard<base::Mutex> guard(&logger_mutex_);
+ 
+   JitCodeEvent event;
+@@ -709,12 +708,7 @@ void JitLogger::CodeMoveEvent(AbstractCode* from, Address to) {
+       from->IsCode() ? JitCodeEvent::JIT_CODE : JitCodeEvent::BYTE_CODE;
+   event.code_start = reinterpret_cast<void*>(from->InstructionStart());
+   event.code_len = from->InstructionSize();
+-
+-  // Calculate the header size.
+-  const size_t header_size = from->InstructionStart() - from->address();
+-
+-  // Calculate the new start address of the instructions.
+-  event.new_code_start = reinterpret_cast<void*>(to + header_size);
++  event.new_code_start = reinterpret_cast<void*>(to->InstructionStart());
+   event.isolate = reinterpret_cast<v8::Isolate*>(isolate_);
+ 
+   code_event_handler_(&event);
+@@ -1431,9 +1425,10 @@ void Logger::RegExpCodeCreateEvent(AbstractCode* code, String* source) {
+   msg.WriteToLogFile();
+ }
+ 
+-void Logger::CodeMoveEvent(AbstractCode* from, Address to) {
++void Logger::CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+   if (!is_listening_to_code_events()) return;
+-  MoveEventInternal(CodeEventListener::CODE_MOVE_EVENT, from->address(), to);
++  MoveEventInternal(CodeEventListener::CODE_MOVE_EVENT, from->address(),
++                    to->address());
+ }
+ 
+ namespace {
+diff --git a/src/log.h b/src/log.h
+index 485de0f4d17db71cbbe4170dff0155c4eac0105a..3bc54a5926d35cca6b1544c4f7fce52ae96bca95 100644
+--- a/src/log.h
++++ b/src/log.h
+@@ -222,7 +222,7 @@ class Logger : public CodeEventListener {
+   // Emits a code create event for a RegExp.
+   void RegExpCodeCreateEvent(AbstractCode* code, String* source);
+   // Emits a code move event.
+-  void CodeMoveEvent(AbstractCode* from, Address to);
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to);
+   // Emits a code line info record event.
+   void CodeLinePosInfoRecordEvent(Address code_start,
+                                   ByteArray* source_position_table);
+@@ -486,7 +486,7 @@ class ExternalCodeEventListener : public CodeEventListener {
+   void GetterCallbackEvent(Name* name, Address entry_point) override {}
+   void SetterCallbackEvent(Name* name, Address entry_point) override {}
+   void SharedFunctionInfoMoveEvent(Address from, Address to) override {}
+-  void CodeMoveEvent(AbstractCode* from, Address to) override {}
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override {}
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override {}
+   void CodeMovingGCEvent() override {}
+diff --git a/src/perf-jit.cc b/src/perf-jit.cc
+index 3aaa36bc12f4ecdbeeab97f4f73adb482ef14211..f6b2cf401a719fd1696f1ac327bcf04b0800092a 100644
+--- a/src/perf-jit.cc
++++ b/src/perf-jit.cc
+@@ -420,7 +420,7 @@ void PerfJitLogger::LogWriteUnwindingInfo(Code* code) {
+   LogWriteBytes(padding_bytes, static_cast<int>(padding_size));
+ }
+ 
+-void PerfJitLogger::CodeMoveEvent(AbstractCode* from, Address to) {
++void PerfJitLogger::CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+   // We may receive a CodeMove event if a BytecodeArray object moves. Otherwise
+   // code relocation is not supported.
+   CHECK(from->IsBytecodeArray());
+diff --git a/src/perf-jit.h b/src/perf-jit.h
+index d08f4b91ab26ef10a55043c84f4694bd1466496a..3b11cf30c23a7027f356c4ab299f88a5efb8dcc9 100644
+--- a/src/perf-jit.h
++++ b/src/perf-jit.h
+@@ -41,7 +41,7 @@ class PerfJitLogger : public CodeEventLogger {
+   explicit PerfJitLogger(Isolate* isolate);
+   virtual ~PerfJitLogger();
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override;
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override;
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override {}
+ 
+@@ -120,7 +120,7 @@ class PerfJitLogger : public CodeEventLogger {
+  public:
+   explicit PerfJitLogger(Isolate* isolate) : CodeEventLogger(isolate) {}
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override {
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override {
+     UNIMPLEMENTED();
+   }
+ 
+diff --git a/src/profiler/cpu-profiler-inl.h b/src/profiler/cpu-profiler-inl.h
+index f6eaa8f8a33e72ca28bf7431747607e0c3764b92..9274bc03c66d860bb0754bf46f4692622861ed0c 100644
+--- a/src/profiler/cpu-profiler-inl.h
++++ b/src/profiler/cpu-profiler-inl.h
+@@ -16,17 +16,17 @@ namespace v8 {
+ namespace internal {
+ 
+ void CodeCreateEventRecord::UpdateCodeMap(CodeMap* code_map) {
+-  code_map->AddCode(start, entry, size);
++  code_map->AddCode(instruction_start, entry, instruction_size);
+ }
+ 
+ 
+ void CodeMoveEventRecord::UpdateCodeMap(CodeMap* code_map) {
+-  code_map->MoveCode(from, to);
++  code_map->MoveCode(from_instruction_start, to_instruction_start);
+ }
+ 
+ 
+ void CodeDisableOptEventRecord::UpdateCodeMap(CodeMap* code_map) {
+-  CodeEntry* entry = code_map->FindEntry(start);
++  CodeEntry* entry = code_map->FindEntry(instruction_start);
+   if (entry != nullptr) {
+     entry->set_bailout_reason(bailout_reason);
+   }
+@@ -34,7 +34,7 @@ void CodeDisableOptEventRecord::UpdateCodeMap(CodeMap* code_map) {
+ 
+ 
+ void CodeDeoptEventRecord::UpdateCodeMap(CodeMap* code_map) {
+-  CodeEntry* entry = code_map->FindEntry(start);
++  CodeEntry* entry = code_map->FindEntry(instruction_start);
+   if (entry == nullptr) return;
+   std::vector<CpuProfileDeoptFrame> frames_vector(
+       deopt_frames, deopt_frames + deopt_frame_count);
+@@ -44,7 +44,7 @@ void CodeDeoptEventRecord::UpdateCodeMap(CodeMap* code_map) {
+ 
+ 
+ void ReportBuiltinEventRecord::UpdateCodeMap(CodeMap* code_map) {
+-  CodeEntry* entry = code_map->FindEntry(start);
++  CodeEntry* entry = code_map->FindEntry(instruction_start);
+   if (!entry) {
+     // Code objects for builtins should already have been added to the map but
+     // some of them have been filtered out by CpuProfiler.
+diff --git a/src/profiler/cpu-profiler.cc b/src/profiler/cpu-profiler.cc
+index 463a30f1842c24a1545b198cb230d99199a33374..555c47f2f4e418b2511c6352b2ef639bee1305f6 100644
+--- a/src/profiler/cpu-profiler.cc
++++ b/src/profiler/cpu-profiler.cc
+@@ -426,7 +426,7 @@ void CpuProfiler::LogBuiltins() {
+     CodeEventsContainer evt_rec(CodeEventRecord::REPORT_BUILTIN);
+     ReportBuiltinEventRecord* rec = &evt_rec.ReportBuiltinEventRecord_;
+     Builtins::Name id = static_cast<Builtins::Name>(i);
+-    rec->start = builtins->builtin(id)->address();
++    rec->instruction_start = builtins->builtin(id)->InstructionStart();
+     rec->builtin_id = id;
+     processor_->Enqueue(evt_rec);
+   }
+diff --git a/src/profiler/cpu-profiler.h b/src/profiler/cpu-profiler.h
+index febc15480215b7406a4453b74e0106d9885ee537..78bb3b4a25f4807dbefe22c7a226969b476a21ba 100644
+--- a/src/profiler/cpu-profiler.h
++++ b/src/profiler/cpu-profiler.h
+@@ -53,9 +53,9 @@ class CodeEventRecord {
+ 
+ class CodeCreateEventRecord : public CodeEventRecord {
+  public:
+-  Address start;
++  Address instruction_start;
+   CodeEntry* entry;
+-  unsigned size;
++  unsigned instruction_size;
+ 
+   V8_INLINE void UpdateCodeMap(CodeMap* code_map);
+ };
+@@ -63,8 +63,8 @@ class CodeCreateEventRecord : public CodeEventRecord {
+ 
+ class CodeMoveEventRecord : public CodeEventRecord {
+  public:
+-  Address from;
+-  Address to;
++  Address from_instruction_start;
++  Address to_instruction_start;
+ 
+   V8_INLINE void UpdateCodeMap(CodeMap* code_map);
+ };
+@@ -72,7 +72,7 @@ class CodeMoveEventRecord : public CodeEventRecord {
+ 
+ class CodeDisableOptEventRecord : public CodeEventRecord {
+  public:
+-  Address start;
++  Address instruction_start;
+   const char* bailout_reason;
+ 
+   V8_INLINE void UpdateCodeMap(CodeMap* code_map);
+@@ -81,7 +81,7 @@ class CodeDisableOptEventRecord : public CodeEventRecord {
+ 
+ class CodeDeoptEventRecord : public CodeEventRecord {
+  public:
+-  Address start;
++  Address instruction_start;
+   const char* deopt_reason;
+   int deopt_id;
+   Address pc;
+@@ -95,7 +95,7 @@ class CodeDeoptEventRecord : public CodeEventRecord {
+ 
+ class ReportBuiltinEventRecord : public CodeEventRecord {
+  public:
+-  Address start;
++  Address instruction_start;
+   Builtins::Name builtin_id;
+ 
+   V8_INLINE void UpdateCodeMap(CodeMap* code_map);
+diff --git a/src/profiler/profile-generator.cc b/src/profiler/profile-generator.cc
+index 92619f2fbf3cf52c75b812cb97d4ed4e270fd983..845fe97b6473f2b7d3009964e01f81ff042780e0 100644
+--- a/src/profiler/profile-generator.cc
++++ b/src/profiler/profile-generator.cc
+@@ -529,6 +529,8 @@ void CodeMap::AddCode(Address addr, CodeEntry* entry, unsigned size) {
+   ClearCodesInRange(addr, addr + size);
+   unsigned index = AddCodeEntry(addr, entry);
+   code_map_.emplace(addr, CodeEntryMapInfo{index, size});
++  DCHECK(entry->instruction_start() == kNullAddress ||
++         addr == entry->instruction_start());
+ }
+ 
+ void CodeMap::ClearCodesInRange(Address start, Address end) {
+@@ -550,8 +552,14 @@ CodeEntry* CodeMap::FindEntry(Address addr) {
+   auto it = code_map_.upper_bound(addr);
+   if (it == code_map_.begin()) return nullptr;
+   --it;
+-  Address end_address = it->first + it->second.size;
+-  return addr < end_address ? entry(it->second.index) : nullptr;
++  Address start_address = it->first;
++  Address end_address = start_address + it->second.size;
++  CodeEntry* ret = addr < end_address ? entry(it->second.index) : nullptr;
++  if (ret && ret->instruction_start() != kNullAddress) {
++    DCHECK_EQ(start_address, ret->instruction_start());
++    DCHECK(addr >= start_address && addr < end_address);
++  }
++  return ret;
+ }
+ 
+ void CodeMap::MoveCode(Address from, Address to) {
+@@ -563,6 +571,9 @@ void CodeMap::MoveCode(Address from, Address to) {
+   DCHECK(from + info.size <= to || to + info.size <= from);
+   ClearCodesInRange(to, to + info.size);
+   code_map_.emplace(to, info);
++
++  CodeEntry* entry = code_entries_[info.index].entry;
++  entry->set_instruction_start(to);
+ }
+ 
+ unsigned CodeMap::AddCodeEntry(Address start, CodeEntry* entry) {
+@@ -693,26 +704,29 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
+   if (sample.pc != nullptr) {
+     if (sample.has_external_callback && sample.state == EXTERNAL) {
+       // Don't use PC when in external callback code, as it can point
+-      // inside callback's code, and we will erroneously report
++      // inside a callback's code, and we will erroneously report
+       // that a callback calls itself.
+       stack_trace.push_back(
+           {FindEntry(reinterpret_cast<Address>(sample.external_callback_entry)),
+            no_line_info});
+     } else {
+-      CodeEntry* pc_entry = FindEntry(reinterpret_cast<Address>(sample.pc));
+-      // If there is no pc_entry we're likely in native code.
+-      // Find out, if top of stack was pointing inside a JS function
+-      // meaning that we have encountered a frameless invocation.
++      Address attributed_pc = reinterpret_cast<Address>(sample.pc);
++      CodeEntry* pc_entry = FindEntry(attributed_pc);
++      // If there is no pc_entry, we're likely in native code. Find out if the
++      // top of the stack (the return address) was pointing inside a JS
++      // function, meaning that we have encountered a frameless invocation.
+       if (!pc_entry && !sample.has_external_callback) {
+-        pc_entry = FindEntry(reinterpret_cast<Address>(sample.tos));
++        attributed_pc = reinterpret_cast<Address>(sample.tos);
++        pc_entry = FindEntry(attributed_pc);
+       }
+       // If pc is in the function code before it set up stack frame or after the
+-      // frame was destroyed SafeStackFrameIterator incorrectly thinks that
+-      // ebp contains return address of the current function and skips caller's
+-      // frame. Check for this case and just skip such samples.
++      // frame was destroyed, SafeStackFrameIterator incorrectly thinks that
++      // ebp contains the return address of the current function and skips the
++      // caller's frame. Check for this case and just skip such samples.
+       if (pc_entry) {
+-        int pc_offset = static_cast<int>(reinterpret_cast<Address>(sample.pc) -
+-                                         pc_entry->instruction_start());
++        int pc_offset =
++            static_cast<int>(attributed_pc - pc_entry->instruction_start());
++        DCHECK_GE(pc_offset, 0);
+         src_line = pc_entry->GetSourceLine(pc_offset);
+         if (src_line == v8::CpuProfileNode::kNoLineNumberInfo) {
+           src_line = pc_entry->line_number();
+@@ -744,6 +758,7 @@ void ProfileGenerator::RecordTickSample(const TickSample& sample) {
+         // Find out if the entry has an inlining stack associated.
+         int pc_offset =
+             static_cast<int>(stack_pos - entry->instruction_start());
++        DCHECK_GE(pc_offset, 0);
+         const std::vector<std::unique_ptr<CodeEntry>>* inline_stack =
+             entry->GetInlineStack(pc_offset);
+         if (inline_stack) {
+diff --git a/src/profiler/profile-generator.h b/src/profiler/profile-generator.h
+index 3e301a40829ea1acbbd8283bed0d3e43dee679e9..8eef05bcdb382600e987608bdcb9270e3307e998 100644
+--- a/src/profiler/profile-generator.h
++++ b/src/profiler/profile-generator.h
+@@ -108,7 +108,9 @@ class CodeEntry {
+   const std::vector<std::unique_ptr<CodeEntry>>* GetInlineStack(
+       int pc_offset) const;
+ 
++  void set_instruction_start(Address start) { instruction_start_ = start; }
+   Address instruction_start() const { return instruction_start_; }
++
+   CodeEventListener::LogEventsAndTags tag() const {
+     return TagField::decode(bit_field_);
+   }
+diff --git a/src/profiler/profiler-listener.cc b/src/profiler/profiler-listener.cc
+index 9c29da9ec7972ac9a5fb2a6be8065fe30d7dddd1..f90a2e11d3f3a247fdec39abbb1a04e4d86204e5 100644
+--- a/src/profiler/profiler-listener.cc
++++ b/src/profiler/profiler-listener.cc
+@@ -24,9 +24,9 @@ ProfilerListener::~ProfilerListener() = default;
+ void ProfilerListener::CallbackEvent(Name* name, Address entry_point) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = entry_point;
++  rec->instruction_start = entry_point;
+   rec->entry = NewCodeEntry(CodeEventListener::CALLBACK_TAG, GetName(name));
+-  rec->size = 1;
++  rec->instruction_size = 1;
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -34,13 +34,13 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                                        AbstractCode* code, const char* name) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->entry = NewCodeEntry(tag, GetName(name), CodeEntry::kEmptyResourceName,
+                             CpuProfileNode::kNoLineNumberInfo,
+                             CpuProfileNode::kNoColumnNumberInfo, nullptr,
+                             code->InstructionStart());
+   RecordInliningInfo(rec->entry, code);
+-  rec->size = code->ExecutableSize();
++  rec->instruction_size = code->InstructionSize();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -48,13 +48,13 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                                        AbstractCode* code, Name* name) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->entry = NewCodeEntry(tag, GetName(name), CodeEntry::kEmptyResourceName,
+                             CpuProfileNode::kNoLineNumberInfo,
+                             CpuProfileNode::kNoColumnNumberInfo, nullptr,
+                             code->InstructionStart());
+   RecordInliningInfo(rec->entry, code);
+-  rec->size = code->ExecutableSize();
++  rec->instruction_size = code->InstructionSize();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -64,7 +64,7 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                                        Name* script_name) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->entry = NewCodeEntry(tag, GetName(shared->DebugName()),
+                             GetName(InferScriptName(script_name, shared)),
+                             CpuProfileNode::kNoLineNumberInfo,
+@@ -72,7 +72,7 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                             code->InstructionStart());
+   RecordInliningInfo(rec->entry, code);
+   rec->entry->FillFunctionInfo(shared);
+-  rec->size = code->ExecutableSize();
++  rec->instruction_size = code->InstructionSize();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -83,7 +83,7 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                                        int column) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = abstract_code->address();
++  rec->instruction_start = abstract_code->InstructionStart();
+   std::unique_ptr<SourcePositionTable> line_table;
+   if (shared->script()->IsScript()) {
+     Script* script = Script::cast(shared->script());
+@@ -105,7 +105,7 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                    std::move(line_table), abstract_code->InstructionStart());
+   RecordInliningInfo(rec->entry, abstract_code);
+   rec->entry->FillFunctionInfo(shared);
+-  rec->size = abstract_code->ExecutableSize();
++  rec->instruction_size = abstract_code->InstructionSize();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -114,20 +114,20 @@ void ProfilerListener::CodeCreateEvent(CodeEventListener::LogEventsAndTags tag,
+                                        wasm::WasmName name) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = code->instruction_start();
++  rec->instruction_start = code->instruction_start();
+   rec->entry = NewCodeEntry(
+       tag, GetName(name.start()), CodeEntry::kWasmResourceNamePrefix,
+       CpuProfileNode::kNoLineNumberInfo, CpuProfileNode::kNoColumnNumberInfo,
+       nullptr, code->instruction_start());
+-  rec->size = code->instructions().length();
++  rec->instruction_size = code->instructions().length();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+-void ProfilerListener::CodeMoveEvent(AbstractCode* from, Address to) {
++void ProfilerListener::CodeMoveEvent(AbstractCode* from, AbstractCode* to) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_MOVE);
+   CodeMoveEventRecord* rec = &evt_rec.CodeMoveEventRecord_;
+-  rec->from = from->address();
+-  rec->to = to;
++  rec->from_instruction_start = from->InstructionStart();
++  rec->to_instruction_start = to->InstructionStart();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -135,7 +135,7 @@ void ProfilerListener::CodeDisableOptEvent(AbstractCode* code,
+                                            SharedFunctionInfo* shared) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_DISABLE_OPT);
+   CodeDisableOptEventRecord* rec = &evt_rec.CodeDisableOptEventRecord_;
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->bailout_reason = GetBailoutReason(shared->disable_optimization_reason());
+   DispatchCodeEvent(evt_rec);
+ }
+@@ -145,7 +145,7 @@ void ProfilerListener::CodeDeoptEvent(Code* code, DeoptimizeKind kind,
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_DEOPT);
+   CodeDeoptEventRecord* rec = &evt_rec.CodeDeoptEventRecord_;
+   Deoptimizer::DeoptInfo info = Deoptimizer::GetDeoptInfo(code, pc);
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->deopt_reason = DeoptimizeReasonToString(info.deopt_reason);
+   rec->deopt_id = info.deopt_id;
+   rec->pc = pc;
+@@ -160,10 +160,10 @@ void ProfilerListener::CodeDeoptEvent(Code* code, DeoptimizeKind kind,
+ void ProfilerListener::GetterCallbackEvent(Name* name, Address entry_point) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = entry_point;
++  rec->instruction_start = entry_point;
+   rec->entry =
+       NewCodeEntry(CodeEventListener::CALLBACK_TAG, GetConsName("get ", name));
+-  rec->size = 1;
++  rec->instruction_size = 1;
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+@@ -171,23 +171,22 @@ void ProfilerListener::RegExpCodeCreateEvent(AbstractCode* code,
+                                              String* source) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = code->address();
++  rec->instruction_start = code->InstructionStart();
+   rec->entry = NewCodeEntry(
+       CodeEventListener::REG_EXP_TAG, GetConsName("RegExp: ", source),
+       CodeEntry::kEmptyResourceName, CpuProfileNode::kNoLineNumberInfo,
+-      CpuProfileNode::kNoColumnNumberInfo, nullptr,
+-      code->raw_instruction_start());
+-  rec->size = code->ExecutableSize();
++      CpuProfileNode::kNoColumnNumberInfo, nullptr, code->InstructionStart());
++  rec->instruction_size = code->InstructionSize();
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+ void ProfilerListener::SetterCallbackEvent(Name* name, Address entry_point) {
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+-  rec->start = entry_point;
++  rec->instruction_start = entry_point;
+   rec->entry =
+       NewCodeEntry(CodeEventListener::CALLBACK_TAG, GetConsName("set ", name));
+-  rec->size = 1;
++  rec->instruction_size = 1;
+   DispatchCodeEvent(evt_rec);
+ }
+ 
+diff --git a/src/profiler/profiler-listener.h b/src/profiler/profiler-listener.h
+index 5cff7cc11d1e91ed773f8e1633b4f4363ba1246b..51fba18a60960f8a65115516401952b46ebb5d71 100644
+--- a/src/profiler/profiler-listener.h
++++ b/src/profiler/profiler-listener.h
+@@ -44,7 +44,7 @@ class ProfilerListener : public CodeEventListener {
+                        wasm::WasmName name) override;
+ 
+   void CodeMovingGCEvent() override {}
+-  void CodeMoveEvent(AbstractCode* from, Address to) override;
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override;
+   void CodeDisableOptEvent(AbstractCode* code,
+                            SharedFunctionInfo* shared) override;
+   void CodeDeoptEvent(Code* code, DeoptimizeKind kind, Address pc,
+diff --git a/src/snapshot/serializer.h b/src/snapshot/serializer.h
+index 6a5d1a4aacae64930066405855e079c4d98dacb0..658d37f286c5a103738ebfe22c84d68ea6c7b222 100644
+--- a/src/snapshot/serializer.h
++++ b/src/snapshot/serializer.h
+@@ -28,8 +28,8 @@ class CodeAddressMap : public CodeEventLogger {
+     isolate_->logger()->RemoveCodeEventListener(this);
+   }
+ 
+-  void CodeMoveEvent(AbstractCode* from, Address to) override {
+-    address_to_name_map_.Move(from->address(), to);
++  void CodeMoveEvent(AbstractCode* from, AbstractCode* to) override {
++    address_to_name_map_.Move(from->address(), to->address());
+   }
+ 
+   void CodeDisableOptEvent(AbstractCode* code,
+diff --git a/test/cctest/test-cpu-profiler.cc b/test/cctest/test-cpu-profiler.cc
+index 4e7a70c76f28b1404f03ffb5ad771227425ac43e..f74bdf1ede87f53b4f396bb85f0a792895f8a40a 100644
+--- a/test/cctest/test-cpu-profiler.cc
++++ b/test/cctest/test-cpu-profiler.cc
+@@ -176,27 +176,29 @@ TEST(CodeEvents) {
+                                     "comment");
+   profiler_listener.CodeCreateEvent(i::Logger::BUILTIN_TAG, comment2_code,
+                                     "comment2");
+-  profiler_listener.CodeMoveEvent(comment2_code, moved_code->address());
++  profiler_listener.CodeMoveEvent(comment2_code, moved_code);
+ 
+   // Enqueue a tick event to enable code events processing.
+-  EnqueueTickSampleEvent(processor, aaa_code->address());
++  EnqueueTickSampleEvent(processor, aaa_code->InstructionStart());
+ 
+   isolate->logger()->RemoveCodeEventListener(&profiler_listener);
+   processor->StopSynchronously();
+ 
+   // Check the state of profile generator.
+-  CodeEntry* aaa = generator->code_map()->FindEntry(aaa_code->address());
++  CodeEntry* aaa =
++      generator->code_map()->FindEntry(aaa_code->InstructionStart());
+   CHECK(aaa);
+   CHECK_EQ(0, strcmp(aaa_str, aaa->name()));
+ 
+   CodeEntry* comment =
+-      generator->code_map()->FindEntry(comment_code->address());
++      generator->code_map()->FindEntry(comment_code->InstructionStart());
+   CHECK(comment);
+   CHECK_EQ(0, strcmp("comment", comment->name()));
+ 
+-  CHECK(!generator->code_map()->FindEntry(comment2_code->address()));
++  CHECK(!generator->code_map()->FindEntry(comment2_code->InstructionStart()));
+ 
+-  CodeEntry* comment2 = generator->code_map()->FindEntry(moved_code->address());
++  CodeEntry* comment2 =
++      generator->code_map()->FindEntry(moved_code->InstructionStart());
+   CHECK(comment2);
+   CHECK_EQ(0, strcmp("comment2", comment2->name()));
+ }
+@@ -298,11 +300,11 @@ TEST(Issue1398) {
+   profiler_listener.CodeCreateEvent(i::Logger::BUILTIN_TAG, code, "bbb");
+ 
+   v8::TickSample* sample = processor->StartTickSample();
+-  sample->pc = reinterpret_cast<void*>(code->address());
++  sample->pc = reinterpret_cast<void*>(code->InstructionStart());
+   sample->tos = nullptr;
+   sample->frames_count = v8::TickSample::kMaxFramesCount;
+   for (unsigned i = 0; i < sample->frames_count; ++i) {
+-    sample->stack[i] = reinterpret_cast<void*>(code->address());
++    sample->stack[i] = reinterpret_cast<void*>(code->InstructionStart());
+   }
+   processor->FinishTickSample();
+ 
+diff --git a/test/cctest/test-log.cc b/test/cctest/test-log.cc
+index 0b13a7e6607cc45ab824725cff38a963b10feca8..1dfa22b4cc6f53972b18f14346a9703fe48bf8a0 100644
+--- a/test/cctest/test-log.cc
++++ b/test/cctest/test-log.cc
+@@ -751,7 +751,7 @@ TEST(Issue539892) {
+     explicit FakeCodeEventLogger(i::Isolate* isolate)
+         : CodeEventLogger(isolate) {}
+ 
+-    void CodeMoveEvent(i::AbstractCode* from, Address to) override {}
++    void CodeMoveEvent(i::AbstractCode* from, i::AbstractCode* to) override {}
+     void CodeDisableOptEvent(i::AbstractCode* code,
+                              i::SharedFunctionInfo* shared) override {}
+ 
+diff --git a/test/cctest/test-profile-generator.cc b/test/cctest/test-profile-generator.cc
+index 9b2d7e3ab2fe9dcc273c0946589a4714768bb86d..b53bf148e615e45581a653438af77d9d3af93909 100644
+--- a/test/cctest/test-profile-generator.cc
++++ b/test/cctest/test-profile-generator.cc
+@@ -676,7 +676,8 @@ int GetFunctionLineNumber(CpuProfiler& profiler, LocalContext& env,
+   i::Handle<i::JSFunction> func = i::Handle<i::JSFunction>::cast(
+       v8::Utils::OpenHandle(*v8::Local<v8::Function>::Cast(
+           env->Global()->Get(env.local(), v8_str(name)).ToLocalChecked())));
+-  CodeEntry* func_entry = code_map->FindEntry(func->abstract_code()->address());
++  CodeEntry* func_entry =
++      code_map->FindEntry(func->abstract_code()->InstructionStart());
+   if (!func_entry) FATAL("%s", name);
+   return func_entry->line_number();
+ }

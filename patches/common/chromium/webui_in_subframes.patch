@@ -1,4 +1,4 @@
-From 8154c4c74afebf8f2918cf18179b6c8eda632af6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:47:15 -0700
 Subject: webui_in_subframes.patch
@@ -140,6 +140,3 @@ index d16a99122772..907738e0bf80 100644
    void SetFocusedFrame(FrameTreeNode* node, SiteInstance* source) override;
    void DidCallFocus() override;
    RenderFrameHost* GetFocusedFrameIncludingInnerWebContents() override;
--- 
-2.17.0
-

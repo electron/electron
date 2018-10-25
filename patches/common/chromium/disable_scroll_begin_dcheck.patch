@@ -35,6 +35,3 @@ index 28879dc5e9bb..222b5d7e91ec 100644
      is_in_gesture_scroll_[gesture_event.SourceDevice()] = true;
    } else if (gesture_event.GetType() ==
               blink::WebInputEvent::kGestureScrollEnd) {
--- 
-2.17.0
-

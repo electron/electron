@@ -1,4 +1,4 @@
-From 47f675c132ac4d4234f14f0c1ffb7aea407a60f7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:46:43 -0700
 Subject: thread_capabilities.patch
@@ -11,7 +11,7 @@ system.
 See https://github.com/atom/electron/issues/3666
 
 diff --git a/sandbox/linux/services/credentials.cc b/sandbox/linux/services/credentials.cc
-index ad0714a7f5ed..1406e1d53f2f 100644
+index ad0714a7f5edad1784d5e055a392519f750973cc..1406e1d53f2f13bbbcc5b96a1681b9ec18c3e49c 100644
 --- a/sandbox/linux/services/credentials.cc
 +++ b/sandbox/linux/services/credentials.cc
 @@ -348,8 +348,10 @@ pid_t Credentials::ForkAndDropCapabilitiesInChild() {
@@ -25,6 +25,3 @@ index ad0714a7f5ed..1406e1d53f2f 100644
    return 0;
  }
  
--- 
-2.17.0
-

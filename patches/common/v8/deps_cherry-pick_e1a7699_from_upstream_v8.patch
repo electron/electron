@@ -1,0 +1,364 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Camillo Bruni <cbruni@chromium.org>
+Date: Sat, 18 Aug 2018 13:41:51 -0400
+Subject: deps: cherry-pick e1a7699 from upstream V8
+
+Original commit message:
+
+    [api][runtime]  Support all-in ctors of {Named,Indexed}PropertyHandlerConfiguration
+
+    - Explicitly allows construction of
+    {Named,Indexed}PropertyHandlerConfiguration with all the members filled.
+
+    Bug: v8:7612
+    Cq-Include-Trybots: luci.chromium.try:linux_chromium_rel_ng
+    Change-Id: I426ea33846b5dbf2b3482c722c963a6e4b0abded
+    Reviewed-on: https://chromium-review.googlesource.com/1163882
+    Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+    Reviewed-by: Adam Klein <adamk@chromium.org>
+    Commit-Queue: Camillo Bruni <cbruni@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#55142}
+
+PR-URL: https://github.com/nodejs/node/pull/22390
+Fixes: https://github.com/nodejs/node/issues/17480
+Fixes: https://github.com/nodejs/node/issues/17481
+Refs: https://github.com/v8/v8/commit/e1a76995ef311eb3ca66e12ef1941ed596034d59
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/include/v8.h b/include/v8.h
+index 23d5ba36db97dab2bb706ab90930ee1403a68104..20a65afcbc61c31360874e45adc03eeda02e9a81 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -5994,6 +5994,26 @@ enum class PropertyHandlerFlags {
+ };
+ 
+ struct NamedPropertyHandlerConfiguration {
++  NamedPropertyHandlerConfiguration(
++      GenericNamedPropertyGetterCallback getter,
++      GenericNamedPropertySetterCallback setter,
++      GenericNamedPropertyQueryCallback query,
++      GenericNamedPropertyDeleterCallback deleter,
++      GenericNamedPropertyEnumeratorCallback enumerator,
++      GenericNamedPropertyDefinerCallback definer,
++      GenericNamedPropertyDescriptorCallback descriptor,
++      Local<Value> data = Local<Value>(),
++      PropertyHandlerFlags flags = PropertyHandlerFlags::kNone)
++      : getter(getter),
++        setter(setter),
++        query(query),
++        deleter(deleter),
++        enumerator(enumerator),
++        definer(definer),
++        descriptor(descriptor),
++        data(data),
++        flags(flags) {}
++
+   NamedPropertyHandlerConfiguration(
+       /** Note: getter is required */
+       GenericNamedPropertyGetterCallback getter = 0,
+@@ -6045,6 +6065,25 @@ struct NamedPropertyHandlerConfiguration {
+ 
+ 
+ struct IndexedPropertyHandlerConfiguration {
++  IndexedPropertyHandlerConfiguration(
++      IndexedPropertyGetterCallback getter,
++      IndexedPropertySetterCallback setter, IndexedPropertyQueryCallback query,
++      IndexedPropertyDeleterCallback deleter,
++      IndexedPropertyEnumeratorCallback enumerator,
++      IndexedPropertyDefinerCallback definer,
++      IndexedPropertyDescriptorCallback descriptor,
++      Local<Value> data = Local<Value>(),
++      PropertyHandlerFlags flags = PropertyHandlerFlags::kNone)
++      : getter(getter),
++        setter(setter),
++        query(query),
++        deleter(deleter),
++        enumerator(enumerator),
++        definer(definer),
++        descriptor(descriptor),
++        data(data),
++        flags(flags) {}
++
+   IndexedPropertyHandlerConfiguration(
+       /** Note: getter is required */
+       IndexedPropertyGetterCallback getter = 0,
+diff --git a/src/api.cc b/src/api.cc
+index 7c569e3a9f0824e1c61b665236589e3b7c1cc464..6155cbb32579effc500b5c475cd478e77b3ecdf4 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -1879,10 +1879,6 @@ static i::Handle<i::InterceptorInfo> CreateInterceptorInfo(
+     i::Isolate* isolate, Getter getter, Setter setter, Query query,
+     Descriptor descriptor, Deleter remover, Enumerator enumerator,
+     Definer definer, Local<Value> data, PropertyHandlerFlags flags) {
+-  // Either intercept attributes or descriptor.
+-  DCHECK(query == nullptr || descriptor == nullptr);
+-  // Only use descriptor callback with definer callback.
+-  DCHECK(query == nullptr || definer == nullptr);
+   auto obj = i::Handle<i::InterceptorInfo>::cast(
+       isolate->factory()->NewStruct(i::INTERCEPTOR_INFO_TYPE, i::TENURED));
+   obj->set_flags(0);
+diff --git a/src/objects.cc b/src/objects.cc
+index 01421bacc4495150fe9dc05469e216c66d513c64..0aac39d30427e0a02b8c99b0b08ea40712ab1dad 100644
+--- a/src/objects.cc
++++ b/src/objects.cc
+@@ -7817,41 +7817,42 @@ Maybe<bool> GetPropertyDescriptorWithInterceptor(LookupIterator* it,
+     }
+   }
+ 
+-  if (it->state() == LookupIterator::INTERCEPTOR) {
+-    Isolate* isolate = it->isolate();
+-    Handle<InterceptorInfo> interceptor = it->GetInterceptor();
+-    if (!interceptor->descriptor()->IsUndefined(isolate)) {
+-      Handle<Object> result;
+-      Handle<JSObject> holder = it->GetHolder<JSObject>();
++  if (it->state() != LookupIterator::INTERCEPTOR) return Just(false);
+ 
+-      Handle<Object> receiver = it->GetReceiver();
+-      if (!receiver->IsJSReceiver()) {
+-        ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+-            isolate, receiver, Object::ConvertReceiver(isolate, receiver),
+-            Nothing<bool>());
+-      }
++  Isolate* isolate = it->isolate();
++  Handle<InterceptorInfo> interceptor = it->GetInterceptor();
++  if (interceptor->descriptor()->IsUndefined(isolate)) return Just(false);
+ 
+-      PropertyCallbackArguments args(isolate, interceptor->data(), *receiver,
+-                                     *holder, kDontThrow);
+-      if (it->IsElement()) {
+-        result = args.CallIndexedDescriptor(interceptor, it->index());
+-      } else {
+-        result = args.CallNamedDescriptor(interceptor, it->name());
+-      }
+-      if (!result.is_null()) {
+-        // Request successfully intercepted, try to set the property
+-        // descriptor.
+-        Utils::ApiCheck(
+-            PropertyDescriptor::ToPropertyDescriptor(isolate, result, desc),
+-            it->IsElement() ? "v8::IndexedPropertyDescriptorCallback"
+-                            : "v8::NamedPropertyDescriptorCallback",
+-            "Invalid property descriptor.");
++  Handle<Object> result;
++  Handle<JSObject> holder = it->GetHolder<JSObject>();
+ 
+-        return Just(true);
+-      }
+-      it->Next();
+-    }
++  Handle<Object> receiver = it->GetReceiver();
++  if (!receiver->IsJSReceiver()) {
++    ASSIGN_RETURN_ON_EXCEPTION_VALUE(isolate, receiver,
++                                     Object::ConvertReceiver(isolate, receiver),
++                                     Nothing<bool>());
++  }
++
++  PropertyCallbackArguments args(isolate, interceptor->data(), *receiver,
++                                 *holder, kDontThrow);
++  if (it->IsElement()) {
++    result = args.CallIndexedDescriptor(interceptor, it->index());
++  } else {
++    result = args.CallNamedDescriptor(interceptor, it->name());
+   }
++  if (!result.is_null()) {
++    // Request successfully intercepted, try to set the property
++    // descriptor.
++    Utils::ApiCheck(
++        PropertyDescriptor::ToPropertyDescriptor(isolate, result, desc),
++        it->IsElement() ? "v8::IndexedPropertyDescriptorCallback"
++                        : "v8::NamedPropertyDescriptorCallback",
++        "Invalid property descriptor.");
++
++    return Just(true);
++  }
++
++  it->Next();
+   return Just(false);
+ }
+ }  // namespace
+diff --git a/test/unittests/api/interceptor-unittest.cc b/test/unittests/api/interceptor-unittest.cc
+index 2f9f0e459e6fed4c688fc0ee7389593cf86e07c8..b13384f18adfefe69dc5be232a5f620a7efd8ba7 100644
+--- a/test/unittests/api/interceptor-unittest.cc
++++ b/test/unittests/api/interceptor-unittest.cc
+@@ -29,4 +29,180 @@ TEST_F(InterceptorTest, FreezeApiObjectWithInterceptor) {
+ }
+ 
+ }  // namespace
++
++namespace internal {
++namespace {
++
++class InterceptorLoggingTest : public TestWithNativeContext {
++ public:
++  InterceptorLoggingTest() {}
++
++  static const int kTestIndex = 0;
++
++  static void NamedPropertyGetter(Local<v8::Name> name,
++                                  const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "named getter");
++  }
++
++  static void NamedPropertySetter(Local<v8::Name> name, Local<v8::Value> value,
++                                  const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "named setter");
++  }
++
++  static void NamedPropertyQuery(
++      Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Integer>& info) {
++    LogCallback(info, "named query");
++  }
++
++  static void NamedPropertyDeleter(
++      Local<v8::Name> name, const v8::PropertyCallbackInfo<v8::Boolean>& info) {
++    LogCallback(info, "named deleter");
++  }
++
++  static void NamedPropertyEnumerator(
++      const v8::PropertyCallbackInfo<Array>& info) {
++    LogCallback(info, "named enumerator");
++  }
++
++  static void NamedPropertyDefiner(
++      Local<v8::Name> name, const v8::PropertyDescriptor& desc,
++      const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "named definer");
++  }
++
++  static void NamedPropertyDescriptor(
++      Local<v8::Name> name, const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "named descriptor");
++  }
++
++  static void IndexedPropertyGetter(
++      uint32_t index, const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "indexed getter");
++  }
++
++  static void IndexedPropertySetter(
++      uint32_t index, Local<v8::Value> value,
++      const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "indexed setter");
++  }
++
++  static void IndexedPropertyQuery(
++      uint32_t index, const v8::PropertyCallbackInfo<v8::Integer>& info) {
++    LogCallback(info, "indexed query");
++  }
++
++  static void IndexedPropertyDeleter(
++      uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& info) {
++    LogCallback(info, "indexed deleter");
++  }
++
++  static void IndexedPropertyEnumerator(
++      const v8::PropertyCallbackInfo<Array>& info) {
++    LogCallback(info, "indexed enumerator");
++  }
++
++  static void IndexedPropertyDefiner(
++      uint32_t index, const v8::PropertyDescriptor& desc,
++      const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "indexed definer");
++  }
++
++  static void IndexedPropertyDescriptor(
++      uint32_t index, const v8::PropertyCallbackInfo<Value>& info) {
++    LogCallback(info, "indexed descriptor");
++  }
++
++  template <class T>
++  static void LogCallback(const v8::PropertyCallbackInfo<T>& info,
++                          const char* callback_name) {
++    InterceptorLoggingTest* test = reinterpret_cast<InterceptorLoggingTest*>(
++        info.This()->GetAlignedPointerFromInternalField(kTestIndex));
++    test->Log(callback_name);
++  }
++
++  void Log(const char* callback_name) {
++    if (log_is_empty_) {
++      log_is_empty_ = false;
++    } else {
++      log_ << ", ";
++    }
++    log_ << callback_name;
++  }
++
++ protected:
++  void SetUp() override {
++    // Set up the object that supports full interceptors.
++    v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(v8_isolate());
++    templ->SetInternalFieldCount(1);
++    templ->SetHandler(v8::NamedPropertyHandlerConfiguration(
++        NamedPropertyGetter, NamedPropertySetter, NamedPropertyQuery,
++        NamedPropertyDeleter, NamedPropertyEnumerator, NamedPropertyDefiner,
++        NamedPropertyDescriptor));
++    templ->SetHandler(v8::IndexedPropertyHandlerConfiguration(
++        IndexedPropertyGetter, IndexedPropertySetter, IndexedPropertyQuery,
++        IndexedPropertyDeleter, IndexedPropertyEnumerator,
++        IndexedPropertyDefiner, IndexedPropertyDescriptor));
++    v8::Local<v8::Object> instance =
++        templ->NewInstance(context()).ToLocalChecked();
++    instance->SetAlignedPointerInInternalField(kTestIndex, this);
++    SetGlobalProperty("obj", instance);
++  }
++
++  std::string Run(const char* script) {
++    log_is_empty_ = true;
++    log_.str(std::string());
++    log_.clear();
++
++    RunJS(script);
++    return log_.str();
++  }
++
++ private:
++  bool log_is_empty_ = false;
++  std::stringstream log_;
++};
++
++TEST_F(InterceptorLoggingTest, DispatchTest) {
++  EXPECT_EQ(Run("for (var p in obj) {}"),
++            "indexed enumerator, named enumerator");
++  EXPECT_EQ(Run("Object.keys(obj)"), "indexed enumerator, named enumerator");
++
++  EXPECT_EQ(Run("obj.foo"), "named getter");
++  EXPECT_EQ(Run("obj[42]"), "indexed getter");
++
++  EXPECT_EQ(Run("obj.foo = null"), "named setter");
++  EXPECT_EQ(Run("obj[42] = null"), "indexed setter");
++
++  EXPECT_EQ(Run("Object.getOwnPropertyDescriptor(obj, 'foo')"),
++            "named descriptor");
++
++  EXPECT_EQ(Run("Object.getOwnPropertyDescriptor(obj, 42)"),
++            "indexed descriptor");
++
++  EXPECT_EQ(Run("Object.defineProperty(obj, 'foo', {value: 42})"),
++            "named descriptor, named definer, named setter");
++  EXPECT_EQ(Run("Object.defineProperty(obj, 'foo', {get(){} })"),
++            "named descriptor, named definer");
++  EXPECT_EQ(Run("Object.defineProperty(obj, 'foo', {set(value){}})"),
++            "named descriptor, named definer");
++  EXPECT_EQ(Run("Object.defineProperty(obj, 'foo', {get(){}, set(value){}})"),
++            "named descriptor, named definer");
++
++  EXPECT_EQ(Run("Object.defineProperty(obj, 42, {value: 'foo'})"),
++            "indexed descriptor, "
++            // then attempt definer first and fallback to setter.
++            "indexed definer, indexed setter");
++
++  EXPECT_EQ(Run("Object.prototype.propertyIsEnumerable.call(obj, 'a')"),
++            "named query");
++  EXPECT_EQ(Run("Object.prototype.propertyIsEnumerable.call(obj, 42)"),
++            "indexed query");
++
++  EXPECT_EQ(Run("Object.prototype.hasOwnProperty.call(obj, 'a')"),
++            "named query");
++  // TODO(cbruni): Fix once hasOnwProperty is fixed (https://crbug.com/872628)
++  EXPECT_EQ(Run("Object.prototype.hasOwnProperty.call(obj, '42')"), "");
++}
++}  // namespace
++}  // namespace internal
+ }  // namespace v8

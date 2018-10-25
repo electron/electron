@@ -20,6 +20,3 @@ index 0dbd9eb..79b5af2 100755
              '--target-os=linux',
              '--arch=mips',
              '--extra-cflags=-mips64r2',
--- 
-2.7.4
-

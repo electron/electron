@@ -41,6 +41,3 @@ index b572778..a2630f20 100644
  component("proxy") {
    output_name = "ppapi_proxy"
  
--- 
-2.7.4
-

@@ -17,6 +17,3 @@ index 7a2def2ef436..50afeaf5553a 100644
  
    // Sets parent process death signal to SIGKILL.
    bool kill_on_parent_death = false;
--- 
-2.17.0
-

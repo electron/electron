@@ -1,0 +1,305 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Sun, 19 Aug 2018 21:53:40 +0200
+Subject: deps: cherry-pick c608122 from upstream V8
+
+Original commit message:
+
+    [api][keys] Allow skipping indices for Proxies with GetPropertyNames
+
+    Bug: v8:7942
+    Change-Id: I7b3740b04cbcaa56dc809150900ab8d821b054ce
+    Reviewed-on: https://chromium-review.googlesource.com/1156544
+    Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+    Commit-Queue: Camillo Bruni <cbruni@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#54821}
+
+Refs: https://github.com/v8/v8/commit/c608122b85238397a43910246f5ff218eb43fb24
+
+PR-URL: https://github.com/nodejs/node/pull/21983
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Ujjwal Sharma <usharma1998@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/src/keys.cc b/src/keys.cc
+index 8ecbe0a1d7b2ad09a12b5c826db4f24efa222bcb..689f4ac3dfeb8d3980946884c57237778724e132 100644
+--- a/src/keys.cc
++++ b/src/keys.cc
+@@ -38,10 +38,10 @@ static bool ContainsOnlyValidKeys(Handle<FixedArray> array) {
+ // static
+ MaybeHandle<FixedArray> KeyAccumulator::GetKeys(
+     Handle<JSReceiver> object, KeyCollectionMode mode, PropertyFilter filter,
+-    GetKeysConversion keys_conversion, bool is_for_in) {
++    GetKeysConversion keys_conversion, bool is_for_in, bool skip_indices) {
+   Isolate* isolate = object->GetIsolate();
+-  FastKeyAccumulator accumulator(isolate, object, mode, filter);
+-  accumulator.set_is_for_in(is_for_in);
++  FastKeyAccumulator accumulator(isolate, object, mode, filter, is_for_in,
++                                 skip_indices);
+   return accumulator.GetKeys(keys_conversion);
+ }
+ 
+@@ -355,7 +355,8 @@ Handle<FixedArray> GetFastEnumPropertyKeys(Isolate* isolate,
+ template <bool fast_properties>
+ MaybeHandle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
+                                                Handle<JSObject> object,
+-                                               GetKeysConversion convert) {
++                                               GetKeysConversion convert,
++                                               bool skip_indices) {
+   Handle<FixedArray> keys;
+   ElementsAccessor* accessor = object->GetElementsAccessor();
+   if (fast_properties) {
+@@ -364,8 +365,14 @@ MaybeHandle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
+     // TODO(cbruni): preallocate big enough array to also hold elements.
+     keys = KeyAccumulator::GetOwnEnumPropertyKeys(isolate, object);
+   }
+-  MaybeHandle<FixedArray> result =
+-      accessor->PrependElementIndices(object, keys, convert, ONLY_ENUMERABLE);
++
++  MaybeHandle<FixedArray> result;
++  if (skip_indices) {
++    result = keys;
++  } else {
++    result =
++        accessor->PrependElementIndices(object, keys, convert, ONLY_ENUMERABLE);
++  }
+ 
+   if (FLAG_trace_for_in_enumerate) {
+     PrintF("| strings=%d symbols=0 elements=%u || prototypes>=1 ||\n",
+@@ -403,7 +410,8 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+ 
+   // Do not try to use the enum-cache for dict-mode objects.
+   if (map->is_dictionary_map()) {
+-    return GetOwnKeysWithElements<false>(isolate_, object, keys_conversion);
++    return GetOwnKeysWithElements<false>(isolate_, object, keys_conversion,
++                                         skip_indices_);
+   }
+   int enum_length = receiver_->map()->EnumLength();
+   if (enum_length == kInvalidEnumCacheSentinel) {
+@@ -421,7 +429,8 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+   }
+   // The properties-only case failed because there were probably elements on the
+   // receiver.
+-  return GetOwnKeysWithElements<true>(isolate_, object, keys_conversion);
++  return GetOwnKeysWithElements<true>(isolate_, object, keys_conversion,
++                                      skip_indices_);
+ }
+ 
+ MaybeHandle<FixedArray>
+@@ -450,6 +459,7 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysSlow(
+     GetKeysConversion keys_conversion) {
+   KeyAccumulator accumulator(isolate_, mode_, filter_);
+   accumulator.set_is_for_in(is_for_in_);
++  accumulator.set_skip_indices(skip_indices_);
+   accumulator.set_last_non_empty_prototype(last_non_empty_prototype_);
+ 
+   MAYBE_RETURN(accumulator.CollectKeys(receiver_, receiver_),
+@@ -699,13 +709,15 @@ Maybe<bool> KeyAccumulator::CollectOwnPropertyNames(Handle<JSReceiver> receiver,
+ Maybe<bool> KeyAccumulator::CollectAccessCheckInterceptorKeys(
+     Handle<AccessCheckInfo> access_check_info, Handle<JSReceiver> receiver,
+     Handle<JSObject> object) {
+-  MAYBE_RETURN((CollectInterceptorKeysInternal(
+-                   receiver, object,
+-                   handle(InterceptorInfo::cast(
+-                              access_check_info->indexed_interceptor()),
+-                          isolate_),
+-                   this, kIndexed)),
+-               Nothing<bool>());
++  if (!skip_indices_) {
++    MAYBE_RETURN((CollectInterceptorKeysInternal(
++                     receiver, object,
++                     handle(InterceptorInfo::cast(
++                                access_check_info->indexed_interceptor()),
++                            isolate_),
++                     this, kIndexed)),
++                 Nothing<bool>());
++  }
+   MAYBE_RETURN(
+       (CollectInterceptorKeysInternal(
+           receiver, object,
+@@ -942,9 +954,9 @@ Maybe<bool> KeyAccumulator::CollectOwnJSProxyTargetKeys(
+   Handle<FixedArray> keys;
+   ASSIGN_RETURN_ON_EXCEPTION_VALUE(
+       isolate_, keys,
+-      KeyAccumulator::GetKeys(target, KeyCollectionMode::kOwnOnly,
+-                              ALL_PROPERTIES,
+-                              GetKeysConversion::kConvertToString, is_for_in_),
++      KeyAccumulator::GetKeys(
++          target, KeyCollectionMode::kOwnOnly, ALL_PROPERTIES,
++          GetKeysConversion::kConvertToString, is_for_in_, skip_indices_),
+       Nothing<bool>());
+   Maybe<bool> result = AddKeysFromJSProxy(proxy, keys);
+   return result;
+diff --git a/src/keys.h b/src/keys.h
+index 649d6a95999fc70358f48bb18ec71687f3de8e75..5abbaac5cd0e5af2d9dca0d41d927b4b72c626ec 100644
+--- a/src/keys.h
++++ b/src/keys.h
+@@ -40,7 +40,7 @@ class KeyAccumulator final BASE_EMBEDDED {
+   static MaybeHandle<FixedArray> GetKeys(
+       Handle<JSReceiver> object, KeyCollectionMode mode, PropertyFilter filter,
+       GetKeysConversion keys_conversion = GetKeysConversion::kKeepNumbers,
+-      bool is_for_in = false);
++      bool is_for_in = false, bool skip_indices = false);
+ 
+   Handle<FixedArray> GetKeys(
+       GetKeysConversion convert = GetKeysConversion::kKeepNumbers);
+@@ -128,14 +128,19 @@ class KeyAccumulator final BASE_EMBEDDED {
+ class FastKeyAccumulator {
+  public:
+   FastKeyAccumulator(Isolate* isolate, Handle<JSReceiver> receiver,
+-                     KeyCollectionMode mode, PropertyFilter filter)
+-      : isolate_(isolate), receiver_(receiver), mode_(mode), filter_(filter) {
++                     KeyCollectionMode mode, PropertyFilter filter,
++                     bool is_for_in = false, bool skip_indices = false)
++      : isolate_(isolate),
++        receiver_(receiver),
++        mode_(mode),
++        filter_(filter),
++        is_for_in_(is_for_in),
++        skip_indices_(skip_indices) {
+     Prepare();
+   }
+ 
+   bool is_receiver_simple_enum() { return is_receiver_simple_enum_; }
+   bool has_empty_prototype() { return has_empty_prototype_; }
+-  void set_is_for_in(bool value) { is_for_in_ = value; }
+ 
+   MaybeHandle<FixedArray> GetKeys(
+       GetKeysConversion convert = GetKeysConversion::kKeepNumbers);
+@@ -153,6 +158,7 @@ class FastKeyAccumulator {
+   KeyCollectionMode mode_;
+   PropertyFilter filter_;
+   bool is_for_in_ = false;
++  bool skip_indices_ = false;
+   bool is_receiver_simple_enum_ = false;
+   bool has_empty_prototype_ = false;
+ 
+diff --git a/src/runtime/runtime-forin.cc b/src/runtime/runtime-forin.cc
+index 5df16faf46faca09d446a700633917fb76fc02b2..ed1e2260602f42d1dba93d0f26357a30a19bc29f 100644
+--- a/src/runtime/runtime-forin.cc
++++ b/src/runtime/runtime-forin.cc
+@@ -26,8 +26,7 @@ MaybeHandle<HeapObject> Enumerate(Isolate* isolate,
+   JSObject::MakePrototypesFast(receiver, kStartAtReceiver, isolate);
+   FastKeyAccumulator accumulator(isolate, receiver,
+                                  KeyCollectionMode::kIncludePrototypes,
+-                                 ENUMERABLE_STRINGS);
+-  accumulator.set_is_for_in(true);
++                                 ENUMERABLE_STRINGS, true);
+   // Test if we have an enum cache for {receiver}.
+   if (!accumulator.is_receiver_simple_enum()) {
+     Handle<FixedArray> keys;
+diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
+index d5d1ae101b38c22036fb92d4af09f53f9a556649..a018e12853199aaff9d4aa914429baa03501a830 100644
+--- a/test/cctest/test-api.cc
++++ b/test/cctest/test-api.cc
+@@ -15360,14 +15360,107 @@ THREADED_TEST(PropertyEnumeration2) {
+   }
+ }
+ 
+-THREADED_TEST(PropertyNames) {
++THREADED_TEST(GetPropertyNames) {
+   LocalContext context;
+   v8::Isolate* isolate = context->GetIsolate();
+   v8::HandleScope scope(isolate);
+   v8::Local<v8::Value> result = CompileRun(
+       "var result = {0: 0, 1: 1, a: 2, b: 3};"
+       "result[Symbol('symbol')] = true;"
+-      "result.__proto__ = {2: 4, 3: 5, c: 6, d: 7};"
++      "result.__proto__ = {__proto__:null, 2: 4, 3: 5, c: 6, d: 7};"
++      "result;");
++  v8::Local<v8::Object> object = result.As<v8::Object>();
++  v8::PropertyFilter default_filter =
++      static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS);
++  v8::PropertyFilter include_symbols_filter = v8::ONLY_ENUMERABLE;
++
++  v8::Local<v8::Array> properties =
++      object->GetPropertyNames(context.local()).ToLocalChecked();
++  const char* expected_properties1[] = {"0", "1", "a", "b", "2", "3", "c", "d"};
++  CheckStringArray(isolate, properties, 8, expected_properties1);
++
++  properties =
++      object
++          ->GetPropertyNames(context.local(),
++                             v8::KeyCollectionMode::kIncludePrototypes,
++                             default_filter, v8::IndexFilter::kIncludeIndices)
++          .ToLocalChecked();
++  CheckStringArray(isolate, properties, 8, expected_properties1);
++
++  properties = object
++                   ->GetPropertyNames(context.local(),
++                                      v8::KeyCollectionMode::kIncludePrototypes,
++                                      include_symbols_filter,
++                                      v8::IndexFilter::kIncludeIndices)
++                   .ToLocalChecked();
++  const char* expected_properties1_1[] = {"0", "1", "a", "b", nullptr,
++                                          "2", "3", "c", "d"};
++  CheckStringArray(isolate, properties, 9, expected_properties1_1);
++  CheckIsSymbolAt(isolate, properties, 4, "symbol");
++
++  properties =
++      object
++          ->GetPropertyNames(context.local(),
++                             v8::KeyCollectionMode::kIncludePrototypes,
++                             default_filter, v8::IndexFilter::kSkipIndices)
++          .ToLocalChecked();
++  const char* expected_properties2[] = {"a", "b", "c", "d"};
++  CheckStringArray(isolate, properties, 4, expected_properties2);
++
++  properties = object
++                   ->GetPropertyNames(context.local(),
++                                      v8::KeyCollectionMode::kIncludePrototypes,
++                                      include_symbols_filter,
++                                      v8::IndexFilter::kSkipIndices)
++                   .ToLocalChecked();
++  const char* expected_properties2_1[] = {"a", "b", nullptr, "c", "d"};
++  CheckStringArray(isolate, properties, 5, expected_properties2_1);
++  CheckIsSymbolAt(isolate, properties, 2, "symbol");
++
++  properties =
++      object
++          ->GetPropertyNames(context.local(), v8::KeyCollectionMode::kOwnOnly,
++                             default_filter, v8::IndexFilter::kIncludeIndices)
++          .ToLocalChecked();
++  const char* expected_properties3[] = {"0", "1", "a", "b"};
++  CheckStringArray(isolate, properties, 4, expected_properties3);
++
++  properties = object
++                   ->GetPropertyNames(
++                       context.local(), v8::KeyCollectionMode::kOwnOnly,
++                       include_symbols_filter, v8::IndexFilter::kIncludeIndices)
++                   .ToLocalChecked();
++  const char* expected_properties3_1[] = {"0", "1", "a", "b", nullptr};
++  CheckStringArray(isolate, properties, 5, expected_properties3_1);
++  CheckIsSymbolAt(isolate, properties, 4, "symbol");
++
++  properties =
++      object
++          ->GetPropertyNames(context.local(), v8::KeyCollectionMode::kOwnOnly,
++                             default_filter, v8::IndexFilter::kSkipIndices)
++          .ToLocalChecked();
++  const char* expected_properties4[] = {"a", "b"};
++  CheckStringArray(isolate, properties, 2, expected_properties4);
++
++  properties = object
++                   ->GetPropertyNames(
++                       context.local(), v8::KeyCollectionMode::kOwnOnly,
++                       include_symbols_filter, v8::IndexFilter::kSkipIndices)
++                   .ToLocalChecked();
++  const char* expected_properties4_1[] = {"a", "b", nullptr};
++  CheckStringArray(isolate, properties, 3, expected_properties4_1);
++  CheckIsSymbolAt(isolate, properties, 2, "symbol");
++}
++
++THREADED_TEST(ProxyGetPropertyNames) {
++  LocalContext context;
++  v8::Isolate* isolate = context->GetIsolate();
++  v8::HandleScope scope(isolate);
++  v8::Local<v8::Value> result = CompileRun(
++      "var target = {0: 0, 1: 1, a: 2, b: 3};"
++      "target[Symbol('symbol')] = true;"
++      "target.__proto__ = {__proto__:null, 2: 4, 3: 5, c: 6, d: 7};"
++      "var result = new Proxy(target, {});"
+       "result;");
+   v8::Local<v8::Object> object = result.As<v8::Object>();
+   v8::PropertyFilter default_filter =
