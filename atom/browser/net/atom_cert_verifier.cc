@@ -186,6 +186,10 @@ int AtomCertVerifier::Verify(const RequestParams& params,
   }
 }
 
+void AtomCertVerifier::SetConfig(const Config& config) {
+  default_cert_verifier_->SetConfig(config);
+}
+
 void AtomCertVerifier::RemoveRequest(const RequestParams& params) {
   auto it = inflight_requests_.find(params);
   if (it != inflight_requests_.end())
