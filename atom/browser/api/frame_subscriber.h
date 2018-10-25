@@ -33,7 +33,8 @@ class FrameSubscriber : public content::WebContentsObserver {
 
  private:
   gfx::Rect GetDamageRect();
-  void DidReceiveCompositorFrame() override;
+  // FIXME(MarshallOfSound): Removed in C70
+  //   void DidReceiveCompositorFrame() override;
   void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
   v8::Isolate* isolate_;
