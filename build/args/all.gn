@@ -10,6 +10,7 @@ enable_cdm_host_verification = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
-enable_basic_printing = true
+# FIXME(deepak1556): C70 upgrade
+enable_basic_printing = false
 
 is_cfi = false
