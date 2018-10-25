@@ -58,16 +58,17 @@ gfx::Rect FrameSubscriber::GetDamageRect() {
   }
 }
 
-void FrameSubscriber::DidReceiveCompositorFrame() {
-  auto* view = web_contents()->GetRenderWidgetHostView();
-  if (view == nullptr)
-    return;
+// FIXME(MarshallOfSound): Removed in C70
+// void FrameSubscriber::DidReceiveCompositorFrame() {
+//   auto* view = web_contents()->GetRenderWidgetHostView();
+//   if (view == nullptr)
+//     return;
 
-  view->CopyFromSurface(
-      gfx::Rect(), view->GetViewBounds().size(),
-      base::BindOnce(&FrameSubscriber::Done, weak_ptr_factory_.GetWeakPtr(),
-                     GetDamageRect()));
-}
+//   view->CopyFromSurface(
+//       gfx::Rect(), view->GetViewBounds().size(),
+//       base::BindOnce(&FrameSubscriber::Done, weak_ptr_factory_.GetWeakPtr(),
+//                      GetDamageRect()));
+// }
 
 void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())
