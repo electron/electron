@@ -130,4 +130,8 @@ int64_t PlatformNotificationService::ReadNextPersistentNotificationId(
   return 0;
 }
 
+void PlatformNotificationService::RecordNotificationUkmEvent(
+    content::BrowserContext* browser_context,
+    const content::NotificationDatabaseData& data) {}
+
 }  // namespace atom
