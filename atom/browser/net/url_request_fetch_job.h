@@ -36,7 +36,7 @@ class URLRequestFetchJob : public JsAsker,
   void HeadersCompleted();
   int DataAvailable(net::IOBuffer* buffer,
                     int num_bytes,
-                    const net::CompletionCallback& callback);
+                    net::CompletionOnceCallback callback);
 
  protected:
   // net::URLRequestJob:
@@ -69,7 +69,7 @@ class URLRequestFetchJob : public JsAsker,
   // Saved arguments passed to DataAvailable.
   scoped_refptr<net::IOBuffer> write_buffer_;
   int write_num_bytes_ = 0;
-  net::CompletionCallback write_callback_;
+  net::CompletionOnceCallback write_callback_;
 
   base::WeakPtrFactory<URLRequestFetchJob> weak_factory_;
 
