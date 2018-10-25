@@ -88,8 +88,9 @@ base::FilePath::StringType GetExecPath() {
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
-  auto script = v8::Script::Compile(isolate->GetCurrentContext(), preloadSrc);
-  auto func = script->Run();
+  v8::Local<v8::Context> context(isolate->GetCurrentContext());
+  auto script = v8::Script::Compile(context, preloadSrc);
+  auto func = script->Run(context);
   return func;
 }
 
