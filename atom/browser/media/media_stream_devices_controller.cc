@@ -50,10 +50,10 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
 
 bool MediaStreamDevicesController::TakeAction() {
   // Do special handling of desktop screen cast.
-  if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE ||
-      request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE ||
-      request_.audio_type == content::MEDIA_DESKTOP_AUDIO_CAPTURE ||
-      request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
+  if (request_.audio_type == content::MEDIA_GUM_TAB_AUDIO_CAPTURE ||
+      request_.video_type == content::MEDIA_GUM_TAB_VIDEO_CAPTURE ||
+      request_.audio_type == content::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE ||
+      request_.video_type == content::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE) {
     HandleUserMediaRequest();
     return true;
   }
@@ -154,19 +154,19 @@ void MediaStreamDevicesController::Deny(
 void MediaStreamDevicesController::HandleUserMediaRequest() {
   content::MediaStreamDevices devices;
 
-  if (request_.audio_type == content::MEDIA_TAB_AUDIO_CAPTURE) {
-    devices.push_back(
-        content::MediaStreamDevice(content::MEDIA_TAB_AUDIO_CAPTURE, "", ""));
-  }
-  if (request_.video_type == content::MEDIA_TAB_VIDEO_CAPTURE) {
-    devices.push_back(
-        content::MediaStreamDevice(content::MEDIA_TAB_VIDEO_CAPTURE, "", ""));
-  }
-  if (request_.audio_type == content::MEDIA_DESKTOP_AUDIO_CAPTURE) {
+  if (request_.audio_type == content::MEDIA_GUM_TAB_AUDIO_CAPTURE) {
     devices.push_back(content::MediaStreamDevice(
-        content::MEDIA_DESKTOP_AUDIO_CAPTURE, "loopback", "System Audio"));
+        content::MEDIA_GUM_TAB_AUDIO_CAPTURE, "", ""));
   }
-  if (request_.video_type == content::MEDIA_DESKTOP_VIDEO_CAPTURE) {
+  if (request_.video_type == content::MEDIA_GUM_TAB_VIDEO_CAPTURE) {
+    devices.push_back(content::MediaStreamDevice(
+        content::MEDIA_GUM_TAB_VIDEO_CAPTURE, "", ""));
+  }
+  if (request_.audio_type == content::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE) {
+    devices.push_back(content::MediaStreamDevice(
+        content::MEDIA_GUM_DESKTOP_AUDIO_CAPTURE, "loopback", "System Audio"));
+  }
+  if (request_.video_type == content::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE) {
     content::DesktopMediaID screen_id;
     // If the device id wasn't specified then this is a screen capture request
     // (i.e. chooseDesktopMedia() API wasn't used to generate device id).
@@ -178,8 +178,9 @@ void MediaStreamDevicesController::HandleUserMediaRequest() {
           content::DesktopMediaID::Parse(request_.requested_video_device_id);
     }
 
-    devices.push_back(content::MediaStreamDevice(
-        content::MEDIA_DESKTOP_VIDEO_CAPTURE, screen_id.ToString(), "Screen"));
+    devices.push_back(
+        content::MediaStreamDevice(content::MEDIA_GUM_DESKTOP_VIDEO_CAPTURE,
+                                   screen_id.ToString(), "Screen"));
   }
 
   std::move(callback_).Run(devices,
