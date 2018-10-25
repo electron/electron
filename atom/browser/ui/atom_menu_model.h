@@ -8,6 +8,7 @@
 #include <map>
 
 #include "base/observer_list.h"
+#include "base/observer_list_types.h"
 #include "ui/base/models/simple_menu_model.h"
 
 namespace atom {
@@ -33,9 +34,9 @@ class AtomMenuModel : public ui::SimpleMenuModel {
         ui::Accelerator* accelerator) const override;
   };
 
-  class Observer {
+  class Observer : public base::CheckedObserver {
    public:
-    virtual ~Observer() {}
+    ~Observer() override {}
 
     // Notifies the menu will open.
     virtual void OnMenuWillShow() {}

@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 
+#include "base/observer_list_types.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -19,7 +20,7 @@ class WebContentsZoomController
     : public content::WebContentsObserver,
       public content::WebContentsUserData<WebContentsZoomController> {
  public:
-  class Observer {
+  class Observer : public base::CheckedObserver {
    public:
     virtual void OnZoomLevelChanged(content::WebContents* web_contents,
                                     double level,
@@ -27,7 +28,7 @@ class WebContentsZoomController
     virtual void OnZoomControllerWebContentsDestroyed() {}
 
    protected:
-    virtual ~Observer() {}
+    ~Observer() override {}
   };
 
   // Defines how zoom changes are handled.

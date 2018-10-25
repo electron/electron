@@ -15,6 +15,7 @@
 #include "atom/browser/common_web_contents_delegate.h"
 #include "atom/browser/ui/autofill_popup.h"
 #include "base/observer_list.h"
+#include "base/observer_list_types.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/web_contents.h"
@@ -60,10 +61,13 @@ namespace api {
 
 // Certain events are only in WebContentsDelegate, provide our own Observer to
 // dispatch those events.
-class ExtendedWebContentsObserver {
+class ExtendedWebContentsObserver : public base::CheckedObserver {
  public:
   virtual void OnCloseContents() {}
   virtual void OnRendererResponsive() {}
+
+ protected:
+  ~ExtendedWebContentsObserver() override {}
 };
 
 // Wrapper around the content::WebContents.

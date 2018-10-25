@@ -5,11 +5,13 @@
 #ifndef ATOM_BROWSER_WINDOW_LIST_OBSERVER_H_
 #define ATOM_BROWSER_WINDOW_LIST_OBSERVER_H_
 
+#include "base/observer_list_types.h"
+
 namespace atom {
 
 class NativeWindow;
 
-class WindowListObserver {
+class WindowListObserver : public base::CheckedObserver {
  public:
   // Called immediately after a window is added to the list.
   virtual void OnWindowAdded(NativeWindow* window) {}
@@ -24,7 +26,7 @@ class WindowListObserver {
   virtual void OnWindowAllClosed() {}
 
  protected:
-  virtual ~WindowListObserver() {}
+  ~WindowListObserver() override {}
 };
 
 }  // namespace atom

@@ -70,7 +70,7 @@ class MenuDelegate : public views::MenuDelegate {
   views::MenuButton* button_to_open_ = nullptr;
   bool hold_first_switch_;
 
-  base::ObserverList<Observer> observers_;
+  base::ObserverList<Observer>::Unchecked observers_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
