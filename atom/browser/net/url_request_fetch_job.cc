@@ -55,21 +55,21 @@ class ResponsePiper : public net::URLFetcherResponseWriter {
   explicit ResponsePiper(URLRequestFetchJob* job) : job_(job) {}
 
   // net::URLFetcherResponseWriter:
-  int Initialize(const net::CompletionCallback& callback) override {
+  int Initialize(net::CompletionOnceCallback callback) override {
     return net::OK;
   }
   int Write(net::IOBuffer* buffer,
             int num_bytes,
-            const net::CompletionCallback& callback) override {
+            net::CompletionOnceCallback callback) override {
     if (first_write_) {
       // The URLFetcherResponseWriter doesn't have an event when headers have
       // been read, so we have to emulate by hooking to first write event.
       job_->HeadersCompleted();
       first_write_ = false;
     }
-    return job_->DataAvailable(buffer, num_bytes, callback);
+    return job_->DataAvailable(buffer, num_bytes, std::move(callback));
   }
-  int Finish(int net_error, const net::CompletionCallback& callback) override {
+  int Finish(int net_error, net::CompletionOnceCallback callback) override {
     return net::OK;
   }
 
@@ -231,14 +231,14 @@ void URLRequestFetchJob::HeadersCompleted() {
 
 int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
                                       int num_bytes,
-                                      const net::CompletionCallback& callback) {
+                                      net::CompletionOnceCallback callback) {
   // When pending_buffer_ is empty, there's no ReadRawData() operation waiting
   // for IO completion, we have to save the parameters until the request is
   // ready to read data.
   if (!pending_buffer_.get()) {
     write_buffer_ = buffer;
     write_num_bytes_ = num_bytes;
-    write_callback_ = callback;
+    write_callback_ = std::move(callback);
     return net::ERR_IO_PENDING;
   }
 
@@ -274,9 +274,9 @@ int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {
   // Read from the write buffer and clear them after reading.
   int bytes_read =
       BufferCopy(write_buffer_.get(), write_num_bytes_, dest, dest_size);
-  net::CompletionCallback write_callback = write_callback_;
   ClearWriteBuffer();
-  write_callback.Run(bytes_read);
+  if (!write_callback_.is_null())
+    std::move(write_callback_).Run(bytes_read);
   return bytes_read;
 }
 
@@ -336,7 +336,6 @@ void URLRequestFetchJob::ClearPendingBuffer() {
 void URLRequestFetchJob::ClearWriteBuffer() {
   write_buffer_ = nullptr;
   write_num_bytes_ = 0;
-  write_callback_.Reset();
 }
 
 }  // namespace atom
