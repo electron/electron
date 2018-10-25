@@ -191,6 +191,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context) {
   // Setup window overrides in the main world context
   v8::Isolate* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
 
   // Wrap the bundle into a function that receives the binding object as
   // an argument.
@@ -200,9 +202,9 @@ void AtomRendererClient::SetupMainWorldOverrides(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
                          mate::ConvertToV8(isolate, right)->ToString()));
-  auto script = v8::Script::Compile(context, source).ToLocalChecked();
-  auto func =
-      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
+  auto result = RunScript(context, source);
+
+  CHECK(result->IsFunction());
 
   auto binding = v8::Object::New(isolate);
   api::Initialize(binding, v8::Null(isolate), context, nullptr);
@@ -221,7 +223,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
            command_line->HasSwitch(switches::kNativeWindowOpen));
 
   v8::Local<v8::Value> args[] = {binding};
-  ignore_result(func->Call(context, v8::Null(isolate), 1, args));
+  ignore_result(
+      result.As<v8::Function>()->Call(context, v8::Null(isolate), 1, args));
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

@@ -85,14 +85,6 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   return exports;
 }
 
-v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> preloadSrc) {
-  auto context = isolate->GetCurrentContext();
-  auto script = v8::Script::Compile(context, preloadSrc).ToLocalChecked();
-  auto func = script->Run(context).ToLocalChecked();
-  return func;
-}
-
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
  public:
   AtomSandboxedRenderFrameObserver(content::RenderFrame* render_frame,
@@ -142,7 +134,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
   auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
-  b.SetMethod("createPreloadScript", CreatePreloadScript);
+  b.SetMethod("createPreloadScript", RunScript);
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
@@ -195,17 +187,17 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
                          mate::ConvertToV8(isolate, right)->ToString()));
-  auto script = v8::Script::Compile(context, source).ToLocalChecked();
-  auto func =
-      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
+  auto result = RunScript(context, source);
+
+  CHECK(result->IsFunction());
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
   AddRenderBindings(isolate, binding);
   v8::Local<v8::Value> args[] = {binding};
   // Execute the function with proper arguments
-  ignore_result(
-      func->Call(context, v8::Null(isolate), node::arraysize(args), args));
+  ignore_result(result.As<v8::Function>()->Call(context, v8::Null(isolate),
+                                                node::arraysize(args), args));
 }
 
 void AtomSandboxedRendererClient::WillReleaseScriptContext(
