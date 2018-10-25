@@ -154,6 +154,7 @@ step-install-nodejs-on-mac: &step-install-nodejs-on-mac
       if [ "`uname`" == "Darwin" ]; then
         brew update
         brew install node@10
+        echo 'export PATH="/usr/local/opt/node@10/bin:$PATH"' >> $BASH_ENV
       fi
 
 step-gn-gen-default: &step-gn-gen-default
