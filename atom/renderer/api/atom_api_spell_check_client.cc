@@ -10,7 +10,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/logging.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/renderer/spellchecker/spellcheck_worditerator.h"
+#include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "native_mate/converter.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/function_template.h"

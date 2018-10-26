@@ -213,6 +213,7 @@ static_library("electron_lib") {
     "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
+    "//components/spellcheck/renderer",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/browser",
