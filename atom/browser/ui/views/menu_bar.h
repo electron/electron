@@ -5,6 +5,8 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include <memory>
+
 #include "atom/browser/ui/atom_menu_model.h"
 #include "atom/browser/ui/views/menu_delegate.h"
 #include "atom/browser/ui/views/root_view.h"
