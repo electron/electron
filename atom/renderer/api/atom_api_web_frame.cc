@@ -12,6 +12,7 @@
 #include "atom/common/native_mate_converters/string16_converter.h"
 #include "atom/renderer/api/atom_api_spell_check_client.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "content/common/url_util.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
@@ -276,9 +277,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
         privileged_scheme);
   }
   if (corsEnabled) {
-    // FIXME: blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled
-    // is removed with C70
-    // https://chromium-review.googlesource.com/c/chromium/src/+/1157364
+    url::AddCORSEnabledScheme(privileged_scheme.c_str());
   }
 }
 
