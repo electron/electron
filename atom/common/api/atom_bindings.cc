@@ -263,6 +263,7 @@ void AtomBindings::DidReceiveMemoryDump(
       dict.Set("sharedBytes", osdump.shared_footprint_kb);
       promise->Resolve(dict.GetHandle());
       resolved = true;
+      break;
     }
   }
   if (!resolved) {
