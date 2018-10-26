@@ -1,5 +1,12 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 18 Oct 2018 17:07:12 -0700
+Subject: proxy_config_monitor.patch
+
+Allow monitoring proxy config changes for a pref service.
+
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 90a8b0895f10..26c1bc0e5859 100644
+index 90a8b0895f10d59ade41cf156e3887c526123b29..26c1bc0e5859e832d03be7215d067312e2d691c0 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -5,9 +5,13 @@
@@ -44,7 +51,7 @@ index 90a8b0895f10..26c1bc0e5859 100644
        pref_proxy_config_tracker_.get());
  
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index b783ab18d2d7..4475b58756db 100644
+index b783ab18d2d77cb2d443eed36a508f1eac77c04d..4475b58756dbf686cf78f6e317e55bc1df783e8d 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -20,22 +20,24 @@ class ProxyConfigWithAnnotation;

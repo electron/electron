@@ -41,8 +41,7 @@ this basic introduction, let's assume that you're calling a command from JavaScr
 that isn't behaving correctly - so you'd like to break on that command's C++
 counterpart inside the Electron source.
 
-Relevant code files can be found in `./atom/` as well as in Brightray, found in
-`./brightray/browser` and `./brightray/common`.
+Relevant code files can be found in `./atom/`.
 
 Let's assume that you want to debug `app.setName()`, which is defined in `browser.cc`
 as `Browser::SetName()`. Set the breakpoint using the `breakpoint` command, specifying

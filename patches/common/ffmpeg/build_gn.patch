@@ -1,8 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ales Pergl <alpergl@microsoft.com>
+Date: Mon, 22 Oct 2018 10:45:25 -0700
+Subject: build_gn.patch
+
+Chromium's Mac toolchain sets the "install_name" linker parameter only
+when "is_component_build" is true, but we want to set even if it's false,
+because we are making a dylib which will be distributed inside a bundle.
+
 diff --git a/BUILD.gn b/BUILD.gn
-index 5439b39693..6783292c3b 100755
+index 494d33fc041c05acc6698e1bfe26cc3f8820bb6b..947deba96107c931582007ce89917f8896923a6f 100755
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -393,6 +393,10 @@ if (is_component_ffmpeg) {
+@@ -390,6 +390,10 @@ if (is_component_ffmpeg) {
      # So we can append below and assume they're defined.
      ldflags = []
  

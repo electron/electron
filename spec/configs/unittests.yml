@@ -1,23 +1,34 @@
+# Note: a "disabled" dict can have arbitrary named properties
+# with lists of disabled tests as a value. Those properties' names
+# are for humans only and are there only to explain
+# why a group of tests is disabled.
+
 tests:
   - base_unittests:
-      # "disabled" dict can have arbitrary named properties
-      # with lists of disabled tests. Those properties' names
-      # are used only to explain why a group of tests is disabled.
       disabled:
-        undecided:
-          - FilePathTest*
+        upstream_failures:
+          - FilePathTest.FromUTF8Unsafe_And_AsUTF8Unsafe
+          - RTLTest.WrapPathWithLTRFormatting
+          - SysStrings.SysNativeMBAndWide
+          - SysStrings.SysNativeMBToWide
+          - SysStrings.SysWideToNativeMB
+        to_fix:
           - PartitionReallocReturnNullTest.RepeatedReturnNullDirect
-          - RTLTest*
-          - SysStrings*
-          - UTFOffsetStringConversionsTest*
           - WeakPtrDeathTest*
   - cc_unittests
   - cc_blink_unittests
   - content_unittests:
       disabled:
-        # TODO(alexeykuzmin): Should those be fixed?
-        - _/DOMStorageMapParamTest.EnforcesQuota/0
-        - _/DOMStorageMapParamTest.EnforcesQuota/1
+        upstream_failures:
+          - BackgroundSyncManagerTest.*
+          - FrameServiceBaseTest.ConnectionError
+          - MediaSessionControllerTest.*
+          - MediaStreamUIProxyFeaturePolicyTest.FeaturePolicy
+          - PresentationServiceImplTest.*
+        to_fix:
+          - _/DOMStorageMapParamTest.EnforcesQuota/0
+          - _/DOMStorageMapParamTest.EnforcesQuota/1
+          - RenderFrameAudioInputStreamFactoryTest.ConstructDestruct
   - crypto_unittests
   - device_unittests
   - gin_unittests
@@ -31,39 +42,19 @@ tests:
   - mojo_common_unittests
   - net_unittests:
       disabled:
-        # TODO(alexeykuzmin): Should those be fixed?
-        - EndToEndTestsWithTls*
-        - FilenameUtilTest*
-        - HTTPSAIATest.AIAFetching
-        - HTTPSCRLSetTest*
-        - HTTPSEVCRLSetTest*
-        - HTTPSFallbackTest*
-        - HTTPSHardFailTest.FailsOnOCSPInvalid
-        - HTTPSOCSPTest*
-        - HTTPSRequestTest*
-        - HTTPSSessionTest*
-        - OCSPVerify*
-        - ProxyConfigServiceLinuxTest*
-        - SSLClientSocketCertRequestInfoTest*
-        - SSLClientSocketChannelIDTest*
-        - SSLClientSocketFalseStartTest*
-        - SSLClientSocketReadTest*
-        - SSLClientSocketTest*
-        - TokenBindingURLRequestTest*
-        - UDPSocketTest*
-        - URLRequestTestFTP*
-        - URLRequestTestHTTP*
-        - WebSocketEndToEndTest*
+        upstream_failures:
+          - EndToEndTestsWithTls/EndToEndTestWithTls.SimpleRequestResponsev6/*
+          - FilenameUtilTest.GenerateFileName
+          - SSLClientSocketTest.*
+          - UDPSocketTest.ClientGetLocalPeerAddresses
+          - UDPSocketTest.ClientSetDoNotFragment
   - ppapi_unittests
   - printing_unittests
   - skia_unittests
   - sql_unittests
   - storage_unittests
   - gn_unittests
-  - ui_base_unittests:
-      disabled:
-        # TODO(alexeykuzmin): Should it be fixed?
-        - AcceleratorTest.GetShortcutText
+  - ui_base_unittests
   - compositor_unittests
   - display_unittests
   - events_unittests
@@ -73,31 +64,43 @@ tests:
   # V8
   - unittests:
       disabled:
-        # TODO(alexeykuzmin): Should it be fixed?
-        - LiveRangeUnitTest*
+        upstream_failures:
+          - LiveRangeUnitTest.InvalidConstruction
+          - LiveRangeUnitTest.SplinterMultipleIntervalsInside
+          - LiveRangeUnitTest.SplitInvalidStart
   # Blink
   - blink_common_unittests
   - blink_heap_unittests
   - blink_platform_unittests:
       disabled:
         # TODO(alexeykuzmin): Should those be fixed?
-        - AnimatedPNGTests*
-        - AnimatedWebPTests*
+        - AnimatedPNGTests.*
+        - AnimatedWebPTests.*
         - AnimatedWEBPTests.clearCacheExceptFrameWithAncestors
-        - BitmapImageTest*
+        - BitmapImageTest.*
         - BMPImageDecoderTest*
         - DecodedImageOrientationHistogramTest*
         - DecodedImageTypeHistogramTest*
+        - DeferredImageDecoderTest.decodeOnOtherThread
         - DeferredImageDecoderTestWoPlatform*
         - GIFImageDecoderTest*
         - HighContrastImageClassifierTest*
         - ICOImageDecoderTests*
         - JPEGImageDecoderTest*
         - FilePathConversionTest*
+        - PaintPropertyNodeTest.InitialStateAndReset
         - PNGTests*
         - StaticPNGTests*
         - StaticWebPTests*
-  - webkit_unit_tests
+  - webkit_unit_tests:
+      disabled:
+        upstream_failures:
+          - Document/ThreadableLoaderTest.CancelAfterStart/0
+          - ModernMediaControlsImplTest.ControlsShouldUseSafeAreaInsets
+          - ScriptRunnerTest.QueueReentrantScript_InOrder
+          - ScrollbarsTestWithVirtualTimer.PressScrollbarButtonOnInfiniteScrolling
+          - VirtualTimeTest.AllowVirtualTimeToAdvance
+          - VirtualTimeTest.VirtualTimeNotAllowedToAdvanceWhileResourcesLoading
   - wtf_unittests
   # Third party
   - angle_unittests
@@ -108,13 +111,16 @@ tests:
   - sandbox_linux_unittests:
       platform: linux
       disabled:
-        # TODO(alexeykuzmin): Should these be fixed?
-        - BrokerProcess*
-        - SandboxBPF.SigBus
+        upstream_failures:
+          - BrokerProcess.OpenFilePermsWithClientCheck
+          - BrokerProcess.OpenFilePermsWithClientCheckNoEnt
+          - BrokerProcess.OpenOpenFilePermsNoClientCheck
+          - BrokerProcess.OpenOpenFilePermsNoClientCheckNoEnt
+          - SandboxBPF.SigBus
   - dbus_unittests:
       platform: linux
       disabled:
-        # TODO(alexeykuzmin): Should these be fixed?
-        - EndToEndAsyncTest.InvalidServiceName
-        - EndToEndSyncTest.InvalidServiceName
-        - MessageTest.SetInvalidHeaders
+        upstream_failures:
+          - EndToEndAsyncTest.InvalidServiceName
+          - EndToEndSyncTest.InvalidServiceName
+          - MessageTest.SetInvalidHeaders

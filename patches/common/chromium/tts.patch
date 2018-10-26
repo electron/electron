@@ -1,5 +1,16 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Thu, 18 Oct 2018 17:08:03 -0700
+Subject: tts.patch
+
+* Adds patch in //chrome/browser/speech/tts_controller_impl.cc
+  to disable calls using chrome profile class.
+* Adds patch in //chrome/browser/speech/tts_message_filter.cc
+  to remove reference to browser context when its signaled for
+  destruction from content layer.
+
 diff --git a/chrome/browser/speech/tts_controller_impl.cc b/chrome/browser/speech/tts_controller_impl.cc
-index 2ca56c3a247e..f58e33b3c019 100644
+index 2ca56c3a247e674ee15b0a0ee30e6c2941aa93d3..f58e33b3c0198e4333f98cd1928c8f6d9be45738 100644
 --- a/chrome/browser/speech/tts_controller_impl.cc
 +++ b/chrome/browser/speech/tts_controller_impl.cc
 @@ -624,12 +624,14 @@ const PrefService* TtsControllerImpl::GetPrefService(
@@ -18,7 +29,7 @@ index 2ca56c3a247e..f58e33b3c019 100644
  }
  
 diff --git a/chrome/browser/speech/tts_message_filter.cc b/chrome/browser/speech/tts_message_filter.cc
-index 013c7a9c60f9..73a244a726e3 100644
+index 013c7a9c60f95475d63701c4f6848cb00dac19d9..73a244a726e3e1a1b5b52ca0e8e3b209aaf432ff 100644
 --- a/chrome/browser/speech/tts_message_filter.cc
 +++ b/chrome/browser/speech/tts_message_filter.cc
 @@ -9,14 +9,40 @@
@@ -120,7 +131,7 @@ index 013c7a9c60f9..73a244a726e3 100644
 +  browser_context_shutdown_notifier_.reset();
  }
 diff --git a/chrome/browser/speech/tts_message_filter.h b/chrome/browser/speech/tts_message_filter.h
-index cc9e2806b5c3..d21fb42f1aca 100644
+index cc9e2806b5c3942472785bf3a3a32e23d859971d..d21fb42f1aca2906b8d8968bd1a46721fbc55edb 100644
 --- a/chrome/browser/speech/tts_message_filter.h
 +++ b/chrome/browser/speech/tts_message_filter.h
 @@ -9,10 +9,9 @@

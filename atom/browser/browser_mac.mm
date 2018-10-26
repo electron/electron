@@ -9,13 +9,13 @@
 #include "atom/browser/mac/dict_util.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/application_info.h"
 #include "atom/common/platform_util.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
-#include "brightray/common/application_info.h"
 #include "net/base/mac/url_conversions.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
@@ -289,11 +289,11 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 }
 
 std::string Browser::GetExecutableFileVersion() const {
-  return brightray::GetApplicationVersion();
+  return GetApplicationVersion();
 }
 
 std::string Browser::GetExecutableFileProductName() const {
-  return brightray::GetApplicationName();
+  return GetApplicationName();
 }
 
 int Browser::DockBounce(BounceType type) {

@@ -16,13 +16,6 @@
 *.vcxproj.user
 *.xcodeproj
 /.idea/
-/brightray/brightray.opensdf
-/brightray/brightray.sdf
-/brightray/brightray.sln
-/brightray/brightray.suo
-/brightray/brightray.v12.suo
-/brightray/brightray.vcxproj*
-/brightray/brightray.xcodeproj/
 /dist/
 /external_binaries/
 /out/

@@ -1,4 +1,4 @@
-From 50f9d1164c07306d128d9860be5a4891310ef495 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:45:00 -0700
 Subject: blink_file_path.patch
@@ -7,7 +7,7 @@ This is used by editors to obtain the filesystem path from a dragged file. See
 documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 39831f1902c6..fddb013aa122 100644
+index 39831f1902c6ab85a0a4cac61a614931ee050ed6..fddb013aa122049de7142bca624d7d0749b58372 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
 @@ -168,6 +168,9 @@ class CORE_EXPORT File final : public Blob {
@@ -21,7 +21,7 @@ index 39831f1902c6..fddb013aa122 100644
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
    long long lastModified() const;
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
-index a74beceda3e7..7196fd5f5f9e 100644
+index a74beceda3e769aaf5673cabc6663bb883f54705..7196fd5f5f9e51616d49c09142247c8382e83cc0 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
 +++ b/third_party/blink/renderer/core/fileapi/file.idl
 @@ -32,6 +32,7 @@
@@ -32,6 +32,3 @@ index a74beceda3e7..7196fd5f5f9e 100644
      readonly attribute long long lastModified;
  
      // Non-standard APIs
--- 
-2.17.0
-

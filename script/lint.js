@@ -8,6 +8,7 @@ const minimist = require('minimist')
 const path = require('path')
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname))
+const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools')
 
 const BLACKLIST = new Set([
   ['atom', 'browser', 'mac', 'atom_application.h'],
@@ -40,7 +41,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 
 const LINTERS = [ {
   key: 'c++',
-  roots: ['atom', 'brightray'],
+  roots: ['atom'],
   test: filename => filename.endsWith('.cc') || filename.endsWith('.h'),
   run: (opts, filenames) => {
     if (opts.fix) {
@@ -66,7 +67,7 @@ const LINTERS = [ {
   roots: ['script'],
   test: filename => filename.endsWith('.py'),
   run: (opts, filenames) => {
-    const rcfile = path.normalize(path.join(SOURCE_ROOT, '..', 'third_party', 'depot_tools', 'pylintrc'))
+    const rcfile = path.join(DEPOT_TOOLS, 'pylintrc')
     const args = ['--rcfile=' + rcfile, ...filenames]
     const env = Object.assign({ PYTHONPATH: path.join(SOURCE_ROOT, 'script') }, process.env)
     spawnAndCheckExitCode('pylint.py', args, { env })
@@ -88,9 +89,15 @@ const LINTERS = [ {
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
+      const env = Object.assign({
+        CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
+        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
+      }, process.env)
+      // Users may not have depot_tools in PATH.
+      env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`
       const args = ['format', filename]
       if (!opts.fix) args.push('--dry-run')
-      const result = childProcess.spawnSync('gn', args, { stdio: 'inherit', shell: true })
+      const result = childProcess.spawnSync('gn', args, { env, stdio: 'inherit', shell: true })
       if (result.status === 0) {
         return true
       } else if (result.status === 2) {

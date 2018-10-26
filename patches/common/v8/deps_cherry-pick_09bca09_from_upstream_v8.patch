@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matheus Marchini <matheus@sthima.com>
+Date: Wed, 1 Aug 2018 15:09:51 -0300
+Subject: deps: cherry-pick 09bca09 from upstream V8
+
+Original commit message:
+
+    [postmortem] add ScopeInfo and Context types
+
+    The metadata introduced in this patch will be useful for postmortem
+    tools to inspect Contexts and ScopeInfos (see
+    https://github.com/nodejs/llnode/issues/211).
+
+    R=bmeurer@google.com, yangguo@google.com
+
+    Change-Id: I927fcab4014d128bd782046c1ecb9ee045723e95
+    Reviewed-on: https://chromium-review.googlesource.com/1153858
+    Reviewed-by: Yang Guo <yangguo@chromium.org>
+    Commit-Queue: Yang Guo <yangguo@chromium.org>
+    Cr-Commit-Position: refs/heads/master@{#54768}
+
+Refs: https://github.com/v8/v8/commit/09bca095e38d6e4770ae48e174f59d33c
+
+PR-URL: https://github.com/nodejs/node/pull/22068
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ruben Bridgewater <ruben@bridgewater.de>
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 4c8c8acd593c8151798a5187c44f56fee3f07977..443694d88075d59d6e8db7fa4bedc3a812fdafc4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -852,6 +852,7 @@ action("postmortem-metadata") {
+     "src/objects/js-regexp-string-iterator.h",
+     "src/objects/map.h",
+     "src/objects/map-inl.h",
++    "src/objects/scope-info.h",
+     "src/objects/script.h",
+     "src/objects/script-inl.h",
+     "src/objects/shared-function-info.h",
+diff --git a/tools/gen-postmortem-metadata.py b/tools/gen-postmortem-metadata.py
+index d8ef7b4a158a9c6d5d157169defb47bb82683023..8191c8152f5942858cc3a305bdee72d74c4e55e9 100644
+--- a/tools/gen-postmortem-metadata.py
++++ b/tools/gen-postmortem-metadata.py
+@@ -58,6 +58,9 @@ consts_misc = [
+     { 'name': 'APIObjectType',          'value': 'JS_API_OBJECT_TYPE' },
+     { 'name': 'SpecialAPIObjectType',   'value': 'JS_SPECIAL_API_OBJECT_TYPE' },
+ 
++    { 'name': 'FirstContextType',     'value': 'FIRST_CONTEXT_TYPE' },
++    { 'name': 'LastContextType',     'value': 'LAST_CONTEXT_TYPE' },
++
+     { 'name': 'IsNotStringMask',        'value': 'kIsNotStringMask' },
+     { 'name': 'StringTag',              'value': 'kStringTag' },
+ 
+@@ -282,7 +285,7 @@ extras_accessors = [
+ expected_classes = [
+     'ConsString', 'FixedArray', 'HeapNumber', 'JSArray', 'JSFunction',
+     'JSObject', 'JSRegExp', 'JSValue', 'Map', 'Oddball', 'Script',
+-    'SeqOneByteString', 'SharedFunctionInfo'
++    'SeqOneByteString', 'SharedFunctionInfo', 'ScopeInfo'
+ ];
+ 
+ 

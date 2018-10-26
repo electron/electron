@@ -59,9 +59,9 @@ const char kChromeUIDevToolsRemoteFrontendBase[] =
     "https://chrome-devtools-frontend.appspot.com/";
 const char kChromeUIDevToolsRemoteFrontendPath[] = "serve_file";
 
-const char kDevToolsBoundsPref[] = "brightray.devtools.bounds";
-const char kDevToolsZoomPref[] = "brightray.devtools.zoom";
-const char kDevToolsPreferences[] = "brightray.devtools.preferences";
+const char kDevToolsBoundsPref[] = "electron.devtools.bounds";
+const char kDevToolsZoomPref[] = "electron.devtools.zoom";
+const char kDevToolsPreferences[] = "electron.devtools.preferences";
 
 const char kFrontendHostId[] = "id";
 const char kFrontendHostMethod[] = "method";
@@ -512,8 +512,9 @@ void InspectableWebContentsImpl::ShowItemInFolder(
     const std::string& file_system_path) {
   if (file_system_path.empty())
     return;
+
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::ShowItemInFolder(path);
+  platform_util::OpenItem(path);
 }
 
 void InspectableWebContentsImpl::SaveToFile(const std::string& url,

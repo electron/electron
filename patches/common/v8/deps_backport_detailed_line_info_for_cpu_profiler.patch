@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Marshall <p.s.marshall0@gmail.com>
+Date: Tue, 4 Sep 2018 15:48:15 +0200
+Subject: deps: backport detailed line info for CPU profiler
+
+[cpu-profiler] Add flag to always generate accurate line info.
+https://chromium.googlesource.com/v8/v8/+/
+56baf56790de439b3f69e887e94beb3b301ed77c
+
+[cpu-profiler] Turn on detailed line info for optimized code
+https://chromium.googlesource.com/v8/v8/+/
+84894ce6d2af7feb9e1f5574409355120887326c
+
+[cpu-profiler] Separate the flags for generating extra line information
+https://chromium.googlesource.com/v8/v8/+/
+30ff6719db441cc7ef220d449970cc169067e256
+
+PR-URL: https://github.com/nodejs/node/pull/22688
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ruben Bridgewater <ruben@bridgewater.de>
+
+diff --git a/src/flag-definitions.h b/src/flag-definitions.h
+index 052869f3081ed662ced727778fefe11231aae6e5..4d5aa6f885465865e0b29c0cd26bcca41571f0bd 100644
+--- a/src/flag-definitions.h
++++ b/src/flag-definitions.h
+@@ -1243,6 +1243,9 @@ DEFINE_BOOL(log_function_events, false,
+ DEFINE_BOOL(prof, false,
+             "Log statistical profiling information (implies --log-code).")
+ 
++DEFINE_BOOL(detailed_line_info, true,
++            "Always generate detailed line information for CPU profiling.")
++
+ #if defined(ANDROID)
+ // Phones and tablets have processors that are much slower than desktop
+ // and laptop computers for which current heuristics are tuned.
+diff --git a/src/isolate.cc b/src/isolate.cc
+index b0a970305e9d4df8257d1e2a29c79d134896b220..b33b713672a6d471652a1b9c1fc508f15278e1cb 100644
+--- a/src/isolate.cc
++++ b/src/isolate.cc
+@@ -3247,6 +3247,10 @@ bool Isolate::use_optimizer() {
+          !is_precise_count_code_coverage() && !is_block_count_code_coverage();
+ }
+ 
++bool Isolate::NeedsDetailedOptimizedCodeLineInfo() const {
++  return NeedsSourcePositionsForProfiling() || FLAG_detailed_line_info;
++}
++
+ bool Isolate::NeedsSourcePositionsForProfiling() const {
+   return FLAG_trace_deopt || FLAG_trace_turbo || FLAG_trace_turbo_graph ||
+          FLAG_turbo_profiling || FLAG_perf_prof || is_profiling() ||
+diff --git a/src/isolate.h b/src/isolate.h
+index 09aaf996849017c8626118a2cae8adec1ca18c2d..d94c0fde147f50764171c5a2896921c9811fd0b3 100644
+--- a/src/isolate.h
++++ b/src/isolate.h
+@@ -1044,6 +1044,8 @@ class Isolate : private HiddenFactory {
+ 
+   bool NeedsSourcePositionsForProfiling() const;
+ 
++  bool NeedsDetailedOptimizedCodeLineInfo() const;
++
+   bool is_best_effort_code_coverage() const {
+     return code_coverage_mode() == debug::Coverage::kBestEffort;
+   }
+diff --git a/src/optimized-compilation-info.cc b/src/optimized-compilation-info.cc
+index 09b8a0edeae734d5ad9df8666c2bee4cdcebb3f1..77730919f14dc2545b88d140478d7ac05e6db0b0 100644
+--- a/src/optimized-compilation-info.cc
++++ b/src/optimized-compilation-info.cc
+@@ -38,7 +38,7 @@ OptimizedCompilationInfo::OptimizedCompilationInfo(
+   // Collect source positions for optimized code when profiling or if debugger
+   // is active, to be able to get more precise source positions at the price of
+   // more memory consumption.
+-  if (isolate->NeedsSourcePositionsForProfiling()) {
++  if (isolate->NeedsDetailedOptimizedCodeLineInfo()) {
+     MarkAsSourcePositionsEnabled();
+   }
+ 

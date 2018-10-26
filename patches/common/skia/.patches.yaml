@@ -1,9 +1,0 @@
-repo: src/third_party/skia
-patches:
--
-  author: Shelley Vohr <shelley.vohr@gmail.com>
-  file: fix_font_thickness.patch
-  description: |
-    Backports https://skia-review.googlesource.com/c/157566/ to 
-    fix an issue whereby font rendering weight was too thin compared
-    to other fonts present on MacOS Mojave.

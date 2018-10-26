@@ -81,7 +81,7 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->http_cache_enabled = use_cache;
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(
-          brightray::BrowserClient::Get()->GetApplicationLocale());
+          AtomBrowserClient::Get()->GetApplicationLocale());
   network_context_params->enable_data_url_support = false;
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();

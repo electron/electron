@@ -8,7 +8,11 @@
 
 #include "base/task_scheduler/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "content/public/common/service_manager_connection.h"
 #include "native_mate/dictionary.h"
+#include "services/device/public/mojom/constants.mojom.h"
+#include "services/device/public/mojom/wake_lock_provider.mojom.h"
+#include "services/service_manager/public/cpp/connector.h"
 
 #include "atom/common/node_includes.h"
 
@@ -39,16 +43,19 @@ namespace atom {
 namespace api {
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
-    : current_blocker_type_(
-          device::mojom::WakeLockType::kPreventAppSuspension) {
+    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension),
+      is_wake_lock_active_(false) {
   Init(isolate);
 }
 
 PowerSaveBlocker::~PowerSaveBlocker() {}
 
 void PowerSaveBlocker::UpdatePowerSaveBlocker() {
-  if (power_save_blocker_types_.empty()) {
-    power_save_blocker_.reset();
+  if (wake_lock_types_.empty()) {
+    if (is_wake_lock_active_) {
+      GetWakeLock()->CancelWakeLock();
+      is_wake_lock_active_ = false;
+    }
     return;
   }
 
@@ -58,45 +65,57 @@ void PowerSaveBlocker::UpdatePowerSaveBlocker() {
   // higher precedence level than |WakeLockType::kPreventAppSuspension|.
   //
   // Only the highest-precedence blocker type takes effect.
-  device::mojom::WakeLockType new_blocker_type =
+  device::mojom::WakeLockType new_lock_type =
       device::mojom::WakeLockType::kPreventAppSuspension;
-  for (const auto& element : power_save_blocker_types_) {
+  for (const auto& element : wake_lock_types_) {
     if (element.second == device::mojom::WakeLockType::kPreventDisplaySleep) {
-      new_blocker_type = device::mojom::WakeLockType::kPreventDisplaySleep;
+      new_lock_type = device::mojom::WakeLockType::kPreventDisplaySleep;
       break;
     }
   }
 
-  if (!power_save_blocker_ || new_blocker_type != current_blocker_type_) {
-    auto new_blocker = std::make_unique<device::PowerSaveBlocker>(
-        new_blocker_type, device::mojom::WakeLockReason::kOther,
-        ATOM_PRODUCT_NAME, base::ThreadTaskRunnerHandle::Get(),
-        // This task runner may be used by some device service
-        // implementation bits to interface with dbus client code, which in
-        // turn imposes some subtle thread affinity on the clients. We
-        // therefore require a single-thread runner.
-        base::CreateSingleThreadTaskRunnerWithTraits(
-            {base::MayBlock(), base::TaskPriority::BACKGROUND}));
-    power_save_blocker_.swap(new_blocker);
-    current_blocker_type_ = new_blocker_type;
+  if (current_lock_type_ != new_lock_type) {
+    GetWakeLock()->ChangeType(new_lock_type, base::DoNothing());
+    current_lock_type_ = new_lock_type;
   }
+  if (!is_wake_lock_active_) {
+    GetWakeLock()->RequestWakeLock();
+    is_wake_lock_active_ = true;
+  }
+}
+
+device::mojom::WakeLock* PowerSaveBlocker::GetWakeLock() {
+  if (!wake_lock_) {
+    device::mojom::WakeLockProviderPtr wake_lock_provider;
+    DCHECK(content::ServiceManagerConnection::GetForProcess());
+    auto* connector =
+        content::ServiceManagerConnection::GetForProcess()->GetConnector();
+    connector->BindInterface(device::mojom::kServiceName,
+                             mojo::MakeRequest(&wake_lock_provider));
+
+    wake_lock_provider->GetWakeLockWithoutContext(
+        device::mojom::WakeLockType::kPreventAppSuspension,
+        device::mojom::WakeLockReason::kOther, ATOM_PRODUCT_NAME,
+        mojo::MakeRequest(&wake_lock_));
+  }
+  return wake_lock_.get();
 }
 
 int PowerSaveBlocker::Start(device::mojom::WakeLockType type) {
   static int count = 0;
-  power_save_blocker_types_[count] = type;
+  wake_lock_types_[count] = type;
   UpdatePowerSaveBlocker();
   return count++;
 }
 
 bool PowerSaveBlocker::Stop(int id) {
-  bool success = power_save_blocker_types_.erase(id) > 0;
+  bool success = wake_lock_types_.erase(id) > 0;
   UpdatePowerSaveBlocker();
   return success;
 }
 
 bool PowerSaveBlocker::IsStarted(int id) {
-  return power_save_blocker_types_.find(id) != power_save_blocker_types_.end();
+  return wake_lock_types_.find(id) != wake_lock_types_.end();
 }
 
 // static

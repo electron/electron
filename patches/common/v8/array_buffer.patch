@@ -1,8 +1,14 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Mon, 22 Oct 2018 10:47:12 -0700
+Subject: array_buffer.patch
+
+
 diff --git a/include/v8.h b/include/v8.h
-index 573e80176d..80bfd1d22a 100644
+index 6bba7a177e72b54084b2a52e413c5de6edb26b01..b1e192dc009b33484148817be0b0b6bb4dc1bf4b 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -7337,6 +7337,9 @@ class V8_EXPORT Isolate {
+@@ -7766,6 +7766,9 @@ class V8_EXPORT Isolate {
     */
    void SetIdle(bool is_idle);
  
@@ -13,10 +19,10 @@ index 573e80176d..80bfd1d22a 100644
    bool InContext();
  
 diff --git a/src/api.cc b/src/api.cc
-index 8b177d041d..f58a350f0f 100644
+index 9fe5268aa5e615fee058d430b6a137dd40fc9226..5c1f2410bbab4a0d9f4fcd99f19530ba999a66a2 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -8139,6 +8139,13 @@ void Isolate::SetIdle(bool is_idle) {
+@@ -8290,6 +8290,13 @@ void Isolate::SetIdle(bool is_idle) {
    isolate->SetIdle(is_idle);
  }
  

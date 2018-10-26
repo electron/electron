@@ -38,7 +38,9 @@
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
+#include "base/lazy_instance.h"
 #include "base/no_destructor.h"
+#include "base/path_service.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -121,6 +123,18 @@ bool IsSameWebSite(content::BrowserContext* browser_context,
              src_url;
 }
 
+AtomBrowserClient* g_browser_client = nullptr;
+
+base::LazyInstance<std::string>::DestructorAtExit
+    g_io_thread_application_locale = LAZY_INSTANCE_INITIALIZER;
+
+base::NoDestructor<std::string> g_application_locale;
+
+void SetApplicationLocaleOnIOThread(const std::string& locale) {
+  DCHECK_CURRENTLY_ON(BrowserThread::IO);
+  g_io_thread_application_locale.Get() = locale;
+}
+
 }  // namespace
 
 // static
@@ -133,9 +147,32 @@ void AtomBrowserClient::SetCustomServiceWorkerSchemes(
   *g_custom_service_worker_schemes = base::JoinString(schemes, ",");
 }
 
-AtomBrowserClient::AtomBrowserClient() {}
+AtomBrowserClient* AtomBrowserClient::Get() {
+  return g_browser_client;
+}
 
-AtomBrowserClient::~AtomBrowserClient() {}
+// static
+void AtomBrowserClient::SetApplicationLocale(const std::string& locale) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
+  if (!BrowserThread::IsThreadInitialized(BrowserThread::IO) ||
+      !BrowserThread::PostTask(
+          BrowserThread::IO, FROM_HERE,
+          base::BindOnce(&SetApplicationLocaleOnIOThread, locale))) {
+    g_io_thread_application_locale.Get() = locale;
+  }
+  *g_application_locale = locale;
+}
+
+AtomBrowserClient::AtomBrowserClient() {
+  DCHECK(!g_browser_client);
+  g_browser_client = this;
+}
+
+AtomBrowserClient::~AtomBrowserClient() {
+  DCHECK(g_browser_client);
+  g_browser_client = nullptr;
+}
 
 content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
@@ -579,7 +616,7 @@ net::NetLog* AtomBrowserClient::GetNetLog() {
   return AtomBrowserMainParts::Get()->net_log();
 }
 
-brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
+content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
   return new AtomBrowserMainParts(params);
 }
@@ -706,6 +743,21 @@ AtomBrowserClient::GetPlatformNotificationService() {
     notification_service_.reset(new PlatformNotificationService(this));
   }
   return notification_service_.get();
+}
+
+base::FilePath AtomBrowserClient::GetDefaultDownloadDirectory() {
+  // ~/Downloads
+  base::FilePath path;
+  if (base::PathService::Get(base::DIR_HOME, &path))
+    path = path.Append(FILE_PATH_LITERAL("Downloads"));
+
+  return path;
+}
+
+std::string AtomBrowserClient::GetApplicationLocale() {
+  if (BrowserThread::CurrentlyOn(BrowserThread::IO))
+    return g_io_thread_application_locale.Get();
+  return *g_application_locale;
 }
 
 }  // namespace atom

@@ -27,6 +27,8 @@ class Button : public View, public views::ButtonListener {
   // views::ButtonListener:
   void ButtonPressed(views::Button* sender, const ui::Event& event) override;
 
+  views::Button* button() const { return static_cast<views::Button*>(view()); }
+
  private:
   DISALLOW_COPY_AND_ASSIGN(Button);
 };

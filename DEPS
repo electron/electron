@@ -30,6 +30,10 @@ vars = {
   # Python interface to Amazon Web Services. Is used for releases only.
   'checkout_boto': False,
 
+  # To allow in-house builds to checkout those manually.
+  'checkout_chromium': True,
+  'checkout_node': True,
+
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
 
@@ -52,10 +56,14 @@ vars = {
 }
 
 deps = {
-  'src':
-    (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
-  'src/third_party/electron_node':
-    (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+  'src': {
+    'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
+    'condition': 'checkout_chromium',
+  },
+  'src/third_party/electron_node': {
+    'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
+    'condition': 'checkout_node',
+  },
   'src/electron/vendor/pyyaml':
     (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
   'src/electron/vendor/boto': {
@@ -71,13 +79,11 @@ deps = {
 hooks = [
   {
     'name': 'patch_chromium',
-    'condition': 'apply_patches',
+    'condition': 'checkout_chromium and apply_patches',
     'pattern': 'src/electron',
     'action': [
       'python',
-      'src/electron/script/apply-patches',
-      '--project-root=.',
-      '--commit',
+      'src/electron/script/apply_all_patches.py',
     ],
   },
   {

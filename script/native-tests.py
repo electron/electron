@@ -6,7 +6,7 @@ import argparse
 import os
 import sys
 
-from lib.native_tests import TestsList, Verbosity
+from lib.native_tests import TestsList, Verbosity, DisabledTestsPolicy
 
 
 class Command:
@@ -25,13 +25,23 @@ def parse_args():
                       help='binaries to run')
   parser.add_argument('-c', '--config', required=True,
                       help='path to a tests config')
-  parser.add_argument('--run-only-disabled-tests',
-                      action='store_true', default=False,
-                      help='if disabled tests should be run')
   parser.add_argument('-t', '--tests-dir', required=False,
                       help='path to a directory with test binaries')
   parser.add_argument('-o', '--output-dir', required=False,
                       help='path to a folder to save tests results')
+
+  disabled_tests = parser.add_mutually_exclusive_group()
+  disabled_tests.add_argument('--only-disabled-tests',
+                              dest='disabled_tests_policy',
+                              action='store_const',
+                              const=DisabledTestsPolicy.ONLY,
+                              help='run disabled tests only')
+  disabled_tests.add_argument('--include-disabled-tests',
+                              dest='disabled_tests_policy',
+                              action='store_const',
+                              const=DisabledTestsPolicy.INCLUDE,
+                              help='if disabled tests should be run as well')
+  parser.set_defaults(disabled_tests_policy=DisabledTestsPolicy.DISABLE)
 
   verbosity = parser.add_mutually_exclusive_group()
   verbosity.add_argument('-v', '--verbosity', required=False,
@@ -86,10 +96,10 @@ def main():
   if args.command == Command.RUN:
     if args.binary is not None:
       return tests_list.run(args.binary, args.output_dir, args.verbosity,
-                            args.run_only_disabled_tests)
+                            args.disabled_tests_policy)
     else:
       return tests_list.run_all(args.output_dir, args.verbosity,
-                                args.run_only_disabled_tests)
+                                args.disabled_tests_policy)
 
   assert False, "unexpected command '{}'".format(args.command)
 

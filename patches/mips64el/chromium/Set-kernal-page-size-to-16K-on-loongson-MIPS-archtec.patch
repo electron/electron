@@ -52,6 +52,3 @@ index c720a50..67c3598 100644
  static const size_t kPartitionPageSize = 1 << kPartitionPageShift;
  static const size_t kPartitionPageOffsetMask = kPartitionPageSize - 1;
  static const size_t kPartitionPageBaseMask = ~kPartitionPageOffsetMask;
--- 
-2.1.0
-

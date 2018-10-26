@@ -1,4 +1,4 @@
-From 070bbbe44c20c52f5e12b04b01fc101a42633119 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <jeremya@chromium.org>
 Date: Thu, 20 Sep 2018 17:50:38 -0700
 Subject: leveldb_ssize_t.patch
@@ -8,7 +8,7 @@ Windows by preventing leveldb from re-defining the type if it's
 already defined.
 
 diff --git a/third_party/leveldatabase/port/port_chromium.h b/third_party/leveldatabase/port/port_chromium.h
-index a7c449eba19c..acbce7efd582 100644
+index a7c449eba19c3e3f46eec9c428fb497f6b1a7852..acbce7efd582e226419054cf80e1c27f4919b2fb 100644
 --- a/third_party/leveldatabase/port/port_chromium.h
 +++ b/third_party/leveldatabase/port/port_chromium.h
 @@ -26,7 +26,11 @@
@@ -23,6 +23,3 @@ index a7c449eba19c..acbce7efd582 100644
  #endif
  
  namespace leveldb {
--- 
-2.17.0
-
