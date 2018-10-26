@@ -5,6 +5,7 @@
 #include "atom/browser/ui/devtools_manager_delegate.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "base/bind.h"
