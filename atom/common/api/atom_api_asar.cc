@@ -123,7 +123,7 @@ class Archive : public mate::Wrappable<Archive> {
 };
 
 void InitAsarSupport(v8::Isolate* isolate,
-                     v8::Local<v8::Value> process,
+                     v8::Local<v8::Value> source,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
   v8::Local<v8::Context> context(isolate->GetCurrentContext());
@@ -137,7 +137,7 @@ void InitAsarSupport(v8::Isolate* isolate,
   // Initialize asar support.
   if (result->IsFunction()) {
     v8::Local<v8::Value> args[] = {
-        process,
+        source,
         require,
         node::asar_value.ToStringChecked(isolate),
     };
