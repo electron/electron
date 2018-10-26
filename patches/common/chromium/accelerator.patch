@@ -5,7 +5,7 @@ Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff184628bba1 100644
+index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc052960766 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -19,17 +19,17 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
 @@ -21,9 +22,7 @@
  #include <windows.h>
  #endif
-
+ 
 -#if !defined(OS_WIN) && (defined(USE_AURA) || defined(OS_MACOSX))
  #include "ui/events/keycodes/keyboard_code_conversion.h"
 -#endif
-
+ 
  namespace ui {
-
+ 
 @@ -139,7 +138,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
-
+ 
 +  unsigned int flags = 0;
    if (shortcut.empty()) {
 +    const uint16_t c = DomCodeToUsLayoutCharacter(
@@ -65,7 +65,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
 +      shortcut = base::UTF8ToUTF16(
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
    }
-
+ 
    // Checking whether the character used for the accelerator is alphanumeric.
 @@ -223,7 +226,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
@@ -74,5 +74,5 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
 -  else if (IsAltDown())
 +  if (IsAltDown())
      shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
-
+ 
    if (IsCmdDown()) {
