@@ -108,8 +108,7 @@ void AtomRendererClient::DidCreateScriptContext(
 
   // Setup node tracing controller.
   if (!node::tracing::TraceEventHelper::GetTracingController())
-    node::tracing::TraceEventHelper::SetTracingController(
-        new v8::TracingController());
+    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
