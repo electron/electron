@@ -28,6 +28,3 @@ index cec3bd8a97b8b9bcab176a9bd2c296ec12aba838..7a2b4462bd44176e8e8389499f8c3d5f
    return targetRWH->GetProcess()->GetID() == dragStartProcessID_ ||
           GetRenderViewHostID(webContents_->GetRenderViewHost()) !=
               dragStartViewID_;
--- 
-2.17.0
-

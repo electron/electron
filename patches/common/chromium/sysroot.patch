@@ -33,6 +33,3 @@ index 58f09950d844f4fa4f8d46718852c4f2c490c391..55dd50187714b596e6ded4f2b302fb49
    sysroots = json.load(open(sysroots_file))
    sysroot_key = '%s_%s' % (target_platform, target_arch)
    if sysroot_key not in sysroots:
--- 
-2.17.0
-

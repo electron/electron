@@ -36,6 +36,3 @@ index 9fe5268aa5e615fee058d430b6a137dd40fc9226..5c1f2410bbab4a0d9f4fcd99f19530ba
  bool Isolate::InContext() {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(this);
    return isolate->context() != nullptr;
--- 
-2.17.0
-

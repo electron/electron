@@ -82,6 +82,3 @@ index 58646a10591a1d3e7c2dd1782c3642b9cbe06738..0ae9c3c8ae27ca5684ebcb4f6a87f014
            if symbol_info == binary_info:
              mkdir_p(os.path.dirname(output_path))
              shutil.copyfile(potential_symbol_file, output_path)
--- 
-2.17.0
-

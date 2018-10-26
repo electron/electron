@@ -78,6 +78,3 @@ index e0ec33400b179a600d95501fb93826075ffc52eb..29ba88a504c33d850c7a3425bd7d874a
    // The root of the Layer tree drawn by this compositor.
    Layer* root_layer_ = nullptr;
  
--- 
-2.17.0
-

@@ -84,6 +84,3 @@ index 18d343ccef0396ee6679f4b5fd8316c3109003f4..2919bc11d0ba4bf84a11e146bf2961b8
      LOG(ERROR) << base::StringPrintf("HTTP status %lu", status_code);
      return false;
    }
--- 
-2.17.0
-

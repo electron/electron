@@ -49,6 +49,3 @@ index feb4b14bc8e52c8335e93d133506ecd6226c051d..95d1cc2c91ca01ec95dc3f63aa5f2546
    v8::Local<v8::Object> GlobalProxy() const override;
    void StartReload(WebFrameLoadType) override;
    void ReloadImage(const WebNode&) override;
--- 
-2.17.0
-

@@ -97,6 +97,3 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..c3fb98b426cd7c12f66eaaf358f4ff18
    parts.push_back(base::string16(IsCmdDown() ? kCommandSymbol : kNoSymbol));
    parts.push_back(shortcut);
    return base::StrCat(parts);
--- 
-2.17.0
-

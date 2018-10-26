@@ -78,6 +78,3 @@ index 6b4a2ce05520c19c77fa3ddf135e83ef8783b3be..2ba97d5ec53ac4693024bb047e6c256d
    GetWorkerReportingProxy().WillDestroyWorkerGlobalScope();
  
    probe::AllAsyncTasksCanceled(GlobalScope());
--- 
-2.17.0
-

@@ -298,6 +298,3 @@ index e6f0e17b05ee4dc45827dc2dd00d484201f74646..75c9ca04ce481ab79615515da948c29d
    std::unique_ptr<Worker> worker_;
  
  #if defined(USE_AURA)
--- 
-2.17.0
-

@@ -29,6 +29,11 @@ def format_patch(repo, since):
     '--no-stat',
     '--stdout',
 
+    # Per RFC 3676 the signature is separated from the body by a line with
+    # '-- ' on it. If the signature option is omitted the signature defaults
+    # to the Git version number.
+    '--no-signature',
+
     # The name of the parent commit object isn't useful information in this
     # context, so zero it out to avoid needless patch-file churn.
     '--zero-commit',

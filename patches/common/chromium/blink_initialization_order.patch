@@ -26,6 +26,3 @@ index cbd9f811d97855e8bf083cbb2dd9ebcbcab0a1a5..160e5bc7d57ad18619a4c912d57b6b07
    if (World().IsMainWorld()) {
      GetFrame()->Loader().DispatchDidClearWindowObjectInMainWorld();
    }
--- 
-2.17.0
-

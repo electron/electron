@@ -34,6 +34,3 @@ index 6830a90482173174266faa0e9a95618c67fad811..78991a26de6d97e3ee14b66913fc079a
    gc_prologue_callbacks_.emplace_back(callback, gc_type, data);
  }
  
--- 
-2.17.0
-

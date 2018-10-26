@@ -23,6 +23,3 @@ index cb0393ecd507b865169e9d7c3037d7d5523ae30e..34eebb06295b38dfa0b567f66780ce14
      return rc_exe_exit_code
  
    def ExecActionWrapper(self, arch, rspfile, *dirname):
--- 
-2.17.0
-

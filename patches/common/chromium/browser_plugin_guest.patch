@@ -22,6 +22,3 @@ index f56ce93c3d5b1b46b706800a12a21f29cabafb33..19c302c2714fb8ce89b261dd44d9939d
  }
  
  base::WeakPtr<BrowserPluginGuest> BrowserPluginGuest::AsWeakPtr() {
--- 
-2.17.0
-

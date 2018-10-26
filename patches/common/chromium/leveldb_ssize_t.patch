@@ -23,6 +23,3 @@ index a7c449eba19c3e3f46eec9c428fb497f6b1a7852..acbce7efd582e226419054cf80e1c27f
  #endif
  
  namespace leveldb {
--- 
-2.17.0
-

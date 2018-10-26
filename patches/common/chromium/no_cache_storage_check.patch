@@ -19,6 +19,3 @@ index d91b54a4d2a15f4d48f6e82488e0c27c68c5abdb..7f946a5a04c97635f783aeecebc13fc2
    }
  
    virtual ~CacheLoader() {}
--- 
-2.17.0
-

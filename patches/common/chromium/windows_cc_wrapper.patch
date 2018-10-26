@@ -32,7 +32,7 @@ index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d
  }
  
  # Copy the VS runtime DLL for the default toolchain to the root build directory
-@@ -404,7 +411,7 @@ if (win_build_host_cpu != "x64") {
+@@ -392,7 +399,7 @@ if (win_build_host_cpu != "x64") {
    msvc_toolchain("win_clang_" + win_build_host_cpu) {
      environment = "environment." + win_build_host_cpu
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)
@@ -41,7 +41,7 @@ index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d
      sys_include_flags = "${build_cpu_toolchain_data.include_flags_imsvc}"
      if (host_os != "win") {
        # For win cross build.
-@@ -453,7 +460,7 @@ template("win_x64_toolchains") {
+@@ -441,7 +448,7 @@ template("win_x64_toolchains") {
    msvc_toolchain("win_clang_" + target_name) {
      environment = "environment.x64"
      prefix = rebase_path("$clang_base_path/bin", root_build_dir)
@@ -50,6 +50,3 @@ index eb3e2b2b377dde31e062be46837bf509ecab0325..5c014b190e121619056aa2eb7301887d
      sys_include_flags = "${x64_toolchain_data.include_flags_imsvc}"
      if (host_os != "win") {
        # For win cross build
--- 
-2.17.0
-

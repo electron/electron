@@ -997,6 +997,3 @@ index 283c0ff81954bb9e777b1e0007a735ec0ad4901e..231873a456442856c43d643e41c1bb22
  // Use for debug only, because output is not completely consistent with format
  // of |PrintSettingsFromJobSettings| input.
  void PrintSettingsToJobSettingsDebug(const PrintSettings& settings,
--- 
-2.17.0
-

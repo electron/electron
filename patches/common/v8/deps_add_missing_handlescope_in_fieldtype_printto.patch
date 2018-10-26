@@ -22,6 +22,3 @@ index 3b51095323c06bf8883ce484566fd263249390ac..2eebebe3d616ea786ed60cd0e9bea853
      os << "Class(" << static_cast<void*>(*AsClass()) << ")";
    }
  }
--- 
-2.17.0
-

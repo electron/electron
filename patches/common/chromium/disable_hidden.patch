@@ -32,6 +32,3 @@ index 4af5870e7c40056b98e67f71c2c037490f2634f2..f2e19fe92e56d5d98a3ea0491a719c89
    void set_hung_renderer_delay(const base::TimeDelta& delay) {
      hung_renderer_delay_ = delay;
    }
--- 
-2.17.0
-

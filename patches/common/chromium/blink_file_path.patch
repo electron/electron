@@ -32,6 +32,3 @@ index a74beceda3e769aaf5673cabc6663bb883f54705..7196fd5f5f9e51616d49c09142247c83
      readonly attribute long long lastModified;
  
      // Non-standard APIs
--- 
-2.17.0
-

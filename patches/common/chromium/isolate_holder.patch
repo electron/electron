@@ -48,6 +48,3 @@ index 84cf66e6e9cdbfcdc3d8f0a1f0c122e5994ef1c2..cc0d65e4e4be5818d526c0a46a60e116
    ~IsolateHolder();
  
    // Should be invoked once before creating IsolateHolder instances to
--- 
-2.17.0
-

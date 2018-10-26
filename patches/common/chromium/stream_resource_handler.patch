@@ -25,6 +25,3 @@ index b6f51bba48cd145d6bccaff649d7875cf0520b7d..1ee88dfacee3e9bf3e4393a32ebd7192
   public:
    // |origin| will be used to construct the URL for the Stream. See
    // WebCore::BlobURL and and WebCore::SecurityOrigin in Blink to understand
--- 
-2.17.0
-

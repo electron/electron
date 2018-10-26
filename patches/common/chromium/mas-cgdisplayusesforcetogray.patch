@@ -27,6 +27,3 @@ index 99a128511250d594cdac79ebf9b291823db18962..7200a5df74e168b817f7e7598b7fce8b
  
    // CGDisplayRotation returns a double. Display::SetRotationAsDegree will
    // handle the unexpected situations were the angle is not a multiple of 90.
--- 
-2.17.0
-

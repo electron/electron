@@ -27,6 +27,3 @@ index 87f2176ce897583b6682e8f49d1e4cac1392aacb..ce3d9ce19bff686640be08776a7dc573
  
      prototype_object = prototype_value.As<v8::Object>();
      if (prototype_object->InternalFieldCount() ==
--- 
-2.17.0
-

@@ -26,6 +26,3 @@ index b06a4b9242d30869f9b37fee1dc3ecbe7dcc06d4..b7793aaa094ad342fa15491653baac26
      // Only main frame proxy can detach for inner WebContents.
      DCHECK(frame_tree_node_->IsMainFrame());
      frame_tree_node_->render_manager()->RemoveOuterDelegateFrame();
--- 
-2.17.0
-

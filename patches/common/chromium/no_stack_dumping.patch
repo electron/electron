@@ -17,6 +17,3 @@ index 8d789ef1b9f76aacbf1bc8c13b79de04618b9141..034fdcad958cb25780c304d184b2fbb7
  #if defined(OS_WIN)
      bool should_enable_stack_dump = !process_type.empty();
  #else
--- 
-2.17.0
-
