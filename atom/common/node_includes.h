@@ -45,6 +45,7 @@ namespace tracing {
 class TraceEventHelper {
  public:
   static v8::TracingController* GetTracingController();
+  static node::tracing::Agent* GetAgent();
   static void SetAgent(node::tracing::Agent* agent);
 };
 
