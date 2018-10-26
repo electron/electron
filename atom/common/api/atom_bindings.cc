@@ -244,7 +244,7 @@ void AtomBindings::DidReceiveMemoryDump(
   v8::Context::Scope context_scope(env->context());
 
   if (!success) {
-    promise->RejectWithErrorMessage("Failed to receive memory dump");
+    promise->RejectWithErrorMessage("Failed to create memory dump");
     return;
   }
 
