@@ -35,16 +35,37 @@ const SkColor kDefaultColor = SkColorSetARGB(255, 233, 233, 233);
 
 const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
+MenuBarColorUpdater::MenuBarColorUpdater(MenuBar* menu_bar)
+    : menu_bar_(menu_bar) {}
+
+MenuBarColorUpdater::~MenuBarColorUpdater() {}
+
+void MenuBarColorUpdater::OnDidChangeFocus(views::View* focused_before,
+                                           views::View* focused_now) {
+  if (menu_bar_) {
+    // if we've changed window focus, update menu bar colors
+    const auto had_focus = menu_bar_->has_focus_;
+    menu_bar_->has_focus_ = focused_now != nullptr;
+    if (menu_bar_->has_focus_ != had_focus)
+      menu_bar_->UpdateViewColors();
+  }
+}
+
 MenuBar::MenuBar(RootView* window)
-    : background_color_(kDefaultColor), window_(window) {
+    : background_color_(kDefaultColor),
+      window_(window),
+      color_updater_(new MenuBarColorUpdater(this)) {
   RefreshColorCache();
   UpdateViewColors();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   SetLayoutManager(
       std::make_unique<views::BoxLayout>(views::BoxLayout::kHorizontal));
+  window_->GetFocusManager()->AddFocusChangeListener(color_updater_.get());
 }
 
-MenuBar::~MenuBar() {}
+MenuBar::~MenuBar() {
+  window_->GetFocusManager()->RemoveFocusChangeListener(color_updater_.get());
+}
 
 void MenuBar::SetMenu(AtomMenuModel* model) {
   menu_model_ = model;
@@ -267,16 +288,6 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
   RefreshColorCache(theme);
   UpdateViewColors();
-}
-
-void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
-  views::AccessiblePaneView::OnDidChangeFocus(focused_before, focused_now);
-
-  // if we've changed focus, update our view
-  const auto had_focus = has_focus_;
-  has_focus_ = focused_now != nullptr;
-  if (has_focus_ != had_focus)
-    UpdateViewColors();
 }
 
 void MenuBar::RebuildChildren() {

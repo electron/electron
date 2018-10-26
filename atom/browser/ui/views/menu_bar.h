@@ -19,6 +19,20 @@ class MenuButton;
 
 namespace atom {
 
+class MenuBarColorUpdater : public views::FocusChangeListener {
+ public:
+  explicit MenuBarColorUpdater(MenuBar* menu_bar);
+  ~MenuBarColorUpdater() override;
+
+  void OnDidChangeFocus(views::View* focused_before,
+                        views::View* focused_now) override;
+  void OnWillChangeFocus(views::View* focused_before,
+                         views::View* focused_now) override {}
+
+ private:
+  MenuBar* menu_bar_;
+};
+
 class MenuBar : public views::AccessiblePaneView,
                 public views::MenuButtonListener,
                 public atom::MenuDelegate::Observer {
@@ -67,10 +81,9 @@ class MenuBar : public views::AccessiblePaneView,
                            const ui::Event* event) override;
   void OnNativeThemeChanged(const ui::NativeTheme* theme) override;
 
-  // views::FocusChangeListener:
-  void OnDidChangeFocus(View* focused_before, View* focused_now) override;
-
  private:
+  friend class MenuBarColorUpdater;
+
   void RebuildChildren();
   void UpdateViewColors();
 
@@ -87,6 +100,8 @@ class MenuBar : public views::AccessiblePaneView,
   View* FindAccelChild(base::char16 key);
 
   bool has_focus_ = true;
+
+  std::unique_ptr<MenuBarColorUpdater> color_updater_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };
