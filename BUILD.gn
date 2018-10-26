@@ -213,6 +213,7 @@ static_library("electron_lib") {
     "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
+    "//components/spellcheck/renderer",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/browser",
@@ -368,11 +369,6 @@ static_library("electron_lib") {
     deps += [ "//third_party/breakpad:client" ]
     include_dirs += [ "//third_party/breakpad" ]
   }
-
-  sources += [
-    "//components/spellcheck/renderer/spellcheck_worditerator.cc",
-    "//components/spellcheck/renderer/spellcheck_worditerator.h",
-  ]
 
   if (enable_pdf) {
     deps += [ "//pdf" ]
