@@ -369,6 +369,11 @@ static_library("electron_lib") {
     include_dirs += [ "//third_party/breakpad" ]
   }
 
+  sources += [
+    "//components/spellcheck/renderer/spellcheck_worditerator.cc",
+    "//components/spellcheck/renderer/spellcheck_worditerator.h",
+  ]
+
   if (enable_pdf) {
     deps += [ "//pdf" ]
   }
