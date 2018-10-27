@@ -385,6 +385,7 @@ static_library("electron_lib") {
       ":libnotify_loader",
       "//build/config/linux/gtk",
       "//chrome/browser/ui/libgtkui",
+      "//dbus",
       "//device/bluetooth",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
