@@ -70,8 +70,8 @@ base::string16 MenuDelegate::GetLabel(int id) const {
   return adapter_->GetLabel(id);
 }
 
-const gfx::FontList* MenuDelegate::GetLabelFontList(int id) const {
-  return adapter_->GetLabelFontList(id);
+void MenuDelegate::GetLabelStyle(int id, LabelStyle* style) const {
+  return adapter_->GetLabelStyle(id, style);
 }
 
 bool MenuDelegate::IsCommandEnabled(int id) const {
