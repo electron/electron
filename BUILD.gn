@@ -403,6 +403,7 @@ static_library("electron_lib") {
   }
   if (is_win) {
     libs += [ "dwmapi.lib" ]
+    cflags = [ "-Wno-microsoft-include" ]
   }
   if (is_linux || is_win) {
     deps += [ "//third_party/breakpad:client" ]
