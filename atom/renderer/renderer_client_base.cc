@@ -19,6 +19,7 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
+#include "chrome/common/secure_origin_whitelist.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
@@ -163,6 +164,13 @@ void RendererClientBase::RenderThreadStarted() {
   for (const std::string& scheme : secure_schemes_list)
     blink::SchemeRegistry::RegisterURLSchemeAsSecure(
         WTF::String::FromUTF8(scheme.data(), scheme.length()));
+
+  // Parse --unsafely-treat-insecure-origin-as-secure
+  for (auto& origin_or_hostname_pattern :
+       secure_origin_whitelist::GetWhitelist()) {
+    blink::WebSecurityPolicy::AddOriginTrustworthyWhiteList(
+        blink::WebString::FromUTF8(origin_or_hostname_pattern));
+  }
 
   // Allow file scheme to handle service worker by default.
   // FIXME(zcbenz): Can this be moved elsewhere?

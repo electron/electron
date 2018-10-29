@@ -46,6 +46,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/printing/printing_message_filter.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -385,9 +386,10 @@ void AtomBrowserClient::AppendExtraCommandLineSwitches(
     return;
 
   // Copy following switches to child process.
-  static const char* const kCommonSwitchNames[] = {switches::kStandardSchemes,
-                                                   switches::kEnableSandbox,
-                                                   switches::kSecureSchemes};
+  static const char* const kCommonSwitchNames[] = {
+      switches::kStandardSchemes, switches::kEnableSandbox,
+      switches::kSecureSchemes,
+      ::switches::kUnsafelyTreatInsecureOriginAsSecure};
   command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                  kCommonSwitchNames,
                                  arraysize(kCommonSwitchNames));
