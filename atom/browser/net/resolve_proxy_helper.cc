@@ -4,75 +4,78 @@
 
 #include "atom/browser/net/resolve_proxy_helper.h"
 
+#include <utility>
+
 #include "atom/browser/atom_browser_context.h"
 #include "base/bind.h"
-#include "base/threading/thread_task_runner_handle.h"
-#include "net/url_request/url_request_context.h"
-#include "net/url_request/url_request_context_getter.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/bindings/interface_request.h"
+#include "net/proxy_resolution/proxy_info.h"
+#include "services/network/public/mojom/network_context.mojom.h"
+
+using content::BrowserThread;
 
 namespace atom {
 
 ResolveProxyHelper::ResolveProxyHelper(AtomBrowserContext* browser_context)
-    : context_getter_(browser_context->GetRequestContext()),
-      original_thread_(base::ThreadTaskRunnerHandle::Get()) {}
+    : binding_(this), browser_context_(browser_context) {}
 
 ResolveProxyHelper::~ResolveProxyHelper() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK(!owned_self_);
+  DCHECK(!binding_.is_bound());
   // Clear all pending requests if the ProxyService is still alive.
   pending_requests_.clear();
 }
 
 void ResolveProxyHelper::ResolveProxy(const GURL& url,
                                       const ResolveProxyCallback& callback) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
   // Enqueue the pending request.
   pending_requests_.push_back(PendingRequest(url, callback));
 
   // If nothing is in progress, start.
-  if (pending_requests_.size() == 1)
+  if (!binding_.is_bound()) {
+    DCHECK_EQ(1u, pending_requests_.size());
     StartPendingRequest();
+  }
 }
 
 void ResolveProxyHelper::StartPendingRequest() {
-  auto& pending_request = pending_requests_.front();
-  context_getter_->GetNetworkTaskRunner()->PostTask(
-      FROM_HERE, base::BindOnce(&ResolveProxyHelper::StartPendingRequestInIO,
-                                base::Unretained(this), pending_request.url));
-}
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  DCHECK(!binding_.is_bound());
+  DCHECK(!pending_requests_.empty());
 
-void ResolveProxyHelper::StartPendingRequestInIO(const GURL& url) {
-  auto* proxy_service =
-      context_getter_->GetURLRequestContext()->proxy_resolution_service();
   // Start the request.
-  int result = proxy_service->ResolveProxy(
-      url, std::string(), &proxy_info_,
-      base::Bind(&ResolveProxyHelper::OnProxyResolveComplete,
-                 base::RetainedRef(this)),
-      nullptr, nullptr, net::NetLogWithSource());
-  // Completed synchronously.
-  if (result != net::ERR_IO_PENDING)
-    OnProxyResolveComplete(result);
+  network::mojom::ProxyLookupClientPtr proxy_lookup_client;
+  binding_.Bind(mojo::MakeRequest(&proxy_lookup_client));
+  binding_.set_connection_error_handler(
+      base::BindOnce(&ResolveProxyHelper::OnProxyLookupComplete,
+                     base::Unretained(this), base::nullopt));
+  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      ->GetNetworkContext()
+      ->LookUpProxyForURL(pending_requests_.front().url,
+                          std::move(proxy_lookup_client));
 }
 
-void ResolveProxyHelper::OnProxyResolveComplete(int result) {
+void ResolveProxyHelper::OnProxyLookupComplete(
+    const base::Optional<net::ProxyInfo>& proxy_info) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
   DCHECK(!pending_requests_.empty());
 
-  std::string proxy;
-  if (result == net::OK)
-    proxy = proxy_info_.ToPacString();
-
-  original_thread_->PostTask(
-      FROM_HERE, base::BindOnce(&ResolveProxyHelper::SendProxyResult,
-                                base::RetainedRef(this), proxy));
-}
-
-void ResolveProxyHelper::SendProxyResult(const std::string& proxy) {
-  DCHECK(!pending_requests_.empty());
-
-  const auto& completed_request = pending_requests_.front();
-  if (!completed_request.callback.is_null())
-    completed_request.callback.Run(proxy);
+  binding_.Close();
 
   // Clear the current (completed) request.
+  PendingRequest completed_request = std::move(pending_requests_.front());
   pending_requests_.pop_front();
+
+  std::string proxy;
+  if (proxy_info)
+    proxy = proxy_info->ToPacString();
+
+  if (!completed_request.callback.is_null())
+    completed_request.callback.Run(proxy);
 
   // Start the next request.
   if (!pending_requests_.empty())
