@@ -6,6 +6,8 @@ const { BrowserWindow, Menu, MenuItem } = remote
 const { sortMenuItems } = require('../lib/browser/api/menu-utils')
 const { closeWindow } = require('./window-helpers')
 
+const isCI = remote.getGlobal('isCi')
+
 const { expect } = chai
 chai.use(dirtyChai)
 
@@ -740,6 +742,161 @@ describe('Menu module', () => {
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null)
       expect(Menu.getApplicationMenu()).to.be.null()
+    })
+
+    describe('keyboard accessibility', () => {
+      const sendEvent = (keyCode, modifiers) => {
+        remote.getCurrentWindow().focus()
+
+        remote.getCurrentWindow().webContents.sendInputEvent({
+          type: 'keyDown',
+          keyCode,
+          modifiers
+        })
+
+        remote.getCurrentWindow().webContents.sendInputEvent({
+          type: 'keyUp',
+          keyCode,
+          modifiers
+        })
+      }
+
+      const menu = (done) => {
+        return Menu.buildFromTemplate([
+          {
+            label: 'te&xt',
+            click: (item) => {
+              expect(item.constructor.name).to.equal('MenuItem')
+              expect(item.label).to.equal('te&xt')
+              done()
+            }
+          }
+        ])
+      }
+
+      const largeMenu = (done = () => {}) => {
+        return Menu.buildFromTemplate([
+          { label: '&a' },
+          { label: 'b' },
+          {
+            label: '&text',
+            click: (item) => {
+              expect(item.constructor.name).to.equal('MenuItem')
+              expect(item.label).to.equal('&text')
+              done()
+            }
+          }
+        ])
+      }
+
+      before(function () {
+        if (process.platform === 'darwin') {
+          this.skip()
+        }
+      })
+
+      it('should not crash when pressing alt repeatedly', (done) => {
+        Menu.setApplicationMenu(menu())
+        sendEvent('alt')
+        sendEvent('alt')
+        sendEvent('alt')
+        done()
+      })
+
+      it('should not crash when two items have same accelerator (& syntax)', (done) => {
+        const menu = Menu.buildFromTemplate([
+          { label: '&test' },
+          { label: 'tes&t' }
+        ])
+
+        Menu.setApplicationMenu(menu)
+        done()
+      })
+
+      it('should activate an item with the accelerator (& syntax)', (done) => {
+        Menu.setApplicationMenu(menu(done))
+        sendEvent('x', ['alt'])
+      })
+
+      if (!isCI) {
+        it('should activate an item with the up key', (done) => {
+          Menu.setApplicationMenu(menu(done))
+          sendEvent('alt')
+          sendEvent('up')
+        })
+
+        it('should activate an item with the down key', (done) => {
+          Menu.setApplicationMenu(menu(done))
+          sendEvent('alt')
+          sendEvent('down')
+        })
+
+        it('should activate an item with the space key', (done) => {
+          Menu.setApplicationMenu(menu(done))
+          sendEvent('alt')
+          sendEvent('space')
+        })
+
+        it('should activate an item with the enter key', (done) => {
+          Menu.setApplicationMenu(menu(done))
+          sendEvent('alt')
+          sendEvent('enter')
+        })
+
+        it('should navigate to an item with accelerator character', (done) => {
+          Menu.setApplicationMenu(largeMenu(done))
+          sendEvent('alt')
+          sendEvent('t')
+        })
+
+        it('should navigate to an item with arrow keys', (done) => {
+          Menu.setApplicationMenu(largeMenu(done))
+          sendEvent('alt')
+          sendEvent('right')
+          sendEvent('right')
+          sendEvent('enter')
+        })
+
+        it('should navigate to the last item with end key', (done) => {
+          Menu.setApplicationMenu(largeMenu(done))
+          sendEvent('alt')
+          sendEvent('end')
+          sendEvent('enter')
+        })
+
+        it('should navigate to the first item with home key', (done) => {
+          const menu = Menu.buildFromTemplate([
+            {
+              label: '&text',
+              click: (item) => {
+                expect(item.constructor.name).to.equal('MenuItem')
+                expect(item.label).to.equal('&text')
+                done()
+              }
+            },
+            { label: 'b' },
+            { label: '&a' }
+          ])
+
+          Menu.setApplicationMenu(menu)
+          sendEvent('alt')
+          sendEvent('end')
+          sendEvent('home')
+          sendEvent('enter')
+        })
+
+        it('should blur menu with escape key', (done) => {
+          expect(() => {
+            Menu.setApplicationMenu(menu(() => {
+              throw new Error('Should not activate button')
+            }))
+            sendEvent('alt')
+            sendEvent('esc')
+            sendEvent('enter')
+            done()
+          }).to.not.throw()
+        })
+      }
     })
   })
 })
