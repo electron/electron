@@ -376,6 +376,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_.reset(
         new WebViewGuestDelegate(embedder_->web_contents(), this));
     params.guest_delegate = guest_delegate_.get();
+    params.initialize_renderer = true;
 
 #if defined(ENABLE_OSR)
     if (embedder_ && embedder_->IsOffScreen()) {
@@ -398,6 +399,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, base::Bind(&WebContents::OnPaint, base::Unretained(this)));
+    params.initialize_renderer = true;
     params.view = view;
     params.delegate_view = view;
 
@@ -406,6 +408,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
+    params.initialize_renderer = true;
     web_contents = content::WebContents::Create(params);
   }
 
