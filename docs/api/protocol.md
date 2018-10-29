@@ -267,7 +267,7 @@ Unregisters the custom protocol of `scheme`.
 
 * `scheme` String
 * `callback` Function
-  * `error` Error
+  * `handled` Boolean
 
 The `callback` will be called with a boolean that indicates whether there is
 already a handler for `scheme`.
