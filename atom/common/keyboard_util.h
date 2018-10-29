@@ -7,9 +7,14 @@
 
 #include <string>
 
+#include "base/strings/string16.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 namespace atom {
+
+// Return key code of the char, and also determine whether the SHIFT key is
+// pressed.
+ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted);
 
 // Return key code of the |str|, and also determine whether the SHIFT key is
 // pressed.

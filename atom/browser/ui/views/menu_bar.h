@@ -5,7 +5,12 @@
 #ifndef ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define ATOM_BROWSER_UI_VIEWS_MENU_BAR_H_
 
+#include <memory>
+
 #include "atom/browser/ui/atom_menu_model.h"
+#include "atom/browser/ui/views/menu_delegate.h"
+#include "atom/browser/ui/views/root_view.h"
+#include "ui/views/accessible_pane_view.h"
 #include "ui/views/controls/button/menu_button_listener.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/view.h"
@@ -16,15 +21,27 @@ class MenuButton;
 
 namespace atom {
 
-class MenuDelegate;
+class MenuBarColorUpdater : public views::FocusChangeListener {
+ public:
+  explicit MenuBarColorUpdater(MenuBar* menu_bar);
+  ~MenuBarColorUpdater() override;
 
-class MenuBar : public views::View,
+  void OnDidChangeFocus(views::View* focused_before,
+                        views::View* focused_now) override;
+  void OnWillChangeFocus(views::View* focused_before,
+                         views::View* focused_now) override {}
+
+ private:
+  MenuBar* menu_bar_;
+};
+
+class MenuBar : public views::AccessiblePaneView,
                 public views::MenuButtonListener,
-                public views::FocusChangeListener {
+                public atom::MenuDelegate::Observer {
  public:
   static const char kViewClassName[];
 
-  explicit MenuBar(views::View* window);
+  explicit MenuBar(RootView* window);
   ~MenuBar() override;
 
   // Replaces current menu with a new one.
@@ -47,6 +64,15 @@ class MenuBar : public views::View,
                                     AtomMenuModel** menu_model,
                                     views::MenuButton** button);
 
+  // atom::MenuDelegate::Observer:
+  void OnBeforeExecuteCommand() override;
+  void OnMenuClosed() override;
+
+  // views::AccessiblePaneView:
+  bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
+  bool SetPaneFocus(views::View* initial_focus) override;
+  void RemovePaneFocus() override;
+
  protected:
   // views::View:
   const char* GetClassName() const override;
@@ -57,11 +83,9 @@ class MenuBar : public views::View,
                            const ui::Event* event) override;
   void OnNativeThemeChanged(const ui::NativeTheme* theme) override;
 
-  // views::FocusChangeListener:
-  void OnDidChangeFocus(View* focused_before, View* focused_now) override;
-  void OnWillChangeFocus(View* focused_before, View* focused_now) override {}
-
  private:
+  friend class MenuBarColorUpdater;
+
   void RebuildChildren();
   void UpdateViewColors();
 
@@ -72,12 +96,14 @@ class MenuBar : public views::View,
   SkColor disabled_color_;
 #endif
 
-  views::View* window_ = nullptr;
+  RootView* window_ = nullptr;
   AtomMenuModel* menu_model_ = nullptr;
 
   View* FindAccelChild(base::char16 key);
 
   bool has_focus_ = true;
+
+  std::unique_ptr<MenuBarColorUpdater> color_updater_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };

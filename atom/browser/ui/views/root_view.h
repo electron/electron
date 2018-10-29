@@ -9,6 +9,7 @@
 
 #include "atom/browser/ui/accelerator_util.h"
 #include "ui/views/view.h"
+#include "ui/views/view_tracker.h"
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -34,6 +35,7 @@ class RootView : public views::View {
   bool IsMenuBarVisible() const;
   void HandleKeyEvent(const content::NativeWebKeyboardEvent& event);
   void ResetAltState();
+  void RestoreFocus();
 
   // views::View:
   void Layout() override;
@@ -56,6 +58,8 @@ class RootView : public views::View {
 
   // Map from accelerator to menu item's command id.
   accelerator_util::AcceleratorTable accelerator_table_;
+
+  std::unique_ptr<views::ViewTracker> last_focused_view_tracker_;
 
   DISALLOW_COPY_AND_ASSIGN(RootView);
 };

@@ -19,6 +19,12 @@ The `menu` class has the following static methods:
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
 
+Also on Windows and Linux, you can use a `&` in the top-level item name to
+indicate which letter should get a generated accelerator. For example, using
+`&File` for the file menu would result in a generated `Alt-F` accelerator that
+opens the associated menu. The indicated character in the button label gets an
+underline. The `&` character is not displayed on the button label.
+
 Passing `null` will remove the menu bar on Windows and Linux but has no
 effect on macOS.
 
