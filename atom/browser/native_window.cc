@@ -558,6 +558,11 @@ void NativeWindow::NotifyNewWindowForTab() {
     observer.OnNewWindowForTab();
 }
 
+void NativeWindow::NotifyHistoryAction(const std::string& action) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnHistoryAction(action);
+}
+
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,

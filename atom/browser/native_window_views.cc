@@ -287,6 +287,12 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_NORMAL;
   last_normal_bounds_ = GetBounds();
 #endif
+
+#if defined(OS_LINUX)
+  aura::Window* window = GetNativeWindow();
+  if (window)
+    window->AddPreTargetHandler(this);
+#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -295,6 +301,12 @@ NativeWindowViews::~NativeWindowViews() {
 #if defined(OS_WIN)
   // Disable mouse forwarding to relinquish resources, should any be held.
   SetForwardMouseMessages(false);
+#endif
+
+#if defined(OS_LINUX)
+  aura::Window* window = GetNativeWindow();
+  if (window)
+    window->RemovePreTargetHandler(this);
 #endif
 }
 
@@ -1278,6 +1290,18 @@ void NativeWindowViews::HandleKeyboardEvent(
                                                root_view_->GetFocusManager());
   root_view_->HandleKeyEvent(event);
 }
+
+#if defined(OS_LINUX)
+void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
+  if (event->type() != ui::ET_MOUSE_PRESSED)
+    return;
+
+  if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
+    NotifyHistoryAction("backward");
+  if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
+    NotifyHistoryAction("forward");
+}
+#endif
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized())

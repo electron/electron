@@ -88,6 +88,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictionaryValue& details) {}
   virtual void OnNewWindowForTab() {}
+  virtual void OnHistoryAction(const std::string& action) {}
 
 // Called when window message received
 #if defined(OS_WIN)

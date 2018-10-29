@@ -281,6 +281,10 @@ void TopLevelWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
 }
 
+void TopLevelWindow::OnHistoryAction(const std::string& action) {
+  Emit("history-action", action);
+}
+
 #if defined(OS_WIN)
 void TopLevelWindow::OnWindowMessage(UINT message,
                                      WPARAM w_param,

@@ -40,7 +40,8 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
                           public MessageHandlerDelegate,
 #endif
-                          public views::WidgetObserver {
+                          public views::WidgetObserver,
+                          public ui::EventHandler {
  public:
   NativeWindowViews(const mate::Dictionary& options, NativeWindow* parent);
   ~NativeWindowViews() override;
@@ -203,6 +204,11 @@ class NativeWindowViews : public NativeWindow,
   void HandleKeyboardEvent(
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
+
+#if defined(OS_LINUX)
+  // EventHandler:
+  void OnMouseEvent(ui::MouseEvent* event) override;
+#endif
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();

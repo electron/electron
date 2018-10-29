@@ -613,6 +613,16 @@ Emitted when the window has closed a sheet.
 
 Emitted when the native new tab button is clicked.
 
+#### Event: 'history-action'
+
+Returns:
+
+* `event` Event
+* `action` String
+
+Emitted when a browser history navigation key is pressed, such as the back button on some mice.
+Possible actions are `forward` and `backward`.
+
 ### Static Methods
 
 The `BrowserWindow` class has the following static methods:
