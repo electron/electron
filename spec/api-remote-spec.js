@@ -5,6 +5,7 @@ const path = require('path')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
+const {ipcMain, BrowserWindow} = remote
 
 const comparePaths = (path1, path2) => {
   if (process.platform === 'win32') {
@@ -482,6 +483,25 @@ describe('remote module', () => {
         assert.ok(error.from)
         assert.deepEqual(error.cause, err)
       }
+    })
+  })
+
+  describe('remote function in renderer', () => {
+    afterEach(() => {
+      ipcMain.removeAllListeners('done')
+    })
+
+    it('works when created in preload script', (done) => {
+      ipcMain.once('done', () => w.close())
+      const preload = path.join(fixtures, 'module', 'preload-remote-function.js')
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: preload
+        }
+      })
+      w.once('closed', () => done())
+      w.loadURL('about:blank')
     })
   })
 })
