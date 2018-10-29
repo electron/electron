@@ -143,6 +143,13 @@ bool NativeWindowViews::ExecuteWindowsCommand(int command_id) {
   std::string command = AppCommandToString(command_id);
   NotifyWindowExecuteWindowsCommand(command);
 
+  if (command_id == APPCOMMAND_BROWSER_BACKWARD) {
+    NotifyHistoryAction("backward");
+  }
+  if (command_id == APPCOMMAND_BROWSER_FORWARD) {
+    NotifyHistoryAction("forward");
+  }
+
   return false;
 }
 

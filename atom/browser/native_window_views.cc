@@ -1286,6 +1286,20 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+#if defined(OS_MACOSX)
+  if (event.GetModifiers() == blink::WebInputEvent::kMetaKey) {
+    if (event.windows_key_code == ui::VKEY_OEM_4)
+      NotifyHistoryAction("backward");
+    if (event.windows_key_code == ui::VKEY_OEM_6)
+      NotifyHistoryAction("forward");
+  }
+#elif defined(OS_LINUX)
+  if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
+    NotifyHistoryAction("backward");
+  if (event.windows_key_code == ui::VKEY_BROWSER_FORWARD)
+    NotifyHistoryAction("forward");
+#endif
+
   keyboard_event_handler_->HandleKeyboardEvent(event,
                                                root_view_->GetFocusManager());
   root_view_->HandleKeyEvent(event);
