@@ -89,6 +89,9 @@ class MenuBar : public views::AccessiblePaneView,
   void RebuildChildren();
   void UpdateViewColors();
 
+  void MaybeAddAccelerators();
+  void MaybeRemoveAccelerators();
+
   void RefreshColorCache(const ui::NativeTheme* theme = nullptr);
   SkColor background_color_;
 #if defined(USE_X11)
@@ -102,6 +105,7 @@ class MenuBar : public views::AccessiblePaneView,
   View* FindAccelChild(base::char16 key);
 
   bool has_focus_ = true;
+  bool accelerators_added_ = false;
 
   std::unique_ptr<MenuBarColorUpdater> color_updater_;
 

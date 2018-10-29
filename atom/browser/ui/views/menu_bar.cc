@@ -64,6 +64,7 @@ MenuBar::MenuBar(RootView* window)
 }
 
 MenuBar::~MenuBar() {
+  MaybeRemoveAccelerators();
   window_->GetFocusManager()->RemoveFocusChangeListener(color_updater_.get());
 }
 
@@ -133,6 +134,13 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
     return false;
 
   switch (accelerator.key_code()) {
+    case ui::VKEY_SPACE:
+    case ui::VKEY_RETURN:
+    case ui::VKEY_UP:
+    case ui::VKEY_DOWN: {
+      auto event = accelerator.ToKeyEvent();
+      return focused_view->OnKeyPressed(event);
+    }
     case ui::VKEY_MENU:
     case ui::VKEY_ESCAPE: {
       RemovePaneFocus();
@@ -178,28 +186,7 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
   bool result = views::AccessiblePaneView::SetPaneFocus(initial_focus);
 
   if (result) {
-    auto children = GetChildrenInZOrder();
-    std::set<ui::KeyboardCode> reg;
-    for (int i = 0, n = children.size(); i < n; ++i) {
-      auto* button = static_cast<SubmenuButton*>(children[i]);
-      bool shifted = false;
-      auto keycode =
-          atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
-
-      // We want the menu items to activate if the user presses the accelerator
-      // key, even without alt, since we are now focused on the menu bar
-      if (keycode != ui::VKEY_UNKNOWN && reg.find(keycode) != reg.end()) {
-        reg.insert(keycode);
-        focus_manager()->RegisterAccelerator(
-            ui::Accelerator(keycode, ui::EF_NONE),
-            ui::AcceleratorManager::kNormalPriority, this);
-      }
-    }
-
-    // We want to remove focus / hide menu bar when alt is pressed again
-    focus_manager()->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN),
-        ui::AcceleratorManager::kNormalPriority, this);
+    MaybeAddAccelerators();
   }
 
   return result;
@@ -208,24 +195,7 @@ bool MenuBar::SetPaneFocus(views::View* initial_focus) {
 void MenuBar::RemovePaneFocus() {
   views::AccessiblePaneView::RemovePaneFocus();
   SetAcceleratorVisibility(false);
-
-  auto children = GetChildrenInZOrder();
-  std::set<ui::KeyboardCode> unreg;
-  for (int i = 0, n = children.size(); i < n; ++i) {
-    auto* button = static_cast<SubmenuButton*>(children[i]);
-    bool shifted = false;
-    auto keycode =
-        atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
-
-    if (keycode != ui::VKEY_UNKNOWN && unreg.find(keycode) != unreg.end()) {
-      unreg.insert(keycode);
-      focus_manager()->UnregisterAccelerator(
-          ui::Accelerator(keycode, ui::EF_NONE), this);
-    }
-  }
-
-  focus_manager()->UnregisterAccelerator(
-      ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN), this);
+  MaybeRemoveAccelerators();
 }
 
 const char* MenuBar::GetClassName() const {
@@ -291,6 +261,9 @@ void MenuBar::OnNativeThemeChanged(const ui::NativeTheme* theme) {
 }
 
 void MenuBar::RebuildChildren() {
+  const bool had_accelerators = accelerators_added_;
+  MaybeRemoveAccelerators();
+
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button =
@@ -299,6 +272,9 @@ void MenuBar::RebuildChildren() {
     AddChildView(button);
   }
   UpdateViewColors();
+
+  if (had_accelerators)
+    MaybeAddAccelerators();
 }
 
 void MenuBar::UpdateViewColors() {
@@ -324,6 +300,88 @@ void MenuBar::UpdateViewColors() {
     button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
+}
+
+void MenuBar::MaybeAddAccelerators() {
+  if (!focus_manager())
+    return;
+
+  if (!accelerators_added_) {
+    accelerators_added_ = true;
+
+    auto children = GetChildrenInZOrder();
+    std::set<ui::KeyboardCode> reg;
+    for (int i = 0, n = children.size(); i < n; ++i) {
+      auto* button = static_cast<SubmenuButton*>(children[i]);
+      bool shifted = false;
+      auto keycode =
+          atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+
+      // We want the menu items to activate if the user presses the accelerator
+      // key, even without alt, since we are now focused on the menu bar
+      if (keycode != ui::VKEY_UNKNOWN && reg.find(keycode) == reg.end()) {
+        reg.insert(keycode);
+        focus_manager()->RegisterAccelerator(
+            ui::Accelerator(keycode, ui::EF_NONE),
+            ui::AcceleratorManager::kNormalPriority, this);
+      }
+    }
+
+    // We want to remove focus / hide menu bar when alt is pressed again
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN),
+        ui::AcceleratorManager::kNormalPriority, this);
+
+    // We need these to allow the sendInputEvent API to trigger a button press,
+    // which improves testing possibilities
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_SPACE, ui::EF_NONE),
+        ui::AcceleratorManager::kNormalPriority, this);
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
+        ui::AcceleratorManager::kNormalPriority, this);
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_UP, ui::EF_NONE),
+        ui::AcceleratorManager::kNormalPriority, this);
+    focus_manager()->RegisterAccelerator(
+        ui::Accelerator(ui::VKEY_DOWN, ui::EF_NONE),
+        ui::AcceleratorManager::kNormalPriority, this);
+  }
+}
+
+void MenuBar::MaybeRemoveAccelerators() {
+  if (!focus_manager())
+    return;
+
+  if (accelerators_added_) {
+    accelerators_added_ = false;
+
+    auto children = GetChildrenInZOrder();
+    std::set<ui::KeyboardCode> unreg;
+    for (int i = 0, n = children.size(); i < n; ++i) {
+      auto* button = static_cast<SubmenuButton*>(children[i]);
+      bool shifted = false;
+      auto keycode =
+          atom::KeyboardCodeFromCharCode(button->accelerator(), &shifted);
+
+      if (keycode != ui::VKEY_UNKNOWN && unreg.find(keycode) == unreg.end()) {
+        unreg.insert(keycode);
+        focus_manager()->UnregisterAccelerator(
+            ui::Accelerator(keycode, ui::EF_NONE), this);
+      }
+    }
+
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN), this);
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(ui::VKEY_SPACE, ui::EF_NONE), this);
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE), this);
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(ui::VKEY_UP, ui::EF_NONE), this);
+    focus_manager()->UnregisterAccelerator(
+        ui::Accelerator(ui::VKEY_DOWN, ui::EF_NONE), this);
+  }
 }
 
 }  // namespace atom
