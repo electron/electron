@@ -210,8 +210,6 @@ bool ShowOpenDialog(const DialogSettings& settings,
     options |= FOS_PICKFOLDERS;
   if (settings.properties & FILE_DIALOG_MULTI_SELECTIONS)
     options |= FOS_ALLOWMULTISELECT;
-  if (settings.properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
-    options |= FOS_FORCESHOWHIDDEN;
   if (settings.properties & FILE_DIALOG_PROMPT_TO_CREATE)
     options |= FOS_CREATEPROMPT;
   file_open_dialog->SetOptions(options);

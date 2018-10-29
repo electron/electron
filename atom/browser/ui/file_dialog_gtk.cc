@@ -96,8 +96,6 @@ class FileChooserDialog {
   void SetupProperties(int properties) {
     if (properties & FILE_DIALOG_MULTI_SELECTIONS)
       gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog()), TRUE);
-    if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
-      g_object_set(dialog(), "show-hidden", TRUE, NULL);
   }
 
   void RunAsynchronous() {

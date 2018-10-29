@@ -194,8 +194,6 @@ void SetupDialogForProperties(NSOpenPanel* dialog, int properties) {
     [dialog setCanCreateDirectories:YES];
   if (properties & FILE_DIALOG_MULTI_SELECTIONS)
     [dialog setAllowsMultipleSelection:YES];
-  if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
-    [dialog setShowsHiddenFiles:YES];
   if (properties & FILE_DIALOG_NO_RESOLVE_ALIASES)
     [dialog setResolvesAliases:NO];
   if (properties & FILE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY)
