@@ -541,8 +541,13 @@ describe('session module', () => {
     let server = null
     let customSession = null
 
-    beforeEach(() => {
+    beforeEach((done) => {
       customSession = session.fromPartition('proxyconfig')
+      // FIXME(deepak1556): This is just a hack to force
+      // creation of request context which in turn initializes
+      // the network context, can be removed with network
+      // service enabled.
+      customSession.clearHostResolverCache(() => done())
     })
 
     afterEach(() => {
