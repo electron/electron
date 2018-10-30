@@ -391,6 +391,10 @@ describe('MenuItems', () => {
   })
 
   describe('MenuItem accelerators', () => {
+    const isDarwin = () => {
+      return (process.platform === 'darwin')
+    }
+
     it('should display modifiers correctly for simple keys', done => {
       const menu = Menu.buildFromTemplate([
         { label: 'text', accelerator: 'CmdOrCtrl+A' },
@@ -399,9 +403,11 @@ describe('MenuItems', () => {
       ])
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        `${(process.platform === 'darwin') ? 'Cmd' : 'Ctrl'}+A`)
-      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+A')
-      assert.strictEqual(menu.getAcceleratorTextAt(2), 'Alt+A')
+        isDarwin() ? '⌘A' : 'Ctrl+A')
+      assert.strictEqual(menu.getAcceleratorTextAt(1),
+        isDarwin() ? '⇧A' : 'Shift+A')
+      assert.strictEqual(menu.getAcceleratorTextAt(2),
+        isDarwin() ? '⌥A' : 'Alt+A')
       done()
     })
 
@@ -413,9 +419,11 @@ describe('MenuItems', () => {
       ])
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        `${(process.platform === 'darwin') ? 'Cmd' : 'Ctrl'}+Tab`)
-      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+Tab')
-      assert.strictEqual(menu.getAcceleratorTextAt(2), 'Alt+Tab')
+        isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
+      assert.strictEqual(menu.getAcceleratorTextAt(1),
+        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+      assert.strictEqual(menu.getAcceleratorTextAt(2),
+        isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
       done()
     })
 
@@ -425,8 +433,10 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Shift+Shift+Tab' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0), 'Shift+A')
-      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+Tab')
+      assert.strictEqual(menu.getAcceleratorTextAt(0),
+        isDarwin() ? '⇧A' : 'Shift+A')
+      assert.strictEqual(menu.getAcceleratorTextAt(1),
+        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
       done()
     })
 
@@ -436,8 +446,10 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Control+Plus' }
       ])
 
-      assert.strictEqual(menu.getAcceleratorTextAt(0), 'Ctrl+Shift+=')
-      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Ctrl+Shift+=')
+      assert.strictEqual(menu.getAcceleratorTextAt(0),
+        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
+      assert.strictEqual(menu.getAcceleratorTextAt(1),
+        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
       done()
     })
   })
