@@ -803,4 +803,9 @@ std::string AtomBrowserClient::GetApplicationLocale() {
   return *g_application_locale;
 }
 
+bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
+  // Enable site isolation. It is off by default in Chromium <= 69.
+  return true;
+}
+
 }  // namespace atom

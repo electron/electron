@@ -65,6 +65,9 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
 
+  // content::ContentBrowserClient:
+  bool ShouldEnableStrictSiteIsolation() override;
+
  protected:
   void RenderProcessWillLaunch(
       content::RenderProcessHost* host,
