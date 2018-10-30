@@ -81,6 +81,9 @@
       },
       'window-open-external': () => {
         addEventListener('load', () => {
+          ipcRenderer.once('open-the-popup', (event, url) => {
+            popup = open(url, '', 'top=65,left=55,width=505,height=605')
+          })
           ipcRenderer.once('touch-the-popup', () => {
             let errorMessage = null
             try {
@@ -90,7 +93,7 @@
             }
             ipcRenderer.send('answer', errorMessage)
           })
-          popup = open('http://www.google.com/#q=electron', '', 'top=65,left=55,width=505,height=605')
+          ipcRenderer.send('opener-loaded')
         })
       },
       'verify-ipc-sender': () => {

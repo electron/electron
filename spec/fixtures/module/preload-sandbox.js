@@ -21,8 +21,17 @@
       }
     }
   } else if (location.href !== 'about:blank') {
-    addEventListener('DOMContentLoaded', () => {
-      ipcRenderer.send('child-loaded', window.opener == null, document.body.innerHTML, location.href)
-    }, false)
+    ipcRenderer.once('touch-the-opener', () => {
+      let errorMessage = null
+      try {
+        const openerDoc = opener.document // eslint-disable-line no-unused-vars
+      } catch (error) {
+        errorMessage = error.message
+      }
+      ipcRenderer.send('answer', errorMessage)
+    })
+    ipcRenderer.once('provide-details', () => {
+      ipcRenderer.send('answer', window.opener == null, document.body.innerHTML, location.href)
+    })
   }
 })()
