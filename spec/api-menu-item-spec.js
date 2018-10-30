@@ -6,7 +6,7 @@ const { BrowserWindow, app, Menu, MenuItem } = remote
 const roles = require('../lib/browser/api/menu-item-roles')
 const { closeWindow } = require('./window-helpers')
 
-const { expect } = chai
+const { expect, assert } = chai
 chai.use(dirtyChai)
 
 describe('MenuItems', () => {
@@ -387,6 +387,58 @@ describe('MenuItems', () => {
       expect(menu.items[0].submenu.items[0].label).to.equal('item 1')
       expect(menu.items[0].submenu.items[0].customProp).to.equal('bar')
       expect(menu.items[0].submenu.items[0].overrideProperty).to.be.a('function')
+    })
+  })
+
+  describe('MenuItem accelerators', () => {
+    it('should display modifiers correctly for simple keys', done => {
+      const menu = Menu.buildFromTemplate([
+        { label: 'text', accelerator: 'CmdOrCtrl+A' },
+        { label: 'text', accelerator: 'Shift+A' },
+        { label: 'text', accelerator: 'Alt+A' }
+      ])
+
+      assert.strictEqual(menu.getAcceleratorTextAt(0),
+        `${(process.platform === 'darwin') ? 'Cmd' : 'Ctrl'}+A`)
+      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+A')
+      assert.strictEqual(menu.getAcceleratorTextAt(2), 'Alt+A')
+      done()
+    })
+
+    it('should display modifiers correctly for special keys', done => {
+      const menu = Menu.buildFromTemplate([
+        { label: 'text', accelerator: 'CmdOrCtrl+Tab' },
+        { label: 'text', accelerator: 'Shift+Tab' },
+        { label: 'text', accelerator: 'Alt+Tab' }
+      ])
+
+      assert.strictEqual(menu.getAcceleratorTextAt(0),
+        `${(process.platform === 'darwin') ? 'Cmd' : 'Ctrl'}+Tab`)
+      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+Tab')
+      assert.strictEqual(menu.getAcceleratorTextAt(2), 'Alt+Tab')
+      done()
+    })
+
+    it('should not display modifiers twice', done => {
+      const menu = Menu.buildFromTemplate([
+        { label: 'text', accelerator: 'Shift+Shift+A' },
+        { label: 'text', accelerator: 'Shift+Shift+Tab' }
+      ])
+
+      assert.strictEqual(menu.getAcceleratorTextAt(0), 'Shift+A')
+      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Shift+Tab')
+      done()
+    })
+
+    it('should display correctly for edge cases', done => {
+      const menu = Menu.buildFromTemplate([
+        { label: 'text', accelerator: 'Control+Shift+=' },
+        { label: 'text', accelerator: 'Control+Plus' }
+      ])
+
+      assert.strictEqual(menu.getAcceleratorTextAt(0), 'Ctrl+Shift+=')
+      assert.strictEqual(menu.getAcceleratorTextAt(1), 'Ctrl+Shift+=')
+      done()
     })
   })
 })
