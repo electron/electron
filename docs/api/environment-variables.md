@@ -48,7 +48,7 @@ Unsupported options are:
 
 ### `GOOGLE_API_KEY`
 
-You can supply your own Google API key in the environment. Place the following code in your main process
+You can provide an API key for making requests to Google's geocoding webservice. To do this, place the following code in your main process
 file, before opening any browser windows that will make geocoding requests:
 
 ```javascript
