@@ -45,7 +45,7 @@ returns `null`.
 
 Returns `WebContents` - A WebContents instance with the given ID.
 
-### `webContents.enableEditHotkeys()`
+### `webContents.enableEditHotkeys()` _MacOS_
 
 Enables `cut`, `copy`, and `paste` shortcuts for a given `webContents`. 
 Useful in differenting shortcuts between different `webContents`, such as devtools vs. primary
