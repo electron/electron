@@ -469,7 +469,7 @@ describe('session module', () => {
       })
     })
 
-    xit('handles requests from partition', (done) => {
+    it('handles requests from partition', (done) => {
       w.webContents.on('did-finish-load', () => done())
       w.loadURL(`${protocolName}://fake-host`)
     })
