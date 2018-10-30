@@ -91,6 +91,7 @@ class Menu : public mate::TrackableObject<Menu>,
   int GetCommandIdAt(int index) const;
   base::string16 GetLabelAt(int index) const;
   base::string16 GetSublabelAt(int index) const;
+  base::string16 GetAcceleratorTextAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
