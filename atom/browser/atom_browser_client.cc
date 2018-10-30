@@ -31,7 +31,6 @@
 #include "atom/browser/web_contents_permission_helper.h"
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/window_list.h"
-#include "atom/common/google_api_key.h"
 #include "atom/common/options_switches.h"
 #include "atom/common/platform_util.h"
 #include "base/command_line.h"
@@ -428,11 +427,11 @@ void AtomBrowserClient::DidCreatePpapiPlugin(content::BrowserPpapiHost* host) {
 #endif
 }
 
+// attempt to get api key from env
 std::string AtomBrowserClient::GetGeolocationApiKey() {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   std::string api_key;
-  if (!env->GetVar("GOOGLE_API_KEY", &api_key))
-    api_key = GOOGLEAPIS_API_KEY;
+  env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
 }
 

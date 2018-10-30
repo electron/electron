@@ -11,7 +11,6 @@
 #include "atom/app/atom_content_client.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/relauncher.h"
-#include "atom/common/google_api_key.h"
 #include "atom/common/options_switches.h"
 #include "atom/renderer/atom_renderer_client.h"
 #include "atom/renderer/atom_sandboxed_renderer_client.h"
