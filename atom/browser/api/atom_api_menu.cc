@@ -156,10 +156,9 @@ base::string16 Menu::GetSublabelAt(int index) const {
 }
 
 base::string16 Menu::GetAcceleratorTextAt(int index) const {
-  auto* accelerator = new ui::Accelerator();
-  model_->GetAcceleratorAtWithParams(index, true, accelerator);
-
-  return accelerator ? accelerator->GetShortcutText() : base::string16();
+  ui::Accelerator accelerator;
+  model_->GetAcceleratorAtWithParams(index, true, &accelerator);
+  return accelerator.GetShortcutText();
 }
 
 bool Menu::IsItemCheckedAt(int index) const {
