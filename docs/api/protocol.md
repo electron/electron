@@ -169,6 +169,7 @@ should be called with either a `String` or an object that has the `data`,
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
@@ -329,6 +330,7 @@ which sends a `Buffer` as a response.
 * `handler` Function
   * `request` Object
     * `url` String
+    * `headers` Object
     * `referrer` String
     * `method` String
     * `uploadData` [UploadData[]](structures/upload-data.md)
