@@ -117,12 +117,11 @@ A few examples of how various semver ranges will pick up new releases:
 
 ![](../images/versioning-sketch-7.png)
 
-# Missing Features: Alphas, and Nightly
+# Missing Features: Alphas
 Our strategy has a few tradeoffs, which for now we feel are appropriate. Most importantly that new features in master may take a while before reaching a stable release line. If you want to try a new feature immediately, you will have to build Electron yourself.
 
 As a future consideration, we may introduce one or both of the following:
 
-* nightly builds off of master; these would allow folks to test new features quickly and give feedback
 * alpha releases that have looser stability constraints to betas; for example it would be allowable to admit new features while a stability channel is in _alpha_
 
 # Feature Flags
@@ -143,8 +142,9 @@ We seek to increase clarity at all levels of the update and releases process. St
 * We allow squashing of commits, provided that the squashed message adheres the the above message format.
 * It is acceptable for some commits in a pull request to not include a semantic prefix, as long as the pull request title contains a meaningful encompassing semantic message.
 
-# Versionless `master`
+# Versioned `master`
 
-- The `master` branch will always contain `0.0.0-dev` in its `package.json`
+- The `master` branch will always contain the next major version `X.0.0-nightly.DATE` in its `package.json`
 - Release branches are never merged back to master
 - Release branches _do_ contain the correct version in their `package.json`
+- As soon as a release branch is cut for a major, master must be bumped to the next major.  I.e. `master` is always versioned as the next theoretical release branch
