@@ -1016,7 +1016,11 @@ describe('chromium feature', () => {
         contents = null
       })
 
-      it('cannot access localStorage', (done) => {
+      // FIXME(deepak1556): Disabled with site isolation ON
+      // Localstorage area is accessed on the browser process
+      // before checking accessibility on the renderer side,
+      // causing illegal origin access renderer termination.
+      xit('cannot access localStorage', (done) => {
         ipcMain.once('local-storage-response', (event, error) => {
           assert.strictEqual(
             error,
