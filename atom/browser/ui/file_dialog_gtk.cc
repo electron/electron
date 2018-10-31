@@ -94,10 +94,14 @@ class FileChooserDialog {
   }
 
   void SetupProperties(int properties) {
-    if (properties & FILE_DIALOG_MULTI_SELECTIONS)
-      gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog()), TRUE);
-    if (properties & FILE_DIALOG_SHOW_HIDDEN_FILES)
-      g_object_set(dialog(), "show-hidden", TRUE, NULL);
+    const auto hasProp = [properties](FileDialogProperty prop) {
+      return gboolean((properties & prop) != 0);
+    };
+    auto* file_chooser = GTK_FILE_CHOOSER(dialog());
+    gtk_file_chooser_set_select_multiple(file_chooser,
+                                         hasProp(FILE_DIALOG_MULTI_SELECTIONS));
+    gtk_file_chooser_set_show_hidden(file_chooser,
+                                     hasProp(FILE_DIALOG_SHOW_HIDDEN_FILES));
   }
 
   void RunAsynchronous() {
