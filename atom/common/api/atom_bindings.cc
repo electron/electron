@@ -221,27 +221,28 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+
   memory_instrumentation::MemoryInstrumentation::GetInstance()
-      ->RequestGlobalDumpForPid(base::GetCurrentProcId(),
-                                std::vector<std::string>(),
-                                base::Bind(&AtomBindings::DidReceiveMemoryDump,
-                                           base::Unretained(env), promise));
+      ->RequestGlobalDumpForPid(
+          base::GetCurrentProcId(), std::vector<std::string>(),
+          base::Bind(&AtomBindings::DidReceiveMemoryDump, promise));
   return promise->GetHandle();
 }
 
 // static
 void AtomBindings::DidReceiveMemoryDump(
-    node::Environment* env,
     scoped_refptr<util::Promise> promise,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
-  // Enter Node environment.
-  mate::Locker locker(env->isolate());
-  v8::HandleScope handle_scope(env->isolate());
-  v8::MicrotasksScope script_scope(env->isolate(),
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  if (!isolate)
+    return;
+
+  mate::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::MicrotasksScope script_scope(isolate,
                                    v8::MicrotasksScope::kRunMicrotasks);
-  v8::Context::Scope context_scope(env->context());
+  v8::Context::Scope context_scope(isolate->GetCurrentContext());
 
   if (!success) {
     promise->RejectWithErrorMessage("Failed to create memory dump");
@@ -252,7 +253,7 @@ void AtomBindings::DidReceiveMemoryDump(
   for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
        global_dump->process_dumps()) {
     if (base::GetCurrentProcId() == dump.pid()) {
-      mate::Dictionary dict = mate::Dictionary::CreateEmpty(env->isolate());
+      mate::Dictionary dict = mate::Dictionary::CreateEmpty(isolate);
       const auto& osdump = dump.os_dump();
 #if defined(OS_LINUX) || defined(OS_WIN)
       dict.Set("residentSet", osdump.resident_set_kb);
