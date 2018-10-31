@@ -42,15 +42,12 @@ describe('process module', () => {
     it('resolves promise successfully with valid data', async () => {
       const memoryInfo = await process.getProcessMemoryInfo()
       expect(memoryInfo).to.be.an('object')
-      if (process.platform === 'linux') {
-        expect(memoryInfo.residentSetBytes).to.be.a('number').greaterThan(0)
+      if (process.platform === 'linux' || process.platform === 'windows') {
+        expect(memoryInfo.residentSet).to.be.a('number').greaterThan(0)
       }
-      if (process.platform === 'windows') {
-        expect(memoryInfo.workingSetSize).to.be.a('number').greaterThan(0)
-      }
-      expect(memoryInfo.privateBytes).to.be.a('number').greaterThan(0)
+      expect(memoryInfo.private).to.be.a('number').greaterThan(0)
       // Shared bytes can be zero
-      expect(memoryInfo.sharedBytes).to.be.a('number').greaterThan(-1)
+      expect(memoryInfo.shared).to.be.a('number').greaterThan(-1)
     })
   })
 

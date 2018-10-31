@@ -254,13 +254,11 @@ void AtomBindings::DidReceiveMemoryDump(
     if (base::GetCurrentProcId() == dump.pid()) {
       mate::Dictionary dict = mate::Dictionary::CreateEmpty(env->isolate());
       const auto& osdump = dump.os_dump();
-#if defined(OS_LINUX)
-      dict.Set("residentSetBytes", osdump.resident_set_kb);
-#elif defined(OS_WIN)
-      dict.Set("workingSetSize", osdump.resident_set_kb);
+#if defined(OS_LINUX) || defined(OS_WIN)
+      dict.Set("residentSet", osdump.resident_set_kb);
 #endif
-      dict.Set("privateBytes", osdump.private_footprint_kb);
-      dict.Set("sharedBytes", osdump.shared_footprint_kb);
+      dict.Set("private", osdump.private_footprint_kb);
+      dict.Set("shared", osdump.shared_footprint_kb);
       promise->Resolve(dict.GetHandle());
       resolved = true;
       break;

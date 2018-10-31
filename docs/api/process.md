@@ -167,11 +167,11 @@ Returns an object with V8 heap statistics. Note that all statistics are reported
 
 Returns `Object`:
 
-* `residentSetBytes` Integer on _Linux_ or `workingSetSize` Integer on _Windows_ - The
-amount of memory currently pinned to actual physical RAM.
-* `privateBytes` Integer - The amount of memory not shared by other processes, such as
+* `residentSet` Integer _Linux_ and _Windows_ - The amount of memory 
+currently pinned to actual physical RAM.
+* `private` Integer - The amount of memory not shared by other processes, such as
   JS heap or HTML content.
-* `sharedBytes` Integer - The amount of memory shared between processes, typically
+* `shared` Integer - The amount of memory shared between processes, typically
   memory consumed by the Electron code itself.
 
 Returns an object giving memory usage statistics about the current process. Note
