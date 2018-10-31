@@ -912,7 +912,7 @@ describe('asar package', function () {
         })
       })
 
-      xit('execFileSync executes binaries', function () {
+      it('execFileSync executes binaries', function () {
         const output = execFileSync(echo, ['test'])
         assert.strictEqual(String(output), 'test\n')
       })
