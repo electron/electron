@@ -37,6 +37,12 @@ bool SystemPreferences::IsInvertedColorScheme() {
   return color_utils::IsInvertedColorScheme();
 }
 
+#if !defined(OS_WIN)
+bool SystemPreferences::IsHighContrastColorScheme() {
+  return false;
+}
+#endif  // !defined(OS_WIN)
+
 // static
 mate::Handle<SystemPreferences> SystemPreferences::Create(
     v8::Isolate* isolate) {
@@ -86,6 +92,8 @@ void SystemPreferences::BuildPrototype(
 #endif
       .SetMethod("isInvertedColorScheme",
                  &SystemPreferences::IsInvertedColorScheme)
+      .SetMethod("isHighContrastColorScheme",
+                 &SystemPreferences::IsHighContrastColorScheme)
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }
 
