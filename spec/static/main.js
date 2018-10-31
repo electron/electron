@@ -313,26 +313,21 @@ ipcMain.on('disable-preload-on-next-will-attach-webview', (event, id) => {
 
 ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
   const consoleWarn = console.warn
-  let warningMessage = null
   const contents = webContents.fromId(id)
   const listenerCountBefore = contents.listenerCount(eventName)
 
-  try {
-    console.warn = (message) => {
-      warningMessage = message
-    }
-    contents.emit(eventName, {sender: contents})
-  } finally {
+  console.warn = (warningMessage) => {
     console.warn = consoleWarn
+
+    const listenerCountAfter = contents.listenerCount(eventName)
+    event.returnValue = {
+      warningMessage,
+      listenerCountBefore,
+      listenerCountAfter
+    }
   }
 
-  const listenerCountAfter = contents.listenerCount(eventName)
-
-  event.returnValue = {
-    warningMessage,
-    listenerCountBefore,
-    listenerCountAfter
-  }
+  contents.emit(eventName, {sender: contents})
 })
 
 ipcMain.on('handle-uncaught-exception', (event, message) => {
