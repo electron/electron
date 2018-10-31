@@ -475,6 +475,19 @@ describe('protocol module', () => {
         })
       })
     })
+
+    it('can access request headers', (done) => {
+      const handler = (request) => {
+        assert.ok('headers' in request)
+        done()
+      }
+      protocol.registerHttpProtocol(protocolName, handler, () => {
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false
+        })
+      })
+    })
   })
 
   describe('protocol.registerStreamProtocol', () => {
@@ -865,6 +878,16 @@ describe('protocol module', () => {
           customSession.webRequest.onBeforeRequest(null)
           done()
         })
+      })
+    })
+
+    it('can access request headers', (done) => {
+      const handler = (request) => {
+        assert.ok('headers' in request)
+        done()
+      }
+      protocol.interceptHttpProtocol('http', handler, () => {
+        fetch('http://fake-host')
       })
     })
   })
