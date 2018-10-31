@@ -38,7 +38,7 @@ bool SystemPreferences::IsInvertedColorScheme() {
 }
 
 #if !defined(OS_WIN)
-bool SystemPreferences::IsHighContractColorScheme() {
+bool SystemPreferences::IsHighContrastColorScheme() {
   return false;
 }
 #endif  // !defined(OS_WIN)
@@ -93,7 +93,7 @@ void SystemPreferences::BuildPrototype(
       .SetMethod("isInvertedColorScheme",
                  &SystemPreferences::IsInvertedColorScheme)
       .SetMethod("isHighContrastColorScheme",
-                 &SystemPreferences::IsHighContractColorScheme)
+                 &SystemPreferences::IsHighContrastColorScheme)
       .SetMethod("isDarkMode", &SystemPreferences::IsDarkMode);
 }
 

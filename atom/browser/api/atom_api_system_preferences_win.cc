@@ -40,7 +40,7 @@ bool SystemPreferences::IsAeroGlassEnabled() {
   return ui::win::IsAeroGlassEnabled();
 }
 
-bool SystemPreferences::IsHighContractColorScheme() {
+bool SystemPreferences::IsHighContrastColorScheme() {
   if (!g_is_high_contract_color_scheme_initialized)
     UpdateHighContrastColorScheme();
   return g_is_high_contract_color_scheme;
@@ -137,7 +137,7 @@ std::string SystemPreferences::GetColor(const std::string& color,
 
 void SystemPreferences::InitializeWindow() {
   invertered_color_scheme_ = IsInvertedColorScheme();
-  high_contrast_color_scheme_ = IsHighContractColorScheme();
+  high_contrast_color_scheme_ = IsHighContrastColorScheme();
 
   // Wait until app is ready before creating sys color listener
   // Creating this listener before the app is ready causes global shortcuts
@@ -202,7 +202,7 @@ void SystemPreferences::OnSysColorChange() {
     Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
   }
 
-  bool new_high_contrast_color_scheme = IsHighContractColorScheme();
+  bool new_high_contrast_color_scheme = IsHighContrastColorScheme();
   if (new_high_contrast_color_scheme != high_contrast_color_scheme_) {
     high_contrast_color_scheme_ = new_high_contrast_color_scheme;
     Emit("high-contrast-color-scheme-changed", new_high_contrast_color_scheme);

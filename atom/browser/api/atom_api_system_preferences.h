@@ -98,7 +98,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();
-  bool IsHighContractColorScheme();
+  bool IsHighContrastColorScheme();
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
