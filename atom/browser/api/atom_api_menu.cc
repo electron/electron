@@ -155,6 +155,12 @@ base::string16 Menu::GetSublabelAt(int index) const {
   return model_->GetSublabelAt(index);
 }
 
+base::string16 Menu::GetAcceleratorTextAt(int index) const {
+  ui::Accelerator accelerator;
+  model_->GetAcceleratorAtWithParams(index, true, &accelerator);
+  return accelerator.GetShortcutText();
+}
+
 bool Menu::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
 }
@@ -195,6 +201,7 @@ void Menu::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
+      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
