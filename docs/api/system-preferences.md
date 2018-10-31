@@ -67,6 +67,8 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  
+Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
@@ -96,6 +98,8 @@ Removes the subscriber with `id`.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  
+Returns `Number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
