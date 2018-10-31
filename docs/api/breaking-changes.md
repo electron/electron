@@ -212,11 +212,11 @@ screen.getPrimaryDisplay().workArea
 
 ```js
 // Deprecated
-ses.setCertificateVerifyProc(function (hostname, certificate, callback) {
+ses.setCertificateVerifyProc((hostname, certificate, callback) => {
   callback(true)
 })
 // Replace with
-ses.setCertificateVerifyProc(function (request, callback) {
+ses.setCertificateVerifyProc((request, callback) => {
   callback(0)
 })
 ```
