@@ -10,6 +10,7 @@
 #endif
 
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1050,6 +1051,11 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
 
 gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
+}
+
+std::tuple<void*, int> NativeWindowViews::GetNativeWindowHandlePointer() const {
+  gfx::AcceleratedWidget handle = GetAcceleratedWidget();
+  return std::make_tuple(static_cast<void*>(&handle), sizeof(handle));
 }
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
