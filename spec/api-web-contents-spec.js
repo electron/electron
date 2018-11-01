@@ -313,8 +313,8 @@ describe('webContents module', () => {
 
   describe('sendInputEvent(event)', () => {
     beforeEach((done) => {
-      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
       w.webContents.once('did-finish-load', () => done())
+      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
     })
 
     it('can send keydown events', (done) => {
