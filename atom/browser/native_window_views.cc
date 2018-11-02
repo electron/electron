@@ -894,6 +894,7 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   if (menu_model == nullptr) {
     global_menu_bar_.reset();
     root_view_->UnregisterAcceleratorsWithFocusManager();
+    return;
   }
 
   if (!global_menu_bar_ && ShouldUseGlobalMenuBar())
