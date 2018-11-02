@@ -44,6 +44,17 @@ The `globalShortcut` module has the following methods:
 
 ### `globalShortcut.register(accelerator, callback)`
 
+* `accelerators` String[] - an array of [Accelerator](accelerator.md)s.
+* `callback` Function
+
+Registers a global shortcut of all `accelerator` items in `accelerators`. The `callback` is called when any of the registered shortcuts are pressed by the user.
+
+When a given accelerator is already taken by other applications, this call will
+silently fail. This behavior is intended by operating systems, since they don't
+want applications to fight for global shortcuts.
+
+### `globalShortcut.registerAccelerator(accelerator, callback)`
+
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
 

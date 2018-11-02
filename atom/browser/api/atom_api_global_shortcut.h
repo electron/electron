@@ -7,6 +7,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "atom/browser/api/trackable_object.h"
 #include "base/callback.h"
@@ -33,8 +34,10 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
  private:
   typedef std::map<ui::Accelerator, base::Closure> AcceleratorCallbackMap;
 
-  bool Register(const ui::Accelerator& accelerator,
+  bool Register(const std::vector<ui::Accelerator>& accelerators,
                 const base::Closure& callback);
+  bool RegisterAccelerator(const ui::Accelerator& accelerator,
+                           const base::Closure& callback);
   bool IsRegistered(const ui::Accelerator& accelerator);
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterAll();
