@@ -51,9 +51,7 @@ bool Converter<file_dialog::DialogSettings>::FromV8(
   dict.Get("filters", &(out->filters));
   dict.Get("properties", &(out->properties));
   dict.Get("showsTagField", &(out->shows_tag_field));
-#if defined(MAS_BUILD)
   dict.Get("securityScopedBookmarks", &(out->security_scoped_bookmarks));
-#endif
   return true;
 }
 
@@ -69,11 +67,8 @@ v8::Local<v8::Value> Converter<file_dialog::DialogSettings>::ToV8(
   dict.Set("nameFieldLabel", in.name_field_label);
   dict.Set("defaultPath", in.default_path);
   dict.Set("filters", in.filters);
-  dict.Set("properties", in.properties);
   dict.Set("showsTagField", in.shows_tag_field);
-#if defined(MAS_BUILD)
   dict.Set("securityScopedBookmarks", in.security_scoped_bookmarks);
-#endif
 
   return dict.GetHandle();
 }
