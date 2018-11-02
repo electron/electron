@@ -395,7 +395,7 @@ describe('MenuItems', () => {
       return (process.platform === 'darwin')
     }
 
-    it('should display modifiers correctly for simple keys', done => {
+    it('should display modifiers correctly for simple keys', () => {
       const menu = Menu.buildFromTemplate([
         { label: 'text', accelerator: 'CmdOrCtrl+A' },
         { label: 'text', accelerator: 'Shift+A' },
@@ -408,10 +408,9 @@ describe('MenuItems', () => {
         isDarwin() ? '⇧A' : 'Shift+A')
       assert.strictEqual(menu.getAcceleratorTextAt(2),
         isDarwin() ? '⌥A' : 'Alt+A')
-      done()
     })
 
-    it('should display modifiers correctly for special keys', done => {
+    it('should display modifiers correctly for special keys', () => {
       const menu = Menu.buildFromTemplate([
         { label: 'text', accelerator: 'CmdOrCtrl+Tab' },
         { label: 'text', accelerator: 'Shift+Tab' },
@@ -424,10 +423,9 @@ describe('MenuItems', () => {
         isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
       assert.strictEqual(menu.getAcceleratorTextAt(2),
         isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
-      done()
     })
 
-    it('should not display modifiers twice', done => {
+    it('should not display modifiers twice', () => {
       const menu = Menu.buildFromTemplate([
         { label: 'text', accelerator: 'Shift+Shift+A' },
         { label: 'text', accelerator: 'Shift+Shift+Tab' }
@@ -437,10 +435,9 @@ describe('MenuItems', () => {
         isDarwin() ? '⇧A' : 'Shift+A')
       assert.strictEqual(menu.getAcceleratorTextAt(1),
         isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
-      done()
     })
 
-    it('should display correctly for edge cases', done => {
+    it('should display correctly for edge cases', () => {
       const menu = Menu.buildFromTemplate([
         { label: 'text', accelerator: 'Control+Shift+=' },
         { label: 'text', accelerator: 'Control+Plus' }
@@ -450,7 +447,6 @@ describe('MenuItems', () => {
         isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
       assert.strictEqual(menu.getAcceleratorTextAt(1),
         isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
-      done()
     })
   })
 })
