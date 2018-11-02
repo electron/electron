@@ -138,7 +138,6 @@ app.on('ready', function () {
       backgroundThrottling: false
     }
   })
-  window.webContents.openDevTools({ mode: 'detach' })
   window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
