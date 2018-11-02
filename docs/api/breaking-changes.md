@@ -20,7 +20,7 @@ app.makeSingleInstance(function (argv, cwd) {
 })
 // Replace with
 app.requestSingleInstanceLock()
-app.on('second-instance', function (argv, cwd) {
+app.on('second-instance', function (event, argv, cwd) {
 
 })
 ```
