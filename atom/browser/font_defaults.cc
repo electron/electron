@@ -5,6 +5,7 @@
 #include "atom/browser/font_defaults.h"
 
 #include <string>
+#include <unordered_map>
 
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -106,11 +107,30 @@ std::string GetDefaultFontForPref(const char* pref_name) {
   return std::string();
 }
 
+// Map from script to font.
+// Key comparison uses pointer equality.
+using ScriptFontMap = std::unordered_map<const char*, base::string16>;
+
+// Map from font family to ScriptFontMap.
+// Key comparison uses pointer equality.
+using FontFamilyMap = std::unordered_map<const char*, ScriptFontMap>;
+
+FontFamilyMap g_font_cache;
+
 base::string16 FetchFont(const char* script, const char* map_name) {
+  FontFamilyMap::const_iterator it = g_font_cache.find(map_name);
+  if (it != g_font_cache.end()) {
+    ScriptFontMap::const_iterator it2 = it->second.find(script);
+    if (it2 != it->second.end())
+      return it2->second;
+  }
+
   std::string pref_name = base::StringPrintf("%s.%s", map_name, script);
   std::string font = GetDefaultFontForPref(pref_name.c_str());
   base::string16 font16 = base::UTF8ToUTF16(font);
 
+  ScriptFontMap& map = g_font_cache[map_name];
+  map[script] = font16;
   return font16;
 }
 
