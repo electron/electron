@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "atom/browser/browser.h"
 #include "atom/common/api/locker.h"
 #include "atom/common/application_info.h"
 #include "atom/common/atom_version.h"
@@ -221,6 +222,12 @@ v8::Local<v8::Value> AtomBindings::GetSystemMemoryInfo(v8::Isolate* isolate,
 v8::Local<v8::Promise> AtomBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
   scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+
+  if (!Browser::Get()->is_ready()) {
+    promise->RejectWithErrorMessage(
+        "Memory Info is available only after app ready");
+    return promise->GetHandle();
+  }
 
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(

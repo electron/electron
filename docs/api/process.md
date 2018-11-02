@@ -176,6 +176,7 @@ currently pinned to actual physical RAM.
 
 Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
+This api should be called after app ready.
 
 ### `process.getSystemMemoryInfo()`
 
