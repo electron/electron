@@ -134,13 +134,6 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
     return false;
 
   switch (accelerator.key_code()) {
-    case ui::VKEY_SPACE:
-    case ui::VKEY_RETURN:
-    case ui::VKEY_UP:
-    case ui::VKEY_DOWN: {
-      auto event = accelerator.ToKeyEvent();
-      return focused_view->OnKeyPressed(event);
-    }
     case ui::VKEY_MENU:
     case ui::VKEY_ESCAPE: {
       RemovePaneFocus();
@@ -331,21 +324,6 @@ void MenuBar::MaybeAddAccelerators() {
     focus_manager()->RegisterAccelerator(
         ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN),
         ui::AcceleratorManager::kNormalPriority, this);
-
-    // We need these to allow the sendInputEvent API to trigger a button press,
-    // which improves testing possibilities
-    focus_manager()->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_SPACE, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
-    focus_manager()->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
-    focus_manager()->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_UP, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
-    focus_manager()->RegisterAccelerator(
-        ui::Accelerator(ui::VKEY_DOWN, ui::EF_NONE),
-        ui::AcceleratorManager::kNormalPriority, this);
   }
 }
 
@@ -373,14 +351,6 @@ void MenuBar::MaybeRemoveAccelerators() {
 
     focus_manager()->UnregisterAccelerator(
         ui::Accelerator(ui::VKEY_MENU, ui::EF_ALT_DOWN), this);
-    focus_manager()->UnregisterAccelerator(
-        ui::Accelerator(ui::VKEY_SPACE, ui::EF_NONE), this);
-    focus_manager()->UnregisterAccelerator(
-        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE), this);
-    focus_manager()->UnregisterAccelerator(
-        ui::Accelerator(ui::VKEY_UP, ui::EF_NONE), this);
-    focus_manager()->UnregisterAccelerator(
-        ui::Accelerator(ui::VKEY_DOWN, ui::EF_NONE), this);
   }
 }
 
