@@ -376,7 +376,13 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       cd src/out/Default
       # -o  overwrite files WITHOUT prompting
       # TODO(alexeykuzmin): Remove '-o' when it's no longer needed.
-      unzip -o dist.zip
+      # -: allows to extract archive members into  locations  outside
+      #    of the current ``extraction root folder''.
+      #    ASan builds have the llvm-symbolizer binaries listed as
+      #    runtime_deps, with their paths as `../../third_party/...`
+      #    unzip exits with non-zero code on such zip files unless -: is
+      #    passed.
+      unzip -:o dist.zip
 
 step-ffmpeg-unzip: &step-ffmpeg-unzip
   run:
@@ -887,8 +893,12 @@ steps-tests: &steps-tests
           MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
-          cd src
           export ELECTRON_OUT_DIR=Default
+          export LLVM_SYMBOLIZER_PATH=$PWD/tools/valgrind/asan/asan_symbolize.py
+          export ASAN_OPTIONS="symbolize=0"
+          export G_SLICE=always-malloc
+          export NSS_DISABLE_ARENA_FREE_LIST=1
+          export NSS_DISABLE_UNLOAD=1
           (cd electron && node script/yarn test -- --ci --enable-logging)
     - run:
         name: Check test results existence
