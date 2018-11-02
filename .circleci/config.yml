@@ -894,12 +894,12 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           export ELECTRON_OUT_DIR=Default
-          export LLVM_SYMBOLIZER_PATH=$PWD/tools/valgrind/asan/asan_symbolize.py
+          export ASAN_SYMBOLIZE=$PWD/src/tools/valgrind/asan/asan_symbolize.py
           export ASAN_OPTIONS="symbolize=0"
           export G_SLICE=always-malloc
           export NSS_DISABLE_ARENA_FREE_LIST=1
           export NSS_DISABLE_UNLOAD=1
-          (cd electron && node script/yarn test -- --ci --enable-logging)
+          (cd electron && node script/yarn test -- --ci --enable-logging) 2>&1 | $ASAN_SYMBOLIZE
     - run:
         name: Check test results existence
         command: |
