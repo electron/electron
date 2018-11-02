@@ -8,8 +8,6 @@
 #include "atom/common/application_info.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtkui/app_indicator_icon.h"
-#include "chrome/browser/ui/libgtkui/gtk_status_icon.h"
 #include "ui/gfx/image/image.h"
 
 namespace atom {
@@ -32,16 +30,8 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
   }
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
-
-  if (libgtkui::AppIndicatorIcon::CouldOpen()) {
-    ++indicators_count;
-    icon_.reset(new libgtkui::AppIndicatorIcon(
-        base::StringPrintf("%s%d", Browser::Get()->GetName().c_str(),
-                           indicators_count),
-        image.AsImageSkia(), toolTip));
-  } else {
-    icon_.reset(new libgtkui::Gtk2StatusIcon(image.AsImageSkia(), toolTip));
-  }
+  icon_.reset(views::LinuxUI::instance()->CreateLinuxStatusIcon(
+      image.AsImageSkia(), toolTip));
   icon_->set_delegate(this);
 }
 
