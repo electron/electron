@@ -44,8 +44,11 @@ bool GlobalShortcut::RegisterAll(
     const base::Closure& callback) {
   for (auto& accelerator : accelerators) {
     GlobalShortcutListener* listener = GlobalShortcutListener::GetInstance();
-    if (!listener->RegisterAccelerator(accelerator, this))
+    if (!listener->RegisterAccelerator(accelerator, this)) {
+      // unregister all shortcuts if any failed
+      UnregisterAll();
       return false;
+    }
 
     accelerator_callback_map_[accelerator] = callback;
   }
