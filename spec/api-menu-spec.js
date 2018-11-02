@@ -818,7 +818,7 @@ describe('Menu module', () => {
 
       let testFn = it
       try {
-        require('robotjs')
+        require('robotjs').setKeyboardDelay(200)
       } catch (err) {
         testFn = it.skip
       }
@@ -895,7 +895,7 @@ describe('Menu module', () => {
             throw new Error('Should not activate button')
           }))
           require('robotjs').keyTap('alt')
-          require('robotjs').keyTap('esc')
+          require('robotjs').keyTap('escape')
           require('robotjs').keyTap('enter')
           done()
         }).to.not.throw()
