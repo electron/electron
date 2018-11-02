@@ -1,4 +1,5 @@
 const assert = require('assert')
+const chai = require('chai')
 const http = require('http')
 const https = require('https')
 const path = require('path')
@@ -9,6 +10,7 @@ const { closeWindow } = require('./window-helpers')
 
 const { ipcRenderer, remote } = require('electron')
 const { ipcMain, session, BrowserWindow, net } = remote
+const { expect } = chai
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -416,6 +418,37 @@ describe('session module', () => {
           assert.strictEqual(receivedBytes, 0)
           assert.strictEqual(totalBytes, mockPDF.length)
           assert.strictEqual(disposition, contentDisposition)
+          done()
+        })
+      })
+    })
+
+    it('can set options for the save dialog', (done) => {
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const port = downloadServer.address().port
+        const options = {
+          window: null,
+          title: 'title',
+          message: 'message',
+          buttonLabel: 'buttonLabel',
+          nameFieldLabel: 'nameFieldLabel',
+          defaultPath: '/',
+          filters: [{
+            name: '1', extensions: ['.1', '.2']
+          }, {
+            name: '2', extensions: ['.3', '.4', '.5']
+          }],
+          showsTagField: true,
+          securityScopedBookmarks: true
+        }
+
+        ipcRenderer.sendSync('set-download-option', true, false, undefined, options)
+        w.webContents.downloadURL(`${url}:${port}`)
+        ipcRenderer.once('download-done', (event, state, url,
+          mimeType, receivedBytes,
+          totalBytes, disposition,
+          filename, savePath, dialogOptions) => {
+          expect(dialogOptions).to.deep.equal(options)
           done()
         })
       })
