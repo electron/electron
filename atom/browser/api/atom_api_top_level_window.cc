@@ -267,7 +267,7 @@ void TopLevelWindow::OnWindowAlwaysOnTopChanged() {
   Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
-void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
+void TopLevelWindow::OnExecuteAppCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 
@@ -279,10 +279,6 @@ void TopLevelWindow::OnTouchBarItemResult(
 
 void TopLevelWindow::OnNewWindowForTab() {
   Emit("new-window-for-tab");
-}
-
-void TopLevelWindow::OnHistoryAction(const std::string& action) {
-  Emit("history-action", action);
 }
 
 #if defined(OS_WIN)

@@ -580,6 +580,11 @@ win.on('app-command', (e, cmd) => {
 })
 ```
 
+The following app commands are explictly supported on Linux and macOS
+
+* `browser-backward`
+* `browser-forward`
+
 #### Event: 'scroll-touch-begin' _macOS_
 
 Emitted when scroll wheel event phase has begun.
@@ -612,16 +617,6 @@ Emitted when the window has closed a sheet.
 #### Event: 'new-window-for-tab' _macOS_
 
 Emitted when the native new tab button is clicked.
-
-#### Event: 'history-action'
-
-Returns:
-
-* `event` Event
-* `action` String
-
-Emitted when a browser history navigation key is pressed, such as the back button on some mice.
-Possible actions are `forward` and `backward`.
 
 ### Static Methods
 
