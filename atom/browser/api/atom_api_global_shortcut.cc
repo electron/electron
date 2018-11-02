@@ -39,8 +39,9 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   accelerator_callback_map_[accelerator].Run();
 }
 
-bool GlobalShortcut::Register(const std::vector<ui::Accelerator>& accelerators,
-                              const base::Closure& callback) {
+bool GlobalShortcut::RegisterAll(
+    const std::vector<ui::Accelerator>& accelerators,
+    const base::Closure& callback) {
   for (auto& accelerator : accelerators) {
     GlobalShortcutListener* listener = GlobalShortcutListener::GetInstance();
     if (!listener->RegisterAccelerator(accelerator, this))
@@ -51,8 +52,8 @@ bool GlobalShortcut::Register(const std::vector<ui::Accelerator>& accelerators,
   return true;
 }
 
-bool GlobalShortcut::RegisterAccelerator(const ui::Accelerator& accelerator,
-                                         const base::Closure& callback) {
+bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
+                              const base::Closure& callback) {
   if (!GlobalShortcutListener::GetInstance()->RegisterAccelerator(accelerator,
                                                                   this)) {
     return false;
@@ -90,8 +91,8 @@ void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
                                     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "GlobalShortcut"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+      .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
-      .SetMethod("registerAccelerator", &GlobalShortcut::RegisterAccelerator)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);

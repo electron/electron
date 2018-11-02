@@ -42,7 +42,7 @@ app.on('will-quit', () => {
 
 The `globalShortcut` module has the following methods:
 
-### `globalShortcut.register(accelerator, callback)`
+### `globalShortcut.registerAll(accelerator, callback)`
 
 * `accelerators` String[] - an array of [Accelerator](accelerator.md)s.
 * `callback` Function
@@ -53,7 +53,7 @@ When a given accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
-### `globalShortcut.registerAccelerator(accelerator, callback)`
+### `globalShortcut.register(accelerator, callback)`
 
 * `accelerator` [Accelerator](accelerator.md)
 * `callback` Function
