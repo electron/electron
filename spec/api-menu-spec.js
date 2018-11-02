@@ -818,85 +818,90 @@ describe('Menu module', () => {
         sendEvent('x', ['alt'])
       })
 
-      if (!isCI) {
-        it('should activate an item with the up key', (done) => {
-          Menu.setApplicationMenu(menu(done))
-          sendEvent('alt')
-          sendEvent('up')
-        })
-
-        it('should activate an item with the down key', (done) => {
-          Menu.setApplicationMenu(menu(done))
-          sendEvent('alt')
-          sendEvent('down')
-        })
-
-        it('should activate an item with the space key', (done) => {
-          Menu.setApplicationMenu(menu(done))
-          sendEvent('alt')
-          sendEvent('space')
-        })
-
-        it('should activate an item with the enter key', (done) => {
-          Menu.setApplicationMenu(menu(done))
-          sendEvent('alt')
-          sendEvent('enter')
-        })
-
-        it('should navigate to an item with accelerator character', (done) => {
-          Menu.setApplicationMenu(largeMenu(done))
-          sendEvent('alt')
-          sendEvent('t')
-        })
-
-        it('should navigate to an item with arrow keys', (done) => {
-          Menu.setApplicationMenu(largeMenu(done))
-          sendEvent('alt')
-          sendEvent('right')
-          sendEvent('right')
-          sendEvent('enter')
-        })
-
-        it('should navigate to the last item with end key', (done) => {
-          Menu.setApplicationMenu(largeMenu(done))
-          sendEvent('alt')
-          sendEvent('end')
-          sendEvent('enter')
-        })
-
-        it('should navigate to the first item with home key', (done) => {
-          const menu = Menu.buildFromTemplate([
-            {
-              label: '&text',
-              click: (item) => {
-                expect(item.constructor.name).to.equal('MenuItem')
-                expect(item.label).to.equal('&text')
-                done()
-              }
-            },
-            { label: 'b' },
-            { label: '&a' }
-          ])
-
-          Menu.setApplicationMenu(menu)
-          sendEvent('alt')
-          sendEvent('end')
-          sendEvent('home')
-          sendEvent('enter')
-        })
-
-        it('should blur menu with escape key', (done) => {
-          expect(() => {
-            Menu.setApplicationMenu(menu(() => {
-              throw new Error('Should not activate button')
-            }))
-            sendEvent('alt')
-            sendEvent('esc')
-            sendEvent('enter')
-            done()
-          }).to.not.throw()
-        })
+      let testFn = it
+      try {
+        require('robotjs')
+      } catch (err) {
+        testFn = it.skip
       }
+
+      testFn('should activate an item with the up key', (done) => {
+        Menu.setApplicationMenu(menu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('up')
+      })
+
+      testFn('should activate an item with the down key', (done) => {
+        Menu.setApplicationMenu(menu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('down')
+      })
+
+      testFn('should activate an item with the space key', (done) => {
+        Menu.setApplicationMenu(menu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('space')
+      })
+
+      testFn('should activate an item with the enter key', (done) => {
+        Menu.setApplicationMenu(menu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('enter')
+      })
+
+      testFn('should navigate to an item with accelerator character', (done) => {
+        Menu.setApplicationMenu(largeMenu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('t')
+      })
+
+      testFn('should navigate to an item with arrow keys', (done) => {
+        Menu.setApplicationMenu(largeMenu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('right')
+        require('robotjs').keyTap('right')
+        require('robotjs').keyTap('enter')
+      })
+
+      testFn('should navigate to the last item with end key', (done) => {
+        Menu.setApplicationMenu(largeMenu(done))
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('end')
+        require('robotjs').keyTap('enter')
+      })
+
+      testFn('should navigate to the first item with home key', (done) => {
+        const menu = Menu.buildFromTemplate([
+          {
+            label: '&text',
+            click: (item) => {
+              expect(item.constructor.name).to.equal('MenuItem')
+              expect(item.label).to.equal('&text')
+              done()
+            }
+          },
+          { label: 'b' },
+          { label: '&a' }
+        ])
+
+        Menu.setApplicationMenu(menu)
+        require('robotjs').keyTap('alt')
+        require('robotjs').keyTap('end')
+        require('robotjs').keyTap('home')
+        require('robotjs').keyTap('enter')
+      })
+
+      testFn('should blur menu with escape key', (done) => {
+        expect(() => {
+          Menu.setApplicationMenu(menu(() => {
+            throw new Error('Should not activate button')
+          }))
+          require('robotjs').keyTap('alt')
+          require('robotjs').keyTap('esc')
+          require('robotjs').keyTap('enter')
+          done()
+        }).to.not.throw()
+      })
     })
   })
 })
