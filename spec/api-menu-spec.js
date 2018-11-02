@@ -6,8 +6,6 @@ const { BrowserWindow, Menu, MenuItem } = remote
 const { sortMenuItems } = require('../lib/browser/api/menu-utils')
 const { closeWindow } = require('./window-helpers')
 
-const isCI = remote.getGlobal('isCi')
-
 const { expect } = chai
 chai.use(dirtyChai)
 
