@@ -1,0 +1,63 @@
+diff --git a/third_party/blink/renderer/bindings/templates/interface.cpp.tmpl b/third_party/blink/renderer/bindings/templates/interface.cpp.tmpl
+index 9bd268142618..03d83a0a9b43 100644
+--- a/third_party/blink/renderer/bindings/templates/interface.cpp.tmpl
++++ b/third_party/blink/renderer/bindings/templates/interface.cpp.tmpl
+@@ -1024,16 +1024,18 @@ v8::Local<v8::Object> {{v8_class}}::findInstanceInPrototypeChain(v8::Local<v8::V
+ {{cpp_class}}* V8{{interface_name}}::ToImpl(v8::Local<v8::Object> object) {
+   DCHECK(object->Is{{interface_name}}());
+   v8::Local<v8::{{interface_name}}> v8buffer = object.As<v8::{{interface_name}}>();
+-  if (v8buffer->IsExternal()) {
++  bool is_external = v8buffer->IsExternal();
++  if (is_external) {
+     const WrapperTypeInfo* wrapperTypeInfo = ToWrapperTypeInfo(object);
+-    CHECK(wrapperTypeInfo);
+-    CHECK_EQ(wrapperTypeInfo->gin_embedder, gin::kEmbedderBlink);
+-    return ToScriptWrappable(object)->ToImpl<{{cpp_class}}>();
++    if (wrapperTypeInfo) {
++      CHECK_EQ(wrapperTypeInfo->gin_embedder, gin::kEmbedderBlink);
++      return ToScriptWrappable(object)->ToImpl<{{cpp_class}}>();
++    }
+   }
+ 
+   // Transfer the ownership of the allocated memory to an {{interface_name}} without
+   // copying.
+-  v8::{{interface_name}}::Contents v8Contents = v8buffer->Externalize();
++  v8::{{interface_name}}::Contents v8Contents = is_external ? v8buffer->GetContents() : v8buffer->Externalize();
+   WTF::ArrayBufferContents::AllocationKind kind = WTF::ArrayBufferContents::AllocationKind::kNormal;
+   switch (v8Contents.AllocationMode()) {
+     case v8::ArrayBuffer::Allocator::AllocationMode::kNormal:
+@@ -1050,7 +1052,7 @@ v8::Local<v8::Object> {{v8_class}}::findInstanceInPrototypeChain(v8::Local<v8::V
+                                             v8Contents.Data(),
+                                             v8Contents.ByteLength(),
+                                             kind,
+-                                            WTF::ArrayBufferContents::FreeMemory);
++                                            is_external ? WTF::ArrayBufferContents::FreeMemoryNOOP : WTF::ArrayBufferContents::FreeMemory);
+   WTF::ArrayBufferContents contents(std::move(data), WTF::ArrayBufferContents::k{% if interface_name == 'ArrayBuffer' %}Not{% endif %}Shared);
+   {{cpp_class}}* buffer = {{cpp_class}}::Create(contents);
+   v8::Local<v8::Object> associatedWrapper = buffer->AssociateWithWrapper(v8::Isolate::GetCurrent(), buffer->GetWrapperTypeInfo(), object);
+diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
+index e33d6d4ceb5a..19b194888ca3 100644
+--- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
++++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.cc
+@@ -130,6 +130,9 @@ void ArrayBufferContents::FreeMemory(void* data) {
+   Partitions::ArrayBufferPartition()->Free(data);
+ }
+ 
++void ArrayBufferContents::FreeMemoryNOOP(void* data) {
++}
++
+ ArrayBufferContents::DataHandle ArrayBufferContents::CreateDataHandle(
+     size_t size,
+     InitializationPolicy policy) {
+diff --git a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
+index 6248ad32d6b0..b487bdfd3ab1 100644
+--- a/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
++++ b/third_party/blink/renderer/platform/wtf/typed_arrays/array_buffer_contents.h
+@@ -180,6 +180,7 @@ class WTF_EXPORT ArrayBufferContents {
+   static void* AllocateMemoryOrNull(size_t, InitializationPolicy);
+   static void* Realloc(void* data, size_t);
+   static void FreeMemory(void*);
++  static void FreeMemoryNOOP(void*);
+   static DataHandle CreateDataHandle(size_t, InitializationPolicy);
+   static void Initialize(
+       AdjustAmountOfExternalAllocatedMemoryFunction function) {
