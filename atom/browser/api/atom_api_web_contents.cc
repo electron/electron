@@ -1462,7 +1462,7 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::Print(mate::Arguments* args) {
   bool silent, print_background = false;
   base::string16 device_name;
-  mate::Dictionary options;
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
   base::DictionaryValue settings;
   if (args->Length() >= 1 && !args->GetNext(&options)) {
     args->ThrowError("Invalid print settings specified");

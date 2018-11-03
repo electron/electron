@@ -888,7 +888,10 @@ service_manifest("electron_content_packaged_services_manifest_overlay") {
   packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
 
   if (enable_basic_printing) {
-    packaged_services += [ "//chrome/services/printing:manifest" ]
+    packaged_services += [
+      "//chrome/services/printing:manifest",
+      "//components/services/pdf_compositor:pdf_compositor_manifest",
+    ]
   }
 }
 
