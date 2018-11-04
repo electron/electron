@@ -38,6 +38,11 @@ class Dictionary;
 class PersistentDictionary;
 }  // namespace mate
 
+namespace appCommand {
+const char kBrowserForward[] = "browser-forward";
+const char kBrowserBackward[] = "browser-backward";
+}  // namespace appCommand
+
 namespace atom {
 
 class AtomMenuModel;

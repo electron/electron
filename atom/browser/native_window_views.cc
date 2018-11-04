@@ -1286,18 +1286,11 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
-#if defined(OS_MACOSX)
-  if (event.GetModifiers() == blink::WebInputEvent::kMetaKey) {
-    if (event.windows_key_code == ui::VKEY_OEM_4)
-      NotifyWindowExecuteAppCommand("browser-backward");
-    if (event.windows_key_code == ui::VKEY_OEM_6)
-      NotifyWindowExecuteAppCommand("browser-forward");
-  }
-#elif defined(OS_LINUX)
+#if defined(OS_LINUX)
   if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
-    NotifyWindowExecuteAppCommand("browser-backward");
+    NotifyWindowExecuteAppCommand(appCommand::kBrowserBackward);
   if (event.windows_key_code == ui::VKEY_BROWSER_FORWARD)
-    NotifyWindowExecuteAppCommand("browser-forward");
+    NotifyWindowExecuteAppCommand(appCommand::kBrowserForward);
 #endif
 
   keyboard_event_handler_->HandleKeyboardEvent(event,
@@ -1311,9 +1304,9 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
     return;
 
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
-    NotifyWindowExecuteAppCommand("browser-backward");
+    NotifyWindowExecuteAppCommand(appCommand::kBrowserBackward);
   if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
-    NotifyWindowExecuteAppCommand("browser-forward");
+    NotifyWindowExecuteAppCommand(appCommand::kBrowserForward);
 }
 #endif
 

@@ -18,9 +18,9 @@ namespace {
 const char* AppCommandToString(int command_id) {
   switch (command_id) {
     case APPCOMMAND_BROWSER_BACKWARD:
-      return "browser-backward";
+      return appCommand::kBrowserBackward;
     case APPCOMMAND_BROWSER_FORWARD:
-      return "browser-forward";
+      return appCommand::kBrowserForward;
     case APPCOMMAND_BROWSER_REFRESH:
       return "browser-refresh";
     case APPCOMMAND_BROWSER_STOP:

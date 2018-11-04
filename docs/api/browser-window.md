@@ -580,7 +580,7 @@ win.on('app-command', (e, cmd) => {
 })
 ```
 
-The following app commands are explictly supported on Linux and macOS
+The following app commands are explictly supported on Linux
 
 * `browser-backward`
 * `browser-forward`
