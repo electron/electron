@@ -40,6 +40,7 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
                 const base::Closure& callback);
   bool IsRegistered(const ui::Accelerator& accelerator);
   void Unregister(const ui::Accelerator& accelerator);
+  void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
   void UnregisterAll();
 
   // GlobalShortcutListener::Observer implementation.

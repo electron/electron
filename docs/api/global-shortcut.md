@@ -81,6 +81,12 @@ don't want applications to fight for global shortcuts.
 
 Unregisters the global shortcut of `accelerator`.
 
+### `globalShortcut.unregisterSome(accelerator)`
+
+* `accelerators` String[] - an array of [Accelerator](accelerator.md)s.
+
+Unregisters all shortcuts present in `accelerators`.
+
 ### `globalShortcut.unregisterAll()`
 
 Unregisters all of the global shortcuts.

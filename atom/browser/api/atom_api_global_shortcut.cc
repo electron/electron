@@ -42,14 +42,16 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 bool GlobalShortcut::RegisterAll(
     const std::vector<ui::Accelerator>& accelerators,
     const base::Closure& callback) {
+  std::vector<ui::Accelerator> registered;
   for (auto& accelerator : accelerators) {
     GlobalShortcutListener* listener = GlobalShortcutListener::GetInstance();
     if (!listener->RegisterAccelerator(accelerator, this)) {
       // unregister all shortcuts if any failed
-      UnregisterAll();
+      UnregisterSome(registered);
       return false;
     }
 
+    registered.push_back(accelerator);
     accelerator_callback_map_[accelerator] = callback;
   }
   return true;
@@ -75,6 +77,13 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
                                                                this);
 }
 
+void GlobalShortcut::UnregisterSome(
+    const std::vector<ui::Accelerator>& accelerators) {
+  for (auto& accelerator : accelerators) {
+    Unregister(accelerator);
+  }
+}
+
 bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
   return ContainsKey(accelerator_callback_map_, accelerator);
 }
@@ -98,6 +107,7 @@ void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
+      .SetMethod("unregisterSome", &GlobalShortcut::UnregisterSome)
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
 }
 
