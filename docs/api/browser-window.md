@@ -554,7 +554,7 @@ Returns:
 
 Emitted when the window is set or unset to show always on top of other windows.
 
-#### Event: 'app-command' _Windows_
+#### Event: 'app-command' _Windows_ _Linux_
 
 Returns:
 
@@ -562,7 +562,7 @@ Returns:
 * `command` String
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
-is invoked. These are typically related to keyboard media keys or browser
+is invoked on Windows. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
 Commands are lowercased, underscores are replaced with hyphens, and the
