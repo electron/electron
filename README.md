@@ -3,7 +3,7 @@
 
 [![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
 [![AppVeyor Build Status](https://windows-ci.electronjs.org/api/projects/status/nilyf07hcef14dvj/branch/master?svg=true)](https://windows-ci.electronjs.org/project/AppVeyor/electron/branch/master)
-[![Azure Pipelines Build Status](https://github.visualstudio.com/electron/_apis/build/status/electron-builds/electron-osx-testing?branchName=master)](https://github.visualstudio.com/electron/_build/latest?definitionId=36)
+[![Azure Pipelines Build Status](https://dev.azure.com/github/electron/_apis/build/status/electron-builds/electron-osx-testing?branchName=master)](https://github.visualstudio.com/electron/_build/latest?definitionId=36)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
 [![Join the Electron Community on Slack](https://atom-slack.herokuapp.com/badge.svg)](https://atom-slack.herokuapp.com/)
 
