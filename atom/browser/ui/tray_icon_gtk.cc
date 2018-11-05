@@ -24,8 +24,8 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
   }
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
-  icon_.reset(views::LinuxUI::instance()->CreateLinuxStatusIcon(
-      image.AsImageSkia(), toolTip, Browser::Get()->GetName().c_str()));
+  icon_ = views::LinuxUI::instance()->CreateLinuxStatusIcon(
+      image.AsImageSkia(), toolTip, Browser::Get()->GetName().c_str());
   icon_->set_delegate(this);
 }
 
