@@ -1360,9 +1360,8 @@ views::View* NativeWindowMac::GetContentsView() {
 
 void NativeWindowMac::AddContentViewLayers() {
   // Make sure the bottom corner is rounded for non-modal windows:
-  // http://crbug.com/396264. But do not enable it on OS X 10.9 for transparent
-  // window, otherwise a semi-transparent frame would show.
-  if (!(transparent() && base::mac::IsOS10_9()) && !is_modal()) {
+  // http://crbug.com/396264.
+  if (!is_modal()) {
     // For normal window, we need to explicitly set layer for contentView to
     // make setBackgroundColor work correctly.
     // There is no need to do so for frameless window, and doing so would make
@@ -1399,14 +1398,8 @@ void NativeWindowMac::AddContentViewLayers() {
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
       [[window_ contentView] addSubview:buttons_view_];
     } else {
-      if (title_bar_style_ != NORMAL) {
-        if (base::mac::IsOS10_9()) {
-          ShowWindowButton(NSWindowZoomButton);
-          ShowWindowButton(NSWindowMiniaturizeButton);
-          ShowWindowButton(NSWindowCloseButton);
-        }
+      if (title_bar_style_ != NORMAL)
         return;
-      }
 
       // Hide the window buttons.
       [[window_ standardWindowButton:NSWindowZoomButton] setHidden:YES];
