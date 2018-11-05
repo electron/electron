@@ -123,7 +123,7 @@ def main(argv):
     for patch in patches:
       filename = get_file_name(patch)
       with open(os.path.join(out_dir, filename), 'w') as f:
-        f.write('\n'.join(remove_patch_filename(patch)))
+        f.write('\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n')
       pl.write(filename + '\n')
 
 
