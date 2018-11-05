@@ -899,7 +899,7 @@ steps-tests: &steps-tests
           export G_SLICE=always-malloc
           export NSS_DISABLE_ARENA_FREE_LIST=1
           export NSS_DISABLE_UNLOAD=1
-          (cd electron && node script/yarn test -- --ci --enable-logging) 2>&1 | $ASAN_SYMBOLIZE
+          (cd electron && node script/yarn test -- --ci --enable-logging) 2>&1 | $ASAN_SYMBOLIZE out/Default/../../
     - run:
         name: Check test results existence
         command: |
