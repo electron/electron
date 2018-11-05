@@ -62,7 +62,12 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   NSView* webView = iwc->GetView()->GetNativeView();
   NSView* contentView = [window()->GetNativeWindow() contentView];
   [webView setFrame:[contentView bounds]];
-  [contentView addSubview:webView];
+
+  // ensure that buttons view is floated to top of view hierarchy
+  NSArray* subviews = [contentView subviews];
+  NSView* last = subviews.lastObject;
+  [contentView addSubview:webView positioned:NSWindowBelow relativeTo:last];
+
   [contentView viewDidMoveToWindow];
 }
 
