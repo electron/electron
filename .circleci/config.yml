@@ -720,8 +720,10 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout
 
-  linux-x64-checkout:
+  linux-checkout-for-native-tests:
     <<: *machine-linux-2xlarge
+    environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -1223,15 +1225,15 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - linux-x64-checkout
+      - linux-checkout-for-native-tests
 
       # TODO(alexeykuzmin): Enable it back.
       # Tons of crashes right now, see
       # https://circleci.com/gh/electron/electron/67463
 #      - linux-x64-browsertests:
 #          requires:
-#            - linux-x64-checkout
+#            - linux-checkout-for-native-tests
 
       - linux-x64-unittests:
           requires:
-            - linux-x64-checkout
+            - linux-checkout-for-native-tests
