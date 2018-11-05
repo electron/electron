@@ -40,6 +40,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_service_factory.h",
     "//chrome/browser/ssl/security_state_tab_helper.cc",
     "//chrome/browser/ssl/security_state_tab_helper.h",
+    "//chrome/browser/win/chrome_process_finder.cc",
+    "//chrome/browser/win/chrome_process_finder.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
