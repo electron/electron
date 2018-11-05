@@ -76,3 +76,4 @@ color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
 chrome_process_finder.patch
+customizable_app_indicator_id_prefix.patch

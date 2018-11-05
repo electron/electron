@@ -9,15 +9,9 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/gfx/image/image.h"
+#include "ui/views/linux_ui/linux_ui.h"
 
 namespace atom {
-
-namespace {
-
-// Number of app indicators used (used as part of app-indicator id).
-int indicators_count;
-
-}  // namespace
 
 TrayIconGtk::TrayIconGtk() {}
 
@@ -31,7 +25,7 @@ void TrayIconGtk::SetImage(const gfx::Image& image) {
 
   const auto toolTip = base::UTF8ToUTF16(GetApplicationName());
   icon_.reset(views::LinuxUI::instance()->CreateLinuxStatusIcon(
-      image.AsImageSkia(), toolTip));
+      image.AsImageSkia(), toolTip, Browser::Get()->GetName().c_str()));
   icon_->set_delegate(this);
 }
 
