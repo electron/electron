@@ -893,8 +893,9 @@ std::string App::GetLocaleCountryCode() {
                       sizeof(locale_name) / sizeof(WCHAR)) ||
       GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
                       (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR)))
+                      sizeof(locale_name) / sizeof(WCHAR))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
+  }
 #elif defined(OS_MACOSX)
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
@@ -906,7 +907,7 @@ std::string App::GetLocaleCountryCode() {
   region = temporaryCString;
 #else
   const char* locale_ptr = setlocale(LC_TIME, NULL);
-  if (locale_ptr == NULL)
+  if (!locale_ptr)
     locale_ptr = setlocale(LC_NUMERIC, NULL);
   if (locale_ptr) {
     std::string locale = locale_ptr;
