@@ -71,15 +71,21 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
   underline_color_ = color;
 }
 
+void SubmenuButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->SetName(accessible_name());
+  node_data->role = ax::mojom::Role::kPopUpButton;
+}
+
 void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   views::MenuButton::PaintButtonContents(canvas);
 
   if (show_underline_ && (underline_start_ != underline_end_)) {
-    int padding = (width() - text_width_) / 2;
-    int underline_height = (height() + text_height_) / 2 - 2;
-    canvas->DrawLine(gfx::Point(underline_start_ + padding, underline_height),
-                     gfx::Point(underline_end_ + padding, underline_height),
-                     underline_color_);
+    float padding = (width() - text_width_) / 2;
+    float underline_height = (height() + text_height_) / 2 - 2;
+    canvas->DrawSharpLine(
+        gfx::PointF(underline_start_ + padding, underline_height),
+        gfx::PointF(underline_end_ + padding, underline_height),
+        underline_color_);
   }
 }
 

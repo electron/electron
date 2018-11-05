@@ -48,20 +48,16 @@ Unsupported options are:
 
 ### `GOOGLE_API_KEY`
 
-Electron includes a hardcoded API key for making requests to Google's geocoding
-webservice. Because this API key is included in every version of Electron, it
-often exceeds its usage quota. To work around this, you can supply your own
-Google API key in the environment. Place the following code in your main process
+You can provide an API key for making requests to Google's geocoding webservice. To do this, place the following code in your main process
 file, before opening any browser windows that will make geocoding requests:
 
 ```javascript
 process.env.GOOGLE_API_KEY = 'YOUR_KEY_HERE'
 ```
 
-For instructions on how to acquire a Google API key, visit [this page](https://www.chromium.org/developers/how-tos/api-keys).
-
+For instructions on how to acquire a Google API key, visit [this page](https://developers.google.com/maps/documentation/javascript/get-api-key).
 By default, a newly generated Google API key may not be allowed to make
-geocoding requests. To enable geocoding requests, visit [this page](https://console.developers.google.com/apis/api/geolocation/overview).
+geocoding requests. To enable geocoding requests, visit [this page](https://developers.google.com/maps/documentation/geocoding/get-api-key).
 
 ### `ELECTRON_NO_ASAR`
 
@@ -79,6 +75,16 @@ Don't attach to the current console session.
 ### `ELECTRON_FORCE_WINDOW_MENU_BAR` _Linux_
 
 Don't use the global menu bar on Linux.
+
+### `ELECTRON_TRASH` _Linux_
+
+Set the trash implementation on Linux. Default is `gio`.
+
+Options:
+* `gvfs-trash`
+* `trash-cli`
+* `kioclient5`
+* `kioclient`
 
 ## Development Variables
 

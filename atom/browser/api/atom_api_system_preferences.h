@@ -98,6 +98,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 #endif
   bool IsDarkMode();
   bool IsInvertedColorScheme();
+  bool IsHighContrastColorScheme();
 
  protected:
   explicit SystemPreferences(v8::Isolate* isolate);
@@ -138,6 +139,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   std::string current_color_;
 
   bool invertered_color_scheme_;
+
+  bool high_contrast_color_scheme_;
 
   std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
 #endif

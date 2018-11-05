@@ -20,7 +20,7 @@
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
-#include "chrome/browser/chrome_process_finder_win.h"
+#include "chrome/browser/win/chrome_process_finder.h"
 #include "content/public/common/result_codes.h"
 #include "net/base/escape.h"
 #include "ui/base/l10n/l10n_util.h"

@@ -26,7 +26,6 @@ web_contents.patch
 webgl_context_attributes.patch
 webview_cross_drag.patch
 worker_context_will_destroy.patch
-webui_in_subframes.patch
 browser_plugin_guest.patch
 disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 add_atomic_lib_to_dependencies_even_for_sysroot_builds.patch
@@ -76,3 +75,4 @@ tts.patch
 color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
+chrome_process_finder.patch

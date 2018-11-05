@@ -32,8 +32,14 @@ Returns:
 Returns:
 
 * `event` Event
-* `invertedColorScheme` Boolean - `true` if an inverted color scheme, such as
-  a high contrast theme, is being used, `false` otherwise.
+* `invertedColorScheme` Boolean - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is being used, `false` otherwise.
+
+### Event: 'high-contrast-color-scheme-changed' _Windows_
+
+Returns:
+
+* `event` Event
+* `highContrastColorScheme` Boolean - `true` if a high contrast theme is being used, `false` otherwise.
 
 ### Event: 'appearance-changed' _macOS_
 
@@ -83,6 +89,8 @@ that contains the user information dictionary sent along with the notification.
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  
+Returns `Number` - The ID of this subscription
 
 Subscribes to native notifications of macOS, `callback` will be called with
 `callback(event, userInfo)` when the corresponding `event` happens. The
@@ -106,6 +114,8 @@ example values of `event` are:
 * `callback` Function
   * `event` String
   * `userInfo` Object
+  
+Returns `Number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
@@ -276,12 +286,15 @@ const alpha = color.substr(6, 2) // "dd"
 Returns `String` - The system color setting in RGB hexadecimal form (`#ABCDEF`).
 See the [Windows docs][windows-colors] for more details.
 
+[windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
+
 ### `systemPreferences.isInvertedColorScheme()` _Windows_
 
-Returns `Boolean` - `true` if an inverted color scheme, such as a high contrast
-theme, is active, `false` otherwise.
+Returns `Boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
 
-[windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
+### `systemPreferences.isHighContrastColorScheme()` _Windows_
+
+Returns `Boolean` - `true` if a high contrast theme is active, `false` otherwise.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
