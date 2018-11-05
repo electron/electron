@@ -38,6 +38,11 @@ bool IsDevTools(content::RenderFrame* render_frame) {
       "chrome-devtools");
 }
 
+bool IsDevToolsExtension(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
+      "chrome-extension");
+}
+
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
   v8::Local<v8::Value> cache;
@@ -197,7 +202,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
-  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
+  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame) &&
+      !IsDevToolsExtension(render_frame))
     return;
 
   auto* isolate = context->GetIsolate();
