@@ -51,7 +51,7 @@ Detaches the debugger from the `webContents`.
 #### `debugger.sendCommand(method[, commandParams, callback])`
 
 * `method` String - Method name, should be one of the methods defined by the
-   remote debugging protocol.
+   [remote debugging protocol][rdp].
 * `commandParams` Object (optional) - JSON object with request parameters.
 * `callback` Function (optional) - Response
   * `error` Object - Error message indicating the failure of the command.
@@ -79,5 +79,5 @@ Emitted when debugging session is terminated. This happens either when
 
 Emitted whenever debugging target issues instrumentation event.
 
-[rdp]: https://developer.chrome.com/devtools/docs/debugger-protocol
+[rdp]: https://chromedevtools.github.io/devtools-protocol/
 [`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options
