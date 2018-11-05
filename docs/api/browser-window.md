@@ -562,7 +562,7 @@ Returns:
 * `command` String
 
 Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
-is invoked on Windows. These are typically related to keyboard media keys or browser
+is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
 Commands are lowercased, underscores are replaced with hyphens, and the
