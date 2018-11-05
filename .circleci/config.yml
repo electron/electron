@@ -70,6 +70,17 @@ build-steps: &build-steps
           else
             echo 'Headless testing not needed'
           fi
+
+    - run:
+        name: Verify mksnapshot
+        command: |
+          if [ "$RUN_TESTS" == "true" ] && [ "$ELECTRON_RELEASE" == "1" ]; then
+            echo 'Verifying mksnapshot on release build'
+            script/verify-mksnapshot.py
+          else
+            echo 'Skipping mksnapshot tests due to configuration'
+          fi
+
     - run:
         name: Test
         environment:

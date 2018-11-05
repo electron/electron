@@ -79,6 +79,29 @@ TARGET_DIRECTORIES = {
   ],
 }
 
+V8_SNAPSHOT_BINARIES = {
+  'darwin': [
+    'libffmpeg.dylib',
+    'libicui18n.dylib',
+    'libicuuc.dylib',
+    'libv8.dylib',
+    'v8_context_snapshot_generator',
+  ],
+  'linux': [
+    'libffmpeg.so',
+    'libicui18n.so',
+    'libicuuc.so',
+    'libv8.so',
+    'v8_context_snapshot_generator',
+  ],
+  'win32': [
+    'ffmpeg.dll',
+    'icui18n.dll',
+    'icuuc.dll',
+    'v8.dll',
+    'v8_context_snapshot_generator.exe',
+  ],
+}
 
 def main():
   args = parse_args()
@@ -95,8 +118,8 @@ def main():
   force_build()
   create_symbols()
   copy_binaries()
-  copy_chrome_binary('chromedriver')
-  copy_chrome_binary('mksnapshot')
+  copy_chrome_binary('chromedriver', CHROMIUM_DIR, DIST_DIR)
+  copy_chrome_binary('mksnapshot', CHROMIUM_DIR, DIST_DIR)
   copy_license()
   if PLATFORM == 'win32':
     copy_vcruntime_binaries()
@@ -136,15 +159,21 @@ def copy_binaries():
                     symlinks=True)
 
 
-def copy_chrome_binary(binary):
+def copy_chrome_binary(binary, src_dir, dest_dir, is_native_mksnapshot = False):
   if PLATFORM == 'win32':
     binary += '.exe'
-  src = os.path.join(CHROMIUM_DIR, binary)
-  dest = os.path.join(DIST_DIR, binary)
+  src = os.path.join(src_dir, binary)
+  dest = os.path.join(dest_dir, binary)
 
   # Copy file and keep the executable bit.
   shutil.copyfile(src, dest)
   os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
+  if binary.startswith('mksnapshot') and not is_native_mksnapshot:
+    snapshot_gen_path =  os.path.join(src_dir, 'snapshot_gen', '*')
+    snapshot_gen_files = glob.glob(snapshot_gen_path)
+    snapshot_gen_files += [ os.path.join(src_dir, get_ffmpeg_name()) ]
+    for gen_file in snapshot_gen_files:
+      shutil.copy2(gen_file, dest_dir)
 
 def copy_vcruntime_binaries():
   arch = get_target_arch()
@@ -272,9 +301,16 @@ def create_dist_zip():
 
 
 def create_chrome_binary_zip(binary, version):
+  files = ['LICENSE', 'LICENSES.chromium.html']
+  if PLATFORM == 'win32':
+    files += [binary + '.exe']
+  else:
+    files += [binary]
+
   file_suffix = ''
   create_native_mksnapshot = False
   if binary == 'mksnapshot':
+    files += V8_SNAPSHOT_BINARIES[PLATFORM]
     arch = get_target_arch()
     if arch.startswith('arm'):
       # if the arch is arm/arm64 the mksnapshot executable is an x64 binary,
@@ -284,23 +320,14 @@ def create_chrome_binary_zip(binary, version):
   dist_name = get_zip_name(binary, version, file_suffix)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
-  files = ['LICENSE', 'LICENSES.chromium.html']
-  if PLATFORM == 'win32':
-    files += [binary + '.exe']
-  else:
-    files += [binary]
-
   with scoped_cwd(DIST_DIR):
     make_zip(zip_file, files, [])
 
   if create_native_mksnapshot == True:
     # Create a zip with the native version of the mksnapshot binary.
-    src = os.path.join(NATIVE_MKSNAPSHOT_DIR, binary)
-    dest = os.path.join(DIST_DIR, binary)
-    # Copy file and keep the executable bit.
-    shutil.copyfile(src, dest)
-    os.chmod(dest, os.stat(dest).st_mode | stat.S_IEXEC)
-
+    copy_chrome_binary('mksnapshot', NATIVE_MKSNAPSHOT_DIR, DIST_DIR, True)
+    copy_chrome_binary('v8_context_snapshot_generator', NATIVE_MKSNAPSHOT_DIR, \
+                       DIST_DIR)
     dist_name = get_zip_name(binary, version)
     zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
     with scoped_cwd(DIST_DIR):
@@ -310,13 +337,7 @@ def create_ffmpeg_zip():
   dist_name = get_zip_name('ffmpeg', ELECTRON_VERSION)
   zip_file = os.path.join(SOURCE_ROOT, 'dist', dist_name)
 
-  if PLATFORM == 'darwin':
-    ffmpeg_name = 'libffmpeg.dylib'
-  elif PLATFORM == 'linux':
-    ffmpeg_name = 'libffmpeg.so'
-  elif PLATFORM == 'win32':
-    ffmpeg_name = 'ffmpeg.dll'
-
+  ffmpeg_name = get_ffmpeg_name()
   shutil.copy2(os.path.join(CHROMIUM_DIR, '..', 'ffmpeg', ffmpeg_name),
                DIST_DIR)
 
@@ -326,6 +347,14 @@ def create_ffmpeg_zip():
   with scoped_cwd(DIST_DIR):
     make_zip(zip_file, [ffmpeg_name, 'LICENSE', 'LICENSES.chromium.html'], [])
 
+def get_ffmpeg_name():
+  if PLATFORM == 'darwin':
+    ffmpeg_name = 'libffmpeg.dylib'
+  elif PLATFORM == 'linux':
+    ffmpeg_name = 'libffmpeg.so'
+  elif PLATFORM == 'win32':
+    ffmpeg_name = 'ffmpeg.dll'
+  return ffmpeg_name
 
 def create_symbols_zip():
   if get_target_arch() == 'mips64el':
