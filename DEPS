@@ -84,6 +84,7 @@ hooks = [
     'action': [
       'python',
       'src/electron/script/apply_all_patches.py',
+      'src/electron/patches/common/config.json',
     ],
   },
   {
