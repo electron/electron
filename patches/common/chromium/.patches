@@ -21,7 +21,6 @@ render_widget_host_view_mac.patch
 scoped_clipboard_writer.patch
 stream_resource_handler.patch
 thread_capabilities.patch
-use_transparent_window.patch
 web_contents.patch
 webgl_context_attributes.patch
 webview_cross_drag.patch
