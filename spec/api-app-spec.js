@@ -487,6 +487,16 @@ describe('app module', () => {
       }, delay)
     })
 
+    it('correctly sets and unsets the LoginItem', function () {
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+
+      app.setLoginItemSettings({ openAtLogin: true })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+
+      app.setLoginItemSettings({ openAtLogin: false })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+    })
+
     it('correctly sets and unsets the LoginItem as hidden', function () {
       if (process.platform !== 'darwin' || process.mas) this.skip()
 
