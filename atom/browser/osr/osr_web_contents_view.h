@@ -5,6 +5,9 @@
 #ifndef ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 #define ATOM_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
+#include "atom/browser/native_window.h"
+#include "atom/browser/native_window_observer.h"
+
 #include "atom/browser/osr/osr_render_widget_host_view.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"
 #include "content/browser/web_contents/web_contents_view.h"
@@ -21,12 +24,20 @@ class OffScreenView;
 namespace atom {
 
 class OffScreenWebContentsView : public content::WebContentsView,
-                                 public content::RenderViewHostDelegateView {
+                                 public content::RenderViewHostDelegateView,
+                                 public NativeWindowObserver {
  public:
   OffScreenWebContentsView(bool transparent, const OnPaintCallback& callback);
   ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
+  void SetNativeWindow(NativeWindow* window);
+
+  // NativeWindowObserver:
+  void OnWindowResize() override;
+  void OnWindowClosed() override;
+
+  gfx::Size GetSize();
 
   // content::WebContentsView:
   gfx::NativeView GetNativeView() const override;
@@ -83,6 +94,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
 #endif
 
   OffScreenRenderWidgetHostView* GetView() const;
+
+  NativeWindow* native_window_;
 
   const bool transparent_;
   bool painting_ = true;
