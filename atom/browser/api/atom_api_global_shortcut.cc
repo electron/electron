@@ -107,7 +107,6 @@ void GlobalShortcut::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
-      .SetMethod("unregisterSome", &GlobalShortcut::UnregisterSome)
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
 }
 
