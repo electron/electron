@@ -604,7 +604,7 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** On Windows you have to call it after the `ready` events gets emitted.
 
 ### `app.getLocaleCountryCode()`
-Returns `String` - User operating system´s locale country code in ISO3166 [here](https://www.iso.org/iso-3166-country-codes.html). The value is taken from native OS APIs.
+Returns `string` - User operating system´s locale country code in ISO3166 [here](https://www.iso.org/iso-3166-country-codes.html). The value is taken from native OS APIs.
 
 **Note:** When unable to detect locale country code, it returns empty string.
 
