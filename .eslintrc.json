@@ -1,12 +1,16 @@
 {
-  "extends": "standard",
+  "extends": ["eslint:recommended", "google"],
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
   "env": {
-    "browser": true
+    "browser": true,
+    "node": true
   },
   "rules": {
-    "no-var": "error",
-    "prefer-const": ["error", {
-      "destructuring": "all"
-    }]
+    "require-jsdoc": [0],
+    "no-console": [0],
+    "max-len": [2, 140],
+    "semi": [2, "never"]
   }
 }

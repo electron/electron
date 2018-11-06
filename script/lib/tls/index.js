@@ -4,9 +4,9 @@ const path = require('path')
 
 const server = https.createServer({
   key: fs.readFileSync(path.resolve(__dirname, 'tls.key.pem')),
-  cert: fs.readFileSync(path.resolve(__dirname, 'tls.cert.pem'))
+  cert: fs.readFileSync(path.resolve(__dirname, 'tls.cert.pem')),
 }, (req, res) => {
-  res.end(JSON.stringify({ protocol: req.socket.getProtocol() }))
+  res.end(JSON.stringify({protocol: req.socket.getProtocol()}))
 
   setTimeout(() => {
     server.close()

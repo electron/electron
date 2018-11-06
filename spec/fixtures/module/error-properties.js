@@ -1,9 +1,9 @@
 class Foo {
-  set bar (value) {
+  set bar(value) {
     throw new Error('setting error')
   }
 
-  get bar () {
+  get bar() {
     throw new Error('getting error')
   }
 }

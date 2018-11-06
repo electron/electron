@@ -2,9 +2,9 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { deprecations, deprecate } = require('electron')
+const {deprecations, deprecate} = require('electron')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 describe('deprecations', () => {
@@ -16,7 +16,7 @@ describe('deprecations', () => {
   it('allows a deprecation handler function to be specified', () => {
     const messages = []
 
-    deprecations.setHandler(message => {
+    deprecations.setHandler((message) => {
       messages.push(message)
     })
 
@@ -27,7 +27,7 @@ describe('deprecations', () => {
   it('returns a deprecation handler after one is set', () => {
     const messages = []
 
-    deprecations.setHandler(message => {
+    deprecations.setHandler((message) => {
       messages.push(message)
     })
 
@@ -37,13 +37,15 @@ describe('deprecations', () => {
 
   it('renames a property', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecations.setHandler((m) => {
+      msg = m
+    })
 
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
 
     let value = 0
-    const o = { [newProp]: value }
+    const o = {[newProp]: value}
     expect(o).to.not.have.a.property(oldProp)
     expect(o).to.have.a.property(newProp).that.is.a('number')
 
@@ -68,10 +70,12 @@ describe('deprecations', () => {
 
   it('deprecates a property of an object', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecations.setHandler((m) => {
+      msg = m
+    })
 
     const prop = 'itMustGo'
-    const o = { [prop]: 0 }
+    const o = {[prop]: 0}
 
     deprecate.removeProperty(o, prop)
 
@@ -84,11 +88,13 @@ describe('deprecations', () => {
 
   it('warns only once per item', () => {
     const messages = []
-    deprecations.setHandler(message => { messages.push(message) })
+    deprecations.setHandler((message) => {
+      messages.push(message)
+    })
 
     const key = 'foo'
     const val = 'bar'
-    const o = { [key]: val }
+    const o = {[key]: val}
     deprecate.removeProperty(o, key)
 
     for (let i = 0; i < 3; ++i) {
@@ -99,12 +105,14 @@ describe('deprecations', () => {
 
   it('warns if deprecated property is already set', () => {
     let msg
-    deprecations.setHandler(m => { msg = m })
+    deprecations.setHandler((m) => {
+      msg = m
+    })
 
     const oldProp = 'dingyOldName'
     const newProp = 'shinyNewName'
 
-    const o = { [oldProp]: 0 }
+    const o = {[oldProp]: 0}
     deprecate.renameProperty(o, oldProp, newProp)
 
     expect(msg).to.be.a('string')

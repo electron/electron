@@ -1,6 +1,6 @@
-(function () {
-  const { setImmediate } = require('timers')
-  const { ipcRenderer } = require('electron')
+(function() {
+  const {setImmediate} = require('timers')
+  const {ipcRenderer} = require('electron')
   window.ipcRenderer = ipcRenderer
   window.setImmediate = setImmediate
   window.require = require
@@ -18,7 +18,7 @@
         sandboxed: process.sandboxed,
         type: process.type,
         version: process.version,
-        versions: process.versions
+        versions: process.versions,
       }
     }
   } else if (location.href !== 'about:blank') {

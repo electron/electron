@@ -6,12 +6,12 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
 
-const { expect } = require('chai')
+const {expect} = require('chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const { remote } = require('electron')
-const { app } = remote.require('electron')
+const {remote} = require('electron')
+const {app} = remote.require('electron')
 
 const skip = process.platform !== 'linux' ||
              process.arch === 'ia32' ||
@@ -19,7 +19,7 @@ const skip = process.platform !== 'linux' ||
              !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 (skip ? describe.skip : describe)('Notification module (dbus)', () => {
-  let mock, Notification, getCalls, reset
+  let mock; let Notification; let getCalls; let reset
   const realAppName = app.getName()
   const realAppVersion = app.getVersion()
   const appName = 'api-notification-dbus-spec'
@@ -35,10 +35,10 @@ const skip = process.platform !== 'linux' ||
     const bus = dbus.sessionBus()
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`)
     const service = bus.getService(serviceName)
-    const getInterface = Promise.promisify(service.getInterface, { context: service })
+    const getInterface = Promise.promisify(service.getInterface, {context: service})
     mock = await getInterface(path, iface)
-    getCalls = Promise.promisify(mock.GetCalls, { context: mock })
-    reset = Promise.promisify(mock.Reset, { context: mock })
+    getCalls = Promise.promisify(mock.GetCalls, {context: mock})
+    reset = Promise.promisify(mock.Reset, {context: mock})
   })
 
   after(async () => {
@@ -50,8 +50,8 @@ const skip = process.platform !== 'linux' ||
   })
 
   describe(`Notification module using ${serviceName}`, () => {
-    function onMethodCalled (done) {
-      function cb (name) {
+    function onMethodCalled(done) {
+      function cb(name) {
         console.log(`onMethodCalled: ${name}`)
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb)
@@ -62,7 +62,7 @@ const skip = process.platform !== 'linux' ||
       return cb
     }
 
-    function unmarshalDBusNotifyHints (dbusHints) {
+    function unmarshalDBusNotifyHints(dbusHints) {
       const o = {}
       for (const hint of dbusHints) {
         const key = hint[0]
@@ -72,7 +72,7 @@ const skip = process.platform !== 'linux' ||
       return o
     }
 
-    function unmarshalDBusNotifyArgs (dbusArgs) {
+    function unmarshalDBusNotifyArgs(dbusArgs) {
       return {
         app_name: dbusArgs[0][1][0],
         replaces_id: dbusArgs[1][1][0],
@@ -80,11 +80,11 @@ const skip = process.platform !== 'linux' ||
         title: dbusArgs[3][1][0],
         body: dbusArgs[4][1][0],
         actions: dbusArgs[5][1][0],
-        hints: unmarshalDBusNotifyHints(dbusArgs[6][1][0])
+        hints: unmarshalDBusNotifyHints(dbusArgs[6][1][0]),
       }
     }
 
-    before(done => {
+    before((done) => {
       mock.on('MethodCalled', onMethodCalled(done))
       // lazy load Notification after we listen to MethodCalled mock signal
       Notification = require('electron').remote.Notification
@@ -94,7 +94,7 @@ const skip = process.platform !== 'linux' ||
         body: 'body',
         replyPlaceholder: 'replyPlaceholder',
         sound: 'sound',
-        closeButtonText: 'closeButtonText'
+        closeButtonText: 'closeButtonText',
       })
       n.show()
     })
@@ -117,8 +117,8 @@ const skip = process.platform !== 'linux' ||
         actions: [],
         hints: {
           'append': 'true',
-          'desktop-entry': appName
-        }
+          'desktop-entry': appName,
+        },
       })
     })
   })

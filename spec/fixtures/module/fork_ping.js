@@ -1,16 +1,16 @@
 const path = require('path')
 
-process.on('uncaughtException', function (error) {
+process.on('uncaughtException', function(error) {
   process.send(error.stack)
 })
 
 const child = require('child_process').fork(path.join(__dirname, '/ping.js'))
-process.on('message', function (msg) {
+process.on('message', function(msg) {
   child.send(msg)
 })
-child.on('message', function (msg) {
+child.on('message', function(msg) {
   process.send(msg)
 })
-child.on('exit', function (code) {
+child.on('exit', function(code) {
   process.exit(code)
 })

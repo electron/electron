@@ -1,16 +1,16 @@
 const assert = require('assert')
 const childProcess = require('child_process')
-const { expect } = require('chai')
+const {expect} = require('chai')
 const fs = require('fs')
 const http = require('http')
 const multiparty = require('multiparty')
 const path = require('path')
 const temp = require('temp').track()
 const url = require('url')
-const { closeWindow } = require('./window-helpers')
+const {closeWindow} = require('./window-helpers')
 
-const { remote } = require('electron')
-const { app, BrowserWindow, crashReporter } = remote.require('electron')
+const {remote} = require('electron')
+const {app, BrowserWindow, crashReporter} = remote.require('electron')
 
 describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
@@ -39,10 +39,12 @@ describe('crashReporter module', () => {
 
       beforeEach(() => {
         stopServer = null
-        w = new BrowserWindow(Object.assign({ show: false }, browserWindowOpts))
+        w = new BrowserWindow(Object.assign({show: false}, browserWindowOpts))
       })
 
-      afterEach(() => closeWindow(w).then(() => { w = null }))
+      afterEach(() => closeWindow(w).then(() => {
+        w = null
+      }))
 
       afterEach(() => {
         stopCrashService()
@@ -56,29 +58,29 @@ describe('crashReporter module', () => {
         }
       })
 
-      it('should send minidump when renderer crashes', function (done) {
+      it('should send minidump when renderer crashes', function(done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
         this.timeout(180000)
 
         stopServer = startServer({
-          callback (port) {
-            w.loadFile(path.join(fixtures, 'api', 'crash.html'), { query: { port } })
+          callback(port) {
+            w.loadFile(path.join(fixtures, 'api', 'crash.html'), {query: {port}})
           },
           processType: 'renderer',
-          done: done
+          done: done,
         })
       })
 
-      it('should send minidump when node processes crash', function (done) {
+      it('should send minidump when node processes crash', function(done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
         this.timeout(180000)
 
         stopServer = startServer({
-          callback (port) {
+          callback(port) {
             const crashesDir = path.join(app.getPath('temp'), `${process.platform === 'win32' ? 'Zombies' : app.getName()} Crashes`)
             const version = app.getVersion()
             const crashPath = path.join(fixtures, 'module', 'crash.js')
@@ -87,24 +89,24 @@ describe('crashReporter module', () => {
               const crashServiceProcess = childProcess.spawn(process.execPath, [
                 `--reporter-url=http://127.0.0.1:${port}`,
                 '--application-name=Zombies',
-                `--crashes-directory=${crashesDir}`
+                `--crashes-directory=${crashesDir}`,
               ], {
                 env: {
-                  ELECTRON_INTERNAL_CRASH_SERVICE: 1
+                  ELECTRON_INTERNAL_CRASH_SERVICE: 1,
                 },
-                detached: true
+                detached: true,
               })
               remote.process.crashServicePid = crashServiceProcess.pid
             }
 
-            childProcess.fork(crashPath, [port, version, crashesDir], { silent: true })
+            childProcess.fork(crashPath, [port, version, crashesDir], {silent: true})
           },
           processType: 'browser',
-          done: done
+          done: done,
         })
       })
 
-      it('should not send minidump if uploadToServer is false', function (done) {
+      it('should not send minidump if uploadToServer is false', function(done) {
         this.timeout(180000)
 
         let dumpFile
@@ -153,36 +155,36 @@ describe('crashReporter module', () => {
         })
 
         stopServer = startServer({
-          callback (port) {
+          callback(port) {
             const crashUrl = url.format({
               protocol: 'file',
               pathname: path.join(fixtures, 'api', 'crash.html'),
-              search: `?port=${port}&skipUpload=1`
+              search: `?port=${port}&skipUpload=1`,
             })
             w.loadURL(crashUrl)
           },
           processType: 'renderer',
-          done: testDone.bind(null, true)
+          done: testDone.bind(null, true),
         })
       })
 
-      it('should send minidump with updated extra parameters', function (done) {
+      it('should send minidump with updated extra parameters', function(done) {
         // TODO(alexeykuzmin): Skip the test instead of marking it as passed.
         if (process.env.APPVEYOR === 'True') return done()
 
         this.timeout(180000)
 
         stopServer = startServer({
-          callback (port) {
+          callback(port) {
             const crashUrl = url.format({
               protocol: 'file',
               pathname: path.join(fixtures, 'api', 'crash-restart.html'),
-              search: `?port=${port}`
+              search: `?port=${port}`,
             })
             w.loadURL(crashUrl)
           },
           processType: 'renderer',
-          done: done
+          done: done,
         })
       })
     })
@@ -192,13 +194,13 @@ describe('crashReporter module', () => {
   generateSpecs('with sandbox', {
     webPreferences: {
       sandbox: true,
-      preload: path.join(fixtures, 'module', 'preload-sandbox.js')
-    }
+      preload: path.join(fixtures, 'module', 'preload-sandbox.js'),
+    },
   })
   generateSpecs('with remote module disabled', {
     webPreferences: {
-      enableRemoteModule: false
-    }
+      enableRemoteModule: false,
+    },
   })
 
   describe('getProductName', () => {
@@ -212,22 +214,22 @@ describe('crashReporter module', () => {
   describe('start(options)', () => {
     it('requires that the companyName and submitURL options be specified', () => {
       assert.throws(() => {
-        crashReporter.start({ companyName: 'Missing submitURL' })
+        crashReporter.start({companyName: 'Missing submitURL'})
       }, /submitURL is a required option to crashReporter\.start/)
       assert.throws(() => {
-        crashReporter.start({ submitURL: 'Missing companyName' })
+        crashReporter.start({submitURL: 'Missing companyName'})
       }, /companyName is a required option to crashReporter\.start/)
     })
     it('can be called multiple times', () => {
       assert.doesNotThrow(() => {
         crashReporter.start({
           companyName: 'Umbrella Corporation',
-          submitURL: 'http://127.0.0.1/crashes'
+          submitURL: 'http://127.0.0.1/crashes',
         })
 
         crashReporter.start({
           companyName: 'Umbrella Corporation 2',
-          submitURL: 'http://127.0.0.1/more-crashes'
+          submitURL: 'http://127.0.0.1/more-crashes',
         })
       })
     })
@@ -261,23 +263,23 @@ describe('crashReporter module', () => {
       const reports = crashReporter.getUploadedReports()
       expect(reports).to.be.an('array')
       expect(reports).to.have.lengthOf.at.least(2,
-        'There are not enough reports for this test')
+          'There are not enough reports for this test')
 
       const lastReport = crashReporter.getLastCrashReport()
       expect(lastReport).to.be.an('object').that.includes.a.key('date')
 
       // Let's find the newest report.
-      const { report: newestReport } = reports.reduce((acc, cur) => {
+      const {report: newestReport} = reports.reduce((acc, cur) => {
         const timestamp = new Date(cur.date).getTime()
         return (timestamp > acc.timestamp)
-          ? { report: cur, timestamp: timestamp }
+          ? {report: cur, timestamp: timestamp}
           : acc
-      }, { timestamp: -Infinity })
+      }, {timestamp: -Infinity})
       assert(newestReport, 'Hey!')
 
       expect(lastReport.date.getTime()).to.be.equal(
-        newestReport.date.getTime(),
-        'Last report is not the newest.')
+          newestReport.date.getTime(),
+          'Last report is not the newest.')
     })
   })
 
@@ -285,7 +287,7 @@ describe('crashReporter module', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.getUploadToServer())
     })
-    it('returns true when uploadToServer is set to true', function () {
+    it('returns true when uploadToServer is set to true', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -295,11 +297,11 @@ describe('crashReporter module', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
+        uploadToServer: true,
       })
       assert.strictEqual(crashReporter.getUploadToServer(), true)
     })
-    it('returns false when uploadToServer is set to false', function () {
+    it('returns false when uploadToServer is set to false', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -309,7 +311,7 @@ describe('crashReporter module', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
+        uploadToServer: true,
       })
       crashReporter.setUploadToServer(false)
       assert.strictEqual(crashReporter.getUploadToServer(), false)
@@ -320,7 +322,7 @@ describe('crashReporter module', () => {
     it('throws an error when called from the renderer process', () => {
       assert.throws(() => require('electron').crashReporter.setUploadToServer('arg'))
     })
-    it('sets uploadToServer false when called with false', function () {
+    it('sets uploadToServer false when called with false', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -330,12 +332,12 @@ describe('crashReporter module', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: true
+        uploadToServer: true,
       })
       crashReporter.setUploadToServer(false)
       assert.strictEqual(crashReporter.getUploadToServer(), false)
     })
-    it('sets uploadToServer true when called with true', function () {
+    it('sets uploadToServer true when called with true', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -345,7 +347,7 @@ describe('crashReporter module', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
         submitURL: 'http://127.0.0.1/crashes',
-        uploadToServer: false
+        uploadToServer: false,
       })
       crashReporter.setUploadToServer(true)
       assert.strictEqual(crashReporter.getUploadToServer(), true)
@@ -356,13 +358,13 @@ describe('crashReporter module', () => {
     it('returns all of the current parameters', () => {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
+        submitURL: 'http://127.0.0.1/crashes',
       })
 
       const parameters = crashReporter.getParameters()
       assert(typeof parameters === 'object')
     })
-    it('adds a parameter to current parameters', function () {
+    it('adds a parameter to current parameters', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -371,13 +373,13 @@ describe('crashReporter module', () => {
 
       crashReporter.start({
         companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
+        submitURL: 'http://127.0.0.1/crashes',
       })
 
       crashReporter.addExtraParameter('hello', 'world')
       assert('hello' in crashReporter.getParameters())
     })
-    it('removes a parameter from current parameters', function () {
+    it('removes a parameter from current parameters', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -386,7 +388,7 @@ describe('crashReporter module', () => {
 
       crashReporter.start({
         companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1/crashes'
+        submitURL: 'http://127.0.0.1/crashes',
       })
 
       crashReporter.addExtraParameter('hello', 'world')
@@ -415,7 +417,7 @@ const waitForCrashReport = () => {
   })
 }
 
-const startServer = ({ callback, processType, done }) => {
+const startServer = ({callback, processType, done}) => {
   let called = false
   const server = http.createServer((req, res) => {
     const form = new multiparty.Form()
@@ -455,20 +457,20 @@ const startServer = ({ callback, processType, done }) => {
     })
   })
 
-  let { port } = remote.process
+  let {port} = remote.process
   server.listen(port, '127.0.0.1', () => {
     port = server.address().port
     remote.process.port = port
     if (process.platform === 'darwin') {
       crashReporter.start({
         companyName: 'Umbrella Corporation',
-        submitURL: 'http://127.0.0.1:' + port
+        submitURL: 'http://127.0.0.1:' + port,
       })
     }
     callback(port)
   })
 
-  return function stopServer (done) {
+  return function stopServer(done) {
     for (const connection of activeConnections) {
       connection.destroy()
     }
@@ -479,7 +481,7 @@ const startServer = ({ callback, processType, done }) => {
 }
 
 const stopCrashService = () => {
-  const { crashServicePid } = remote.process
+  const {crashServicePid} = remote.process
   if (crashServicePid) {
     remote.process.crashServicePid = 0
     try {

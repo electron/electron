@@ -3,17 +3,17 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
-const { remote } = require('electron')
+const {remote} = require('electron')
 
-describe('inAppPurchase module', function () {
+describe('inAppPurchase module', function() {
   if (process.platform !== 'darwin') return
 
   this.timeout(3 * 60 * 1000)
 
-  const { inAppPurchase } = remote
+  const {inAppPurchase} = remote
 
   it('canMakePayments() does not throw', () => {
     expect(() => {
@@ -38,22 +38,22 @@ describe('inAppPurchase module', function () {
     expect(correctUrlEnd).to.be.true()
   })
 
-  it('purchaseProduct() fails when buying invalid product', done => {
-    inAppPurchase.purchaseProduct('non-exist', 1, success => {
+  it('purchaseProduct() fails when buying invalid product', (done) => {
+    inAppPurchase.purchaseProduct('non-exist', 1, (success) => {
       expect(success).to.be.false()
       done()
     })
   })
 
-  it('purchaseProduct() accepts optional arguments', done => {
+  it('purchaseProduct() accepts optional arguments', (done) => {
     inAppPurchase.purchaseProduct('non-exist', () => {
       inAppPurchase.purchaseProduct('non-exist', 1)
       done()
     })
   })
 
-  it('getProducts() returns an empty list when getting invalid product', done => {
-    inAppPurchase.getProducts(['non-exist'], products => {
+  it('getProducts() returns an empty list when getting invalid product', (done) => {
+    inAppPurchase.getProducts(['non-exist'], (products) => {
       expect(products).to.be.an('array').of.length(0)
       done()
     })

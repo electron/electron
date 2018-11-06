@@ -1,9 +1,9 @@
 class Foo {
-  static foo () {
+  static foo() {
     return 3
   }
 
-  baz () {
+  baz() {
     return 123
   }
 }
@@ -11,5 +11,5 @@ class Foo {
 Foo.bar = 'baz'
 
 module.exports = {
-  Foo: Foo
+  Foo: Foo,
 }

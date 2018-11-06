@@ -1,6 +1,6 @@
 const path = require('path')
-const { remote } = require('electron')
-const { Buffer } = window
+const {remote} = require('electron')
+const {Buffer} = window
 
 delete window.Buffer
 delete global.Buffer

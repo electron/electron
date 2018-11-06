@@ -5,7 +5,7 @@ const stats = fs.statSync(path.join(__dirname, '..', 'asar', 'a.asar'))
 
 const details = {
   isFile: stats.isFile(),
-  size: stats.size
+  size: stats.size,
 }
 
 if (process.send != null) {

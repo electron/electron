@@ -1,8 +1,8 @@
-exports.print = function (obj) {
+exports.print = function(obj) {
   return obj.constructor.name
 }
 
-exports.echo = function (obj) {
+exports.echo = function(obj) {
   return obj
 }
 
@@ -15,10 +15,10 @@ const typedArrays = {
   Int32Array,
   Uint32Array,
   Float32Array,
-  Float64Array
+  Float64Array,
 }
 
-exports.typedArray = function (type, values) {
+exports.typedArray = function(type, values) {
   const constructor = typedArrays[type]
   const array = new constructor(values.length)
   for (let i = 0; i < values.length; ++i) {
@@ -27,10 +27,10 @@ exports.typedArray = function (type, values) {
   return array
 }
 
-exports.getNaN = function () {
+exports.getNaN = function() {
   return NaN
 }
 
-exports.getInfinity = function () {
+exports.getInfinity = function() {
   return Infinity
 }

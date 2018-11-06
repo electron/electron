@@ -1,10 +1,10 @@
 const assert = require('assert')
-const { remote } = require('electron')
-const { systemPreferences } = remote
+const {remote} = require('electron')
+const {systemPreferences} = remote
 
 describe('systemPreferences module', () => {
   describe('systemPreferences.getAccentColor', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'win32') {
         this.skip()
       }
@@ -18,7 +18,7 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.getColor(id)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'win32') {
         this.skip()
       }
@@ -36,7 +36,7 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.registerDefaults(defaults)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }
@@ -44,18 +44,20 @@ describe('systemPreferences module', () => {
 
     it('registers defaults', () => {
       const defaultsMap = [
-        { key: 'one', type: 'string', value: 'ONE' },
-        { key: 'two', value: 2, type: 'integer' },
-        { key: 'three', value: [1, 2, 3], type: 'array' }
+        {key: 'one', type: 'string', value: 'ONE'},
+        {key: 'two', value: 2, type: 'integer'},
+        {key: 'three', value: [1, 2, 3], type: 'array'},
       ]
 
       const defaultsDict = {}
-      defaultsMap.forEach(row => { defaultsDict[row.key] = row.value })
+      defaultsMap.forEach((row) => {
+        defaultsDict[row.key] = row.value
+      })
 
       systemPreferences.registerDefaults(defaultsDict)
 
       for (const userDefault of defaultsMap) {
-        const { key, value: expectedValue, type } = userDefault
+        const {key, value: expectedValue, type} = userDefault
         const actualValue = systemPreferences.getUserDefault(key, type)
         assert.deepStrictEqual(actualValue, expectedValue)
       }
@@ -66,7 +68,7 @@ describe('systemPreferences module', () => {
         1,
         null,
         new Date(),
-        { 'one': null }
+        {'one': null},
       ]
 
       for (const badDefault of badDefaults) {
@@ -78,7 +80,7 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.getUserDefault(key, type)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }
@@ -117,10 +119,10 @@ describe('systemPreferences module', () => {
       ['integer', 11],
       ['url', 'https://github.com/electron'],
       ['array', [1, 2, 3]],
-      ['dictionary', { 'a': 1, 'b': 2 }]
+      ['dictionary', {'a': 1, 'b': 2}],
     ]
 
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }
@@ -150,7 +152,7 @@ describe('systemPreferences module', () => {
   })
 
   describe('systemPreferences.setUserDefault(key, type, value)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }

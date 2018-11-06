@@ -4,7 +4,7 @@
 // proprietary codecs to ensure Electron uses it instead of the version
 // that does include proprietary codecs.
 
-const { app, BrowserWindow, ipcMain } = require('electron')
+const {app, BrowserWindow, ipcMain} = require('electron')
 const path = require('path')
 
 const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
@@ -14,7 +14,7 @@ let window
 
 app.once('ready', () => {
   window = new BrowserWindow({
-    show: false
+    show: false,
   })
 
   window.webContents.on('crashed', (event, killed) => {

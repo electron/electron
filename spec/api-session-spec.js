@@ -5,10 +5,10 @@ const path = require('path')
 const fs = require('fs')
 const send = require('send')
 const auth = require('basic-auth')
-const { closeWindow } = require('./window-helpers')
+const {closeWindow} = require('./window-helpers')
 
-const { ipcRenderer, remote } = require('electron')
-const { ipcMain, session, BrowserWindow, net } = remote
+const {ipcRenderer, remote} = require('electron')
+const {ipcMain, session, BrowserWindow, net} = remote
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -23,7 +23,7 @@ describe('session module', () => {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
     })
   })
 
@@ -35,7 +35,9 @@ describe('session module', () => {
       webview.remove()
     }
 
-    return closeWindow(w).then(() => { w = null })
+    return closeWindow(w).then(() => {
+      w = null
+    })
   })
 
   describe('session.defaultSession', () => {
@@ -72,7 +74,7 @@ describe('session module', () => {
         const port = server.address().port
         w.loadURL(`${url}:${port}`)
         w.webContents.on('did-finish-load', () => {
-          w.webContents.session.cookies.get({ url }, (error, list) => {
+          w.webContents.session.cookies.get({url}, (error, list) => {
             if (error) return done(error)
             for (let i = 0; i < list.length; i++) {
               const cookie = list[i]
@@ -94,7 +96,7 @@ describe('session module', () => {
       session.defaultSession.cookies.set({
         url: '',
         name: '1',
-        value: '1'
+        value: '1',
       }, (error) => {
         assert(error, 'Should have an error')
         assert.strictEqual(error.message, 'Setting cookie failed')
@@ -106,10 +108,10 @@ describe('session module', () => {
       session.defaultSession.cookies.set({
         url,
         name: '1',
-        value: '1'
+        value: '1',
       }, (error) => {
         if (error) return done(error)
-        session.defaultSession.cookies.get({ url }, (error, list) => {
+        session.defaultSession.cookies.get({url}, (error, list) => {
           if (error) return done(error)
           for (let i = 0; i < list.length; i++) {
             const cookie = list[i]
@@ -130,11 +132,11 @@ describe('session module', () => {
       session.defaultSession.cookies.set({
         url: url,
         name: '2',
-        value: '2'
+        value: '2',
       }, (error) => {
         if (error) return done(error)
         session.defaultSession.cookies.remove(url, '2', () => {
-          session.defaultSession.cookies.get({ url }, (error, list) => {
+          session.defaultSession.cookies.get({url}, (error, list) => {
             if (error) return done(error)
             for (let i = 0; i < list.length; i++) {
               const cookie = list[i]
@@ -152,10 +154,10 @@ describe('session module', () => {
       session.defaultSession.cookies.set({
         url: origin,
         name: 'custom',
-        value: '1'
+        value: '1',
       }, (error) => {
         if (error) return done(error)
-        session.defaultSession.cookies.get({ url: origin }, (error, list) => {
+        session.defaultSession.cookies.get({url: origin}, (error, list) => {
           if (error) return done(error)
           assert.strictEqual(list.length, 1)
           assert.strictEqual(list[0].name, 'custom')
@@ -167,7 +169,7 @@ describe('session module', () => {
     })
 
     it('emits a changed event when a cookie is added or removed', (done) => {
-      const { cookies } = session.fromPartition('cookies-changed')
+      const {cookies} = session.fromPartition('cookies-changed')
 
       cookies.once('changed', (event, cookie, cause, removed) => {
         assert.strictEqual(cookie.name, 'foo')
@@ -191,7 +193,7 @@ describe('session module', () => {
       cookies.set({
         url: url,
         name: 'foo',
-        value: 'bar'
+        value: 'bar',
       }, (error) => {
         if (error) return done(error)
       })
@@ -202,7 +204,7 @@ describe('session module', () => {
         session.defaultSession.cookies.set({
           url: url,
           name: 'foo',
-          value: 'bar'
+          value: 'bar',
         }, (error) => {
           if (error) return done(error)
           session.defaultSession.cookies.flushStore(() => {
@@ -226,7 +228,7 @@ describe('session module', () => {
         const options = {
           origin: 'file://',
           storages: ['localstorage'],
-          quotas: ['persistent']
+          quotas: ['persistent'],
         }
         w.webContents.session.clearStorageData(options, () => {
           w.webContents.send('getcount')
@@ -241,7 +243,7 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
       })
     })
 
@@ -252,7 +254,7 @@ describe('session module', () => {
         res.writeHead(200, {
           'Content-Length': mockFile.length,
           'Content-Type': 'application/plain',
-          'Content-Disposition': contentDisposition
+          'Content-Disposition': contentDisposition,
         })
         res.end(mockFile)
         downloadServer.close()
@@ -284,7 +286,7 @@ describe('session module', () => {
       res.writeHead(200, {
         'Content-Length': mockPDF.length,
         'Content-Type': 'application/pdf',
-        'Content-Disposition': contentDisposition
+        'Content-Disposition': contentDisposition,
       })
       res.end(mockPDF)
       downloadServer.close()
@@ -294,8 +296,8 @@ describe('session module', () => {
       return path.relative(path1, path2) === ''
     }
     const assertDownload = (event, state, url, mimeType,
-      receivedBytes, totalBytes, disposition,
-      filename, port, savePath, isCustom) => {
+        receivedBytes, totalBytes, disposition,
+        filename, port, savePath, isCustom) => {
       assert.strictEqual(state, 'completed')
       assert.strictEqual(filename, 'mock.pdf')
       assert.ok(path.isAbsolute(savePath))
@@ -319,11 +321,11 @@ describe('session module', () => {
         ipcRenderer.sendSync('set-download-option', false, false)
         w.webContents.downloadURL(`${url}:${port}`)
         ipcRenderer.once('download-done', (event, state, url,
-          mimeType, receivedBytes,
-          totalBytes, disposition,
-          filename, savePath) => {
+            mimeType, receivedBytes,
+            totalBytes, disposition,
+            filename, savePath) => {
           assertDownload(event, state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename, port, savePath)
+              totalBytes, disposition, filename, port, savePath)
           done()
         })
       })
@@ -334,19 +336,19 @@ describe('session module', () => {
       downloadServer.listen(0, '127.0.0.1', () => {
         const port = downloadServer.address().port
         const handler = (ignoredError, callback) => {
-          callback({ url: `${url}:${port}` })
+          callback({url: `${url}:${port}`})
         }
         protocol.registerHttpProtocol(protocolName, handler, (error) => {
           if (error) return done(error)
           ipcRenderer.sendSync('set-download-option', false, false)
           w.webContents.downloadURL(`${protocolName}://item`)
           ipcRenderer.once('download-done', (event, state, url,
-            mimeType, receivedBytes,
-            totalBytes, disposition,
-            filename, savePath) => {
+              mimeType, receivedBytes,
+              totalBytes, disposition,
+              filename, savePath) => {
             assertDownload(event, state, url, mimeType, receivedBytes,
-              totalBytes, disposition, filename, port, savePath,
-              true)
+                totalBytes, disposition, filename, port, savePath,
+                true)
             done()
           })
         })
@@ -363,11 +365,11 @@ describe('session module', () => {
           webview.downloadURL(`${url}:${port}/`)
         })
         ipcRenderer.once('download-done', (event, state, url,
-          mimeType, receivedBytes,
-          totalBytes, disposition,
-          filename, savePath) => {
+            mimeType, receivedBytes,
+            totalBytes, disposition,
+            filename, savePath) => {
           assertDownload(event, state, url, mimeType, receivedBytes,
-            totalBytes, disposition, filename, port, savePath)
+              totalBytes, disposition, filename, port, savePath)
           document.body.removeChild(webview)
           done()
         })
@@ -381,9 +383,9 @@ describe('session module', () => {
         ipcRenderer.sendSync('set-download-option', true, false)
         w.webContents.downloadURL(`${url}:${port}/`)
         ipcRenderer.once('download-done', (event, state, url,
-          mimeType, receivedBytes,
-          totalBytes, disposition,
-          filename) => {
+            mimeType, receivedBytes,
+            totalBytes, disposition,
+            filename) => {
           assert.strictEqual(state, 'cancelled')
           assert.strictEqual(filename, 'mock.pdf')
           assert.strictEqual(mimeType, 'application/pdf')
@@ -395,7 +397,7 @@ describe('session module', () => {
       })
     })
 
-    it('can generate a default filename', function (done) {
+    it('can generate a default filename', function(done) {
       if (process.env.APPVEYOR === 'True') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -407,9 +409,9 @@ describe('session module', () => {
         ipcRenderer.sendSync('set-download-option', true, false)
         w.webContents.downloadURL(`${url}:${port}/?testFilename`)
         ipcRenderer.once('download-done', (event, state, url,
-          mimeType, receivedBytes,
-          totalBytes, disposition,
-          filename) => {
+            mimeType, receivedBytes,
+            totalBytes, disposition,
+            filename) => {
           assert.strictEqual(state, 'cancelled')
           assert.strictEqual(filename, 'download.pdf')
           assert.strictEqual(mimeType, 'application/pdf')
@@ -439,7 +441,7 @@ describe('session module', () => {
     const partitionProtocol = session.fromPartition(partitionName).protocol
     const protocol = session.defaultSession.protocol
     const handler = (ignoredError, callback) => {
-      callback({ data: 'test', mimeType: 'text/html' })
+      callback({data: 'test', mimeType: 'text/html'})
     }
 
     beforeEach((done) => {
@@ -447,8 +449,8 @@ describe('session module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: partitionName
-        }
+          partition: partitionName,
+        },
       })
       partitionProtocol.registerStringProtocol(protocolName, handler, (error) => {
         done(error != null ? error : undefined)
@@ -493,7 +495,7 @@ describe('session module', () => {
     })
 
     it('allows configuring proxy settings', (done) => {
-      const config = { proxyRules: 'http=myproxy:80' }
+      const config = {proxyRules: 'http=myproxy:80'}
       customSession.setProxy(config, () => {
         customSession.resolveProxy('http://localhost', (proxy) => {
           assert.strictEqual(proxy, 'PROXY myproxy:80')
@@ -510,12 +512,12 @@ describe('session module', () => {
           }
         `
         res.writeHead(200, {
-          'Content-Type': 'application/x-ns-proxy-autoconfig'
+          'Content-Type': 'application/x-ns-proxy-autoconfig',
         })
         res.end(pac)
       })
       server.listen(0, '127.0.0.1', () => {
-        const config = { pacScript: `http://127.0.0.1:${server.address().port}` }
+        const config = {pacScript: `http://127.0.0.1:${server.address().port}`}
         customSession.setProxy(config, () => {
           customSession.resolveProxy('http://localhost', (proxy) => {
             assert.strictEqual(proxy, 'PROXY myproxy:8132')
@@ -528,7 +530,7 @@ describe('session module', () => {
     it('allows bypassing proxy settings', (done) => {
       const config = {
         proxyRules: 'http=myproxy:80',
-        proxyBypassRules: '<local>'
+        proxyBypassRules: '<local>',
       }
       customSession.setProxy(config, () => {
         customSession.resolveProxy('http://localhost', (proxy) => {
@@ -546,7 +548,7 @@ describe('session module', () => {
       const url = `${scheme}://host`
       before(() => {
         if (w != null) w.destroy()
-        w = new BrowserWindow({ show: false })
+        w = new BrowserWindow({show: false})
       })
 
       after((done) => {
@@ -560,7 +562,7 @@ describe('session module', () => {
 
       const postData = JSON.stringify({
         type: 'blob',
-        value: 'hello'
+        value: 'hello',
       })
       const content = `<html>
                        <script>
@@ -574,7 +576,7 @@ describe('session module', () => {
 
       protocol.registerStringProtocol(scheme, (request, callback) => {
         if (request.method === 'GET') {
-          callback({ data: content, mimeType: 'text/html' })
+          callback({data: content, mimeType: 'text/html'})
         } else if (request.method === 'POST') {
           const uuid = request.uploadData[1].blobUUID
           assert(uuid)
@@ -600,10 +602,10 @@ describe('session module', () => {
         cert: fs.readFileSync(path.join(certPath, 'server.pem')),
         ca: [
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
-          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem')),
         ],
         requestCert: true,
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
       }
 
       server = https.createServer(options, (req, res) => {
@@ -619,7 +621,7 @@ describe('session module', () => {
     })
 
     it('accepts the request when the callback is called with 0', (done) => {
-      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult, errorCode }, callback) => {
+      session.defaultSession.setCertificateVerifyProc(({hostname, certificate, verificationResult, errorCode}, callback) => {
         assert(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult), verificationResult)
         assert([-202, -200].includes(errorCode), errorCode)
         callback(0)
@@ -633,7 +635,7 @@ describe('session module', () => {
     })
 
     it('rejects the request when the callback is called with -2', (done) => {
-      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
+      session.defaultSession.setCertificateVerifyProc(({hostname, certificate, verificationResult}, callback) => {
         assert.strictEqual(hostname, '127.0.0.1')
         assert.strictEqual(certificate.issuerName, 'Intermediate CA')
         assert.strictEqual(certificate.subjectName, 'localhost')
@@ -666,13 +668,13 @@ describe('session module', () => {
         urlChain: ['http://127.0.0.1/'],
         mimeType: 'application/pdf',
         offset: 0,
-        length: 5242880
+        length: 5242880,
       }
       w.webContents.session.createInterruptedDownload(options)
       ipcRenderer.once('download-created', (event, state, urlChain,
-        mimeType, receivedBytes,
-        totalBytes, filename,
-        savePath) => {
+          mimeType, receivedBytes,
+          totalBytes, filename,
+          savePath) => {
         assert.strictEqual(state, 'interrupted')
         assert.deepStrictEqual(urlChain, ['http://127.0.0.1/'])
         assert.strictEqual(mimeType, 'application/pdf')
@@ -687,18 +689,20 @@ describe('session module', () => {
       const fixtures = path.join(__dirname, 'fixtures')
       const downloadFilePath = path.join(fixtures, 'logo.png')
       const rangeServer = http.createServer((req, res) => {
-        const options = { root: fixtures }
+        const options = {root: fixtures}
         send(req, req.url, options)
-          .on('error', (error) => { done(error) }).pipe(res)
+            .on('error', (error) => {
+              done(error)
+            }).pipe(res)
       })
       ipcRenderer.sendSync('set-download-option', true, false, downloadFilePath)
       rangeServer.listen(0, '127.0.0.1', () => {
         const port = rangeServer.address().port
         const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`
         const callback = (event, state, url, mimeType,
-          receivedBytes, totalBytes, disposition,
-          filename, savePath, urlChain,
-          lastModifiedTime, eTag) => {
+            receivedBytes, totalBytes, disposition,
+            filename, savePath, urlChain,
+            lastModifiedTime, eTag) => {
           if (state === 'cancelled') {
             const options = {
               path: savePath,
@@ -707,7 +711,7 @@ describe('session module', () => {
               offset: receivedBytes,
               length: totalBytes,
               lastModified: lastModifiedTime,
-              eTag: eTag
+              eTag: eTag,
             }
             ipcRenderer.sendSync('set-download-option', false, false, downloadFilePath)
             w.webContents.session.createInterruptedDownload(options)
@@ -747,14 +751,14 @@ describe('session module', () => {
       })
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port
-        function issueLoginRequest (attempt = 1) {
+        function issueLoginRequest(attempt = 1) {
           if (attempt > 2) {
             server.close()
             return done()
           }
           const request = net.request({
             url: `http://127.0.0.1:${port}`,
-            session: ses
+            session: ses,
           })
           request.on('login', (info, callback) => {
             attempt += 1
@@ -770,11 +774,13 @@ describe('session module', () => {
             })
             response.on('end', () => {
               assert.strictEqual(data, 'authenticated')
-              ses.clearAuthCache({ type: 'password' }, () => {
+              ses.clearAuthCache({type: 'password'}, () => {
                 issueLoginRequest(attempt)
               })
             })
-            response.on('error', (error) => { done(error) })
+            response.on('error', (error) => {
+              done(error)
+            })
             response.resume()
           })
           // Internal api to bypass cache for testing.

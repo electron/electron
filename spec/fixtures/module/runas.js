@@ -1,4 +1,4 @@
-process.on('uncaughtException', function (err) {
+process.on('uncaughtException', function(err) {
   process.send(err.message)
 })
 

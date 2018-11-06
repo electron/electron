@@ -1,11 +1,11 @@
-exports.setup = function () {
+exports.setup = function() {
   const foo = {}
 
-  foo.bar = function () {
+  foo.bar = function() {
     return delete foo.bar.baz && delete foo.bar
   }
 
-  foo.bar.baz = function () {
+  foo.bar.baz = function() {
     return 3
   }
 

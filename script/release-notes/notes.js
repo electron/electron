@@ -5,16 +5,16 @@ const fs = require('fs')
 const os = require('os')
 const path = require('path')
 
-const { GitProcess } = require('dugite')
+const {GitProcess} = require('dugite')
 const GitHub = require('github')
 const semver = require('semver')
 
 const CACHE_DIR = path.resolve(__dirname, '.cache')
 const NO_NOTES = 'No notes'
-const FOLLOW_REPOS = [ 'electron/electron', 'electron/libchromiumcontent', 'electron/node' ]
+const FOLLOW_REPOS = ['electron/electron', 'electron/libchromiumcontent', 'electron/node']
 const github = new GitHub()
 const gitDir = path.resolve(__dirname, '..', '..')
-github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
+github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 const breakTypes = new Set(['breaking-change'])
 const docTypes = new Set(['doc', 'docs'])
@@ -49,21 +49,21 @@ const getCommonAncestor = async (dir, point1, point2) => {
 
 const setPullRequest = (commit, owner, repo, number) => {
   if (!owner || !repo || !number) {
-    throw new Error(JSON.stringify({ owner, repo, number }, null, 2))
+    throw new Error(JSON.stringify({owner, repo, number}, null, 2))
   }
 
   if (!commit.originalPr) {
     commit.originalPr = commit.pr
   }
 
-  commit.pr = { owner, repo, number }
+  commit.pr = {owner, repo, number}
 
   if (!commit.originalPr) {
     commit.originalPr = commit.pr
   }
 }
 
-const getNoteFromBody = body => {
+const getNoteFromBody = (body) => {
   if (!body) {
     return null
   }
@@ -71,17 +71,17 @@ const getNoteFromBody = body => {
   const NOTE_PREFIX = 'Notes: '
 
   let note = body
-    .split(/\r?\n\r?\n/) // split into paragraphs
-    .map(paragraph => paragraph.trim())
-    .find(paragraph => paragraph.startsWith(NOTE_PREFIX))
+      .split(/\r?\n\r?\n/) // split into paragraphs
+      .map((paragraph) => paragraph.trim())
+      .find((paragraph) => paragraph.startsWith(NOTE_PREFIX))
 
   if (note) {
     const placeholder = '<!-- One-line Change Summary Here-->'
     note = note
-      .slice(NOTE_PREFIX.length)
-      .replace(placeholder, '')
-      .replace(/\r?\n/, ' ') // remove newlines
-      .trim()
+        .slice(NOTE_PREFIX.length)
+        .replace(placeholder, '')
+        .replace(/\r?\n/, ' ') // remove newlines
+        .trim()
   }
 
   if (note) {
@@ -125,7 +125,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
     commit.body = body
 
     const note = getNoteFromBody(body)
-    if (note) { commit.note = note }
+    if (note) {
+      commit.note = note
+    }
   }
 
   // if the subject ends in ' (#dddd)', treat it as a pull request id
@@ -176,9 +178,9 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
   // https://www.conventionalcommits.org/en
   if (commitMessage
-    .split(/\r?\n\r?\n/) // split into paragraphs
-    .map(paragraph => paragraph.trim())
-    .some(paragraph => paragraph.startsWith('BREAKING CHANGE'))) {
+      .split(/\r?\n\r?\n/) // split into paragraphs
+      .map((paragraph) => paragraph.trim())
+      .some((paragraph) => paragraph.startsWith('BREAKING CHANGE'))) {
     commit.type = 'breaking-change'
   }
 
@@ -190,7 +192,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // Edge case: manual backport where commit has `owner/repo#pull` notation
   if (commitMessage.toLowerCase().includes('backport') &&
       ((match = commitMessage.match(/\b(\w+)\/(\w+)#(\d+)\b/)))) {
-    const [ , owner, repo, number ] = match
+    const [, owner, repo, number] = match
     if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
       setPullRequest(commit, owner, repo, number)
     }
@@ -199,7 +201,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
   // Edge case: manual backport where commit has a link to the backport PR
   if (commitMessage.includes('ackport') &&
       ((match = commitMessage.match(/https:\/\/github\.com\/(\w+)\/(\w+)\/pull\/(\d+)/)))) {
-    const [ , owner, repo, number ] = match
+    const [, owner, repo, number] = match
     if (FOLLOW_REPOS.includes(`${owner}/${repo}`)) {
       setPullRequest(commit, owner, repo, number)
     }
@@ -227,7 +229,7 @@ const parseCommitMessage = (commitMessage, owner, repo, commit = {}) => {
 
 const getLocalCommitHashes = async (dir, ref) => {
   const args = ['log', '-z', `--format=%H`, ref]
-  return (await runGit(dir, args)).split(`\0`).map(hash => hash.trim())
+  return (await runGit(dir, args)).split(`\0`).map((hash) => hash.trim())
 }
 
 /*
@@ -236,24 +238,24 @@ const getLocalCommitHashes = async (dir, ref) => {
  * pr { owner, repo, number, branch }, revertHash, subject, type
  */
 const getLocalCommitDetails = async (module, point1, point2) => {
-  const { owner, repo, dir } = module
+  const {owner, repo, dir} = module
 
   const fieldSep = '||'
   const format = ['%H', '%P', '%aE', '%B'].join(fieldSep)
   const args = ['log', '-z', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`]
-  const commits = (await runGit(dir, args)).split(`\0`).map(field => field.trim())
+  const commits = (await runGit(dir, args)).split(`\0`).map((field) => field.trim())
   const details = []
   for (const commit of commits) {
     if (!commit) {
       continue
     }
-    const [ hash, parentHashes, email, commitMessage ] = commit.split(fieldSep, 4).map(field => field.trim())
+    const [hash, parentHashes, email, commitMessage] = commit.split(fieldSep, 4).map((field) => field.trim())
     details.push(parseCommitMessage(commitMessage, owner, repo, {
       email,
       hash,
       owner,
       repo,
-      parentHashes: parentHashes.split()
+      parentHashes: parentHashes.split(),
     }))
   }
   return details
@@ -275,7 +277,7 @@ const getPullRequest = async (number, owner, repo) => {
   const name = `${owner}-${repo}-pull-${number}`
   return checkCache(name, async () => {
     try {
-      return await github.pullRequests.get({ number, owner, repo })
+      return await github.pullRequests.get({number, owner, repo})
     } catch (error) {
       // Silently eat 404s.
       // We can get a bad pull number if someone manually lists
@@ -290,12 +292,14 @@ const getPullRequest = async (number, owner, repo) => {
 const addRepoToPool = async (pool, repo, from, to) => {
   const commonAncestor = await getCommonAncestor(repo.dir, from, to)
   const oldHashes = await getLocalCommitHashes(repo.dir, from)
-  oldHashes.forEach(hash => { pool.processedHashes.add(hash) })
+  oldHashes.forEach((hash) => {
+    pool.processedHashes.add(hash)
+  })
   const commits = await getLocalCommitDetails(repo, commonAncestor, to)
   pool.commits.push(...commits)
 }
 
-/***
+/** *
 ****  Other Repos
 ***/
 
@@ -304,12 +308,12 @@ const addRepoToPool = async (pool, repo, from, to) => {
 const getGypSubmoduleRef = async (dir, point) => {
   // example: '160000 commit 028b0af83076cec898f4ebce208b7fadb715656e libchromiumcontent'
   const response = await runGit(
-    path.dirname(dir),
-    ['ls-tree', '-t', point, path.basename(dir)]
+      path.dirname(dir),
+      ['ls-tree', '-t', point, path.basename(dir)]
   )
 
-  const line = response.split('\n').filter(line => line.startsWith('160000')).shift()
-  const tokens = line ? line.split(/\s/).map(token => token.trim()) : null
+  const line = response.split('\n').filter((line) => line.startsWith('160000')).shift()
+  const tokens = line ? line.split(/\s/).map((token) => token.trim()) : null
   const ref = tokens && tokens.length >= 3 ? tokens[2] : null
 
   return ref
@@ -321,11 +325,11 @@ const getDependencyCommitsGyp = async (pool, fromRef, toRef) => {
   const repos = [{
     owner: 'electron',
     repo: 'libchromiumcontent',
-    dir: path.resolve(gitDir, 'vendor', 'libchromiumcontent')
+    dir: path.resolve(gitDir, 'vendor', 'libchromiumcontent'),
   }, {
     owner: 'electron',
     repo: 'node',
-    dir: path.resolve(gitDir, 'vendor', 'node')
+    dir: path.resolve(gitDir, 'vendor', 'node'),
   }]
 
   for (const repo of repos) {
@@ -347,9 +351,9 @@ const getDepsVariable = async (ref, key) => {
 
   // query the DEPS file
   const response = childProcess.spawnSync(
-    'gclient',
-    ['getdep', '--deps-file', filename, '--var', key],
-    { encoding: 'utf8' }
+      'gclient',
+      ['getdep', '--deps-file', filename, '--var', key],
+      {encoding: 'utf8'}
   )
 
   // cleanup
@@ -362,7 +366,7 @@ const getDependencyCommitsGN = async (pool, fromRef, toRef) => {
     owner: 'electron',
     repo: 'node',
     dir: path.resolve(gitDir, '..', 'third_party', 'electron_node'),
-    deps_variable_name: 'node_version'
+    deps_variable_name: 'node_version',
   }]
 
   for (const repo of repos) {
@@ -385,7 +389,7 @@ const getDependencyCommits = async (pool, from, to) => {
     : getDependencyCommitsGN(pool, from, to)
 }
 
-/***
+/** *
 ****  Main
 ***/
 
@@ -396,11 +400,11 @@ const getNotes = async (fromRef, toRef) => {
 
   const pool = {
     processedHashes: new Set(),
-    commits: []
+    commits: [],
   }
 
   // get the electron/electron commits
-  const electron = { owner: 'electron', repo: 'electron', dir: gitDir }
+  const electron = {owner: 'electron', repo: 'electron', dir: gitDir}
   await addRepoToPool(pool, electron, fromRef, toRef)
 
   // Don't include submodules if comparing across major versions;
@@ -414,7 +418,7 @@ const getNotes = async (fromRef, toRef) => {
   }
 
   // remove any old commits
-  pool.commits = pool.commits.filter(commit => !pool.processedHashes.has(commit.hash))
+  pool.commits = pool.commits.filter((commit) => !pool.processedHashes.has(commit.hash))
 
   // if a commmit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
@@ -423,7 +427,7 @@ const getNotes = async (fromRef, toRef) => {
       continue
     }
 
-    const revert = pool.commits.find(commit => commit.hash === revertHash)
+    const revert = pool.commits.find((commit) => commit.hash === revertHash)
     if (!revert) {
       continue
     }
@@ -457,8 +461,8 @@ const getNotes = async (fromRef, toRef) => {
 
   // remove uninteresting commits
   pool.commits = pool.commits
-    .filter(commit => commit.note !== NO_NOTES)
-    .filter(commit => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
+      .filter((commit) => commit.note !== NO_NOTES)
+      .filter((commit) => !((commit.note || commit.subject).match(/^[Bb]ump v\d+\.\d+\.\d+/)))
 
   const notes = {
     breaks: [],
@@ -467,10 +471,10 @@ const getNotes = async (fromRef, toRef) => {
     fix: [],
     other: [],
     unknown: [],
-    ref: toRef
+    ref: toRef,
   }
 
-  pool.commits.forEach(commit => {
+  pool.commits.forEach((commit) => {
     const str = commit.type
     if (!str) {
       notes.unknown.push(commit)
@@ -492,11 +496,11 @@ const getNotes = async (fromRef, toRef) => {
   return notes
 }
 
-/***
+/** *
 ****  Render
 ***/
 
-const renderCommit = commit => {
+const renderCommit = (commit) => {
   // clean up the note
   let note = commit.note || commit.subject
   note = note.trim()
@@ -508,22 +512,22 @@ const renderCommit = commit => {
     }
 
     const commonVerbs = {
-      'Added': [ 'Add' ],
-      'Backported': [ 'Backport' ],
-      'Cleaned': [ 'Clean' ],
-      'Disabled': [ 'Disable' ],
-      'Ensured': [ 'Ensure' ],
-      'Exported': [ 'Export' ],
-      'Fixed': [ 'Fix', 'Fixes' ],
-      'Handled': [ 'Handle' ],
-      'Improved': [ 'Improve' ],
-      'Made': [ 'Make' ],
-      'Removed': [ 'Remove' ],
-      'Repaired': [ 'Repair' ],
-      'Reverted': [ 'Revert' ],
-      'Stopped': [ 'Stop' ],
-      'Updated': [ 'Update' ],
-      'Upgraded': [ 'Upgrade' ]
+      'Added': ['Add'],
+      'Backported': ['Backport'],
+      'Cleaned': ['Clean'],
+      'Disabled': ['Disable'],
+      'Ensured': ['Ensure'],
+      'Exported': ['Export'],
+      'Fixed': ['Fix', 'Fixes'],
+      'Handled': ['Handle'],
+      'Improved': ['Improve'],
+      'Made': ['Make'],
+      'Removed': ['Remove'],
+      'Repaired': ['Repair'],
+      'Reverted': ['Revert'],
+      'Stopped': ['Stop'],
+      'Updated': ['Update'],
+      'Upgraded': ['Upgrade'],
     }
     for (const [key, values] of Object.entries(commonVerbs)) {
       for (const value of values) {
@@ -546,18 +550,18 @@ const renderCommit = commit => {
     link = `[${pr.owner}/${pr.repo}:${pr.number}](https://github.com/${pr.owner}/${pr.repo}/pull/${pr.number})`
   }
 
-  return { note, link }
+  return {note, link}
 }
 
-const renderNotes = notes => {
-  const rendered = [ `# Release Notes for ${notes.ref}\n\n` ]
+const renderNotes = (notes) => {
+  const rendered = [`# Release Notes for ${notes.ref}\n\n`]
 
   const renderSection = (title, commits) => {
     if (commits.length === 0) {
       return
     }
     const notes = new Map()
-    for (const note of commits.map(commit => renderCommit(commit))) {
+    for (const note of commits.map((commit) => renderCommit(commit))) {
       if (!notes.has(note.note)) {
         notes.set(note.note, [note.link])
       } else {
@@ -566,7 +570,7 @@ const renderNotes = notes => {
     }
     rendered.push(`## ${title}\n\n`)
     const lines = []
-    notes.forEach((links, key) => lines.push(` * ${key} ${links.map(link => link.toString()).sort().join(', ')}\n`))
+    notes.forEach((links, key) => lines.push(` * ${key} ${links.map((link) => link.toString()).sort().join(', ')}\n`))
     rendered.push(...lines.sort(), '\n')
   }
 
@@ -576,7 +580,7 @@ const renderNotes = notes => {
   renderSection('Other Changes', notes.other)
 
   if (notes.docs.length) {
-    const docs = notes.docs.map(commit => {
+    const docs = notes.docs.map((commit) => {
       return commit.pr && commit.pr.number
         ? `#${commit.pr.number}`
         : `https://github.com/electron/electron/commit/${commit.hash}`
@@ -589,11 +593,11 @@ const renderNotes = notes => {
   return rendered.join('')
 }
 
-/***
+/** *
 ****  Module
 ***/
 
 module.exports = {
   get: getNotes,
-  render: renderNotes
+  render: renderNotes,
 }

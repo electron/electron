@@ -2,7 +2,7 @@ const assert = require('assert')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { shell } = require('electron')
+const {shell} = require('electron')
 
 describe('shell module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -13,11 +13,11 @@ describe('shell module', () => {
     args: 'args',
     appUserModelId: 'appUserModelId',
     icon: 'icon',
-    iconIndex: 1
+    iconIndex: 1,
   }
 
   // (alexeykuzmin): `.skip()` in `before` doesn't work for nested `describe`s.
-  beforeEach(function () {
+  beforeEach(function() {
     if (process.platform !== 'win32') {
       this.skip()
     }
@@ -44,7 +44,7 @@ describe('shell module', () => {
     })
 
     it('writes the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' }), true)
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, {target: 'C:\\'}), true)
       assert.strictEqual(fs.existsSync(tmpShortcut), true)
     })
 
@@ -57,7 +57,7 @@ describe('shell module', () => {
       assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions), false)
       assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
       assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
-      const change = { target: 'D:\\' }
+      const change = {target: 'D:\\'}
       assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', change), true)
       assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), Object.assign(shortcutOptions, change))
     })
@@ -73,7 +73,7 @@ describe('shell module', () => {
         args: 'args2',
         appUserModelId: 'appUserModelId2',
         icon: 'icon2',
-        iconIndex: 2
+        iconIndex: 2,
       }
       assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', change), true)
       assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), change)

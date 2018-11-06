@@ -7,14 +7,14 @@ const path = require('path')
 const ws = require('ws')
 const url = require('url')
 const ChildProcess = require('child_process')
-const { ipcRenderer, remote } = require('electron')
-const { closeWindow } = require('./window-helpers')
-const { resolveGetters } = require('./assert-helpers')
-const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
+const {ipcRenderer, remote} = require('electron')
+const {closeWindow} = require('./window-helpers')
+const {resolveGetters} = require('./assert-helpers')
+const {app, BrowserWindow, ipcMain, protocol, session, webContents} = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 /* Most of the APIs here don't use standard callbacks */
@@ -41,7 +41,9 @@ describe('chromium feature', () => {
         let output = ''
         const appProcess = ChildProcess.spawn(electronPath, [appPath, `--lang=${locale}`])
 
-        appProcess.stdout.on('data', (data) => { output += data })
+        appProcess.stdout.on('data', (data) => {
+          output += data
+        })
         appProcess.stdout.on('end', () => {
           output = output.replace(/(\r\n|\n|\r)/gm, '')
           assert.strictEqual(output, result)
@@ -54,10 +56,12 @@ describe('chromium feature', () => {
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(() => closeWindow(w).then(() => {
+    w = null
+  }))
 
   describe('heap snapshot', () => {
-    it('does not crash', function () {
+    it('does not crash', function() {
       process.atomBinding('v8_util').takeHeapSnapshot()
     })
   })
@@ -78,8 +82,10 @@ describe('chromium feature', () => {
 
   describe('accessing key names also used as Node.js module names', () => {
     it('does not crash', (done) => {
-      w = new BrowserWindow({ show: false })
-      w.webContents.once('did-finish-load', () => { done() })
+      w = new BrowserWindow({show: false})
+      w.webContents.once('did-finish-load', () => {
+        done()
+      })
       w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
       w.loadFile(path.join(fixtures, 'pages', 'external-string.html'))
     })
@@ -90,10 +96,12 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: false
-        }
+          nodeIntegration: false,
+        },
       })
-      w.webContents.once('did-finish-load', () => { done() })
+      w.webContents.once('did-finish-load', () => {
+        done()
+      })
       w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
       w.loadFile(path.join(fixtures, 'pages', 'jquery.html'))
     })
@@ -103,7 +111,7 @@ describe('chromium feature', () => {
     it('calls its callbacks', (done) => {
       navigator.webkitGetUserMedia({
         audio: true,
-        video: false
+        video: false,
       }, () => done(),
       () => done())
     })
@@ -144,15 +152,15 @@ describe('chromium feature', () => {
     it('can return new device id when cookie storage is cleared', (done) => {
       const options = {
         origin: null,
-        storages: ['cookies']
+        storages: ['cookies'],
       }
       const deviceIds = []
       const ses = session.fromPartition('persist:media-device-id')
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          session: ses
-        }
+          session: ses,
+        },
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'deviceIds') deviceIds.push(args[1])
@@ -191,8 +199,8 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'sw-file-scheme-spec'
-        }
+          partition: 'sw-file-scheme-spec',
+        },
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
@@ -202,7 +210,7 @@ describe('chromium feature', () => {
         } else if (args[0] === 'response') {
           assert.strictEqual(args[1], 'Hello from serviceWorker!')
           session.fromPartition('sw-file-scheme-spec').clearStorageData({
-            storages: ['serviceworkers']
+            storages: ['serviceworkers'],
           }, () => done())
         }
       })
@@ -221,14 +229,14 @@ describe('chromium feature', () => {
         let type = 'text/html'
 
         if (ext === '.js') type = 'application/javascript'
-        callback({ data: content, mimeType: type })
+        callback({data: content, mimeType: type})
       }, (error) => {
         if (error) done(error)
       })
 
       w = new BrowserWindow({
         show: false,
-        webPreferences: { session: customSession }
+        webPreferences: {session: customSession},
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
@@ -238,7 +246,7 @@ describe('chromium feature', () => {
         } else if (args[0] === 'response') {
           assert.strictEqual(args[1], 'Hello from serviceWorker!')
           customSession.clearStorageData({
-            storages: ['serviceworkers']
+            storages: ['serviceworkers'],
           }, () => {
             customSession.protocol.uninterceptProtocol('file', (error) => done(error))
           })
@@ -250,7 +258,7 @@ describe('chromium feature', () => {
   })
 
   describe('navigator.geolocation', () => {
-    before(function () {
+    before(function() {
       if (!features.isFakeLocationProviderEnabled()) {
         return this.skip()
       }
@@ -269,8 +277,8 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'geolocation-spec'
-        }
+          partition: 'geolocation-spec',
+        },
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'success') {
@@ -325,7 +333,7 @@ describe('chromium feature', () => {
 
     for (const show of [true, false]) {
       it(`inherits parent visibility over parent {show=${show}} option`, (done) => {
-        const w = new BrowserWindow({ show })
+        const w = new BrowserWindow({show})
 
         // toggle visibility
         if (show) {
@@ -356,9 +364,9 @@ describe('chromium feature', () => {
         pathname: `${fixtures}/pages/window-opener-no-node-integration.html`,
         protocol: 'file',
         query: {
-          p: `${fixtures}/pages/window-opener-node.html`
+          p: `${fixtures}/pages/window-opener-node.html`,
         },
-        slashes: true
+        slashes: true,
       })
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
@@ -376,9 +384,9 @@ describe('chromium feature', () => {
         pathname: `${fixtures}/pages/window-opener-no-web-view-tag.html`,
         protocol: 'file',
         query: {
-          p: `${fixtures}/pages/window-opener-web-view.html`
+          p: `${fixtures}/pages/window-opener-web-view.html`,
         },
-        slashes: true
+        slashes: true,
       })
       b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
     })
@@ -410,15 +418,15 @@ describe('chromium feature', () => {
             done()
           })
           // Click link on page
-          contents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 })
-          contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 })
+          contents.sendInputEvent({type: 'mouseDown', clickCount: 1, x: 1, y: 1})
+          contents.sendInputEvent({type: 'mouseUp', clickCount: 1, x: 1, y: 1})
         })
       })
 
       const windowUrl = require('url').format({
         pathname: `${fixtures}/pages/window-no-javascript.html`,
         protocol: 'file',
-        slashes: true
+        slashes: true,
       })
       b = window.open(windowUrl, '', 'javascript=no,show=no')
     })
@@ -436,9 +444,9 @@ describe('chromium feature', () => {
         pathname: `${fixtures}/pages/window-opener-no-webview-tag.html`,
         protocol: 'file',
         query: {
-          p: `${fixtures}/pages/window-opener-webview.html`
+          p: `${fixtures}/pages/window-opener-webview.html`,
         },
-        slashes: true
+        slashes: true,
       })
       b = window.open(windowUrl, '', 'webviewTag=no,nodeIntegration=yes,show=no')
     })
@@ -447,7 +455,7 @@ describe('chromium feature', () => {
       let b = null
       const size = {
         width: 350,
-        height: 450
+        height: 450,
       }
       listener = (event) => {
         assert.strictEqual(event.data, `size: ${size.width} ${size.height}`)
@@ -467,14 +475,14 @@ describe('chromium feature', () => {
           bar: undefined,
           baz: {
             hello: {
-              world: true
-            }
+              world: true,
+            },
           },
           baz2: {
             hello: {
-              world: true
-            }
-          }
+              world: true,
+            },
+          },
         }))
         done()
       })
@@ -500,7 +508,7 @@ describe('chromium feature', () => {
 
     it('defines a window.location setter', (done) => {
       let b = null
-      app.once('browser-window-created', (event, { webContents }) => {
+      app.once('browser-window-created', (event, {webContents}) => {
         webContents.once('did-finish-load', () => {
           // When it loads, redirect
           b.location = `file://${fixtures}/pages/base-page.html`
@@ -516,16 +524,16 @@ describe('chromium feature', () => {
 
     it('open a blank page when no URL is specified', (done) => {
       let b = null
-      app.once('browser-window-created', (event, { webContents }) => {
+      app.once('browser-window-created', (event, {webContents}) => {
         webContents.once('did-finish-load', () => {
-          const { location } = b
+          const {location} = b
           b.close()
           assert.strictEqual(location, 'about:blank')
 
           let c = null
-          app.once('browser-window-created', (event, { webContents }) => {
+          app.once('browser-window-created', (event, {webContents}) => {
             webContents.once('did-finish-load', () => {
-              const { location } = c
+              const {location} = c
               c.close()
               assert.strictEqual(location, 'about:blank')
               done()
@@ -539,11 +547,11 @@ describe('chromium feature', () => {
 
     it('throws an exception when the arguments cannot be converted to strings', () => {
       assert.throws(() => {
-        window.open('', { toString: null })
+        window.open('', {toString: null})
       }, /Cannot convert object to primitive value/)
 
       assert.throws(() => {
-        window.open('', '', { toString: 3 })
+        window.open('', '', {toString: 3})
       }, /Cannot convert object to primitive value/)
     })
 
@@ -579,7 +587,7 @@ describe('chromium feature', () => {
   describe('window.opener', () => {
     const url = `file://${fixtures}/pages/window-opener.html`
     it('is null for main window', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({show: false})
       w.webContents.once('ipc-message', (event, args) => {
         assert.deepStrictEqual(args, ['opener', null])
         done()
@@ -677,9 +685,9 @@ describe('chromium feature', () => {
         pathname: srcPath,
         protocol: scheme,
         query: {
-          p: pageURL
+          p: pageURL,
         },
-        slashes: true
+        slashes: true,
       })
       document.body.appendChild(webview)
     })
@@ -695,9 +703,9 @@ describe('chromium feature', () => {
         pathname: srcPath,
         protocol: 'file',
         query: {
-          p: pageURL
+          p: pageURL,
         },
-        slashes: true
+        slashes: true,
       })
       document.body.appendChild(webview)
     })
@@ -715,9 +723,9 @@ describe('chromium feature', () => {
         pathname: srcPath,
         protocol: scheme,
         query: {
-          p: pageURL
+          p: pageURL,
         },
-        slashes: true
+        slashes: true,
       })
       document.body.appendChild(webview)
     })
@@ -737,7 +745,7 @@ describe('chromium feature', () => {
         done()
       }
       window.addEventListener('message', listener)
-      app.once('browser-window-created', (event, { webContents }) => {
+      app.once('browser-window-created', (event, {webContents}) => {
         webContents.once('did-finish-load', () => {
           b.postMessage('testing', '*')
         })
@@ -748,7 +756,7 @@ describe('chromium feature', () => {
     it('throws an exception when the targetOrigin cannot be converted to a string', () => {
       const b = window.open('')
       assert.throws(() => {
-        b.postMessage('test', { toString: null })
+        b.postMessage('test', {toString: null})
       }, /Cannot convert object to primitive value/)
       b.close()
     })
@@ -780,9 +788,9 @@ describe('chromium feature', () => {
         pathname: `${fixtures}/pages/webview-opener-postMessage.html`,
         protocol: 'file',
         query: {
-          p: `${fixtures}/pages/window-opener-postMessage.html`
+          p: `${fixtures}/pages/window-opener-postMessage.html`,
         },
-        slashes: true
+        slashes: true,
       })
       document.body.appendChild(webview)
     })
@@ -830,7 +838,7 @@ describe('chromium feature', () => {
   })
 
   describe('webgl', () => {
-    before(function () {
+    before(function() {
       if (isCI && process.platform === 'win32') {
         this.skip()
       }
@@ -952,14 +960,14 @@ describe('chromium feature', () => {
           const parsedUrl = url.parse(request.url)
           let filename
           switch (parsedUrl.pathname) {
-            case '/localStorage' : filename = 'local_storage.html'; break
-            case '/sessionStorage' : filename = 'session_storage.html'; break
-            case '/WebSQL' : filename = 'web_sql.html'; break
-            case '/indexedDB' : filename = 'indexed_db.html'; break
-            case '/cookie' : filename = 'cookie.html'; break
-            default : filename = ''
+            case '/localStorage': filename = 'local_storage.html'; break
+            case '/sessionStorage': filename = 'session_storage.html'; break
+            case '/WebSQL': filename = 'web_sql.html'; break
+            case '/indexedDB': filename = 'indexed_db.html'; break
+            case '/cookie': filename = 'cookie.html'; break
+            default: filename = ''
           }
-          callback({ path: `${fixtures}/pages/storage/${filename}` })
+          callback({path: `${fixtures}/pages/storage/${filename}`})
         }
         protocol.registerFileProtocol(protocolName, handler, (error) => done(error))
       })
@@ -980,8 +988,8 @@ describe('chromium feature', () => {
       it('cannot access localStorage', (done) => {
         ipcMain.once('local-storage-response', (event, error) => {
           assert.strictEqual(
-            error,
-            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+              error,
+              'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
           done()
         })
         contents.loadURL(protocolName + '://host/localStorage')
@@ -990,8 +998,8 @@ describe('chromium feature', () => {
       it('cannot access sessionStorage', (done) => {
         ipcMain.once('session-storage-response', (event, error) => {
           assert.strictEqual(
-            error,
-            'Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
+              error,
+              'Failed to read the \'sessionStorage\' property from \'Window\': Access is denied for this document.')
           done()
         })
         contents.loadURL(`${protocolName}://host/sessionStorage`)
@@ -1000,8 +1008,8 @@ describe('chromium feature', () => {
       it('cannot access WebSQL database', (done) => {
         ipcMain.once('web-sql-response', (event, error) => {
           assert.strictEqual(
-            error,
-            'An attempt was made to break through the security policy of the user agent.')
+              error,
+              'An attempt was made to break through the security policy of the user agent.')
           done()
         })
         contents.loadURL(`${protocolName}://host/WebSQL`)
@@ -1039,7 +1047,7 @@ describe('chromium feature', () => {
       server = http.createServer()
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port
-        wss = new WebSocketServer({ server: server })
+        wss = new WebSocketServer({server: server})
         wss.on('error', done)
         wss.on('connection', (ws, upgradeReq) => {
           if (upgradeReq.headers['user-agent']) {
@@ -1059,9 +1067,9 @@ describe('chromium feature', () => {
       document.registerElement('x-element', {
         prototype: Object.create(HTMLElement.prototype, {
           createdCallback: {
-            value: () => {}
-          }
-        })
+            value: () => {},
+          },
+        }),
       })
       setImmediate(() => {
         let called = false
@@ -1077,9 +1085,9 @@ describe('chromium feature', () => {
       document.registerElement('y-element', {
         prototype: Object.create(HTMLElement.prototype, {
           createdCallback: {
-            value: () => {}
-          }
-        })
+            value: () => {},
+          },
+        }),
       })
       remote.getGlobal('setImmediate')(() => {
         let called = false
@@ -1101,18 +1109,18 @@ describe('chromium feature', () => {
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port
         fetch(`http://127.0.0.1:${port}`).then((res) => res.body.getReader())
-          .then((reader) => {
-            reader.read().then((r) => {
-              reader.cancel()
-              done()
-            })
-          }).catch((e) => done(e))
+            .then((reader) => {
+              reader.read().then((r) => {
+                reader.cancel()
+                done()
+              })
+            }).catch((e) => done(e))
       })
     })
   })
 
   describe('PDF Viewer', () => {
-    before(function () {
+    before(function() {
       if (!features.isPDFViewerEnabled()) {
         return this.skip()
       }
@@ -1122,26 +1130,26 @@ describe('chromium feature', () => {
       this.pdfSource = url.format({
         pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
         protocol: 'file',
-        slashes: true
+        slashes: true,
       })
 
       this.pdfSourceWithParams = url.format({
         pathname: path.join(fixtures, 'assets', 'cat.pdf').replace(/\\/g, '/'),
         query: {
           a: 1,
-          b: 2
+          b: 2,
         },
         protocol: 'file',
-        slashes: true
+        slashes: true,
       })
 
-      this.createBrowserWindow = ({ plugins, preload }) => {
+      this.createBrowserWindow = ({plugins, preload}) => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
             preload: path.join(fixtures, 'module', preload),
-            plugins: plugins
-          }
+            plugins: plugins,
+          },
         })
       }
 
@@ -1149,10 +1157,10 @@ describe('chromium feature', () => {
         const pagePath = url.format({
           pathname: path.join(fixtures, 'pages', page).replace(/\\/g, '/'),
           protocol: 'file',
-          slashes: true
+          slashes: true,
         })
 
-        this.createBrowserWindow({ plugins: true, preload: preloadFile })
+        this.createBrowserWindow({plugins: true, preload: preloadFile})
         ipcMain.once('pdf-loaded', (event, state) => {
           assert.strictEqual(state, 'success')
           done()
@@ -1169,7 +1177,7 @@ describe('chromium feature', () => {
     })
 
     it('opens when loading a pdf resource as top level navigation', (done) => {
-      this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      this.createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', (event, state) => {
         assert.strictEqual(state, 'success')
         done()
@@ -1185,7 +1193,7 @@ describe('chromium feature', () => {
     })
 
     it('opens a pdf link given params, the query string should be escaped', (done) => {
-      this.createBrowserWindow({ plugins: true, preload: 'preload-pdf-loaded.js' })
+      this.createBrowserWindow({plugins: true, preload: 'preload-pdf-loaded.js'})
       ipcMain.once('pdf-loaded', (event, state) => {
         assert.strictEqual(state, 'success')
         done()
@@ -1203,7 +1211,7 @@ describe('chromium feature', () => {
     })
 
     it('should download a pdf when plugins are disabled', (done) => {
-      this.createBrowserWindow({ plugins: false, preload: 'preload-pdf-loaded.js' })
+      this.createBrowserWindow({plugins: false, preload: 'preload-pdf-loaded.js'})
       ipcRenderer.sendSync('set-download-option', false, false)
       ipcRenderer.once('download-done', (event, state, url, mimeType, receivedBytes, totalBytes, disposition, filename) => {
         assert.strictEqual(state, 'completed')
@@ -1235,7 +1243,7 @@ describe('chromium feature', () => {
   describe('window.alert(message, title)', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
       assert.throws(() => {
-        window.alert({ toString: null })
+        window.alert({toString: null})
       }, /Cannot convert object to primitive value/)
     })
   })
@@ -1243,7 +1251,7 @@ describe('chromium feature', () => {
   describe('window.confirm(message, title)', () => {
     it('throws an exception when the arguments cannot be converted to strings', () => {
       assert.throws(() => {
-        window.confirm({ toString: null }, 'title')
+        window.confirm({toString: null}, 'title')
       }, /Cannot convert object to primitive value/)
     })
   })
@@ -1252,14 +1260,14 @@ describe('chromium feature', () => {
     describe('window.history.go(offset)', () => {
       it('throws an exception when the argumnet cannot be converted to a string', () => {
         assert.throws(() => {
-          window.history.go({ toString: null })
+          window.history.go({toString: null})
         }, /Cannot convert object to primitive value/)
       })
     })
 
     describe('window.history.pushState', () => {
       it('should push state after calling history.pushState() from the same url', (done) => {
-        w = new BrowserWindow({ show: false })
+        w = new BrowserWindow({show: false})
         w.webContents.once('did-finish-load', () => {
           // History should have current page by now.
           assert.strictEqual(w.webContents.length(), 1)
@@ -1276,7 +1284,7 @@ describe('chromium feature', () => {
   })
 
   describe('SpeechSynthesis', () => {
-    before(function () {
+    before(function() {
       if (isCI || !features.isTtsEnabled()) {
         this.skip()
       }
@@ -1293,22 +1301,30 @@ describe('chromium feature', () => {
       speechSynthesis.speak(utter)
       // paused state after speak()
       expect(speechSynthesis.paused).to.be.false()
-      await new Promise((resolve) => { utter.onstart = resolve })
+      await new Promise((resolve) => {
+        utter.onstart = resolve
+      })
       // paused state after start event
       expect(speechSynthesis.paused).to.be.false()
 
       speechSynthesis.pause()
       // paused state changes async, right before the pause event
       expect(speechSynthesis.paused).to.be.false()
-      await new Promise((resolve) => { utter.onpause = resolve })
+      await new Promise((resolve) => {
+        utter.onpause = resolve
+      })
       expect(speechSynthesis.paused).to.be.true()
 
       speechSynthesis.resume()
-      await new Promise((resolve) => { utter.onresume = resolve })
+      await new Promise((resolve) => {
+        utter.onresume = resolve
+      })
       // paused state after resume event
       expect(speechSynthesis.paused).to.be.false()
 
-      await new Promise((resolve) => { utter.onend = resolve })
+      await new Promise((resolve) => {
+        utter.onend = resolve
+      })
     })
   })
 })

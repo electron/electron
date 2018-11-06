@@ -9,8 +9,8 @@
  * @return {!Promise<!Event>}
  */
 const waitForEvent = (target, eventName) => {
-  return new Promise(resolve => {
-    target.addEventListener(eventName, resolve, { once: true })
+  return new Promise((resolve) => {
+    target.addEventListener(eventName, resolve, {once: true})
   })
 }
 
@@ -20,7 +20,7 @@ const waitForEvent = (target, eventName) => {
  * @return {!Promise<!Array>} With Event as the first item.
  */
 const emittedOnce = (emitter, eventName) => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     emitter.once(eventName, (...args) => resolve(args))
   })
 }

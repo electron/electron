@@ -4,14 +4,14 @@ const assert = require('assert')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
-const { closeWindow } = require('./window-helpers')
-const { emittedOnce } = require('./events-helpers')
+const {closeWindow} = require('./window-helpers')
+const {emittedOnce} = require('./events-helpers')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const { ipcRenderer, remote, clipboard } = require('electron')
-const { BrowserWindow, webContents, ipcMain, session } = remote
-const { expect } = chai
+const {ipcRenderer, remote, clipboard} = require('electron')
+const {BrowserWindow, webContents, ipcMain, session} = remote
+const {expect} = chai
 
 const isCi = remote.getGlobal('isCi')
 
@@ -30,12 +30,14 @@ describe('webContents module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
-      }
+        backgroundThrottling: false,
+      },
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(() => closeWindow(w).then(() => {
+    w = null
+  }))
 
   describe('getAllWebContents() API', () => {
     it('returns an array of web contents', (done) => {
@@ -96,14 +98,14 @@ describe('webContents module', () => {
         done()
       })
 
-      specWebContents.openDevTools({ mode: 'detach' })
+      specWebContents.openDevTools({mode: 'detach'})
       w.inspectElement(100, 100)
     })
   })
 
   describe('setDevToolsWebContents() API', () => {
     it('sets arbitry webContents as devtools', (done) => {
-      const devtools = new BrowserWindow({ show: false })
+      const devtools = new BrowserWindow({show: false})
       devtools.webContents.once('dom-ready', () => {
         assert.ok(devtools.getURL().startsWith('chrome-devtools://devtools'))
         devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name', (name) => {
@@ -165,8 +167,8 @@ describe('webContents module', () => {
       })
       w.webContents.once('did-finish-load', () => {
         ipcRenderer.sendSync('prevent-next-input-event', 'a', w.webContents.id)
-        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
-        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'a'})
+        w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'b'})
       })
       w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
     })
@@ -198,7 +200,7 @@ describe('webContents module', () => {
             w.webContents.sendInputEvent({
               type: opts.type,
               keyCode: opts.keyCode,
-              modifiers: modifiers
+              modifiers: modifiers,
             })
           })
         }
@@ -213,7 +215,7 @@ describe('webContents module', () => {
             control: true,
             alt: true,
             meta: true,
-            isAutoRepeat: true
+            isAutoRepeat: true,
           })
         }).then(() => {
           return testBeforeInput({
@@ -225,7 +227,7 @@ describe('webContents module', () => {
             control: true,
             alt: true,
             meta: false,
-            isAutoRepeat: false
+            isAutoRepeat: false,
           })
         }).then(() => {
           return testBeforeInput({
@@ -237,7 +239,7 @@ describe('webContents module', () => {
             control: false,
             alt: false,
             meta: true,
-            isAutoRepeat: false
+            isAutoRepeat: false,
           })
         }).then(() => {
           return testBeforeInput({
@@ -249,7 +251,7 @@ describe('webContents module', () => {
             control: true,
             alt: false,
             meta: false,
-            isAutoRepeat: true
+            isAutoRepeat: true,
           })
         }).then(done).catch(done)
       })
@@ -269,7 +271,7 @@ describe('webContents module', () => {
       testFn = it.skip
     }
 
-    testFn('can receive and handle menu events', async function () {
+    testFn('can receive and handle menu events', async function() {
       this.timeout(5000)
       w.show()
       w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
@@ -283,7 +285,7 @@ describe('webContents module', () => {
 
       // Focus an input field
       await w.webContents.devToolsWebContents.executeJavaScript(
-        `const input = document.createElement('input');
+          `const input = document.createElement('input');
         document.body.innerHTML = '';
         document.body.appendChild(input)
         input.focus();`
@@ -301,9 +303,9 @@ describe('webContents module', () => {
       // Check every now and again for the pasted value (paste is async)
       while (val !== 'test value' && Date.now() - start <= 1000) {
         val = await w.webContents.devToolsWebContents.executeJavaScript(
-          `document.querySelector('input').value`
+            `document.querySelector('input').value`
         )
-        await new Promise(resolve => setTimeout(resolve, 10))
+        await new Promise((resolve) => setTimeout(resolve, 10))
       }
 
       // Once we're done expect the paste to have been successful
@@ -327,7 +329,7 @@ describe('webContents module', () => {
         assert.strictEqual(altKey, false)
         done()
       })
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
     })
 
     it('can send keydown events with modifiers', (done) => {
@@ -340,7 +342,7 @@ describe('webContents module', () => {
         assert.strictEqual(altKey, false)
         done()
       })
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl'] })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
 
     it('can send keydown events with special keys', (done) => {
@@ -353,7 +355,7 @@ describe('webContents module', () => {
         assert.strictEqual(altKey, true)
         done()
       })
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab', modifiers: ['alt'] })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Tab', modifiers: ['alt']})
     })
 
     it('can send char events', (done) => {
@@ -366,8 +368,8 @@ describe('webContents module', () => {
         assert.strictEqual(altKey, false)
         done()
       })
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' })
-      w.webContents.sendInputEvent({ type: 'char', keyCode: 'A' })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'A'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'A'})
     })
 
     it('can send char events with modifiers', (done) => {
@@ -380,8 +382,8 @@ describe('webContents module', () => {
         assert.strictEqual(altKey, false)
         done()
       })
-      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z' })
-      w.webContents.sendInputEvent({ type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl'] })
+      w.webContents.sendInputEvent({type: 'keyDown', keyCode: 'Z'})
+      w.webContents.sendInputEvent({type: 'char', keyCode: 'Z', modifiers: ['shift', 'ctrl']})
     })
   })
 
@@ -405,16 +407,16 @@ describe('webContents module', () => {
   describe('startDrag({file, icon})', () => {
     it('throws errors for a missing file or a missing/empty icon', () => {
       assert.throws(() => {
-        w.webContents.startDrag({ icon: path.join(fixtures, 'assets', 'logo.png') })
+        w.webContents.startDrag({icon: path.join(fixtures, 'assets', 'logo.png')})
       }, /Must specify either 'file' or 'files' option/)
 
       assert.throws(() => {
-        w.webContents.startDrag({ file: __filename })
+        w.webContents.startDrag({file: __filename})
       }, /Must specify 'icon' option/)
 
       if (process.platform === 'darwin') {
         assert.throws(() => {
-          w.webContents.startDrag({ file: __filename, icon: __filename })
+          w.webContents.startDrag({file: __filename, icon: __filename})
         }, /Must specify non-empty 'icon' option/)
       }
     })
@@ -453,7 +455,7 @@ describe('webContents module', () => {
     const hostZoomMap = {
       host1: 0.3,
       host2: 0.7,
-      host3: 0.2
+      host3: 0.2,
     }
 
     before((done) => {
@@ -468,7 +470,7 @@ describe('webContents module', () => {
                               })
                             })
                           </script>`
-        callback({ data: response, mimeType: 'text/html' })
+        callback({data: response, mimeType: 'text/html'})
       }, (error) => done(error))
     })
 
@@ -519,7 +521,7 @@ describe('webContents module', () => {
 
     it('can propagate zoom level across same session', (done) => {
       const w2 = new BrowserWindow({
-        show: false
+        show: false,
       })
       w2.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel1) => {
@@ -543,8 +545,8 @@ describe('webContents module', () => {
       const w2 = new BrowserWindow({
         show: false,
         webPreferences: {
-          partition: 'temp'
-        }
+          partition: 'temp',
+        },
       })
       const protocol = w2.webContents.session.protocol
       protocol.registerStringProtocol(zoomScheme, (request, callback) => {
@@ -603,7 +605,7 @@ describe('webContents module', () => {
     it('cannot propagate when used with webframe', (done) => {
       let finalZoomLevel = 0
       const w2 = new BrowserWindow({
-        show: false
+        show: false,
       })
       w2.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel1) => {
@@ -656,7 +658,7 @@ describe('webContents module', () => {
         'default',
         'default_public_interface_only',
         'default_public_and_private_interfaces',
-        'disable_non_proxied_udp'
+        'disable_non_proxied_udp',
       ]
       policies.forEach((policy) => {
         w.webContents.setWebRTCIPHandlingPolicy(policy)
@@ -734,19 +736,19 @@ describe('webContents module', () => {
 
     it('should not crash when invoked synchronously inside navigation observer', (done) => {
       const events = [
-        { name: 'did-start-loading', url: `${server.url}/200` },
-        { name: 'dom-ready', url: `${server.url}/200` },
-        { name: 'did-stop-loading', url: `${server.url}/200` },
-        { name: 'did-finish-load', url: `${server.url}/200` },
+        {name: 'did-start-loading', url: `${server.url}/200`},
+        {name: 'dom-ready', url: `${server.url}/200`},
+        {name: 'did-stop-loading', url: `${server.url}/200`},
+        {name: 'did-finish-load', url: `${server.url}/200`},
         // FIXME: Multiple Emit calls inside an observer assume that object
         // will be alive till end of the observer. Synchronous `destroy` api
         // violates this contract and crashes.
         // { name: 'did-frame-finish-load', url: `${server.url}/200` },
-        { name: 'did-fail-load', url: `${server.url}/404` }
+        {name: 'did-fail-load', url: `${server.url}/404`},
       ]
       const responseEvent = 'webcontents-destroyed'
 
-      function * genNavigationEvent () {
+      function* genNavigationEvent() {
         let eventOptions = null
         while ((eventOptions = events.shift()) && events.length) {
           eventOptions.responseEvent = responseEvent
@@ -844,8 +846,8 @@ describe('webContents module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          sandbox: true
-        }
+          sandbox: true,
+        },
       })
       w.webContents.once('did-finish-load', () => {
         w.webContents.executeJavaScript('37 + 5', (result) => {
@@ -863,8 +865,8 @@ describe('webContents module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          sandbox: true
-        }
+          sandbox: true,
+        },
       })
 
       w.loadURL('about:blank')
@@ -894,8 +896,8 @@ describe('webContents module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          sandbox: true
-        }
+          sandbox: true,
+        },
       })
 
       w.loadURL('about:blank')
@@ -919,8 +921,8 @@ describe('webContents module', () => {
         width: 400,
         height: 400,
         webPreferences: {
-          backgroundThrottling: true
-        }
+          backgroundThrottling: true,
+        },
       })
 
       w.webContents.setBackgroundThrottling(false)

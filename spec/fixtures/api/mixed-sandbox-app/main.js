@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const {app, BrowserWindow, ipcMain} = require('electron')
 const net = require('net')
 const path = require('path')
 
@@ -17,14 +17,14 @@ if (process.argv.includes('--app-enable-mixed-sandbox')) {
 let currentWindowSandboxed = false
 
 app.once('ready', () => {
-  function testWindow (isSandboxed, callback) {
+  function testWindow(isSandboxed, callback) {
     currentWindowSandboxed = isSandboxed
     const currentWindow = new BrowserWindow({
       show: false,
       webPreferences: {
         preload: path.join(__dirname, 'electron-app-mixed-sandbox-preload.js'),
-        sandbox: isSandboxed
-      }
+        sandbox: isSandboxed,
+      },
     })
     currentWindow.loadURL('about:blank')
     currentWindow.webContents.once('devtools-opened', () => {
@@ -45,7 +45,7 @@ app.once('ready', () => {
     sandbox: null,
     noSandbox: null,
     sandboxDevtools: null,
-    noSandboxDevtools: null
+    noSandboxDevtools: null,
   }
 
   let connected = false
@@ -54,7 +54,7 @@ app.once('ready', () => {
     testWindow()
   })
 
-  function finish () {
+  function finish() {
     if (connected && argv.sandbox != null && argv.noSandbox != null &&
         argv.noSandboxDevtools != null && argv.sandboxDevtools != null) {
       client.once('end', () => {

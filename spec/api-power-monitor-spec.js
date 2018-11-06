@@ -11,23 +11,23 @@ const dirtyChai = require('dirty-chai')
 const dbus = require('dbus-native')
 const Promise = require('bluebird')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SYSTEM_BUS_ADDRESS
 
 describe('powerMonitor', () => {
-  let logindMock, dbusMockPowerMonitor, getCalls, emitSignal, reset
+  let logindMock; let dbusMockPowerMonitor; let getCalls; let emitSignal; let reset
 
   if (!skip) {
     before(async () => {
       const systemBus = dbus.systemBus()
       const loginService = systemBus.getService('org.freedesktop.login1')
-      const getInterface = Promise.promisify(loginService.getInterface, { context: loginService })
+      const getInterface = Promise.promisify(loginService.getInterface, {context: loginService})
       logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock')
-      getCalls = Promise.promisify(logindMock.GetCalls, { context: logindMock })
-      emitSignal = Promise.promisify(logindMock.EmitSignal, { context: logindMock })
-      reset = Promise.promisify(logindMock.Reset, { context: logindMock })
+      getCalls = Promise.promisify(logindMock.GetCalls, {context: logindMock})
+      emitSignal = Promise.promisify(logindMock.EmitSignal, {context: logindMock})
+      reset = Promise.promisify(logindMock.Reset, {context: logindMock})
     })
 
     after(async () => {
@@ -36,15 +36,15 @@ describe('powerMonitor', () => {
   }
 
   (skip ? describe.skip : describe)('when powerMonitor module is loaded with dbus mock', () => {
-    function onceMethodCalled (done) {
-      function cb () {
+    function onceMethodCalled(done) {
+      function cb() {
         logindMock.removeListener('MethodCalled', cb)
       }
       done()
       return cb
     }
 
-    before(done => {
+    before((done) => {
       logindMock.on('MethodCalled', onceMethodCalled(done))
       // lazy load powerMonitor after we listen to MethodCalled mock signal
       dbusMockPowerMonitor = require('electron').remote.powerMonitor
@@ -55,11 +55,11 @@ describe('powerMonitor', () => {
       expect(calls).to.be.an('array').that.has.lengthOf(1)
       expect(calls[0].slice(1)).to.deep.equal([
         'Inhibit', [
-          [[{ type: 's', child: [] }], ['sleep']],
-          [[{ type: 's', child: [] }], ['electron']],
-          [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-          [[{ type: 's', child: [] }], ['delay']]
-        ]
+          [[{type: 's', child: []}], ['sleep']],
+          [[{type: 's', child: []}], ['electron']],
+          [[{type: 's', child: []}], ['Application cleanup before suspend']],
+          [[{type: 's', child: []}], ['delay']],
+        ],
       ])
     })
 
@@ -67,14 +67,14 @@ describe('powerMonitor', () => {
       it('should emit "suspend" event', (done) => {
         dbusMockPowerMonitor.once('suspend', () => done())
         emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
-          'b', [['b', true]])
+            'b', [['b', true]])
       })
 
       describe('when PrepareForSleep(false) signal is sent by logind', () => {
-        it('should emit "resume" event', done => {
+        it('should emit "resume" event', (done) => {
           dbusMockPowerMonitor.once('resume', () => done())
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForSleep',
-            'b', [['b', false]])
+              'b', [['b', false]])
         })
 
         it('should have called Inhibit again', async () => {
@@ -82,11 +82,11 @@ describe('powerMonitor', () => {
           expect(calls).to.be.an('array').that.has.lengthOf(2)
           expect(calls[1].slice(1)).to.deep.equal([
             'Inhibit', [
-              [[{ type: 's', child: [] }], ['sleep']],
-              [[{ type: 's', child: [] }], ['electron']],
-              [[{ type: 's', child: [] }], ['Application cleanup before suspend']],
-              [[{ type: 's', child: [] }], ['delay']]
-            ]
+              [[{type: 's', child: []}], ['sleep']],
+              [[{type: 's', child: []}], ['electron']],
+              [[{type: 's', child: []}], ['Application cleanup before suspend']],
+              [[{type: 's', child: []}], ['delay']],
+            ],
           ])
         })
       })
@@ -104,19 +104,21 @@ describe('powerMonitor', () => {
         expect(calls).to.be.an('array').that.has.lengthOf(3)
         expect(calls[2].slice(1)).to.deep.equal([
           'Inhibit', [
-            [[{ type: 's', child: [] }], ['shutdown']],
-            [[{ type: 's', child: [] }], ['electron']],
-            [[{ type: 's', child: [] }], ['Ensure a clean shutdown']],
-            [[{ type: 's', child: [] }], ['delay']]
-          ]
+            [[{type: 's', child: []}], ['shutdown']],
+            [[{type: 's', child: []}], ['electron']],
+            [[{type: 's', child: []}], ['Ensure a clean shutdown']],
+            [[{type: 's', child: []}], ['delay']],
+          ],
         ])
       })
 
       describe('when PrepareForShutdown(true) signal is sent by logind', () => {
-        it('should emit "shutdown" event', done => {
-          dbusMockPowerMonitor.once('shutdown', () => { done() })
+        it('should emit "shutdown" event', (done) => {
+          dbusMockPowerMonitor.once('shutdown', () => {
+            done()
+          })
           emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown',
-            'b', [['b', true]])
+              'b', [['b', true]])
         })
       })
     })
@@ -129,12 +131,12 @@ describe('powerMonitor', () => {
     })
 
     describe('powerMonitor.querySystemIdleState', () => {
-      it('notify current system idle state', done => {
+      it('notify current system idle state', (done) => {
         // this function is not mocked out, so we can test the result's
         // form and type but not its value.
-        powerMonitor.querySystemIdleState(1, idleState => {
+        powerMonitor.querySystemIdleState(1, (idleState) => {
           expect(idleState).to.be.a('string')
-          const validIdleStates = [ 'active', 'idle', 'locked', 'unknown' ]
+          const validIdleStates = ['active', 'idle', 'locked', 'unknown']
           expect(validIdleStates).to.include(idleState)
           done()
         })
@@ -156,8 +158,8 @@ describe('powerMonitor', () => {
     })
 
     describe('powerMonitor.querySystemIdleTime', () => {
-      it('notify current system idle time', done => {
-        powerMonitor.querySystemIdleTime(idleTime => {
+      it('notify current system idle time', (done) => {
+        powerMonitor.querySystemIdleTime((idleTime) => {
           expect(idleTime).to.be.at.least(0)
           done()
         })

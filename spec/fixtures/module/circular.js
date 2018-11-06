@@ -1,3 +1,3 @@
-exports.returnArgs = function (...args) {
+exports.returnArgs = function(...args) {
   return args
 }

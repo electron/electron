@@ -2,7 +2,7 @@ if (!process.env.CI) require('dotenv-safe').load()
 
 const GitHub = require('github')
 const github = new GitHub()
-github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
+github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId')
@@ -20,12 +20,12 @@ const githubOpts = {
   repo: targetRepo,
   id: releaseId,
   filePath: filePath,
-  name: fileName
+  name: fileName,
 }
 
 let retry = 0
 
-function uploadToGitHub () {
+function uploadToGitHub() {
   github.repos.uploadAsset(githubOpts).then(() => {
     console.log(`Successfully uploaded ${fileName} to GitHub.`)
     process.exit()
@@ -33,8 +33,8 @@ function uploadToGitHub () {
     if (retry < 4) {
       console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err)
       retry++
-      github.repos.getRelease(githubOpts).then(release => {
-        const existingAssets = release.data.assets.filter(asset => asset.name === fileName)
+      github.repos.getRelease(githubOpts).then((release) => {
+        const existingAssets = release.data.assets.filter((asset) => asset.name === fileName)
         console.log('There are', release.data.assets.length, 'existing releases')
         console.log(JSON.stringify(release.data.assets))
         console.log(githubOpts)
@@ -43,7 +43,7 @@ function uploadToGitHub () {
           github.repos.deleteAsset({
             owner: 'electron',
             repo: targetRepo,
-            id: existingAssets[0].id
+            id: existingAssets[0].id,
           }).then(uploadToGitHub).catch(uploadToGitHub)
         } else {
           uploadToGitHub()

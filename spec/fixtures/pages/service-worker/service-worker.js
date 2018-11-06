@@ -1,4 +1,4 @@
-self.addEventListener('fetch', function (event) {
+self.addEventListener('fetch', function(event) {
   const requestUrl = new URL(event.request.url)
 
   if (requestUrl.pathname === '/echo' &&

@@ -3,7 +3,7 @@
 const childProcess = require('child_process')
 const crypto = require('crypto')
 const fs = require('fs')
-const { hashElement } = require('folder-hash')
+const {hashElement} = require('folder-hash')
 const path = require('path')
 
 const utils = require('./lib/utils')
@@ -13,7 +13,7 @@ const NPM_CMD = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash')
 
-async function main () {
+async function main() {
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash()
   const [currentSpecHash, currentSpecInstallHash] = await getSpecHash()
   const somethingChanged = (currentSpecHash !== lastSpecHash) ||
@@ -27,17 +27,17 @@ async function main () {
   await runElectronTests()
 }
 
-function loadLastSpecHash () {
+function loadLastSpecHash() {
   return fs.existsSync(specHashPath)
     ? fs.readFileSync(specHashPath, 'utf8').split('\n')
     : [null, null]
 }
 
-function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
+function saveSpecHash([newSpecHash, newSpecInstallHash]) {
   fs.writeFileSync(specHashPath, `${newSpecHash}\n${newSpecInstallHash}`)
 }
 
-async function runElectronTests () {
+async function runElectronTests() {
   let exe = path.resolve(BASE, utils.getElectronExec())
   const args = process.argv.slice(2)
   if (process.platform === 'linux') {
@@ -45,32 +45,32 @@ async function runElectronTests () {
     exe = 'python'
   }
 
-  const { status } = childProcess.spawnSync(exe, args, {
+  const {status} = childProcess.spawnSync(exe, args, {
     cwd: path.resolve(__dirname, '../..'),
-    stdio: 'inherit'
+    stdio: 'inherit',
   })
   if (status !== 0) {
     throw new Error(`Electron tests failed with code ${status}.`)
   }
 }
 
-async function installSpecModules () {
+async function installSpecModules() {
   const nodeDir = path.resolve(BASE, `out/${utils.OUT_DIR}/gen/node_headers`)
   const env = Object.assign({}, process.env, {
     npm_config_nodedir: nodeDir,
-    npm_config_msvs_version: '2017'
+    npm_config_msvs_version: '2017',
   })
-  const { status } = childProcess.spawnSync(NPM_CMD, ['install'], {
+  const {status} = childProcess.spawnSync(NPM_CMD, ['install'], {
     env,
     cwd: path.resolve(__dirname, '../spec'),
-    stdio: 'inherit'
+    stdio: 'inherit',
   })
   if (status !== 0) {
     throw new Error('Failed to npm install in the spec folder')
   }
 }
 
-function getSpecHash () {
+function getSpecHash() {
   return Promise.all([
     (async () => {
       const hasher = crypto.createHash('SHA256')
@@ -83,13 +83,13 @@ function getSpecHash () {
       if (!fs.existsSync(specNodeModulesPath)) {
         return null
       }
-      const { hash } = await hashElement(specNodeModulesPath, {
+      const {hash} = await hashElement(specNodeModulesPath, {
         folders: {
-          exclude: ['.bin']
-        }
+          exclude: ['.bin'],
+        },
       })
       return hash
-    })()
+    })(),
   ])
 }
 

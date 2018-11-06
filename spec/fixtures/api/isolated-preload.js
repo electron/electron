@@ -1,4 +1,4 @@
-const { ipcRenderer, webFrame } = require('electron')
+const {ipcRenderer, webFrame} = require('electron')
 
 window.foo = 3
 
@@ -13,8 +13,8 @@ window.addEventListener('message', (event) => {
       typeofProcess: typeof process,
       typeofArrayPush: typeof Array.prototype.push,
       typeofFunctionApply: typeof Function.prototype.apply,
-      typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty
+      typeofPreloadExecuteJavaScriptProperty: typeof window.preloadExecuteJavaScriptProperty,
     },
-    pageContext: event.data
+    pageContext: event.data,
   })
 })

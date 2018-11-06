@@ -1,7 +1,7 @@
-const { BrowserWindow } = require('electron')
+const {BrowserWindow} = require('electron')
 
 class Foo {
-  set bar (value) {
+  set bar(value) {
     if (!(value instanceof BrowserWindow)) {
       throw new Error('setting error')
     }

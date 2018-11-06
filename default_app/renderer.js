@@ -1,9 +1,9 @@
-const { remote, shell } = require('electron')
+const {remote, shell} = require('electron')
 const fs = require('fs')
 const path = require('path')
 const URL = require('url')
 
-function initialize () {
+function initialize() {
   // Find the shortest path to the electron binary
   const absoluteElectronPath = remote.process.execPath
   const relativeElectronPath = path.relative(process.cwd(), absoluteElectronPath)
@@ -14,7 +14,7 @@ function initialize () {
   for (const link of document.querySelectorAll('a[href]')) {
     // safely add `?utm_source=default_app
     const parsedUrl = URL.parse(link.getAttribute('href'), true)
-    parsedUrl.query = { ...parsedUrl.query, utm_source: 'default_app' }
+    parsedUrl.query = {...parsedUrl.query, utm_source: 'default_app'}
     const url = URL.format(parsedUrl)
 
     const openLinkExternally = (e) => {
@@ -32,7 +32,7 @@ function initialize () {
   document.querySelector('.v8-version').innerText = `v8 v${process.versions.v8}`
   document.querySelector('.command-example').innerText = `${electronPath} path-to-app`
 
-  function getOcticonSvg (name) {
+  function getOcticonSvg(name) {
     const octiconPath = path.resolve(__dirname, 'node_modules', 'octicons', 'build', 'svg', `${name}.svg`)
     if (fs.existsSync(octiconPath)) {
       const content = fs.readFileSync(octiconPath, 'utf8')
@@ -43,7 +43,7 @@ function initialize () {
     return null
   }
 
-  function loadSVG (element) {
+  function loadSVG(element) {
     for (const cssClass of element.classList) {
       if (cssClass.startsWith('octicon-')) {
         const icon = getOcticonSvg(cssClass.substr(8))

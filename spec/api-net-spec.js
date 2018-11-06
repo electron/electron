@@ -1,15 +1,15 @@
 const assert = require('assert')
-const { remote } = require('electron')
-const { ipcRenderer } = require('electron')
+const {remote} = require('electron')
+const {ipcRenderer} = require('electron')
 const http = require('http')
 const url = require('url')
-const { net } = remote
-const { session } = remote
+const {net} = remote
+const {session} = remote
 
 /* The whole net API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
 
-function randomBuffer (size, start, end) {
+function randomBuffer(size, start, end) {
   start = start || 0
   end = end || 255
   const range = 1 + end - start
@@ -20,7 +20,7 @@ function randomBuffer (size, start, end) {
   return buffer
 }
 
-function randomString (length) {
+function randomString(length) {
   const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0))
   return buffer.toString()
 }
@@ -97,7 +97,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -165,7 +165,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -204,7 +204,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'POST',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
 
       let chunkIndex = 0
@@ -264,7 +264,7 @@ describe('net module', () => {
       let responseDataEventEmitted = false
       let responseEndEventEmitted = false
 
-      function maybeDone (done) {
+      function maybeDone(done) {
         if (!requestCloseEventEmitted || !responseEndEventEmitted) {
           return
         }
@@ -279,7 +279,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         requestResponseEventEmitted = true
@@ -329,7 +329,7 @@ describe('net module', () => {
         switch (request.url) {
           case requestUrl:
             assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+                customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -340,7 +340,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -355,14 +355,14 @@ describe('net module', () => {
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.write('')
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.end()
     })
 
@@ -374,7 +374,7 @@ describe('net module', () => {
         switch (request.url) {
           case requestUrl:
             assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue.toString())
+                customHeaderValue.toString())
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -385,7 +385,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -398,14 +398,14 @@ describe('net module', () => {
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.write('')
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName.toLowerCase()),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.end()
     })
 
@@ -427,7 +427,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -466,7 +466,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -481,7 +481,7 @@ describe('net module', () => {
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.removeHeader(customHeaderName)
       assert(!urlRequest.getHeader(customHeaderName))
       urlRequest.write('')
@@ -496,7 +496,7 @@ describe('net module', () => {
         switch (request.url) {
           case requestUrl:
             assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+                customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -507,7 +507,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -522,13 +522,13 @@ describe('net module', () => {
       })
       urlRequest.setHeader(customHeaderName, customHeaderValue)
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.write('')
       assert.throws(() => {
         urlRequest.removeHeader(customHeaderName)
       })
       assert.strictEqual(urlRequest.getHeader(customHeaderName),
-        customHeaderValue)
+          customHeaderValue)
       urlRequest.end()
     })
 
@@ -541,7 +541,7 @@ describe('net module', () => {
         switch (request.url) {
           case requestUrl:
             assert.strictEqual(request.headers[cookieHeaderName.toLowerCase()],
-              cookieHeaderValue)
+                cookieHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -553,13 +553,13 @@ describe('net module', () => {
       customSession.cookies.set({
         url: `${server.url}`,
         name: 'test',
-        value: '11111'
+        value: '11111',
       }, (error) => {
         if (error) return done(error)
         const urlRequest = net.request({
           method: 'GET',
           url: `${server.url}${requestUrl}`,
-          session: customSession
+          session: customSession,
         })
         urlRequest.on('response', (response) => {
           const statusCode = response.statusCode
@@ -573,7 +573,7 @@ describe('net module', () => {
         })
         urlRequest.setHeader(cookieHeaderName, cookieHeaderValue)
         assert.strictEqual(urlRequest.getHeader(cookieHeaderName),
-          cookieHeaderValue)
+            cookieHeaderValue)
         urlRequest.end()
       })
     })
@@ -590,7 +590,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.fail('Unexpected response event')
@@ -634,7 +634,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.fail('Unexpected response event')
@@ -658,7 +658,7 @@ describe('net module', () => {
 
       urlRequest.chunkedEncoding = true
       urlRequest.write(randomString(kOneKiloByte))
-      function cancelRequest () {
+      function cancelRequest() {
         urlRequest.abort()
       }
     })
@@ -688,7 +688,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.fail('Unexpected response event')
@@ -712,7 +712,7 @@ describe('net module', () => {
       })
 
       urlRequest.end(randomString(kOneKiloByte))
-      function cancelRequest () {
+      function cancelRequest() {
         urlRequest.abort()
       }
     })
@@ -741,7 +741,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         requestResponseEventEmitted = true
@@ -804,7 +804,7 @@ describe('net module', () => {
 
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', () => {
         assert.fail('Unexpected response event')
@@ -832,7 +832,7 @@ describe('net module', () => {
       })
 
       urlRequest.end(randomString(kOneKiloByte))
-      function cancelRequest () {
+      function cancelRequest() {
         urlRequest.abort()
         urlRequest.abort()
       }
@@ -855,20 +855,20 @@ describe('net module', () => {
 
       let requestIsIntercepted = false
       session.defaultSession.webRequest.onBeforeRequest(
-        (details, callback) => {
-          if (details.url === `${server.url}${requestUrl}`) {
-            requestIsIntercepted = true
-            // Disabled due to false positive in StandardJS
-            // eslint-disable-next-line standard/no-callback-literal
-            callback({
-              redirectURL: `${server.url}${redirectUrl}`
-            })
-          } else {
-            callback({
-              cancel: false
-            })
-          }
-        })
+          (details, callback) => {
+            if (details.url === `${server.url}${requestUrl}`) {
+              requestIsIntercepted = true
+              // Disabled due to false positive in StandardJS
+              // eslint-disable-next-line standard/no-callback-literal
+              callback({
+                redirectURL: `${server.url}${redirectUrl}`,
+              })
+            } else {
+              callback({
+                cancel: false,
+              })
+            }
+          })
 
       const urlRequest = net.request(`${server.url}${requestUrl}`)
 
@@ -907,7 +907,7 @@ describe('net module', () => {
         assert.fail('Request should not be intercepted by the default session')
       })
 
-      const customSession = session.fromPartition(customPartitionName, { cache: false })
+      const customSession = session.fromPartition(customPartitionName, {cache: false})
       let requestIsIntercepted = false
       customSession.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === `${server.url}${requestUrl}`) {
@@ -915,18 +915,18 @@ describe('net module', () => {
           // Disabled due to false positive in StandardJS
           // eslint-disable-next-line standard/no-callback-literal
           callback({
-            redirectURL: `${server.url}${redirectUrl}`
+            redirectURL: `${server.url}${redirectUrl}`,
           })
         } else {
           callback({
-            cancel: false
+            cancel: false,
           })
         }
       })
 
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        session: customSession
+        session: customSession,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -947,7 +947,7 @@ describe('net module', () => {
       const requestUrl = '/requestUrl'
       const options = {
         url: `${server.url}${requestUrl}`,
-        redirect: 'custom'
+        redirect: 'custom',
       }
       assert.throws(() => {
         net.request(options)
@@ -956,21 +956,21 @@ describe('net module', () => {
 
     it('should throw when calling getHeader without a name', () => {
       assert.throws(() => {
-        net.request({ url: `${server.url}/requestUrl` }).getHeader()
+        net.request({url: `${server.url}/requestUrl`}).getHeader()
       }, /`name` is required for getHeader\(name\)\./)
 
       assert.throws(() => {
-        net.request({ url: `${server.url}/requestUrl` }).getHeader(null)
+        net.request({url: `${server.url}/requestUrl`}).getHeader(null)
       }, /`name` is required for getHeader\(name\)\./)
     })
 
     it('should throw when calling removeHeader without a name', () => {
       assert.throws(() => {
-        net.request({ url: `${server.url}/requestUrl` }).removeHeader()
+        net.request({url: `${server.url}/requestUrl`}).removeHeader()
       }, /`name` is required for removeHeader\(name\)\./)
 
       assert.throws(() => {
-        net.request({ url: `${server.url}/requestUrl` }).removeHeader(null)
+        net.request({url: `${server.url}/requestUrl`}).removeHeader(null)
       }, /`name` is required for removeHeader\(name\)\./)
     })
 
@@ -992,7 +992,7 @@ describe('net module', () => {
         }
       })
       const urlRequest = net.request({
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -1024,7 +1024,7 @@ describe('net module', () => {
         }
       })
       const urlRequest = net.request({
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -1052,7 +1052,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        redirect: 'error'
+        redirect: 'error',
       })
       urlRequest.on('error', (error) => {
         assert.strictEqual(error.message, 'Request cannot follow redirect with the current redirect mode')
@@ -1088,7 +1088,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        redirect: 'manual'
+        redirect: 'manual',
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -1129,7 +1129,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        redirect: 'manual'
+        redirect: 'manual',
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -1159,7 +1159,7 @@ describe('net module', () => {
       try {
         const urlRequest = net.request({
           url: `${server.url}${requestUrl}`,
-          session: 1
+          session: 1,
         })
 
         // eslint-disable-next-line
@@ -1190,25 +1190,25 @@ describe('net module', () => {
       })
 
       const customSession = session.fromPartition(customPartitionName, {
-        cache: false
+        cache: false,
       })
       let requestIsIntercepted = false
       customSession.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === `${server.url}${requestUrl}`) {
           requestIsIntercepted = true
           callback({
-            redirectURL: `${server.url}${redirectUrl}`
+            redirectURL: `${server.url}${redirectUrl}`,
           })
         } else {
           callback({
-            cancel: false
+            cancel: false,
           })
         }
       })
 
       const urlRequest = net.request({
         url: `${server.url}${requestUrl}`,
-        partition: customPartitionName
+        partition: customPartitionName,
       })
       urlRequest.on('response', (response) => {
         assert.strictEqual(response.statusCode, 200)
@@ -1230,7 +1230,7 @@ describe('net module', () => {
       try {
         const urlRequest = net.request({
           url: `${server.url}${requestUrl}`,
-          partition: 1
+          partition: 1,
         })
 
         // eslint-disable-next-line
@@ -1249,7 +1249,7 @@ describe('net module', () => {
           case requestUrl:
             assert.strictEqual(request.method, 'GET')
             assert.strictEqual(request.headers[customHeaderName.toLowerCase()],
-              customHeaderValue)
+                customHeaderValue)
             response.statusCode = 200
             response.statusMessage = 'OK'
             response.end()
@@ -1263,7 +1263,7 @@ describe('net module', () => {
       const options = {
         port: serverUrl.port,
         hostname: '127.0.0.1',
-        headers: {}
+        headers: {},
       }
       options.headers[customHeaderName] = customHeaderValue
       const urlRequest = net.request(options)
@@ -1292,7 +1292,7 @@ describe('net module', () => {
             response.write(bodyData)
             response.end()
             break
-          case netRequestUrl:
+          case netRequestUrl: {
             netRequestReceived = true
             let receivedBodyData = ''
             request.on('data', (chunk) => {
@@ -1307,6 +1307,7 @@ describe('net module', () => {
               response.end()
             })
             break
+          }
           default:
             handleUnexpectedURL(request, response)
         }
@@ -1375,7 +1376,7 @@ describe('net module', () => {
       })
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         const statusCode = response.statusCode
@@ -1387,7 +1388,7 @@ describe('net module', () => {
         const headers = response.headers
         assert(typeof headers === 'object')
         assert.deepStrictEqual(headers[customHeaderName.toLowerCase()],
-          [customHeaderValue])
+            [customHeaderValue])
         const httpVersion = response.httpVersion
         assert(typeof httpVersion === 'string')
         assert(httpVersion.length > 0)
@@ -1420,7 +1421,7 @@ describe('net module', () => {
             response.write(bodyData)
             response.end()
             break
-          case nodeRequestUrl:
+          case nodeRequestUrl: {
             let receivedBodyData = ''
             request.on('data', (chunk) => {
               receivedBodyData += chunk.toString()
@@ -1433,6 +1434,7 @@ describe('net module', () => {
               response.end()
             })
             break
+          }
           default:
             handleUnexpectedURL(request, response)
         }
@@ -1486,7 +1488,7 @@ describe('net module', () => {
       let requestCloseEventEmitted = false
       const urlRequest = net.request({
         method: 'GET',
-        url: `${server.url}${requestUrl}`
+        url: `${server.url}${requestUrl}`,
       })
       urlRequest.on('response', (response) => {
         assert(!requestCloseEventEmitted)
@@ -1622,7 +1624,7 @@ describe('net module', () => {
   })
 })
 
-function handleUnexpectedURL (request, response) {
+function handleUnexpectedURL(request, response) {
   response.statusCode = '500'
   response.end()
   assert.fail(`Unexpected URL: ${request.url}`)

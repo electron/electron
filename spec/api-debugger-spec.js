@@ -2,10 +2,10 @@ const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
-const { closeWindow } = require('./window-helpers')
-const { BrowserWindow } = require('electron').remote
+const {closeWindow} = require('./window-helpers')
+const {BrowserWindow} = require('electron').remote
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 describe('debugger module', () => {
@@ -16,14 +16,16 @@ describe('debugger module', () => {
     w = new BrowserWindow({
       show: false,
       width: 400,
-      height: 400
+      height: 400,
     })
   })
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(() => closeWindow(w).then(() => {
+    w = null
+  }))
 
   describe('debugger.attach', () => {
-    it('succeeds when devtools is already open', done => {
+    it('succeeds when devtools is already open', (done) => {
       w.webContents.on('did-finish-load', () => {
         w.webContents.openDevTools()
         try {
@@ -37,7 +39,7 @@ describe('debugger module', () => {
       w.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'))
     })
 
-    it('fails when protocol version is not supported', done => {
+    it('fails when protocol version is not supported', (done) => {
       try {
         w.webContents.debugger.attach('2.0')
       } catch (err) {
@@ -46,7 +48,7 @@ describe('debugger module', () => {
       }
     })
 
-    it('attaches when no protocol version is specified', done => {
+    it('attaches when no protocol version is specified', (done) => {
       try {
         w.webContents.debugger.attach()
       } catch (err) {
@@ -73,7 +75,7 @@ describe('debugger module', () => {
       w.webContents.debugger.detach()
     })
 
-    it('doesn\'t disconnect an active devtools session', done => {
+    it('doesn\'t disconnect an active devtools session', (done) => {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
@@ -102,7 +104,7 @@ describe('debugger module', () => {
       }
     })
 
-    it('returns response', done => {
+    it('returns response', (done) => {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
@@ -119,11 +121,11 @@ describe('debugger module', () => {
         done()
       }
 
-      const params = { 'expression': '4+2' }
+      const params = {'expression': '4+2'}
       w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
     })
 
-    it('returns response when devtools is opened', done => {
+    it('returns response when devtools is opened', (done) => {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
@@ -139,12 +141,12 @@ describe('debugger module', () => {
       }
       w.webContents.openDevTools()
       w.webContents.once('devtools-opened', () => {
-        const params = { 'expression': '4+2' }
+        const params = {'expression': '4+2'}
         w.webContents.debugger.sendCommand('Runtime.evaluate', params, callback)
       })
     })
 
-    it('fires message event', done => {
+    it('fires message event', (done) => {
       const url = process.platform !== 'win32'
         ? `file://${path.join(fixtures, 'pages', 'a.html')}`
         : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`
@@ -169,7 +171,7 @@ describe('debugger module', () => {
       w.webContents.debugger.sendCommand('Console.enable')
     })
 
-    it('returns error message when command fails', done => {
+    it('returns error message when command fails', (done) => {
       w.webContents.loadURL('about:blank')
       try {
         w.webContents.debugger.attach()
@@ -177,9 +179,9 @@ describe('debugger module', () => {
         done(`unexpected error : ${err}`)
       }
 
-      w.webContents.debugger.sendCommand('Test', err => {
+      w.webContents.debugger.sendCommand('Test', (err) => {
         expect(err).to.not.be.null()
-        expect(err.message).to.equal("'Test' wasn't found")
+        expect(err.message).to.equal('\'Test\' wasn\'t found')
         w.webContents.debugger.detach()
         done()
       })
@@ -195,7 +197,7 @@ describe('debugger module', () => {
       w.webContents.debugger.on('message', (event, method, params) => {
         if (method === 'Network.loadingFinished') {
           w.webContents.debugger.sendCommand('Network.getResponseBody', {
-            requestId: params.requestId
+            requestId: params.requestId,
           }, (_, data) => {
             expect(data.body).to.equal('\u0024')
             done()

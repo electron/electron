@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const {ipcRenderer} = require('electron')
 
 document.addEventListener('DOMContentLoaded', (event) => {
   const subframe = document.querySelector('#pdf-frame')

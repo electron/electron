@@ -1,10 +1,10 @@
-const { app, net, session } = require('electron')
+const {app, net, session} = require('electron')
 
 if (process.env.TEST_DUMP_FILE) {
   app.commandLine.appendSwitch('log-net-log', process.env.TEST_DUMP_FILE)
 }
 
-function request () {
+function request() {
   return new Promise((resolve) => {
     const req = net.request(process.env.TEST_REQUEST_URL)
     req.on('response', () => {
@@ -14,7 +14,7 @@ function request () {
   })
 }
 
-function stopLogging (netLog) {
+function stopLogging(netLog) {
   return new Promise((resolve) => {
     netLog.stopLogging((path) => {
       resolve()

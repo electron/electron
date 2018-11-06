@@ -1,8 +1,8 @@
-const { expect } = require('chai')
+const {expect} = require('chai')
 const path = require('path')
-const { Buffer } = require('buffer')
+const {Buffer} = require('buffer')
 
-const { clipboard, nativeImage } = require('electron')
+const {clipboard, nativeImage} = require('electron')
 
 describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -27,7 +27,13 @@ describe('clipboard module', () => {
   describe('clipboard.readHTML()', () => {
     it('returns markup correctly', () => {
       const text = '<string>Hi</string>'
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>'
+      const markup = process.platform === 'darwin'
+        ? '<meta charset=\'utf-8\'><string>Hi</string>'
+        : (
+          process.platform === 'linux'
+            ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>'
+            : '<string>Hi</string>'
+          )
       clipboard.writeHTML(text)
       expect(clipboard.readHTML()).to.equal(markup)
     })
@@ -42,7 +48,7 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.readBookmark', () => {
-    before(function () {
+    before(function() {
       if (process.platform === 'linux') {
         this.skip()
       }
@@ -52,13 +58,13 @@ describe('clipboard module', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org')
       expect(clipboard.readBookmark()).to.deep.equal({
         title: 'a title',
-        url: 'https://electronjs.org'
+        url: 'https://electronjs.org',
       })
 
       clipboard.writeText('no bookmark')
       expect(clipboard.readBookmark()).to.deep.equal({
         title: '',
-        url: ''
+        url: '',
       })
     })
   })
@@ -69,14 +75,20 @@ describe('clipboard module', () => {
       const rtf = '{\\rtf1\\utf8 text}'
       const p = path.join(fixtures, 'assets', 'logo.png')
       const i = nativeImage.createFromPath(p)
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>'
-      const bookmark = { title: 'a title', url: 'test' }
+      const markup = process.platform === 'darwin'
+        ? '<meta charset=\'utf-8\'><b>Hi</b>'
+        : (
+            process.platform === 'linux'
+              ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>'
+              : '<b>Hi</b>'
+          )
+      const bookmark = {title: 'a title', url: 'test'}
       clipboard.write({
         text: 'test',
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
-        image: p
+        image: p,
       })
 
       expect(clipboard.readText()).to.equal(text)
@@ -91,7 +103,7 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.read/writeFindText(text)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }
@@ -104,7 +116,7 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.writeBuffer(format, buffer)', () => {
-    it('writes a Buffer for the specified format', function () {
+    it('writes a Buffer for the specified format', function() {
       if (process.platform !== 'darwin') {
         // FIXME(alexeykuzmin): Skip the test.
         // this.skip()
@@ -124,7 +136,7 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.readBuffer(format)', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }

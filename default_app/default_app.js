@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const {app, BrowserWindow} = require('electron')
 const path = require('path')
 
 let mainWindow = null
@@ -20,10 +20,10 @@ exports.load = async (appUrl) => {
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.resolve(__dirname, 'renderer.js'),
-      webviewTag: false
+      webviewTag: false,
     },
     useContentSize: true,
-    show: false
+    show: false,
   }
 
   if (process.platform === 'linux') {

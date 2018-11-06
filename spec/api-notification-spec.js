@@ -1,10 +1,10 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
-const { Notification } = require('electron').remote
+const {Notification} = require('electron').remote
 
 describe('Notification module', () => {
   it('inits, gets and sets basic string properties correctly', () => {
@@ -14,7 +14,7 @@ describe('Notification module', () => {
       body: 'body',
       replyPlaceholder: 'replyPlaceholder',
       sound: 'sound',
-      closeButtonText: 'closeButtonText'
+      closeButtonText: 'closeButtonText',
     })
 
     expect(n.title).to.equal('title')
@@ -45,7 +45,7 @@ describe('Notification module', () => {
   it('inits, gets and sets basic boolean properties correctly', () => {
     const n = new Notification({
       silent: true,
-      hasReply: true
+      hasReply: true,
     })
 
     expect(n.silent).to.be.true()
@@ -62,12 +62,12 @@ describe('Notification module', () => {
       actions: [
         {
           type: 'button',
-          text: '1'
+          text: '1',
         }, {
           type: 'button',
-          text: '2'
-        }
-      ]
+          text: '2',
+        },
+      ],
     })
 
     expect(n.actions.length).to.equal(2)
@@ -79,11 +79,11 @@ describe('Notification module', () => {
     n.actions = [
       {
         type: 'button',
-        text: '3'
+        text: '3',
       }, {
         type: 'button',
-        text: '4'
-      }
+        text: '4',
+      },
     ]
 
     expect(n.actions.length).to.equal(2)

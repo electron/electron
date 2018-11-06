@@ -2,7 +2,7 @@ const OUT_DIR = process.env.ELECTRON_OUT_DIR || 'Debug'
 
 const path = require('path')
 
-function getElectronExec () {
+function getElectronExec() {
   switch (process.platform) {
     case 'darwin':
       return `out/${OUT_DIR}/Electron.app/Contents/MacOS/Electron`
@@ -15,12 +15,12 @@ function getElectronExec () {
   }
 }
 
-function getAbsoluteElectronExec () {
+function getAbsoluteElectronExec() {
   return path.resolve(__dirname, '../../..', getElectronExec())
 }
 
 module.exports = {
   getElectronExec,
   getAbsoluteElectronExec,
-  OUT_DIR
+  OUT_DIR,
 }

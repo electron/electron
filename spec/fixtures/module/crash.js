@@ -6,8 +6,8 @@ process.crashReporter.start({
   extra: {
     extra1: 'extra1',
     extra2: 'extra2',
-    _version: process.argv[3]
-  }
+    _version: process.argv[3],
+  },
 })
 
 process.nextTick(() => process.crash())

@@ -1,4 +1,4 @@
-const { app } = require('electron')
+const {app} = require('electron')
 
 app.once('ready', () => {
   console.log('started') // ping parent

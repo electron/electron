@@ -1,11 +1,11 @@
-const { app, dialog } = require('electron')
+const {app, dialog} = require('electron')
 
 const fs = require('fs')
 const Module = require('module')
 const path = require('path')
 const url = require('url')
 
-const { setDefaultApplicationMenu } = require('./menu')
+const {setDefaultApplicationMenu} = require('./menu')
 
 // Parse command line options.
 const argv = process.argv.slice(1)
@@ -15,7 +15,7 @@ const option = {
   noHelp: Boolean(process.env.ELECTRON_NO_HELP),
   version: null,
   webdriver: null,
-  modules: []
+  modules: [],
 }
 
 let nextArgIsRequire = false
@@ -74,12 +74,12 @@ if (option.modules.length > 0) {
   Module._preloadModules(option.modules)
 }
 
-function loadApplicationPackage (packagePath) {
+function loadApplicationPackage(packagePath) {
   // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
     configurable: false,
     enumerable: true,
-    value: true
+    value: true,
   })
 
   try {
@@ -124,17 +124,17 @@ function loadApplicationPackage (packagePath) {
   }
 }
 
-function showErrorMessage (message) {
+function showErrorMessage(message) {
   app.focus()
   dialog.showErrorBox('Error launching app', message)
   process.exit(1)
 }
 
-function loadApplicationByUrl (appUrl) {
+function loadApplicationByUrl(appUrl) {
   require('./default_app').load(appUrl)
 }
 
-function startRepl () {
+function startRepl() {
   if (process.platform === 'win32') {
     console.error('Electron REPL not currently supported on Windows')
     process.exit(1)
@@ -158,7 +158,7 @@ if (option.file && !option.webdriver) {
     loadApplicationByUrl(url.format({
       protocol: 'file:',
       slashes: true,
-      pathname: path.resolve(file)
+      pathname: path.resolve(file),
     }))
   } else {
     loadApplicationPackage(file)
@@ -197,6 +197,6 @@ Options:
   loadApplicationByUrl(url.format({
     protocol: 'file:',
     slashes: true,
-    pathname: indexPath
+    pathname: indexPath,
   }))
 }

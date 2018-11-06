@@ -1,14 +1,14 @@
-const { globalShortcut } = require('electron').remote
+const {globalShortcut} = require('electron').remote
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const isCI = require('electron').remote.getGlobal('isCi')
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 describe('globalShortcut module', () => {
-  before(function () {
+  before(function() {
     if (isCI && process.platform === 'win32') {
       this.skip()
     }

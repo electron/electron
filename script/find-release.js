@@ -10,13 +10,13 @@ if (process.argv.length < 3) {
 
 const version = process.argv[2]
 
-async function findRelease () {
-  github.authenticate({ type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN })
+async function findRelease() {
+  github.authenticate({type: 'token', token: process.env.ELECTRON_GITHUB_TOKEN})
   const releases = await github.repos.getReleases({
     owner: 'electron',
-    repo: version.indexOf('nightly') > 0 ? 'nightlies' : 'electron'
+    repo: version.indexOf('nightly') > 0 ? 'nightlies' : 'electron',
   })
-  const targetRelease = releases.data.find(release => {
+  const targetRelease = releases.data.find((release) => {
     return release.tag_name === version
   })
   let returnObject = {}
@@ -25,12 +25,12 @@ async function findRelease () {
     returnObject = {
       id: targetRelease.id,
       draft: targetRelease.draft,
-      exists: true
+      exists: true,
     }
   } else {
     returnObject = {
       exists: false,
-      draft: false
+      draft: false,
     }
   }
   console.log(JSON.stringify(returnObject))

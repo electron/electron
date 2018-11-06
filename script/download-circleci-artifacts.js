@@ -2,7 +2,7 @@ const args = require('minimist')(process.argv.slice(2))
 const nugget = require('nugget')
 const request = require('request')
 
-async function makeRequest (requestOptions, parseResponse) {
+async function makeRequest(requestOptions, parseResponse) {
   return new Promise((resolve, reject) => {
     request(requestOptions, (err, res, body) => {
       if (!err && res.statusCode >= 200 && res.statusCode < 300) {
@@ -29,19 +29,20 @@ async function makeRequest (requestOptions, parseResponse) {
   })
 }
 
-async function downloadArtifact (name, buildNum, dest) {
-  const circleArtifactUrl = `https://circleci.com/api/v1.1/project/github/electron/electron/${args.buildNum}/artifacts?circle-token=${process.env.CIRCLE_TOKEN}`
+async function downloadArtifact(name, buildNum, dest) {
+  const baseCircleUrl = 'https://circleci.com/api/v1.1/project/github/electron/electron'
+  const circleArtifactUrl = `${baseCircleUrl}/${args.buildNum}/artifacts?circle-token=${process.env.CIRCLE_TOKEN}`
   const artifacts = await makeRequest({
     method: 'GET',
     url: circleArtifactUrl,
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
-  }, true).catch(err => {
+      'Accept': 'application/json',
+    },
+  }, true).catch((err) => {
     console.log('Error calling CircleCI:', err)
   })
-  const artifactToDownload = artifacts.find(artifact => {
+  const artifactToDownload = artifacts.find((artifact) => {
     return (artifact.path === name)
   })
   if (!artifactToDownload) {
@@ -54,10 +55,10 @@ async function downloadArtifact (name, buildNum, dest) {
   }
 }
 
-function downloadFile (url, directory) {
+function downloadFile(url, directory) {
   return new Promise((resolve, reject) => {
     const nuggetOpts = {
-      dir: directory
+      dir: directory,
     }
     nugget(url, nuggetOpts, (err) => {
       if (err) {

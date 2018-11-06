@@ -45,7 +45,7 @@ describe('webRequest module', () => {
     it('can cancel the request', (done) => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({
-          cancel: true
+          cancel: true,
         })
       })
       $.ajax({
@@ -55,14 +55,14 @@ describe('webRequest module', () => {
         },
         error: () => {
           done()
-        }
+        },
       })
     })
 
     it('can filter URLs', (done) => {
-      const filter = { urls: [defaultURL + 'filter/*'] }
+      const filter = {urls: [defaultURL + 'filter/*']}
       ses.webRequest.onBeforeRequest(filter, (details, callback) => {
-        callback({ cancel: true })
+        callback({cancel: true})
       })
       $.ajax({
         url: `${defaultURL}nofilter/test`,
@@ -71,10 +71,10 @@ describe('webRequest module', () => {
           $.ajax({
             url: `${defaultURL}filter/test`,
             success: () => done('unexpected success'),
-            error: () => done()
+            error: () => done(),
           })
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
@@ -95,36 +95,36 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
     it('receives post data in details object', (done) => {
       const postData = {
         name: 'post test',
-        type: 'string'
+        type: 'string',
       }
       ses.webRequest.onBeforeRequest((details, callback) => {
         assert.strictEqual(details.url, defaultURL)
         assert.strictEqual(details.method, 'POST')
         assert.strictEqual(details.uploadData.length, 1)
         const data = qs.parse(details.uploadData[0].bytes.toString())
-        assert.deepStrictEqual({ ...data }, postData)
-        callback({ cancel: true })
+        assert.deepStrictEqual({...data}, postData)
+        callback({cancel: true})
       })
       $.ajax({
         url: defaultURL,
         type: 'POST',
         data: postData,
         success: () => {},
-        error: () => done()
+        error: () => done(),
       })
     })
 
     it('can redirect the request', (done) => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: `${defaultURL}redirect` })
+          callback({redirectURL: `${defaultURL}redirect`})
         } else {
           callback({})
         }
@@ -135,7 +135,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/redirect')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -153,12 +153,12 @@ describe('webRequest module', () => {
       })
       $.ajax({
         url: defaultURL,
-        headers: { 'Foo.Bar': 'baz' },
+        headers: {'Foo.Bar': 'baz'},
         success: (data) => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
@@ -166,7 +166,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders
         requestHeaders.Accept = '*/*;test/header'
-        callback({ requestHeaders: requestHeaders })
+        callback({requestHeaders: requestHeaders})
       })
       $.ajax({
         url: defaultURL,
@@ -174,16 +174,16 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/header/received')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
     it('resets the whole headers', (done) => {
       const requestHeaders = {
-        Test: 'header'
+        Test: 'header',
       }
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders })
+        callback({requestHeaders: requestHeaders})
       })
       ses.webRequest.onSendHeaders((details) => {
         assert.deepStrictEqual(details.requestHeaders, requestHeaders)
@@ -191,7 +191,7 @@ describe('webRequest module', () => {
       })
       $.ajax({
         url: defaultURL,
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -211,7 +211,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -234,7 +234,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
@@ -242,7 +242,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
         responseHeaders['Custom'] = ['Changed']
-        callback({ responseHeaders: responseHeaders })
+        callback({responseHeaders: responseHeaders})
       })
       $.ajax({
         url: defaultURL,
@@ -251,7 +251,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
@@ -266,14 +266,14 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
     it('follows server redirect', (done) => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders
-        callback({ responseHeaders: responseHeaders })
+        callback({responseHeaders: responseHeaders})
       })
       $.ajax({
         url: defaultURL + 'serverRedirect',
@@ -281,7 +281,7 @@ describe('webRequest module', () => {
           assert.strictEqual(xhr.getResponseHeader('Custom'), 'Header')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
 
@@ -290,7 +290,7 @@ describe('webRequest module', () => {
         const responseHeaders = details.responseHeaders
         callback({
           responseHeaders: responseHeaders,
-          statusLine: 'HTTP/1.1 404 Not Found'
+          statusLine: 'HTTP/1.1 404 Not Found',
         })
       })
       $.ajax({
@@ -299,7 +299,7 @@ describe('webRequest module', () => {
         error: (xhr, errorType) => {
           assert.strictEqual(xhr.getResponseHeader('Custom'), 'Header')
           done()
-        }
+        },
       })
     })
   })
@@ -323,7 +323,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -338,7 +338,7 @@ describe('webRequest module', () => {
       const redirectURL = defaultURL + 'redirect'
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL })
+          callback({redirectURL: redirectURL})
         } else {
           callback({})
         }
@@ -355,7 +355,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/redirect')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -377,7 +377,7 @@ describe('webRequest module', () => {
           assert.strictEqual(data, '/')
           done()
         },
-        error: (xhr, errorType) => done(errorType)
+        error: (xhr, errorType) => done(errorType),
       })
     })
   })
@@ -390,7 +390,7 @@ describe('webRequest module', () => {
 
     it('receives details object', (done) => {
       ses.webRequest.onBeforeRequest((details, callback) => {
-        callback({ cancel: true })
+        callback({cancel: true})
       })
       ses.webRequest.onErrorOccurred((details) => {
         assert.strictEqual(details.error, 'net::ERR_BLOCKED_BY_CLIENT')
@@ -398,7 +398,7 @@ describe('webRequest module', () => {
       })
       $.ajax({
         url: defaultURL,
-        success: () => done('unexpected success')
+        success: () => done('unexpected success'),
       })
     })
   })

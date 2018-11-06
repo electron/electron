@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { GitProcess } = require('dugite')
+const {GitProcess} = require('dugite')
 const path = require('path')
 const semver = require('semver')
 
@@ -8,7 +8,7 @@ const notesGenerator = require('./notes.js')
 
 const gitDir = path.resolve(__dirname, '..', '..')
 
-const semverify = version => version.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.')
+const semverify = (version) => version.replace(/^origin\//, '').replace('x', '0').replace(/-/g, '.')
 
 const runGit = async (args) => {
   const response = await GitProcess.exec(args, gitDir)
@@ -18,16 +18,16 @@ const runGit = async (args) => {
   return response.stdout.trim()
 }
 
-const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported')
-const tagIsBeta = tag => tag.includes('beta')
-const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag)
+const tagIsSupported = (tag) => tag && !tag.includes('nightly') && !tag.includes('unsupported')
+const tagIsBeta = (tag) => tag.includes('beta')
+const tagIsStable = (tag) => tagIsSupported(tag) && !tagIsBeta(tag)
 
 const getTagsOf = async (point) => {
   return (await runGit(['tag', '--merged', point]))
-    .split('\n')
-    .map(tag => tag.trim())
-    .filter(tag => semver.valid(tag))
-    .sort(semver.compare)
+      .split('\n')
+      .map((tag) => tag.trim())
+      .filter((tag) => semver.valid(tag))
+      .sort(semver.compare)
 }
 
 const getTagsOnBranch = async (point) => {
@@ -37,35 +37,35 @@ const getTagsOnBranch = async (point) => {
   }
 
   const masterTagsSet = new Set(masterTags)
-  return (await getTagsOf(point)).filter(tag => !masterTagsSet.has(tag))
+  return (await getTagsOf(point)).filter((tag) => !masterTagsSet.has(tag))
 }
 
 const getBranchOf = async (point) => {
   const branches = (await runGit(['branch', '-a', '--contains', point]))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch)
-  const current = branches.find(branch => branch.startsWith('* '))
+      .split('\n')
+      .map((branch) => branch.trim())
+      .filter((branch) => !!branch)
+  const current = branches.find((branch) => branch.startsWith('* '))
   return current ? current.slice(2) : branches.shift()
 }
 
 const getAllBranches = async () => {
   return (await runGit(['branch', '--remote']))
-    .split('\n')
-    .map(branch => branch.trim())
-    .filter(branch => !!branch)
-    .filter(branch => branch !== 'origin/HEAD -> origin/master')
-    .sort()
+      .split('\n')
+      .map((branch) => branch.trim())
+      .filter((branch) => !!branch)
+      .filter((branch) => branch !== 'origin/HEAD -> origin/master')
+      .sort()
 }
 
 const getStabilizationBranches = async () => {
   return (await getAllBranches())
-    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch))
+      .filter((branch) => /^origin\/\d+-\d+-x$/.test(branch))
 }
 
 const getPreviousStabilizationBranch = async (current) => {
   const stabilizationBranches = (await getStabilizationBranches())
-    .filter(branch => branch !== current && branch !== `origin/${current}`)
+      .filter((branch) => branch !== current && branch !== `origin/${current}`)
 
   if (!semver.valid(current)) {
     // since we don't seem to be on a stabilization branch right now,
@@ -89,15 +89,15 @@ const getPreviousStabilizationBranch = async (current) => {
 
 const getPreviousPoint = async (point) => {
   const currentBranch = await getBranchOf(point)
-  const currentTag = (await getTagsOf(point)).filter(tag => tagIsSupported(tag)).pop()
+  const currentTag = (await getTagsOf(point)).filter((tag) => tagIsSupported(tag)).pop()
   const currentIsStable = tagIsStable(currentTag)
 
   try {
     // First see if there's an earlier tag on the same branch
     // that can serve as a reference point.
-    let tags = (await getTagsOnBranch(`${point}^`)).filter(tag => tagIsSupported(tag))
+    let tags = (await getTagsOnBranch(`${point}^`)).filter((tag) => tagIsSupported(tag))
     if (currentIsStable) {
-      tags = tags.filter(tag => tagIsStable(tag))
+      tags = tags.filter((tag) => tagIsStable(tag))
     }
     if (tags.length) {
       return tags.pop()
@@ -112,7 +112,7 @@ const getPreviousPoint = async (point) => {
   let branch = currentBranch
   while (branch) {
     const prevBranch = await getPreviousStabilizationBranch(branch)
-    const tags = (await getTagsOnBranch(prevBranch)).filter(tag => tagIsStable(tag))
+    const tags = (await getTagsOnBranch(prevBranch)).filter((tag) => tagIsStable(tag))
     if (tags.length) {
       return tags.pop()
     }
@@ -120,7 +120,7 @@ const getPreviousPoint = async (point) => {
   }
 }
 
-async function getReleaseNotes (range) {
+async function getReleaseNotes(range) {
   const rangeList = range.split('..') || ['HEAD']
   const to = rangeList.pop()
   const from = rangeList.pop() || (await getPreviousPoint(to))
@@ -128,7 +128,7 @@ async function getReleaseNotes (range) {
 
   const notes = await notesGenerator.get(from, to)
   const ret = {
-    text: notesGenerator.render(notes)
+    text: notesGenerator.render(notes),
   }
 
   if (notes.unknown.length) {
@@ -138,7 +138,7 @@ async function getReleaseNotes (range) {
   return ret
 }
 
-async function main () {
+async function main() {
   if (process.argv.length > 3) {
     console.log('Use: script/release-notes/index.js [tag | tag1..tag2]')
     return 1

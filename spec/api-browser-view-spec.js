@@ -2,12 +2,12 @@
 
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { closeWindow } = require('./window-helpers')
+const {closeWindow} = require('./window-helpers')
 
-const { remote } = require('electron')
-const { BrowserView, BrowserWindow } = remote
+const {remote} = require('electron')
+const {BrowserView, BrowserWindow} = remote
 
-const { expect } = chai
+const {expect} = chai
 chai.use(dirtyChai)
 
 describe('BrowserView module', () => {
@@ -20,8 +20,8 @@ describe('BrowserView module', () => {
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
-      }
+        backgroundThrottling: false,
+      },
     })
   })
 
@@ -31,7 +31,9 @@ describe('BrowserView module', () => {
       view = null
     }
 
-    return closeWindow(w).then(() => { w = null })
+    return closeWindow(w).then(() => {
+      w = null
+    })
   })
 
   describe('BrowserView.destroy()', () => {
@@ -68,7 +70,7 @@ describe('BrowserView module', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()
       view.setAutoResize({})
-      view.setAutoResize({ width: true, height: false })
+      view.setAutoResize({width: true, height: false})
     })
 
     it('throws for invalid args', () => {
@@ -82,7 +84,7 @@ describe('BrowserView module', () => {
   describe('BrowserView.setBounds()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView()
-      view.setBounds({ x: 0, y: 0, width: 1, height: 1 })
+      view.setBounds({x: 0, y: 0, width: 1, height: 1})
     })
 
     it('throws for invalid args', () => {

@@ -4,12 +4,12 @@ const assert = require('assert')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 const path = require('path')
-const { closeWindow } = require('./window-helpers')
-const { resolveGetters } = require('./assert-helpers')
+const {closeWindow} = require('./window-helpers')
+const {resolveGetters} = require('./assert-helpers')
 
-const { remote, ipcRenderer } = require('electron')
-const { ipcMain, BrowserWindow } = remote
-const { expect } = chai
+const {remote, ipcRenderer} = require('electron')
+const {ipcMain, BrowserWindow} = remote
+const {expect} = chai
 
 chai.use(dirtyChai)
 
@@ -26,11 +26,13 @@ describe('remote module', () => {
 
   let w = null
 
-  afterEach(() => closeWindow(w).then(() => { w = null }))
+  afterEach(() => closeWindow(w).then(() => {
+    w = null
+  }))
 
   describe('remote.getGlobal', () => {
     it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-get-global', { test: 'Hello World!' })
+      ipcRenderer.send('handle-next-remote-get-global', {test: 'Hello World!'})
       expect(remote.getGlobal('test')).to.be.equal('Hello World!')
     })
 
@@ -42,7 +44,7 @@ describe('remote module', () => {
 
   describe('remote.require', () => {
     it('can return custom values', () => {
-      ipcRenderer.send('handle-next-remote-require', { test: 'Hello World!' })
+      ipcRenderer.send('handle-next-remote-require', {test: 'Hello World!'})
       expect(remote.require('test')).to.be.equal('Hello World!')
     })
 
@@ -125,47 +127,47 @@ describe('remote module', () => {
       arrayA.push(arrayB)
       assert.deepStrictEqual(a.returnArgs(arrayA, arrayB), [
         ['foo', [null, 'bar']],
-        [['foo', null], 'bar']
+        [['foo', null], 'bar'],
       ])
 
-      let objectA = { foo: 'bar' }
-      const objectB = { baz: objectA }
+      let objectA = {foo: 'bar'}
+      const objectB = {baz: objectA}
       objectA.objectB = objectB
       assert.deepStrictEqual(a.returnArgs(objectA, objectB), [
-        { foo: 'bar', objectB: { baz: null } },
-        { baz: { foo: 'bar', objectB: null } }
+        {foo: 'bar', objectB: {baz: null}},
+        {baz: {foo: 'bar', objectB: null}},
       ])
 
       arrayA = [1, 2, 3]
-      assert.deepStrictEqual(a.returnArgs({ foo: arrayA }, { bar: arrayA }), [
-        { foo: [1, 2, 3] },
-        { bar: [1, 2, 3] }
+      assert.deepStrictEqual(a.returnArgs({foo: arrayA}, {bar: arrayA}), [
+        {foo: [1, 2, 3]},
+        {bar: [1, 2, 3]},
       ])
 
-      objectA = { foo: 'bar' }
-      assert.deepStrictEqual(a.returnArgs({ foo: objectA }, { bar: objectA }), [
-        { foo: { foo: 'bar' } },
-        { bar: { foo: 'bar' } }
+      objectA = {foo: 'bar'}
+      assert.deepStrictEqual(a.returnArgs({foo: objectA}, {bar: objectA}), [
+        {foo: {foo: 'bar'}},
+        {bar: {foo: 'bar'}},
       ])
 
       arrayA = []
       arrayA.push(arrayA)
       assert.deepStrictEqual(a.returnArgs(arrayA), [
-        [null]
+        [null],
       ])
 
       objectA = {}
       objectA.foo = objectA
       objectA.bar = 'baz'
       assert.deepStrictEqual(a.returnArgs(objectA), [
-        { foo: null, bar: 'baz' }
+        {foo: null, bar: 'baz'},
       ])
 
       objectA = {}
-      objectA.foo = { bar: objectA }
+      objectA.foo = {bar: objectA}
       objectA.bar = 'baz'
       assert.deepStrictEqual(a.returnArgs(objectA), [
-        { foo: { bar: null }, bar: 'baz' }
+        {foo: {bar: null}, bar: 'baz'},
       ])
     })
   })
@@ -188,10 +190,10 @@ describe('remote module', () => {
     })
 
     it('returns toString() of original function via toString()', () => {
-      const { readText } = remote.clipboard
+      const {readText} = remote.clipboard
       assert(readText.toString().startsWith('function'))
 
-      const { functionWithToStringProperty } = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
+      const {functionWithToStringProperty} = remote.require(path.join(fixtures, 'module', 'to-string-non-function.js'))
       assert.strictEqual(functionWithToStringProperty.toString, 'hello')
     })
   })
@@ -249,7 +251,9 @@ describe('remote module', () => {
       const remoteFunctions = remote.require(path.join(fixtures, 'module', 'function.js'))
       assert.strictEqual(remoteFunctions.aFunction(), 1127)
 
-      remoteFunctions.aFunction = () => { return 1234 }
+      remoteFunctions.aFunction = () => {
+        return 1234
+      }
       assert.strictEqual(remoteFunctions.aFunction(), 1234)
 
       assert.strictEqual(delete remoteFunctions.aFunction, true)
@@ -291,7 +295,7 @@ describe('remote module', () => {
       const buffer = Buffer.from('test')
       assert.ok(buffer.equals(printName.echo(buffer)))
 
-      const objectWithBuffer = { a: 'foo', b: Buffer.from('bar') }
+      const objectWithBuffer = {a: 'foo', b: Buffer.from('bar')}
       assert.ok(objectWithBuffer.b.equals(printName.echo(objectWithBuffer).b))
 
       const arrayWithBuffer = [1, 2, Buffer.from('baz')]
@@ -415,7 +419,7 @@ describe('remote module', () => {
     })
 
     it('does not emit unhandled rejection events in the main process', (done) => {
-      remote.process.once('unhandledRejection', function (reason) {
+      remote.process.once('unhandledRejection', function(reason) {
         done(reason)
       })
 
@@ -429,7 +433,7 @@ describe('remote module', () => {
     })
 
     it('emits unhandled rejection events in the renderer process', (done) => {
-      window.addEventListener('unhandledrejection', function (event) {
+      window.addEventListener('unhandledrejection', function(event) {
         event.preventDefault()
         assert.strictEqual(event.reason.message, 'rejected')
         done()
@@ -525,8 +529,8 @@ describe('remote module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          preload: preload
-        }
+          preload: preload,
+        },
       })
       w.once('closed', () => done())
       w.loadURL('about:blank')

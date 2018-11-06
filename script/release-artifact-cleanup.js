@@ -3,10 +3,10 @@
 if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
 const args = require('minimist')(process.argv.slice(2), {
-  string: ['tag']
+  string: ['tag'],
 })
-const { execSync } = require('child_process')
-const { GitProcess } = require('dugite')
+const {execSync} = require('child_process')
+const {GitProcess} = require('dugite')
 
 const GitHub = require('github')
 const path = require('path')
@@ -16,15 +16,15 @@ const gitDir = path.resolve(__dirname, '..')
 
 github.authenticate({
   type: 'token',
-  token: process.env.ELECTRON_GITHUB_TOKEN
+  token: process.env.ELECTRON_GITHUB_TOKEN,
 })
 
-function getLastBumpCommit (tag) {
+function getLastBumpCommit(tag) {
   const data = execSync(`git log -n1 --grep "Bump ${tag}" --format='format:{"hash": "%H", "message": "%s"}'`).toString()
   return JSON.parse(data)
 }
 
-async function getCurrentBranch (gitDir) {
+async function getCurrentBranch(gitDir) {
   const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
   const branchDetails = await GitProcess.exec(gitArgs, gitDir)
   if (branchDetails.exitCode === 0) {
@@ -36,7 +36,7 @@ async function getCurrentBranch (gitDir) {
   process.exit(1)
 }
 
-async function revertBumpCommit (tag) {
+async function revertBumpCommit(tag) {
   const branch = await getCurrentBranch()
   const commitToRevert = getLastBumpCommit(tag).hash
   await GitProcess.exec(['revert', commitToRevert], gitDir)
@@ -50,12 +50,12 @@ async function revertBumpCommit (tag) {
   }
 }
 
-async function deleteDraft (tag, targetRepo) {
+async function deleteDraft(tag, targetRepo) {
   try {
     const result = await github.repos.getReleaseByTag({
       owner: 'electron',
       repo: targetRepo,
-      tag
+      tag,
     })
     if (!result.draft) {
       console.log(`Published releases cannot be deleted.`)
@@ -64,7 +64,7 @@ async function deleteDraft (tag, targetRepo) {
       await github.repos.deleteRelease({
         owner: 'electron',
         repo: targetRepo,
-        release_id: result.id
+        release_id: result.id,
       })
     }
     console.log(`Successfully deleted draft with tag ${tag} from ${targetRepo}`)
@@ -74,12 +74,12 @@ async function deleteDraft (tag, targetRepo) {
   }
 }
 
-async function deleteTag (tag, targetRepo) {
+async function deleteTag(tag, targetRepo) {
   try {
     await github.gitdata.deleteReference({
       owner: 'electron',
       repo: targetRepo,
-      ref: tag
+      ref: tag,
     })
     console.log(`Successfully deleted tag ${tag} from ${targetRepo}`)
   } catch (err) {
@@ -88,7 +88,7 @@ async function deleteTag (tag, targetRepo) {
   }
 }
 
-async function cleanReleaseArtifacts () {
+async function cleanReleaseArtifacts() {
   const tag = args.tag
   const isNightly = args.tag.includes('nightly')
 

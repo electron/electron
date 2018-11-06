@@ -2,9 +2,9 @@
 process.throwDeprecation = false
 
 const electron = require('electron')
-const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
+const {app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents} = electron
 
-const { Coverage } = require('electabul')
+const {Coverage} = require('electabul')
 
 const fs = require('fs')
 const path = require('path')
@@ -12,10 +12,10 @@ const util = require('util')
 const v8 = require('v8')
 
 const argv = require('yargs')
-  .boolean('ci')
-  .string('g').alias('g', 'grep')
-  .boolean('i').alias('i', 'invert')
-  .argv
+    .boolean('ci')
+    .string('g').alias('g', 'grep')
+    .boolean('i').alias('i', 'invert')
+    .argv
 
 let window = null
 
@@ -44,7 +44,7 @@ process.env.sandboxmain = ''
 // eslint-disable-next-line
 console
 
-ipcMain.on('message', function (event, ...args) {
+ipcMain.on('message', function(event, ...args) {
   event.sender.send('message', ...args)
 })
 
@@ -55,7 +55,7 @@ if (process.platform !== 'darwin') {
 
 // Write output to file if OUTPUT_TO_FILE is defined.
 const outputToFile = process.env.OUTPUT_TO_FILE
-const print = function (_, args) {
+const print = function(_, args) {
   const output = util.format.apply(null, args)
   if (outputToFile) {
     fs.appendFileSync(outputToFile, output + '\n')
@@ -66,15 +66,15 @@ const print = function (_, args) {
 ipcMain.on('console.log', print)
 ipcMain.on('console.error', print)
 
-ipcMain.on('process.exit', function (event, code) {
+ipcMain.on('process.exit', function(event, code) {
   process.exit(code)
 })
 
-ipcMain.on('eval', function (event, script) {
+ipcMain.on('eval', function(event, script) {
   event.returnValue = eval(script) // eslint-disable-line
 })
 
-ipcMain.on('echo', function (event, msg) {
+ipcMain.on('echo', function(event, msg) {
   event.returnValue = msg
 })
 
@@ -82,22 +82,22 @@ global.setTimeoutPromisified = util.promisify(setTimeout)
 
 global.permissionChecks = {
   allow: () => electron.session.defaultSession.setPermissionCheckHandler(null),
-  reject: () => electron.session.defaultSession.setPermissionCheckHandler(() => false)
+  reject: () => electron.session.defaultSession.setPermissionCheckHandler(() => false),
 }
 
 const coverage = new Coverage({
-  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
+  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage'),
 })
 coverage.setup()
 
-ipcMain.on('get-main-process-coverage', function (event) {
+ipcMain.on('get-main-process-coverage', function(event) {
   event.returnValue = global.__coverage__ || null
 })
 
 global.isCi = !!argv.ci
 if (global.isCi) {
   process.removeAllListeners('uncaughtException')
-  process.on('uncaughtException', function (error) {
+  process.on('uncaughtException', function(error) {
     console.error(error, error.stack)
     process.exit(1)
   })
@@ -108,9 +108,9 @@ global.nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
 // Register app as standard scheme.
 global.standardScheme = 'app'
 global.zoomScheme = 'zoom'
-protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], { secure: true })
+protocol.registerStandardSchemes([global.standardScheme, global.zoomScheme], {secure: true})
 
-app.on('window-all-closed', function () {
+app.on('window-all-closed', function() {
   app.quit()
 })
 
@@ -120,12 +120,12 @@ app.on('web-contents-created', (event, contents) => {
   })
 })
 
-app.on('ready', function () {
+app.on('ready', function() {
   // Test if using protocol module would crash.
-  electron.protocol.registerStringProtocol('test-if-crashes', function () {})
+  electron.protocol.registerStringProtocol('test-if-crashes', function() {})
 
   // Send auto updater errors to window to be verified in specs
-  electron.autoUpdater.on('error', function (error) {
+  electron.autoUpdater.on('error', function(error) {
     window.send('auto-updater-error', error.message)
   })
 
@@ -135,25 +135,25 @@ app.on('ready', function () {
     width: 800,
     height: 600,
     webPreferences: {
-      backgroundThrottling: false
-    }
+      backgroundThrottling: false,
+    },
   })
   window.loadFile('static/index.html', {
     query: {
       grep: argv.grep,
-      invert: argv.invert ? 'true' : ''
-    }
+      invert: argv.invert ? 'true' : '',
+    },
   })
-  window.on('unresponsive', function () {
+  window.on('unresponsive', function() {
     const chosen = dialog.showMessageBox(window, {
       type: 'warning',
       buttons: ['Close', 'Keep Waiting'],
       message: 'Window is not responsing',
-      detail: 'The window is not responding. Would you like to force close it or just keep waiting?'
+      detail: 'The window is not responding. Would you like to force close it or just keep waiting?',
     })
     if (chosen === 0) window.destroy()
   })
-  window.webContents.on('crashed', function () {
+  window.webContents.on('crashed', function() {
     console.error('Renderer process crashed')
     process.exit(1)
   })
@@ -161,21 +161,21 @@ app.on('ready', function () {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath) {
-    window.webContents.session.once('will-download', function (e, item) {
+  ipcMain.on('set-download-option', function(event, needCancel, preventDefault, filePath = downloadFilePath) {
+    window.webContents.session.once('will-download', function(e, item) {
       window.webContents.send('download-created',
-        item.getState(),
-        item.getURLChain(),
-        item.getMimeType(),
-        item.getReceivedBytes(),
-        item.getTotalBytes(),
-        item.getFilename(),
-        item.getSavePath())
+          item.getState(),
+          item.getURLChain(),
+          item.getMimeType(),
+          item.getReceivedBytes(),
+          item.getTotalBytes(),
+          item.getFilename(),
+          item.getSavePath())
       if (preventDefault) {
         e.preventDefault()
         const url = item.getURL()
         const filename = item.getFilename()
-        setImmediate(function () {
+        setImmediate(function() {
           try {
             item.getURL()
           } catch (err) {
@@ -188,19 +188,19 @@ app.on('ready', function () {
         } else {
           item.setSavePath(filePath)
         }
-        item.on('done', function (e, state) {
+        item.on('done', function(e, state) {
           window.webContents.send('download-done',
-            state,
-            item.getURL(),
-            item.getMimeType(),
-            item.getReceivedBytes(),
-            item.getTotalBytes(),
-            item.getContentDisposition(),
-            item.getFilename(),
-            item.getSavePath(),
-            item.getURLChain(),
-            item.getLastModifiedTime(),
-            item.getETag())
+              state,
+              item.getURL(),
+              item.getMimeType(),
+              item.getReceivedBytes(),
+              item.getTotalBytes(),
+              item.getContentDisposition(),
+              item.getFilename(),
+              item.getSavePath(),
+              item.getURLChain(),
+              item.getLastModifiedTime(),
+              item.getETag())
         })
         if (needCancel) item.cancel()
       }
@@ -215,7 +215,7 @@ app.on('ready', function () {
     event.returnValue = null
   })
 
-  ipcMain.on('executeJavaScript', function (event, code, hasCallback) {
+  ipcMain.on('executeJavaScript', function(event, code, hasCallback) {
     let promise
 
     if (hasCallback) {
@@ -242,7 +242,7 @@ app.on('ready', function () {
   })
 })
 
-ipcMain.on('handle-next-remote-require', function (event, modulesMap = {}) {
+ipcMain.on('handle-next-remote-require', function(event, modulesMap = {}) {
   event.sender.once('remote-require', (event, moduleName) => {
     event.preventDefault()
     if (modulesMap.hasOwnProperty(moduleName)) {
@@ -251,7 +251,7 @@ ipcMain.on('handle-next-remote-require', function (event, modulesMap = {}) {
   })
 })
 
-ipcMain.on('handle-next-remote-get-global', function (event, globalsMap = {}) {
+ipcMain.on('handle-next-remote-get-global', function(event, globalsMap = {}) {
   event.sender.once('remote-get-global', (event, globalName) => {
     event.preventDefault()
     if (globalsMap.hasOwnProperty(globalName)) {
@@ -260,13 +260,13 @@ ipcMain.on('handle-next-remote-get-global', function (event, globalsMap = {}) {
   })
 })
 
-ipcMain.on('set-client-certificate-option', function (event, skip) {
-  app.once('select-client-certificate', function (event, webContents, url, list, callback) {
+ipcMain.on('set-client-certificate-option', function(event, skip) {
+  app.once('select-client-certificate', function(event, webContents, url, list, callback) {
     event.preventDefault()
     if (skip) {
       callback()
     } else {
-      ipcMain.on('client-certificate-response', function (event, certificate) {
+      ipcMain.on('client-certificate-response', function(event, certificate) {
         callback(certificate)
       })
       window.webContents.send('select-client-certificate', webContents.id, list)
@@ -307,16 +307,16 @@ ipcMain.on('create-window-with-options-cycle', (event) => {
   foo.bar = foo
   foo.baz = {
     hello: {
-      world: true
-    }
+      world: true,
+    },
   }
   foo.baz2 = foo.baz
-  const window = new BrowserWindow({ show: false, foo: foo })
+  const window = new BrowserWindow({show: false, foo: foo})
   event.returnValue = window.id
 })
 
 ipcMain.on('prevent-next-new-window', (event, id) => {
-  webContents.fromId(id).once('new-window', event => event.preventDefault())
+  webContents.fromId(id).once('new-window', (event) => event.preventDefault())
 })
 
 ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => {
@@ -326,11 +326,11 @@ ipcMain.on('set-web-preferences-on-next-new-window', (event, id, key, value) => 
 })
 
 ipcMain.on('prevent-next-will-attach-webview', (event) => {
-  event.sender.once('will-attach-webview', event => event.preventDefault())
+  event.sender.once('will-attach-webview', (event) => event.preventDefault())
 })
 
 ipcMain.on('prevent-next-will-prevent-unload', (event, id) => {
-  webContents.fromId(id).once('will-prevent-unload', event => event.preventDefault())
+  webContents.fromId(id).once('will-prevent-unload', (event) => event.preventDefault())
 })
 
 ipcMain.on('disable-node-on-next-will-attach-webview', (event, id) => {
@@ -360,11 +360,11 @@ ipcMain.on('try-emit-web-contents-event', (event, id, eventName) => {
     event.returnValue = {
       warningMessage,
       listenerCountBefore,
-      listenerCountAfter
+      listenerCountAfter,
     }
   }
 
-  contents.emit(eventName, { sender: contents })
+  contents.emit(eventName, {sender: contents})
 })
 
 ipcMain.on('handle-uncaught-exception', (event, message) => {
@@ -420,13 +420,13 @@ ipcMain.on('test-browserwindow-destroy', (event, testOptions) => {
     width: 400,
     height: 400,
     webPreferences: {
-      backgroundThrottling: false
-    }
+      backgroundThrottling: false,
+    },
   }
-  const windows = Array.from(Array(windowCount)).map(x => new BrowserWindow(windowOptions))
-  windows.forEach(win => win.show())
-  windows.forEach(win => win.focus())
-  windows.forEach(win => win.destroy())
+  const windows = Array.from(Array(windowCount)).map((x) => new BrowserWindow(windowOptions))
+  windows.forEach((win) => win.show())
+  windows.forEach((win) => win.focus())
+  windows.forEach((win) => win.destroy())
   app.removeListener('browser-window-focus', focusListener)
   event.sender.send(testOptions.responseEvent)
 })

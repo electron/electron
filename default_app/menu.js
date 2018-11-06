@@ -1,4 +1,4 @@
-const { shell, Menu } = require('electron')
+const {shell, Menu} = require('electron')
 
 const setDefaultApplicationMenu = () => {
   if (Menu.getApplicationMenu()) return
@@ -8,108 +8,108 @@ const setDefaultApplicationMenu = () => {
       label: 'Edit',
       submenu: [
         {
-          role: 'undo'
+          role: 'undo',
         },
         {
-          role: 'redo'
+          role: 'redo',
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
-          role: 'cut'
+          role: 'cut',
         },
         {
-          role: 'copy'
+          role: 'copy',
         },
         {
-          role: 'paste'
+          role: 'paste',
         },
         {
-          role: 'pasteandmatchstyle'
+          role: 'pasteandmatchstyle',
         },
         {
-          role: 'delete'
+          role: 'delete',
         },
         {
-          role: 'selectall'
-        }
-      ]
+          role: 'selectall',
+        },
+      ],
     },
     {
       label: 'View',
       submenu: [
         {
-          role: 'reload'
+          role: 'reload',
         },
         {
-          role: 'forcereload'
+          role: 'forcereload',
         },
         {
-          role: 'toggledevtools'
+          role: 'toggledevtools',
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
-          role: 'resetzoom'
+          role: 'resetzoom',
         },
         {
-          role: 'zoomin'
+          role: 'zoomin',
         },
         {
-          role: 'zoomout'
+          role: 'zoomout',
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
-          role: 'togglefullscreen'
-        }
-      ]
+          role: 'togglefullscreen',
+        },
+      ],
     },
     {
       role: 'window',
       submenu: [
         {
-          role: 'minimize'
+          role: 'minimize',
         },
         {
-          role: 'close'
-        }
-      ]
+          role: 'close',
+        },
+      ],
     },
     {
       role: 'help',
       submenu: [
         {
           label: 'Learn More',
-          click () {
+          click() {
             shell.openExternal('https://electronjs.org')
-          }
+          },
         },
         {
           label: 'Documentation',
-          click () {
+          click() {
             shell.openExternal(
-              `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
+                `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
             )
-          }
+          },
         },
         {
           label: 'Community Discussions',
-          click () {
+          click() {
             shell.openExternal('https://discuss.atom.io/c/electron')
-          }
+          },
         },
         {
           label: 'Search Issues',
-          click () {
+          click() {
             shell.openExternal('https://github.com/electron/electron/issues')
-          }
-        }
-      ]
-    }
+          },
+        },
+      ],
+    },
   ]
 
   if (process.platform === 'darwin') {
@@ -117,71 +117,71 @@ const setDefaultApplicationMenu = () => {
       label: 'Electron',
       submenu: [
         {
-          role: 'about'
+          role: 'about',
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
           role: 'services',
-          submenu: []
+          submenu: [],
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
-          role: 'hide'
+          role: 'hide',
         },
         {
-          role: 'hideothers'
+          role: 'hideothers',
         },
         {
-          role: 'unhide'
+          role: 'unhide',
         },
         {
-          type: 'separator'
+          type: 'separator',
         },
         {
-          role: 'quit'
-        }
-      ]
+          role: 'quit',
+        },
+      ],
     })
     template[1].submenu.push({
-      type: 'separator'
+      type: 'separator',
     }, {
       label: 'Speech',
       submenu: [
         {
-          role: 'startspeaking'
+          role: 'startspeaking',
         },
         {
-          role: 'stopspeaking'
-        }
-      ]
+          role: 'stopspeaking',
+        },
+      ],
     })
     template[3].submenu = [
       {
-        role: 'close'
+        role: 'close',
       },
       {
-        role: 'minimize'
+        role: 'minimize',
       },
       {
-        role: 'zoom'
+        role: 'zoom',
       },
       {
-        type: 'separator'
+        type: 'separator',
       },
       {
-        role: 'front'
-      }
+        role: 'front',
+      },
     ]
   } else {
     template.unshift({
       label: 'File',
       submenu: [{
-        role: 'quit'
-      }]
+        role: 'quit',
+      }],
     })
   }
 
@@ -190,5 +190,5 @@ const setDefaultApplicationMenu = () => {
 }
 
 module.exports = {
-  setDefaultApplicationMenu
+  setDefaultApplicationMenu,
 }

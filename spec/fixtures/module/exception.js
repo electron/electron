@@ -1,3 +1,3 @@
-module.exports = function (error) {
+module.exports = function(error) {
   throw error
 }

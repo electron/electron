@@ -5,7 +5,7 @@ module.exports = {
   foo: foo,
   bar: 1234,
   anonymous: new (class {})(),
-  getConstructorName: function (value) {
+  getConstructorName: function(value) {
     return value.constructor.name
-  }
+  },
 }

@@ -1,8 +1,8 @@
-const { remote } = require('electron')
+const {remote} = require('electron')
 const fs = require('fs')
 const path = require('path')
 
-const { expect } = require('chai')
+const {expect} = require('chai')
 
 describe('process module', () => {
   describe('process.getCreationTime()', () => {
@@ -21,7 +21,7 @@ describe('process module', () => {
   })
 
   describe('process.getIOCounters()', () => {
-    before(function () {
+    before(function() {
       if (process.platform === 'darwin') {
         this.skip()
       }

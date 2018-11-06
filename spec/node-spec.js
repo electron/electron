@@ -1,11 +1,11 @@
 const ChildProcess = require('child_process')
 const chai = require('chai')
-const { expect } = chai
+const {expect} = chai
 const dirtyChai = require('dirty-chai')
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { ipcRenderer, remote } = require('electron')
+const {ipcRenderer, remote} = require('electron')
 
 const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)
@@ -17,7 +17,7 @@ describe('node feature', () => {
     describe('child_process.fork', () => {
       it('works in current process', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'ping.js'))
-        child.on('message', msg => {
+        child.on('message', (msg) => {
           expect(msg).to.equal('message')
           done()
         })
@@ -45,7 +45,7 @@ describe('node feature', () => {
 
       it('works in forked process when options.env is specifed', (done) => {
         const child = ChildProcess.fork(path.join(fixtures, 'module', 'fork_ping.js'), [], {
-          path: process.env['PATH']
+          path: process.env['PATH'],
         })
         child.on('message', (msg) => {
           expect(msg).to.equal('message')
@@ -83,7 +83,7 @@ describe('node feature', () => {
       })
 
       it('pipes stdio', (done) => {
-        const child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), { silent: true })
+        const child = ChildProcess.fork(path.join(fixtures, 'module', 'process-stdout.js'), {silent: true})
         let data = ''
         child.stdout.on('data', (chunk) => {
           data += String(chunk)
@@ -96,7 +96,7 @@ describe('node feature', () => {
       })
 
       it('works when sending a message to a process forked with the --eval argument', (done) => {
-        const source = "process.on('message', (message) => { process.send(message) })"
+        const source = 'process.on(\'message\', (message) => { process.send(message) })'
         const forked = ChildProcess.fork('--eval', [source])
         forked.once('message', (message) => {
           expect(message).to.equal('hello')
@@ -116,19 +116,19 @@ describe('node feature', () => {
       it('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', (done) => {
         child = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
           env: {
-            ELECTRON_RUN_AS_NODE: true
-          }
+            ELECTRON_RUN_AS_NODE: true,
+          },
         })
 
         let output = ''
-        child.stdout.on('data', data => {
+        child.stdout.on('data', (data) => {
           output += data
         })
         child.stdout.on('close', () => {
           expect(JSON.parse(output)).to.deep.equal({
             processLog: process.platform === 'win32' ? 'function' : 'undefined',
             processType: 'undefined',
-            window: 'undefined'
+            window: 'undefined',
           })
           done()
         })
@@ -215,23 +215,23 @@ describe('node feature', () => {
     it('supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
       child = ChildProcess.spawn(process.execPath, ['--inspect-brk', path.join(__dirname, 'fixtures', 'module', 'run-as-node.js')], {
         env: {
-          ELECTRON_RUN_AS_NODE: true
-        }
+          ELECTRON_RUN_AS_NODE: true,
+        },
       })
 
       let output = ''
-      function cleanup () {
+      function cleanup() {
         child.stderr.removeListener('data', errorDataListener)
         child.stdout.removeListener('data', outDataHandler)
       }
-      function errorDataListener (data) {
+      function errorDataListener(data) {
         output += data
         if (output.trim().startsWith('Debugger listening on ws://')) {
           cleanup()
           done()
         }
       }
-      function outDataHandler (data) {
+      function outDataHandler(data) {
         cleanup()
         done(new Error(`Unexpected output: ${data.toString()}`))
       }
@@ -242,12 +242,12 @@ describe('node feature', () => {
     it('supports js binding', (done) => {
       child = ChildProcess.spawn(process.execPath, ['--inspect', path.join(__dirname, 'fixtures', 'module', 'inspector-binding.js')], {
         env: {
-          ELECTRON_RUN_AS_NODE: true
+          ELECTRON_RUN_AS_NODE: true,
         },
-        stdio: ['ipc']
+        stdio: ['ipc'],
       })
 
-      child.on('message', ({ cmd, debuggerEnabled, secondSessionOpened, success }) => {
+      child.on('message', ({cmd, debuggerEnabled, secondSessionOpened, success}) => {
         if (cmd === 'assert') {
           expect(debuggerEnabled).to.be.true()
           expect(secondSessionOpened).to.be.true()
@@ -281,7 +281,7 @@ describe('node feature', () => {
   })
 
   describe('net.connect', () => {
-    before(function () {
+    before(function() {
       if (process.platform !== 'darwin') {
         this.skip()
       }
@@ -352,7 +352,7 @@ describe('node feature', () => {
       }).to.not.throw()
     })
 
-    it('should have isTTY defined on Mac and Linux', function () {
+    it('should have isTTY defined on Mac and Linux', function() {
       if (isCI || process.platform === 'win32') {
         this.skip()
         return
@@ -361,7 +361,7 @@ describe('node feature', () => {
       expect(process.stdout.isTTY).to.be.a('boolean')
     })
 
-    it('should have isTTY undefined on Windows', function () {
+    it('should have isTTY undefined on Windows', function() {
       if (isCI || process.platform !== 'win32') {
         this.skip()
         return
@@ -395,15 +395,15 @@ describe('node feature', () => {
 
   it('includes the electron version in process.versions', () => {
     expect(process.versions)
-      .to.have.own.property('electron')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+(\S*)?$/)
+        .to.have.own.property('electron')
+        .that.is.a('string')
+        .and.matches(/^\d+\.\d+\.\d+(\S*)?$/)
   })
 
   it('includes the chrome version in process.versions', () => {
     expect(process.versions)
-      .to.have.own.property('chrome')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
+        .to.have.own.property('chrome')
+        .that.is.a('string')
+        .and.matches(/^\d+\.\d+\.\d+\.\d+$/)
   })
 })
