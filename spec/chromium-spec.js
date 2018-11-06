@@ -1336,8 +1336,8 @@ describe('font fallback', () => {
     }
   }
 
-  it('should use Helvetica for sans-serif on mac, and Arial on windows and linux', async () => {
-    const html = `<span style="font-family: sans-serif">test</body>`
+  it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
+    const html = `<body style="font-family: sans-serif">test</body>`
     const fonts = await getRenderedFonts(html)
     expect(fonts).to.be.an('array')
     expect(fonts).to.have.length(1)
@@ -1348,7 +1348,7 @@ describe('font fallback', () => {
     }[process.platform])
   })
 
-  it('should fall back to non-PingFang SC font for sans-serif japanese script', async () => {
+  it('should fall back to Japanese font for sans-serif Japanese script', async function () {
     if (process.platform === 'linux') {
       return this.skip()
     }
