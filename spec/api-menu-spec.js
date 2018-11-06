@@ -774,6 +774,7 @@ describe('Menu module', () => {
       Menu.setApplicationMenu(menu)
       expect(Menu.getApplicationMenu()).to.not.be.null()
       const robot = require('robotjs')
+      robot.setKeyboardDelay(50);
       robot.keyToggle('control', 'down')
       robot.keyToggle('t', 'down')
       robot.keyToggle('control', 'up')
