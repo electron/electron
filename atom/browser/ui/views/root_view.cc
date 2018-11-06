@@ -180,7 +180,8 @@ bool RootView::AcceleratorPressed(const ui::Accelerator& accelerator) {
 void RootView::RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model) {
   // Clear previous accelerators.
   UnregisterAcceleratorsWithFocusManager();
-
+  if (!menu_model)
+    return;
   views::FocusManager* focus_manager = GetFocusManager();
   // Register accelerators with focus manager.
   accelerator_util::GenerateAcceleratorTable(&accelerator_table_, menu_model);
