@@ -752,8 +752,16 @@ describe('Menu module', () => {
     } catch (err) {
       testFn = it.skip
     }
+    const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
+      return new Promise((resolve, reject) => {
+        require('robotjs').keyTap(key, modifiers)
+        setTimeout(() => {
+          resolve()
+        }, delay)
+      })
+    }
 
-    testFn('menu accelerators perform the specified action', (done) => {
+    testFn('menu accelerators perform the specified action', async () => {
       const menu = Menu.buildFromTemplate([
         {
           label: 'Test',
@@ -764,7 +772,7 @@ describe('Menu module', () => {
               click: () => {
                 // Test will succeed, only when the menu accelerator action
                 // is triggered
-                done()
+                Promise.resolve()
               },
               id: 'test'
             }
@@ -773,12 +781,7 @@ describe('Menu module', () => {
       ])
       Menu.setApplicationMenu(menu)
       expect(Menu.getApplicationMenu()).to.not.be.null()
-      const robot = require('robotjs')
-      robot.setKeyboardDelay(50);
-      robot.keyToggle('control', 'down')
-      robot.keyToggle('t', 'down')
-      robot.keyToggle('control', 'up')
-      robot.keyToggle('t', 'up')
+      await sendRobotjsKey('t', 'control')
     })
   })
 })
