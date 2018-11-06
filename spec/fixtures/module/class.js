@@ -1,22 +1,22 @@
-'use strict'
+'use strict';
 
-let value = 'old'
+let value = 'old';
 
 class BaseClass {
   method() {
-    return 'method'
+    return 'method';
   }
 
   get readonly() {
-    return 'readonly'
+    return 'readonly';
   }
 
   get value() {
-    return value
+    return value;
   }
 
   set value(val) {
-    value = val
+    value = val;
   }
 }
 
@@ -26,4 +26,4 @@ class DerivedClass extends BaseClass {
 module.exports = {
   base: new BaseClass(),
   derived: new DerivedClass(),
-}
+};

@@ -1,13 +1,13 @@
 exports.setup = function() {
-  const foo = {}
+  const foo = {};
 
   foo.bar = function() {
-    return delete foo.bar.baz && delete foo.bar
-  }
+    return delete foo.bar.baz && delete foo.bar;
+  };
 
   foo.bar.baz = function() {
-    return 3
-  }
+    return 3;
+  };
 
-  return foo
-}
+  return foo;
+};

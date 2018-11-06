@@ -1,4 +1,4 @@
 function foo() {}
-foo.bar = 'baz'
+foo.bar = 'baz';
 
-module.exports = foo
+module.exports = foo;

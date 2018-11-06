@@ -8,6 +8,6 @@ process.crashReporter.start({
     extra2: 'extra2',
     _version: process.argv[3],
   },
-})
+});
 
-process.nextTick(() => process.crash())
+process.nextTick(() => process.crash());

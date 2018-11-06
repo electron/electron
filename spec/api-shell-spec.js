@@ -1,11 +1,11 @@
-const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
-const os = require('os')
-const {shell} = require('electron')
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const {shell} = require('electron');
 
 describe('shell module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
+  const fixtures = path.resolve(__dirname, 'fixtures');
   const shortcutOptions = {
     target: 'C:\\target',
     description: 'description',
@@ -14,58 +14,58 @@ describe('shell module', () => {
     appUserModelId: 'appUserModelId',
     icon: 'icon',
     iconIndex: 1,
-  }
+  };
 
   // (alexeykuzmin): `.skip()` in `before` doesn't work for nested `describe`s.
   beforeEach(function() {
     if (process.platform !== 'win32') {
-      this.skip()
+      this.skip();
     }
-  })
+  });
 
   describe('shell.readShortcutLink(shortcutPath)', () => {
     it('throws when failed', () => {
       assert.throws(() => {
-        shell.readShortcutLink('not-exist')
-      }, /Failed to read shortcut link/)
-    })
+        shell.readShortcutLink('not-exist');
+      }, /Failed to read shortcut link/);
+    });
 
     it('reads all properties of a shortcut', () => {
-      const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'))
-      assert.deepStrictEqual(shortcut, shortcutOptions)
-    })
-  })
+      const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
+      assert.deepStrictEqual(shortcut, shortcutOptions);
+    });
+  });
 
   describe('shell.writeShortcutLink(shortcutPath[, operation], options)', () => {
-    const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`)
+    const tmpShortcut = path.join(os.tmpdir(), `${Date.now()}.lnk`);
 
     afterEach(() => {
-      fs.unlinkSync(tmpShortcut)
-    })
+      fs.unlinkSync(tmpShortcut);
+    });
 
     it('writes the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, {target: 'C:\\'}), true)
-      assert.strictEqual(fs.existsSync(tmpShortcut), true)
-    })
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, {target: 'C:\\'}), true);
+      assert.strictEqual(fs.existsSync(tmpShortcut), true);
+    });
 
     it('correctly sets the fields', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
-    })
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, shortcutOptions), true);
+      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions);
+    });
 
     it('updates the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions), false)
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
-      const change = {target: 'D:\\'}
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', change), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), Object.assign(shortcutOptions, change))
-    })
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', shortcutOptions), false);
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true);
+      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions);
+      const change = {target: 'D:\\'};
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'update', change), true);
+      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), Object.assign(shortcutOptions, change));
+    });
 
     it('replaces the shortcut', () => {
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions), false)
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions)
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', shortcutOptions), false);
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'create', shortcutOptions), true);
+      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), shortcutOptions);
       const change = {
         target: 'D:\\',
         description: 'description2',
@@ -74,9 +74,9 @@ describe('shell module', () => {
         appUserModelId: 'appUserModelId2',
         icon: 'icon2',
         iconIndex: 2,
-      }
-      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', change), true)
-      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), change)
-    })
-  })
-})
+      };
+      assert.strictEqual(shell.writeShortcutLink(tmpShortcut, 'replace', change), true);
+      assert.deepStrictEqual(shell.readShortcutLink(tmpShortcut), change);
+    });
+  });
+});

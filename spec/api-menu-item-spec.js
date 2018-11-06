@@ -1,13 +1,13 @@
-const chai = require('chai')
-const dirtyChai = require('dirty-chai')
+const chai = require('chai');
+const dirtyChai = require('dirty-chai');
 
-const {remote} = require('electron')
-const {BrowserWindow, app, Menu, MenuItem} = remote
-const roles = require('../lib/browser/api/menu-item-roles')
-const {closeWindow} = require('./window-helpers')
+const {remote} = require('electron');
+const {BrowserWindow, app, Menu, MenuItem} = remote;
+const roles = require('../lib/browser/api/menu-item-roles');
+const {closeWindow} = require('./window-helpers');
 
-const {expect, assert} = chai
-chai.use(dirtyChai)
+const {expect, assert} = chai;
+chai.use(dirtyChai);
 
 describe('MenuItems', () => {
   describe('MenuItem.click', () => {
@@ -15,179 +15,179 @@ describe('MenuItems', () => {
       const menu = Menu.buildFromTemplate([{
         label: 'text',
         click: (item) => {
-          expect(item.constructor.name).to.equal('MenuItem')
-          expect(item.label).to.equal('text')
-          done()
+          expect(item.constructor.name).to.equal('MenuItem');
+          expect(item.label).to.equal('text');
+          done();
         },
-      }])
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-    })
-  })
+      }]);
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+    });
+  });
 
   describe('MenuItem with checked/radio property', () => {
     it('clicking an checkbox item should flip the checked property', () => {
       const menu = Menu.buildFromTemplate([{
         label: 'text',
         type: 'checkbox',
-      }])
+      }]);
 
-      expect(menu.items[0].checked).to.be.false()
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
-    })
+      expect(menu.items[0].checked).to.be.false();
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      expect(menu.items[0].checked).to.be.true();
+    });
 
     it('clicking an radio item should always make checked property true', () => {
       const menu = Menu.buildFromTemplate([{
         label: 'text',
         type: 'radio',
-      }])
+      }]);
 
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
-      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId)
-      expect(menu.items[0].checked).to.be.true()
-    })
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      expect(menu.items[0].checked).to.be.true();
+      menu.delegate.executeCommand(menu, {}, menu.items[0].commandId);
+      expect(menu.items[0].checked).to.be.true();
+    });
 
     describe('MenuItem group properties', () => {
-      const template = []
+      const template = [];
 
       const findRadioGroups = (template) => {
-        const groups = []
-        let cur = null
+        const groups = [];
+        let cur = null;
         for (let i = 0; i <= template.length; i++) {
           if (cur && ((i === template.length) || (template[i].type !== 'radio'))) {
-            cur.end = i
-            groups.push(cur)
-            cur = null
+            cur.end = i;
+            groups.push(cur);
+            cur = null;
           } else if (!cur && i < template.length && template[i].type === 'radio') {
-            cur = {begin: i}
+            cur = {begin: i};
           }
         }
-        return groups
-      }
+        return groups;
+      };
 
       // returns array of checked menuitems in [begin,end)
       const findChecked = (menuItems, begin, end) => {
-        const checked = []
+        const checked = [];
         for (let i = begin; i < end; i++) {
-          if (menuItems[i].checked) checked.push(i)
+          if (menuItems[i].checked) checked.push(i);
         }
-        return checked
-      }
+        return checked;
+      };
 
       beforeEach(() => {
         for (let i = 0; i <= 10; i++) {
           template.push({
             label: `${i}`,
             type: 'radio',
-          })
+          });
         }
 
-        template.push({type: 'separator'})
+        template.push({type: 'separator'});
 
         for (let i = 12; i <= 20; i++) {
           template.push({
             label: `${i}`,
             type: 'radio',
-          })
+          });
         }
-      })
+      });
 
       it('at least have one item checked in each group', () => {
-        const menu = Menu.buildFromTemplate(template)
-        menu.delegate.menuWillShow(menu)
+        const menu = Menu.buildFromTemplate(template);
+        menu.delegate.menuWillShow(menu);
 
-        const groups = findRadioGroups(template)
+        const groups = findRadioGroups(template);
 
         groups.forEach((g) => {
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
-        })
-      })
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin]);
+        });
+      });
 
       it('should assign groupId automatically', () => {
-        const menu = Menu.buildFromTemplate(template)
+        const menu = Menu.buildFromTemplate(template);
 
-        const usedGroupIds = new Set()
-        const groups = findRadioGroups(template)
+        const usedGroupIds = new Set();
+        const groups = findRadioGroups(template);
         groups.forEach((g) => {
-          const groupId = menu.items[g.begin].groupId
+          const groupId = menu.items[g.begin].groupId;
 
           // groupId should be previously unused
-          expect(usedGroupIds.has(groupId)).to.be.false()
-          usedGroupIds.add(groupId)
+          expect(usedGroupIds.has(groupId)).to.be.false();
+          usedGroupIds.add(groupId);
 
           // everything in the group should have the same id
           for (let i = g.begin; i < g.end; ++i) {
-            expect(menu.items[i].groupId).to.equal(groupId)
+            expect(menu.items[i].groupId).to.equal(groupId);
           }
-        })
-      })
+        });
+      });
 
       it('setting \'checked\' should flip other items\' \'checked\' property', () => {
-        const menu = Menu.buildFromTemplate(template)
+        const menu = Menu.buildFromTemplate(template);
 
-        const groups = findRadioGroups(template)
+        const groups = findRadioGroups(template);
         groups.forEach((g) => {
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([])
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([]);
 
-          menu.items[g.begin].checked = true
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin])
+          menu.items[g.begin].checked = true;
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.begin]);
 
-          menu.items[g.end - 1].checked = true
-          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.end - 1])
-        })
-      })
-    })
-  })
+          menu.items[g.end - 1].checked = true;
+          expect(findChecked(menu.items, g.begin, g.end)).to.deep.equal([g.end - 1]);
+        });
+      });
+    });
+  });
 
   describe('MenuItem role execution', () => {
     it('does not try to execute roles without a valid role property', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      const item = new MenuItem({role: 'asdfghjkl'})
+      let win = new BrowserWindow({show: false, width: 200, height: 200});
+      const item = new MenuItem({role: 'asdfghjkl'});
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.false()
+      const canExecute = roles.execute(item.role, win, win.webContents);
+      expect(canExecute).to.be.false();
 
       closeWindow(win).then(() => {
-        win = null
-      })
-    })
+        win = null;
+      });
+    });
 
     it('executes roles with native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      const item = new MenuItem({role: 'reload'})
+      let win = new BrowserWindow({show: false, width: 200, height: 200});
+      const item = new MenuItem({role: 'reload'});
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.true()
+      const canExecute = roles.execute(item.role, win, win.webContents);
+      expect(canExecute).to.be.true();
 
       closeWindow(win).then(() => {
-        win = null
-      })
-    })
+        win = null;
+      });
+    });
 
     it('execute roles with non-native role functions', () => {
-      let win = new BrowserWindow({show: false, width: 200, height: 200})
-      const item = new MenuItem({role: 'resetzoom'})
+      let win = new BrowserWindow({show: false, width: 200, height: 200});
+      const item = new MenuItem({role: 'resetzoom'});
 
-      const canExecute = roles.execute(item.role, win, win.webContents)
-      expect(canExecute).to.be.true()
+      const canExecute = roles.execute(item.role, win, win.webContents);
+      expect(canExecute).to.be.true();
 
       closeWindow(win).then(() => {
-        win = null
-      })
-    })
-  })
+        win = null;
+      });
+    });
+  });
 
   describe('MenuItem command id', () => {
     it('cannot be overwritten', () => {
-      const item = new MenuItem({label: 'item'})
+      const item = new MenuItem({label: 'item'});
 
-      const commandId = item.commandId
-      expect(commandId).to.not.be.undefined()
-      item.commandId = `${commandId}-modified`
-      expect(item.commandId).to.equal(commandId)
-    })
-  })
+      const commandId = item.commandId;
+      expect(commandId).to.not.be.undefined();
+      item.commandId = `${commandId}-modified`;
+      expect(item.commandId).to.equal(commandId);
+    });
+  });
 
   describe('MenuItem with invalid type', () => {
     it('throws an exception', () => {
@@ -195,10 +195,10 @@ describe('MenuItems', () => {
         Menu.buildFromTemplate([{
           label: 'text',
           type: 'not-a-type',
-        }])
-      }).to.throw(/Unknown menu item type: not-a-type/)
-    })
-  })
+        }]);
+      }).to.throw(/Unknown menu item type: not-a-type/);
+    });
+  });
 
   describe('MenuItem with submenu type and missing submenu', () => {
     it('throws an exception', () => {
@@ -206,10 +206,10 @@ describe('MenuItems', () => {
         Menu.buildFromTemplate([{
           label: 'text',
           type: 'submenu',
-        }])
-      }).to.throw(/Invalid submenu/)
-    })
-  })
+        }]);
+      }).to.throw(/Invalid submenu/);
+    });
+  });
 
   describe('MenuItem role', () => {
     it('returns undefined for items without default accelerator', () => {
@@ -233,13 +233,13 @@ describe('MenuItems', () => {
         'undo',
         'zoomin',
         'zoomout',
-      ]
+      ];
 
       for (const role of roleList) {
-        const item = new MenuItem({role})
-        expect(item.getDefaultRoleAccelerator()).to.be.undefined()
+        const item = new MenuItem({role});
+        expect(item.getDefaultRoleAccelerator()).to.be.undefined();
       }
-    })
+    });
 
     it('returns the correct default label', () => {
       const roleMap = {
@@ -262,13 +262,13 @@ describe('MenuItems', () => {
         'undo': 'Undo',
         'zoomin': 'Zoom In',
         'zoomout': 'Zoom Out',
-      }
+      };
 
       for (const role of Object.keys(roleMap)) {
-        const item = new MenuItem({role})
-        expect(item.label).to.equal(roleMap[role])
+        const item = new MenuItem({role});
+        expect(item.label).to.equal(roleMap[role]);
       }
-    })
+    });
 
     it('returns the correct default accelerator', () => {
       const roleMap = {
@@ -291,51 +291,51 @@ describe('MenuItems', () => {
         'undo': 'CommandOrControl+Z',
         'zoomin': 'CommandOrControl+Plus',
         'zoomout': 'CommandOrControl+-',
-      }
+      };
 
       for (const role of Object.keys(roleMap)) {
-        const item = new MenuItem({role})
-        expect(item.getDefaultRoleAccelerator()).to.equal(roleMap[role])
+        const item = new MenuItem({role});
+        expect(item.getDefaultRoleAccelerator()).to.equal(roleMap[role]);
       }
-    })
+    });
 
     it('allows a custom accelerator and label to be set', () => {
       const item = new MenuItem({
         role: 'close',
         label: 'Custom Close!',
         accelerator: 'D',
-      })
+      });
 
-      expect(item.label).to.equal('Custom Close!')
-      expect(item.accelerator).to.equal('D')
-      expect(item.getDefaultRoleAccelerator()).to.equal('CommandOrControl+W')
-    })
-  })
+      expect(item.label).to.equal('Custom Close!');
+      expect(item.accelerator).to.equal('D');
+      expect(item.getDefaultRoleAccelerator()).to.equal('CommandOrControl+W');
+    });
+  });
 
   describe('MenuItem editMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({role: 'editMenu'})
+      const item = new MenuItem({role: 'editMenu'});
 
-      expect(item.label).to.equal('Edit')
-      expect(item.submenu.items[0].role).to.equal('undo')
-      expect(item.submenu.items[1].role).to.equal('redo')
-      expect(item.submenu.items[2].type).to.equal('separator')
-      expect(item.submenu.items[3].role).to.equal('cut')
-      expect(item.submenu.items[4].role).to.equal('copy')
-      expect(item.submenu.items[5].role).to.equal('paste')
+      expect(item.label).to.equal('Edit');
+      expect(item.submenu.items[0].role).to.equal('undo');
+      expect(item.submenu.items[1].role).to.equal('redo');
+      expect(item.submenu.items[2].type).to.equal('separator');
+      expect(item.submenu.items[3].role).to.equal('cut');
+      expect(item.submenu.items[4].role).to.equal('copy');
+      expect(item.submenu.items[5].role).to.equal('paste');
 
       if (process.platform === 'darwin') {
-        expect(item.submenu.items[6].role).to.equal('pasteandmatchstyle')
-        expect(item.submenu.items[7].role).to.equal('delete')
-        expect(item.submenu.items[8].role).to.equal('selectall')
+        expect(item.submenu.items[6].role).to.equal('pasteandmatchstyle');
+        expect(item.submenu.items[7].role).to.equal('delete');
+        expect(item.submenu.items[8].role).to.equal('selectall');
       }
 
       if (process.platform === 'win32') {
-        expect(item.submenu.items[6].role).to.equal('delete')
-        expect(item.submenu.items[7].type).to.equal('separator')
-        expect(item.submenu.items[8].role).to.equal('selectall')
+        expect(item.submenu.items[6].role).to.equal('delete');
+        expect(item.submenu.items[7].type).to.equal('separator');
+        expect(item.submenu.items[8].role).to.equal('selectall');
       }
-    })
+    });
 
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
@@ -343,36 +343,36 @@ describe('MenuItems', () => {
         submenu: [{
           role: 'close',
         }],
-      })
-      expect(item.label).to.equal('Edit')
-      expect(item.submenu.items[0].role).to.equal('close')
-    })
-  })
+      });
+      expect(item.label).to.equal('Edit');
+      expect(item.submenu.items[0].role).to.equal('close');
+    });
+  });
 
   describe('MenuItem windowMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
-      const item = new MenuItem({role: 'windowMenu'})
+      const item = new MenuItem({role: 'windowMenu'});
 
-      expect(item.label).to.equal('Window')
-      expect(item.submenu.items[0].role).to.equal('minimize')
-      expect(item.submenu.items[1].role).to.equal('close')
+      expect(item.label).to.equal('Window');
+      expect(item.submenu.items[0].role).to.equal('minimize');
+      expect(item.submenu.items[1].role).to.equal('close');
 
       if (process.platform === 'darwin') {
-        expect(item.submenu.items[2].type).to.equal('separator')
-        expect(item.submenu.items[3].role).to.equal('front')
+        expect(item.submenu.items[2].type).to.equal('separator');
+        expect(item.submenu.items[3].role).to.equal('front');
       }
-    })
+    });
 
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'windowMenu',
         submenu: [{role: 'copy'}],
-      })
+      });
 
-      expect(item.label).to.equal('Window')
-      expect(item.submenu.items[0].role).to.equal('copy')
-    })
-  })
+      expect(item.label).to.equal('Window');
+      expect(item.submenu.items[0].role).to.equal('copy');
+    });
+  });
 
   describe('MenuItem with custom properties in constructor', () => {
     it('preserves the custom properties', () => {
@@ -380,79 +380,79 @@ describe('MenuItems', () => {
         label: 'menu 1',
         customProp: 'foo',
         submenu: [],
-      }]
+      }];
 
-      const menu = Menu.buildFromTemplate(template)
+      const menu = Menu.buildFromTemplate(template);
       menu.items[0].submenu.append(new MenuItem({
         label: 'item 1',
         customProp: 'bar',
         overrideProperty: 'oops not allowed',
-      }))
+      }));
 
-      expect(menu.items[0].customProp).to.equal('foo')
-      expect(menu.items[0].submenu.items[0].label).to.equal('item 1')
-      expect(menu.items[0].submenu.items[0].customProp).to.equal('bar')
-      expect(menu.items[0].submenu.items[0].overrideProperty).to.be.a('function')
-    })
-  })
+      expect(menu.items[0].customProp).to.equal('foo');
+      expect(menu.items[0].submenu.items[0].label).to.equal('item 1');
+      expect(menu.items[0].submenu.items[0].customProp).to.equal('bar');
+      expect(menu.items[0].submenu.items[0].overrideProperty).to.be.a('function');
+    });
+  });
 
   describe('MenuItem accelerators', () => {
     const isDarwin = () => {
-      return (process.platform === 'darwin')
-    }
+      return (process.platform === 'darwin');
+    };
 
     it('should display modifiers correctly for simple keys', () => {
       const menu = Menu.buildFromTemplate([
         {label: 'text', accelerator: 'CmdOrCtrl+A'},
         {label: 'text', accelerator: 'Shift+A'},
         {label: 'text', accelerator: 'Alt+A'},
-      ])
+      ]);
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌘A' : 'Ctrl+A')
+        isDarwin() ? '⌘A' : 'Ctrl+A');
       assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧A' : 'Shift+A')
+        isDarwin() ? '⇧A' : 'Shift+A');
       assert.strictEqual(menu.getAcceleratorTextAt(2),
-        isDarwin() ? '⌥A' : 'Alt+A')
-    })
+        isDarwin() ? '⌥A' : 'Alt+A');
+    });
 
     it('should display modifiers correctly for special keys', () => {
       const menu = Menu.buildFromTemplate([
         {label: 'text', accelerator: 'CmdOrCtrl+Tab'},
         {label: 'text', accelerator: 'Shift+Tab'},
         {label: 'text', accelerator: 'Alt+Tab'},
-      ])
+      ]);
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab')
+        isDarwin() ? '⌘⇥\u0000' : 'Ctrl+Tab');
       assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
+        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab');
       assert.strictEqual(menu.getAcceleratorTextAt(2),
-        isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab')
-    })
+        isDarwin() ? '⌥⇥\u0000' : 'Alt+Tab');
+    });
 
     it('should not display modifiers twice', () => {
       const menu = Menu.buildFromTemplate([
         {label: 'text', accelerator: 'Shift+Shift+A'},
         {label: 'text', accelerator: 'Shift+Shift+Tab'},
-      ])
+      ]);
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⇧A' : 'Shift+A')
+        isDarwin() ? '⇧A' : 'Shift+A');
       assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab')
-    })
+        isDarwin() ? '⇧⇥\u0000' : 'Shift+Tab');
+    });
 
     it('should display correctly for edge cases', () => {
       const menu = Menu.buildFromTemplate([
         {label: 'text', accelerator: 'Control+Shift+='},
         {label: 'text', accelerator: 'Control+Plus'},
-      ])
+      ]);
 
       assert.strictEqual(menu.getAcceleratorTextAt(0),
-        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
+        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=');
       assert.strictEqual(menu.getAcceleratorTextAt(1),
-        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=')
-    })
-  })
-})
+        isDarwin() ? '⌃⇧=' : 'Ctrl+Shift+=');
+    });
+  });
+});

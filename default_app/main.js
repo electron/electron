@@ -1,14 +1,14 @@
-const {app, dialog} = require('electron')
+const {app, dialog} = require('electron');
 
-const fs = require('fs')
-const Module = require('module')
-const path = require('path')
-const url = require('url')
+const fs = require('fs');
+const Module = require('module');
+const path = require('path');
+const url = require('url');
 
-const {setDefaultApplicationMenu} = require('./menu')
+const {setDefaultApplicationMenu} = require('./menu');
 
 // Parse command line options.
-const argv = process.argv.slice(1)
+const argv = process.argv.slice(1);
 
 const option = {
   file: null,
@@ -16,62 +16,62 @@ const option = {
   version: null,
   webdriver: null,
   modules: [],
-}
+};
 
-let nextArgIsRequire = false
+let nextArgIsRequire = false;
 
 for (const arg of argv) {
   if (nextArgIsRequire) {
-    option.modules.push(arg)
-    nextArgIsRequire = false
-    continue
+    option.modules.push(arg);
+    nextArgIsRequire = false;
+    continue;
   } else if (arg === '--version' || arg === '-v') {
-    option.version = true
-    break
+    option.version = true;
+    break;
   } else if (arg.match(/^--app=/)) {
-    option.file = arg.split('=')[1]
-    break
+    option.file = arg.split('=')[1];
+    break;
   } else if (arg === '--interactive' || arg === '-i' || arg === '-repl') {
-    option.interactive = true
+    option.interactive = true;
   } else if (arg === '--test-type=webdriver') {
-    option.webdriver = true
+    option.webdriver = true;
   } else if (arg === '--require' || arg === '-r') {
-    nextArgIsRequire = true
-    continue
+    nextArgIsRequire = true;
+    continue;
   } else if (arg === '--abi' || arg === '-a') {
-    option.abi = true
-    continue
+    option.abi = true;
+    continue;
   } else if (arg === '--no-help') {
-    option.noHelp = true
-    continue
+    option.noHelp = true;
+    continue;
   } else if (arg[0] === '-') {
-    continue
+    continue;
   } else {
-    option.file = arg
-    break
+    option.file = arg;
+    break;
   }
 }
 
 if (nextArgIsRequire) {
-  console.error('Invalid Usage: --require [file]\n\n"file" is required')
-  process.exit(1)
+  console.error('Invalid Usage: --require [file]\n\n"file" is required');
+  process.exit(1);
 }
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', () => {
   if (app.listeners('window-all-closed').length === 1 && !option.interactive) {
-    app.quit()
+    app.quit();
   }
-})
+});
 
 // Create default menu.
 app.once('ready', () => {
-  setDefaultApplicationMenu()
-})
+  setDefaultApplicationMenu();
+});
 
 // Set up preload modules
 if (option.modules.length > 0) {
-  Module._preloadModules(option.modules)
+  Module._preloadModules(option.modules);
 }
 
 function loadApplicationPackage(packagePath) {
@@ -80,97 +80,97 @@ function loadApplicationPackage(packagePath) {
     configurable: false,
     enumerable: true,
     value: true,
-  })
+  });
 
   try {
     // Override app name and version.
-    packagePath = path.resolve(packagePath)
-    const packageJsonPath = path.join(packagePath, 'package.json')
+    packagePath = path.resolve(packagePath);
+    const packageJsonPath = path.join(packagePath, 'package.json');
     if (fs.existsSync(packageJsonPath)) {
-      let packageJson
+      let packageJson;
       try {
-        packageJson = require(packageJsonPath)
+        packageJson = require(packageJsonPath);
       } catch (e) {
-        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`)
-        return
+        showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${e.message}`);
+        return;
       }
 
       if (packageJson.version) {
-        app.setVersion(packageJson.version)
+        app.setVersion(packageJson.version);
       }
       if (packageJson.productName) {
-        app.setName(packageJson.productName)
+        app.setName(packageJson.productName);
       } else if (packageJson.name) {
-        app.setName(packageJson.name)
+        app.setName(packageJson.name);
       }
-      app.setPath('userData', path.join(app.getPath('appData'), app.getName()))
-      app.setPath('userCache', path.join(app.getPath('cache'), app.getName()))
-      app.setAppPath(packagePath)
+      app.setPath('userData', path.join(app.getPath('appData'), app.getName()));
+      app.setPath('userCache', path.join(app.getPath('cache'), app.getName()));
+      app.setAppPath(packagePath);
     }
 
     try {
-      Module._resolveFilename(packagePath, module, true)
+      Module._resolveFilename(packagePath, module, true);
     } catch (e) {
-      showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`)
-      return
+      showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`);
+      return;
     }
 
     // Run the app.
-    Module._load(packagePath, module, true)
+    Module._load(packagePath, module, true);
   } catch (e) {
-    console.error('App threw an error during load')
-    console.error(e.stack || e)
-    throw e
+    console.error('App threw an error during load');
+    console.error(e.stack || e);
+    throw e;
   }
 }
 
 function showErrorMessage(message) {
-  app.focus()
-  dialog.showErrorBox('Error launching app', message)
-  process.exit(1)
+  app.focus();
+  dialog.showErrorBox('Error launching app', message);
+  process.exit(1);
 }
 
 function loadApplicationByUrl(appUrl) {
-  require('./default_app').load(appUrl)
+  require('./default_app').load(appUrl);
 }
 
 function startRepl() {
   if (process.platform === 'win32') {
-    console.error('Electron REPL not currently supported on Windows')
-    process.exit(1)
+    console.error('Electron REPL not currently supported on Windows');
+    process.exit(1);
   }
 
-  const repl = require('repl')
+  const repl = require('repl');
   repl.start('> ').on('exit', () => {
-    process.exit(0)
-  })
+    process.exit(0);
+  });
 }
 
 // Start the specified app if there is one specified in command line, otherwise
 // start the default app.
 if (option.file && !option.webdriver) {
-  const file = option.file
-  const protocol = url.parse(file).protocol
-  const extension = path.extname(file)
+  const file = option.file;
+  const protocol = url.parse(file).protocol;
+  const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
-    loadApplicationByUrl(file)
+    loadApplicationByUrl(file);
   } else if (extension === '.html' || extension === '.htm') {
     loadApplicationByUrl(url.format({
       protocol: 'file:',
       slashes: true,
       pathname: path.resolve(file),
-    }))
+    }));
   } else {
-    loadApplicationPackage(file)
+    loadApplicationPackage(file);
   }
 } else if (option.version) {
-  console.log('v' + process.versions.electron)
-  process.exit(0)
+  console.log('v' + process.versions.electron);
+  process.exit(0);
 } else if (option.abi) {
-  console.log(process.versions.modules)
-  process.exit(0)
+  console.log(process.versions.modules);
+  process.exit(0);
 } else if (option.interactive) {
-  startRepl()
+  startRepl();
 } else {
   if (!option.noHelp) {
     const welcomeMessage = `
@@ -188,15 +188,15 @@ Options:
   -i, --interactive     Open a REPL to the main process.
   -r, --require         Module to preload (option can be repeated).
   -v, --version         Print the version.
-  -a, --abi             Print the Node ABI version.`
+  -a, --abi             Print the Node ABI version.`;
 
-    console.log(welcomeMessage)
+    console.log(welcomeMessage);
   }
 
-  const indexPath = path.join(__dirname, '/index.html')
+  const indexPath = path.join(__dirname, '/index.html');
   loadApplicationByUrl(url.format({
     protocol: 'file:',
     slashes: true,
     pathname: indexPath,
-  }))
+  }));
 }

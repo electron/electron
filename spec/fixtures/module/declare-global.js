@@ -1,2 +1,2 @@
-const global = 'declared global'
-module.exports = global
+const global = 'declared global';
+module.exports = global;

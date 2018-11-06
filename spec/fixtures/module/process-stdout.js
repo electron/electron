@@ -1,1 +1,1 @@
-process.stdout.write('pipes stdio')
+process.stdout.write('pipes stdio');

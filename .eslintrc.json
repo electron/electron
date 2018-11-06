@@ -10,7 +10,6 @@
   "rules": {
     "require-jsdoc": [0],
     "no-console": [0],
-    "max-len": [2, 140],
-    "semi": [2, "never"]
+    "max-len": [2, 140]
   }
 }

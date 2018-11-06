@@ -10,9 +10,9 @@
  */
 const waitForEvent = (target, eventName) => {
   return new Promise((resolve) => {
-    target.addEventListener(eventName, resolve, {once: true})
-  })
-}
+    target.addEventListener(eventName, resolve, {once: true});
+  });
+};
 
 /**
  * @param {!EventEmitter} emitter
@@ -21,9 +21,9 @@ const waitForEvent = (target, eventName) => {
  */
 const emittedOnce = (emitter, eventName) => {
   return new Promise((resolve) => {
-    emitter.once(eventName, (...args) => resolve(args))
-  })
-}
+    emitter.once(eventName, (...args) => resolve(args));
+  });
+};
 
-exports.emittedOnce = emittedOnce
-exports.waitForEvent = waitForEvent
+exports.emittedOnce = emittedOnce;
+exports.waitForEvent = waitForEvent;

@@ -1,10 +1,10 @@
 exports.print = function(obj) {
-  return obj.constructor.name
-}
+  return obj.constructor.name;
+};
 
 exports.echo = function(obj) {
-  return obj
-}
+  return obj;
+};
 
 const typedArrays = {
   Int8Array,
@@ -16,21 +16,21 @@ const typedArrays = {
   Uint32Array,
   Float32Array,
   Float64Array,
-}
+};
 
 exports.typedArray = function(type, values) {
-  const constructor = typedArrays[type]
-  const array = new constructor(values.length)
+  const constructor = typedArrays[type];
+  const array = new constructor(values.length);
   for (let i = 0; i < values.length; ++i) {
-    array[i] = values[i]
+    array[i] = values[i];
   }
-  return array
-}
+  return array;
+};
 
 exports.getNaN = function() {
-  return NaN
-}
+  return NaN;
+};
 
 exports.getInfinity = function() {
-  return Infinity
-}
+  return Infinity;
+};

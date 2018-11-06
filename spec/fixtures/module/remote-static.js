@@ -1,15 +1,15 @@
 class Foo {
   static foo() {
-    return 3
+    return 3;
   }
 
   baz() {
-    return 123
+    return 123;
   }
 }
 
-Foo.bar = 'baz'
+Foo.bar = 'baz';
 
 module.exports = {
   Foo: Foo,
-}
+};

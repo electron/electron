@@ -1,2 +1,2 @@
-const Buffer = 'declared Buffer'
-module.exports = Buffer
+const Buffer = 'declared Buffer';
+module.exports = Buffer;

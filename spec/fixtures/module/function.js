@@ -1,3 +1,3 @@
 exports.aFunction = function() {
-  return 1127
-}
+  return 1127;
+};

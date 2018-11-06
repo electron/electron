@@ -1,17 +1,17 @@
-'use strict'
+'use strict';
 
-const {expect} = require('chai')
-const path = require('path')
+const {expect} = require('chai');
+const path = require('path');
 
-const {remote} = require('electron')
-const {ipcMain, BrowserWindow} = remote
-const {closeWindow} = require('./window-helpers')
+const {remote} = require('electron');
+const {ipcMain, BrowserWindow} = remote;
+const {closeWindow} = require('./window-helpers');
 
 describe('BrowserWindow with affinity module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures')
-  const myAffinityName = 'myAffinity'
-  const myAffinityNameUpper = 'MYAFFINITY'
-  const anotherAffinityName = 'anotherAffinity'
+  const fixtures = path.resolve(__dirname, 'fixtures');
+  const myAffinityName = 'myAffinity';
+  const myAffinityNameUpper = 'MYAFFINITY';
+  const anotherAffinityName = 'anotherAffinity';
 
   function createWindowWithWebPrefs(webPrefs) {
     return new Promise((resolve, reject) => {
@@ -20,102 +20,102 @@ describe('BrowserWindow with affinity module', () => {
         width: 400,
         height: 400,
         webPreferences: webPrefs || {},
-      })
+      });
       w.webContents.on('did-finish-load', () => {
-        resolve(w)
-      })
-      w.loadFile(path.join(fixtures, 'api', 'blank.html'))
-    })
+        resolve(w);
+      });
+      w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+    });
   }
 
   describe(`BrowserWindow with an affinity '${myAffinityName}'`, () => {
-    let mAffinityWindow
+    let mAffinityWindow;
     before((done) => {
       createWindowWithWebPrefs({affinity: myAffinityName})
           .then((w) => {
-            mAffinityWindow = w
-            done()
-          })
-    })
+            mAffinityWindow = w;
+            done();
+          });
+    });
 
     after((done) => {
       closeWindow(mAffinityWindow, {assertSingleWindow: false}).then(() => {
-        mAffinityWindow = null
-        done()
-      })
-    })
+        mAffinityWindow = null;
+        done();
+      });
+    });
 
     it('should have a different process id than a default window', (done) => {
       createWindowWithWebPrefs({})
           .then((w) => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
+            const affinityID = mAffinityWindow.webContents.getOSProcessId();
+            const wcID = w.webContents.getOSProcessId();
 
-            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs');
             closeWindow(w, {assertSingleWindow: false}).then(() => {
-              done()
-            })
-          })
-    })
+              done();
+            });
+          });
+    });
 
     it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, (done) => {
       createWindowWithWebPrefs({affinity: anotherAffinityName})
           .then((w) => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
+            const affinityID = mAffinityWindow.webContents.getOSProcessId();
+            const wcID = w.webContents.getOSProcessId();
 
-            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs');
             closeWindow(w, {assertSingleWindow: false}).then(() => {
-              done()
-            })
-          })
-    })
+              done();
+            });
+          });
+    });
 
     it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, (done) => {
       createWindowWithWebPrefs({affinity: myAffinityName})
           .then((w) => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
+            const affinityID = mAffinityWindow.webContents.getOSProcessId();
+            const wcID = w.webContents.getOSProcessId();
 
-            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID');
             closeWindow(w, {assertSingleWindow: false}).then(() => {
-              done()
-            })
-          })
-    })
+              done();
+            });
+          });
+    });
 
     it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, (done) => { // eslint-disable-line max-len
       createWindowWithWebPrefs({affinity: myAffinityNameUpper})
           .then((w) => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
+            const affinityID = mAffinityWindow.webContents.getOSProcessId();
+            const wcID = w.webContents.getOSProcessId();
 
-            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID');
             closeWindow(w, {assertSingleWindow: false}).then(() => {
-              done()
-            })
-          })
-    })
-  })
+              done();
+            });
+          });
+    });
+  });
 
   describe(`BrowserWindow with an affinity : nodeIntegration=false`, () => {
-    const preload = path.join(fixtures, 'module', 'send-later.js')
-    const affinityWithNodeTrue = 'affinityWithNodeTrue'
-    const affinityWithNodeFalse = 'affinityWithNodeFalse'
+    const preload = path.join(fixtures, 'module', 'send-later.js');
+    const affinityWithNodeTrue = 'affinityWithNodeTrue';
+    const affinityWithNodeFalse = 'affinityWithNodeFalse';
 
     function testNodeIntegration(present) {
       return new Promise((resolve, reject) => {
         ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
           if (present) {
-            expect(typeofProcess).to.not.equal('undefined')
-            expect(typeofBuffer).to.not.equal('undefined')
+            expect(typeofProcess).to.not.equal('undefined');
+            expect(typeofBuffer).to.not.equal('undefined');
           } else {
-            expect(typeofProcess).to.equal('undefined')
-            expect(typeofBuffer).to.equal('undefined')
+            expect(typeofProcess).to.equal('undefined');
+            expect(typeofBuffer).to.equal('undefined');
           }
-          resolve()
-        })
-      })
+          resolve();
+        });
+      });
     }
 
     it('disables node integration when specified to false', (done) => {
@@ -128,10 +128,10 @@ describe('BrowserWindow with affinity module', () => {
         }),
       ]).then((args) => {
         closeWindow(args[1], {assertSingleWindow: false}).then(() => {
-          done()
-        })
-      })
-    })
+          done();
+        });
+      });
+    });
     it('disables node integration when first window is false', (done) => {
       Promise.all([
         testNodeIntegration(false),
@@ -141,7 +141,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: false,
         }),
       ]).then((args) => {
-        const w1 = args[1]
+        const w1 = args[1];
         return Promise.all([
           testNodeIntegration(false),
           w1,
@@ -150,16 +150,16 @@ describe('BrowserWindow with affinity module', () => {
             preload,
             nodeIntegration: true,
           }),
-        ])
+        ]);
       }).then((ws) => {
         return Promise.all([
           closeWindow(ws[1], {assertSingleWindow: false}),
           closeWindow(ws[2], {assertSingleWindow: false}),
-        ])
+        ]);
       }).then(() => {
-        done()
-      })
-    })
+        done();
+      });
+    });
 
     it('enables node integration when specified to true', (done) => {
       Promise.all([
@@ -171,10 +171,10 @@ describe('BrowserWindow with affinity module', () => {
         }),
       ]).then((args) => {
         closeWindow(args[1], {assertSingleWindow: false}).then(() => {
-          done()
-        })
-      })
-    })
+          done();
+        });
+      });
+    });
 
     it('enables node integration when first window is true', (done) => {
       Promise.all([
@@ -185,7 +185,7 @@ describe('BrowserWindow with affinity module', () => {
           nodeIntegration: true,
         }),
       ]).then((args) => {
-        const w1 = args[1]
+        const w1 = args[1];
         return Promise.all([
           testNodeIntegration(true),
           w1,
@@ -194,15 +194,15 @@ describe('BrowserWindow with affinity module', () => {
             preload,
             nodeIntegration: false,
           }),
-        ])
+        ]);
       }).then((ws) => {
         return Promise.all([
           closeWindow(ws[1], {assertSingleWindow: false}),
           closeWindow(ws[2], {assertSingleWindow: false}),
-        ])
+        ]);
       }).then(() => {
-        done()
-      })
-    })
-  })
-})
+        done();
+      });
+    });
+  });
+});

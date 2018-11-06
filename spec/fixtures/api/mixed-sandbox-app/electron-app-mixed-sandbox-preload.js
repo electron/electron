@@ -1,1 +1,1 @@
-require('electron').ipcRenderer.send('argv', process.argv)
+require('electron').ipcRenderer.send('argv', process.argv);

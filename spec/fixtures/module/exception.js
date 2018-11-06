@@ -1,3 +1,3 @@
 module.exports = function(error) {
-  throw error
-}
+  throw error;
+};

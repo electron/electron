@@ -1,7 +1,7 @@
-const {shell, Menu} = require('electron')
+const {shell, Menu} = require('electron');
 
 const setDefaultApplicationMenu = () => {
-  if (Menu.getApplicationMenu()) return
+  if (Menu.getApplicationMenu()) return;
 
   const template = [
     {
@@ -85,7 +85,7 @@ const setDefaultApplicationMenu = () => {
         {
           label: 'Learn More',
           click() {
-            shell.openExternal('https://electronjs.org')
+            shell.openExternal('https://electronjs.org');
           },
         },
         {
@@ -93,24 +93,24 @@ const setDefaultApplicationMenu = () => {
           click() {
             shell.openExternal(
                 `https://github.com/electron/electron/tree/v${process.versions.electron}/docs#readme`
-            )
+            );
           },
         },
         {
           label: 'Community Discussions',
           click() {
-            shell.openExternal('https://discuss.atom.io/c/electron')
+            shell.openExternal('https://discuss.atom.io/c/electron');
           },
         },
         {
           label: 'Search Issues',
           click() {
-            shell.openExternal('https://github.com/electron/electron/issues')
+            shell.openExternal('https://github.com/electron/electron/issues');
           },
         },
       ],
     },
-  ]
+  ];
 
   if (process.platform === 'darwin') {
     template.unshift({
@@ -145,7 +145,7 @@ const setDefaultApplicationMenu = () => {
           role: 'quit',
         },
       ],
-    })
+    });
     template[1].submenu.push({
       type: 'separator',
     }, {
@@ -158,7 +158,7 @@ const setDefaultApplicationMenu = () => {
           role: 'stopspeaking',
         },
       ],
-    })
+    });
     template[3].submenu = [
       {
         role: 'close',
@@ -175,20 +175,20 @@ const setDefaultApplicationMenu = () => {
       {
         role: 'front',
       },
-    ]
+    ];
   } else {
     template.unshift({
       label: 'File',
       submenu: [{
         role: 'quit',
       }],
-    })
+    });
   }
 
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
-}
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+};
 
 module.exports = {
   setDefaultApplicationMenu,
-}
+};
