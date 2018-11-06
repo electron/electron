@@ -162,10 +162,6 @@ app.on('ready', function () {
   // reply the result to renderer for verifying
   const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
   ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath, dialogOptions = {}) {
-    // Set default when undefined was given on the other side of the IPC channel
-    if (filePath === null) {
-      filePath = downloadFilePath
-    }
     window.webContents.session.once('will-download', function (e, item) {
       window.webContents.send('download-created',
         item.getState(),

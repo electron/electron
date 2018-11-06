@@ -425,6 +425,7 @@ describe('session module', () => {
 
     it('can set options for the save dialog', (done) => {
       downloadServer.listen(0, '127.0.0.1', () => {
+        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
         const port = downloadServer.address().port
         const options = {
           window: null,
@@ -442,7 +443,7 @@ describe('session module', () => {
           securityScopedBookmarks: true
         }
 
-        ipcRenderer.sendSync('set-download-option', true, false, undefined, options)
+        ipcRenderer.sendSync('set-download-option', true, false, filePath, options)
         w.webContents.downloadURL(`${url}:${port}`)
         ipcRenderer.once('download-done', (event, state, url,
           mimeType, receivedBytes,
@@ -730,7 +731,7 @@ describe('session module', () => {
         const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`
         const callback = (event, state, url, mimeType,
           receivedBytes, totalBytes, disposition,
-          filename, savePath, urlChain,
+          filename, savePath, dialogOptions, urlChain,
           lastModifiedTime, eTag) => {
           if (state === 'cancelled') {
             const options = {
