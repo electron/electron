@@ -3,6 +3,8 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Web, 31 Oct 2018 09:08:02 -0700
 Subject: fix_zoom_display.patch
 
+This patch was released in 70.0.3512.0.
+
 diff --git a/ui/base/accelerators/platform_accelerator_cocoa.mm b/ui/base/accelerators/platform_accelerator_cocoa.mm
 index 9786168be893..3c177060453a 100644
 --- a/ui/base/accelerators/platform_accelerator_cocoa.mm
