@@ -10,6 +10,7 @@ const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
+const { emittedOnce } = require('./events-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
@@ -1310,5 +1311,45 @@ describe('chromium feature', () => {
 
       await new Promise((resolve) => { utter.onend = resolve })
     })
+  })
+})
+
+describe('font fallback', () => {
+  it('should fall back to non-PingFang SC font for sans-serif japanese script', async () => {
+    const w = new BrowserWindow({ show: false })
+    try {
+      const html = `
+      <html lang="ja-JP">
+        <head>
+          <meta charset="utf-8" />
+        </head>
+        <body style="font-family: sans-serif">
+          test 智史
+        </body>
+      </html>
+      `
+      const fallbackFontJa = {
+        'win32': 'Meiryo',
+        'darwin': 'Hiragino Kaku Gothic ProN',
+        'linux': 'VL PGothic'
+      }[process.platform]
+      const loaded = emittedOnce(w.webContents, 'did-finish-load')
+      w.loadURL(`data:text/html,${html}`)
+      await loaded
+      w.webContents.debugger.attach()
+      const sendCommand = (...args) => new Promise((resolve, reject) => {
+        w.webContents.debugger.sendCommand(...args, (e, r) => {
+          if (e) { reject(e) } else { resolve(r) }
+        })
+      })
+      const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
+      await sendCommand('CSS.enable')
+      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', {nodeId})
+      expect(fonts).to.be.an('array')
+      expect(fonts).to.have.length(1)
+      expect(fonts[0].familyName).to.equal(fallbackFontJa)
+    } finally {
+      w.close()
+    }
   })
 })
