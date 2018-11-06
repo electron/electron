@@ -16,6 +16,14 @@
 
 namespace {
 
+// The following list of font defaults was copied from
+// https://chromium.googlesource.com/chromium/src/+/69.0.3497.106/chrome/browser/ui/prefs/prefs_tab_helper.cc#152
+//
+// The only updates that should be made to this list are copying updates that
+// were made in Chromium.
+//
+// vvvvv DO NOT EDIT vvvvv
+
 struct FontDefault {
   const char* pref_name;
   int resource_id;
@@ -97,6 +105,8 @@ const FontDefault kFontDefaults[] = {
 };
 const size_t kFontDefaultsLength = arraysize(kFontDefaults);
 
+// ^^^^^ DO NOT EDIT ^^^^^
+
 std::string GetDefaultFontForPref(const char* pref_name) {
   for (size_t i = 0; i < kFontDefaultsLength; ++i) {
     FontDefault pref = kFontDefaults[i];
@@ -115,6 +125,8 @@ using ScriptFontMap = std::unordered_map<const char*, base::string16>;
 // Key comparison uses pointer equality.
 using FontFamilyMap = std::unordered_map<const char*, ScriptFontMap>;
 
+// A lookup table mapping (font-family, script) -> font-name
+// e.g. ("sans-serif", "Zyyy") -> "Arial"
 FontFamilyMap g_font_cache;
 
 base::string16 FetchFont(const char* script, const char* map_name) {

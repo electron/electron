@@ -1315,24 +1315,9 @@ describe('chromium feature', () => {
 })
 
 describe('font fallback', () => {
-  it('should fall back to non-PingFang SC font for sans-serif japanese script', async () => {
+  async function getRenderedFonts (html) {
     const w = new BrowserWindow({ show: false })
     try {
-      const html = `
-      <html lang="ja-JP">
-        <head>
-          <meta charset="utf-8" />
-        </head>
-        <body style="font-family: sans-serif">
-          test 智史
-        </body>
-      </html>
-      `
-      const fallbackFontJa = {
-        'win32': 'Meiryo',
-        'darwin': 'Hiragino Kaku Gothic ProN',
-        'linux': 'VL PGothic'
-      }[process.platform]
       const loaded = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL(`data:text/html,${html}`)
       await loaded
@@ -1344,12 +1329,43 @@ describe('font fallback', () => {
       })
       const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
       await sendCommand('CSS.enable')
-      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', {nodeId})
-      expect(fonts).to.be.an('array')
-      expect(fonts).to.have.length(1)
-      expect(fonts[0].familyName).to.equal(fallbackFontJa)
+      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
+      return fonts
     } finally {
       w.close()
     }
+  }
+
+  it('should use Helvetica for sans-serif on mac, and Arial on windows and linux', async () => {
+    const html = `<span style="font-family: sans-serif">test</body>`
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    expect(fonts[0].familyName).to.equal({
+      'win32': 'Arial',
+      'darwin': 'Helvetica',
+      'linux': 'Arial'
+    }[process.platform])
+  })
+
+  it('should fall back to non-PingFang SC font for sans-serif japanese script', async () => {
+    if (process.platform === 'linux') {
+      return this.skip()
+    }
+    const html = `
+    <html lang="ja-JP">
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: sans-serif">test 智史</body>
+    </html>
+    `
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    expect(fonts[0].familyName).to.equal({
+      'win32': 'Meiryo',
+      'darwin': 'Hiragino Kaku Gothic ProN'
+    }[process.platform])
   })
 })
