@@ -208,7 +208,6 @@ static_library("electron_lib") {
     "//base",
     "//base:base_static",
     "//base:i18n",
-    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
