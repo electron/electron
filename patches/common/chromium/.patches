@@ -11,7 +11,7 @@ browser_plugin_wheel.patch
 can_create_window.patch
 compositor_delegate.patch
 disable_hidden.patch
-dom_storage_map.patch
+dom_storage_limits.patch
 frame_host_manager.patch
 net_url_request_job.patch
 no_stack_dumping.patch
