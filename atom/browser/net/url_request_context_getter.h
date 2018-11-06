@@ -60,6 +60,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
     content::ResourceContext* GetResourceContext();
     scoped_refptr<URLRequestContextGetter> GetMainRequestContextGetter();
     network::mojom::NetworkContextPtr GetNetworkContext();
+    network::mojom::NetworkContextParamsPtr CreateNetworkContextParams();
 
     void ShutdownOnUIThread();
 
