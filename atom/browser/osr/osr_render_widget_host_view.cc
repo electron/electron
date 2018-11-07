@@ -275,7 +275,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #if !defined(OS_MACOSX)
   delegated_frame_host_ = std::make_unique<content::DelegatedFrameHost>(
       AllocateFrameSinkId(is_guest_view_hack), this,
-      base::FeatureList::IsEnabled(features::kVizDisplayCompositor),
       true /* should_register_frame_sink_id */);
 
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
@@ -325,7 +324,7 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   // necessary to remove all connections to its old ui::Compositor.
   if (is_showing_)
     delegated_frame_host_->WasHidden();
-  delegated_frame_host_->ResetCompositor();
+  delegated_frame_host_->DetachFromCompositor();
 #endif
 
   if (copy_frame_generator_.get())
@@ -431,7 +430,7 @@ void OffScreenRenderWidgetHostView::Show() {
 #if defined(OS_MACOSX)
   browser_compositor_->SetRenderWidgetHostIsHidden(false);
 #else
-  delegated_frame_host_->SetCompositor(compositor_.get());
+  delegated_frame_host_->AttachToCompositor(compositor_.get());
   delegated_frame_host_->WasShown(GetLocalSurfaceId(),
                                   GetRootLayer()->bounds().size(), false);
 #endif
@@ -451,7 +450,7 @@ void OffScreenRenderWidgetHostView::Hide() {
   browser_compositor_->SetRenderWidgetHostIsHidden(true);
 #else
   GetDelegatedFrameHost()->WasHidden();
-  GetDelegatedFrameHost()->ResetCompositor();
+  GetDelegatedFrameHost()->DetachFromCompositor();
 #endif
 
   is_showing_ = false;
@@ -587,6 +586,10 @@ void OffScreenRenderWidgetHostView::SubmitCompositorFrame(
 
 void OffScreenRenderWidgetHostView::ClearCompositorFrame() {
   GetDelegatedFrameHost()->ClearDelegatedFrame();
+}
+
+void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
+  GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
@@ -746,7 +749,7 @@ ui::Layer* OffScreenRenderWidgetHostView::DelegatedFrameHostGetLayer() const {
 }
 
 bool OffScreenRenderWidgetHostView::DelegatedFrameHostIsVisible() const {
-  return !render_widget_host_->is_hidden();
+  return is_showing_;
 }
 
 SkColor OffScreenRenderWidgetHostView::DelegatedFrameHostGetGutterColor()
@@ -765,10 +768,6 @@ void OffScreenRenderWidgetHostView::OnBeginFrame(base::TimeTicks frame_time) {}
 
 void OffScreenRenderWidgetHostView::OnFrameTokenChanged(uint32_t frame_token) {
   render_widget_host_->DidProcessFrame(frame_token);
-}
-
-void OffScreenRenderWidgetHostView::DidReceiveFirstFrameAfterNavigation() {
-  render_widget_host_->DidReceiveFirstFrameAfterNavigation();
 }
 
 const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()
@@ -820,11 +819,7 @@ bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
     return true;
   }
 
-  // In TransformPointToLocalCoordSpace() there is a Point-to-Pixel conversion,
-  // but it is not necessary here because the final target view is responsible
-  // for converting before computing the final transform.
-  return GetDelegatedFrameHost()->TransformPointToCoordSpaceForView(
-      point, target_view, transformed_point, source);
+  return false;
 }
 
 void OffScreenRenderWidgetHostView::CancelWidget() {
