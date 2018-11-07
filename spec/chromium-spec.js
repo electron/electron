@@ -1344,7 +1344,7 @@ describe('font fallback', () => {
     expect(fonts[0].familyName).to.equal({
       'win32': 'Arial',
       'darwin': 'Helvetica',
-      'linux': 'Arial'
+      'linux': 'DejaVu Sans' // I think this depends on the distro? We don't specify a default.
     }[process.platform])
   })
 
