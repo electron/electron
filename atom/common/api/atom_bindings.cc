@@ -72,19 +72,18 @@ void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
                                               base::Unretained(this)));
 
 #if defined(MAS_BUILD)
-  dict.Set("mas", true);
+  dict.SetReadOnly("mas", true);
 #endif
 
 #if defined(OS_WIN)
   if (IsRunningInDesktopBridge())
-    dict.Set("windowsStore", true);
+    dict.SetReadOnly("windowsStore", true);
 #endif
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {
-    // TODO(kevinsawicki): Make read-only in 2.0 to match node
-    versions.Set(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
-    versions.Set("chrome", CHROME_VERSION_STRING);
+    versions.SetReadOnly(ATOM_PROJECT_NAME, ATOM_VERSION_STRING);
+    versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
   }
 }
 
