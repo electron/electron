@@ -18,8 +18,8 @@ describe('globalShortcut module', () => {
     globalShortcut.unregisterAll()
   })
 
-  it('can register and unregister accelerators', () => {
-    const accelerator = 'CommandOrControl+A+B+C'
+  it('can register and unregister single accelerators', () => {
+    const accelerator = 'CmdOrCtrl+A+B+C'
 
     expect(globalShortcut.isRegistered(accelerator)).to.be.false()
     globalShortcut.register(accelerator, () => {})
@@ -32,5 +32,22 @@ describe('globalShortcut module', () => {
     expect(globalShortcut.isRegistered(accelerator)).to.be.true()
     globalShortcut.unregisterAll()
     expect(globalShortcut.isRegistered(accelerator)).to.be.false()
+  })
+
+  it('can register and unregister multiple accelerators', () => {
+    const accelerators = ['CmdOrCtrl+X', 'CmdOrCtrl+Y']
+
+    expect(globalShortcut.isRegistered(accelerators[0])).to.be.false()
+    expect(globalShortcut.isRegistered(accelerators[1])).to.be.false()
+
+    globalShortcut.registerAll(accelerators, () => {})
+
+    expect(globalShortcut.isRegistered(accelerators[0])).to.be.true()
+    expect(globalShortcut.isRegistered(accelerators[1])).to.be.true()
+
+    globalShortcut.unregisterAll()
+
+    expect(globalShortcut.isRegistered(accelerators[0])).to.be.false()
+    expect(globalShortcut.isRegistered(accelerators[1])).to.be.false()
   })
 })
