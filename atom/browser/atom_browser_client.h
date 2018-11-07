@@ -144,6 +144,10 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   content::BrowserMainParts* CreateBrowserMainParts(
       const content::MainFunctionParams&) override;
   base::FilePath GetDefaultDownloadDirectory() override;
+  scoped_refptr<network::SharedURLLoaderFactory>
+  GetSystemSharedURLLoaderFactory() override;
+  void OnNetworkServiceCreated(
+      network::mojom::NetworkService* network_service) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

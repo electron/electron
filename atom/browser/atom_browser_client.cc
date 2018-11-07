@@ -804,6 +804,21 @@ base::FilePath AtomBrowserClient::GetDefaultDownloadDirectory() {
   return path;
 }
 
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
+  if (!g_browser_process)
+    return nullptr;
+  return g_browser_process->shared_url_loader_factory();
+}
+
+void AtomBrowserClient::OnNetworkServiceCreated(
+    network::mojom::NetworkService* network_service) {
+  if (!g_browser_process)
+    return;
+  g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
+      network_service);
+}
+
 std::string AtomBrowserClient::GetApplicationLocale() {
   if (BrowserThread::CurrentlyOn(BrowserThread::IO))
     return g_io_thread_application_locale.Get();
