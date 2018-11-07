@@ -49,6 +49,8 @@ Some alternatives to this patch:
    `electron_{100,200}_percent.pak`.
 3. Initialize the resource bundle with DO_NOT_LOAD_COMMON_RESOURCES and load
    the paks ourselves.
+   
+None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
 index a47af42a5a5afc1560f11ee0ccfa5fc177745caa..db8311121e755eb955ff05dee61a9706ae747977 100644
