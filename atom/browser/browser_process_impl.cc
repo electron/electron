@@ -109,7 +109,8 @@ void BrowserProcessImpl::PreCreateThreads(
   net_log_->net_export_file_writer()->Initialize();
 
   // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>(net_log_.get());
+  io_thread_ = std::make_unique<IOThread>(
+      net_log_.get(), system_network_context_manager_.get());
 }
 
 void BrowserProcessImpl::PostDestroyThreads() {
@@ -153,7 +154,7 @@ net::URLRequestContextGetter* BrowserProcessImpl::system_request_context() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 BrowserProcessImpl::shared_url_loader_factory() {
-  return nullptr;
+  return system_network_context_manager()->GetSharedURLLoaderFactory();
 }
 
 variations::VariationsService* BrowserProcessImpl::variations_service() {

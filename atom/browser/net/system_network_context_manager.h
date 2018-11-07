@@ -50,8 +50,11 @@ class SystemNetworkContextManager {
   // help set up the IOThread's in-process URLRequestContext.
   //
   // Must be called before the system NetworkContext is first used.
-  void SetUp(network::mojom::NetworkContextRequest* network_context_request,
-             network::mojom::NetworkContextParamsPtr* network_context_params);
+  void SetUp(
+      network::mojom::NetworkContextRequest* network_context_request,
+      network::mojom::NetworkContextParamsPtr* network_context_params,
+      network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
+      network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params);
 
   // Returns the System NetworkContext. May only be called after SetUp(). Does
   // any initialization of the NetworkService that may be needed when first

@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "atom/browser/io_thread.h"
+#include "atom/common/options_switches.h"
+#include "base/command_line.h"
 #include "base/lazy_instance.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
@@ -25,6 +27,33 @@
 
 base::LazyInstance<SystemNetworkContextManager>::Leaky
     g_system_network_context_manager = LAZY_INSTANCE_INITIALIZER;
+
+namespace {
+
+network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
+  network::mojom::HttpAuthStaticParamsPtr auth_static_params =
+      network::mojom::HttpAuthStaticParams::New();
+
+  auth_static_params->supported_schemes = {"basic", "digest", "ntlm",
+                                           "negotiate"};
+
+  return auth_static_params;
+}
+
+network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  network::mojom::HttpAuthDynamicParamsPtr auth_dynamic_params =
+      network::mojom::HttpAuthDynamicParams::New();
+
+  auth_dynamic_params->server_whitelist =
+      command_line->GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
+  auth_dynamic_params->delegate_whitelist = command_line->GetSwitchValueASCII(
+      atom::switches::kAuthNegotiateDelegateWhitelist);
+
+  return auth_dynamic_params;
+}
+
+}  // namespace
 
 // SharedURLLoaderFactory backed by a SystemNetworkContextManager and its
 // network context. Transparently handles crashes.
@@ -137,7 +166,9 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 
 void SystemNetworkContextManager::SetUp(
     network::mojom::NetworkContextRequest* network_context_request,
-    network::mojom::NetworkContextParamsPtr* network_context_params) {
+    network::mojom::NetworkContextParamsPtr* network_context_params,
+    network::mojom::HttpAuthStaticParamsPtr* http_auth_static_params,
+    network::mojom::HttpAuthDynamicParamsPtr* http_auth_dynamic_params) {
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
     *network_context_request = mojo::MakeRequest(&io_thread_network_context_);
     *network_context_params = CreateNetworkContextParams();
@@ -146,6 +177,8 @@ void SystemNetworkContextManager::SetUp(
     // CreateNetworkContextParams() can only be called once.
     *network_context_params = CreateDefaultNetworkContextParams();
   }
+  *http_auth_static_params = CreateHttpAuthStaticParams();
+  *http_auth_dynamic_params = CreateHttpAuthDynamicParams();
 }
 
 SystemNetworkContextManager::SystemNetworkContextManager()
@@ -162,8 +195,8 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
     return;
 
-  // network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
-  // network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
+  network_service->SetUpHttpAuth(CreateHttpAuthStaticParams());
+  network_service->ConfigureHttpAuthPrefs(CreateHttpAuthDynamicParams());
 
   // The system NetworkContext must be created first, since it sets
   // |primary_network_context| to true.
