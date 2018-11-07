@@ -19,7 +19,6 @@
 #include "atom/browser/atom_web_ui_controller_factory.h"
 #include "atom/browser/browser.h"
 #include "atom/browser/browser_process_impl.h"
-#include "atom/browser/io_thread.h"
 #include "atom/browser/javascript_environment.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/node_debugger.h"
@@ -36,9 +35,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
-#include "chrome/browser/net/chrome_net_log_helper.h"
-#include "components/net_log/chrome_net_log.h"
-#include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/web_ui_controller_factory.h"
@@ -49,7 +45,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/base/localized_strings.h"
 #include "services/device/public/mojom/constants.mojom.h"
-#include "services/network/public/cpp/network_switches.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -382,24 +377,7 @@ int AtomBrowserMainParts::PreCreateThreads() {
   ui::InitIdleMonitor();
 #endif
 
-  net_log_ = std::make_unique<net_log::ChromeNetLog>();
-  auto& command_line = main_function_params_.command_line;
-  // start net log trace if --log-net-log is passed in the command line.
-  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
-    base::FilePath log_file =
-        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
-    if (!log_file.empty()) {
-      net_log_->StartWritingToFile(
-          log_file, GetNetCaptureModeFromCommandLine(command_line),
-          command_line.GetCommandLineString(), std::string());
-    }
-  }
-  // Initialize net log file exporter.
-  net_log_->net_export_file_writer()->Initialize();
-
-  fake_browser_process_->PreCreateThreads(command_line);
-  // Manage global state of net and other IO thread related.
-  io_thread_ = std::make_unique<IOThread>(net_log_.get());
+  fake_browser_process_->PreCreateThreads(main_function_params_.command_line);
 
   return 0;
 }
@@ -409,7 +387,7 @@ void AtomBrowserMainParts::PostDestroyThreads() {
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
 #endif
-  io_thread_.reset();
+  fake_browser_process_->PostDestroyThreads();
 }
 
 void AtomBrowserMainParts::ToolkitInitialized() {

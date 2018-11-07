@@ -20,8 +20,6 @@ namespace net_log {
 class ChromeNetLog;
 }
 
-namespace atom {
-
 class IOThread : public content::BrowserThreadDelegate {
  public:
   explicit IOThread(net_log::ChromeNetLog* net_log);
@@ -45,7 +43,5 @@ class IOThread : public content::BrowserThreadDelegate {
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };
-
-}  // namespace atom
 
 #endif  // ATOM_BROWSER_IO_THREAD_H_

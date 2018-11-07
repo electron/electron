@@ -25,8 +25,6 @@
 
 using content::BrowserThread;
 
-namespace atom {
-
 namespace {
 
 network::mojom::HttpAuthStaticParamsPtr CreateHttpAuthStaticParams() {
@@ -45,9 +43,9 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams(
       network::mojom::HttpAuthDynamicParams::New();
 
   auth_dynamic_params->server_whitelist =
-      command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist);
+      command_line.GetSwitchValueASCII(atom::switches::kAuthServerWhitelist);
   auth_dynamic_params->delegate_whitelist = command_line.GetSwitchValueASCII(
-      switches::kAuthNegotiateDelegateWhitelist);
+      atom::switches::kAuthNegotiateDelegateWhitelist);
 
   return auth_dynamic_params;
 }
@@ -114,5 +112,3 @@ void IOThread::CleanUp() {
   if (net_log_)
     net_log_->ShutDownBeforeTaskScheduler();
 }
-
-}  // namespace atom

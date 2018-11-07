@@ -6,8 +6,10 @@
 
 #include <utility>
 
-#include "chrome/browser/printing/print_job_manager.h"
+#include "chrome/browser/net/chrome_net_log_helper.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/net_log/chrome_net_log.h"
+#include "components/net_log/net_export_file_writer.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
@@ -21,6 +23,7 @@
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "net/proxy_resolution/proxy_resolution_service.h"
+#include "services/network/public/cpp/network_switches.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -90,6 +93,27 @@ void BrowserProcessImpl::PreCreateThreads(
   // this can be created on first use.
   system_network_context_manager_ =
       std::make_unique<SystemNetworkContextManager>();
+
+  net_log_ = std::make_unique<net_log::ChromeNetLog>();
+  // start net log trace if --log-net-log is passed in the command line.
+  if (command_line.HasSwitch(network::switches::kLogNetLog)) {
+    base::FilePath log_file =
+        command_line.GetSwitchValuePath(network::switches::kLogNetLog);
+    if (!log_file.empty()) {
+      net_log_->StartWritingToFile(
+          log_file, GetNetCaptureModeFromCommandLine(command_line),
+          command_line.GetCommandLineString(), std::string());
+    }
+  }
+  // Initialize net log file exporter.
+  net_log_->net_export_file_writer()->Initialize();
+
+  // Manage global state of net and other IO thread related.
+  io_thread_ = std::make_unique<IOThread>(net_log_.get());
+}
+
+void BrowserProcessImpl::PostDestroyThreads() {
+  io_thread_.reset();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -154,7 +178,8 @@ NotificationPlatformBridge* BrowserProcessImpl::notification_platform_bridge() {
 }
 
 IOThread* BrowserProcessImpl::io_thread() {
-  return nullptr;
+  DCHECK(io_thread_.get());
+  return io_thread_.get();
 }
 
 SystemNetworkContextManager*
@@ -239,7 +264,8 @@ BrowserProcessImpl::optimization_guide_service() {
 }
 
 net_log::ChromeNetLog* BrowserProcessImpl::net_log() {
-  return nullptr;
+  DCHECK(net_log_.get());
+  return net_log_.get();
 }
 
 component_updater::ComponentUpdateService*
