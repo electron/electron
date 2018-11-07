@@ -746,22 +746,6 @@ describe('Menu module', () => {
     })
 
     describe('keyboard accessibility', () => {
-      const sendEvent = (keyCode, modifiers) => {
-        remote.getCurrentWindow().focus()
-
-        remote.getCurrentWindow().webContents.sendInputEvent({
-          type: 'keyDown',
-          keyCode,
-          modifiers
-        })
-
-        remote.getCurrentWindow().webContents.sendInputEvent({
-          type: 'keyUp',
-          keyCode,
-          modifiers
-        })
-      }
-
       const menu = (done) => {
         return Menu.buildFromTemplate([
           {
@@ -818,7 +802,7 @@ describe('Menu module', () => {
       })
 
       const keyTap = (key, modifiers = [], delay = 100) => {
-        return new Promise(function(resolve, reject) {
+        return new Promise((resolve, reject) => {
           require('robotjs').keyTap(key, modifiers)
           setTimeout(() => {
             resolve()
@@ -848,7 +832,6 @@ describe('Menu module', () => {
       try {
         require('robotjs')
       } catch (err) {
-        console.log(err);
         testFn = it.skip
       }
 
