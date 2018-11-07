@@ -34,6 +34,9 @@ vars = {
   'checkout_chromium': True,
   'checkout_node': True,
 
+  # It's only needed to parse the native tests configurations.
+  'checkout_pyyaml': False,
+
   # Python "requests" module is used for releases only.
   'checkout_requests': False,
 
@@ -64,8 +67,10 @@ deps = {
     'url': (Var("electron_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node',
   },
-  'src/electron/vendor/pyyaml':
-    (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
+  'src/electron/vendor/pyyaml': {
+    'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
+    'condition': 'checkout_pyyaml',
+  },
   'src/electron/vendor/boto': {
     'url': Var('boto_git') + '/boto.git' + '@' +  Var('boto_version'),
     'condition': 'checkout_boto',
@@ -84,6 +89,7 @@ hooks = [
     'action': [
       'python',
       'src/electron/script/apply_all_patches.py',
+      'src/electron/patches/common/config.json',
     ],
   },
   {

@@ -74,10 +74,6 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   mate::Dictionary(isolate, web_contents->GetWrapper())
       .Set("browserWindowOptions", options);
 
-  // Tell the content module to initialize renderer widget with transparent
-  // mode.
-  ui::GpuSwitchingManager::SetTransparent(window()->transparent());
-
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
 

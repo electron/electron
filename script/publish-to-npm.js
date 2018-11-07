@@ -5,6 +5,7 @@ const childProcess = require('child_process')
 const GitHubApi = require('github')
 const { GitProcess } = require('dugite')
 const request = require('request')
+const semver = require('semver')
 const rootPackageJson = require('../package.json')
 
 if (!process.env.ELECTRON_NPM_OTP) {
@@ -109,15 +110,26 @@ new Promise((resolve, reject) => {
     })
   })
   .then(async (release) => {
+    const currentBranch = await getCurrentBranch()
+
     if (release.tag_name.indexOf('nightly') > 0) {
-      const currentBranch = await getCurrentBranch()
       if (currentBranch === 'master') {
         npmTag = 'nightly'
       } else {
         npmTag = `nightly-${currentBranch}`
       }
     } else {
-      npmTag = release.prerelease ? 'beta' : 'latest'
+      if (currentBranch === 'master') {
+        // This should never happen, master releases should be nightly releases
+        // this is here just-in-case
+        npmTag = 'master'
+      } else if (!release.prerelease) {
+        // Tag the release with a `2-0-x` style tag
+        npmTag = currentBranch
+      } else {
+        // Tag the release with a `beta-3-0-x` style tag
+        npmTag = `beta-${currentBranch}`
+      }
     }
   })
   .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
@@ -133,6 +145,19 @@ new Promise((resolve, reject) => {
     })
   })
   .then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
+  .then(() => {
+    const currentTags = JSON.parse(childProcess.execSync('npm show electron dist-tags --json').toString())
+    const localVersion = rootPackageJson.version
+    const parsedLocalVersion = semver.parse(localVersion)
+    if (parsedLocalVersion.prerelease.length === 0 &&
+          semver.gt(localVersion, currentTags.latest)) {
+      childProcess.execSync(`npm dist-tag add electron@${localVersion} latest --otp=${process.env.ELECTRON_NPM_OTP}`)
+    }
+    if (parsedLocalVersion.prerelease[0] === 'beta' &&
+          semver.gt(localVersion, currentTags.beta)) {
+      childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`)
+    }
+  })
   .catch((err) => {
     console.error(`Error: ${err}`)
     process.exit(1)

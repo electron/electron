@@ -721,14 +721,16 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout
 
-  linux-x64-checkout:
-    <<: *machine-linux-2xlarge
-    <<: *steps-checkout
-
-  linux-x64-checkout-no-patches:
+  linux-checkout-for-native-tests:
     <<: *machine-linux-2xlarge
     environment:
-      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
+    <<: *steps-checkout
+
+  linux-checkout-for-native-tests-with-no-patches:
+    <<: *machine-linux-2xlarge
+    environment:
+      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
     <<: *steps-checkout
 
   # Layer 2: Builds.
@@ -1247,25 +1249,25 @@ workflows:
                 - master
                 - *chromium-upgrade-branches
     jobs:
-      - linux-x64-checkout
+      - linux-checkout-for-native-tests
 
       # TODO(alexeykuzmin): Enable it back.
       # Tons of crashes right now, see
       # https://circleci.com/gh/electron/electron/67463
 #      - linux-x64-browsertests:
 #          requires:
-#            - linux-x64-checkout
+#            - linux-checkout-for-native-tests
 
       - linux-x64-unittests:
           requires:
-            - linux-x64-checkout
+            - linux-checkout-for-native-tests
 
       - linux-x64-disabled-unittests:
           requires:
-            - linux-x64-checkout
+            - linux-checkout-for-native-tests
 
-      - linux-x64-checkout-no-patches
+      - linux-checkout-for-native-tests-with-no-patches
 
       - linux-x64-chromium-unittests:
           requires:
-            - linux-x64-checkout-no-patches
+            - linux-checkout-for-native-tests-with-no-patches

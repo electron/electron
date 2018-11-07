@@ -7,8 +7,8 @@
 // will return NULL if the service is not available, so callers must check for
 // this condition.
 
-#ifndef CHROME_BROWSER_BROWSER_PROCESS_IMPL_H_
-#define CHROME_BROWSER_BROWSER_PROCESS_IMPL_H_
+#ifndef ATOM_BROWSER_BROWSER_PROCESS_IMPL_H_
+#define ATOM_BROWSER_BROWSER_PROCESS_IMPL_H_
 
 #include <memory>
 #include <string>
@@ -104,4 +104,4 @@ class BrowserProcessImpl : public BrowserProcess {
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
 };
 
-#endif  // CHROME_BROWSER_BROWSER_PROCESS_IMPL_H_
+#endif  // ATOM_BROWSER_BROWSER_PROCESS_IMPL_H_

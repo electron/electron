@@ -232,6 +232,7 @@
     // Turn off the style for toolbar.
     if (shell_->title_bar_style() == atom::NativeWindowMac::HIDDEN_INSET) {
       shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
+      [window setTitlebarAppearsTransparent:YES];
     }
   }
 }

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/browser_process_impl.h"
+#include "atom/browser/browser_process_impl.h"
 
 #include "chrome/browser/printing/print_job_manager.h"
 #include "printing/buildflags/buildflags.h"
