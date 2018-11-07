@@ -1584,7 +1584,8 @@ describe('BrowserWindow module', () => {
         // XXX(alexeykuzmin): It will leak if the test fails too soon.
         const [, popupWindow] = await browserWindowCreated
 
-        // Wait for a message from the popup's preload script.
+        // Ask the popup window for details.
+        popupWindow.webContents.send('provide-details')
         const [, openerIsNull, , locationHref] =
             await emittedOnce(ipcMain, 'child-loaded')
         expect(openerIsNull).to.be.false('window.opener is null')
@@ -1596,7 +1597,7 @@ describe('BrowserWindow module', () => {
         const [, popupAccessMessage] = await emittedOnce(ipcMain, 'answer')
 
         // Ask the popup to access the opener.
-        w.webContents.send('touch-the-opener')
+        popupWindow.webContents.send('touch-the-opener')
         const [, openerAccessMessage] = await emittedOnce(ipcMain, 'answer')
 
         // We don't need the popup anymore, and its parent page can't close it,

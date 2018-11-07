@@ -76,13 +76,15 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   CreateSpeechRecognitionManagerDelegate() override;
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
-  void OverrideSiteInstanceForNavigation(
+  SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* render_frame_host,
       content::BrowserContext* browser_context,
       const GURL& dest_url,
       bool has_request_started,
-      content::SiteInstance* candidate_instance,
-      content::SiteInstance** new_instance) override;
+      content::SiteInstance** affinity_instance) const override;
+  void RegisterPendingSiteInstance(
+      content::RenderFrameHost* render_frame_host,
+      content::SiteInstance* pending_site_instance) override;
   void AppendExtraCommandLineSwitches(base::CommandLine* command_line,
                                       int child_process_id) override;
   void DidCreatePpapiPlugin(content::BrowserPpapiHost* browser_host) override;
@@ -172,16 +174,23 @@ class AtomBrowserClient : public content::ContentBrowserClient,
     bool web_security = true;
   };
 
-  bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
-                                   content::BrowserContext* browser_context,
-                                   content::SiteInstance* current_instance,
-                                   const GURL& dest_url);
+  bool ShouldForceNewSiteInstance(content::RenderFrameHost* render_frame_host,
+                                  content::BrowserContext* browser_context,
+                                  content::SiteInstance* current_instance,
+                                  const GURL& dest_url) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
-  bool IsProcessObserved(int process_id);
-  bool IsRendererSandboxed(int process_id);
-  bool RendererUsesNativeWindowOpen(int process_id);
-  bool RendererDisablesPopups(int process_id);
+  bool IsProcessObserved(int process_id) const;
+  bool IsRendererSandboxed(int process_id) const;
+  bool RendererUsesNativeWindowOpen(int process_id) const;
+  bool RendererDisablesPopups(int process_id) const;
+  std::string GetAffinityPreference(content::RenderFrameHost* rfh) const;
+  content::SiteInstance* GetSiteInstanceFromAffinity(
+      content::BrowserContext* browser_context,
+      const GURL& url,
+      content::RenderFrameHost* rfh) const;
+  void ConsiderSiteInstanceForAffinity(content::RenderFrameHost* rfh,
+                                       content::SiteInstance* site_instance);
 
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
@@ -189,7 +198,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   std::map<int, base::ProcessId> render_process_host_pids_;
 
   // list of site per affinity. weak_ptr to prevent instance locking
-  std::map<std::string, content::SiteInstance*> site_per_affinities;
+  std::map<std::string, content::SiteInstance*> site_per_affinities_;
 
   std::unique_ptr<AtomResourceDispatcherHostDelegate>
       resource_dispatcher_host_delegate_;
