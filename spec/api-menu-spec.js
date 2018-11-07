@@ -7,6 +7,9 @@ const { sortMenuItems } = require('../lib/browser/api/menu-utils')
 const { closeWindow } = require('./window-helpers')
 
 const { expect } = chai
+
+const isCi = remote.getGlobal('isCi')
+
 chai.use(dirtyChai)
 
 describe('Menu module', () => {
@@ -772,16 +775,27 @@ describe('Menu module', () => {
         ])
       }
 
-      const largeMenu = (done = () => {}) => {
+      const largeMenu = (done = () => {}, expectLast = true) => {
         return Menu.buildFromTemplate([
-          { label: '&a' },
+          {
+            label: '&a',
+            click: (item) => {
+              expect(item.constructor.name).to.equal('MenuItem')
+              expect(item.label).to.equal('&a')
+              if (!expectLast) {
+                done()
+              }
+            }
+          },
           { label: 'b' },
           {
             label: '&text',
             click: (item) => {
               expect(item.constructor.name).to.equal('MenuItem')
               expect(item.label).to.equal('&text')
-              done()
+              if (expectLast) {
+                done()
+              }
             }
           }
         ])
@@ -791,14 +805,6 @@ describe('Menu module', () => {
         if (process.platform === 'darwin') {
           this.skip()
         }
-      })
-
-      it('should not crash when pressing alt repeatedly', (done) => {
-        Menu.setApplicationMenu(menu())
-        sendEvent('alt')
-        sendEvent('alt')
-        sendEvent('alt')
-        done()
       })
 
       it('should not crash when two items have same accelerator (& syntax)', (done) => {
@@ -811,92 +817,139 @@ describe('Menu module', () => {
         done()
       })
 
-      it('should activate an item with the accelerator (& syntax)', (done) => {
-        Menu.setApplicationMenu(menu(done))
-        sendEvent('x', ['alt'])
-      })
+      const keyTap = (key, modifiers = [], delay = 100) => {
+        return new Promise(function(resolve, reject) {
+          require('robotjs').keyTap(key, modifiers)
+          setTimeout(() => {
+            resolve()
+          }, delay)
+        })
+      }
+
+      const delayedTest = (menu, keys) => {
+        return new Promise(async (resolve, reject) => {
+          let done = false
+          Menu.setApplicationMenu(menu(() => { done = true }))
+
+          await keys()
+
+          if (done) {
+            resolve()
+          } else {
+            reject(new Error(`menu wasn't activated`))
+          }
+        })
+      }
 
       let testFn = it
+      if (isCi) {
+        testFn = it.skip
+      }
       try {
-        require('robotjs').setKeyboardDelay(200)
+        require('robotjs')
       } catch (err) {
+        console.log(err);
         testFn = it.skip
       }
 
-      testFn('should activate an item with the up key', (done) => {
-        Menu.setApplicationMenu(menu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('up')
+      testFn('should not crash when pressing alt repeatedly', (done) => {
+        Menu.setApplicationMenu(menu())
+
+        const run = async () => {
+          await keyTap('alt', [], 10)
+          await keyTap('alt', [], 10)
+          await keyTap('alt', [], 10)
+          await keyTap('alt', [], 10)
+          await keyTap('escape')
+          done()
+        }
+
+        run()
       })
 
-      testFn('should activate an item with the down key', (done) => {
-        Menu.setApplicationMenu(menu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('down')
+      testFn('should activate an item with the accelerator (& syntax)', () => {
+        return delayedTest(menu, async () => {
+          await keyTap('x', ['alt'])
+        })
       })
 
-      testFn('should activate an item with the space key', (done) => {
-        Menu.setApplicationMenu(menu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('space')
+      testFn('should activate an item with the up key', () => {
+        return delayedTest(menu, async () => {
+          await keyTap('alt')
+          await keyTap('up')
+          await keyTap('escape')
+        })
       })
 
-      testFn('should activate an item with the enter key', (done) => {
-        Menu.setApplicationMenu(menu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('enter')
+      testFn('should activate an item with the down key', () => {
+        return delayedTest(menu, async () => {
+          await keyTap('alt')
+          await keyTap('down')
+          await keyTap('escape')
+        })
       })
 
-      testFn('should navigate to an item with accelerator character', (done) => {
-        Menu.setApplicationMenu(largeMenu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('t')
+      testFn('should activate an item with the space key', () => {
+        return delayedTest(menu, async () => {
+          await keyTap('alt')
+          await keyTap('space')
+          await keyTap('escape')
+        })
       })
 
-      testFn('should navigate to an item with arrow keys', (done) => {
-        Menu.setApplicationMenu(largeMenu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('right')
-        require('robotjs').keyTap('right')
-        require('robotjs').keyTap('enter')
+      testFn('should activate an item with the enter key', () => {
+        return delayedTest(menu, async () => {
+          await keyTap('alt')
+          await keyTap('enter')
+          await keyTap('escape')
+        })
       })
 
-      testFn('should navigate to the last item with end key', (done) => {
-        Menu.setApplicationMenu(largeMenu(done))
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('end')
-        require('robotjs').keyTap('enter')
+      testFn('should navigate to an item with accelerator character', () => {
+        return delayedTest(largeMenu, async () => {
+          await keyTap('alt')
+          await keyTap('t')
+          await keyTap('escape')
+        })
       })
 
-      testFn('should navigate to the first item with home key', (done) => {
-        const menu = Menu.buildFromTemplate([
-          {
-            label: '&text',
-            click: (item) => {
-              expect(item.constructor.name).to.equal('MenuItem')
-              expect(item.label).to.equal('&text')
-              done()
-            }
-          },
-          { label: 'b' },
-          { label: '&a' }
-        ])
+      testFn('should navigate to an item with arrow keys', () => {
+        return delayedTest(largeMenu, async () => {
+          await keyTap('alt')
+          await keyTap('right')
+          await keyTap('right')
+          await keyTap('enter')
+          await keyTap('escape')
+        })
+      })
 
-        Menu.setApplicationMenu(menu)
-        require('robotjs').keyTap('alt')
-        require('robotjs').keyTap('end')
-        require('robotjs').keyTap('home')
-        require('robotjs').keyTap('enter')
+      testFn('should navigate to the last item with end key', () => {
+        return delayedTest(largeMenu, async () => {
+          await keyTap('alt')
+          await keyTap('end')
+          await keyTap('enter')
+          await keyTap('escape')
+        })
+      })
+
+      testFn('should navigate to the first item with home key', () => {
+        return delayedTest((done) => { return largeMenu(done, false) }, async () => {
+          await keyTap('alt')
+          await keyTap('end')
+          await keyTap('home')
+          await keyTap('enter')
+          await keyTap('escape')
+        })
       })
 
       testFn('should blur menu with escape key', (done) => {
-        expect(() => {
+        expect(async () => {
           Menu.setApplicationMenu(menu(() => {
             throw new Error('Should not activate button')
           }))
-          require('robotjs').keyTap('alt')
-          require('robotjs').keyTap('escape')
-          require('robotjs').keyTap('enter')
+          await keyTap('alt')
+          await keyTap('escape')
+          await keyTap('enter')
           done()
         }).to.not.throw()
       })
