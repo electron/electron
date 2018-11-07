@@ -36,9 +36,16 @@ namespace atom {
 
 namespace api {
 
-PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
+PowerMonitor::PowerMonitor(v8::Isolate* isolate)
+#ifdef OS_WIN
+    : shutdown_blocker_(new ShutdownBlockerWin(false))
+#endif
+{
 #if defined(OS_LINUX)
   SetShutdownHandler(
+      base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
+#elif defined(OS_WIN)
+  shutdown_blocker_->SetShutdownHandler(
       base::Bind(&PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #elif defined(OS_MACOSX)
   Browser::Get()->SetShutdownHandler(

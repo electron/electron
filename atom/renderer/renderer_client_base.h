@@ -21,6 +21,9 @@
 namespace atom {
 
 class PreferencesManager;
+#ifdef OS_WIN
+class ShutdownBlockerWin;
+#endif
 
 class RendererClientBase : public content::ContentRendererClient {
  public:
@@ -59,6 +62,9 @@ class RendererClientBase : public content::ContentRendererClient {
   bool IsKeySystemsUpdateNeeded() override;
 
  private:
+#ifdef OS_WIN
+  std::unique_ptr<ShutdownBlockerWin> shutdown_blocker_;
+#endif
   std::unique_ptr<PreferencesManager> preferences_manager_;
 #if defined(WIDEVINE_CDM_AVAILABLE)
   ChromeKeySystemsProvider key_systems_provider_;
