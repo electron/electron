@@ -90,7 +90,7 @@ save dialog.
 
 #### `downloadItem.setSaveDialogOptions(options)`
 
-* `options` Object - Set the save file dialog options. This object has the same
+* `options` SaveDialogOptions - Set the save file dialog options. This object has the same
 properties as the `options` parameter of [`dialog.showSaveDialog()`](dialog.md).
 
 This API allows the user to set custom options for the save dialog that opens
@@ -99,7 +99,7 @@ The API is only available in session's `will-download` callback function.
 
 #### `downloadItem.getSaveDialogOptions()`
 
-Returns `Object` - Returns the object previously set by `downloadItem.setSaveDialogOptions(options)`.
+Returns `SaveDialogOptions` - Returns the object previously set by `downloadItem.setSaveDialogOptions(options)`.
 
 #### `downloadItem.pause()`
 
