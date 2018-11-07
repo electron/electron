@@ -282,6 +282,13 @@ step-ffmpeg-store: &step-ffmpeg-store
     path: src/out/ffmpeg/ffmpeg.zip
     destination: ffmpeg.zip
 
+step-verify-mksnapshot: &step-verify-mksnapshot
+  run:
+    name: Verify mksnapshot
+    command: |
+      cd src
+      python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
   run:
     name: Setup for headless testing
@@ -618,6 +625,17 @@ steps-verify-ffmpeg: &steps-verify-ffmpeg
     - *step-verify-ffmpeg
     - *step-maybe-notify-slack-failure
 
+steps-verify-mksnapshot: &steps-verify-mksnapshot
+  steps:
+    - attach_workspace:
+        at: .
+    - *step-depot-tools-add-to-path
+    - *step-electron-dist-unzip
+    - *step-setup-linux-for-headless-testing
+
+    - *step-verify-mksnapshot
+    - *step-maybe-notify-slack-failure
+
 steps-tests: &steps-tests
   steps:
     - attach_workspace:
@@ -648,6 +666,8 @@ steps-tests: &steps-tests
           fi
     - store_test_results:
         path: src/junit
+
+    - *step-verify-mksnapshot
 
     - *step-maybe-notify-slack-failure
 
@@ -688,6 +708,8 @@ steps-build-mac: &steps-build-mac
     # but it requires `gn` to run, and it's complicated
     # to store all gn's dependencies and configs.
     - *step-verify-ffmpeg
+
+    - *step-verify-mksnapshot
 
     # Node.js headers for tests
     - *step-nodejs-headers-build
@@ -994,6 +1016,13 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
+  linux-x64-verify-mksnapshot:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-verify-mksnapshot
+
   linux-ia32-testing-tests:
     <<: *machine-linux-medium
     environment:
@@ -1017,6 +1046,14 @@ jobs:
       <<: *env-headless-testing
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
+
+  linux-ia32-verify-mksnapshot:
+    <<: *machine-linux-medium
+    environment:
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-verify-mksnapshot
 
   osx-testing-tests:
     <<: *machine-mac
@@ -1140,6 +1177,9 @@ workflows:
           requires:
             - linux-x64-release
             - linux-x64-ffmpeg
+      - linux-x64-verify-mksnapshot:
+          requires:
+            - linux-x64-release
       - linux-x64-chromedriver:
           requires:
             - linux-checkout
@@ -1164,6 +1204,9 @@ workflows:
           requires:
             - linux-ia32-release
             - linux-ia32-ffmpeg
+      - linux-ia32-verify-mksnapshot:
+          requires:
+            - linux-ia32-release
       - linux-ia32-chromedriver:
           requires:
             - linux-checkout
