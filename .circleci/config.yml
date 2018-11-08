@@ -488,6 +488,10 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
 
     - *step-show-sccache-stats
 
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
@@ -496,10 +500,6 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-build-dump-syms
     - *step-generate-breakpad-symbols
     - *step-zip-symbols
-
-    # mksnapshot
-    - *step-mksnapshot-build
-    - *step-mksnapshot-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
