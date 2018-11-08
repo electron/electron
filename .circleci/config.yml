@@ -243,7 +243,6 @@ step-persist-data-for-tests: &step-persist-data-for-tests
 
       # Build artifacts
       - src/out/Default/dist.zip
-      - src/out/Default/mksnapshot.zip
       - src/out/Default/gen/node_headers
 
 step-electron-dist-unzip: &step-electron-dist-unzip
@@ -496,6 +495,10 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-build-dump-syms
     - *step-generate-breakpad-symbols
     - *step-zip-symbols
+
+    # mksnapshot
+    - *step-mksnapshot-build
+    - *step-mksnapshot-store
 
     # Trigger tests on arm hardware if needed
     - *step-maybe-trigger-arm-test
