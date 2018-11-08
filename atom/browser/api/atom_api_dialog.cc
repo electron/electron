@@ -12,56 +12,13 @@
 #include "atom/browser/ui/file_dialog.h"
 #include "atom/browser/ui/message_box.h"
 #include "atom/common/native_mate_converters/callback.h"
+#include "atom/common/native_mate_converters/file_dialog_converter.h"
 #include "atom/common/native_mate_converters/file_path_converter.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "native_mate/dictionary.h"
 
 #include "atom/common/node_includes.h"
-
-namespace mate {
-
-template <>
-struct Converter<file_dialog::Filter> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     file_dialog::Filter* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    if (!dict.Get("name", &(out->first)))
-      return false;
-    if (!dict.Get("extensions", &(out->second)))
-      return false;
-    return true;
-  }
-};
-
-template <>
-struct Converter<file_dialog::DialogSettings> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     file_dialog::DialogSettings* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    dict.Get("window", &(out->parent_window));
-    dict.Get("title", &(out->title));
-    dict.Get("message", &(out->message));
-    dict.Get("buttonLabel", &(out->button_label));
-    dict.Get("nameFieldLabel", &(out->name_field_label));
-    dict.Get("defaultPath", &(out->default_path));
-    dict.Get("filters", &(out->filters));
-    dict.Get("properties", &(out->properties));
-    dict.Get("showsTagField", &(out->shows_tag_field));
-#if defined(MAS_BUILD)
-    dict.Get("securityScopedBookmarks", &(out->security_scoped_bookmarks));
-#endif
-    return true;
-  }
-};
-
-}  // namespace mate
 
 namespace {
 
