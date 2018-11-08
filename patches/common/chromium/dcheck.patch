@@ -98,23 +98,6 @@ index d8aca9e2cbffdfd0bbb0bd67e8adfb53547132bb..86224ab7a3c5637422559da25bc8c104
    // The browser requested to clear the session history when it initiated the
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
-diff --git a/content/browser/frame_host/render_frame_host_impl.cc b/content/browser/frame_host/render_frame_host_impl.cc
-index 8e5af3e3b9c5b9e5c7a2462600fb2c9582df0c7c..520dcffb53534e76d739cff74ea58d49bdfb682a 100644
---- a/content/browser/frame_host/render_frame_host_impl.cc
-+++ b/content/browser/frame_host/render_frame_host_impl.cc
-@@ -2416,8 +2416,10 @@ void RenderFrameHostImpl::AllowBindings(int bindings_flags) {
-   }
- 
-   enabled_bindings_ |= bindings_flags;
--  if (GetParent())
--    DCHECK_EQ(GetParent()->GetEnabledBindings(), GetEnabledBindings());
-+  // WebUI in sub frames require binding policy while the parent does not,
-+  // Fix this when we use OOPIF in Electron.
-+  // if (GetParent())
-+  //  DCHECK_EQ(GetParent()->GetEnabledBindings(), GetEnabledBindings());
- 
-   if (render_frame_created_) {
-     if (!frame_bindings_control_)
 diff --git a/ppapi/host/ppapi_host.cc b/ppapi/host/ppapi_host.cc
 index 3f80e73535c8b4a2bcff08821e3585306f691c8b..bf40b94ad24c0621cbe093002c3355693219ebc4 100644
 --- a/ppapi/host/ppapi_host.cc
