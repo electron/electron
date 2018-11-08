@@ -664,8 +664,11 @@ void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
 }
 
 v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
-  gfx::AcceleratedWidget handle = window_->GetAcceleratedWidget();
-  return ToBuffer(isolate(), static_cast<void*>(&handle), sizeof(handle));
+  // TODO(MarshallOfSound): Replace once
+  // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
+  // landed
+  auto handle = window_->GetNativeWindowHandlePointer();
+  return ToBuffer(isolate(), std::get<0>(handle), std::get<1>(handle));
 }
 
 void TopLevelWindow::SetProgressBar(double progress, mate::Arguments* args) {
