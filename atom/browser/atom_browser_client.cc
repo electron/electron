@@ -21,6 +21,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/font_defaults.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/native_window.h"
@@ -300,6 +301,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+
+  SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
   auto* web_contents = content::WebContents::FromRenderViewHost(host);
