@@ -51,24 +51,6 @@ index 08c1f0fc59672b2134c634e081f0c4df4d261b75..7a758ce3ef90145d2b68e07e17f00fc3
  
  #define DCHECK(condition)                                           \
    LAZY_STREAM(LOG_STREAM(DCHECK), !ANALYZER_ASSUME_TRUE(condition)) \
-diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
-index 18ef58a725c3a87a30413a4676044533f1751c7c..239f319c8b4cf52c115acd6173a15978f6ff3386 100644
---- a/base/process/process_metrics_win.cc
-+++ b/base/process/process_metrics_win.cc
-@@ -153,10 +153,9 @@ bool ProcessMetrics::GetIOCounters(IoCounters* io_counters) const {
- ProcessMetrics::ProcessMetrics(ProcessHandle process) {
-   if (process) {
-     HANDLE duplicate_handle = INVALID_HANDLE_VALUE;
--    BOOL result = ::DuplicateHandle(::GetCurrentProcess(), process,
--                                    ::GetCurrentProcess(), &duplicate_handle,
--                                    PROCESS_QUERY_INFORMATION, FALSE, 0);
--    DPCHECK(result);
-+    ::DuplicateHandle(::GetCurrentProcess(), process,
-+                      ::GetCurrentProcess(), &duplicate_handle,
-+                      PROCESS_QUERY_INFORMATION, FALSE, 0);
-     process_.Set(duplicate_handle);
-   }
- }
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
 index d8aca9e2cbffdfd0bbb0bd67e8adfb53547132bb..86224ab7a3c5637422559da25bc8c1040a03e937 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
