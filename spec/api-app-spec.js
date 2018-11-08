@@ -124,7 +124,12 @@ describe('app module', () => {
 
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
-      expect(app.getLocaleCountryCode().length).to.be.oneOf([0, 2])
+      let expectedLength = 2;
+      if (isCi && process.platform === 'linux') {
+        // Linux CI machines have no locale.
+        expectedLength = 0
+      }
+      expect(app.getLocaleCountryCode()).to.be.a('string').and.have.lengthOf(expectedLength)
     })
   })
 
