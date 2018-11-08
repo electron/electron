@@ -202,6 +202,13 @@ jobs:
       ArtifactName: Default
     timeoutInMinutes: 1
 
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (mksnapshot.zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/mksnapshot.zip'
+      ArtifactName: Default
+    timeoutInMinutes: 1
+
   - bash: |
       echo $BUILD_SOURCEVERSION > revision
     displayName: Save exact revision
