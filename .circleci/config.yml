@@ -243,6 +243,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
 
       # Build artifacts
       - src/out/Default/dist.zip
+      - src/out/Default/mksnapshot.zip
       - src/out/Default/gen/node_headers
 
 step-electron-dist-unzip: &step-electron-dist-unzip
@@ -253,6 +254,13 @@ step-electron-dist-unzip: &step-electron-dist-unzip
       # -o  overwrite files WITHOUT prompting
       # TODO(alexeykuzmin): Remove '-o' when it's no longer needed.
       unzip -o dist.zip
+
+step-mksnapshot-unzip: &step-mksnapshot-unzip
+  run:
+    name: Unzip mksnapshot.zip
+    command: |
+      cd src/out/Default
+      unzip mksnapshot.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
   run:
@@ -631,6 +639,7 @@ steps-verify-mksnapshot: &steps-verify-mksnapshot
         at: .
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
+    - *step-mksnapshot-unzip
     - *step-setup-linux-for-headless-testing
 
     - *step-verify-mksnapshot
@@ -642,6 +651,7 @@ steps-tests: &steps-tests
         at: .
     - *step-depot-tools-add-to-path
     - *step-electron-dist-unzip
+    - *step-mksnapshot-unzip
     - *step-setup-linux-for-headless-testing
     - *step-install-nodejs-on-mac
 
