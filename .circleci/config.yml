@@ -260,7 +260,7 @@ step-mksnapshot-unzip: &step-mksnapshot-unzip
     name: Unzip mksnapshot.zip
     command: |
       cd src/out/Default
-      unzip mksnapshot.zip
+      unzip -o mksnapshot.zip
 
 step-ffmpeg-gn-gen: &step-ffmpeg-gn-gen
   run:
