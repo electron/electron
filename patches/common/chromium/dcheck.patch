@@ -51,21 +51,6 @@ index 08c1f0fc59672b2134c634e081f0c4df4d261b75..7a758ce3ef90145d2b68e07e17f00fc3
  
  #define DCHECK(condition)                                           \
    LAZY_STREAM(LOG_STREAM(DCHECK), !ANALYZER_ASSUME_TRUE(condition)) \
-diff --git a/base/memory/weak_ptr.cc b/base/memory/weak_ptr.cc
-index c993fcb8a13a156c1ba6fc1979d8d18fbedd9059..80a5b708d2597bbda53826dac4175fe9788bf154 100644
---- a/base/memory/weak_ptr.cc
-+++ b/base/memory/weak_ptr.cc
-@@ -25,8 +25,8 @@ void WeakReference::Flag::Invalidate() {
- }
- 
- bool WeakReference::Flag::IsValid() const {
--  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_)
--      << "WeakPtrs must be checked on the same sequenced thread.";
-+  // DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_)
-+  //     << "WeakPtrs must be checked on the same sequenced thread.";
-   return !invalidated_.IsSet();
- }
- 
 diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
 index 18ef58a725c3a87a30413a4676044533f1751c7c..239f319c8b4cf52c115acd6173a15978f6ff3386 100644
 --- a/base/process/process_metrics_win.cc
