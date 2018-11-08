@@ -635,7 +635,7 @@ if (is_mac) {
       "$root_out_dir/$electron_login_helper_name.app",
     ]
     outputs = [
-      "{{bundle_contents_dir}}/Library/LoginItems",
+      "{{bundle_contents_dir}}/Library/LoginItems/{{source_file_part}}",
     ]
   }
 
