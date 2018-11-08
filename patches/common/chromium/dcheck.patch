@@ -178,19 +178,6 @@ index 3f80e73535c8b4a2bcff08821e3585306f691c8b..bf40b94ad24c0621cbe093002c335569
      return;
    }
  
-diff --git a/third_party/blink/renderer/core/dom/node.cc b/third_party/blink/renderer/core/dom/node.cc
-index 5629f8170851f0b58069e2cd0c14ebe093d89d00..bc773ac9b1e462385dcbb8bef2fc4c2d7e6c7b06 100644
---- a/third_party/blink/renderer/core/dom/node.cc
-+++ b/third_party/blink/renderer/core/dom/node.cc
-@@ -2568,7 +2568,7 @@ StaticNodeList* Node::getDestinationInsertionPoints() {
- 
- HTMLSlotElement* Node::AssignedSlot() const {
-   // assignedSlot doesn't need to call updateDistribution().
--  DCHECK(!IsPseudoElement());
-+  // DCHECK(!IsPseudoElement());
-   if (ShadowRoot* root = V1ShadowRootOfParent())
-     return root->AssignedSlotFor(*this);
-   return nullptr;
 diff --git a/third_party/blink/renderer/core/loader/BUILD.gn b/third_party/blink/renderer/core/loader/BUILD.gn
 index 49b4ead3dc521796bf3c6a207a072ff5eeff1849..0083e5c8efb71cf2cb097944174dcad8eff1cc3e 100644
 --- a/third_party/blink/renderer/core/loader/BUILD.gn
