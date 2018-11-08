@@ -124,22 +124,6 @@ index 5629f8170851f0b58069e2cd0c14ebe093d89d00..bc773ac9b1e462385dcbb8bef2fc4c2d
    if (ShadowRoot* root = V1ShadowRootOfParent())
      return root->AssignedSlotFor(*this);
    return nullptr;
-diff --git a/third_party/blink/renderer/core/loader/BUILD.gn b/third_party/blink/renderer/core/loader/BUILD.gn
-index 49b4ead3dc521796bf3c6a207a072ff5eeff1849..0083e5c8efb71cf2cb097944174dcad8eff1cc3e 100644
---- a/third_party/blink/renderer/core/loader/BUILD.gn
-+++ b/third_party/blink/renderer/core/loader/BUILD.gn
-@@ -135,4 +135,11 @@ blink_core_sources("loader") {
-   public_deps = [
-     "//third_party/blink/renderer/platform",
-   ]
-+
-+  if (is_electron_build) {
-+    if (!defined(defines)) {
-+      defines = []
-+    }
-+    defines += [ "ELECTRON_NO_DCHECK" ]
-+  }
- }
 diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
 index 0e7c40b732ec283e006b2e3517c42e699d7e3102..7c513d95a586d8ac80e691aa89abaf49793e9a18 100644
 --- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
