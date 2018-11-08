@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
@@ -694,6 +695,16 @@ describe('webContents module', () => {
     it('does not throw', () => {
       assert.strictEqual(w.webContents.setIgnoreMenuShortcuts(true), undefined)
       assert.strictEqual(w.webContents.setIgnoreMenuShortcuts(false), undefined)
+    })
+  })
+
+  describe('create()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontents.js')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
     })
   })
 

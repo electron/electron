@@ -339,7 +339,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   mate::Dictionary process(context->GetIsolate(), env->process_object());
-  process.Set("type", process_type);
+  process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BROWSER)

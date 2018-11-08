@@ -158,18 +158,18 @@ void AtomSandboxedRendererClient::InitializeBindings(
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.Set("execPath", GetExecPath());
-  process.Set("pid", base::GetCurrentProcId());
+  process.SetReadOnly("pid", base::GetCurrentProcId());
   process.Set("resourcesPath", NodeBindings::GetHelperResourcesPath());
-  process.Set("sandboxed", true);
-  process.Set("type", "renderer");
+  process.SetReadOnly("sandboxed", true);
+  process.SetReadOnly("type", "renderer");
 
 #if defined(MAS_BUILD)
-  process.Set("mas", true);
+  process.SetReadOnly("mas", true);
 #endif
 
 #if defined(OS_WIN)
   if (IsRunningInDesktopBridge())
-    process.Set("windowsStore", true);
+    process.SetReadOnly("windowsStore", true);
 #endif
 
   // Pass in CLI flags needed to setup the renderer
