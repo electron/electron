@@ -208,6 +208,7 @@ static_library("electron_lib") {
     "//base",
     "//base:base_static",
     "//base:i18n",
+    "//chrome/app/resources:platform_locale_settings",
     "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",

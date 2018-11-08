@@ -106,7 +106,19 @@ class WebContents : public mate::TrackableObject<WebContents>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  // Notifies to destroy any guest web contents before destroying self.
+  // Destroy the managed content::WebContents instance.
+  //
+  // Note: The |async| should only be |true| when users are expecting to use the
+  // webContents immediately after the call. Always pass |false| if you are not
+  // sure.
+  // See https://github.com/electron/electron/issues/8930.
+  //
+  // Note: When destroying a webContents member inside a destructor, the |async|
+  // should always be |false|, otherwise the destroy task might be delayed after
+  // normal shutdown procedure, resulting in an assertion.
+  // The normal pattern for calling this method in destructor is:
+  // api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down())
+  // See https://github.com/electron/electron/issues/15133.
   void DestroyWebContents(bool async);
 
   void SetBackgroundThrottling(bool allowed);

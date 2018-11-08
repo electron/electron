@@ -17,6 +17,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/atom_navigation_throttle.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
@@ -493,14 +494,25 @@ WebContents::~WebContents() {
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
     if (type_ == WEB_VIEW) {
+      // For webview simply destroy the WebContents immediately.
+      // TODO(zcbenz): Add an internal API for webview instead of using
+      // destroy(), so we don't have to add a special branch here.
+      DestroyWebContents(false /* async */);
+    } else if (type_ == BROWSER_WINDOW && owner_window()) {
+      // For BrowserWindow we should close the window and clean up everything
+      // before WebContents is destroyed.
+      for (ExtendedWebContentsObserver& observer : observers_)
+        observer.OnCloseContents();
+      // BrowserWindow destroys WebContents asynchronously, manually emit the
+      // destroyed event here.
+      WebContentsDestroyed();
+    } else if (Browser::Get()->is_shutting_down()) {
+      // Destroy WebContents directly when app is shutting down.
       DestroyWebContents(false /* async */);
     } else {
-      if (type_ == BROWSER_WINDOW && owner_window()) {
-        for (ExtendedWebContentsObserver& observer : observers_)
-          observer.OnCloseContents();
-      } else {
-        DestroyWebContents(true /* async */);
-      }
+      // Destroy WebContents asynchronously unless app is shutting down,
+      // because destroy() might be called inside WebContents's event handler.
+      DestroyWebContents(true /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
       // call it here to make sure "destroyed" event is emitted.
@@ -567,6 +579,7 @@ void WebContents::AddNewContents(
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name)) {
+    // TODO(zcbenz): Can we make this sync?
     api_web_contents->DestroyWebContents(true /* async */);
   }
 }
