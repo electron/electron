@@ -138,18 +138,3 @@ index e49dd8c81270cdd9794ddee11bad036c2f444af5..9e61c901cd2df168520b83a8522ca8c0
      FreeData(format, handle);
    }
  }
-diff --git a/url/BUILD.gn b/url/BUILD.gn
-index 57bbe16c15ea442963a53f89b009e2c99c7b090a..07725187c595784d9e5f49d45a8835da78144830 100644
---- a/url/BUILD.gn
-+++ b/url/BUILD.gn
-@@ -98,6 +98,10 @@ component("url") {
-     ]
-     deps += [ "//third_party/icu" ]
-   }
-+
-+  if (is_electron_build) {
-+    defines += [ "ELECTRON_NO_DCHECK" ]
-+  }
- }
- 
- if (is_android) {
