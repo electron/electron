@@ -66,19 +66,6 @@ index c993fcb8a13a156c1ba6fc1979d8d18fbedd9059..80a5b708d2597bbda53826dac4175fe9
    return !invalidated_.IsSet();
  }
  
-diff --git a/base/process/kill_win.cc b/base/process/kill_win.cc
-index 7a664429bcd305b10da8c7317700f9124742f3b8..26f49dc3d1e782e69e74f2d177535b80a54b2433 100644
---- a/base/process/kill_win.cc
-+++ b/base/process/kill_win.cc
-@@ -23,7 +23,7 @@ TerminationStatus GetTerminationStatus(ProcessHandle handle, int* exit_code) {
-   DWORD tmp_exit_code = 0;
- 
-   if (!::GetExitCodeProcess(handle, &tmp_exit_code)) {
--    DPLOG(FATAL) << "GetExitCodeProcess() failed";
-+    // DPLOG(FATAL) << "GetExitCodeProcess() failed";
- 
-     // This really is a random number.  We haven't received any
-     // information about the exit code, presumably because this
 diff --git a/base/process/process_metrics_win.cc b/base/process/process_metrics_win.cc
 index 18ef58a725c3a87a30413a4676044533f1751c7c..239f319c8b4cf52c115acd6173a15978f6ff3386 100644
 --- a/base/process/process_metrics_win.cc
