@@ -1,7 +1,10 @@
 'use strict'
 
 const chai = require('chai')
+const ChildProcess = require('child_process')
 const dirtyChai = require('dirty-chai')
+const path = require('path')
+const {emittedOnce} = require('./events-helpers')
 const {closeWindow} = require('./window-helpers')
 
 const {remote} = require('electron')
@@ -170,6 +173,16 @@ describe('BrowserView module', () => {
       const views = BrowserView.getAllViews()
       expect(views).to.be.an('array').that.has.lengthOf(1)
       expect(views[0].webContents.id).to.equal(view.webContents.id)
+    })
+  })
+
+  describe('new BrowserView()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-browserview.js')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
     })
   })
 })
