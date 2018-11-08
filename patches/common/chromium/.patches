@@ -79,3 +79,4 @@ content_browser_main_loop.patch
 dump_syms.patch
 web_preferences.patch
 verbose_generate_breakpad_symbols.patch
+fix_zoom_display.patch
