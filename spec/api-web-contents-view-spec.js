@@ -1,8 +1,13 @@
 'use strict'
 
 const assert = require('assert')
+const ChildProcess = require('child_process')
+const path = require('path')
+const {emittedOnce} = require('./events-helpers')
 const {closeWindow} = require('./window-helpers')
-const {webContents, TopLevelWindow, WebContentsView} = require('electron').remote
+
+const {remote} = require('electron')
+const {webContents, TopLevelWindow, WebContentsView} = remote
 
 describe('WebContentsView', () => {
   let w = null
@@ -21,5 +26,15 @@ describe('WebContentsView', () => {
     assert.throws(() => {
       w.setContentView(new WebContentsView(web))
     }, /The WebContents has already been added to a View/)
+  })
+
+  describe('new WebContentsView()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontentsview.js')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      assert.equal(code, 0)
+    })
   })
 })
