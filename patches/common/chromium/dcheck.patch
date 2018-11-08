@@ -97,28 +97,6 @@ index 18ef58a725c3a87a30413a4676044533f1751c7c..239f319c8b4cf52c115acd6173a15978
      process_.Set(duplicate_handle);
    }
  }
-diff --git a/components/viz/service/display/program_binding.h b/components/viz/service/display/program_binding.h
-index 2a8fb9f5484768f88ec6d383639da2d42fd777fd..2c318b310b2aeb39a1256feb612e19dc0fd53a72 100644
---- a/components/viz/service/display/program_binding.h
-+++ b/components/viz/service/display/program_binding.h
-@@ -434,7 +434,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
-     if (!ProgramBindingBase::Init(context_provider->ContextGL(),
-                                   vertex_shader_.GetShaderString(),
-                                   fragment_shader_.GetShaderString())) {
--      DCHECK(IsContextLost(context_provider->ContextGL()));
-+      // DCHECK(IsContextLost(context_provider->ContextGL()));
-       return;
-     }
- 
-@@ -446,7 +446,7 @@ class VIZ_SERVICE_EXPORT Program : public ProgramBindingBase {
- 
-     // Link after binding uniforms
-     if (!Link(context_provider->ContextGL())) {
--      DCHECK(IsContextLost(context_provider->ContextGL()));
-+      // DCHECK(IsContextLost(context_provider->ContextGL()));
-       return;
-     }
- 
 diff --git a/content/browser/frame_host/navigation_controller_impl.cc b/content/browser/frame_host/navigation_controller_impl.cc
 index d8aca9e2cbffdfd0bbb0bd67e8adfb53547132bb..86224ab7a3c5637422559da25bc8c1040a03e937 100644
 --- a/content/browser/frame_host/navigation_controller_impl.cc
