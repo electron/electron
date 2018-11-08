@@ -243,6 +243,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
 
       # Build artifacts
       - src/out/Default/dist.zip
+      - src/out/Default/mksnapshot.zip
       - src/out/Default/gen/node_headers
 
 step-electron-dist-unzip: &step-electron-dist-unzip
