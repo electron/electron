@@ -948,10 +948,7 @@ describe('webContents module', () => {
         { name: 'dom-ready', url: `${server.url}/200` },
         { name: 'did-stop-loading', url: `${server.url}/200` },
         { name: 'did-finish-load', url: `${server.url}/200` },
-        // FIXME: Multiple Emit calls inside an observer assume that object
-        // will be alive till end of the observer. Synchronous `destroy` api
-        // violates this contract and crashes.
-        // { name: 'did-frame-finish-load', url: `${server.url}/200` },
+        { name: 'did-frame-finish-load', url: `${server.url}/200` },
         { name: 'did-fail-load', url: `${server.url}/404` }
       ]
       const responseEvent = 'webcontents-destroyed'

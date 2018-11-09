@@ -855,18 +855,9 @@ describe('chromium feature', () => {
   })
 
   describe('webgl', () => {
-    before(function () {
-      if (isCI && process.platform === 'win32') {
-        this.skip()
-      }
-    })
-
     it('can be get as context in canvas', () => {
-      if (process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
+      // WebGL doesn't work on ia32 linux in CI
+      if (process.platform === 'linux' && process.arch === 'ia32' && isCI) return;
 
       const webgl = document.createElement('canvas').getContext('webgl')
       assert.notStrictEqual(webgl, null)

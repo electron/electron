@@ -8,12 +8,11 @@ const fs = require('fs')
 const path = require('path')
 const { ipcRenderer, remote } = require('electron')
 const { emittedOnce } = require('./events-helpers')
+const { platformIt } = require('./test-helpers')
 const { closeWindow } = require('./window-helpers')
 
 const { expect } = chai
 const { app, BrowserWindow, Menu, ipcMain } = remote
-
-const isCI = remote.getGlobal('isCi')
 
 chai.use(chaiAsPromised)
 chai.use(dirtyChai)
@@ -522,13 +521,7 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAsHidden).to.be.false()
     })
 
-    it('allows you to pass a custom executable and arguments', function () {
-      if (process.platform !== 'win32') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
+    platformIt('allows you to pass a custom executable and arguments', ['win32'], function () {
       app.setLoginItemSettings({ openAtLogin: true, path: updateExe, args: processStartArgs })
 
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
@@ -760,6 +753,7 @@ describe('app module', () => {
       large: process.platform === 'win32' ? 32 : 48
     }
 
+<<<<<<< HEAD
     // (alexeykuzmin): `.skip()` called in `before`
     // doesn't affect nested `describe`s.
     beforeEach(function () {
@@ -772,6 +766,14 @@ describe('app module', () => {
     it('fetches a non-empty icon', async () => {
       const icon = await app.getFileIcon(iconPath)
       expect(icon.isEmpty()).to.be.false()
+=======
+    it('fetches a non-empty icon', done => {
+      app.getFileIcon(iconPath, (err, icon) => {
+        expect(err).to.be.null()
+        expect(icon.isEmpty()).to.be.false()
+        done()
+      })
+>>>>>>> chore: remove FIXME test skips to see what passes
     })
 
     it('fetches normal icon size by default', async () => {
@@ -799,10 +801,7 @@ describe('app module', () => {
         expect(size.width).to.equal(sizes.normal)
       })
 
-      it('fetches a large icon', async () => {
-        // macOS does not support large icons
-        if (process.platform === 'darwin') return
-
+      platformIt('fetches a large icon', ['linux', 'win32'], async () => {
         const icon = await app.getFileIcon(iconPath, { size: 'large' })
         const size = icon.getSize()
 

@@ -19,6 +19,8 @@ const { expect } = chai
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
+const { platformIt } = require('./test-helpers')
+
 chai.use(dirtyChai)
 
 describe('BrowserWindow module', () => {
@@ -797,16 +799,7 @@ describe('BrowserWindow module', () => {
       w.setAlwaysOnTop(true)
       assert.strictEqual(w.isAlwaysOnTop(), true)
     })
-    it('raises an error when relativeLevel is out of bounds', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
-        // afterEach hook won't be run if a test is skipped dynamically.
-        // If afterEach isn't run current window won't be destroyed
-        // and the next test will fail on assertion in `closeWindow()`.
-        // this.skip()
-        return
-      }
-
+    platformIt('raises an error when relativeLevel is out of bounds', ['darwin'], function () {
       assert.throws(() => {
         w.setAlwaysOnTop(true, '', -2147483644)
       })
@@ -2157,15 +2150,6 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
     it('visibilityState changes when window is shown inactive', function (done) {
-      if (isCI && process.platform === 'win32') {
-        // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
-        // afterEach hook won't be run if a test is skipped dynamically.
-        // If afterEach isn't run current window won't be destroyed
-        // and the next test will fail on assertion in `closeWindow()`.
-        // this.skip()
-        return done()
-      }
-
       w = new BrowserWindow({ width: 100, height: 100 })
 
       onNextVisibilityChange((visibilityState, hidden) => {
@@ -2182,16 +2166,7 @@ describe('BrowserWindow module', () => {
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'))
     })
-    it('visibilityState changes when window is minimized', function (done) {
-      if (isCI && process.platform === 'linux') {
-        // FIXME(alexeykuzmin): Skip the test instead of marking it as passed.
-        // afterEach hook won't be run if a test is skipped dynamically.
-        // If afterEach isn't run current window won't be destroyed
-        // and the next test will fail on assertion in `closeWindow()`.
-        // this.skip()
-        return done()
-      }
-
+    platformIt('visibilityState changes when window is minimized', ['win32', 'darwin'], function (done) {
       w = new BrowserWindow({ width: 100, height: 100 })
 
       onNextVisibilityChange((visibilityState, hidden) => {

@@ -167,12 +167,6 @@ describe('<webview> tag', function () {
     })
 
     it('loads node symbols after POST navigation when set', async function () {
-      // FIXME Figure out why this is timing out on AppVeyor
-      if (process.env.APPVEYOR === 'True') {
-        this.skip()
-        return
-      }
-
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         nodeintegration: 'on',
         src: `file://${fixtures}/pages/post.html`

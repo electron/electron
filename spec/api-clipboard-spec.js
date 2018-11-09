@@ -4,6 +4,8 @@ const { Buffer } = require('buffer')
 
 const { clipboard, nativeImage } = require('electron')
 
+const { platformIt } = require('./test-helpers')
+
 describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
 
@@ -104,15 +106,15 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.writeBuffer(format, buffer)', () => {
-    it('writes a Buffer for the specified format', function () {
-      if (process.platform !== 'darwin') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return
-      }
-
+    platformIt('writes a Buffer for the specified format', ['darwin'], function () {
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
+      expect(clipboard.readText()).to.equal('writeBuffer')
+    })
+
+    platformIt('writes a Buffer for the specified format', ['linux'], function () {
+      const buffer = Buffer.from('writeBuffer', 'utf8')
+      clipboard.writeBuffer('text/plain', buffer)
       expect(clipboard.readText()).to.equal('writeBuffer')
     })
 
