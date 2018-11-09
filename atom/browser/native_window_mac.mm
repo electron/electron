@@ -1085,6 +1085,11 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
+  // Retain the child window before closing it. If the last reference to the
+  // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
+  // See e.g. http://crbug.com/616701.
+  base::scoped_nsobject<NSWindow> child_window(window_,
+                                               base::scoped_policy::RETAIN);
   [window_ close];
 }
 
