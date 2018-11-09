@@ -6,7 +6,8 @@
       "requires": {
         "device": [ "device:geolocation_control" ],
         "proxy_resolver": [ "factory" ],
-        "chrome_printing": [ "converter" ]
+        "chrome_printing": [ "converter" ],
+        "pdf_compositor": [ "compositor"]
       }
     }
   }

@@ -5,6 +5,11 @@
     V8 Proxy Resolver
   </message>
 
+  <!-- PDF Compositor Service -->
+  <message name="IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME" desc="The name of the utility process used for PDF compositing.">
+    PDF Compositor Service
+  </message>
+
   <!-- Printing Service -->
   <message name="IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME" desc="The name of the utility process used for printing conversions.">
     Printing Service

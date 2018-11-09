@@ -4,6 +4,7 @@
 
 #include "atom/utility/atom_content_utility_client.h"
 
+#include <string>
 #include <utility>
 
 #include "base/command_line.h"
@@ -17,6 +18,8 @@
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/services/printing/printing_service.h"
 #include "chrome/services/printing/public/mojom/constants.mojom.h"
+#include "components/services/pdf_compositor/public/cpp/pdf_compositor_service_factory.h"
+#include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
 
 #if defined(OS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
@@ -92,6 +95,11 @@ void AtomContentUtilityClient::RegisterServices(StaticServiceMap* services) {
                     proxy_resolver_info);
 
 #if BUILDFLAG(ENABLE_PRINTING)
+  service_manager::EmbeddedServiceInfo pdf_compositor_info;
+  pdf_compositor_info.factory =
+      base::BindRepeating(&printing::CreatePdfCompositorService, std::string());
+  services->emplace(printing::mojom::kServiceName, pdf_compositor_info);
+
   service_manager::EmbeddedServiceInfo printing_info;
   printing_info.factory =
       base::BindRepeating(&printing::PrintingService::CreateService);
