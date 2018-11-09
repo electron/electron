@@ -197,6 +197,8 @@ bool RootView::AcceleratorPressed(const ui::Accelerator& accelerator) {
 }
 
 void RootView::RegisterAcceleratorsWithFocusManager(AtomMenuModel* menu_model) {
+  if (!menu_model)
+    return;
   // Clear previous accelerators.
   UnregisterAcceleratorsWithFocusManager();
 
