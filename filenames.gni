@@ -334,8 +334,6 @@ filenames = {
     "atom/browser/net/url_request_fetch_job.h",
     "atom/browser/net/url_request_stream_job.cc",
     "atom/browser/net/url_request_stream_job.h",
-    "atom/browser/notifications/linux/libnotify_loader.cc",
-    "atom/browser/notifications/linux/libnotify_loader.h",
     "atom/browser/notifications/linux/libnotify_notification.cc",
     "atom/browser/notifications/linux/libnotify_notification.h",
     "atom/browser/notifications/linux/notification_presenter_linux.cc",
