@@ -50,8 +50,7 @@ class PrintPreviewMessageHandler
       content::RenderFrameHost* render_frame_host,
       const PrintHostMsg_DidPreviewDocument_Params& params,
       const PrintHostMsg_PreviewIds& ids);
-  void OnCompositePdfDocumentDone(int page_number,
-                                  const PrintHostMsg_PreviewIds& ids,
+  void OnCompositePdfDocumentDone(const PrintHostMsg_PreviewIds& ids,
                                   printing::mojom::PdfCompositor::Status status,
                                   base::ReadOnlySharedMemoryRegion region);
   void OnPrintPreviewFailed(int document_cookie,
