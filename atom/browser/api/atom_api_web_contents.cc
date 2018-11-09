@@ -80,7 +80,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
-#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
@@ -102,39 +101,15 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "atom/browser/atom_print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "components/printing/common/print_messages.h"
 #endif
 
 #include "atom/common/node_includes.h"
 
-namespace {
-
-struct PrintSettings {
-  bool silent;
-  bool print_background;
-  base::string16 device_name;
-};
-
-}  // namespace
-
 namespace mate {
 
-template <>
-struct Converter<PrintSettings> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     PrintSettings* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    dict.Get("silent", &(out->silent));
-    dict.Get("printBackground", &(out->print_background));
-    dict.Get("deviceName", &(out->device_name));
-    return true;
-  }
-};
-
+#if BUILDFLAG(ENABLE_PRINTING)
 template <>
 struct Converter<printing::PrinterBasicInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -148,6 +123,7 @@ struct Converter<printing::PrinterBasicInfo> {
     return dict.GetHandle();
   }
 };
+#endif
 
 template <>
 struct Converter<WindowOpenDisposition> {
@@ -1477,50 +1453,58 @@ bool WebContents::IsDOMReady() const {
   return is_dom_ready_;
 }
 
-void WebContents::Print(mate::Arguments* args) {
 #if BUILDFLAG(ENABLE_PRINTING)
-  PrintSettings settings = {false, false, base::string16()};
-  if (args->Length() >= 1 && !args->GetNext(&settings)) {
-    args->ThrowError();
+void WebContents::Print(mate::Arguments* args) {
+  bool silent, print_background = false;
+  base::string16 device_name;
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  base::DictionaryValue settings;
+  if (args->Length() >= 1 && !args->GetNext(&options)) {
+    args->ThrowError("Invalid print settings specified");
     return;
   }
-  auto* print_view_manager_basic_ptr =
-      printing::PrintViewManagerBasic::FromWebContents(web_contents());
-  if (args->Length() == 2) {
-    base::Callback<void(bool)> callback;
-    if (!args->GetNext(&callback)) {
-      args->ThrowError();
-      return;
-    }
-    print_view_manager_basic_ptr->SetCallback(callback);
+  printing::CompletionCallback callback;
+  if (args->Length() == 2 && !args->GetNext(&callback)) {
+    args->ThrowError("Invalid optional callback provided");
+    return;
   }
-  print_view_manager_basic_ptr->PrintNow(
-      web_contents()->GetMainFrame(), settings.silent,
-      settings.print_background, settings.device_name);
-#else
-  LOG(ERROR) << "Printing is disabled";
-#endif
+  options.Get("silent", &silent);
+  options.Get("printBackground", &print_background);
+  if (options.Get("deviceName", &device_name) && !device_name.empty()) {
+    settings.SetString(printing::kSettingDeviceName, device_name);
+  }
+  auto* print_view_manager =
+      printing::PrintViewManagerBasic::FromWebContents(web_contents());
+  auto* focused_frame = web_contents()->GetFocusedFrame();
+  auto* rfh = focused_frame && focused_frame->HasSelection()
+                  ? focused_frame
+                  : web_contents()->GetMainFrame();
+  print_view_manager->PrintNow(
+      rfh,
+      std::make_unique<PrintMsg_PrintPages>(rfh->GetRoutingID(), silent,
+                                            print_background, settings),
+      std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
-
-#if BUILDFLAG(ENABLE_PRINTING)
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
-  print_backend->EnumeratePrinters(&printers);
-#endif
-
+  {
+    // TODO(deepak1556): Deprecate this api in favor of an
+    // async version and post a non blocing task call.
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    print_backend->EnumeratePrinters(&printers);
+  }
   return printers;
 }
 
-void WebContents::PrintToPDF(const base::DictionaryValue& setting,
-                             const PrintToPDFCallback& callback) {
-#if BUILDFLAG(ENABLE_PRINTING)
-  AtomPrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(setting, callback);
-#endif
+void WebContents::PrintToPDF(
+    const base::DictionaryValue& settings,
+    const PrintPreviewMessageHandler::PrintToPDFCallback& callback) {
+  PrintPreviewMessageHandler::FromWebContents(web_contents())
+      ->PrintToPDF(settings, callback);
 }
+#endif
 
 void WebContents::AddWorkSpace(mate::Arguments* args,
                                const base::FilePath& path) {
@@ -2140,9 +2124,11 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unregisterServiceWorker",
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
-      .SetMethod("print", &WebContents::Print)
-      .SetMethod("getPrinters", &WebContents::GetPrinterList)
+#if BUILDFLAG(ENABLE_PRINTING)
+      .SetMethod("_print", &WebContents::Print)
+      .SetMethod("_getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+#endif
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",

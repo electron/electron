@@ -39,8 +39,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/printing/printing_message_filter.h"
-#include "chrome/browser/speech/tts_message_filter.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -87,7 +85,9 @@
 #endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
 
 #if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/services/printing/public/mojom/constants.mojom.h"
+#include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 using content::BrowserThread;
@@ -218,7 +218,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     return;
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  host->AddFilter(new printing::PrintingMessageFilter(process_id));
+  host->AddFilter(new printing::PrintingMessageFilter(
+      process_id, host->GetBrowserContext()));
 #endif
 
   ProcessPreferences prefs;
@@ -545,6 +546,10 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
                           IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
 
 #if BUILDFLAG(ENABLE_PRINTING)
+  (*services)[printing::mojom::kServiceName] =
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME);
+
   (*services)[printing::mojom::kChromePrintingServiceName] =
       base::BindRepeating(&l10n_util::GetStringUTF16,
                           IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);

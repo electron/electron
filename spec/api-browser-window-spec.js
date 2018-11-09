@@ -1720,43 +1720,6 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      it('can get printer list', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true,
-            preload: preload
-          }
-        })
-        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-        w.webContents.once('did-finish-load', () => {
-          const printers = w.webContents.getPrinters()
-          assert.strictEqual(Array.isArray(printers), true)
-          done()
-        })
-      })
-
-      it('can print to PDF', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true,
-            preload: preload
-          }
-        })
-        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.printToPDF({}, function (error, data) {
-            assert.strictEqual(error, null)
-            assert.strictEqual(data instanceof Buffer, true)
-            assert.notStrictEqual(data.length, 0)
-            done()
-          })
-        })
-      })
-
       it('supports calling preventDefault on new-window events', (done) => {
         w.destroy()
         w = new BrowserWindow({

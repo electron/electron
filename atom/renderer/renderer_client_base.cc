@@ -52,7 +52,7 @@
 #endif  // BUILDFLAG(ENABLE_PEPPER_FLASH)
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/renderer/printing/chrome_print_render_frame_helper_delegate.h"
+#include "atom/renderer/printing/print_render_frame_helper_delegate.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
@@ -189,7 +189,7 @@ void RendererClientBase::RenderFrameCreated(
   new ContentSettingsObserver(render_frame);
 #if BUILDFLAG(ENABLE_PRINTING)
   new printing::PrintRenderFrameHelper(
-      render_frame, std::make_unique<ChromePrintRenderFrameHelperDelegate>());
+      render_frame, std::make_unique<atom::PrintRenderFrameHelperDelegate>());
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)

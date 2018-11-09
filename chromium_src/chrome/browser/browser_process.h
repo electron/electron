@@ -14,6 +14,7 @@
 #include <string>
 
 #include "base/macros.h"
+#include "printing/buildflags/buildflags.h"
 
 namespace printing {
 class PrintJobManager;
@@ -29,8 +30,9 @@ class BrowserProcess {
   void SetApplicationLocale(const std::string& locale);
   std::string GetApplicationLocale();
 
+#if BUILDFLAG(ENABLE_PRINTING)
   printing::PrintJobManager* print_job_manager();
-
+#endif
  private:
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
   std::string locale_;
