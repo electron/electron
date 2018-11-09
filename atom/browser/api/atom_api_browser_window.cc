@@ -74,10 +74,6 @@ BrowserWindow::BrowserWindow(v8::Isolate* isolate,
   mate::Dictionary(isolate, web_contents->GetWrapper())
       .Set("browserWindowOptions", options);
 
-  // Tell the content module to initialize renderer widget with transparent
-  // mode.
-  ui::GpuSwitchingManager::SetTransparent(window()->transparent());
-
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
 
@@ -385,7 +381,9 @@ void BrowserWindow::Cleanup() {
   if (host)
     host->GetWidget()->RemoveInputEventObserver(this);
 
-  api_web_contents_->DestroyWebContents(true /* async */);
+  // Destroy WebContents asynchronously unless app is shutting down,
+  // because destroy() might be called inside WebContents's event handler.
+  api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
   Observe(nullptr);
 }
 
