@@ -9,6 +9,7 @@
 #include <string>
 
 #include "atom/browser/api/event_emitter.h"
+#include "atom/common/promise_util.h"
 #include "base/callback.h"
 #include "base/values.h"
 #include "native_mate/handle.h"
@@ -89,6 +90,13 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
                       mate::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
+
+  // TODO(codebytere): Write tests for these methods once we
+  // are running tests on a Mojave machine
+  std::string GetMediaAccessStatus(const std::string& media_type,
+                                   mate::Arguments* args);
+  v8::Local<v8::Promise> AskForMediaAccess(v8::Isolate* isolate,
+                                           const std::string& media_type);
 
   // TODO(MarshallOfSound): Write tests for these methods once we
   // are running tests on a Mojave machine

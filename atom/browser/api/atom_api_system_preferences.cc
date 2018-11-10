@@ -89,6 +89,9 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::GetAppLevelAppearance)
       .SetMethod("setAppLevelAppearance",
                  &SystemPreferences::SetAppLevelAppearance)
+      .SetMethod("getMediaAccessStatus",
+                 &SystemPreferences::GetMediaAccessStatus)
+      .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
 #endif
       .SetMethod("isInvertedColorScheme",
                  &SystemPreferences::IsInvertedColorScheme)
