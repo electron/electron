@@ -9,6 +9,7 @@ import("//build/config/win/manifest.gni")
 import("//pdf/features.gni")
 import("//services/service_manager/public/service_manifest.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
+import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
@@ -25,6 +26,13 @@ if (is_linux) {
 
   pkg_config("gio_unix") {
     packages = [ "gio-unix-2.0" ]
+  }
+
+  pkg_config("libnotify_config") {
+    packages = [
+      "glib-2.0",
+      "gdk-pixbuf-2.0",
+    ]
   }
 }
 
@@ -194,6 +202,30 @@ grit("resources") {
   output_dir = "$target_gen_dir"
 }
 
+if (is_linux) {
+  generate_library_loader("libnotify_loader") {
+    name = "LibNotifyLoader"
+    output_h = "libnotify_loader.h"
+    output_cc = "libnotify_loader.cc"
+    header = "<libnotify/notify.h>"
+    config = ":libnotify_config"
+
+    functions = [
+      "notify_is_initted",
+      "notify_init",
+      "notify_get_server_caps",
+      "notify_get_server_info",
+      "notify_notification_new",
+      "notify_notification_add_action",
+      "notify_notification_set_image_from_pixbuf",
+      "notify_notification_set_timeout",
+      "notify_notification_set_hint_string",
+      "notify_notification_show",
+      "notify_notification_close",
+    ]
+  }
+}
+
 static_library("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -345,6 +377,7 @@ static_library("electron_lib") {
   }
   if (is_linux) {
     deps += [
+      ":libnotify_loader",
       "//build/config/linux/gtk",
       "//chrome/browser/ui/libgtkui",
       "//device/bluetooth",
