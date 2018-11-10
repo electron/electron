@@ -1064,6 +1064,11 @@ details. Disabled by default.
 
 **Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
+### `app.showAboutPanel()` _macOS_
+
+Show the about panel with the values defined in the app's
+`.plist` file or with the options set via `app.setAboutPanelOptions(options)`.
+
 ### `app.setAboutPanelOptions(options)` _macOS_
 
 * `options` Object
