@@ -210,7 +210,7 @@ if (process.platform === 'darwin') {
     submenu: [
       { role: 'about' },
       { type: 'separator' },
-      { role: 'services', submenu: [] },
+      { role: 'services' },
       { type: 'separator' },
       { role: 'hide' },
       { role: 'hideothers' },
