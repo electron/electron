@@ -6,6 +6,7 @@
 
 #include <map>
 
+#import <AVFoundation/AVFoundation.h>
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/mac/atom_application.h"
@@ -77,6 +78,31 @@ int g_next_id = 0;
 
 // The map to convert |id| to |int|.
 std::map<int, id> g_id_map;
+
+AVMediaType ParseMediaType(const std::string& media_type) {
+  if (media_type == "camera") {
+    return AVMediaTypeVideo;
+  } else if (media_type == "microphone") {
+    return AVMediaTypeAudio;
+  } else {
+    return nil;
+  }
+}
+
+std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
+  switch (status) {
+    case AVAuthorizationStatusNotDeterminedMac:
+      return "not-determined";
+    case AVAuthorizationStatusRestrictedMac:
+      return "restricted";
+    case AVAuthorizationStatusDeniedMac:
+      return "denied";
+    case AVAuthorizationStatusAuthorizedMac:
+      return "granted";
+    default:
+      return "unknown";
+  }
+}
 
 }  // namespace
 
@@ -358,6 +384,47 @@ void SystemPreferences::SetUserDefault(const std::string& name,
     args->ThrowError("Invalid type: " + type);
     return;
   }
+}
+
+std::string SystemPreferences::GetMediaAccessStatus(
+    const std::string& media_type,
+    mate::Arguments* args) {
+  if (auto type = ParseMediaType(media_type)) {
+    if (@available(macOS 10.14, *)) {
+      return ConvertAuthorizationStatus(
+          [AVCaptureDevice authorizationStatusForMediaType:type]);
+    } else {
+      // access always allowed pre-10.14 Mojave
+      return ConvertAuthorizationStatus(AVAuthorizationStatusAuthorizedMac);
+    }
+  } else {
+    args->ThrowError("Invalid media type");
+    return std::string();
+  }
+}
+
+v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
+    v8::Isolate* isolate,
+    const std::string& media_type) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate);
+
+  if (auto type = ParseMediaType(media_type)) {
+    if (@available(macOS 10.14, *)) {
+      [AVCaptureDevice requestAccessForMediaType:type
+                               completionHandler:^(BOOL granted) {
+                                 dispatch_async(dispatch_get_main_queue(), ^{
+                                   promise->Resolve(!!granted);
+                                 });
+                               }];
+    } else {
+      // access always allowed pre-10.14 Mojave
+      promise->Resolve(true);
+    }
+  } else {
+    promise->RejectWithErrorMessage("Invalid media type");
+  }
+
+  return promise->GetHandle();
 }
 
 void SystemPreferences::RemoveUserDefault(const std::string& name) {

@@ -302,7 +302,6 @@ using `electron-packager` or `electron-forge` just set the `enableDarwinDarkMode
 packager option to `true`.  See the [Electron Packager API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 for more details.
 
-
 ### `systemPreferences.getAppLevelAppearance()` _macOS_
 
 Returns `String` | `null` - Can be `dark`, `light` or `unknown`.
@@ -317,3 +316,21 @@ You can use the `setAppLevelAppearance` API to set this value.
 
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
+
+### `systemPreferences.getMediaAccessStatus(mediaType)` _macOS_
+
+* `mediaType` String - `microphone` or `camera`.
+
+Returns `String` - Can be `not-determined`, `granted`, `denied`, `restricted` or `unknown`.
+
+This user consent was not required until macOS 10.14 Mojave, so this method will always return `granted` if your system is running 10.13 High Sierra or lower.
+
+### `systemPreferences.askForMediaAccess(mediaType)` _macOS_
+
+* `mediaType` String - the type of media being requested; can be `microphone`, `camera`.
+
+Returns `Promise<Boolean>` - A promise that resolves with `true` if consent was granted and `false` if it was denied. If an invalid `mediaType` is passed, the promise will be rejected. If an access request was denied and later is changed through the System Preferences pane, a restart of the app will be required for the new permissions to take effect. If access has already been requested and denied, it _must_ be changed through the preference pane; an alert will not pop up and the promise will resolve with the existing access status.
+
+**Important:** In order to properly leverage this API, you [must set](https://developer.apple.com/documentation/avfoundation/cameras_and_media_capture/requesting_authorization_for_media_capture_on_macos?language=objc) the `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` strings in your app's `Info.plist` file. The values for these keys will be used to populate the permission dialogs so that the user will be properly informed as to the purpose of the permission request. See [Electron Application Distribution](https://electronjs.org/docs/tutorial/application-distribution#macos) for more information about how to set these in the context of Electron.
+
+This user consent was not required until macOS 10.14 Mojave, so this method will always return `true` if your system is running 10.13 High Sierra or lower.
