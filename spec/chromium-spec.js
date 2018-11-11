@@ -941,7 +941,7 @@ describe('chromium feature', () => {
             // 25 * 2^20 UTF-16 characters will require 50MiB
             const arraySize = 25 * Math.pow(2, 20)
             storage[testKeyName] = new Array(arraySize).fill('X').join('')
-            assert.strictEqual(storage[testKeyName].length, arraySize)
+            expect(storage[testKeyName])to.have.lengthOf(arraySize)
             delete storage[testKeyName]
             done()
           })
