@@ -934,17 +934,14 @@ describe('chromium feature', () => {
   describe('storage', () => {
     describe('DOM storage quota override', () => {
       ['localStorage', 'sessionStorage'].forEach((storageName) => {
-        it(`can store at least 50MiB in ${storageName}`, (done) => {
-          assert.doesNotThrow(() => {
-            const storage = window[storageName]
-            const testKeyName = '_electronDOMStorageQuotaOverrideTest'
-            // 25 * 2^20 UTF-16 characters will require 50MiB
-            const arraySize = 25 * Math.pow(2, 20)
-            storage[testKeyName] = new Array(arraySize).fill('X').join('')
-            expect(storage[testKeyName])to.have.lengthOf(arraySize)
-            delete storage[testKeyName]
-            done()
-          })
+        it(`allows saving at least 50MiB in ${storageName}`, () => {
+          const storage = window[storageName]
+          const testKeyName = '_electronDOMStorageQuotaOverrideTest'
+          // 25 * 2^20 UTF-16 characters will require 50MiB
+          const arraySize = 25 * Math.pow(2, 20)
+          storage[testKeyName] = new Array(arraySize).fill('X').join('')
+          expect(storage[testKeyName]).to.have.lengthOf(arraySize)
+          delete storage[testKeyName]
         })
       })
     })
