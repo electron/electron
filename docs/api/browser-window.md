@@ -895,7 +895,7 @@ Closes the currently open [Quick Look][quick-look] panel.
 * `bounds` [Rectangle](structures/rectangle.md)
 * `animate` Boolean (optional) _macOS_
 
-Resizes and moves the window to the supplied bounds. Also allows setting any of the `x`, `y`, `width`, or `height` properties, instead of setting them all at once. Properties that are not set will fall back to their current values.
+Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
 ```javascript
 const { BrowserWindow } = require('electron')
