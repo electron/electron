@@ -536,15 +536,11 @@ describe('BrowserWindow module', () => {
       const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
       w.setBounds(fullBounds)
 
-      assertBoundsEqual(w.getBounds(), fullBounds)
+      const boundsUpdate = { width: 100 }
+      w.setBounds(boundsUpdate)
 
-      w.setBounds({ width: 100 })
-      assertBoundsEqual(w.getBounds(), {
-        x: 440,
-        y: 225,
-        width: 100, // updated bound
-        height: 400
-      })
+      const expectedBounds = Object.assign(fullBounds, boundsUpdate)
+      assertBoundsEqual(w.getBounds(), expectedBounds)
     })
   })
 
