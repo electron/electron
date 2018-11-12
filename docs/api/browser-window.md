@@ -899,7 +899,7 @@ Resizes and moves the window to the supplied bounds. Also allows setting any of 
 
 ```javascript
 const { BrowserWindow } = require('electron')
-let win = new BrowserWindow()
+const win = new BrowserWindow()
 
 // set all bounds properties
 win.setBounds({ x: 440, y: 225, width: 800, height: 600 })
