@@ -75,13 +75,13 @@ improve the security of your application.
 4. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#4-handle-session-permission-requests-from-remote-content)
 5. [Do not disable `webSecurity`](#5-do-not-disable-websecurity)
 6. [Define a `Content-Security-Policy`](#6-define-a-content-security-policy) and use restrictive rules (i.e. `script-src 'self'`)
-7. [Do not set `allowRunningInsecureContent` to `true`](#8-do-not-set-allowrunninginsecurecontent-to-true)
-8. [Do not enable experimental features](#9-do-not-enable-experimental-features)
-9. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
-10. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups)
-11. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
-12. [Disable or limit navigation](#13-disable-or-limit-navigation)
-13. [Disable or limit creation of new windows](#14-disable-or-limit-creation-of-new-windows)
+7. [Do not set `allowRunningInsecureContent` to `true`](#7-do-not-set-allowrunninginsecurecontent-to-true)
+8. [Do not enable experimental features](#8-do-not-enable-experimental-features)
+9. [Do not use `enableBlinkFeatures`](#9-do-not-use-enableblinkfeatures)
+10. [`<webview>`: Do not use `allowpopups`](#10-do-not-use-allowpopups)
+11. [`<webview>`: Verify options and params](#11-verify-webview-options-before-creation)
+12. [Disable or limit navigation](#12-disable-or-limit-navigation)
+13. [Disable or limit creation of new windows](#13-disable-or-limit-creation-of-new-windows)
 
 ## 1) Only Load Secure Content
 
