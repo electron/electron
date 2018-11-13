@@ -1284,6 +1284,8 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::Bind(&Browser::UpdateCurrentActivity, browser))
       .SetMethod("setAboutPanelOptions",
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
+      .SetMethod("showAboutPanel",
+                 base::Bind(&Browser::ShowAboutPanel, browser))
 #endif
 #if defined(OS_WIN)
       .SetMethod("setUserTasks", base::Bind(&Browser::SetUserTasks, browser))
