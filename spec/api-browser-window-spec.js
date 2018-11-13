@@ -538,7 +538,7 @@ describe('BrowserWindow module', () => {
       const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
       w.setBounds(fullBounds)
 
-      const boundsUpdate = { width: 100 }
+      const boundsUpdate = { width: 200 }
       w.setBounds(boundsUpdate)
 
       const expectedBounds = Object.assign(fullBounds, boundsUpdate)
