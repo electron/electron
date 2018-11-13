@@ -1830,7 +1830,6 @@ describe('BrowserWindow module', () => {
           assert.strictEqual(test.platform, remote.process.platform)
           assert.deepStrictEqual(...resolveGetters(test.env, remote.process.env))
           assert.strictEqual(test.execPath, remote.process.helperExecPath)
-          assert.strictEqual(test.resourcesPath, remote.process.resourcesPath)
           assert.strictEqual(test.sandboxed, true)
           assert.strictEqual(test.type, 'renderer')
           assert.strictEqual(test.version, remote.process.version)
