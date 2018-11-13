@@ -1290,6 +1290,11 @@ void App::BuildPrototype(v8::Isolate* isolate,
                  base::Bind(&Browser::InvalidateCurrentActivity, browser))
       .SetMethod("updateCurrentActivity",
                  base::Bind(&Browser::UpdateCurrentActivity, browser))
+      // TODO(juturu): Remove in 2.0, deprecate before then with warnings
+      .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
+      .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
+#endif
+#if defined(OS_MACOSX) || defined(OS_LINUX)
       .SetMethod("setAboutPanelOptions",
                  base::Bind(&Browser::SetAboutPanelOptions, browser))
       .SetMethod("showAboutPanel",
@@ -1329,11 +1334,6 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("getGPUInfo", &App::GetGPUInfo)
-// TODO(juturu): Remove in 2.0, deprecate before then with warnings
-#if defined(OS_MACOSX)
-      .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
-      .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
-#endif
 #if defined(MAS_BUILD)
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
