@@ -7,6 +7,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "atom/browser/native_window.h"
+#include "atom/common/native_mate_converters/string16_converter.h"
 #include "base/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -54,21 +55,36 @@ namespace atom {
 
 namespace {
 
+// Create an accessory view for richer dialogs
+NSTextView* CreateAccessoryView(const std::string& content) {
+  NSTextView* accessory =
+      [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 300, 15)];
+  NSFont* font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+  NSDictionary* textAttributes =
+      [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
+  [accessory insertText:[[NSAttributedString alloc]
+                            initWithString:base::SysUTF8ToNSString(content)
+                                attributes:textAttributes]];
+  [accessory setEditable:NO];
+
+  return accessory;
+}
+
 NSAlert* CreateNSAlert(NativeWindow* parent_window,
                        MessageBoxType type,
                        const std::vector<std::string>& buttons,
                        int default_id,
                        int cancel_id,
+                       const std::string& window_title,
                        const std::string& title,
                        const std::string& message,
-                       const std::string& detail,
                        const std::string& checkbox_label,
                        bool checkbox_checked,
                        const gfx::ImageSkia& icon) {
   // Ignore the title; it's the window title on other platforms and ignorable.
   NSAlert* alert = [[NSAlert alloc] init];
-  [alert setMessageText:base::SysUTF8ToNSString(message)];
-  [alert setInformativeText:base::SysUTF8ToNSString(detail)];
+  [alert setMessageText:base::SysUTF8ToNSString(title)];
+  [alert setInformativeText:base::SysUTF8ToNSString(message)];
 
   switch (type) {
     case MESSAGE_BOX_TYPE_INFORMATION:
@@ -137,13 +153,20 @@ int ShowMessageBox(NativeWindow* parent_window,
                    int default_id,
                    int cancel_id,
                    int options,
+                   const std::string& window_title,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
                    const gfx::ImageSkia& icon) {
   NSAlert* alert =
-      CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
-                    message, detail, "", false, icon);
+      CreateNSAlert(parent_window, type, buttons, default_id, cancel_id,
+                    window_title, title, message, "", false, icon);
+
+  // add rich text view to message box
+  if (detail != "") {
+    NSTextView* accessory = CreateAccessoryView(detail);
+    alert.accessoryView = accessory;
+  }
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -172,6 +195,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     int default_id,
                     int cancel_id,
                     int options,
+                    const std::string& window_title,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -179,9 +203,15 @@ void ShowMessageBox(NativeWindow* parent_window,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
                     const MessageBoxCallback& callback) {
-  NSAlert* alert =
-      CreateNSAlert(parent_window, type, buttons, default_id, cancel_id, title,
-                    message, detail, checkbox_label, checkbox_checked, icon);
+  NSAlert* alert = CreateNSAlert(parent_window, type, buttons, default_id,
+                                 cancel_id, window_title, title, message,
+                                 checkbox_label, checkbox_checked, icon);
+
+  // add rich text view to message box
+  if (detail != "") {
+    NSTextView* accessory = CreateAccessoryView(detail);
+    alert.accessoryView = accessory;
+  }
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
@@ -202,11 +232,23 @@ void ShowMessageBox(NativeWindow* parent_window,
   }
 }
 
-void ShowErrorBox(const base::string16& title, const base::string16& content) {
+void ShowErrorBox(const std::string& title,
+                  const std::string& message,
+                  mate::Arguments* args) {
   NSAlert* alert = [[NSAlert alloc] init];
-  [alert setMessageText:base::SysUTF16ToNSString(title)];
-  [alert setInformativeText:base::SysUTF16ToNSString(content)];
+
+  alert.messageText = base::SysUTF8ToNSString(title);
+  [alert setInformativeText:base::SysUTF8ToNSString(message)];
+
+  // add rich text view to message box
+  std::string detail;
+  if (args->GetNext(&detail)) {
+    NSTextView* accessory = CreateAccessoryView(detail);
+    alert.accessoryView = accessory;
+  }
+
   [alert setAlertStyle:NSCriticalAlertStyle];
+
   [alert runModal];
   [alert release];
 }

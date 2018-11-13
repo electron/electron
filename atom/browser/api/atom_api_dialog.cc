@@ -27,6 +27,7 @@ void ShowMessageBox(int type,
                     int default_id,
                     int cancel_id,
                     int options,
+                    const std::string& window_title,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -40,13 +41,13 @@ void ShowMessageBox(int type,
   if (mate::Converter<atom::MessageBoxCallback>::FromV8(args->isolate(), peek,
                                                         &callback)) {
     atom::ShowMessageBox(window, static_cast<atom::MessageBoxType>(type),
-                         buttons, default_id, cancel_id, options, title,
-                         message, detail, checkbox_label, checkbox_checked,
-                         icon, callback);
+                         buttons, default_id, cancel_id, options, window_title,
+                         title, message, detail, checkbox_label,
+                         checkbox_checked, icon, callback);
   } else {
     int chosen = atom::ShowMessageBox(
         window, static_cast<atom::MessageBoxType>(type), buttons, default_id,
-        cancel_id, options, title, message, detail, icon);
+        cancel_id, options, window_title, title, message, detail, icon);
     args->Return(chosen);
   }
 }

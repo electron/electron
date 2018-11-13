@@ -212,15 +212,16 @@ void RunMessageBoxInNewThread(base::Thread* thread,
                               int default_id,
                               int cancel_id,
                               int options,
+                              const std::string& window_title,
                               const std::string& title,
                               const std::string& message,
-                              const std::string& detail,
+                              const std::string& detail,  // unused on win
                               const std::string& checkbox_label,
                               bool checkbox_checked,
                               const gfx::ImageSkia& icon,
                               const MessageBoxCallback& callback) {
   int result = ShowTaskDialogUTF8(parent, type, buttons, default_id, cancel_id,
-                                  options, title, message, detail,
+                                  options, window_title, title, message,
                                   checkbox_label, &checkbox_checked, icon);
   content::BrowserThread::PostTask(
       content::BrowserThread::UI, FROM_HERE,
@@ -237,13 +238,15 @@ int ShowMessageBox(NativeWindow* parent,
                    int default_id,
                    int cancel_id,
                    int options,
+                   const std::string& window_title,
                    const std::string& title,
                    const std::string& message,
-                   const std::string& detail,
+                   const std::string& detail,  // unused on win
                    const gfx::ImageSkia& icon) {
   atom::UnresponsiveSuppressor suppressor;
   return ShowTaskDialogUTF8(parent, type, buttons, default_id, cancel_id,
-                            options, title, message, detail, "", nullptr, icon);
+                            options, window_title, title, message, "", nullptr,
+                            icon);
 }
 
 void ShowMessageBox(NativeWindow* parent,
@@ -252,9 +255,10 @@ void ShowMessageBox(NativeWindow* parent,
                     int default_id,
                     int cancel_id,
                     int options,
+                    const std::string& window_title,
                     const std::string& title,
                     const std::string& message,
-                    const std::string& detail,
+                    const std::string& detail,  // unused on win
                     const std::string& checkbox_label,
                     bool checkbox_checked,
                     const gfx::ImageSkia& icon,
@@ -271,15 +275,17 @@ void ShowMessageBox(NativeWindow* parent,
   unretained->task_runner()->PostTask(
       FROM_HERE,
       base::Bind(&RunMessageBoxInNewThread, base::Unretained(unretained),
-                 parent, type, buttons, default_id, cancel_id, options, title,
-                 message, detail, checkbox_label, checkbox_checked, icon,
-                 callback));
+                 parent, type, buttons, default_id, cancel_id, options,
+                 window_title, title, message, checkbox_label, checkbox_checked,
+                 icon, callback));
 }
 
-void ShowErrorBox(const base::string16& title, const base::string16& content) {
+void ShowErrorBox(const base::string16& title,
+                  const base::string16& message,
+                  mate::Arguments* args) {
   atom::UnresponsiveSuppressor suppressor;
   ShowTaskDialogUTF16(nullptr, MESSAGE_BOX_TYPE_ERROR, {}, -1, 0, 0, L"Error",
-                      title, content, L"", nullptr, gfx::ImageSkia());
+                      title, message, L"", nullptr, gfx::ImageSkia());
 }
 
 }  // namespace atom

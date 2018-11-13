@@ -10,6 +10,7 @@
 
 #include "base/callback_forward.h"
 #include "base/strings/string16.h"
+#include "native_mate/arguments.h"
 
 namespace gfx {
 class ImageSkia;
@@ -41,6 +42,7 @@ int ShowMessageBox(NativeWindow* parent_window,
                    int default_id,
                    int cancel_id,
                    int options,
+                   const std::string& window_title,
                    const std::string& title,
                    const std::string& message,
                    const std::string& detail,
@@ -52,6 +54,7 @@ void ShowMessageBox(NativeWindow* parent_window,
                     int default_id,
                     int cancel_id,
                     int options,
+                    const std::string& window_title,
                     const std::string& title,
                     const std::string& message,
                     const std::string& detail,
@@ -62,7 +65,9 @@ void ShowMessageBox(NativeWindow* parent_window,
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.
-void ShowErrorBox(const base::string16& title, const base::string16& content);
+void ShowErrorBox(const std::string& title,
+                  const std::string& message,
+                  mate::Arguments* args);
 
 }  // namespace atom
 

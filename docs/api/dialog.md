@@ -129,9 +129,10 @@ will be passed via `callback(filename)`.
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `title` String (optional) - Title of the message box, some platforms will not show it.
-  * `message` String - Content of the message box.
-  * `detail` String (optional) - Extra information of the message.
+  * `windowTitle` String (optional) - The title of the message box's window. _Linux_ _Windows_
+  * `title` String - The title to display inside the message box.
+  * `message` String - The main message to display in the message box.
+  * `detail` String (optional) - The text content to display in the rich text view. _macOS_
   * `checkboxLabel` String (optional) - If provided, the message box will
     include a checkbox with the given label. The checkbox state can be
     inspected only when using `callback`.
@@ -171,10 +172,11 @@ The `browserWindow` argument allows the dialog to attach itself to a parent wind
 If a `callback` is passed, the dialog will not block the process. The API call
 will be asynchronous and the result will be passed via `callback(response)`.
 
-### `dialog.showErrorBox(title, content)`
+### `dialog.showErrorBox(title, message, detail)`
 
 * `title` String - The title to display in the error box.
-* `content` String - The text content to display in the error box.
+* `message` String - The message to display in the error box.
+* `detail` String (optional) - The text content to display in the rich text view. _macOS_
 
 Displays a modal dialog that shows an error message.
 
