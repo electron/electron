@@ -113,6 +113,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // See https://github.com/electron/electron/issues/15133.
   void DestroyWebContents(bool async);
 
+  void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   Type GetType() const;

@@ -1114,6 +1114,37 @@ void WebContents::NavigationEntryCommitted(
        details.is_same_document, details.did_replace_entry);
 }
 
+void WebContents::SetBackgroundThrottling(bool allowed) {
+  background_throttling_ = allowed;
+
+  const auto* contents = web_contents();
+  if (!contents) {
+    return;
+  }
+
+  const auto* render_view_host = contents->GetRenderViewHost();
+  if (!render_view_host) {
+    return;
+  }
+
+  const auto* render_process_host = render_view_host->GetProcess();
+  if (!render_process_host) {
+    return;
+  }
+
+  auto* render_widget_host_impl = content::RenderWidgetHostImpl::FromID(
+      render_process_host->GetID(), render_view_host->GetRoutingID());
+  if (!render_widget_host_impl) {
+    return;
+  }
+
+  render_widget_host_impl->disable_hidden_ = !background_throttling_;
+
+  if (render_widget_host_impl->is_hidden()) {
+    render_widget_host_impl->WasShown(false);
+  }
+}
+
 int WebContents::GetProcessID() const {
   return web_contents()->GetMainFrame()->GetProcess()->GetID();
 }
@@ -2015,6 +2046,8 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(mate::StringToV8(isolate, "WebContents"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .MakeDestroyable()
+      .SetMethod("setBackgroundThrottling",
+                 &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
