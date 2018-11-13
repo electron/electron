@@ -27,7 +27,6 @@ webview_cross_drag.patch
 worker_context_will_destroy.patch
 browser_plugin_guest.patch
 disable_user_gesture_requirement_for_beforeunload_dialogs.patch
-add_atomic_lib_to_dependencies_even_for_sysroot_builds.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
