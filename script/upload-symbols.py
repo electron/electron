@@ -14,9 +14,7 @@ RELEASE_DIR = get_out_dir()
 
 PROJECT_NAME = get_electron_branding()['project_name']
 PRODUCT_NAME = get_electron_branding()['product_name']
-SYMBOLS_DIR = os.path.join(
-  RELEASE_DIR, '{0}.breakpad.syms'.format(PROJECT_NAME)
-)
+SYMBOLS_DIR = os.path.join(RELEASE_DIR, 'breakpad_symbols')
 
 PDB_LIST = [
   os.path.join(RELEASE_DIR, '{0}.exe.pdb'.format(PROJECT_NAME))

@@ -72,7 +72,7 @@ def generate_posix_symbols(binary, source_root, build_dir, destination):
     '--binary={0}'.format(binary),
   ]
   if is_verbose_mode():
-    args += ['-v']
+    args += ['--verbose']
   execute([sys.executable, generate_breakpad_symbols] + args)
 
 def parse_args():
