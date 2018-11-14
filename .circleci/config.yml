@@ -350,7 +350,7 @@ step-generate-breakpad-symbols: &step-generate-breakpad-symbols
     command: |
       cd src
       export BUILD_PATH="$PWD/out/Default"
-      export DEST_PATH="$BUILD_PATH/electron.breakpad.syms"
+      export DEST_PATH="$BUILD_PATH/breakpad_symbols"
       electron/script/dump-symbols.py -b $BUILD_PATH -d $DEST_PATH -v
 
 step-zip-symbols: &step-zip-symbols
