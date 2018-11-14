@@ -86,6 +86,8 @@ V8_SNAPSHOT_BINARIES = {
     'libicuuc.dylib',
     'libv8.dylib',
     'v8_context_snapshot_generator',
+    'natives_blob.bin',
+    'snapshot_blob.bin',
   ],
   'linux': [
     'libffmpeg.so',
@@ -93,6 +95,8 @@ V8_SNAPSHOT_BINARIES = {
     'libicuuc.so',
     'libv8.so',
     'v8_context_snapshot_generator',
+    'natives_blob.bin',
+    'snapshot_blob.bin',
   ],
   'win32': [
     'ffmpeg.dll',
@@ -100,6 +104,8 @@ V8_SNAPSHOT_BINARIES = {
     'icuuc.dll',
     'v8.dll',
     'v8_context_snapshot_generator.exe',
+    'natives_blob.bin',
+    'snapshot_blob.bin',
   ],
 }
 
