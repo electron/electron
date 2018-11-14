@@ -196,12 +196,6 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
   auto enable_features =
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
-  // Node depends on SharedArrayBuffer support, which was temporarily disabled
-  // by https://chromium-review.googlesource.com/c/chromium/src/+/849429 (in
-  // M64) and reenabled by
-  // https://chromium-review.googlesource.com/c/chromium/src/+/1159358 (in
-  // M70). Once Electron upgrades to M70, we can remove this.
-  enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
 #if defined(OS_MACOSX)
