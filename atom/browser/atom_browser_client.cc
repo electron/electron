@@ -223,28 +223,34 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
 void AtomBrowserClient::AddProcessPreferences(
     int process_id,
     AtomBrowserClient::ProcessPreferences prefs) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   process_preferences_[process_id] = prefs;
 }
 
 void AtomBrowserClient::RemoveProcessPreferences(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   process_preferences_.erase(process_id);
 }
 
 bool AtomBrowserClient::IsProcessObserved(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   return process_preferences_.find(process_id) != process_preferences_.end();
 }
 
 bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.sandbox;
 }
 
 bool AtomBrowserClient::RendererUsesNativeWindowOpen(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.native_window_open;
 }
 
 bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.disable_popups;
 }
@@ -274,6 +280,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.native_window_open =
         web_preferences->IsEnabled(options::kNativeWindowOpen);
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
+    prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
+                                                    true /* default value */);
   }
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
@@ -776,6 +784,13 @@ void AtomBrowserClient::OnNetworkServiceCreated(
     return;
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
       network_service);
+}
+
+bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) {
+  // This is called on the network thread.
+  base::AutoLock auto_lock(process_preferences_lock_);
+  auto it = process_preferences_.find(render_process_id);
+  return it != process_preferences_.end() && !it->second.web_security;
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {
