@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 15 Nov 2018 22:04:34 +0530
+Subject: cross_site_document_resource_handler.patch
+
+Add a content layer hook to disable CORB for a renderer process,
+this patch can be removed once we switch to network service,
+where the embedders have a chance to design their URLLoaders.
+
+diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
+index 907922701280b589bf11691342de0ec95cdec6a1..eaf8bac18f8e3a2735ce7ded606199092a3746d3 100644
+--- a/content/browser/loader/cross_site_document_resource_handler.cc
++++ b/content/browser/loader/cross_site_document_resource_handler.cc
+@@ -593,6 +593,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
+     return false;
+   }
+ 
++  if (GetContentClient()->browser()->ShouldBypassCORB(info->GetChildID()))
++    return false;
++
+   return true;
+ }
+ 
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index bb54b89bef5c6f32e7b4a056336c85494e2a04de..f069dfc4d2823b22eb0d90d28bc20236aeeddd04 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -47,6 +47,10 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+                                                          handle);
+ }
+ 
++bool ContentBrowserClient::ShouldBypassCORB(int render_process_id) {
++  return false;
++}
++
+ BrowserMainParts* ContentBrowserClient::CreateBrowserMainParts(
+     const MainFunctionParams& parameters) {
+   return nullptr;
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 2c22cb1cfe0dddc97c00e5f4ff89de6b18bc232f..a7b59095a887d566af9e74a646443fb49ea23bfc 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -205,6 +205,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+       SiteInstance* candidate_site_instance,
+       SiteInstance** new_instance) {}
+ 
++  // Electron: Allows bypassing CORB checks for a renderer process.
++  virtual bool ShouldBypassCORB(int render_process_id);
++
+   // Allows the embedder to set any number of custom BrowserMainParts
+   // implementations for the browser startup code. See comments in
+   // browser_main_parts.h.
