@@ -24,7 +24,7 @@ def main():
   licenses = ['LICENSE', 'LICENSES.chromium.html', 'version']
 
   with scoped_cwd(args.build_dir):
-    dirs = ['{0}.breakpad.syms'.format(PROJECT_NAME)]
+    dirs = ['breakpad_symbols']
     print('Making symbol zip: ' + zip_file)
     make_zip(zip_file, licenses, dirs)
 

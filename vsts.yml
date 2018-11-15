@@ -110,7 +110,7 @@ jobs:
       # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
       export ELECTRON_OUT_DIR=Default
 
-      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+      electron/script/dump-symbols.py -d "$PWD/out/Default/breakpad_symbols"
       electron/script/zip-symbols.py
     displayName: Collect symbols
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
