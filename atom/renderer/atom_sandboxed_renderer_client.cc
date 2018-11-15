@@ -80,12 +80,6 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   return exports;
 }
 
-base::FilePath::StringType GetExecPath() {
-  base::FilePath path;
-  base::PathService::Get(base::FILE_EXE, &path);
-  return path.value();
-}
-
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
   auto script = v8::Script::Compile(preloadSrc);
@@ -157,9 +151,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
   process.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
-  process.Set("execPath", GetExecPath());
   process.SetReadOnly("pid", base::GetCurrentProcId());
-  process.Set("resourcesPath", NodeBindings::GetHelperResourcesPath());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
 

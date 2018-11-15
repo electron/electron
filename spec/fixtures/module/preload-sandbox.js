@@ -14,7 +14,6 @@
         pid: process.pid,
         arch: process.arch,
         platform: process.platform,
-        resourcesPath: process.resourcesPath,
         sandboxed: process.sandboxed,
         type: process.type,
         version: process.version,
