@@ -24,7 +24,7 @@
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
-#elif defined(OS_LINUX)                   // defined(OS_WIN)
+#elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
 #include <cstdio>
 #include "atom/app/atom_main_delegate.h"  // NOLINT
