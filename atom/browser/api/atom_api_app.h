@@ -198,7 +198,8 @@ class App : public AtomBrowserClient::Delegate,
   void ImportCertificate(const base::DictionaryValue& options,
                          const net::CompletionCallback& callback);
 #endif
-  void GetFileIcon(const base::FilePath& path, mate::Arguments* args);
+  v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
+                                     mate::Arguments* args);
 
   std::vector<mate::Dictionary> GetAppMetrics(v8::Isolate* isolate);
   v8::Local<v8::Value> GetGPUFeatureStatus(v8::Isolate* isolate);
