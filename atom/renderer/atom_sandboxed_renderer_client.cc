@@ -120,6 +120,21 @@ class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
   DISALLOW_COPY_AND_ASSIGN(AtomSandboxedRenderFrameObserver);
 };
 
+v8::Local<v8::Value> GetHiddenValue(v8::Local<v8::Context> context,
+                                    const base::StringPiece& key) {
+  v8::Isolate* isolate = context->GetIsolate();
+  v8::Local<v8::Private> privateKey =
+      v8::Private::ForApi(isolate, mate::StringToV8(isolate, key));
+  v8::Local<v8::Value> value;
+  v8::Local<v8::Object> object = context->Global();
+  v8::Maybe<bool> result = object->HasPrivate(context, privateKey);
+  if (!(result.IsJust() && result.FromJust()))
+    return v8::Local<v8::Value>();
+  if (object->GetPrivate(context, privateKey).ToLocal(&value))
+    return value;
+  return v8::Local<v8::Value>();
+}
+
 }  // namespace
 
 AtomSandboxedRendererClient::AtomSandboxedRendererClient() {
@@ -223,10 +238,23 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   if (!render_frame->IsMainFrame())
     return;
 
-  auto* isolate = context->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
-  InvokeIpcCallback(context, "onExit", std::vector<v8::Local<v8::Value>>());
+  // Notify the main process when current context is going to be released.
+  // Note that when the renderer process is destroyed, the message may not be
+  // sent, we also listen to the "render-view-deleted" event in the main process
+  // to guard that situation.
+  auto contextId = GetHiddenValue(context, "contextId");
+  std::string contextIdValue;
+  if (mate::ConvertFromV8(context->GetIsolate(), contextId, &contextIdValue)) {
+    base::ListValue release_arguments;
+    release_arguments.GetList().emplace_back(
+        "ELECTRON_BROWSER_CONTEXT_RELEASE");
+    release_arguments.GetList().emplace_back(contextIdValue);
+    base::ListValue result;
+    IPC::SyncMessage* message = new AtomFrameHostMsg_Message_Sync(
+        render_frame->GetRoutingID(), "ipc-internal-message-sync",
+        release_arguments, &result);
+    render_frame->Send(message);
+  }
 }
 
 void AtomSandboxedRendererClient::InvokeIpcCallback(
