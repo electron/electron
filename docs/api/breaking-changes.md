@@ -22,6 +22,10 @@ The following `webPreferences` option default values are deprecated in favor of 
 
 Child windows opened with the `nativeWindowOpen` option will always have Node.js integration disabled.
 
+## `webContents.findInPage(text[, options])`
+
+`wordStart` and `medialCapitalAsWordStart` options are removed.
+
 # Planned Breaking API Changes (4.0)
 
 The following list includes the breaking API changes planned for Electron 4.0.

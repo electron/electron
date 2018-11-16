@@ -2090,7 +2090,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unselect", &WebContents::Unselect)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
-      .SetMethod("findInPage", &WebContents::FindInPage)
+      .SetMethod("_findInPage", &WebContents::FindInPage)
       .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
       .SetMethod("focus", &WebContents::Focus)
       .SetMethod("isFocused", &WebContents::IsFocused)
