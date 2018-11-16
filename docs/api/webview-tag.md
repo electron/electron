@@ -73,7 +73,7 @@ examples:
 
 * When clicking into a `webview`, the page focus will move from the embedder
   frame to `webview`.
-* You can not add keyboard event listeners to `webview`.
+* You can not add keyboard, mouse, and scroll event listeners to `webview`.
 * All reactions between the embedder frame and `webview` are asynchronous.
 
 ## CSS Styling Notes
