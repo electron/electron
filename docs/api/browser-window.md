@@ -341,12 +341,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       more details.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
-      to `false`. The context that the `preload` script runs in will not
-      have full access to the `document` and `window` globals, will use
+      to `false`. The context that the `preload` script runs will
+      have full access to the `document` and `window` globals, however these will not be
+      the same `document/window` objects in the browserWindow. The preload script will use
       its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.)
       and will be isolated from any changes made to the global environment
       by the loaded page. See `sandbox` or `webFrame.executeJavaScriptInIsolatedWorld` 
-      for access to the globals. The Electron API will only be available in the
+      for mutating the global variables in the browserWindow. The Electron API will only be available in the
       `preload` script and not the loaded page. This option should be used when
       loading potentially untrusted remote content to ensure the loaded content
       cannot tamper with the `preload` script and any Electron APIs being used.
