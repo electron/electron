@@ -1048,14 +1048,13 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect, ]callback)`
+#### `contents.capturePage(rect)`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
-* `callback` Function
-  * `image` [NativeImage](native-image.md)
 
-Captures a snapshot of the page within `rect`. Upon completion `callback` will
-be called with `callback(image)`. The `image` is an instance of
+* Returns `Promise<NativeImage>` - Returns [NativeImage](native-image.md)
+
+Captures a snapshot of the page within `rect`. The promise will will be resolved with an `image`, where `image` is an instance of
 [NativeImage](native-image.md) that stores data of the snapshot. Omitting
 `rect` will capture the whole visible page.
 

@@ -490,15 +490,13 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.capturePage(rect, callback)', () => {
-    it('calls the callback with a Buffer', async () => {
-      const image = await new Promise((resolve) => {
-        w.capturePage({
-          x: 0,
-          y: 0,
-          width: 100,
-          height: 100
-        }, resolve)
+  describe('BrowserWindow.capturePage(rect)', () => {
+    it('returns a Promise with a Buffer', async () => {
+      const image = await w.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
       })
 
       expect(image.isEmpty()).to.be.true()
@@ -515,7 +513,7 @@ describe('BrowserWindow module', () => {
       await emittedOnce(w, 'ready-to-show')
       w.show()
 
-      const image = await new Promise((resolve) => w.capturePage(resolve))
+      const image = await w.capturePage()
       const imgBuffer = image.toPNG()
 
       // Check the 25th byte in the PNG.

@@ -226,7 +226,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
-  void CapturePage(mate::Arguments* args);
+  v8::Local<v8::Promise> CapturePage(mate::Arguments* args);
 
   // Methods for creating <webview>.
   bool IsGuest() const;

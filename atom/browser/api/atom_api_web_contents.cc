@@ -255,12 +255,12 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }
 
 // Called when CapturePage is done.
-void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
+void OnCapturePageDone(scoped_refptr<util::Promise> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
-  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise->Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
@@ -1754,21 +1754,19 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
-void WebContents::CapturePage(mate::Arguments* args) {
+v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
-  base::Callback<void(const gfx::Image&)> callback;
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
-  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
-      !(args->Length() == 2 && args->GetNext(&rect) &&
-        args->GetNext(&callback))) {
-    args->ThrowError();
-    return;
+  if (args->Length() == 1 && !args->GetNext(&rect)) {
+    promise->RejectWithErrorMessage("Rect argument is required.");
+    return promise->GetHandle();
   }
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    callback.Run(gfx::Image());
-    return;
+    promise->Resolve(gfx::Image());
+    return promise->GetHandle();
   }
 
   // Capture full page if user doesn't specify a |rect|.
@@ -1787,7 +1785,8 @@ void WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, callback));
+                        base::BindOnce(&OnCapturePageDone, promise));
+  return promise->GetHandle();
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
