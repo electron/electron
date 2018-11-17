@@ -10,7 +10,6 @@ EXTENSIONS_TO_SKIP = [
 
 PATHS_TO_SKIP = [
   'angledata', #Skipping because it is an output of //ui/gl that we don't need
-  'swiftshader', #Skipping because it is an output of //ui/gl that we don't need
   './libVkLayer_', #Skipping because these are outputs that we don't need
   './VkLayerLayer_', #Skipping because these are outputs that we don't need
 
