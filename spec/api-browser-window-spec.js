@@ -526,6 +526,25 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('BrowserWindow.setBounds(bounds[, animate])', () => {
+    it('sets the window bounds with full bounds', () => {
+      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
+      w.setBounds(fullBounds)
+      assertBoundsEqual(w.getBounds(), fullBounds)
+    })
+
+    it('sets the window bounds with partial bounds', () => {
+      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
+      w.setBounds(fullBounds)
+
+      const boundsUpdate = { width: 200 }
+      w.setBounds(boundsUpdate)
+
+      const expectedBounds = Object.assign(fullBounds, boundsUpdate)
+      assertBoundsEqual(w.getBounds(), expectedBounds)
+    })
+  })
+
   describe('BrowserWindow.setSize(width, height)', () => {
     it('sets the window size', async () => {
       const size = [300, 400]
