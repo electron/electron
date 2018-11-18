@@ -538,7 +538,7 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
 
 Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options, callback)`.
 
-### `<webview>.capturePage(rect)`
+### `<webview>.capturePage([rect])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 
