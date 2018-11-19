@@ -45,6 +45,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -662,7 +663,7 @@ std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {
-  return AtomBrowserMainParts::Get()->net_log();
+  return g_browser_process->net_log();
 }
 
 content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
@@ -801,6 +802,21 @@ base::FilePath AtomBrowserClient::GetDefaultDownloadDirectory() {
     path = path.Append(FILE_PATH_LITERAL("Downloads"));
 
   return path;
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
+  if (!g_browser_process)
+    return nullptr;
+  return g_browser_process->shared_url_loader_factory();
+}
+
+void AtomBrowserClient::OnNetworkServiceCreated(
+    network::mojom::NetworkService* network_service) {
+  if (!g_browser_process)
+    return;
+  g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
+      network_service);
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {

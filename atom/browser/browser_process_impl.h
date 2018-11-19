@@ -13,10 +13,19 @@
 #include <memory>
 #include <string>
 
+#include "atom/browser/io_thread.h"
+#include "atom/browser/net/system_network_context_manager.h"
+#include "base/command_line.h"
 #include "base/macros.h"
 #include "chrome/browser/browser_process.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+
+namespace net_log {
+class ChromeNetLog;
+}
 
 namespace printing {
 class PrintJobManager;
@@ -31,6 +40,13 @@ class BrowserProcessImpl : public BrowserProcess {
  public:
   BrowserProcessImpl();
   ~BrowserProcessImpl() override;
+
+  static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
+
+  void PostEarlyInitialization();
+  void PreCreateThreads(const base::CommandLine& command_line);
+  void PostDestroyThreads();
+  void PostMainMessageLoopRun();
 
   void ResourceDispatcherHostCreated() override {}
   void EndSession() override {}
@@ -102,6 +118,10 @@ class BrowserProcessImpl : public BrowserProcess {
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
+  std::unique_ptr<PrefService> local_state_;
+  std::unique_ptr<IOThread> io_thread_;
+  std::unique_ptr<net_log::ChromeNetLog> net_log_;
+  std::unique_ptr<SystemNetworkContextManager> system_network_context_manager_;
   std::string locale_;
 
   DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);

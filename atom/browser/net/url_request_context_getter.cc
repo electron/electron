@@ -11,6 +11,7 @@
 #include "atom/browser/api/atom_api_protocol.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
+#include "atom/browser/browser_process_impl.h"
 #include "atom/browser/net/about_protocol_handler.h"
 #include "atom/browser/net/asar/asar_protocol_handler.h"
 #include "atom/browser/net/atom_cert_verifier.h"
@@ -18,22 +19,18 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "atom/browser/net/http_protocol_handler.h"
 #include "atom/browser/net/require_ct_delegate.h"
+#include "atom/browser/net/system_network_context_manager.h"
 #include "base/command_line.h"
 #include "base/strings/string_util.h"
 #include "base/task_scheduler/post_task.h"
-#include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_constants.h"
-#include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/network_session_configurator/common/network_switches.h"
 #include "components/prefs/value_map_pref_store.h"
-#include "components/proxy_config/proxy_config_dictionary.h"
-#include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_network_transaction_factory.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/resource_context.h"
-#include "content/public/common/content_switches.h"
 #include "net/base/host_mapping_rules.h"
 #include "net/cert/multi_log_ct_verifier.h"
 #include "net/cookies/cookie_monster.h"
@@ -43,10 +40,6 @@
 #include "net/http/http_auth_scheme.h"
 #include "net/http/http_transaction_factory.h"
 #include "net/log/net_log.h"
-#include "net/proxy_resolution/proxy_config.h"
-#include "net/proxy_resolution/proxy_config_service.h"
-#include "net/proxy_resolution/proxy_config_with_annotation.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
@@ -67,43 +60,6 @@ using content::BrowserThread;
 namespace atom {
 
 namespace {
-
-network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
-    const base::FilePath& base_path,
-    const std::string& user_agent,
-    bool in_memory,
-    bool use_cache,
-    int max_cache_size) {
-  network::mojom::NetworkContextParamsPtr network_context_params =
-      network::mojom::NetworkContextParams::New();
-  network_context_params->enable_brotli = true;
-  network_context_params->user_agent = user_agent;
-  network_context_params->http_cache_enabled = use_cache;
-  network_context_params->accept_language =
-      net::HttpUtil::GenerateAcceptLanguageHeader(
-          AtomBrowserClient::Get()->GetApplicationLocale());
-  network_context_params->enable_data_url_support = false;
-  network_context_params->proxy_resolver_factory =
-      ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
-  if (!in_memory) {
-    network_context_params->http_cache_path =
-        base_path.Append(chrome::kCacheDirname);
-    network_context_params->http_cache_max_size = max_cache_size;
-    network_context_params->http_server_properties_path =
-        base_path.Append(chrome::kNetworkPersistentStateFilename);
-    network_context_params->cookie_path =
-        base_path.Append(chrome::kCookieFilename);
-    network_context_params->channel_id_path =
-        base_path.Append(chrome::kChannelIDFilename);
-    network_context_params->restore_old_session_cookies = false;
-    network_context_params->persist_session_cookies = false;
-  }
-  // TODO(deepak1556): Decide the stand on chrome ct policy and
-  // enable it.
-  // See //net/docs/certificate-transparency.md
-  // network_context_params->enforce_chrome_ct_policy = true;
-  return network_context_params;
-}
 
 void SetupAtomURLRequestJobFactory(
     content::ProtocolHandlerMap* protocol_handlers,
@@ -141,39 +97,6 @@ void SetupAtomURLRequestJobFactory(
   job_factory->SetProtocolHandler(
       url::kFtpScheme, net::FtpProtocolHandler::Create(host_resolver));
 #endif
-}
-
-void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store) {
-  if (!pref_store)
-    return;
-
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  if (command_line->HasSwitch(::switches::kNoProxyServer)) {
-    pref_store->SetValue(proxy_config::prefs::kProxy,
-                         ProxyConfigDictionary::CreateDirect(),
-                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
-  } else if (command_line->HasSwitch(::switches::kProxyPacUrl)) {
-    std::string pac_script_url =
-        command_line->GetSwitchValueASCII(::switches::kProxyPacUrl);
-    pref_store->SetValue(proxy_config::prefs::kProxy,
-                         ProxyConfigDictionary::CreatePacScript(
-                             pac_script_url, false /* pac_mandatory */),
-                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
-  } else if (command_line->HasSwitch(::switches::kProxyAutoDetect)) {
-    pref_store->SetValue(proxy_config::prefs::kProxy,
-                         ProxyConfigDictionary::CreateAutoDetect(),
-                         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
-  } else if (command_line->HasSwitch(::switches::kProxyServer)) {
-    std::string proxy_server =
-        command_line->GetSwitchValueASCII(::switches::kProxyServer);
-    std::string bypass_list =
-        command_line->GetSwitchValueASCII(::switches::kProxyBypassList);
-    pref_store->SetValue(
-        proxy_config::prefs::kProxy,
-        ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list),
-        WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
-  }
 }
 
 }  // namespace
@@ -235,21 +158,58 @@ URLRequestContextGetter::Handle::GetNetworkContext() {
   return std::move(main_network_context_);
 }
 
+network::mojom::NetworkContextParamsPtr
+URLRequestContextGetter::Handle::CreateNetworkContextParams() {
+  network::mojom::NetworkContextParamsPtr network_context_params =
+      SystemNetworkContextManager::CreateDefaultNetworkContextParams();
+
+  network_context_params->user_agent = browser_context_->GetUserAgent();
+
+  network_context_params->http_cache_enabled =
+      browser_context_->CanUseHttpCache();
+
+  network_context_params->accept_language =
+      net::HttpUtil::GenerateAcceptLanguageHeader(
+          AtomBrowserClient::Get()->GetApplicationLocale());
+
+  network_context_params->enable_data_url_support = false;
+
+  if (!browser_context_->IsOffTheRecord()) {
+    auto base_path = browser_context_->GetPath();
+    network_context_params->http_cache_path =
+        base_path.Append(chrome::kCacheDirname);
+    network_context_params->http_cache_max_size =
+        browser_context_->GetMaxCacheSize();
+    network_context_params->http_server_properties_path =
+        base_path.Append(chrome::kNetworkPersistentStateFilename);
+    network_context_params->cookie_path =
+        base_path.Append(chrome::kCookieFilename);
+    network_context_params->channel_id_path =
+        base_path.Append(chrome::kChannelIDFilename);
+    network_context_params->restore_old_session_cookies = false;
+    network_context_params->persist_session_cookies = false;
+  }
+
+  // TODO(deepak1556): Decide the stand on chrome ct policy and
+  // enable it.
+  // See //net/docs/certificate-transparency.md
+  // network_context_params->enforce_chrome_ct_policy = true;
+  return network_context_params;
+}
+
 void URLRequestContextGetter::Handle::LazyInitialize() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (initialized_)
     return;
 
   initialized_ = true;
-  main_network_context_params_ = CreateDefaultNetworkContextParams(
-      browser_context_->GetPath(), browser_context_->GetUserAgent(),
-      browser_context_->IsOffTheRecord(), browser_context_->CanUseHttpCache(),
-      browser_context_->GetMaxCacheSize());
+  main_network_context_params_ = CreateNetworkContextParams();
 
   browser_context_->proxy_config_monitor()->AddToNetworkContextParams(
       main_network_context_params_.get());
 
-  ApplyProxyModeFromCommandLine(browser_context_->in_memory_pref_store());
+  BrowserProcessImpl::ApplyProxyModeFromCommandLine(
+      browser_context_->in_memory_pref_store());
 
   if (!main_network_context_request_.is_pending()) {
     main_network_context_request_ = mojo::MakeRequest(&main_network_context_);
