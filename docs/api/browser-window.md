@@ -351,8 +351,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       Console tab. **Note:** This option is currently experimental and may
       change or be removed in future Electron releases.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
-      `window.open()`. Defaults to `false`. **Note:** This option is currently
-      experimental.
+      `window.open()`. If set to `true`, the `webPreferences` of child window
+      will always be the same with parent window, regardless of the parameters
+      passed to `window.open()`. Defaults to `false`. **Note:** This option is
+      currently experimental.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
