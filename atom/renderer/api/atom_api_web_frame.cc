@@ -493,9 +493,9 @@ void WebFrame::BuildPrototype(v8::Isolate* isolate,
                  &WebFrame::RegisterEmbedderCustomElement)
       .SetMethod("getWebFrameId", &WebFrame::GetWebFrameId)
       .SetMethod("setSpellCheckProvider", &WebFrame::SetSpellCheckProvider)
-      .SetMethod("registerURLSchemeAsBypassingCSP",
+      .SetMethod("_registerURLSchemeAsBypassingCSP",
                  &WebFrame::RegisterURLSchemeAsBypassingCSP)
-      .SetMethod("registerURLSchemeAsPrivileged",
+      .SetMethod("_registerURLSchemeAsPrivileged",
                  &WebFrame::RegisterURLSchemeAsPrivileged)
       .SetMethod("insertText", &WebFrame::InsertText)
       .SetMethod("insertCSS", &WebFrame::InsertCSS)

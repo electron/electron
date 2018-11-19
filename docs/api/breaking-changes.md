@@ -26,6 +26,12 @@ Child windows opened with the `nativeWindowOpen` option will always have Node.js
 
 `wordStart` and `medialCapitalAsWordStart` options are removed.
 
+## `webFrame.registerURLSchemeAsBypassingCSP(scheme)` and `webFrame.registerURLSchemeAsPrivileged(scheme[, options])`
+
+These APIs have been deprecated. Starting in 5.0 this functionality can only be used per app, and not separtely for each webframe.
+Use `app.registerURLSchemeAsPrivileged(scheme[, options])` instead.
+
+
 # Planned Breaking API Changes (4.0)
 
 The following list includes the breaking API changes planned for Electron 4.0.
