@@ -13,7 +13,14 @@ import sys
 
 def main(args):
   for dirname in args:
-    os.makedirs(dirname)
+    try:
+      os.makedirs(dirname)
+    except OSError as e:
+      if e.errno == os.errno.EEXIST:
+        # It's OK if it already exists
+        pass
+      else:
+        raise
 
 
 if __name__ == '__main__':
