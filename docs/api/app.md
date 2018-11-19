@@ -542,7 +542,7 @@ You can request the following paths by the name:
     * `normal` - 32x32
     * `large` - 48x48 on _Linux_, 32x32 on _Windows_, unsupported on _macOS_.
 
-Returns `Promise<icon>` - fulfilled with the app's icon, which is a [NativeImage](native-image.md).
+Returns `Promise<NativeImage>` - fulfilled with the app's icon, which is a [NativeImage](native-image.md).
 
 Fetches a path's associated icon.
 
