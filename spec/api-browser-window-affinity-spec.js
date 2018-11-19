@@ -26,73 +26,67 @@ describe('BrowserWindow with affinity module', () => {
     })
   }
 
-  function testAffinityProcessIds (name, webPreferences = {}) {
-    describe(name, () => {
-      let mAffinityWindow
-      before(done => {
-        createWindowWithWebPrefs({ affinity: myAffinityName, ...webPreferences })
-          .then((w) => {
-            mAffinityWindow = w
-            done()
-          })
-      })
-
-      after(done => {
-        closeWindow(mAffinityWindow, { assertSingleWindow: false }).then(() => {
-          mAffinityWindow = null
+  describe(`BrowserWindow with an affinity '${myAffinityName}'`, () => {
+    let mAffinityWindow
+    before(done => {
+      createWindowWithWebPrefs({ affinity: myAffinityName })
+        .then((w) => {
+          mAffinityWindow = w
           done()
         })
-      })
+    })
 
-      it('should have a different process id than a default window', done => {
-        createWindowWithWebPrefs({ ...webPreferences })
-          .then(w => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
-
-            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-            closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
-          })
-      })
-
-      it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, done => {
-        createWindowWithWebPrefs({ affinity: anotherAffinityName, ...webPreferences })
-          .then(w => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
-
-            expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
-            closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
-          })
-      })
-
-      it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, done => {
-        createWindowWithWebPrefs({ affinity: myAffinityName, ...webPreferences })
-          .then(w => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
-
-            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-            closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
-          })
-      })
-
-      it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, done => {
-        createWindowWithWebPrefs({ affinity: myAffinityNameUpper, ...webPreferences })
-          .then(w => {
-            const affinityID = mAffinityWindow.webContents.getOSProcessId()
-            const wcID = w.webContents.getOSProcessId()
-
-            expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
-            closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
-          })
+    after(done => {
+      closeWindow(mAffinityWindow, { assertSingleWindow: false }).then(() => {
+        mAffinityWindow = null
+        done()
       })
     })
-  }
 
-  testAffinityProcessIds(`BrowserWindow with an affinity '${myAffinityName}'`)
-  testAffinityProcessIds(`BrowserWindow with an affinity '${myAffinityName}' and sandbox enabled`, { sandbox: true })
-  testAffinityProcessIds(`BrowserWindow with an affinity '${myAffinityName}' and nativeWindowOpen enabled`, { nativeWindowOpen: true })
+    it('should have a different process id than a default window', done => {
+      createWindowWithWebPrefs({})
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
+
+          expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
+    })
+
+    it(`should have a different process id than a window with a different affinity '${anotherAffinityName}'`, done => {
+      createWindowWithWebPrefs({ affinity: anotherAffinityName })
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
+
+          expect(affinityID).to.not.equal(wcID, 'Should have different OS process IDs')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
+    })
+
+    it(`should have the same OS process id than a window with the same affinity '${myAffinityName}'`, done => {
+      createWindowWithWebPrefs({ affinity: myAffinityName })
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
+
+          expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
+    })
+
+    it(`should have the same OS process id than a window with an equivalent affinity '${myAffinityNameUpper}' (case insensitive)`, done => {
+      createWindowWithWebPrefs({ affinity: myAffinityNameUpper })
+        .then(w => {
+          const affinityID = mAffinityWindow.webContents.getOSProcessId()
+          const wcID = w.webContents.getOSProcessId()
+
+          expect(affinityID).to.equal(wcID, 'Should have the same OS process ID')
+          closeWindow(w, { assertSingleWindow: false }).then(() => { done() })
+        })
+    })
+  })
 
   describe(`BrowserWindow with an affinity : nodeIntegration=false`, () => {
     const preload = path.join(fixtures, 'module', 'send-later.js')
