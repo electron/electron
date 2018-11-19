@@ -39,8 +39,7 @@ class Archive : public mate::Wrappable<Archive> {
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD)
-        .SetMethod("destroy", &Archive::Destroy);
+        .SetMethod("getFd", &Archive::GetFD);
   }
 
  protected:
@@ -112,9 +111,6 @@ class Archive : public mate::Wrappable<Archive> {
       return -1;
     return archive_->GetFD();
   }
-
-  // Free the resources used by archive.
-  void Destroy() { archive_.reset(); }
 
  private:
   std::unique_ptr<asar::Archive> archive_;
