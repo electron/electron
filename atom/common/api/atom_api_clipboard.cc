@@ -65,8 +65,9 @@ void Clipboard::WriteBuffer(const std::string& format,
   }
 
   ui::ScopedClipboardWriter writer(GetClipboardType(args));
-  writer.WriteData(node::Buffer::Data(buffer), node::Buffer::Length(buffer),
-                   ui::Clipboard::GetFormatType(format));
+  writer.WriteData(
+      ui::Clipboard::GetFormatType(format).Serialize(),
+      std::string(node::Buffer::Data(buffer), node::Buffer::Length(buffer)));
 }
 
 void Clipboard::Write(const mate::Dictionary& data, mate::Arguments* args) {

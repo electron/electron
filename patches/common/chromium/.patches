@@ -18,7 +18,6 @@ no_stack_dumping.patch
 out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
-scoped_clipboard_writer.patch
 stream_resource_handler.patch
 thread_capabilities.patch
 web_contents.patch
