@@ -211,8 +211,6 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   // Chromium drops support for the old sandbox implmentation.
   disable_features += std::string(",") + features::kMacV2Sandbox.name;
 #endif
-  disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name;
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));
