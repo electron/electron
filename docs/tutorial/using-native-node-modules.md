@@ -90,7 +90,7 @@ following things:
 ### A note about `win_delay_load_hook`
 
 On Windows, by default, node-gyp links native modules against `node.dll`.
-However, in Electron 4.x an higher, the symbols needed by native modules are
+However, in Electron 4.x and higher, the symbols needed by native modules are
 exported by `electron.exe`, and there is no `node.dll` in Electron 4.x. In
 order to load native modules on Windows, node-gyp installs a [delay-load
 hook](https://msdn.microsoft.com/en-us/library/z9h1h6ty.aspx) that triggers
