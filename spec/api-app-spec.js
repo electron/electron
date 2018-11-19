@@ -457,7 +457,7 @@ describe('app module', () => {
     it('sets and returns the app as a login item', done => {
       app.setLoginItemSettings({ openAtLogin: true })
       // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 250 : 0
+      const delay = process.mas ? 500 : 0
       setTimeout(() => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           openAtLogin: true,
@@ -473,7 +473,7 @@ describe('app module', () => {
     it('adds a login item that loads in hidden mode', done => {
       app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true })
       // Wait because login item settings are not applied immediately in MAS build
-      const delay = process.mas ? 250 : 0
+      const delay = process.mas ? 500 : 0
       setTimeout(() => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           openAtLogin: true,
@@ -486,17 +486,23 @@ describe('app module', () => {
       }, delay)
     })
 
-    it('correctly sets and unsets the LoginItem', function () {
+    it('correctly sets and unsets the LoginItem', (done) => {
+      const delay = process.mas ? 500 : 0
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
 
       app.setLoginItemSettings({ openAtLogin: true })
-      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      setTimeout(() => {
+        expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+      }, delay)
 
       app.setLoginItemSettings({ openAtLogin: false })
-      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+      setTimeout(() => {
+        expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+        done()
+      }, delay)
     })
 
-    it('correctly sets and unsets the LoginItem as hidden', function () {
+    it('correctly sets and unsets the LoginItem as hidden', () => {
       if (process.platform !== 'darwin' || process.mas) this.skip()
 
       expect(app.getLoginItemSettings().openAtLogin).to.be.false()
