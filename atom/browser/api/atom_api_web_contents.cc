@@ -1758,10 +1758,8 @@ v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
-  if (args->Length() == 1 && !args->GetNext(&rect)) {
-    promise->RejectWithErrorMessage("Rect argument is required.");
-    return promise->GetHandle();
-  }
+  // get rect arguments if they exist
+  args->GetNext(&rect);
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
