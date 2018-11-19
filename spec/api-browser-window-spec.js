@@ -90,8 +90,6 @@ describe('BrowserWindow module', () => {
           res.end()
         } else if (req.url === '/navigate-302') {
           res.end(`<html><body><script>window.location='${server.url}/302'</script></body></html>`)
-        } else if (req.url === '/cross-site') {
-          res.end(`<html><body><h1>${req.url}</h1></body></html>`)
         } else {
           res.end()
         }
@@ -1469,6 +1467,29 @@ describe('BrowserWindow module', () => {
 
       const preload = path.join(fixtures, 'module', 'preload-sandbox.js')
 
+      // http protocol to simulate accessing another domain. This is required
+      // because the code paths for cross domain popups is different.
+      function crossDomainHandler (request, callback) {
+        // Disabled due to false positive in StandardJS
+        // eslint-disable-next-line standard/no-callback-literal
+        callback({
+          mimeType: 'text/html',
+          data: `<html><body><h1>${request.url}</h1></body></html>`
+        })
+      }
+
+      before((done) => {
+        protocol.interceptStringProtocol('http', crossDomainHandler, () => {
+          done()
+        })
+      })
+
+      after((done) => {
+        protocol.uninterceptProtocol('http', () => {
+          done()
+        })
+      })
+
       it('exposes ipcRenderer to preload script', (done) => {
         ipcMain.once('answer', function (event, test) {
           assert.strictEqual(test, 'preload')
@@ -1563,49 +1584,32 @@ describe('BrowserWindow module', () => {
         })
 
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
-        w.loadFile(
-          path.join(fixtures, 'api', 'sandbox.html'),
-          { search: 'window-open-external' }
-        )
-
-        // Wait for a message from the main window saying that it's ready.
-        await emittedOnce(ipcMain, 'opener-loaded')
-
-        // Ask the opener to open a popup with window.opener.
-        const expectedPopupUrl =
-            `${server.url}/cross-site` // Set in "sandbox.html".
-        w.webContents.send('open-the-popup', expectedPopupUrl)
+        w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'window-open-external' })
+        const expectedPopupUrl = 'http://www.google.com/#q=electron' // Set in the "sandbox.html".
 
         // The page is going to open a popup that it won't be able to close.
         // We have to close it from here later.
         // XXX(alexeykuzmin): It will leak if the test fails too soon.
         const [, popupWindow] = await emittedOnce(app, 'browser-window-created')
 
-        // Ask the popup window for details.
-        popupWindow.webContents.send('provide-details')
-        const [, openerIsNull, , locationHref] =
-            await emittedOnce(ipcMain, 'child-loaded')
-        expect(openerIsNull).to.be.false('window.opener is null')
+        // Wait for a message from the popup's preload script.
+        const [, openerIsNull, html, locationHref] = await emittedOnce(ipcMain, 'child-loaded')
+        expect(openerIsNull).to.be.true('window.opener is not null')
+        expect(html).to.equal(`<h1>${expectedPopupUrl}</h1>`,
+          'looks like a http: request has not been intercepted locally')
         expect(locationHref).to.equal(expectedPopupUrl)
 
         // Ask the page to access the popup.
         w.webContents.send('touch-the-popup')
-        const [, popupAccessMessage] = await emittedOnce(ipcMain, 'answer')
-
-        // Ask the popup to access the opener.
-        popupWindow.webContents.send('touch-the-opener')
-        const [, openerAccessMessage] = await emittedOnce(ipcMain, 'answer')
+        const [, exceptionMessage] = await emittedOnce(ipcMain, 'answer')
 
         // We don't need the popup anymore, and its parent page can't close it,
         // so let's close it from here before we run any checks.
         await closeWindow(popupWindow, { assertSingleWindow: false })
 
-        expect(popupAccessMessage).to.be.a('string',
+        expect(exceptionMessage).to.be.a('string',
           `child's .document is accessible from its parent window`)
-        expect(popupAccessMessage).to.match(/^Blocked a frame with origin/)
-        expect(openerAccessMessage).to.be.a('string',
-          `opener .document is accessible from a popup window`)
-        expect(openerAccessMessage).to.match(/^Blocked a frame with origin/)
+        expect(exceptionMessage).to.match(/^Blocked a frame with origin/)
       })
 
       it('should inherit the sandbox setting in opened windows', (done) => {
