@@ -25,7 +25,7 @@ store from `.pdb` files.
   SDK, open Visual Studio Installer, select
   `Change` → `Individual Components`, scroll down and select the appropriate
   Windows SDK to install. Another option would be to look at the
-  [Windows SDK and emulator archive](https://developer.microsoft.com/de-de/windows/downloads/sdk-archive)
+  [Windows SDK and emulator archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive)
   and download the standalone version of the SDK respectively.
 
 If you don't currently have a Windows installation,
