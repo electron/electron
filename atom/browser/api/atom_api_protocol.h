@@ -94,9 +94,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     DISALLOW_COPY_AND_ASSIGN(CustomProtocolHandler);
   };
 
-  // Register schemes that can handle service worker.
-  void RegisterServiceWorkerSchemes(const std::vector<std::string>& schemes);
-
+  void RegisterSchemesAsPrivileged(const std::vector<std::string>& schemes,
+                                   mate::Arguments* args);
   // Register the protocol with certain request job.
   template <typename RequestJob>
   void RegisterProtocol(const std::string& scheme,
