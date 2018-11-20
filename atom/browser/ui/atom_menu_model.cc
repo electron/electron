@@ -43,6 +43,14 @@ bool AtomMenuModel::GetAcceleratorAtWithParams(
   return false;
 }
 
+bool AtomMenuModel::ShouldRegisterAcceleratorAt(int index) const {
+  if (delegate_) {
+    return delegate_->ShouldRegisterAcceleratorForCommandId(
+        GetCommandIdAt(index));
+  }
+  return true;
+}
+
 void AtomMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
   for (Observer& observer : observers_) {

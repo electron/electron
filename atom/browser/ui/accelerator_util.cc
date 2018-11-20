@@ -77,9 +77,11 @@ void GenerateAcceleratorTable(AcceleratorTable* table,
       GenerateAcceleratorTable(table, submodel);
     } else {
       ui::Accelerator accelerator;
-      if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
-        MenuItem item = {i, model};
-        (*table)[accelerator] = item;
+      if (model->ShouldRegisterAcceleratorAt(i)) {
+        if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
+          MenuItem item = {i, model};
+          (*table)[accelerator] = item;
+        }
       }
     }
   }
