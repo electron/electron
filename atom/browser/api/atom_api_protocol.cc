@@ -74,9 +74,42 @@ Protocol::Protocol(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Protocol::~Protocol() {}
 
-void Protocol::RegisterServiceWorkerSchemes(
-    const std::vector<std::string>& schemes) {
-  atom::AtomBrowserClient::SetCustomServiceWorkerSchemes(schemes);
+void Protocol::RegisterSchemesAsPrivileged(
+    const std::vector<std::string>& schemes,
+    mate::Arguments* args) {
+  bool secure = true;
+  bool bypassCSP = true;
+  bool allowServiceWorkers = true;
+  bool supportFetchAPI = true;
+  bool corsEnabled = true;
+  if (args->Length() == 2) {
+    mate::Dictionary options;
+    if (args->GetNext(&options)) {
+      options.Get("secure", &secure);
+      options.Get("bypassCSP", &bypassCSP);
+      options.Get("allowServiceWorkers", &allowServiceWorkers);
+      options.Get("supportFetchAPI", &supportFetchAPI);
+      options.Get("corsEnabled", &corsEnabled);
+    }
+  }
+  for (const auto& scheme : schemes) {
+    // Register scheme to privileged list (https, wss, data, chrome-extension)
+    if (secure) {
+      url::AddSecureScheme(scheme.c_str());
+    }
+    if (bypassCSP) {
+      url::AddCSPBypassingScheme(scheme.c_str());
+    }
+    if (allowServiceWorkers) {
+      atom::AtomBrowserClient::SetCustomServiceWorkerSchemes({scheme});
+    }
+    if (supportFetchAPI) {
+      // NYI
+    }
+    if (corsEnabled) {
+      url::AddCORSEnabledScheme(scheme.c_str());
+    }
+  }
 }
 
 void Protocol::UnregisterProtocol(const std::string& scheme,
@@ -195,8 +228,8 @@ void Protocol::BuildPrototype(v8::Isolate* isolate,
                               v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Protocol"));
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("registerServiceWorkerSchemes",
-                 &Protocol::RegisterServiceWorkerSchemes)
+      .SetMethod("registerSchemesAsPrivileged",
+                 &Protocol::RegisterSchemesAsPrivileged)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocol<URLRequestStringJob>)
       .SetMethod("registerBufferProtocol",
