@@ -65,6 +65,7 @@
 #endif
 
 #if defined(OS_MACOSX)
+#include <CoreFoundation/CoreFoundation.h>
 #include "atom/browser/ui/cocoa/atom_bundle_mover.h"
 #endif
 
@@ -882,6 +883,45 @@ std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
 
+std::string App::GetLocaleCountryCode() {
+  std::string region;
+#if defined(OS_WIN)
+  WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
+
+  if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
+                      (LPWSTR)&locale_name,
+                      sizeof(locale_name) / sizeof(WCHAR)) ||
+      GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
+                      (LPWSTR)&locale_name,
+                      sizeof(locale_name) / sizeof(WCHAR))) {
+    base::WideToUTF8(locale_name, wcslen(locale_name), &region);
+  }
+#elif defined(OS_MACOSX)
+  CFLocaleRef locale = CFLocaleCopyCurrent();
+  CFStringRef value = CFStringRef(
+      static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  const CFIndex kCStringSize = 128;
+  char temporaryCString[kCStringSize] = {0};
+  CFStringGetCString(value, temporaryCString, kCStringSize,
+                     kCFStringEncodingUTF8);
+  region = temporaryCString;
+#else
+  const char* locale_ptr = setlocale(LC_TIME, NULL);
+  if (!locale_ptr)
+    locale_ptr = setlocale(LC_NUMERIC, NULL);
+  if (locale_ptr) {
+    std::string locale = locale_ptr;
+    std::string::size_type rpos = locale.find('.');
+    if (rpos != std::string::npos)
+      locale = locale.substr(0, rpos);
+    rpos = locale.find('_');
+    if (rpos != std::string::npos && rpos + 1 < locale.size())
+      region = locale.substr(rpos + 1);
+  }
+#endif
+  return region.size() == 2 ? region : std::string();
+}
+
 void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
                            const base::FilePath& cwd) {
   Emit("second-instance", cmd, cwd);
@@ -1315,6 +1355,7 @@ void App::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if defined(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
 #endif
