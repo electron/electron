@@ -61,6 +61,14 @@ app.getGPUInfo('complete')
 app.getGPUInfo('basic')
 ```
 
+## `win_delay_load_hook`
+
+When building native modules for windows, the `win_delay_load_hook` variable in
+the module's `binding.gyp` must be true (which is the default). If this hook is
+not present, then the native module will fail to load on Windows, with an error
+message like `Cannot find module`. See the [native module
+guide](/docs/tutorial/using-native-node-modules.md) for more.
+
 
 # Breaking API Changes (3.0)
 
