@@ -176,8 +176,7 @@ app.once('ready', () => {
           type: 'separator'
         },
         {
-          role: 'services',
-          submenu: []
+          role: 'services'
         },
         {
           type: 'separator'
