@@ -989,20 +989,27 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   XSetTransientForHint(
       xdisplay, GetAcceleratedWidget(),
       parent ? parent->GetAcceleratedWidget() : DefaultRootWindow(xdisplay));
-#elif defined(OS_WIN) && defined(DEBUG)
-  // Should work, but does not, it seems that the views toolkit doesn't support
-  // reparenting on desktop.
-  if (parent) {
-    ::SetParent(GetAcceleratedWidget(), parent->GetAcceleratedWidget());
-    views::Widget::ReparentNativeView(GetNativeWindow(),
-                                      parent->GetNativeWindow());
-    wm::AddTransientChild(parent->GetNativeWindow(), GetNativeWindow());
-  } else {
-    if (!GetNativeWindow()->parent())
-      return;
-    ::SetParent(GetAcceleratedWidget(), NULL);
-    views::Widget::ReparentNativeView(GetNativeWindow(), nullptr);
-    wm::RemoveTransientChild(GetNativeWindow()->parent(), GetNativeWindow());
+#elif defined(OS_WIN)
+  // To set parentship between windows into Windows is better to play with the
+  //  owner instead of the parent, as Windows natively seems to do if a parent
+  //  is specified at window creation time.
+  // For do this we must NOT use the ::SetParent function, instead we must use
+  //  the ::GetWindowLongPtr or ::SetWindowLongPtr functions with "nIndex" set
+  //  to "GWLP_HWNDPARENT" which actually means the window owner.
+  HWND hwndParent = parent ? parent->GetAcceleratedWidget() : NULL;
+  if (hwndParent ==
+      (HWND)::GetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT))
+    return;
+  ::SetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT,
+                     (LONG_PTR)hwndParent);
+  // Ensures the visibility
+  if (IsVisible()) {
+    WINDOWPLACEMENT wp;
+    wp.length = sizeof(WINDOWPLACEMENT);
+    ::GetWindowPlacement(GetAcceleratedWidget(), &wp);
+    ::ShowWindow(GetAcceleratedWidget(), SW_HIDE);
+    ::ShowWindow(GetAcceleratedWidget(), wp.showCmd);
+    ::BringWindowToTop(GetAcceleratedWidget());
   }
 #endif
 }

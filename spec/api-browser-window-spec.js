@@ -2957,12 +2957,6 @@ describe('BrowserWindow module', () => {
     })
 
     describe('win.setParentWindow(parent)', () => {
-      before(function () {
-        if (process.platform === 'win32') {
-          this.skip()
-        }
-      })
-
       beforeEach(() => {
         if (c != null) c.destroy()
         c = new BrowserWindow({ show: false })

@@ -671,6 +671,7 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
   } else if (mate::ConvertFromV8(isolate(), value, &parent)) {
+    RemoveFromParentChildWindows();
     parent_window_.Reset(isolate(), value);
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
@@ -1061,9 +1062,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setContentProtection", &TopLevelWindow::SetContentProtection)
       .SetMethod("setFocusable", &TopLevelWindow::SetFocusable)
       .SetMethod("setMenu", &TopLevelWindow::SetMenu)
-#if !defined(OS_WIN)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
-#endif
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
