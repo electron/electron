@@ -178,7 +178,7 @@ Returns an object giving memory usage statistics about the current process. Note
 that all statistics are reported in Kilobytes.
 This api should be called after app ready.
 
-Chromium does not provide `residentSet` value for macos. This is because macos 
+Chromium does not provide `residentSet` value for macOS. This is because macOS 
 performs in-memory compression of pages that haven't been recently used. As a
 result the resident set size value is not what one would expect. `private` memory
 is more representative of the actual pre-compression memory usage of the process
