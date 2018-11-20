@@ -19,10 +19,11 @@ PATHS_TO_SKIP = [
   'pyproto',
 ]
 
-def skip_path(dep):
+def skip_path(dep, dist_zip, target_cpu):
   should_skip = (
     any(dep.startswith(path) for path in PATHS_TO_SKIP) or
-    any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP))
+    any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP) or
+    ('arm' in target_cpu and dist_zip == 'mksnapshot.zip' and dep == 'snapshot_blob.bin'))
   if should_skip:
     print("Skipping {}".format(dep))
   return should_skip
@@ -47,7 +48,7 @@ def main(argv):
   else:
     with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED) as z:
       for dep in dist_files:
-        if skip_path(dep):
+        if skip_path(dep, dist_zip, target_cpu):
           continue
         if os.path.isdir(dep):
           for root, dirs, files in os.walk(dep):
