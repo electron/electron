@@ -370,7 +370,7 @@ step-maybe-native-mksnapshot-gn-gen: &step-maybe-native-mksnapshot-gn-gen
     command: |
       if [ "$BUILD_NATIVE_MKSNAPSHOT" == "1" ]; then
         cd src
-        gn gen out/native_mksnapshot --args='import("//electron/build/args/native_mksnapshot.gn") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
+        gn gen out/native_mksnapshot --args='import("'$GN_CONFIG'") cc_wrapper="'"$SCCACHE_PATH"'" v8_snapshot_toolchain="'"$MKSNAPSHOT_TOOLCHAIN"'"'" $GN_EXTRA_ARGS"
       else
         echo 'Skipping native mksnapshot GN gen for non arm build'
       fi
@@ -919,6 +919,7 @@ jobs:
     executor: linux-medium
     environment:
       <<: *env-arm
+      <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
@@ -978,6 +979,7 @@ jobs:
     executor: linux-medium
     environment:
       <<: *env-arm64
+      <<: *env-release-build
       <<: *env-enable-sccache
       <<: *env-send-slack-notifications
     <<: *steps-native-mksnapshot-build
