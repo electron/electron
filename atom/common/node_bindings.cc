@@ -74,6 +74,7 @@
   V(atom_browser_label_button)   \
   V(atom_browser_layout_manager) \
   V(atom_browser_md_text_button) \
+  V(atom_browser_resize_area)    \
   V(atom_browser_text_field)
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)

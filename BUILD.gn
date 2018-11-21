@@ -165,6 +165,7 @@ asar("js2asar") {
       "lib/browser/api/views/label-button.js",
       "lib/browser/api/views/layout-manager.js",
       "lib/browser/api/views/md-text-button.js",
+      "lib/browser/api/views/resize-area.js",
       "lib/browser/api/views/text-field.js",
     ]
   }
@@ -459,6 +460,8 @@ static_library("electron_lib") {
       "atom/browser/api/views/atom_api_layout_manager.h",
       "atom/browser/api/views/atom_api_md_text_button.cc",
       "atom/browser/api/views/atom_api_md_text_button.h",
+      "atom/browser/api/views/atom_api_resize_area.cc",
+      "atom/browser/api/views/atom_api_resize_area.h",
       "atom/browser/api/views/atom_api_text_field.cc",
       "atom/browser/api/views/atom_api_text_field.h",
     ]
