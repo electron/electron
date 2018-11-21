@@ -11,7 +11,9 @@
 #include <string>
 #include <vector>
 
+#include "base/synchronization/lock.h"
 #include "brightray/browser/browser_client.h"
+#include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "net/ssl/client_cert_identity.h"
 
@@ -124,6 +126,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
   void WebNotificationAllowed(
       int render_process_id,
       const base::Callback<void(bool, bool)>& callback) override;
+  bool ShouldBypassCORB(int render_process_id) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -145,6 +148,7 @@ class AtomBrowserClient : public brightray::BrowserClient,
     bool sandbox = false;
     bool native_window_open = false;
     bool disable_popups = false;
+    bool web_security = true;
   };
 
   bool ShouldCreateNewSiteInstance(content::RenderFrameHost* render_frame_host,
@@ -161,7 +165,6 @@ class AtomBrowserClient : public brightray::BrowserClient,
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
 
-  std::map<int, ProcessPreferences> process_preferences_;
   std::map<int, base::ProcessId> render_process_host_pids_;
 
   // list of site per affinity. weak_ptr to prevent instance locking
@@ -171,6 +174,9 @@ class AtomBrowserClient : public brightray::BrowserClient,
       resource_dispatcher_host_delegate_;
 
   Delegate* delegate_ = nullptr;
+
+  base::Lock process_preferences_lock_;
+  std::map<int, ProcessPreferences> process_preferences_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
 };

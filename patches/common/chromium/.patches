@@ -80,3 +80,4 @@ dump_syms.patch
 web_preferences.patch
 verbose_generate_breakpad_symbols.patch
 fix_zoom_display.patch
+cross_site_document_resource_handler.patch
