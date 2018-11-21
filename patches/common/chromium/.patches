@@ -14,7 +14,6 @@ disable_hidden.patch
 dom_storage_limits.patch
 frame_host_manager.patch
 net_url_request_job.patch
-no_stack_dumping.patch
 out_of_process_instance.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
