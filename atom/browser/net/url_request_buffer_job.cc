@@ -120,7 +120,7 @@ void URLRequestBufferJob::Kill() {
 }
 
 void URLRequestBufferJob::GetResponseInfo(net::HttpResponseInfo* info) {
-  std::string status("HTTP/1.1 200 OK");
+  std::string status("HTTP/1.1 ");
   status.append(base::IntToString(status_code_));
   status.append(" ");
   status.append(net::GetHttpReasonPhrase(status_code_));
