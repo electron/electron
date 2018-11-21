@@ -278,4 +278,8 @@ bool AtomMainDelegate::DelaySandboxInitialization(
 }
 #endif
 
+bool AtomMainDelegate::ShouldLockSchemeRegistry() {
+  return false;
+}
+
 }  // namespace atom
