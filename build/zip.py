@@ -20,6 +20,12 @@ PATHS_TO_SKIP = [
 ]
 
 def skip_path(dep, dist_zip, target_cpu):
+  # Skip specific paths and extensions as well as the following special case:
+  # snapshot_blob.bin is a dependency of mksnapshot.zip because
+  # v8_context_generator needs it, but this file does not get generated for arm
+  # and arm 64 binaries of mksnapshot since they are built on x64 hardware.
+  # Consumers of arm and arm64 mksnapshot can generate snapshot_blob.bin
+  # themselves by running mksnapshot.
   should_skip = (
     any(dep.startswith(path) for path in PATHS_TO_SKIP) or
     any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP) or
