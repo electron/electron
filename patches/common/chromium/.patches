@@ -24,7 +24,6 @@ web_contents.patch
 webgl_context_attributes.patch
 webview_cross_drag.patch
 worker_context_will_destroy.patch
-browser_plugin_guest.patch
 disable_user_gesture_requirement_for_beforeunload_dialogs.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
