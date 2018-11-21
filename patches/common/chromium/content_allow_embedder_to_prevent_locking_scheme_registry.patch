@@ -3,6 +3,14 @@ From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 21 Nov 2018 14:31:34 -0800
 Subject: content: allow embedder to prevent locking scheme registry
 
+The //content layer requires all schemes to be registered during startup,
+because Add*Scheme aren't threadsafe. However, Electron exposes the option to
+register additional schemes via JavaScript in the main process before the app
+is ready, but after the //content layer has already locked the registry.
+
+Without this patch, calling `registerStandardSchemes` during initialization
+when in debug mode will cause a DCHECK to fire.
+
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
 index 034fdcad958cb25780c304d184b2fbb721a13200..c2090368f6678950690463e0b90620cb9fdf5f41 100644
