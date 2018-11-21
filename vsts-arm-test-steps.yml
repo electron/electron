@@ -11,12 +11,33 @@ steps:
 
 - bash: |
     export ZIP_DEST=$PWD/src/out/Default
+    echo "##vso[task.setvariable variable=ZIP_DEST]$ZIP_DEST"
     mkdir -p $ZIP_DEST
     cd src/electron
     node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=dist.zip --dest=$ZIP_DEST
     cd $ZIP_DEST
     unzip -o dist.zip
   displayName: 'Download and unzip dist files for test'
+  env:
+    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
+
+- bash: |
+    export FFMPEG_ZIP_DEST=$PWD/src/out/ffmpeg
+    mkdir -p $FFMPEG_ZIP_DEST
+    cd src/electron
+    node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=ffmpeg.zip --dest=$FFMPEG_ZIP_DEST
+    cd $FFMPEG_ZIP_DEST
+    unzip -o ffmpeg.zip
+  displayName: 'Download and unzip ffmpeg for test'
+  env:
+    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
+
+- bash: |
+    cd src/electron
+    node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=native_mksnapshot.zip --dest=$ZIP_DEST
+    cd $ZIP_DEST
+    unzip -o native_mksnapshot.zip
+  displayName: 'Download and unzip native_mksnapshot.zip for test'
   env:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
@@ -43,6 +64,18 @@ steps:
   displayName: Setup for headless testing
   env:
     DISPLAY: ":99.0"
+
+- bash: |
+    cd src
+    python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
+  displayName: Verify non proprietary ffmpeg
+  timeoutInMinutes: 5
+
+- bash: |
+    cd src
+    python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+  displayName: Verify mksnapshot
+  timeoutInMinutes: 5
 
 - bash: |
    cd src
