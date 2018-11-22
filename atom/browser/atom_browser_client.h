@@ -108,6 +108,12 @@ class AtomBrowserClient : public brightray::BrowserClient,
       content::ResourceContext* resource_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
+  network::mojom::NetworkContextPtr CreateNetworkContext(
+      content::BrowserContext* browser_context,
+      bool in_memory,
+      const base::FilePath& relative_partition_path) override;
+  void RegisterOutOfProcessServices(OutOfProcessServiceMap* services) override;
+  net::NetLog* GetNetLog() override;
 
   // brightray::BrowserClient:
   brightray::BrowserMainParts* OverrideCreateBrowserMainParts(

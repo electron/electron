@@ -39,7 +39,9 @@ class InspectableWebContentsImpl
  public:
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  InspectableWebContentsImpl(content::WebContents* web_contents, bool is_guest);
+  InspectableWebContentsImpl(content::WebContents* web_contents,
+                             PrefService* pref_service,
+                             bool is_guest);
   ~InspectableWebContentsImpl() override;
 
   InspectableWebContentsView* GetView() const override;

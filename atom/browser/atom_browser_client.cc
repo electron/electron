@@ -17,6 +17,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/io_thread.h"
 #include "atom/browser/native_window.h"
 #include "atom/browser/session_preferences.h"
 #include "atom/browser/web_contents_permission_helper.h"
@@ -27,12 +28,15 @@
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/json/json_reader.h"
+#include "base/no_destructor.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h"
 #include "chrome/browser/speech/tts_message_filter.h"
+#include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/render_frame_host.h"
@@ -43,12 +47,15 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/service_names.mojom.h"
 #include "content/public/common/url_constants.h"
 #include "content/public/common/web_preferences.h"
 #include "device/geolocation/public/cpp/location_provider.h"
+#include "net/base/escape.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/host/ppapi_host.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "v8/include/v8.h"
 
@@ -504,10 +511,28 @@ AtomBrowserClient::OverrideSystemLocationProvider() {
 #endif
 }
 
+network::mojom::NetworkContextPtr AtomBrowserClient::CreateNetworkContext(
+    content::BrowserContext* browser_context,
+    bool /*in_memory*/,
+    const base::FilePath& /*relative_partition_path*/) {
+  if (!browser_context)
+    return nullptr;
+  return static_cast<AtomBrowserContext*>(browser_context)->GetNetworkContext();
+}
+
+void AtomBrowserClient::RegisterOutOfProcessServices(
+    OutOfProcessServiceMap* services) {
+  (*services)[proxy_resolver::mojom::kProxyResolverServiceName] =
+      base::ASCIIToUTF16("V8 Proxy Resolver");
+}
+
+net::NetLog* AtomBrowserClient::GetNetLog() {
+  return AtomBrowserMainParts::Get()->net_log();
+}
+
 brightray::BrowserMainParts* AtomBrowserClient::OverrideCreateBrowserMainParts(
-    const content::MainFunctionParams&) {
-  v8::V8::Initialize();  // Init V8 before creating main parts.
-  return new AtomBrowserMainParts;
+    const content::MainFunctionParams& params) {
+  return new AtomBrowserMainParts(params);
 }
 
 void AtomBrowserClient::WebNotificationAllowed(
