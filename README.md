@@ -95,6 +95,7 @@ Find documentation translations in [electron/i18n](https://github.com/electron/i
 
 ## Community
 
+
 Info on reporting bugs, getting help, finding third-party tools and sample apps,
 and more can be found in the [support document](docs/tutorial/support.md#finding-support).
 
@@ -103,3 +104,4 @@ and more can be found in the [support document](docs/tutorial/support.md#finding
 [MIT](https://github.com/electron/electron/blob/master/LICENSE)
 
 When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
+
