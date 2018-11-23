@@ -149,7 +149,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   GetSystemSharedURLLoaderFactory() override;
   void OnNetworkServiceCreated(
       network::mojom::NetworkService* network_service) override;
-  bool ShouldBypassCORB(int render_process_id) override;
+  bool ShouldBypassCORB(int render_process_id) const override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -208,7 +208,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  base::Lock process_preferences_lock_;
+  mutable base::Lock process_preferences_lock_;
   std::map<int, ProcessPreferences> process_preferences_;
 
   DISALLOW_COPY_AND_ASSIGN(AtomBrowserClient);
