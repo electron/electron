@@ -14,7 +14,6 @@
 #include "atom/browser/cookie_change_notifier.h"
 #include "atom/browser/net/resolve_proxy_helper.h"
 #include "atom/browser/pref_store_delegate.h"
-#include "atom/browser/special_storage_policy.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/common/atom_version.h"
 #include "atom/common/chrome_version.h"
@@ -28,6 +27,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "brightray/browser/brightray_paths.h"
 #include "brightray/browser/inspectable_web_contents_impl.h"
+#include "brightray/browser/special_storage_policy.h"
 #include "brightray/browser/zoom_level_delegate.h"
 #include "brightray/common/application_info.h"
 #include "chrome/common/chrome_paths.h"
@@ -40,6 +40,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/user_agent.h"
 #include "net/base/escape.h"
@@ -74,7 +75,7 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
     : base::RefCountedDeleteOnSequence<AtomBrowserContext>(
           base::SequencedTaskRunnerHandle::Get()),
       in_memory_pref_store_(nullptr),
-      storage_policy_(new SpecialStoragePolicy),
+      storage_policy_(new brightray::SpecialStoragePolicy),
       in_memory_(in_memory),
       weak_factory_(this) {
   // Construct user agent string.

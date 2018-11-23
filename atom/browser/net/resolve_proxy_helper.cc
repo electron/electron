@@ -84,13 +84,4 @@ ResolveProxyHelper::PendingRequest::PendingRequest(
     const ResolveProxyCallback& callback)
     : url(url), callback(callback) {}
 
-ResolveProxyHelper::PendingRequest::PendingRequest(
-    ResolveProxyHelper::PendingRequest&& pending_request) = default;
-
-ResolveProxyHelper::PendingRequest::~PendingRequest() noexcept = default;
-
-ResolveProxyHelper::PendingRequest& ResolveProxyHelper::PendingRequest::
-operator=(ResolveProxyHelper::PendingRequest&& pending_request) noexcept =
-    default;
-
 }  // namespace atom

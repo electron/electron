@@ -21,6 +21,10 @@ class PrefRegistrySimple;
 class PrefService;
 class ValueMapPrefStore;
 
+namespace brightray {
+class SpecialStoragePolicy;
+}
+
 namespace atom {
 
 class AtomBlobReader;
@@ -29,7 +33,6 @@ class AtomDownloadManagerDelegate;
 class AtomPermissionManager;
 class CookieChangeNotifier;
 class ResolveProxyHelper;
-class SpecialStoragePolicy;
 class WebViewManager;
 
 class AtomBrowserContext

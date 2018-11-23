@@ -43,9 +43,8 @@ void NetLog::StartLogging(mate::Arguments* args) {
     return;
   }
 
-  auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+  net_log::NetExportFileWriter::URLRequestContextGetterList context_getters = {
+      browser_context_->GetRequestContext()};
 
   // TODO(deepak1556): Provide more flexibility to this module
   // by allowing customizations on the capturing options.
@@ -53,7 +52,7 @@ void NetLog::StartLogging(mate::Arguments* args) {
       log_path, net::NetLogCaptureMode::Default(),
       net_log::NetExportFileWriter::kNoLimit /* file size limit */,
       base::CommandLine::ForCurrentProcess()->GetCommandLineString(),
-      std::string(), network_context);
+      std::string(), context_getters);
 }
 
 std::string NetLog::GetLoggingState() const {
@@ -95,7 +94,7 @@ void NetLog::StopLogging(mate::Arguments* args) {
 
   if (IsCurrentlyLogging()) {
     stop_callback_queue_.emplace_back(callback);
-    net_log_writer_->StopNetLog(nullptr);
+    net_log_writer_->StopNetLog(nullptr, nullptr);
   } else {
     callback.Run(base::FilePath());
   }

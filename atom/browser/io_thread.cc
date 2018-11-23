@@ -6,7 +6,7 @@
 
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_thread.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
+#include "net/proxy_resolution/proxy_service.h"
 #include "net/url_request/url_request_context.h"
 #include "net/url_request/url_request_context_builder.h"
 #include "net/url_request/url_request_context_getter.h"

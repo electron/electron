@@ -46,8 +46,7 @@
 #include "net/log/net_log.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
-#include "net/proxy_resolution/proxy_config_with_annotation.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
+#include "net/proxy_resolution/proxy_service.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "net/url_request/data_protocol_handler.h"
 #include "net/url_request/static_http_user_agent_settings.h"
@@ -80,10 +79,6 @@ network::mojom::NetworkContextParamsPtr CreateDefaultNetworkContextParams(
   network_context_params->enable_brotli = true;
   network_context_params->user_agent = user_agent;
   network_context_params->http_cache_enabled = use_cache;
-  network_context_params->accept_language =
-      net::HttpUtil::GenerateAcceptLanguageHeader(
-          brightray::BrowserClient::Get()->GetApplicationLocale());
-  network_context_params->allow_gssapi_library_load = true;
   network_context_params->enable_data_url_support = false;
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithStrongBinding().PassInterface();
@@ -112,8 +107,9 @@ void SetupAtomURLRequestJobFactory(
     net::URLRequestContext* url_request_context,
     AtomURLRequestJobFactory* job_factory) {
   for (auto& protocol_handler : *protocol_handlers) {
-    job_factory->SetProtocolHandler(protocol_handler.first,
-                                    std::move(protocol_handler.second));
+    job_factory->SetProtocolHandler(
+        protocol_handler.first,
+        base::WrapUnique(protocol_handler.second.release()));
   }
   protocol_handlers->clear();
 

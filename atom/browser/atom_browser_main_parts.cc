@@ -22,6 +22,7 @@
 #include "chrome/browser/net/chrome_net_log_helper.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/net_log/net_export_file_writer.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/service_manager_connection.h"
@@ -195,7 +196,9 @@ int AtomBrowserMainParts::PreCreateThreads() {
     }
   }
   // Initialize net log file exporter.
-  net_log_->net_export_file_writer()->Initialize();
+  net_log_->net_export_file_writer()->Initialize(
+      content::BrowserThread::GetTaskRunnerForThread(
+          content::BrowserThread::IO));
 
   // Manage global state of net and other IO thread related.
   io_thread_ = std::make_unique<IOThread>(net_log_.get());

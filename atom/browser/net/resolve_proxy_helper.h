@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/memory/ref_counted.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
+#include "net/proxy_resolution/proxy_service.h"
 #include "url/gurl.h"
 
 namespace net {
@@ -35,16 +35,9 @@ class ResolveProxyHelper
   struct PendingRequest {
    public:
     PendingRequest(const GURL& url, const ResolveProxyCallback& callback);
-    PendingRequest(PendingRequest&& pending_request) noexcept;
-    ~PendingRequest();
-
-    PendingRequest& operator=(PendingRequest&& pending_request) noexcept;
 
     GURL url;
     ResolveProxyCallback callback;
-
-   private:
-    DISALLOW_COPY_AND_ASSIGN(PendingRequest);
   };
 
   ~ResolveProxyHelper();
