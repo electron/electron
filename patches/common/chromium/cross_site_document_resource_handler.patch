@@ -1,21 +1,14 @@
-From b2048d8d28cc018d5b6b16794e6b2759a1bd6db4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 15 Nov 2018 22:04:34 +0530
-Subject: [PATCH] cross_site_document_resource_handler.patch
+Subject: cross_site_document_resource_handler.patch
 
 Add a content layer hook to disable CORB for a renderer process,
 this patch can be removed once we switch to network service,
 where the embedders have a chance to design their URLLoaders.
 
-Patch-Filename: cross_site_document_resource_handler.patch
----
- .../browser/loader/cross_site_document_resource_handler.cc    | 3 +++
- content/public/browser/content_browser_client.cc              | 4 ++++
- content/public/browser/content_browser_client.h               | 3 +++
- 3 files changed, 10 insertions(+)
-
 diff --git a/content/browser/loader/cross_site_document_resource_handler.cc b/content/browser/loader/cross_site_document_resource_handler.cc
-index 907922701280..eaf8bac18f8e 100644
+index 907922701280b589bf11691342de0ec95cdec6a1..eaf8bac18f8e3a2735ce7ded606199092a3746d3 100644
 --- a/content/browser/loader/cross_site_document_resource_handler.cc
 +++ b/content/browser/loader/cross_site_document_resource_handler.cc
 @@ -593,6 +593,9 @@ bool CrossSiteDocumentResourceHandler::ShouldBlockBasedOnHeaders(
@@ -29,10 +22,10 @@ index 907922701280..eaf8bac18f8e 100644
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2d0633f38ddf..f6d805520c2c 100644
+index f713d0cfbf90665d921f56f4d828887ad1f7842c..4fe21468aee93a7cb3783220ebfe8dd100a3d1d5 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -57,6 +57,10 @@ ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
+@@ -57,6 +57,10 @@ ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::Should
    return SiteInstanceForNavigationType::ASK_CHROMIUM;
  }
  
@@ -44,10 +37,10 @@ index 2d0633f38ddf..f6d805520c2c 100644
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0554de92d81e..64732e916ae5 100644
+index 4bf6b2b5f8110f539adc61858cfdc8f77f7ed08b..94454812e27d4d357eeee27cfc1e185386ea2003 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -224,6 +224,9 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -225,6 +225,9 @@ class CONTENT_EXPORT ContentBrowserClient {
        content::RenderFrameHost* rfh,
        content::SiteInstance* pending_site_instance){};
  
@@ -57,6 +50,3 @@ index 0554de92d81e..64732e916ae5 100644
    // Allows the embedder to set any number of custom BrowserMainParts
    // implementations for the browser startup code. See comments in
    // browser_main_parts.h.
--- 
-2.17.2 (Apple Git-113)
-

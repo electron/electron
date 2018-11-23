@@ -189,27 +189,35 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
 }
 
 bool AtomBrowserClient::ShouldForceNewSiteInstance(
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost* current_rfh,
+    content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
-    content::SiteInstance* current_instance,
-    const GURL& url) const {
+    const GURL& url,
+    bool has_response_started) const {
   if (url.SchemeIs(url::kJavaScriptScheme))
     // "javacript:" scheme should always use same SiteInstance
     return false;
 
+  content::SiteInstance* current_instance = current_rfh->GetSiteInstance();
+  content::SiteInstance* speculative_instance =
+      speculative_rfh ? speculative_rfh->GetSiteInstance() : nullptr;
   int process_id = current_instance->GetProcess()->GetID();
-  if (IsRendererSandboxed(process_id)) {
+  if (NavigationWasRedirectedCrossSite(browser_context, current_instance,
+                                       speculative_instance, url,
+                                       has_response_started)) {
+    // Navigation was redirected. We can't force the current, speculative or a
+    // new unrelated site instance to be used. Delegate to the content layer.
+    return false;
+  } else if (IsRendererSandboxed(process_id)) {
     // Renderer is sandboxed, delegate the decision to the content layer for all
     // origins.
     return false;
+  } else if (!RendererUsesNativeWindowOpen(process_id)) {
+    // non-sandboxed renderers without native window.open should always create
+    // a new SiteInstance
+    return true;
   } else {
-    if (!RendererUsesNativeWindowOpen(process_id)) {
-      // non-sandboxed renderers without native window.open should always create
-      // a new SiteInstance
-      return true;
-    }
-    auto* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
+    auto* web_contents = content::WebContents::FromRenderFrameHost(current_rfh);
     if (!ChildWebContentsTracker::FromWebContents(web_contents)) {
       // Root WebContents should always create new process to make sure
       // native addons are loaded correctly after reload / navigation.
@@ -222,6 +230,26 @@ bool AtomBrowserClient::ShouldForceNewSiteInstance(
   // Create new a SiteInstance if navigating to a different site.
   auto src_url = current_instance->GetSiteURL();
   return !IsSameWebSite(browser_context, src_url, url);
+}
+
+bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    content::SiteInstance* speculative_instance,
+    const GURL& dest_url,
+    bool has_response_started) const {
+  bool navigationWasRedirected = false;
+  if (has_response_started) {
+    navigationWasRedirected = !IsSameWebSite(
+        browser_context, current_instance->GetSiteURL(), dest_url);
+  } else {
+    navigationWasRedirected =
+        speculative_instance &&
+        !IsSameWebSite(browser_context, speculative_instance->GetSiteURL(),
+                       dest_url);
+  }
+
+  return navigationWasRedirected;
 }
 
 void AtomBrowserClient::AddProcessPreferences(
@@ -368,10 +396,11 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
 
 content::ContentBrowserClient::SiteInstanceForNavigationType
 AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
-    content::RenderFrameHost* rfh,
+    content::RenderFrameHost* current_rfh,
+    content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
     const GURL& url,
-    bool has_request_started,
+    bool has_response_started,
     content::SiteInstance** affinity_site_instance) const {
   if (g_suppress_renderer_process_restart) {
     g_suppress_renderer_process_restart = false;
@@ -380,15 +409,14 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
 
   // Do we have an affinity site to manage ?
   content::SiteInstance* site_instance_from_affinity =
-      GetSiteInstanceFromAffinity(browser_context, url, rfh);
+      GetSiteInstanceFromAffinity(browser_context, url, current_rfh);
   if (site_instance_from_affinity) {
     *affinity_site_instance = site_instance_from_affinity;
     return SiteInstanceForNavigationType::FORCE_AFFINITY;
   }
 
-  content::SiteInstance* current_instance = rfh->GetSiteInstance();
-  if (!ShouldForceNewSiteInstance(rfh, browser_context, current_instance,
-                                  url)) {
+  if (!ShouldForceNewSiteInstance(current_rfh, speculative_rfh, browser_context,
+                                  url, has_response_started)) {
     return SiteInstanceForNavigationType::ASK_CHROMIUM;
   }
 
@@ -402,7 +430,7 @@ AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
   // creation. We check for the state of the request, which should be one of
   // (WAITING_FOR_RENDERER_RESPONSE, STARTED, RESPONSE_STARTED, FAILED) along
   // with the availability of a speculative render frame host.
-  if (has_request_started) {
+  if (has_response_started) {
     return SiteInstanceForNavigationType::FORCE_CURRENT;
   }
 

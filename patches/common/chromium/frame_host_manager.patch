@@ -7,7 +7,7 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance. 
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..ce6ea215b841d381477258417edaef4afd834bb7 100644
+index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..39d26adb60c50f88d19e824846519338083dc166 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
 @@ -1960,6 +1960,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
@@ -42,7 +42,7 @@ index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..ce6ea215b841d381477258417edaef4a
 +    scoped_refptr<SiteInstance> overriden_site_instance;
 +    ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
 +        GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
-+            render_frame_host_.get(), browser_context,
++            current_frame_host(), speculative_frame_host(), browser_context,
 +            request.common_params().url, has_response_started,
 +            &affinity_site_instance);
 +    switch (siteInstanceType) {
@@ -109,20 +109,20 @@ index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..ce6ea215b841d381477258417edaef4a
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index bb54b89bef5c6f32e7b4a056336c85494e2a04de..2d0633f38ddfc0fa1999674903b1d5e8952e22d5 100644
+index bb54b89bef5c6f32e7b4a056336c85494e2a04de..f713d0cfbf90665d921f56f4d828887ad1f7842c 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -47,6 +47,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
-+ContentBrowserClient::SiteInstanceForNavigationType
-+ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
-+    RenderFrameHost* render_frame_host,
-+    BrowserContext* browser_context,
-+    const GURL& dest_url,
-+    bool has_response_started,
-+    SiteInstance** affinity_instance) const {
++ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
++    content::RenderFrameHost* current_rfh,
++    content::RenderFrameHost* speculative_rfh,
++    content::BrowserContext* browser_context,
++    const GURL& url,
++    bool has_request_started,
++    content::SiteInstance** affinity_site_instance) const {
 +  return SiteInstanceForNavigationType::ASK_CHROMIUM;
 +}
 +
@@ -130,10 +130,10 @@ index bb54b89bef5c6f32e7b4a056336c85494e2a04de..2d0633f38ddfc0fa1999674903b1d5e8
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3be31602689cb93b965729cc4e35cf6d23a8ec2f..0554de92d81e54367e6f430bfe0c93e3a486ea66 100644
+index 3be31602689cb93b965729cc4e35cf6d23a8ec2f..4bf6b2b5f8110f539adc61858cfdc8f77f7ed08b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -194,8 +194,36 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -194,8 +194,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:
@@ -156,11 +156,12 @@ index 3be31602689cb93b965729cc4e35cf6d23a8ec2f..0554de92d81e54367e6f430bfe0c93e3
  
 +  // Electron: Allows overriding the SiteInstance when navigating.
 +  virtual SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-+      RenderFrameHost* render_frame_host,
-+      BrowserContext* browser_context,
-+      const GURL& dest_url,
-+      bool has_response_started,
-+      SiteInstance** affinity_instance) const;
++    content::RenderFrameHost* current_rfh,
++    content::RenderFrameHost* speculative_rfh,
++    content::BrowserContext* browser_context,
++    const GURL& url,
++    bool has_request_started,
++    content::SiteInstance** affinity_site_instance) const;
 +
 +  // Electron: Registers a pending site instance during a navigation.
 +  virtual void RegisterPendingSiteInstance(

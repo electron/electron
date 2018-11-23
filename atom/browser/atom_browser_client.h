@@ -77,11 +77,12 @@ class AtomBrowserClient : public content::ContentBrowserClient,
   void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
                            content::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-      content::RenderFrameHost* render_frame_host,
+      content::RenderFrameHost* current_rfh,
+      content::RenderFrameHost* speculative_rfh,
       content::BrowserContext* browser_context,
-      const GURL& dest_url,
+      const GURL& url,
       bool has_request_started,
-      content::SiteInstance** affinity_instance) const override;
+      content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;
@@ -174,10 +175,17 @@ class AtomBrowserClient : public content::ContentBrowserClient,
     bool web_security = true;
   };
 
-  bool ShouldForceNewSiteInstance(content::RenderFrameHost* render_frame_host,
+  bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,
+                                  content::RenderFrameHost* speculative_rfh,
                                   content::BrowserContext* browser_context,
-                                  content::SiteInstance* current_instance,
-                                  const GURL& dest_url) const;
+                                  const GURL& dest_url,
+                                  bool has_request_started) const;
+  bool NavigationWasRedirectedCrossSite(
+      content::BrowserContext* browser_context,
+      content::SiteInstance* current_instance,
+      content::SiteInstance* speculative_instance,
+      const GURL& dest_url,
+      bool has_request_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;
