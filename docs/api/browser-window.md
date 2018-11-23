@@ -343,7 +343,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs will
       have full access to the `document` and `window` globals, however these will not be
-      the same `document/window` objects in the browserWindow. The preload script will use
+      the same `document`/`window` objects in the browserWindow—properties set
+      on `window` in the preload script will not be visible to the loaded content. The
+      preload script will use
       its own set of JavaScript builtins (`Array`, `Object`, `JSON`, etc.)
       and will be isolated from any changes made to the global environment
       by the loaded page. See `sandbox` or `webFrame.executeJavaScriptInIsolatedWorld` 
