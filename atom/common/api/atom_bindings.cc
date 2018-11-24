@@ -61,35 +61,44 @@ AtomBindings::~AtomBindings() {
   uv_close(reinterpret_cast<uv_handle_t*>(&call_next_tick_async_), nullptr);
 }
 
+// static
+void AtomBindings::BindProcess(v8::Isolate* isolate,
+                               mate::Dictionary* process,
+                               base::ProcessMetrics* metrics) {
+  // These bindings are shared between sandboxed & unsandboxed renderers
+  process->SetMethod("crash", &Crash);
+  process->SetMethod("hang", &Hang);
+  process->SetMethod("log", &Log);
+  process->SetMethod("getCreationTime", &GetCreationTime);
+  process->SetMethod("getHeapStatistics", &GetHeapStatistics);
+  process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
+  process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
+  process->SetMethod("getIOCounters", &GetIOCounters);
+  process->SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
+                                               base::Unretained(metrics)));
+
+#if defined(MAS_BUILD)
+  process->SetReadOnly("mas", true);
+#endif
+
+#if defined(OS_WIN)
+  if (IsRunningInDesktopBridge())
+    process->SetReadOnly("windowsStore", true);
+#endif
+}
+
 void AtomBindings::BindTo(v8::Isolate* isolate, v8::Local<v8::Object> process) {
   isolate->SetFatalErrorHandler(FatalErrorCallback);
 
   mate::Dictionary dict(isolate, process);
-  dict.SetMethod("crash", &AtomBindings::Crash);
-  dict.SetMethod("hang", &Hang);
-  dict.SetMethod("log", &Log);
-  dict.SetMethod("getHeapStatistics", &GetHeapStatistics);
-  dict.SetMethod("getCreationTime", &GetCreationTime);
-  dict.SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
-  dict.SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
-  dict.SetMethod("getCPUUsage", base::Bind(&AtomBindings::GetCPUUsage,
-                                           base::Unretained(metrics_.get())));
-  dict.SetMethod("getIOCounters", &GetIOCounters);
+  BindProcess(isolate, &dict, metrics_.get());
+
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
 #if defined(OS_POSIX)
   dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
 #endif
   dict.SetMethod("activateUvLoop", base::Bind(&AtomBindings::ActivateUVLoop,
                                               base::Unretained(this)));
-
-#if defined(MAS_BUILD)
-  dict.SetReadOnly("mas", true);
-#endif
-
-#if defined(OS_WIN)
-  if (IsRunningInDesktopBridge())
-    dict.SetReadOnly("windowsStore", true);
-#endif
 
   mate::Dictionary versions;
   if (dict.Get("versions", &versions)) {

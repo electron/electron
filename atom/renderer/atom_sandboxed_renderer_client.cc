@@ -147,28 +147,12 @@ void AtomSandboxedRendererClient::InitializeBindings(
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
-  process.SetMethod("crash", AtomBindings::Crash);
-  process.SetMethod("hang", AtomBindings::Hang);
-  process.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
-  process.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
-  process.SetMethod(
-      "getCPUUsage",
-      base::Bind(&AtomBindings::GetCPUUsage, base::Unretained(metrics_.get())));
-  process.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
+  AtomBindings::BindProcess(isolate, &process, metrics_.get());
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
-
-#if defined(MAS_BUILD)
-  process.SetReadOnly("mas", true);
-#endif
-
-#if defined(OS_WIN)
-  if (IsRunningInDesktopBridge())
-    process.SetReadOnly("windowsStore", true);
-#endif
 
   // Pass in CLI flags needed to setup the renderer
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();

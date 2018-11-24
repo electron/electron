@@ -13,6 +13,7 @@ It adds the following events, properties, and methods:
 In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `crash()`
 - `hang()`
+- `getCreationTime()`
 - `getHeapStatistics()`
 - `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
