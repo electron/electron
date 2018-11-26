@@ -1,0 +1,376 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Menke <mmenke@chromium.org>
+Date: Fri, 27 Jul 2018 19:05:47 +0000
+Subject: Backports
+ https://chromium-review.googlesource.com/c/chromium/src/+/1152083
+
+This backport ensures that the cookie store is always created. We use a
+code path that didn't previously create the cookie store internally,
+which caused all cookies to be deleted when the application was closed.
+
+This backport can be deleted when the C70 upgrade lands.
+
+diff --git a/chrome/browser/io_thread.cc b/chrome/browser/io_thread.cc
+index 55df34044af7bafb55521738a6581410877494c0..56da4a1012a6bcf7a500c0e600a08776b948ef03 100644
+--- a/chrome/browser/io_thread.cc
++++ b/chrome/browser/io_thread.cc
+@@ -360,6 +360,11 @@ void IOThread::Init() {
+ #endif
+
+   ConstructSystemRequestContext();
++
++  // Prevent DCHECK failures when a NetworkContext is created with an encrypted
++  // cookie store.
++  if (!base::FeatureList::IsEnabled(network::features::kNetworkService))
++    content::GetNetworkServiceImpl()->set_os_crypt_is_configured();
+ }
+
+ void IOThread::CleanUp() {
+diff --git a/chrome/browser/profiles/off_the_record_profile_io_data.cc b/chrome/browser/profiles/off_the_record_profile_io_data.cc
+index ebb7e95151156209aae7234de0e17ef9241335a7..de61d90917a40d0d64bb7c15daad0fd2c1147247 100644
+--- a/chrome/browser/profiles/off_the_record_profile_io_data.cc
++++ b/chrome/browser/profiles/off_the_record_profile_io_data.cc
+@@ -215,14 +215,6 @@ void OffTheRecordProfileIOData::InitializeInternal(
+       std::make_unique<net::ChannelIDService>(
+           new net::DefaultChannelIDStore(nullptr)));
+
+-  using content::CookieStoreConfig;
+-  std::unique_ptr<net::CookieStore> cookie_store(CreateCookieStore(
+-      CookieStoreConfig(base::FilePath(), false, false, nullptr)));
+-  cookie_store->SetChannelIDServiceID(channel_id_service->GetUniqueID());
+-
+-  builder->SetCookieAndChannelIdStores(std::move(cookie_store),
+-                                       std::move(channel_id_service));
+-
+   AddProtocolHandlersToBuilder(builder, protocol_handlers);
+   SetUpJobFactoryDefaultsForBuilder(
+       builder, std::move(request_interceptors),
+diff --git a/chrome/browser/profiles/profile_impl_io_data.cc b/chrome/browser/profiles/profile_impl_io_data.cc
+index 6dd54b7d045f38195c3858699dbd4ac5ad877277..c4038dc1e9cd5c13e946919ef5747357d347654f 100644
+--- a/chrome/browser/profiles/profile_impl_io_data.cc
++++ b/chrome/browser/profiles/profile_impl_io_data.cc
+@@ -450,49 +450,6 @@ void ProfileImplIOData::InitializeInternal(
+   IOThread* const io_thread = profile_params->io_thread;
+   IOThread::Globals* const io_thread_globals = io_thread->globals();
+
+-  // This check is needed because with the network service the cookies are used
+-  // in a different process. See the bottom of
+-  // ProfileNetworkContextService::SetUpProfileIODataMainContext.
+-  if (profile_params->main_network_context_params->cookie_path) {
+-    // Create a single task runner to use with the CookieStore and
+-    // ChannelIDStore.
+-    scoped_refptr<base::SequencedTaskRunner> cookie_background_task_runner =
+-        base::CreateSequencedTaskRunnerWithTraits(
+-            {base::MayBlock(), base::TaskPriority::BACKGROUND,
+-             base::TaskShutdownBehavior::BLOCK_SHUTDOWN});
+-
+-    // Set up server bound cert service.
+-    DCHECK(!profile_params->main_network_context_params->channel_id_path.value()
+-                .empty());
+-    scoped_refptr<QuotaPolicyChannelIDStore> channel_id_db =
+-        new QuotaPolicyChannelIDStore(
+-            profile_params->main_network_context_params->channel_id_path
+-                .value(),
+-            cookie_background_task_runner,
+-            lazy_params_->special_storage_policy.get());
+-    std::unique_ptr<net::ChannelIDService> channel_id_service(
+-        std::make_unique<net::ChannelIDService>(
+-            new net::DefaultChannelIDStore(channel_id_db.get())));
+-
+-    // Set up cookie store.
+-    content::CookieStoreConfig cookie_config(
+-        profile_params->main_network_context_params->cookie_path.value(),
+-        profile_params->main_network_context_params
+-            ->restore_old_session_cookies,
+-        profile_params->main_network_context_params->persist_session_cookies,
+-        lazy_params_->special_storage_policy.get());
+-    cookie_config.crypto_delegate = cookie_config::GetCookieCryptoDelegate();
+-    cookie_config.channel_id_service = channel_id_service.get();
+-    cookie_config.background_task_runner = cookie_background_task_runner;
+-    std::unique_ptr<net::CookieStore> cookie_store(
+-        content::CreateCookieStore(cookie_config));
+-
+-    cookie_store->SetChannelIDServiceID(channel_id_service->GetUniqueID());
+-
+-    builder->SetCookieAndChannelIdStores(std::move(cookie_store),
+-                                         std::move(channel_id_service));
+-  }
+-
+   AddProtocolHandlersToBuilder(builder, protocol_handlers);
+
+   // Install the Offline Page Interceptor.
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index 50b4f60a47c046796f2452a7454e2ed821113d3c..ec799409ac3597c2437d38a8686efcb8448255b8 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -64,6 +64,7 @@
+ #include "net/url_request/static_http_user_agent_settings.h"
+ #include "net/url_request/url_request_context.h"
+ #include "net/url_request/url_request_context_builder.h"
++#include "services/network/cookie_manager.h"
+ #include "services/network/cors/cors_url_loader_factory.h"
+ #include "services/network/expect_ct_reporter.h"
+ #include "services/network/http_server_properties_pref_delegate.h"
+@@ -308,10 +309,7 @@ NetworkContext::NetworkContext(
+       params_(std::move(params)),
+       on_connection_close_callback_(std::move(on_connection_close_callback)),
+       binding_(this, std::move(request)) {
+-  SessionCleanupCookieStore* session_cleanup_cookie_store = nullptr;
+-  SessionCleanupChannelIDStore* session_cleanup_channel_id_store = nullptr;
+-  url_request_context_owner_ = MakeURLRequestContext(
+-      &session_cleanup_cookie_store, &session_cleanup_channel_id_store);
++  url_request_context_owner_ = MakeURLRequestContext();
+   url_request_context_ = url_request_context_owner_.url_request_context.get();
+
+   network_service_->RegisterNetworkContext(this);
+@@ -323,10 +321,6 @@ NetworkContext::NetworkContext(
+   binding_.set_connection_error_handler(base::BindOnce(
+       &NetworkContext::OnConnectionError, base::Unretained(this)));
+
+-  cookie_manager_ = std::make_unique<CookieManager>(
+-      url_request_context_->cookie_store(), session_cleanup_cookie_store,
+-      session_cleanup_channel_id_store,
+-      std::move(params_->cookie_manager_params));
+   socket_factory_ = std::make_unique<SocketFactory>(network_service_->net_log(),
+                                                     url_request_context_);
+   resource_scheduler_ =
+@@ -348,9 +342,6 @@ NetworkContext::NetworkContext(
+   url_request_context_ = url_request_context_owner_.url_request_context.get();
+
+   network_service_->RegisterNetworkContext(this);
+-  cookie_manager_ = std::make_unique<CookieManager>(
+-      url_request_context_->cookie_store(), nullptr, nullptr,
+-      std::move(params_->cookie_manager_params));
+   socket_factory_ = std::make_unique<SocketFactory>(network_service_->net_log(),
+                                                     url_request_context_);
+   resource_scheduler_ =
+@@ -819,6 +810,61 @@ URLRequestContextOwner NetworkContext::ApplyContextParamsToBuilder(
+         network_service_->network_quality_estimator());
+   }
+
++  scoped_refptr<network::SessionCleanupCookieStore>
++      session_cleanup_cookie_store;
++  scoped_refptr<SessionCleanupChannelIDStore> session_cleanup_channel_id_store;
++  if (params_->cookie_path) {
++    scoped_refptr<base::SequencedTaskRunner> client_task_runner =
++        base::MessageLoopCurrent::Get()->task_runner();
++    scoped_refptr<base::SequencedTaskRunner> background_task_runner =
++        base::CreateSequencedTaskRunnerWithTraits(
++            {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
++             base::TaskShutdownBehavior::BLOCK_SHUTDOWN});
++
++    std::unique_ptr<net::ChannelIDService> channel_id_service;
++    if (params_->channel_id_path) {
++      session_cleanup_channel_id_store =
++          base::MakeRefCounted<SessionCleanupChannelIDStore>(
++              params_->channel_id_path.value(), background_task_runner);
++      channel_id_service = std::make_unique<net::ChannelIDService>(
++          new net::DefaultChannelIDStore(
++              session_cleanup_channel_id_store.get()));
++    }
++
++    net::CookieCryptoDelegate* crypto_delegate = nullptr;
++    if (params_->enable_encrypted_cookies) {
++#if defined(OS_LINUX) && !defined(OS_CHROMEOS) && !defined(IS_CHROMECAST)
++      DCHECK(network_service_->os_crypt_config_set())
++          << "NetworkService::SetCryptConfig must be called before creating a "
++             "NetworkContext with encrypted cookies.";
++#endif
++      crypto_delegate = cookie_config::GetCookieCryptoDelegate();
++    }
++    scoped_refptr<net::SQLitePersistentCookieStore> sqlite_store(
++        new net::SQLitePersistentCookieStore(
++            params_->cookie_path.value(), client_task_runner,
++            background_task_runner, params_->restore_old_session_cookies,
++            crypto_delegate));
++
++    session_cleanup_cookie_store =
++        base::MakeRefCounted<network::SessionCleanupCookieStore>(sqlite_store);
++
++    std::unique_ptr<net::CookieMonster> cookie_store =
++        std::make_unique<net::CookieMonster>(session_cleanup_cookie_store.get(),
++                                             channel_id_service.get());
++    if (params_->persist_session_cookies)
++      cookie_store->SetPersistSessionCookies(true);
++
++    if (channel_id_service) {
++      cookie_store->SetChannelIDServiceID(channel_id_service->GetUniqueID());
++    }
++    builder->SetCookieAndChannelIdStores(std::move(cookie_store),
++                                         std::move(channel_id_service));
++  } else {
++    DCHECK(!params_->restore_old_session_cookies);
++    DCHECK(!params_->persist_session_cookies);
++  }
++
+   std::unique_ptr<net::StaticHttpUserAgentSettings> user_agent_settings =
+       std::make_unique<net::StaticHttpUserAgentSettings>(
+           params_->accept_language, params_->user_agent);
+@@ -1065,6 +1111,12 @@ URLRequestContextOwner NetworkContext::ApplyContextParamsToBuilder(
+ #endif
+   }
+
++  cookie_manager_ = std::make_unique<CookieManager>(
++      result.url_request_context->cookie_store(),
++      std::move(session_cleanup_cookie_store),
++      std::move(session_cleanup_channel_id_store),
++      std::move(params_->cookie_manager_params));
++
+   return result;
+ }
+
+@@ -1098,71 +1150,11 @@ void NetworkContext::OnConnectionError() {
+     std::move(on_connection_close_callback_).Run(this);
+ }
+
+-URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+-    SessionCleanupCookieStore** session_cleanup_cookie_store,
+-    SessionCleanupChannelIDStore** session_cleanup_channel_id_store) {
++URLRequestContextOwner NetworkContext::MakeURLRequestContext() {
+   URLRequestContextBuilderMojo builder;
+   const base::CommandLine* command_line =
+       base::CommandLine::ForCurrentProcess();
+
+-  // The cookie configuration is in this method, which is only used by the
+-  // network process, and not ApplyContextParamsToBuilder which is used by the
+-  // browser as well. This is because this code path doesn't handle encryption
+-  // and other configuration done in QuotaPolicyCookieStore yet (and we still
+-  // have to figure out which of the latter needs to move to the network
+-  // process). TODO: http://crbug.com/789644
+-  if (params_->cookie_path) {
+-    scoped_refptr<base::SequencedTaskRunner> client_task_runner =
+-        base::MessageLoopCurrent::Get()->task_runner();
+-    scoped_refptr<base::SequencedTaskRunner> background_task_runner =
+-        base::CreateSequencedTaskRunnerWithTraits(
+-            {base::MayBlock(), base::TaskPriority::BACKGROUND,
+-             base::TaskShutdownBehavior::BLOCK_SHUTDOWN});
+-
+-    std::unique_ptr<net::ChannelIDService> channel_id_service;
+-    if (params_->channel_id_path) {
+-      auto channel_id_db = base::MakeRefCounted<SessionCleanupChannelIDStore>(
+-          params_->channel_id_path.value(), background_task_runner);
+-      *session_cleanup_channel_id_store = channel_id_db.get();
+-      channel_id_service = std::make_unique<net::ChannelIDService>(
+-          new net::DefaultChannelIDStore(channel_id_db.get()));
+-    }
+-
+-    net::CookieCryptoDelegate* crypto_delegate = nullptr;
+-    if (params_->enable_encrypted_cookies) {
+-#if defined(OS_LINUX) && !defined(OS_CHROMEOS) && !defined(IS_CHROMECAST)
+-      DCHECK(network_service_->os_crypt_config_set())
+-          << "NetworkService::SetCryptConfig must be called before creating a "
+-             "NetworkContext with encrypted cookies.";
+-#endif
+-      crypto_delegate = cookie_config::GetCookieCryptoDelegate();
+-    }
+-    scoped_refptr<net::SQLitePersistentCookieStore> sqlite_store(
+-        new net::SQLitePersistentCookieStore(
+-            params_->cookie_path.value(), client_task_runner,
+-            background_task_runner, params_->restore_old_session_cookies,
+-            crypto_delegate));
+-
+-    scoped_refptr<network::SessionCleanupCookieStore> cleanup_store(
+-        base::MakeRefCounted<network::SessionCleanupCookieStore>(sqlite_store));
+-    *session_cleanup_cookie_store = cleanup_store.get();
+-
+-    std::unique_ptr<net::CookieMonster> cookie_store =
+-        std::make_unique<net::CookieMonster>(cleanup_store.get(),
+-                                             channel_id_service.get());
+-    if (params_->persist_session_cookies)
+-      cookie_store->SetPersistSessionCookies(true);
+-
+-    if (channel_id_service) {
+-      cookie_store->SetChannelIDServiceID(channel_id_service->GetUniqueID());
+-    }
+-    builder.SetCookieAndChannelIdStores(std::move(cookie_store),
+-                                        std::move(channel_id_service));
+-  } else {
+-    DCHECK(!params_->restore_old_session_cookies);
+-    DCHECK(!params_->persist_session_cookies);
+-  }
+-
+   if (g_cert_verifier_for_testing) {
+     builder.SetCertVerifier(std::make_unique<WrappedTestingCertVerifier>());
+   } else {
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index 83459ab0f23ea0190bae410921391ca9d11c5aa9..4b25717b4be3a21249d177f0c7caca613e0aad89 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -21,7 +21,6 @@
+ #include "build/build_config.h"
+ #include "mojo/public/cpp/bindings/binding.h"
+ #include "mojo/public/cpp/bindings/strong_binding_set.h"
+-#include "services/network/cookie_manager.h"
+ #include "services/network/http_cache_data_counter.h"
+ #include "services/network/http_cache_data_remover.h"
+ #include "services/network/public/mojom/network_context.mojom.h"
+@@ -51,6 +50,7 @@ class TreeStateTracker;
+ }  // namespace certificate_transparency
+
+ namespace network {
++class CookieManager;
+ class ExpectCTReporter;
+ class NetworkService;
+ class ResourceScheduler;
+@@ -233,9 +233,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   // On connection errors the NetworkContext destroys itself.
+   void OnConnectionError();
+
+-  URLRequestContextOwner MakeURLRequestContext(
+-      SessionCleanupCookieStore** session_cleanup_cookie_store,
+-      SessionCleanupChannelIDStore** session_cleanup_channel_id_store);
++  URLRequestContextOwner MakeURLRequestContext();
+
+   NetworkService* const network_service_;
+
+diff --git a/services/network/network_context_unittest.cc b/services/network/network_context_unittest.cc
+index c756789a39f3d265c536a69d899512e816708344..88cdcc0b5433087c15edad4e6a977bb2a127f834 100644
+--- a/services/network/network_context_unittest.cc
++++ b/services/network/network_context_unittest.cc
+@@ -72,6 +72,7 @@
+ #include "net/url_request/url_request_context.h"
+ #include "net/url_request/url_request_context_builder.h"
+ #include "net/url_request/url_request_job_factory.h"
++#include "services/network/cookie_manager.h"
+ #include "services/network/mojo_net_log.h"
+ #include "services/network/network_context.h"
+ #include "services/network/network_service.h"
+diff --git a/services/network/network_service.cc b/services/network/network_service.cc
+index c4df8eceaad173b580c8fa91aca6cfdced5f571b..a91a9f4b5866c11ae76e2d173a92579f0b7d12a1 100644
+--- a/services/network/network_service.cc
++++ b/services/network/network_service.cc
+@@ -169,6 +169,10 @@ NetworkService::~NetworkService() {
+   DCHECK(network_contexts_.empty());
+ }
+
++void NetworkService::set_os_crypt_is_configured() {
++  os_crypt_config_set_ = true;
++}
++
+ std::unique_ptr<NetworkService> NetworkService::Create(
+     mojom::NetworkServiceRequest request,
+     net::NetLog* net_log) {
+@@ -370,6 +374,7 @@ void NetworkService::UpdateSignedTreeHead(const net::ct::SignedTreeHead& sth) {
+ #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
+ void NetworkService::SetCryptConfig(mojom::CryptConfigPtr crypt_config) {
+ #if !defined(IS_CHROMECAST)
++  DCHECK(!os_crypt_config_set_);
+   auto config = std::make_unique<os_crypt::Config>();
+   config->store = crypt_config->store;
+   config->product_name = crypt_config->product_name;
+diff --git a/services/network/network_service.h b/services/network/network_service.h
+index 839a5da98be9adaa836a3881f5a42fde069c860c..a686fd84e0cf61219289d6f5ee9c700edb9bc96d 100644
+--- a/services/network/network_service.h
++++ b/services/network/network_service.h
+@@ -62,6 +62,11 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
+
+   ~NetworkService() override;
+
++  // Call to inform the NetworkService that OSCrypt::SetConfig() has already
++  // been invoked, so OSCrypt::SetConfig() does not need to be called before
++  // encrypted storage can be used.
++  void set_os_crypt_is_configured();
++
+   // Can be used to seed a NetworkContext with a consumer-configured
+   // URLRequestContextBuilder, which |params| will then be applied to. The
+   // results URLRequestContext will be written to |url_request_context|, which
