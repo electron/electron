@@ -41,6 +41,8 @@ void Menu::AfterInit(v8::Isolate* isolate) {
   delegate.Get("isCommandIdEnabled", &is_enabled_);
   delegate.Get("isCommandIdVisible", &is_visible_);
   delegate.Get("getAcceleratorForCommandId", &get_accelerator_);
+  delegate.Get("shouldRegisterAcceleratorForCommandId",
+               &should_register_accelerator_);
   delegate.Get("executeCommand", &execute_command_);
   delegate.Get("menuWillShow", &menu_will_show_);
 }
@@ -72,6 +74,12 @@ bool Menu::GetAcceleratorForCommandIdWithParams(
   v8::Local<v8::Value> val =
       get_accelerator_.Run(GetWrapper(), command_id, use_default_accelerator);
   return mate::ConvertFromV8(isolate(), val, accelerator);
+}
+
+bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  return should_register_accelerator_.Run(GetWrapper(), command_id);
 }
 
 void Menu::ExecuteCommand(int command_id, int flags) {
