@@ -8,29 +8,6 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 # Planned Breaking API Changes (5.0)
 
-## `app.getFileIcon(path[, options], callback)`
-
-The `getFileIcon` function on `app` taking a callback is being deprecated in favor of a version returning a Promise.
-
-```js
-const path = 'some/path/to/your/icon'
-// Deprecated
-app.getFileIcon(path, (err, icon) => {
-  if (err) {
-    console.log('oh no an error!', err)
-  } else {
-    console.log(icon)
-  }
-})
-// Replace With
-app.getFileIcon(path)
-  .then(icon => {
-    console.log(icon)
-  }).catch(err => {
-    console.log('oh no an error!', err)
-  })
-```
-
 ## `new BrowserWindow({ webPreferences })`
 
 The following `webPreferences` option default values are deprecated in favor of the new defaults listed below.
