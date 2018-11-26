@@ -188,6 +188,9 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
         base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
+    // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,
+    // enable encryption as a followup.
+    network_context_params->enable_encrypted_cookies = false;
   }
 
   // TODO(deepak1556): Decide the stand on chrome ct policy and
