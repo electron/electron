@@ -76,7 +76,7 @@ instead of the `--no-deprecation` command line flag.
 ### `process.enablePromiseAPIs`
 
 A `Boolean` that controls whether or not deprecation warnings are printed to `stderr` when
-formerly callback-based APIs converted to Promises are ivnoked using callbacks. Setting this to `true` 
+formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true` 
 will enable deprecation warnings.
 
 ### `process.resourcesPath`
