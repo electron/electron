@@ -554,6 +554,8 @@ On _Windows_, there a 2 kinds of icons:
 
 On _Linux_ and _macOS_, icons depend on the application associated with file mime type.
 
+**[Deprecated Soon](promisification.md)**
+
 ### `app.getFileIcon(path[, options])`
 
 * `path` String
