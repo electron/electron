@@ -8,28 +8,6 @@ The `FIXME` string is used in code comments to denote things that should be fixe
 
 # Planned Breaking API Changes (5.0)
 
-## `[BrowserWindow, webContents, <webview>].capturePage([rect, ]callback)`
-
-The `capturePage` function on `BrowserWindow`, `webContents`, and `<webview>` taking a callback is being deprecated in favor of a version returning a Promise.
-
-```js
-// Deprecated
-const w = new BrowserWindow()
-w.capturePage(image => {
-  console.log(`image is ${image}`)
-})
-
-// Replace With
-const w = new BrowserWindow()
-w.capturePage().then(image => {
-  console.log(`image is ${image}`)
-})
-
-// Or
-const image = await w.capturePage()
-console.log(`image is ${image}`)
-```
-
 ## `new BrowserWindow({ webPreferences })`
 
 The following `webPreferences` option default values are deprecated in favor of the new defaults listed below.
