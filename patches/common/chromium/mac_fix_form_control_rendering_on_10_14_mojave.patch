@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 27 Nov 2018 04:32:18 +0530
+Subject: [Mac] Fix form control rendering on 10.14 Mojave.
+
+Backports https://crrev.com/c/1106298/ and https://crrev.com/c/1130163/
+with changes required for v1 sandbox on macOS.
+
+This can be removed after enabling seatbelt sandbox v2
+
+diff --git a/services/service_manager/sandbox/mac/common.sb b/services/service_manager/sandbox/mac/common.sb
+index 0e90c9ab2f61aacceb1ca60893445881339b834a..b7dc1998df0f42cc58d24f2233a929810244440e 100644
+--- a/services/service_manager/sandbox/mac/common.sb
++++ b/services/service_manager/sandbox/mac/common.sb
+@@ -19,6 +19,7 @@
+ (define homedir-as-literal "USER_HOMEDIR_AS_LITERAL")
+ (define elcap-or-later "ELCAP_OR_LATER")
+ (define macos-1013 "MACOS_1013")
++(define os-version (string->number (param "OS_VERSION")))
+ 
+ ; Consumes a subpath and appends it to the user's homedir path.
+ (define (user-homedir-path subpath)
+diff --git a/services/service_manager/sandbox/mac/renderer.sb b/services/service_manager/sandbox/mac/renderer.sb
+index 09f142e19c2cb2ba8fb3fbcd2df1684899ae1c16..7e56b3fa582afcaa4a4862246553c0fbdf520e6a 100644
+--- a/services/service_manager/sandbox/mac/renderer.sb
++++ b/services/service_manager/sandbox/mac/renderer.sb
+@@ -12,6 +12,7 @@
+ (allow mach-lookup (global-name "com.apple.FontObjectsServer"))
+ (allow mach-lookup (global-name "com.apple.FontServer"))
+ (allow mach-lookup (global-name "com.apple.fonts"))
++(allow mach-lookup (global-name "com.apple.cvmsServ")) ; https://crbug.com/850021
+ (allow file-read* (extension "com.apple.app-sandbox.read")) ; https://crbug.com/662686
+ 
+ ; Allow read-only connection to launchservicesd. https://crbug.com/533537
+@@ -41,6 +42,19 @@
+          (allow file-read-data (subpath "/usr/share/zoneinfo.default")))
+   (allow file-read-data (subpath "/usr/share/zoneinfo")))
+ 
++; Reads of signed Mach-O blobs created by the CVMS server.
++; https://crbug.com/850021
++(if (>= os-version 1014)
++  (allow file-read*
++    (extension "com.apple.cvms.kernel")
++    (prefix "/private/tmp/cvmsCodeSignObj")
++    (subpath "/private/var/db/CVMS")))
++
++; Reads from /Library.
++; https://crbug.com/850021
++(allow file-read-data
++  (subpath "/Library/GPUBundles"))
++
+ ; Allow access to the metadata of the /etc symlink.
+ (allow file-read-metadata (path "/etc"))
+ ; Allow access to the symlink target as well.
+diff --git a/services/service_manager/sandbox/mac/sandbox_mac.mm b/services/service_manager/sandbox/mac/sandbox_mac.mm
+index d69fcc0d4c5c2471163280c03a9fd9366e05031d..cdd7b7f6723162d6875c4d11379837708bdde79d 100644
+--- a/services/service_manager/sandbox/mac/sandbox_mac.mm
++++ b/services/service_manager/sandbox/mac/sandbox_mac.mm
+@@ -81,6 +81,21 @@
+                   size_t(SANDBOX_TYPE_AFTER_LAST_TYPE),
+               "sandbox type to resource id mapping incorrect");
+ 
++// Produce the OS version as an integer "1010", etc. and pass that to the
++// profile. The profile converts the string back to a number and can do
++// comparison operations on OS version.
++std::string GetOSVersion() {
++  int32_t major_version, minor_version, bugfix_version;
++  base::SysInfo::OperatingSystemVersionNumbers(&major_version, &minor_version,
++                                               &bugfix_version);
++  base::CheckedNumeric<int32_t> os_version(major_version);
++  os_version *= 100;
++  os_version += minor_version;
++
++  int32_t final_os_version = os_version.ValueOrDie();
++  return std::to_string(final_os_version);
++}
++
+ }  // namespace
+ 
+ // Static variable declarations.
+@@ -242,6 +257,9 @@
+   if (!compiler.InsertBooleanParam(kSandboxMacOS1013, macos_1013))
+     return false;
+ 
++  if (!compiler.InsertStringParam(kSandboxOSVersion, GetOSVersion()))
++    return false;
++
+   if (sandbox_type == service_manager::SANDBOX_TYPE_CDM) {
+     base::FilePath bundle_path = SandboxMac::GetCanonicalPath(
+         base::mac::FrameworkBundlePath().DirName());

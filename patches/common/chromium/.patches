@@ -82,3 +82,4 @@ verbose_generate_breakpad_symbols.patch
 fix_zoom_display.patch
 cross_site_document_resource_handler.patch
 fix_trackpad_scrolling.patch
+mac_fix_form_control_rendering_on_10_14_mojave.patch
