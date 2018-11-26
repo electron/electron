@@ -194,6 +194,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       if (prevent_default) {
         ::GetWindowRect(GetAcceleratedWidget(),
                         reinterpret_cast<RECT*>(l_param));
+        return true;  // Tells Windows that the Sizing is handled.
       }
       return false;
     }
