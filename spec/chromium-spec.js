@@ -1066,6 +1066,59 @@ describe('chromium feature', () => {
         contents.loadURL(`${protocolName}://host/cookie`)
       })
     })
+
+    describe('can be accessed', () => {
+      let server = null
+      before((done) => {
+        server = http.createServer((req, res) => {
+          const respond = () => {
+            if (req.url === '/redirect-cross-site') {
+              res.setHeader('Location', `${server.cross_site_url}/redirected`)
+              res.statusCode = 302
+              res.end()
+            } else if (req.url === '/redirected') {
+              res.end('<html><script>window.localStorage</script></html>')
+            } else {
+              res.end()
+            }
+          }
+          setTimeout(respond, 0)
+        })
+        server.listen(0, '127.0.0.1', () => {
+          server.url = `http://127.0.0.1:${server.address().port}`
+          server.cross_site_url = `http://localhost:${server.address().port}`
+          done()
+        })
+      })
+
+      after(() => {
+        server.close()
+        server = null
+      })
+
+      const testLocalStorageAfterXSiteRedirect = (testTitle, extraPreferences = {}) => {
+        it(testTitle, (done) => {
+          const webPreferences = { show: false, ...extraPreferences }
+          w = new BrowserWindow(webPreferences)
+          let redirected = false
+          w.webContents.on('crashed', () => {
+            assert.fail('renderer crashed / was killed')
+          })
+          w.webContents.on('did-redirect-navigation', (event, url) => {
+            assert.strictEqual(url, `${server.cross_site_url}/redirected`)
+            redirected = true
+          })
+          w.webContents.on('did-finish-load', () => {
+            assert.strictEqual(redirected, true, 'didnt redirect')
+            done()
+          })
+          w.loadURL(`${server.url}/redirect-cross-site`)
+        })
+      }
+
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect')
+      testLocalStorageAfterXSiteRedirect('after a cross-site redirect in sandbox mode', { sandbox: true })
+    })
   })
 
   describe('websockets', () => {
