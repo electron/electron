@@ -1206,6 +1206,13 @@ Returns `Boolean` - Whether the window's document has been edited.
 
 #### `win.blurWebView()`
 
+#### `win.capturePage([rect, ]callback)`
+
+* `callback` Function
+  * `image` [NativeImage](native-image.md)
+
+Same as `webContents.capturePage([rect, ]callback)`.
+
 #### `win.capturePage([rect])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
