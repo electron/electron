@@ -326,6 +326,8 @@ jobs:
 
   - bash: |
       cd src
+      echo "$PWD"/out/Default
+      ls -la "$PWD"/out/Default
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
     displayName: Verify non proprietary ffmpeg
     timeoutInMinutes: 5
