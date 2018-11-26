@@ -24,7 +24,7 @@ struct Converter<base::string16> {
     if (!val->IsString())
       return false;
 
-    v8::String::Value s(val);
+    v8::String::Value s(isolate, val);
     out->assign(reinterpret_cast<const base::char16*>(*s), s.length());
     return true;
   }

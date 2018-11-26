@@ -87,8 +87,9 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
-  auto script = v8::Script::Compile(preloadSrc);
-  auto func = script->Run();
+  auto context = isolate->GetCurrentContext();
+  auto script = v8::Script::Compile(context, preloadSrc).ToLocalChecked();
+  auto func = script->Run(context).ToLocalChecked();
   return func;
 }
 
@@ -206,10 +207,11 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string left = "(function(binding, require) {\n";
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
-  auto script = v8::Script::Compile(v8::String::Concat(
+  auto source = v8::String::Concat(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString())));
+                         mate::ConvertToV8(isolate, right)->ToString()));
+  auto script = v8::Script::Compile(context, source).ToLocalChecked();
   auto func =
       v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
   // Create and initialize the binding object

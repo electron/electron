@@ -68,8 +68,8 @@ class GtkMessageBox : public NativeWindowObserver {
       GtkWidget* w = gtk_image_new_from_pixbuf(scaled_pixbuf);
       gtk_message_dialog_set_image(GTK_MESSAGE_DIALOG(dialog_), w);
       gtk_widget_show(w);
-      g_clear_pointer(&scaled_pixbuf, gdk_pixbuf_unref);
-      g_clear_pointer(&pixbuf, gdk_pixbuf_unref);
+      g_clear_pointer(&scaled_pixbuf, g_object_unref);
+      g_clear_pointer(&pixbuf, g_object_unref);
     }
 
     if (!checkbox_label.empty()) {
