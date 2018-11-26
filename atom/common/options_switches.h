@@ -113,6 +113,8 @@ extern const char kWidevineCdmVersion[];
 
 extern const char kDiskCacheSize[];
 extern const char kIgnoreConnectionsLimit[];
+extern const char kAuthServerWhitelist[];
+extern const char kAuthNegotiateDelegateWhitelist[];
 
 }  // namespace switches
 

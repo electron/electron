@@ -55,7 +55,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   void Set(const base::DictionaryValue& details, const SetCallback& callback);
   void FlushStore(const base::Closure& callback);
 
-  // AtomBrowserContext::RegisterCookieChangeCallback subscription:
+  // CookieChangeNotifier subscription:
   void OnCookieChanged(const CookieDetails*);
 
  private:

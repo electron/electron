@@ -6,8 +6,9 @@ namespace brightray {
 
 InspectableWebContents* InspectableWebContents::Create(
     content::WebContents* web_contents,
+    PrefService* pref_service,
     bool is_guest) {
-  return new InspectableWebContentsImpl(web_contents, is_guest);
+  return new InspectableWebContentsImpl(web_contents, pref_service, is_guest);
 }
 
 }  // namespace brightray

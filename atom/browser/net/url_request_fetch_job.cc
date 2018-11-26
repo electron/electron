@@ -167,6 +167,9 @@ void URLRequestFetchJob::StartAsync(std::unique_ptr<base::Value> options) {
       request()->extra_request_headers().ToString());
 
   fetcher_->Start();
+  // URLFetcher has a refernce to the context, which
+  // will be cleared when the request is destroyed.
+  url_request_context_getter_ = nullptr;
 }
 
 void URLRequestFetchJob::HeadersCompleted() {
@@ -199,6 +202,7 @@ int URLRequestFetchJob::DataAvailable(net::IOBuffer* buffer,
 void URLRequestFetchJob::Kill() {
   JsAsker<URLRequestJob>::Kill();
   fetcher_.reset();
+  custom_browser_context_ = nullptr;
 }
 
 int URLRequestFetchJob::ReadRawData(net::IOBuffer* dest, int dest_size) {

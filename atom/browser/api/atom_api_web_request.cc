@@ -42,7 +42,7 @@ namespace {
 
 template <typename Method, typename Event, typename Listener>
 void CallNetworkDelegateMethod(
-    brightray::URLRequestContextGetter* url_request_context_getter,
+    URLRequestContextGetter* url_request_context_getter,
     Method method,
     Event type,
     URLPatterns patterns,
@@ -94,8 +94,8 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
     return;
   }
 
-  brightray::URLRequestContextGetter* url_request_context_getter =
-      browser_context_->GetRequestContext();
+  auto* url_request_context_getter = static_cast<URLRequestContextGetter*>(
+      browser_context_->GetRequestContext());
   if (!url_request_context_getter)
     return;
   BrowserThread::PostTask(

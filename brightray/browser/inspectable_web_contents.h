@@ -13,6 +13,8 @@ namespace content {
 class DevToolsAgentHost;
 }
 
+class PrefService;
+
 namespace brightray {
 
 class InspectableWebContentsDelegate;
@@ -23,6 +25,7 @@ class InspectableWebContents {
   // The returned InspectableWebContents takes ownership of the passed-in
   // WebContents.
   static InspectableWebContents* Create(content::WebContents* web_contents,
+                                        PrefService* pref_service,
                                         bool is_guest);
 
   virtual ~InspectableWebContents() {}

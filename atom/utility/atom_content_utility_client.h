@@ -21,6 +21,7 @@ class AtomContentUtilityClient : public content::ContentUtilityClient {
   ~AtomContentUtilityClient() override;
 
   bool OnMessageReceived(const IPC::Message& message) override;
+  void RegisterServices(StaticServiceMap* services) override;
 
  private:
 #if defined(OS_WIN)

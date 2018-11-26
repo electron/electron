@@ -150,8 +150,8 @@
                   '<(libchromiumcontent_dir)/libfx_agg.a',
                   '<(libchromiumcontent_dir)/libfx_lcms2.a',
                   '<(libchromiumcontent_dir)/libfx_libopenjpeg.a',
-                  '<(libchromiumcontent_dir)/libfx_zlib.a',
                   '-Wl,--no-whole-archive',
+                  '<(libchromiumcontent_dir)/libchrome.a',
                 ],
               },
             }, {
@@ -221,6 +221,7 @@
                   '<(libchromiumcontent_dir)/librenderer.a',
                   '<(libchromiumcontent_dir)/libsecurity_state.a',
                   '<(libchromiumcontent_dir)/libviz_service.a',
+                  '<(libchromiumcontent_dir)/libchrome.a',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/libpower_save_blocker.a',
                   # Friends of libpdf.a:
@@ -360,6 +361,7 @@
                   '<(libchromiumcontent_dir)/renderer.lib',
                   '<(libchromiumcontent_dir)/security_state.lib',
                   '<(libchromiumcontent_dir)/viz_service.lib',
+                  '<(libchromiumcontent_dir)/chrome.lib',
                   # services/device/wake_lock/power_save_blocker/
                   '<(libchromiumcontent_dir)/power_save_blocker.lib',
                   # Friends of pdf.lib:
