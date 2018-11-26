@@ -65,6 +65,7 @@ describe('chromium feature', () => {
           if (m) {
             const port = m[1]
             http.get(`http://127.0.0.1:${port}`, (res) => {
+              res.destroy()
               appProcess.kill()
               expect(res.statusCode).to.eql(200)
               expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
