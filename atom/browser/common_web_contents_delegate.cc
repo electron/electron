@@ -194,8 +194,17 @@ void CommonWebContentsDelegate::SetOwnerWindow(
 
 void CommonWebContentsDelegate::ResetManagedWebContents(bool async) {
   if (async) {
-    base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE,
-                                                    web_contents_.release());
+    // Browser context should be destroyed only after the WebContents,
+    // this is guaranteed in the sync mode by the order of declaration,
+    // in the async version we maintain a reference until the WebContents
+    // is destroyed.
+    base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+        FROM_HERE,
+        base::BindOnce([](scoped_refptr<AtomBrowserContext> browser_context,
+                          std::unique_ptr<brightray::InspectableWebContents>
+                              web_contents) { web_contents.reset(); },
+                       base::RetainedRef(browser_context_),
+                       std::move(web_contents_)));
   } else {
     web_contents_.reset();
   }
