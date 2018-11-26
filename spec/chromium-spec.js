@@ -1016,16 +1016,20 @@ describe('chromium feature', () => {
         contents = null
       })
 
-      // FIXME(deepak1556): Disabled with site isolation ON
-      // Localstorage area is accessed on the browser process
-      // before checking accessibility on the renderer side,
-      // causing illegal origin access renderer termination.
-      xit('cannot access localStorage', (done) => {
-        ipcMain.once('local-storage-response', (event, error) => {
-          assert.strictEqual(
-            error,
-            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+      it('cannot access localStorage', (done) => {
+        contents.on('crashed', (event, killed) => {
+          // Site isolation ON: process is killed for trying to access resources without permission.
+          if (process.platform !== 'win32') {
+            // Chromium on Windows does not set this flag correctly.
+            assert.strictEqual(killed, true, 'Process should\'ve been killed')
+          }
           done()
+        })
+        ipcMain.once('local-storage-response', (event, message) => {
+          // Site isolation OFF: access is refused.
+          assert.strictEqual(
+            message,
+            'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
         })
         contents.loadURL(protocolName + '://host/localStorage')
       })
