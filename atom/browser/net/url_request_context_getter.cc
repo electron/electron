@@ -262,6 +262,11 @@ void URLRequestContextGetter::NotifyContextShuttingDown(
     std::unique_ptr<ResourceContext> resource_context) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
+  // todo(brenca): remove once C70 lands
+  if (url_request_context_ && url_request_context_->cookie_store()) {
+    url_request_context_->cookie_store()->FlushStore(base::NullCallback());
+  }
+
   context_shutting_down_ = true;
   resource_context.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
