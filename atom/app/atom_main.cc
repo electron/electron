@@ -24,10 +24,14 @@
 #include "base/win/windows_version.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "sandbox/win/src/sandbox_types.h"
-#elif defined(OS_LINUX)                   // defined(OS_WIN)
+#elif defined(OS_LINUX)  // defined(OS_WIN)
+#include <unistd.h>
+#include <cstdio>
 #include "atom/app/atom_main_delegate.h"  // NOLINT
 #include "content/public/app/content_main.h"
 #else  // defined(OS_LINUX)
+#include <unistd.h>
+#include <cstdio>
 #include "atom/app/atom_library_main.h"
 #endif  // defined(OS_MACOSX)
 
@@ -52,6 +56,25 @@ bool IsEnvSet(const char* name) {
   char* indicator = getenv(name);
   return indicator && indicator[0] != '\0';
 #endif
+}
+#endif
+
+#if defined(OS_POSIX)
+void FixStdioStreams() {
+  // libuv may mark stdin/stdout/stderr as close-on-exec, which interferes
+  // with chromium's subprocess spawning. As a workaround, we detect if these
+  // streams are closed on startup, and reopen them as /dev/null if necessary.
+  // Otherwise, an unrelated file descriptor will be assigned as stdout/stderr
+  // which may cause various errors when attempting to write to them.
+  //
+  // For details see https://github.com/libuv/libuv/issues/2062
+  struct stat st;
+  if (fstat(STDIN_FILENO, &st) < 0 && errno == EBADF)
+    freopen("/dev/null", "r", stdin);
+  if (fstat(STDOUT_FILENO, &st) < 0 && errno == EBADF)
+    freopen("/dev/null", "w", stdout);
+  if (fstat(STDERR_FILENO, &st) < 0 && errno == EBADF)
+    freopen("/dev/null", "w", stderr);
 }
 #endif
 
@@ -157,6 +180,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 int main(int argc, char* argv[]) {
 #ifdef ENABLE_RUN_AS_NODE
+  FixStdioStreams();
+
   if (IsEnvSet(kRunAsNode)) {
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
@@ -176,6 +201,8 @@ int main(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
 #ifdef ENABLE_RUN_AS_NODE
+  FixStdioStreams();
+
   if (IsEnvSet(kRunAsNode)) {
     return AtomInitializeICUandStartNode(argc, argv);
   }
