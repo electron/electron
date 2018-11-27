@@ -7,7 +7,7 @@ const os = require('os')
 const qs = require('querystring')
 const http = require('http')
 const {closeWindow} = require('./window-helpers')
-const {emittedOnce} = require('./events-helpers')
+
 const {ipcRenderer, remote, screen} = require('electron')
 const {app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents} = remote
 
@@ -1574,7 +1574,7 @@ describe('BrowserWindow module', () => {
         })
       })
 
-      it('webview in sandbox renderer', async () => {
+      it('supports webview in sandbox renderer', (done) => {
         w.destroy()
         w = new BrowserWindow({
           show: false,
@@ -1586,9 +1586,12 @@ describe('BrowserWindow module', () => {
         })
         w.loadURL(`file://${fixtures}/pages/webview-did-attach-event.html`)
 
-        const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
-        const [, id] = await emittedOnce(ipcMain, 'webview-dom-ready')
-        assert.equal(webContents.id, id)
+        w.webContents.once('did-attach-webview', (event, webContents) => {
+          ipcMain.once('webview-dom-ready', (event, id) => {
+            assert.equal(webContents.id, id)
+            done()
+          })
+        })
       })
     })
 
