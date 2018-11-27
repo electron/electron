@@ -878,8 +878,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
 
@@ -909,8 +910,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const promise = w.webContents.takeHeapSnapshot('')
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
