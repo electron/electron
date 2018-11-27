@@ -1573,6 +1573,26 @@ describe('BrowserWindow module', () => {
           done()
         })
       })
+
+      it('supports webview in sandbox renderer', (done) => {
+        w.destroy()
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: preload,
+            webviewTag: true
+          }
+        })
+        w.loadURL(`file://${fixtures}/pages/webview-did-attach-event.html`)
+
+        w.webContents.once('did-attach-webview', (event, webContents) => {
+          ipcMain.once('webview-dom-ready', (event, id) => {
+            assert.equal(webContents.id, id)
+            done()
+          })
+        })
+      })
     })
 
     describe('nativeWindowOpen option', () => {

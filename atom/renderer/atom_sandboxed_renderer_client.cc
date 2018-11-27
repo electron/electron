@@ -92,6 +92,12 @@ void InitializeBindings(v8::Local<v8::Object> binding,
   b.SetMethod("getArgv", GetArgv);
   b.SetMethod("getProcessMemoryInfo", &AtomBindings::GetProcessMemoryInfo);
   b.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
+
+  // Pass in CLI flags needed to setup the renderer
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  if (command_line->HasSwitch(switches::kGuestInstanceID))
+    b.Set(options::kGuestInstanceID,
+        command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
 }
 
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
