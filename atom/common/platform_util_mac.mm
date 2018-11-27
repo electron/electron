@@ -199,9 +199,9 @@ bool GetLoginItemEnabled() {
   return enabled;
 }
 
-void SetLoginItemEnabled(bool enabled) {
+bool SetLoginItemEnabled(bool enabled) {
   NSString* identifier = GetLoginHelperBundleIdentifier();
-  SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
+  return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
 }
 
 }  // namespace platform_util

@@ -61,7 +61,7 @@ void Beep();
 
 #if defined(OS_MACOSX)
 bool GetLoginItemEnabled();
-void SetLoginItemEnabled(bool enabled);
+bool SetLoginItemEnabled(bool enabled);
 #endif
 
 #if defined(OS_LINUX)
