@@ -198,10 +198,11 @@ void AtomRendererClient::SetupMainWorldOverrides(
   // an argument.
   std::string left = "(function (binding, require) {\n";
   std::string right = "\n})";
-  auto script = v8::Script::Compile(v8::String::Concat(
+  auto source = v8::String::Concat(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString())));
+                         mate::ConvertToV8(isolate, right)->ToString()));
+  auto script = v8::Script::Compile(context, source).ToLocalChecked();
   auto func =
       v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
 

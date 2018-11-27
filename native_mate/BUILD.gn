@@ -1,7 +1,5 @@
 config("native_mate_config") {
   include_dirs = [ "." ]
-  cflags_cc = [ "-Wno-deprecated-declarations" ]
-  cflags_objcc = cflags_cc
 }
 
 source_set("native_mate") {

@@ -287,8 +287,12 @@ static_library("electron_lib") {
     "//third_party/blink/renderer",
   ]
 
-  defines = []
+  defines = [ "V8_DEPRECATION_WARNINGS" ]
   libs = []
+
+  if (is_linux) {
+    defines += [ "GDK_DISABLE_DEPRECATION_WARNINGS" ]
+  }
 
   extra_source_filters = []
   if (!is_linux) {
