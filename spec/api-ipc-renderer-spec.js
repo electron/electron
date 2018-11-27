@@ -5,7 +5,6 @@ const dirtyChai = require('dirty-chai')
 const http = require('http')
 const path = require('path')
 const { closeWindow } = require('./window-helpers')
-const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -229,9 +228,7 @@ describe('ipc renderer module', () => {
   describe('ipcRenderer.on', () => {
     it('is not used for internals', async () => {
       w = new BrowserWindow({ show: false })
-      w.loadURL('about:blank')
-
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await w.loadURL('about:blank')
 
       const script = `require('electron').ipcRenderer.eventNames()`
       const result = await w.webContents.executeJavaScript(script)

@@ -697,6 +697,11 @@ Custom value can be returned by setting `event.returnValue`.
   * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md) | [UploadBlob[]](structures/upload-blob.md)) (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
+Returns `Promise` - the promise will resolve when the page has finished loading
+(see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
+if the page fails to load (see
+[`did-fail-load`](web-contents.md#event-did-fail-load)).
+
 Loads the `url` in the window. The `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
@@ -714,6 +719,10 @@ webContents.loadURL('https://github.com', options)
   * `query` Object (optional) - Passed to `url.format()`.
   * `search` String (optional) - Passed to `url.format()`.
   * `hash` String (optional) - Passed to `url.format()`.
+
+Returns `Promise` - the promise will resolve when the page has finished loading
+(see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
+if the page fails to load (see [`did-fail-load`](web-contents.md#event-did-fail-load)).
 
 Loads the given file in the window, `filePath` should be a path to
 an HTML file relative to the root of your application.  For instance
