@@ -52,6 +52,29 @@ describe('chromium feature', () => {
       it('should set the locale', (done) => testLocale('fr', 'fr', done))
       it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done))
     })
+
+    describe('--remote-debugging-port switch', () => {
+      it('should display the discovery page', (done) => {
+        const electronPath = remote.getGlobal('process').execPath
+        let output = ''
+        const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
+
+        appProcess.stderr.on('data', (data) => {
+          output += data
+          const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output)
+          if (m) {
+            const port = m[1]
+            http.get(`http://127.0.0.1:${port}`, (res) => {
+              res.destroy()
+              appProcess.kill()
+              expect(res.statusCode).to.eql(200)
+              expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
+              done()
+            })
+          }
+        })
+      })
+    })
   })
 
   afterEach(() => closeWindow(w).then(() => { w = null }))
