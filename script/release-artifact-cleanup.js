@@ -50,13 +50,14 @@ async function revertBumpCommit (tag) {
   }
 }
 
-async function deleteDraft (tag, targetRepo) {
+async function deleteDraft (releaseId, targetRepo) {
   try {
-    const result = await github.repos.getReleaseByTag({
+    const result = await github.repos.getRelease({
       owner: 'electron',
       repo: targetRepo,
-      tag
+      id: parseInt(releaseId, 10)
     })
+    console.log(result)
     if (!result.draft) {
       console.log(`Published releases cannot be deleted.`)
       process.exit(1)
@@ -67,9 +68,9 @@ async function deleteDraft (tag, targetRepo) {
         release_id: result.id
       })
     }
-    console.log(`Successfully deleted draft with tag ${tag} from ${targetRepo}`)
+    console.log(`Successfully deleted draft with id ${releaseId} from ${targetRepo}`)
   } catch (err) {
-    console.error(`Couldn't delete draft with tag ${tag} from ${targetRepo}: `, err)
+    console.error(`Couldn't delete draft with id ${releaseId} from ${targetRepo}: `, err)
     process.exit(1)
   }
 }
@@ -89,18 +90,19 @@ async function deleteTag (tag, targetRepo) {
 }
 
 async function cleanReleaseArtifacts () {
-  const tag = args.tag
+  const releaseId = args.releaseId
   const isNightly = args.tag.includes('nightly')
 
   if (isNightly) {
-    await deleteDraft(tag, 'nightlies')
-    await deleteTag(tag, 'nightlies')
+    await deleteDraft(releaseId, 'nightlies')
+    await deleteTag(args.tag, 'nightlies')
   } else {
-    await deleteDraft(tag, 'electron')
+    console.log('we are here')
+    await deleteDraft(releaseId, 'electron')
   }
 
-  await deleteTag(tag, 'electron')
-  await revertBumpCommit(tag)
+  await deleteTag(args.tag, 'electron')
+  await revertBumpCommit(args.tag)
 
   console.log('Failed release artifact cleanup complete')
 }
