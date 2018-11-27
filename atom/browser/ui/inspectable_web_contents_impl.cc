@@ -306,12 +306,14 @@ void InspectableWebContentsImpl::SetDevToolsWebContents(
     external_devtools_web_contents_ = devtools;
 }
 
-void InspectableWebContentsImpl::ShowDevTools() {
+void InspectableWebContentsImpl::ShowDevTools(bool activate) {
   if (embedder_message_dispatcher_) {
     if (managed_devtools_web_contents_)
-      view_->ShowDevTools();
+      view_->ShowDevTools(activate);
     return;
   }
+
+  activate_ = activate;
 
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
@@ -430,7 +432,7 @@ void InspectableWebContentsImpl::CloseWindow() {
 void InspectableWebContentsImpl::LoadCompleted() {
   frontend_loaded_ = true;
   if (managed_devtools_web_contents_)
-    view_->ShowDevTools();
+    view_->ShowDevTools(activate_);
 
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
@@ -501,7 +503,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
                                              bool docked) {
   if (managed_devtools_web_contents_)
-    view_->SetIsDocked(docked);
+    view_->SetIsDocked(docked, activate_);
   if (!callback.is_null())
     callback.Run(nullptr);
 }

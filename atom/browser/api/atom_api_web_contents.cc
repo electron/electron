@@ -1307,14 +1307,16 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
   }
+  bool activate = true;
   if (args && args->Length() == 1) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
+      options.Get("activate", &activate);
     }
   }
   managed_web_contents()->SetDockState(state);
-  managed_web_contents()->ShowDevTools();
+  managed_web_contents()->ShowDevTools(activate);
 }
 
 void WebContents::CloseDevTools() {
