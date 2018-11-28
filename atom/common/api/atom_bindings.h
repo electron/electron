@@ -63,6 +63,7 @@ class AtomBindings {
   static void OnCallNextTick(uv_async_t* handle);
 
   static void DidReceiveMemoryDump(
+      const v8::Global<v8::Context>& context,
       scoped_refptr<util::Promise> promise,
       bool success,
       std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
