@@ -17,6 +17,10 @@
 #include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
 
+namespace mate {
+class Dictionary;
+}
+
 namespace memory_instrumentation {
 class GlobalMemoryDump;
 }
@@ -43,8 +47,14 @@ class AtomBindings {
   // Should be called when a node::Environment has been destroyed.
   void EnvironmentDestroyed(node::Environment* env);
 
+  static void BindProcess(v8::Isolate* isolate,
+                          mate::Dictionary* process,
+                          base::ProcessMetrics* metrics);
+
   static void Log(const base::string16& message);
   static void Crash();
+
+ private:
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
@@ -57,7 +67,6 @@ class AtomBindings {
   static bool TakeHeapSnapshot(v8::Isolate* isolate,
                                const base::FilePath& file_path);
 
- private:
   void ActivateUVLoop(v8::Isolate* isolate);
 
   static void OnCallNextTick(uv_async_t* handle);
