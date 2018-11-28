@@ -374,8 +374,10 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
 
 ### CSP Meta Tag
 
-CSP's preferred delivery mechanism is an HTTP header. It can be useful, however,
-to set a policy on a page directly in the markup using a `<meta>` tag:
+CSP's preferred delivery mechanism is an HTTP header, however it is not possible
+to use this method when loading a resource using the `file://` protocol. It can
+be useful in some cases, such as using the `file://` protocol, to set a policy
+on a page directly in the markup using a `<meta>` tag:
 
 ```html
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
