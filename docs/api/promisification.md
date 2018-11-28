@@ -11,7 +11,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [ ] [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
 - [ ] [win.hookWindowMessage(message, callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#hookWindowMessage)
-- [ ] [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
 - [ ] [request.write(chunk[, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#write)
 - [ ] [request.end([chunk][, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#end)
 - [ ] [contentTracing.getCategories(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getCategories)
@@ -52,7 +51,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [contents.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#executeJavaScript)
 - [ ] [contents.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomFactor)
 - [ ] [contents.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomLevel)
-- [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
 - [ ] [contents.hasServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#hasServiceWorker)
 - [ ] [contents.unregisterServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#unregisterServiceWorker)
 - [ ] [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
@@ -63,8 +61,11 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScriptInIsolatedWorld)
 - [ ] [webviewTag.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#executeJavaScript)
 - [ ] [webviewTag.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#printToPDF)
-- [ ] [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
 - [ ] [webviewTag.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomFactor)
 - [ ] [webviewTag.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomLevel)
 
 ### Converted Functions
+
+- [ ] [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
+- [ ] [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
+- [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
