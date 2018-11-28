@@ -328,11 +328,14 @@ describe('app module', () => {
         event.sender.send('client-certificate-response', list[0])
       })
 
-      app.importCertificate(options, result => {
-        expect(result).toNotExist()
-        ipcRenderer.sendSync('set-client-certificate-option', false)
-        w.loadURL(secureUrl)
-      })
+      app.importCertificate(options)
+        .then(result => {
+          expect(result).toNotExist()
+          ipcRenderer.sendSync('set-client-certificate-option', false)
+          w.loadURL(secureUrl)
+        }).catch(err => {
+          console.log('Failed to import the certificate with err: ', err)
+        })
     })
   })
 

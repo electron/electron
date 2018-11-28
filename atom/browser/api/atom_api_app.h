@@ -195,8 +195,8 @@ class App : public AtomBrowserClient::Delegate,
   void SetAccessibilitySupportEnabled(bool enabled, mate::Arguments* args);
   Browser::LoginItemSettings GetLoginItemSettings(mate::Arguments* args);
 #if defined(USE_NSS_CERTS)
-  void ImportCertificate(const base::DictionaryValue& options,
-                         const net::CompletionCallback& callback);
+  v8::Local<v8::Promise> ImportCertificate(
+      const base::DictionaryValue& options);
 #endif
   v8::Local<v8::Promise> GetFileIcon(const base::FilePath& path,
                                      mate::Arguments* args);

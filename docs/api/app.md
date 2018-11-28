@@ -991,6 +991,20 @@ Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
 indicates success while any other value indicates failure according to Chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
 
+**[Deprecated Soon](promisification.md)**
+
+### `app.importCertificate(options)` _LINUX_
+
+* `options` Object
+  * `certificate` String - Path for the pkcs12 file.
+  * `password` String - Passphrase for the certificate.
+
+* Returns `Promise<Integer>` - Resolves with the result of the import as an integer
+
+Imports the certificate in pkcs12 format into the platform certificate store.
+The Promise is resolved  with the `result` of import operation, a value of `0`
+indicates success while any other value indicates failure according to Chromium [net_error_list](https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h).
+
 ### `app.disableHardwareAcceleration()`
 
 Disables hardware acceleration for current app.
