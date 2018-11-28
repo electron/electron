@@ -245,10 +245,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js
   // integration.
-  if (IsEnabled(options::kSandbox))
+  if (IsEnabled(options::kSandbox)) {
     command_line->AppendSwitch(switches::kEnableSandbox);
-  else if (!command_line->HasSwitch(switches::kEnableSandbox))
+  } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(service_manager::switches::kNoSandbox);
+    command_line->AppendSwitch(::switches::kNoZygote);
+  }
 
   // Check if nativeWindowOpen is enabled.
   if (IsEnabled(options::kNativeWindowOpen))
