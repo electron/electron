@@ -8,6 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "atom/browser/native_window.h"
@@ -103,6 +104,7 @@ class NativeWindowMac : public NativeWindow {
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
+  std::tuple<void*, int> GetNativeWindowHandlePointer() const override;
   void SetProgressBar(double progress, const ProgressState state) override;
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description) override;
