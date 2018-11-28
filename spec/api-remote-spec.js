@@ -429,9 +429,10 @@ describe('remote module', () => {
     })
 
     it('emits unhandled rejection events in the renderer process', (done) => {
-      window.addEventListener('unhandledrejection', function (event) {
+      window.addEventListener('unhandledrejection', function handler (event) {
         event.preventDefault()
         assert.strictEqual(event.reason.message, 'rejected')
+        window.removeEventListener('unhandledrejection', handler)
         done()
       })
 
