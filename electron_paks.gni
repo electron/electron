@@ -150,11 +150,13 @@ template("electron_paks") {
       "${root_gen_dir}/content/app/strings/content_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
+      "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
     ]
     deps = [
       "//chrome/app/resources:platform_locale_settings",
       "//components/strings:components_strings",
       "//content/app/strings",
+      "//device/bluetooth/strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ui_strings",
     ]
