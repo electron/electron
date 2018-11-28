@@ -60,7 +60,7 @@ describe('webContents module', () => {
       expect(err).not.to.be.null()
       expect(err.code).to.eql('ERR_FILE_NOT_FOUND')
       expect(err.errno).to.eql(-6)
-      expect(err.validatedURL).to.eql(process.platform === 'win32' ? 'file://non-existent/' : 'file:///non-existent')
+      expect(err.url).to.eql(process.platform === 'win32' ? 'file://non-existent/' : 'file:///non-existent')
     })
 
     it('rejects when loading fails due to DNS not resolved', async () => {
@@ -73,7 +73,7 @@ describe('webContents module', () => {
       expect(err).not.to.be.undefined()
       expect(err.code).to.eql('ERR_NAME_NOT_RESOLVED')
       expect(err.errno).to.eql(-105)
-      expect(err.validatedURL).to.eql('https://err.name.not.resolved/')
+      expect(err.url).to.eql('https://err.name.not.resolved/')
     })
   })
 
