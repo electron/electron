@@ -278,7 +278,9 @@ void RemoveFromLoginItems() {
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 #if defined(MAS_BUILD)
-  platform_util::SetLoginItemEnabled(settings.open_at_login);
+  if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
+    LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
+  }
 #else
   if (settings.open_at_login)
     base::mac::AddToLoginItems(settings.open_as_hidden);
