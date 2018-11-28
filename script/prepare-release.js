@@ -93,7 +93,7 @@ async function createRelease (branchToTarget, isBeta) {
   console.log(`Checking for existing draft release.`)
   const releases = await github.repos.getReleases(githubOpts)
     .catch(err => {
-      console.log('$fail} Could not get releases.  Error was', err)
+      console.log(`${fail} Could not get releases. Error was: `, err)
     })
   const drafts = releases.data.filter(release => release.draft &&
     release.tag_name === newVersion)
@@ -124,12 +124,13 @@ async function createRelease (branchToTarget, isBeta) {
   }
   githubOpts.tag_name = newVersion
   githubOpts.target_commitish = newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
-  await github.repos.createRelease(githubOpts)
+  const release = await github.repos.createRelease(githubOpts)
     .catch(err => {
       console.log(`${fail} Error creating new release: `, err)
       process.exit(1)
     })
-  console.log(`${pass} Draft release for ${newVersion} has been created.`)
+  console.log(`Release has been created with id: ${release.id}.`)
+  console.log(`${pass} Draft release for ${newVersion} successful.`)
 }
 
 async function pushRelease (branch) {
