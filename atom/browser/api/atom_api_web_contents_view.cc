@@ -5,6 +5,7 @@
 #include "atom/browser/api/atom_api_web_contents_view.h"
 
 #include "atom/browser/api/atom_api_web_contents.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/ui/inspectable_web_contents_view.h"
 #include "atom/common/api/constructor.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -64,8 +65,11 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
-  if (api_web_contents_)
-    api_web_contents_->DestroyWebContents(false /* async */);
+  if (api_web_contents_) {  // destroy() is called
+    // Destroy WebContents asynchronously unless app is shutting down,
+    // because destroy() might be called inside WebContents's event handler.
+    api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
+  }
 }
 
 void WebContentsView::WebContentsDestroyed() {

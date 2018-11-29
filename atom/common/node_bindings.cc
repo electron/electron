@@ -74,6 +74,7 @@
   V(atom_browser_label_button)   \
   V(atom_browser_layout_manager) \
   V(atom_browser_md_text_button) \
+  V(atom_browser_resize_area)    \
   V(atom_browser_text_field)
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(atom_browser_desktop_capturer)
@@ -339,7 +340,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   mate::Dictionary process(context->GetIsolate(), env->process_object());
-  process.Set("type", process_type);
+  process.SetReadOnly("type", process_type);
   process.Set("resourcesPath", resources_path);
   // Do not set DOM globals for renderer process.
   if (browser_env_ != BROWSER)

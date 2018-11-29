@@ -208,7 +208,17 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   base::string16 role = model->GetRoleAt(index);
   atom::AtomMenuModel::ItemType type = model->GetTypeAt(index);
-  if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
+
+  if (role == base::ASCIIToUTF16("services")) {
+    base::string16 title = base::ASCIIToUTF16("Services");
+    NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
+
+    [item setTarget:nil];
+    [item setAction:nil];
+    NSMenu* submenu = [[NSMenu alloc] initWithTitle:label];
+    [item setSubmenu:submenu];
+    [NSApp setServicesMenu:submenu];
+  } else if (type == atom::AtomMenuModel::TYPE_SUBMENU) {
     // Recursively build a submenu from the sub-model at this index.
     [item setTarget:nil];
     [item setAction:nil];
@@ -223,8 +233,6 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       [NSApp setWindowsMenu:submenu];
     else if (role == base::ASCIIToUTF16("help"))
       [NSApp setHelpMenu:submenu];
-    else if (role == base::ASCIIToUTF16("services"))
-      [NSApp setServicesMenu:submenu];
     else if (role == base::ASCIIToUTF16("recentdocuments"))
       [self replaceSubmenuShowingRecentDocuments:item];
   } else {

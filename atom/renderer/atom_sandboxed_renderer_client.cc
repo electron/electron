@@ -38,6 +38,11 @@ bool IsDevTools(content::RenderFrame* render_frame) {
       "chrome-devtools");
 }
 
+bool IsDevToolsExtension(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
+      "chrome-extension");
+}
+
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   mate::Dictionary global(isolate, isolate->GetCurrentContext()->Global());
   v8::Local<v8::Value> cache;
@@ -80,16 +85,11 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   return exports;
 }
 
-base::FilePath::StringType GetExecPath() {
-  base::FilePath path;
-  base::PathService::Get(base::FILE_EXE, &path);
-  return path.value();
-}
-
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> preloadSrc) {
-  auto script = v8::Script::Compile(preloadSrc);
-  auto func = script->Run();
+  auto context = isolate->GetCurrentContext();
+  auto script = v8::Script::Compile(context, preloadSrc).ToLocalChecked();
+  auto func = script->Run(context).ToLocalChecked();
   return func;
 }
 
@@ -147,30 +147,12 @@ void AtomSandboxedRendererClient::InitializeBindings(
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
 
-  process.SetMethod("crash", AtomBindings::Crash);
-  process.SetMethod("hang", AtomBindings::Hang);
-  process.SetMethod("getHeapStatistics", &AtomBindings::GetHeapStatistics);
-  process.SetMethod("getSystemMemoryInfo", &AtomBindings::GetSystemMemoryInfo);
-  process.SetMethod(
-      "getCPUUsage",
-      base::Bind(&AtomBindings::GetCPUUsage, base::Unretained(metrics_.get())));
-  process.SetMethod("getIOCounters", &AtomBindings::GetIOCounters);
+  AtomBindings::BindProcess(isolate, &process, metrics_.get());
 
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
-  process.Set("execPath", GetExecPath());
-  process.Set("pid", base::GetCurrentProcId());
-  process.Set("resourcesPath", NodeBindings::GetHelperResourcesPath());
-  process.Set("sandboxed", true);
-  process.Set("type", "renderer");
-
-#if defined(MAS_BUILD)
-  process.Set("mas", true);
-#endif
-
-#if defined(OS_WIN)
-  if (IsRunningInDesktopBridge())
-    process.Set("windowsStore", true);
-#endif
+  process.SetReadOnly("pid", base::GetCurrentProcId());
+  process.SetReadOnly("sandboxed", true);
+  process.SetReadOnly("type", "renderer");
 
   // Pass in CLI flags needed to setup the renderer
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
@@ -197,7 +179,8 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
 
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
-  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame))
+  if (!render_frame->IsMainFrame() && !IsDevTools(render_frame) &&
+      !IsDevToolsExtension(render_frame))
     return;
 
   auto* isolate = context->GetIsolate();
@@ -208,10 +191,11 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string left = "(function(binding, require) {\n";
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
-  auto script = v8::Script::Compile(v8::String::Concat(
+  auto source = v8::String::Concat(
       mate::ConvertToV8(isolate, left)->ToString(),
       v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString())));
+                         mate::ConvertToV8(isolate, right)->ToString()));
+  auto script = v8::Script::Compile(context, source).ToLocalChecked();
   auto func =
       v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
   // Create and initialize the binding object

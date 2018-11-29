@@ -34,12 +34,12 @@ gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
   return view_.get();
 }
 
-void InspectableWebContentsViewMac::ShowDevTools() {
-  [view_ setDevToolsVisible:YES];
+void InspectableWebContentsViewMac::ShowDevTools(bool activate) {
+  [view_ setDevToolsVisible:YES activate:activate];
 }
 
 void InspectableWebContentsViewMac::CloseDevTools() {
-  [view_ setDevToolsVisible:NO];
+  [view_ setDevToolsVisible:NO activate:NO];
 }
 
 bool InspectableWebContentsViewMac::IsDevToolsViewShowing() {
@@ -50,8 +50,8 @@ bool InspectableWebContentsViewMac::IsDevToolsViewFocused() {
   return [view_ isDevToolsFocused];
 }
 
-void InspectableWebContentsViewMac::SetIsDocked(bool docked) {
-  [view_ setIsDocked:docked];
+void InspectableWebContentsViewMac::SetIsDocked(bool docked, bool activate) {
+  [view_ setIsDocked:docked activate:activate];
 }
 
 void InspectableWebContentsViewMac::SetContentsResizingStrategy(

@@ -58,9 +58,8 @@ void NodeDebugger::Start() {
   }
 
   const char* path = "";
-  inspector->Start(path, options);
-  // FIXME
-  // DCHECK(env_->inspector_agent()->IsListening());
+  if (inspector->Start(path, options))
+    DCHECK(env_->inspector_agent()->IsListening());
 }
 
 }  // namespace atom

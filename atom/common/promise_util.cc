@@ -11,8 +11,10 @@ namespace atom {
 namespace util {
 
 Promise::Promise(v8::Isolate* isolate) {
+  auto context = isolate->GetCurrentContext();
+  auto resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
   isolate_ = isolate;
-  resolver_.Reset(isolate, v8::Promise::Resolver::New(isolate));
+  resolver_.Reset(isolate, resolver);
 }
 
 Promise::~Promise() = default;

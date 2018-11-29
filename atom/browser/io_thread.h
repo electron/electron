@@ -7,29 +7,25 @@
 
 #include <memory>
 
+#include "atom/browser/net/system_network_context_manager.h"
 #include "base/macros.h"
-#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/browser_thread_delegate.h"
+#include "services/network/public/mojom/network_service.mojom.h"
 
 namespace net {
 class URLRequestContext;
-class URLRequestContextGetter;
-}  // namespace net
+}
 
 namespace net_log {
 class ChromeNetLog;
 }
 
-namespace atom {
-
 class IOThread : public content::BrowserThreadDelegate {
  public:
-  explicit IOThread(net_log::ChromeNetLog* net_log);
+  explicit IOThread(
+      net_log::ChromeNetLog* net_log,
+      SystemNetworkContextManager* system_network_context_manager);
   ~IOThread() override;
-
-  net::URLRequestContextGetter* GetRequestContext() {
-    return url_request_context_getter_.get();
-  }
 
  protected:
   // BrowserThreadDelegate Implementation, runs on the IO thread.
@@ -40,12 +36,30 @@ class IOThread : public content::BrowserThreadDelegate {
   // The NetLog is owned by the browser process, to allow logging from other
   // threads during shutdown, but is used most frequently on the IOThread.
   net_log::ChromeNetLog* net_log_;
-  std::unique_ptr<net::URLRequestContext> url_request_context_;
-  scoped_refptr<net::URLRequestContextGetter> url_request_context_getter_;
+
+  // When the network service is disabled, this holds on to a
+  // content::NetworkContext class that owns |system_request_context_|.
+  // TODO(deepak1556): primary network context has to be destroyed after
+  // other active contexts, but since the ownership of latter is not released
+  // before IO thread is destroyed, it results in a DCHECK failure.
+  // We leak the reference to primary context to workaround this issue,
+  // since there is only one instance for the entire lifetime of app, it is
+  // safe.
+  network::mojom::NetworkContext* system_network_context_;
+  net::URLRequestContext* system_request_context_;
+
+  // These are set on the UI thread, and then consumed during initialization on
+  // the IO thread.
+  network::mojom::NetworkContextRequest network_context_request_;
+  network::mojom::NetworkContextParamsPtr network_context_params_;
+
+  // Initial HTTP auth configuration used when setting up the NetworkService on
+  // the IO Thread. Future updates are sent using the NetworkService mojo
+  // interface, but initial state needs to be set non-racily.
+  network::mojom::HttpAuthStaticParamsPtr http_auth_static_params_;
+  network::mojom::HttpAuthDynamicParamsPtr http_auth_dynamic_params_;
 
   DISALLOW_COPY_AND_ASSIGN(IOThread);
 };
-
-}  // namespace atom
 
 #endif  // ATOM_BROWSER_IO_THREAD_H_

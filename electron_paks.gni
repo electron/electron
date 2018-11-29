@@ -56,6 +56,7 @@ template("electron_extra_paks") {
       "$root_gen_dir/components/components_resources.pak",
       "$root_gen_dir/content/browser/tracing/tracing_resources.pak",
       "$root_gen_dir/content/content_resources.pak",
+      "$root_gen_dir/content/shell/shell_resources.pak",
       "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
@@ -65,6 +66,7 @@ template("electron_extra_paks") {
       "//components/resources",
       "//content:resources",
       "//content/browser/tracing:resources",
+      "//content/shell:copy_shell_resources",
       "//electron:resources",
       "//mojo/public/js:resources",
       "//net:net_resources",
@@ -143,14 +145,18 @@ template("electron_paks") {
     }
 
     source_patterns = [
+      "${root_gen_dir}/chrome/platform_locale_settings_",
       "${root_gen_dir}/components/strings/components_strings_",
       "${root_gen_dir}/content/app/strings/content_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/ui_strings_",
+      "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
     ]
     deps = [
+      "//chrome/app/resources:platform_locale_settings",
       "//components/strings:components_strings",
       "//content/app/strings",
+      "//device/bluetooth/strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:ui_strings",
     ]

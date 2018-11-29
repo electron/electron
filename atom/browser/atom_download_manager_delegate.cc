@@ -70,6 +70,18 @@ void AtomDownloadManagerDelegate::GetItemSavePath(download::DownloadItem* item,
     *path = download->GetSavePath();
 }
 
+void AtomDownloadManagerDelegate::GetItemSaveDialogOptions(
+    download::DownloadItem* item,
+    file_dialog::DialogSettings* options) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  api::DownloadItem* download =
+      api::DownloadItem::FromWrappedClass(isolate, item);
+  if (download)
+    *options = download->GetSaveDialogOptions();
+}
+
 void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
     uint32_t download_id,
     const content::DownloadTargetCallback& callback,
@@ -96,10 +108,14 @@ void AtomDownloadManagerDelegate::OnDownloadPathGenerated(
   GetItemSavePath(item, &path);
   // Show save dialog if save path was not set already on item
   file_dialog::DialogSettings settings;
-  settings.parent_window = window;
+  GetItemSaveDialogOptions(item, &settings);
+  if (!settings.parent_window)
+    settings.parent_window = window;
   settings.force_detached = offscreen;
-  settings.title = item->GetURL().spec();
-  settings.default_path = default_path;
+  if (settings.title.size() == 0)
+    settings.title = item->GetURL().spec();
+  if (!settings.default_path.empty())
+    settings.default_path = default_path;
   if (path.empty() && file_dialog::ShowSaveDialog(settings, &path)) {
     // Remember the last selected download directory.
     AtomBrowserContext* browser_context = static_cast<AtomBrowserContext*>(

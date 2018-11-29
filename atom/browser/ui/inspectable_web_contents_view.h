@@ -43,12 +43,12 @@ class InspectableWebContentsView {
   virtual gfx::NativeView GetNativeView() const = 0;
 #endif
 
-  virtual void ShowDevTools() = 0;
+  virtual void ShowDevTools(bool activate) = 0;
   // Hide the DevTools view.
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
   virtual bool IsDevToolsViewFocused() = 0;
-  virtual void SetIsDocked(bool docked) = 0;
+  virtual void SetIsDocked(bool docked, bool activate) = 0;
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
   virtual void SetTitle(const base::string16& title) = 0;

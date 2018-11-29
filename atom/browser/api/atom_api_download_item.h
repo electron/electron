@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "atom/browser/api/trackable_object.h"
+#include "atom/browser/ui/file_dialog.h"
 #include "base/files/file_path.h"
 #include "components/download/public/common/download_item.h"
 #include "native_mate/handle.h"
@@ -44,6 +45,8 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
   bool IsDone() const;
   void SetSavePath(const base::FilePath& path);
   base::FilePath GetSavePath() const;
+  file_dialog::DialogSettings GetSaveDialogOptions() const;
+  void SetSaveDialogOptions(const file_dialog::DialogSettings& options);
   std::string GetLastModifiedTime() const;
   std::string GetETag() const;
   double GetStartTime() const;
@@ -58,6 +61,7 @@ class DownloadItem : public mate::TrackableObject<DownloadItem>,
 
  private:
   base::FilePath save_path_;
+  file_dialog::DialogSettings dialog_options_;
   download::DownloadItem* download_item_;
 
   DISALLOW_COPY_AND_ASSIGN(DownloadItem);

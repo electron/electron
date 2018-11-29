@@ -5,48 +5,6 @@ Subject: libgtkui_export.patch
 
 Export libgtkui symbols for the GN component build.
 
-diff --git a/chrome/browser/ui/libgtkui/app_indicator_icon.h b/chrome/browser/ui/libgtkui/app_indicator_icon.h
-index 7815fbb2cea8d3c3434287fa32c57e095199c217..f17a5c59e64b22ef0b864c3b8dd2dcb8b17d0c84 100644
---- a/chrome/browser/ui/libgtkui/app_indicator_icon.h
-+++ b/chrome/browser/ui/libgtkui/app_indicator_icon.h
-@@ -12,6 +12,7 @@
- #include "base/memory/weak_ptr.h"
- #include "base/nix/xdg_util.h"
- #include "chrome/browser/ui/libgtkui/gtk_signal.h"
-+#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
- #include "ui/views/linux_ui/status_icon_linux.h"
- 
- typedef struct _AppIndicator AppIndicator;
-@@ -31,7 +32,7 @@ namespace libgtkui {
- class AppIndicatorIconMenu;
- 
- // Status icon implementation which uses libappindicator.
--class AppIndicatorIcon : public views::StatusIconLinux {
-+class LIBGTKUI_EXPORT AppIndicatorIcon : public views::StatusIconLinux {
-  public:
-   // The id uniquely identifies the new status icon from other chrome status
-   // icons.
-diff --git a/chrome/browser/ui/libgtkui/gtk_status_icon.h b/chrome/browser/ui/libgtkui/gtk_status_icon.h
-index e4e0da40981ca58964dfdcbd3fc0f730c9c09ec1..af028715ada9b8023f0ff7cf60e0f7e7acd6c042 100644
---- a/chrome/browser/ui/libgtkui/gtk_status_icon.h
-+++ b/chrome/browser/ui/libgtkui/gtk_status_icon.h
-@@ -10,6 +10,7 @@
- #include "base/macros.h"
- #include "base/strings/string16.h"
- #include "chrome/browser/ui/libgtkui/gtk_signal.h"
-+#include "chrome/browser/ui/libgtkui/libgtkui_export.h"
- #include "ui/base/glib/glib_integers.h"
- #include "ui/base/glib/glib_signal.h"
- #include "ui/views/linux_ui/status_icon_linux.h"
-@@ -29,7 +30,7 @@ class AppIndicatorIconMenu;
- 
- // Status icon implementation which uses the system tray X11 spec (via
- // GtkStatusIcon).
--class Gtk2StatusIcon : public views::StatusIconLinux {
-+class LIBGTKUI_EXPORT Gtk2StatusIcon : public views::StatusIconLinux {
-  public:
-   Gtk2StatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
-   ~Gtk2StatusIcon() override;
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
 index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209d7d5cf3f 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h

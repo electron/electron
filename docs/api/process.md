@@ -13,7 +13,9 @@ It adds the following events, properties, and methods:
 In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `crash()`
 - `hang()`
+- `getCreationTime()`
 - `getHeapStatistics()`
+- `getProcessMemoryInfo()`
 - `getSystemMemoryInfo()`
 - `getCPUUsage()`
 - `getIOCounters()`
@@ -23,7 +25,6 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 - `pid`
 - `arch`
 - `platform`
-- `resourcesPath`
 - `sandboxed`
 - `type`
 - `version`
@@ -74,6 +75,12 @@ A `Boolean` that controls whether or not deprecation warnings are printed to `st
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
+### `process.enablePromiseAPIs`
+
+A `Boolean` that controls whether or not deprecation warnings are printed to `stderr` when
+formerly callback-based APIs converted to Promises are invoked using callbacks. Setting this to `true` 
+will enable deprecation warnings.
+
 ### `process.resourcesPath`
 
 A `String` representing the path to the resources directory.
@@ -103,7 +110,7 @@ A `Boolean` that controls whether or not process warnings printed to `stderr` in
 
 ### `process.type`
 
-A `String` representing the current process's type, can be `"browser"` (i.e. main process) or `"renderer"`.
+A `String` representing the current process's type, can be `"browser"` (i.e. main process), `"renderer"`, or `"worker"` (i.e. web worker).
 
 ### `process.versions.chrome`
 
@@ -156,6 +163,27 @@ Returns `Object`:
 * `doesZapGarbage` Boolean
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
+
+### `process.getProcessMemoryInfo()`
+
+Returns `Object`:
+
+* `residentSet` Integer _Linux_ and _Windows_ - The amount of memory 
+currently pinned to actual physical RAM in Kilobytes.
+* `private` Integer - The amount of memory not shared by other processes, such as
+  JS heap or HTML content in Kilobytes.
+* `shared` Integer - The amount of memory shared between processes, typically
+  memory consumed by the Electron code itself in Kilobytes.
+
+Returns an object giving memory usage statistics about the current process. Note
+that all statistics are reported in Kilobytes.
+This api should be called after app ready.
+
+Chromium does not provide `residentSet` value for macOS. This is because macOS 
+performs in-memory compression of pages that haven't been recently used. As a
+result the resident set size value is not what one would expect. `private` memory
+is more representative of the actual pre-compression memory usage of the process
+on macOS.
 
 ### `process.getSystemMemoryInfo()`
 

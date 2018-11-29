@@ -10,17 +10,30 @@
 
 #include "base/files/file_path.h"
 #include "base/macros.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "base/strings/string16.h"
 #include "native_mate/arguments.h"
 #include "uv.h"  // NOLINT(build/include)
 #include "v8/include/v8.h"
 
+namespace mate {
+class Dictionary;
+}
+
+namespace memory_instrumentation {
+class GlobalMemoryDump;
+}
+
 namespace node {
 class Environment;
 }
 
 namespace atom {
+
+namespace util {
+class Promise;
+}
 
 class AtomBindings {
  public:
@@ -34,23 +47,35 @@ class AtomBindings {
   // Should be called when a node::Environment has been destroyed.
   void EnvironmentDestroyed(node::Environment* env);
 
+  static void BindProcess(v8::Isolate* isolate,
+                          mate::Dictionary* process,
+                          base::ProcessMetrics* metrics);
+
   static void Log(const base::string16& message);
   static void Crash();
+
+ private:
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   mate::Arguments* args);
+  static v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,
                                           v8::Isolate* isolate);
   static v8::Local<v8::Value> GetIOCounters(v8::Isolate* isolate);
   static bool TakeHeapSnapshot(v8::Isolate* isolate,
                                const base::FilePath& file_path);
 
- private:
   void ActivateUVLoop(v8::Isolate* isolate);
 
   static void OnCallNextTick(uv_async_t* handle);
+
+  static void DidReceiveMemoryDump(
+      const v8::Global<v8::Context>& context,
+      scoped_refptr<util::Promise> promise,
+      bool success,
+      std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 
   uv_async_t call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;

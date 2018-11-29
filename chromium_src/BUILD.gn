@@ -4,6 +4,7 @@
 
 import("//build/config/ui.gni")
 import("//electron/buildflags/buildflags.gni")
+import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
 # Builds some of the chrome sources that Electron depends on.
@@ -138,5 +139,43 @@ static_library("chrome") {
       "//chrome/renderer/media/chrome_key_systems_provider.h",
     ]
     deps += [ "//components/cdm/renderer" ]
+  }
+
+  if (enable_basic_printing) {
+    sources += [
+      "//chrome/browser/printing/print_job.cc",
+      "//chrome/browser/printing/print_job.h",
+      "//chrome/browser/printing/print_job_manager.cc",
+      "//chrome/browser/printing/print_job_manager.h",
+      "//chrome/browser/printing/print_job_worker.cc",
+      "//chrome/browser/printing/print_job_worker.h",
+      "//chrome/browser/printing/print_view_manager_base.cc",
+      "//chrome/browser/printing/print_view_manager_base.h",
+      "//chrome/browser/printing/print_view_manager_basic.cc",
+      "//chrome/browser/printing/print_view_manager_basic.h",
+      "//chrome/browser/printing/printer_query.cc",
+      "//chrome/browser/printing/printer_query.h",
+      "//chrome/browser/printing/printing_message_filter.cc",
+      "//chrome/browser/printing/printing_message_filter.h",
+    ]
+    deps += [
+      "//chrome/services/printing:lib",
+      "//components/printing/browser",
+      "//components/printing/common",
+      "//components/printing/renderer",
+      "//components/services/pdf_compositor",
+      "//components/services/pdf_compositor/public/cpp:factory",
+      "//components/services/pdf_compositor/public/interfaces",
+      "//printing",
+    ]
+
+    if (is_win) {
+      sources += [
+        "//chrome/browser/printing/pdf_to_emf_converter.cc",
+        "//chrome/browser/printing/pdf_to_emf_converter.h",
+        "//chrome/utility/printing_handler.cc",
+        "//chrome/utility/printing_handler.h",
+      ]
+    }
   }
 }

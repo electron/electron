@@ -70,7 +70,7 @@ build_script:
       if ($env:GN_CONFIG -eq 'release') {
         ninja -C out/Default third_party/breakpad:dump_syms
       }
-  - if "%GN_CONFIG%"=="release" ( python electron\script\dump-symbols.py -d %cd%\out\Default\electron.breakpad.syms -v)
+  - if "%GN_CONFIG%"=="release" ( python electron\script\dump-symbols.py -d %cd%\out\Default\breakpad_symbols -v)
   - ps: >-
       if ($env:GN_CONFIG -eq 'release') {
         python electron\script\zip-symbols.py
@@ -82,6 +82,7 @@ test_script:
         $env:RUN_TESTS="true"
       }
   - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
+  - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
   - ps: >-
       if ($env:RUN_TESTS -eq 'true') {
         New-Item .\out\Default\gen\node_headers\Release -Type directory

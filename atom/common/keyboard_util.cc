@@ -40,6 +40,36 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
     return ui::VKEY_OEM_PLUS;
   } else if (str == "tab") {
     return ui::VKEY_TAB;
+  } else if (str == "num0") {
+    return ui::VKEY_NUMPAD0;
+  } else if (str == "num1") {
+    return ui::VKEY_NUMPAD1;
+  } else if (str == "num2") {
+    return ui::VKEY_NUMPAD2;
+  } else if (str == "num3") {
+    return ui::VKEY_NUMPAD3;
+  } else if (str == "num4") {
+    return ui::VKEY_NUMPAD4;
+  } else if (str == "num5") {
+    return ui::VKEY_NUMPAD5;
+  } else if (str == "num6") {
+    return ui::VKEY_NUMPAD6;
+  } else if (str == "num7") {
+    return ui::VKEY_NUMPAD7;
+  } else if (str == "num8") {
+    return ui::VKEY_NUMPAD8;
+  } else if (str == "num9") {
+    return ui::VKEY_NUMPAD9;
+  } else if (str == "numadd") {
+    return ui::VKEY_ADD;
+  } else if (str == "nummult") {
+    return ui::VKEY_MULTIPLY;
+  } else if (str == "numdec") {
+    return ui::VKEY_DECIMAL;
+  } else if (str == "numsub") {
+    return ui::VKEY_SUBTRACT;
+  } else if (str == "numdiv") {
+    return ui::VKEY_DIVIDE;
   } else if (str == "space") {
     return ui::VKEY_SPACE;
   } else if (str == "backspace") {
@@ -118,7 +148,6 @@ ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
       return ui::VKEY_ESCAPE;
     case ' ':
       return ui::VKEY_SPACE;
-
     case 'a':
       return ui::VKEY_A;
     case 'b':

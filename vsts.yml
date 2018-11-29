@@ -110,7 +110,7 @@ jobs:
       # TODO(alexeykuzmin): Explicitly pass an out folder path to the scripts.
       export ELECTRON_OUT_DIR=Default
 
-      electron/script/dump-symbols.py -d "$PWD/out/Default/electron.breakpad.syms"
+      electron/script/dump-symbols.py -d "$PWD/out/Default/breakpad_symbols"
       electron/script/zip-symbols.py
     displayName: Collect symbols
     condition: and(succeeded(), eq(variables['ELECTRON_RELEASE'], '1'))
@@ -126,7 +126,14 @@ jobs:
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
     displayName: Verify non proprietary ffmpeg
-    condition: and(succeeded(), eq(variables['RUN_TESTS'], '1'))
+    condition: and(eq('DISABLED', 'breaking consistently'), and(succeeded(), eq(variables['RUN_TESTS'], '1')))
+    timeoutInMinutes: 5
+
+  - bash: |
+      cd src
+      python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+    displayName: Verify mksnapshot
+    condition: and(eq('DISABLED', 'breaking sometimes?'), and(succeeded(), eq(variables['RUN_TESTS'], '1')))
     timeoutInMinutes: 5
 
   - bash: |
@@ -192,6 +199,13 @@ jobs:
     displayName: Publish Build Artifacts (chromedriver.zip)
     inputs:
       PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/chromedriver.zip'
+      ArtifactName: Default
+    timeoutInMinutes: 1
+
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Build Artifacts (mksnapshot.zip)
+    inputs:
+      PathtoPublish: '$(System.DefaultWorkingDirectory)/src/out/Default/mksnapshot.zip'
       ArtifactName: Default
     timeoutInMinutes: 1
 

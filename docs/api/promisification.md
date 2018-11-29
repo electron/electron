@@ -1,0 +1,71 @@
+## Promisification
+
+The Electron team is currently undergoing an initiative to convert callback-based functions in Electron to return Promises. During this transition period, both the callback and Promise-based versions of these functions will work correctly, and will both be documented.
+
+To enable deprecation warnings for these updated functions, use the `process.enablePromiseAPI` runtime flag.
+
+When a majority of affected functions are migrated, this flag will be enabled by default and all developers will be able to see these deprecation warnings. At that time, the callback-based versions will also be removed from documentation. This document will be continuously updated as more functions are converted.
+
+### Candidate Functions
+
+- [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
+- [ ] [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
+- [ ] [win.hookWindowMessage(message, callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#hookWindowMessage)
+- [ ] [request.write(chunk[, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#write)
+- [ ] [request.end([chunk][, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#end)
+- [ ] [contentTracing.getCategories(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getCategories)
+- [ ] [contentTracing.startRecording(options, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#startRecording)
+- [ ] [contentTracing.stopRecording(resultFilePath, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#stopRecording)
+- [ ] [contentTracing.startMonitoring(options, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#startMonitoring)
+- [ ] [contentTracing.stopMonitoring(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#stopMonitoring)
+- [ ] [contentTracing.captureMonitoringSnapshot(resultFilePath, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#captureMonitoringSnapshot)
+- [ ] [contentTracing.getTraceBufferUsage(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getTraceBufferUsage)
+- [ ] [cookies.get(filter, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#get)
+- [ ] [cookies.set(details, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#set)
+- [ ] [cookies.remove(url, name, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#remove)
+- [ ] [cookies.flushStore(callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#flushStore)
+- [ ] [debugger.sendCommand(method[, commandParams, callback])](https://github.com/electron/electron/blob/master/docs/api/debugger.md#sendCommand)
+- [ ] [desktopCapturer.getSources(options, callback)](https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md#getSources)
+- [ ] [dialog.showOpenDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showOpenDialog)
+- [ ] [dialog.showSaveDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showSaveDialog)
+- [ ] [dialog.showMessageBox([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showMessageBox)
+- [ ] [dialog.showCertificateTrustDialog([browserWindow, ]options, callback)](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showCertificateTrustDialog)
+- [ ] [globalShortcut.register(accelerator, callback)](https://github.com/electron/electron/blob/master/docs/api/global-shortcut.md#register)
+- [ ] [globalShortcut.registerAll(accelerators, callback)](https://github.com/electron/electron/blob/master/docs/api/global-shortcut.md#registerAll)
+- [ ] [inAppPurchase.purchaseProduct(productID, quantity, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#purchaseProduct)
+- [ ] [inAppPurchase.getProducts(productIDs, callback)](https://github.com/electron/electron/blob/master/docs/api/in-app-purchase.md#getProducts)
+- [ ] [netLog.stopLogging([callback])](https://github.com/electron/electron/blob/master/docs/api/net-log.md#stopLogging)
+- [ ] [protocol.isProtocolHandled(scheme, callback)](https://github.com/electron/electron/blob/master/docs/api/protocol.md#isProtocolHandled)
+- [ ] [ses.getCacheSize(callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#getCacheSize)
+- [ ] [ses.clearCache(callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#clearCache)
+- [ ] [ses.clearStorageData([options, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearStorageData)
+- [ ] [ses.setProxy(config, callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#setProxy)
+- [ ] [ses.resolveProxy(url, callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#resolveProxy)
+- [ ] [ses.clearHostResolverCache([callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearHostResolverCache)
+- [ ] [ses.getBlobData(identifier, callback)](https://github.com/electron/electron/blob/master/docs/api/session.md#getBlobData)
+- [ ] [ses.clearAuthCache(options[, callback])](https://github.com/electron/electron/blob/master/docs/api/session.md#clearAuthCache)
+- [ ] [shell.openExternal(url[, options, callback])](https://github.com/electron/electron/blob/master/docs/api/shell.md#openExternal)
+- [ ] [systemPreferences.subscribeNotification(event, callback)](https://github.com/electron/electron/blob/master/docs/api/system-preferences.md#subscribeNotification)
+- [ ] [systemPreferences.subscribeLocalNotification(event, callback)](https://github.com/electron/electron/blob/master/docs/api/system-preferences.md#subscribeLocalNotification)
+- [ ] [systemPreferences.subscribeWorkspaceNotification(event, callback)](https://github.com/electron/electron/blob/master/docs/api/system-preferences.md#subscribeWorkspaceNotification)
+- [ ] [contents.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#executeJavaScript)
+- [ ] [contents.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomFactor)
+- [ ] [contents.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#getZoomLevel)
+- [ ] [contents.hasServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#hasServiceWorker)
+- [ ] [contents.unregisterServiceWorker(callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#unregisterServiceWorker)
+- [ ] [contents.print([options], [callback])](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#print)
+- [ ] [contents.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#printToPDF)
+- [ ] [contents.beginFrameSubscription([onlyDirty ,]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#beginFrameSubscription)
+- [ ] [contents.savePage(fullPath, saveType, callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#savePage)
+- [ ] [webFrame.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScript)
+- [ ] [webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/web-frame.md#executeJavaScriptInIsolatedWorld)
+- [ ] [webviewTag.executeJavaScript(code[, userGesture, callback])](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#executeJavaScript)
+- [ ] [webviewTag.printToPDF(options, callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#printToPDF)
+- [ ] [webviewTag.getZoomFactor(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomFactor)
+- [ ] [webviewTag.getZoomLevel(callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#getZoomLevel)
+
+### Converted Functions
+
+- [ ] [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
+- [ ] [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
+- [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)

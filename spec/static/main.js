@@ -161,7 +161,7 @@ app.on('ready', function () {
   // For session's download test, listen 'will-download' event in browser, and
   // reply the result to renderer for verifying
   const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf')
-  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath) {
+  ipcMain.on('set-download-option', function (event, needCancel, preventDefault, filePath = downloadFilePath, dialogOptions = {}) {
     window.webContents.session.once('will-download', function (e, item) {
       window.webContents.send('download-created',
         item.getState(),
@@ -187,6 +187,7 @@ app.on('ready', function () {
           item.resume()
         } else {
           item.setSavePath(filePath)
+          item.setSaveDialogOptions(dialogOptions)
         }
         item.on('done', function (e, state) {
           window.webContents.send('download-done',
@@ -198,6 +199,7 @@ app.on('ready', function () {
             item.getContentDisposition(),
             item.getFilename(),
             item.getSavePath(),
+            item.getSaveDialogOptions(),
             item.getURLChain(),
             item.getLastModifiedTime(),
             item.getETag())

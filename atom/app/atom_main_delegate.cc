@@ -155,18 +155,9 @@ bool AtomMainDelegate::BasicStartupComplete(int* exit_code) {
   // Logging with pid and timestamp.
   logging::SetLogItems(true, false, true, false);
 
-  // Enable convient stack printing.
-#if defined(DEBUG) && defined(OS_LINUX)
-  bool enable_stack_dumping = true;
-#else
-  bool enable_stack_dumping = env->HasVar("ELECTRON_ENABLE_STACK_DUMPING");
-#endif
-#if defined(ARCH_CPU_ARM_FAMILY) && defined(ARCH_CPU_32_BITS)
-  // For 32bit ARM enabling stack printing would end up crashing.
-  // https://github.com/electron/electron/pull/11230#issuecomment-363232482
-  enable_stack_dumping = false;
-#endif
-  if (enable_stack_dumping)
+  // Enable convient stack printing. This is enabled by default in non-official
+  // builds.
+  if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
     base::debug::EnableInProcessStackDumping();
 
   chrome::RegisterPathProvider();
@@ -209,16 +200,14 @@ void AtomMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess(command_line))
     return;
 
-  if (!command_line->HasSwitch(switches::kEnableMixedSandbox)) {
-    if (command_line->HasSwitch(switches::kEnableSandbox)) {
-      // Disable setuid sandbox since it is not longer required on
-      // linux(namespace sandbox is available on most distros).
-      command_line->AppendSwitch(
-          service_manager::switches::kDisableSetuidSandbox);
-    } else {
-      // Disable renderer sandbox for most of node's functions.
-      command_line->AppendSwitch(service_manager::switches::kNoSandbox);
-    }
+  // Disable setuid sandbox since it is not longer required on
+  // linux (namespace sandbox is available on most distros).
+  command_line->AppendSwitch(service_manager::switches::kDisableSetuidSandbox);
+
+  if (!command_line->HasSwitch(switches::kEnableMixedSandbox) &&
+      !command_line->HasSwitch(switches::kEnableSandbox)) {
+    // Disable renderer sandbox for most of node's functions.
+    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
   }
 
   // Allow file:// URIs to read other file:// URIs by default.
@@ -279,5 +268,9 @@ bool AtomMainDelegate::DelaySandboxInitialization(
   return process_type == kRelauncherProcess;
 }
 #endif
+
+bool AtomMainDelegate::ShouldLockSchemeRegistry() {
+  return false;
+}
 
 }  // namespace atom

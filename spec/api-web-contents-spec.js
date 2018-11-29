@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('assert')
+const ChildProcess = require('child_process')
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
@@ -9,6 +10,7 @@ const { emittedOnce } = require('./events-helpers')
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
 
+const features = process.atomBinding('features')
 const { ipcRenderer, remote, clipboard } = require('electron')
 const { BrowserWindow, webContents, ipcMain, session } = remote
 const { expect } = chai
@@ -135,12 +137,14 @@ describe('webContents module', () => {
       const oscillator = context.createOscillator()
       oscillator.connect(context.destination)
       oscillator.start()
+      let p = emittedOnce(webContents, '-audio-state-changed')
       await context.resume()
-      const [, audible] = await emittedOnce(webContents, '-audio-state-changed')
+      const [, audible] = await p
       assert(webContents.isCurrentlyAudible() === audible)
       expect(webContents.isCurrentlyAudible()).to.be.true()
+      p = emittedOnce(webContents, '-audio-state-changed')
       oscillator.stop()
-      await emittedOnce(webContents, '-audio-state-changed')
+      await p
       expect(webContents.isCurrentlyAudible()).to.be.false()
       oscillator.disconnect()
       context.close()
@@ -154,6 +158,24 @@ describe('webContents module', () => {
         assert(!w.devToolsWebContents.getWebPreferences())
         done()
       })
+    })
+  })
+
+  describe('openDevTools() API', () => {
+    it('can show window with activation', async () => {
+      w.show()
+      assert.strictEqual(w.isFocused(), true)
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools({ mode: 'detach', activate: true })
+      await devtoolsOpened
+      assert.strictEqual(w.isFocused(), false)
+    })
+
+    it('can show window without activation', async () => {
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
+      w.webContents.openDevTools({ mode: 'detach', activate: false })
+      await devtoolsOpened
+      assert.strictEqual(w.isDevToolsOpened(), true)
     })
   })
 
@@ -478,7 +500,6 @@ describe('webContents module', () => {
     })
 
     it('can set the correct zoom level', (done) => {
-      w.loadURL('about:blank')
       w.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel) => {
           assert.strictEqual(zoomLevel, 0.0)
@@ -490,6 +511,7 @@ describe('webContents module', () => {
           })
         })
       })
+      w.loadURL('about:blank')
     })
 
     it('can persist zoom level across navigation', (done) => {
@@ -697,6 +719,16 @@ describe('webContents module', () => {
     })
   })
 
+  describe('create()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'leak-exit-webcontents.js')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+  })
+
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
   xdescribe('destroy()', () => {
@@ -867,8 +899,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
 
@@ -898,8 +931,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const promise = w.webContents.takeHeapSnapshot('')
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
@@ -930,6 +964,63 @@ describe('webContents module', () => {
     it('does not crash when called via BrowserWindow', (done) => {
       w.setBackgroundThrottling(true)
       done()
+    })
+  })
+
+  describe('getPrinterList()', () => {
+    before(function () {
+      if (!features.isPrintingEnabled()) {
+        return closeWindow(w).then(() => {
+          w = null
+          this.skip()
+        })
+      }
+    })
+
+    it('can get printer list', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        const printers = w.webContents.getPrinters()
+        assert.strictEqual(Array.isArray(printers), true)
+        done()
+      })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+    })
+  })
+
+  describe('printToPDF()', () => {
+    before(function () {
+      if (!features.isPrintingEnabled()) {
+        return closeWindow(w).then(() => {
+          w = null
+          this.skip()
+        })
+      }
+    })
+
+    it('can print to PDF', (done) => {
+      w.destroy()
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      })
+      w.webContents.once('did-finish-load', () => {
+        w.webContents.printToPDF({}, function (error, data) {
+          assert.strictEqual(error, null)
+          assert.strictEqual(data instanceof Buffer, true)
+          assert.notStrictEqual(data.length, 0)
+          done()
+        })
+      })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
   })
 })

@@ -317,7 +317,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
   }
 
   if (val->IsString()) {
-    v8::String::Utf8Value utf8(val->ToString(context).ToLocalChecked());
+    v8::String::Utf8Value utf8(isolate,
+                               val->ToString(context).ToLocalChecked());
     return new base::Value(std::string(*utf8, utf8.length()));
   }
 
@@ -333,7 +334,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
       v8::Local<v8::Value> result =
           toISOString.As<v8::Function>()->Call(val, 0, nullptr);
       if (!result.IsEmpty()) {
-        v8::String::Utf8Value utf8(result->ToString(context).ToLocalChecked());
+        v8::String::Utf8Value utf8(isolate,
+                                   result->ToString(context).ToLocalChecked());
         return new base::Value(std::string(*utf8, utf8.length()));
       }
     }
@@ -344,8 +346,8 @@ base::Value* V8ValueConverter::FromV8ValueImpl(FromV8ValueState* state,
       // JSON.stringify converts to an object.
       return FromV8Object(val->ToObject(context).ToLocalChecked(), state,
                           isolate);
-    return new base::Value(
-        *v8::String::Utf8Value(val->ToString(context).ToLocalChecked()));
+    return new base::Value(*v8::String::Utf8Value(
+        isolate, val->ToString(context).ToLocalChecked()));
   }
 
   // v8::Value doesn't have a ToArray() method for some reason.
@@ -442,14 +444,14 @@ base::Value* V8ValueConverter::FromV8Object(v8::Local<v8::Object> val,
 
     // Extend this test to cover more types as necessary and if sensible.
     if (!key->IsString() && !key->IsNumber()) {
-      NOTREACHED() << "Key \"" << *v8::String::Utf8Value(key)
+      NOTREACHED() << "Key \"" << *v8::String::Utf8Value(isolate, key)
                    << "\" "
                       "is neither a string nor a number";
       continue;
     }
 
     v8::String::Utf8Value name_utf8(
-        key->ToString(isolate->GetCurrentContext()).ToLocalChecked());
+        isolate, key->ToString(isolate->GetCurrentContext()).ToLocalChecked());
 
     v8::TryCatch try_catch(isolate);
     v8::Local<v8::Value> child_v8 = val->Get(key);

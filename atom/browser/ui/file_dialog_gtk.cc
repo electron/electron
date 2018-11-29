@@ -18,6 +18,7 @@
 namespace file_dialog {
 
 DialogSettings::DialogSettings() = default;
+DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
@@ -129,20 +130,18 @@ class FileChooserDialog {
 
   base::FilePath GetFileName() const {
     gchar* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog_));
-    base::FilePath path = AddExtensionForFilename(filename);
+    const base::FilePath path(filename);
     g_free(filename);
     return path;
   }
 
   std::vector<base::FilePath> GetFileNames() const {
     std::vector<base::FilePath> paths;
-    GSList* filenames =
-        gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
-    for (GSList* iter = filenames; iter != NULL; iter = g_slist_next(iter)) {
-      base::FilePath path =
-          AddExtensionForFilename(static_cast<char*>(iter->data));
-      g_free(iter->data);
-      paths.push_back(path);
+    auto* filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(dialog_));
+    for (auto* iter = filenames; iter != NULL; iter = iter->next) {
+      auto* filename = static_cast<char*>(iter->data);
+      paths.emplace_back(filename);
+      g_free(filename);
     }
     g_slist_free(filenames);
     return paths;
@@ -154,7 +153,6 @@ class FileChooserDialog {
 
  private:
   void AddFilters(const Filters& filters);
-  base::FilePath AddExtensionForFilename(const gchar* filename) const;
 
   atom::NativeWindowViews* parent_;
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
@@ -203,31 +201,6 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog_), gtk_filter);
   }
-}
-
-base::FilePath FileChooserDialog::AddExtensionForFilename(
-    const gchar* filename) const {
-  base::FilePath path(filename);
-  GtkFileFilter* selected_filter =
-      gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog_));
-  if (!selected_filter)
-    return path;
-
-  GSList* filters = gtk_file_chooser_list_filters(GTK_FILE_CHOOSER(dialog_));
-  size_t i = g_slist_index(filters, selected_filter);
-  g_slist_free(filters);
-  if (i >= filters_.size())
-    return path;
-
-  const auto& extensions = filters_[i].second;
-  for (const auto& extension : extensions) {
-    if (extension == "*" ||
-        base::EndsWith(path.value(), "." + extension,
-                       base::CompareCase::INSENSITIVE_ASCII))
-      return path;
-  }
-
-  return path.ReplaceExtension(extensions[0]);
 }
 
 }  // namespace

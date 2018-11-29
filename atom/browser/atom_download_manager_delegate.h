@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "atom/browser/ui/file_dialog.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 
@@ -41,6 +42,8 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate {
  private:
   // Get the save path set on the associated api::DownloadItem object
   void GetItemSavePath(download::DownloadItem* item, base::FilePath* path);
+  void GetItemSaveDialogOptions(download::DownloadItem* item,
+                                file_dialog::DialogSettings* settings);
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<AtomDownloadManagerDelegate> weak_ptr_factory_;

@@ -360,7 +360,6 @@ describe('BrowserWindow module', () => {
 
     it('is emitted after will-navigate on redirects', (done) => {
       let navigateCalled = false
-      w.loadURL(`${server.url}/navigate-302`)
       w.webContents.on('will-navigate', () => {
         navigateCalled = true
       })
@@ -368,6 +367,7 @@ describe('BrowserWindow module', () => {
         expect(navigateCalled).to.equal(true, 'should have called will-navigate first')
         done()
       })
+      w.loadURL(`${server.url}/navigate-302`)
     })
 
     it('is emitted before did-stop-loading on redirects', (done) => {
@@ -490,15 +490,13 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.capturePage(rect, callback)', () => {
-    it('calls the callback with a Buffer', async () => {
-      const image = await new Promise((resolve) => {
-        w.capturePage({
-          x: 0,
-          y: 0,
-          width: 100,
-          height: 100
-        }, resolve)
+  describe('BrowserWindow.capturePage(rect)', () => {
+    it('returns a Promise with a Buffer', async () => {
+      const image = await w.capturePage({
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 100
       })
 
       expect(image.isEmpty()).to.be.true()
@@ -511,16 +509,37 @@ describe('BrowserWindow module', () => {
         height: 400,
         transparent: true
       })
+      const p = emittedOnce(w, 'ready-to-show')
       w.loadURL('data:text/html,<html><body background-color: rgba(255,255,255,0)></body></html>')
-      await emittedOnce(w, 'ready-to-show')
+      await p
       w.show()
 
-      const image = await new Promise((resolve) => w.capturePage(resolve))
+      const image = await w.capturePage()
       const imgBuffer = image.toPNG()
 
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6)
+    })
+  })
+
+  describe('BrowserWindow.setBounds(bounds[, animate])', () => {
+    it('sets the window bounds with full bounds', () => {
+      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
+      w.setBounds(fullBounds)
+
+      assertBoundsEqual(w.getBounds(), fullBounds)
+    })
+
+    it('sets the window bounds with partial bounds', () => {
+      const fullBounds = { x: 440, y: 225, width: 500, height: 400 }
+      w.setBounds(fullBounds)
+
+      const boundsUpdate = { width: 200 }
+      w.setBounds(boundsUpdate)
+
+      const expectedBounds = Object.assign(fullBounds, boundsUpdate)
+      assertBoundsEqual(w.getBounds(), expectedBounds)
     })
   })
 
@@ -1294,8 +1313,9 @@ describe('BrowserWindow module', () => {
             preload: preload
           }
         })
+        const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'preload.html'))
-        const [, test] = await emittedOnce(ipcMain, 'answer')
+        const [, test] = await p
         expect(test).to.be.an('object')
         expect(test.atPreload).to.be.an('array')
         expect(test.atLoad).to.be.an('array')
@@ -1410,8 +1430,9 @@ describe('BrowserWindow module', () => {
                 sandbox
               }
             })
+            const p = emittedOnce(ipcMain, 'remote')
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
-            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            const [, remote] = await p
             expect(remote).to.equal('object')
           })
 
@@ -1425,8 +1446,9 @@ describe('BrowserWindow module', () => {
                 enableRemoteModule: false
               }
             })
+            const p = emittedOnce(ipcMain, 'remote')
             w.loadFile(path.join(fixtures, 'api', 'blank.html'))
-            const [, remote] = await emittedOnce(ipcMain, 'remote')
+            const [, remote] = await p
             expect(remote).to.equal('undefined')
           })
         })
@@ -1515,7 +1537,6 @@ describe('BrowserWindow module', () => {
         })
         const htmlPath = path.join(fixtures, 'api', 'sandbox.html?exit-event')
         const pageUrl = 'file://' + htmlPath
-        w.loadURL(pageUrl)
         ipcMain.once('answer', function (event, url) {
           let expectedUrl = pageUrl
           if (process.platform === 'win32') {
@@ -1524,6 +1545,7 @@ describe('BrowserWindow module', () => {
           assert.strictEqual(url, expectedUrl)
           done()
         })
+        w.loadURL(pageUrl)
       })
 
       it('should open windows in same domain with cross-scripting enabled', (done) => {
@@ -1538,7 +1560,6 @@ describe('BrowserWindow module', () => {
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
         const htmlPath = path.join(fixtures, 'api', 'sandbox.html?window-open')
         const pageUrl = 'file://' + htmlPath
-        w.loadURL(pageUrl)
         w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
           let expectedUrl = pageUrl
           if (process.platform === 'win32') {
@@ -1553,6 +1574,7 @@ describe('BrowserWindow module', () => {
             done()
           })
         })
+        w.loadURL(pageUrl)
       })
 
       it('should open windows in another domain with cross-scripting disabled', async () => {
@@ -1565,24 +1587,27 @@ describe('BrowserWindow module', () => {
         })
 
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
+        const browserWindowCreated = emittedOnce(app, 'browser-window-created')
+        const childLoaded = emittedOnce(ipcMain, 'child-loaded')
         w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'window-open-external' })
         const expectedPopupUrl = 'http://www.google.com/#q=electron' // Set in the "sandbox.html".
 
         // The page is going to open a popup that it won't be able to close.
         // We have to close it from here later.
         // XXX(alexeykuzmin): It will leak if the test fails too soon.
-        const [, popupWindow] = await emittedOnce(app, 'browser-window-created')
+        const [, popupWindow] = await browserWindowCreated
 
         // Wait for a message from the popup's preload script.
-        const [, openerIsNull, html, locationHref] = await emittedOnce(ipcMain, 'child-loaded')
+        const [, openerIsNull, html, locationHref] = await childLoaded
         expect(openerIsNull).to.be.true('window.opener is not null')
         expect(html).to.equal(`<h1>${expectedPopupUrl}</h1>`,
           'looks like a http: request has not been intercepted locally')
         expect(locationHref).to.equal(expectedPopupUrl)
 
         // Ask the page to access the popup.
+        const answer = emittedOnce(ipcMain, 'answer')
         w.webContents.send('touch-the-popup')
-        const [, exceptionMessage] = await emittedOnce(ipcMain, 'answer')
+        const [, exceptionMessage] = await answer
 
         // We don't need the popup anymore, and its parent page can't close it,
         // so let's close it from here before we run any checks.
@@ -1691,43 +1716,6 @@ describe('BrowserWindow module', () => {
             'dom-ready'
           ], done)
           w.loadFile(path.join(fixtures, 'api', 'sandbox.html'), { search: 'webcontents-events' })
-        })
-      })
-
-      it('can get printer list', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true,
-            preload: preload
-          }
-        })
-        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-        w.webContents.once('did-finish-load', () => {
-          const printers = w.webContents.getPrinters()
-          assert.strictEqual(Array.isArray(printers), true)
-          done()
-        })
-      })
-
-      it('can print to PDF', (done) => {
-        w.destroy()
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            sandbox: true,
-            preload: preload
-          }
-        })
-        w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.printToPDF({}, function (error, data) {
-            assert.strictEqual(error, null)
-            assert.strictEqual(data instanceof Buffer, true)
-            assert.notStrictEqual(data.length, 0)
-            done()
-          })
         })
       })
 
@@ -1851,7 +1839,6 @@ describe('BrowserWindow module', () => {
           assert.strictEqual(test.platform, remote.process.platform)
           assert.deepStrictEqual(...resolveGetters(test.env, remote.process.env))
           assert.strictEqual(test.execPath, remote.process.helperExecPath)
-          assert.strictEqual(test.resourcesPath, remote.process.resourcesPath)
           assert.strictEqual(test.sandboxed, true)
           assert.strictEqual(test.type, 'renderer')
           assert.strictEqual(test.version, remote.process.version)
@@ -1880,10 +1867,12 @@ describe('BrowserWindow module', () => {
             webviewTag: true
           }
         })
+        const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview')
+        const webviewDomReady = emittedOnce(ipcMain, 'webview-dom-ready')
         w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'))
 
-        const [, webContents] = await emittedOnce(w.webContents, 'did-attach-webview')
-        const [, id] = await emittedOnce(ipcMain, 'webview-dom-ready')
+        const [, webContents] = await didAttachWebview
+        const [, id] = await webviewDomReady
         expect(webContents.id).to.equal(id)
       })
     })
@@ -3217,13 +3206,13 @@ describe('BrowserWindow module', () => {
 
       showLastDevToolsPanel()
 
-      w.loadURL('about:blank')
-      w.webContents.openDevTools({ mode: 'bottom' })
-
       ipcMain.once('answer', function (event, message) {
         assert.strictEqual(message.runtimeId, 'foo')
         done()
       })
+
+      w.loadURL('about:blank')
+      w.webContents.openDevTools({ mode: 'bottom' })
     })
 
     it('serializes the registered extensions on quit', () => {
@@ -3437,32 +3426,39 @@ describe('BrowserWindow module', () => {
     })
 
     it('separates the page context from the Electron/preload context', async () => {
+      const p = emittedOnce(ipcMain, 'isolated-world')
       iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      const [, data] = await p
       assert.deepStrictEqual(data, expectedContextData)
     })
     it('recreates the contexts on reload', async () => {
+      const loaded = emittedOnce(iw.webContents, 'did-finish-load')
       iw.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      await emittedOnce(iw.webContents, 'did-finish-load')
+      await loaded
+      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
       iw.webContents.reload()
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      const [, data] = await isolatedWorld
       assert.deepStrictEqual(data, expectedContextData)
     })
     it('enables context isolation on child windows', async () => {
+      const browserWindowCreated = emittedOnce(app, 'browser-window-created')
       iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
-      const [, window] = await emittedOnce(app, 'browser-window-created')
+      const [, window] = await browserWindowCreated
       assert.ok(window.webContents.getLastWebPreferences().contextIsolation)
     })
     it('separates the page context from the Electron/preload context with sandbox on', async () => {
+      const p = emittedOnce(ipcMain, 'isolated-world')
       ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      const [, data] = await p
       assert.deepStrictEqual(data, expectedContextData)
     })
     it('recreates the contexts on reload with sandbox on', async () => {
+      const loaded = emittedOnce(ws.webContents, 'did-finish-load')
       ws.loadFile(path.join(fixtures, 'api', 'isolated.html'))
-      await emittedOnce(ws.webContents, 'did-finish-load')
+      await loaded
+      const isolatedWorld = emittedOnce(ipcMain, 'isolated-world')
       ws.webContents.reload()
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      const [, data] = await isolatedWorld
       assert.deepStrictEqual(data, expectedContextData)
     })
     it('supports fetch api', async () => {
@@ -3473,12 +3469,14 @@ describe('BrowserWindow module', () => {
           preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
         }
       })
+      const p = emittedOnce(ipcMain, 'isolated-fetch-error')
       fetchWindow.loadURL('about:blank')
-      const [, error] = await emittedOnce(ipcMain, 'isolated-fetch-error')
+      const [, error] = await p
       fetchWindow.destroy()
       assert.strictEqual(error, 'Failed to fetch')
     })
     it('doesn\'t break ipc serialization', async () => {
+      const p = emittedOnce(ipcMain, 'isolated-world')
       iw.loadURL('about:blank')
       iw.webContents.executeJavaScript(`
         const opened = window.open()
@@ -3486,7 +3484,7 @@ describe('BrowserWindow module', () => {
         opened.close()
         window.postMessage({openedLocation}, '*')
       `)
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world')
+      const [, data] = await p
       assert.strictEqual(data.pageContext.openedLocation, '')
     })
   })

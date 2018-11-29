@@ -39,8 +39,7 @@ class Archive : public mate::Wrappable<Archive> {
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("getFd", &Archive::GetFD)
-        .SetMethod("destroy", &Archive::Destroy);
+        .SetMethod("getFd", &Archive::GetFD);
   }
 
  protected:
@@ -113,9 +112,6 @@ class Archive : public mate::Wrappable<Archive> {
     return archive_->GetFD();
   }
 
-  // Free the resources used by archive.
-  void Destroy() { archive_.reset(); }
-
  private:
   std::unique_ptr<asar::Archive> archive_;
 
@@ -126,9 +122,10 @@ void InitAsarSupport(v8::Isolate* isolate,
                      v8::Local<v8::Value> process,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
-  v8::Local<v8::Script> asar_init =
-      v8::Script::Compile(node::asar_init_value.ToStringChecked(isolate));
-  v8::Local<v8::Value> result = asar_init->Run();
+  auto context = isolate->GetCurrentContext();
+  auto source = node::asar_init_value.ToStringChecked(isolate);
+  auto asar_init = v8::Script::Compile(context, source).ToLocalChecked();
+  auto result = asar_init->Run(context).ToLocalChecked();
 
   // Initialize asar support.
   if (result->IsFunction()) {

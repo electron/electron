@@ -10,6 +10,7 @@ const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
+const { emittedOnce } = require('./events-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
@@ -51,6 +52,30 @@ describe('chromium feature', () => {
 
       it('should set the locale', (done) => testLocale('fr', 'fr', done))
       it('should not set an invalid locale', (done) => testLocale('asdfkl', currentLocale, done))
+    })
+
+    describe('--remote-debugging-port switch', () => {
+      it('should display the discovery page', (done) => {
+        const electronPath = remote.getGlobal('process').execPath
+        let output = ''
+        const appProcess = ChildProcess.spawn(electronPath, [`--remote-debugging-port=`])
+
+        appProcess.stderr.on('data', (data) => {
+          output += data
+          const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output)
+          if (m) {
+            appProcess.stderr.removeAllListeners('data')
+            const port = m[1]
+            http.get(`http://127.0.0.1:${port}`, (res) => {
+              res.destroy()
+              appProcess.kill()
+              expect(res.statusCode).to.eql(200)
+              expect(parseInt(res.headers['content-length'])).to.be.greaterThan(0)
+              done()
+            })
+          }
+        })
+      })
     })
   })
 
@@ -937,6 +962,20 @@ describe('chromium feature', () => {
   })
 
   describe('storage', () => {
+    describe('DOM storage quota override', () => {
+      ['localStorage', 'sessionStorage'].forEach((storageName) => {
+        it(`allows saving at least 50MiB in ${storageName}`, () => {
+          const storage = window[storageName]
+          const testKeyName = '_electronDOMStorageQuotaOverrideTest'
+          // 25 * 2^20 UTF-16 characters will require 50MiB
+          const arraySize = 25 * Math.pow(2, 20)
+          storage[testKeyName] = new Array(arraySize).fill('X').join('')
+          expect(storage[testKeyName]).to.have.lengthOf(arraySize)
+          delete storage[testKeyName]
+        })
+      })
+    })
+
     it('requesting persitent quota works', (done) => {
       navigator.webkitPersistentStorage.requestQuota(1024 * 1024, (grantedBytes) => {
         assert.strictEqual(grantedBytes, 1048576)
@@ -1310,5 +1349,61 @@ describe('chromium feature', () => {
 
       await new Promise((resolve) => { utter.onend = resolve })
     })
+  })
+})
+
+describe('font fallback', () => {
+  async function getRenderedFonts (html) {
+    const w = new BrowserWindow({ show: false })
+    try {
+      const loaded = emittedOnce(w.webContents, 'did-finish-load')
+      w.loadURL(`data:text/html,${html}`)
+      await loaded
+      w.webContents.debugger.attach()
+      const sendCommand = (...args) => new Promise((resolve, reject) => {
+        w.webContents.debugger.sendCommand(...args, (e, r) => {
+          if (e) { reject(e) } else { resolve(r) }
+        })
+      })
+      const { nodeId } = (await sendCommand('DOM.getDocument')).root.children[0]
+      await sendCommand('CSS.enable')
+      const { fonts } = await sendCommand('CSS.getPlatformFontsForNode', { nodeId })
+      return fonts
+    } finally {
+      w.close()
+    }
+  }
+
+  it('should use Helvetica for sans-serif on Mac, and Arial on Windows and Linux', async () => {
+    const html = `<body style="font-family: sans-serif">test</body>`
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    expect(fonts[0].familyName).to.equal({
+      'win32': 'Arial',
+      'darwin': 'Helvetica',
+      'linux': 'DejaVu Sans' // I think this depends on the distro? We don't specify a default.
+    }[process.platform])
+  })
+
+  it('should fall back to Japanese font for sans-serif Japanese script', async function () {
+    if (process.platform === 'linux') {
+      return this.skip()
+    }
+    const html = `
+    <html lang="ja-JP">
+      <head>
+        <meta charset="utf-8" />
+      </head>
+      <body style="font-family: sans-serif">test 智史</body>
+    </html>
+    `
+    const fonts = await getRenderedFonts(html)
+    expect(fonts).to.be.an('array')
+    expect(fonts).to.have.length(1)
+    expect(fonts[0].familyName).to.equal({
+      'win32': 'Meiryo',
+      'darwin': 'Hiragino Kaku Gothic ProN'
+    }[process.platform])
   })
 })

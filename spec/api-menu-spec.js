@@ -742,4 +742,46 @@ describe('Menu module', () => {
       expect(Menu.getApplicationMenu()).to.be.null()
     })
   })
+
+  describe('menu accelerators', () => {
+    let testFn = it
+    try {
+      // We have other tests that check if native modules work, if we fail to require
+      // robotjs let's skip this test to avoid false negatives
+      require('robotjs')
+    } catch (err) {
+      testFn = it.skip
+    }
+    const sendRobotjsKey = (key, modifiers = [], delay = 500) => {
+      return new Promise((resolve, reject) => {
+        require('robotjs').keyTap(key, modifiers)
+        setTimeout(() => {
+          resolve()
+        }, delay)
+      })
+    }
+
+    testFn('menu accelerators perform the specified action', async () => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'Test',
+          submenu: [
+            {
+              label: 'Test Item',
+              accelerator: 'Ctrl+T',
+              click: () => {
+                // Test will succeed, only when the menu accelerator action
+                // is triggered
+                Promise.resolve()
+              },
+              id: 'test'
+            }
+          ]
+        }
+      ])
+      Menu.setApplicationMenu(menu)
+      expect(Menu.getApplicationMenu()).to.not.be.null()
+      await sendRobotjsKey('t', 'control')
+    })
+  })
 })

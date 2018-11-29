@@ -1,7 +1,11 @@
 'use strict'
 
+const assert = require('assert')
 const chai = require('chai')
+const ChildProcess = require('child_process')
 const dirtyChai = require('dirty-chai')
+const path = require('path')
+const { emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
 
 const { remote } = require('electron')
@@ -11,6 +15,8 @@ const { expect } = chai
 chai.use(dirtyChai)
 
 describe('BrowserView module', () => {
+  const fixtures = path.resolve(__dirname, 'fixtures')
+
   let w = null
   let view = null
 
@@ -170,6 +176,31 @@ describe('BrowserView module', () => {
       const views = BrowserView.getAllViews()
       expect(views).to.be.an('array').that.has.lengthOf(1)
       expect(views[0].webContents.id).to.equal(view.webContents.id)
+    })
+  })
+
+  describe('new BrowserView()', () => {
+    it('does not crash on exit', async () => {
+      const appPath = path.join(fixtures, 'api', 'leak-exit-browserview.js')
+      const electronPath = remote.getGlobal('process').execPath
+      const appProcess = ChildProcess.spawn(electronPath, [appPath])
+      const [code] = await emittedOnce(appProcess, 'close')
+      expect(code).to.equal(0)
+    })
+  })
+
+  describe('window.open()', () => {
+    it('works in BrowserView', (done) => {
+      view = new BrowserView()
+      w.setBrowserView(view)
+      view.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
+        e.preventDefault()
+        assert.strictEqual(url, 'http://host/')
+        assert.strictEqual(frameName, 'host')
+        assert.strictEqual(additionalFeatures[0], 'this-is-not-a-standard-feature')
+        done()
+      })
+      view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
     })
   })
 })

@@ -21,6 +21,7 @@
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
 #include "atom/browser/atom_speech_recognition_manager_delegate.h"
 #include "atom/browser/child_web_contents_tracker.h"
+#include "atom/browser/font_defaults.h"
 #include "atom/browser/io_thread.h"
 #include "atom/browser/media/media_capture_devices_dispatcher.h"
 #include "atom/browser/native_window.h"
@@ -44,7 +45,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/printing/printing_message_filter.h"
+#include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/client_certificate_delegate.h"
@@ -95,7 +96,9 @@
 #endif  // BUILDFLAG(ENABLE_TTS)
 
 #if BUILDFLAG(ENABLE_PRINTING)
+#include "chrome/browser/printing/printing_message_filter.h"
 #include "chrome/services/printing/public/mojom/constants.mojom.h"
+#include "components/services/pdf_compositor/public/interfaces/pdf_compositor.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 using content::BrowserThread;
@@ -220,28 +223,34 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
 void AtomBrowserClient::AddProcessPreferences(
     int process_id,
     AtomBrowserClient::ProcessPreferences prefs) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   process_preferences_[process_id] = prefs;
 }
 
 void AtomBrowserClient::RemoveProcessPreferences(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   process_preferences_.erase(process_id);
 }
 
 bool AtomBrowserClient::IsProcessObserved(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   return process_preferences_.find(process_id) != process_preferences_.end();
 }
 
 bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.sandbox;
 }
 
 bool AtomBrowserClient::RendererUsesNativeWindowOpen(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.native_window_open;
 }
 
 bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
+  base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.disable_popups;
 }
@@ -255,7 +264,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     return;
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  host->AddFilter(new printing::PrintingMessageFilter(process_id));
+  host->AddFilter(new printing::PrintingMessageFilter(
+      process_id, host->GetBrowserContext()));
 #endif
 
 #if BUILDFLAG(ENABLE_TTS)
@@ -270,6 +280,8 @@ void AtomBrowserClient::RenderProcessWillLaunch(
     prefs.native_window_open =
         web_preferences->IsEnabled(options::kNativeWindowOpen);
     prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
+    prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
+                                                    true /* default value */);
   }
   AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
@@ -300,6 +312,8 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
+
+  SetFontDefaults(prefs);
 
   // Custom preferences of guest page.
   auto* web_contents = content::WebContents::FromRenderViewHost(host);
@@ -589,6 +603,10 @@ void AtomBrowserClient::RegisterOutOfProcessServices(
                           IDS_UTILITY_PROCESS_PROXY_RESOLVER_NAME);
 
 #if BUILDFLAG(ENABLE_PRINTING)
+  (*services)[printing::mojom::kServiceName] =
+      base::BindRepeating(&l10n_util::GetStringUTF16,
+                          IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME);
+
   (*services)[printing::mojom::kChromePrintingServiceName] =
       base::BindRepeating(&l10n_util::GetStringUTF16,
                           IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME);
@@ -612,7 +630,7 @@ std::unique_ptr<base::Value> AtomBrowserClient::GetServiceManifestOverlay(
 }
 
 net::NetLog* AtomBrowserClient::GetNetLog() {
-  return AtomBrowserMainParts::Get()->net_log();
+  return g_browser_process->net_log();
 }
 
 content::BrowserMainParts* AtomBrowserClient::CreateBrowserMainParts(
@@ -751,6 +769,28 @@ base::FilePath AtomBrowserClient::GetDefaultDownloadDirectory() {
     path = path.Append(FILE_PATH_LITERAL("Downloads"));
 
   return path;
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserClient::GetSystemSharedURLLoaderFactory() {
+  if (!g_browser_process)
+    return nullptr;
+  return g_browser_process->shared_url_loader_factory();
+}
+
+void AtomBrowserClient::OnNetworkServiceCreated(
+    network::mojom::NetworkService* network_service) {
+  if (!g_browser_process)
+    return;
+  g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
+      network_service);
+}
+
+bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) {
+  // This is called on the network thread.
+  base::AutoLock auto_lock(process_preferences_lock_);
+  auto it = process_preferences_.find(render_process_id);
+  return it != process_preferences_.end() && !it->second.web_security;
 }
 
 std::string AtomBrowserClient::GetApplicationLocale() {

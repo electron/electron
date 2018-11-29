@@ -123,8 +123,7 @@ const setDefaultApplicationMenu = () => {
           type: 'separator'
         },
         {
-          role: 'services',
-          submenu: []
+          role: 'services'
         },
         {
           type: 'separator'

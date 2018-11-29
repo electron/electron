@@ -263,7 +263,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   }
 
   gfx::Size size() const { return size_; }
-  float scale_factor() const { return scale_factor_; }
 
   void set_popup_host_view(OffScreenRenderWidgetHostView* popup_view) {
     popup_host_view_ = popup_view;
@@ -310,7 +309,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   base::Time last_time_ = base::Time::Now();
 
-  float scale_factor_;
   gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;

@@ -17,6 +17,7 @@
 #include "atom/browser/atom_browser_main_parts.h"
 #include "atom/browser/atom_javascript_dialog_manager.h"
 #include "atom/browser/atom_navigation_throttle.h"
+#include "atom/browser/browser.h"
 #include "atom/browser/child_web_contents_tracker.h"
 #include "atom/browser/lib/bluetooth_chooser.h"
 #include "atom/browser/native_window.h"
@@ -79,7 +80,6 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
-#include "printing/buildflags/buildflags.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
@@ -101,39 +101,15 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "atom/browser/atom_print_preview_message_handler.h"
 #include "chrome/browser/printing/print_view_manager_basic.h"
+#include "components/printing/common/print_messages.h"
 #endif
 
 #include "atom/common/node_includes.h"
 
-namespace {
-
-struct PrintSettings {
-  bool silent;
-  bool print_background;
-  base::string16 device_name;
-};
-
-}  // namespace
-
 namespace mate {
 
-template <>
-struct Converter<PrintSettings> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     PrintSettings* out) {
-    mate::Dictionary dict;
-    if (!ConvertFromV8(isolate, val, &dict))
-      return false;
-    dict.Get("silent", &(out->silent));
-    dict.Get("printBackground", &(out->print_background));
-    dict.Get("deviceName", &(out->device_name));
-    return true;
-  }
-};
-
+#if BUILDFLAG(ENABLE_PRINTING)
 template <>
 struct Converter<printing::PrinterBasicInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -147,6 +123,7 @@ struct Converter<printing::PrinterBasicInfo> {
     return dict.GetHandle();
   }
 };
+#endif
 
 template <>
 struct Converter<WindowOpenDisposition> {
@@ -278,12 +255,12 @@ content::ServiceWorkerContext* GetServiceWorkerContext(
 }
 
 // Called when CapturePage is done.
-void OnCapturePageDone(const base::Callback<void(const gfx::Image&)>& callback,
+void OnCapturePageDone(scoped_refptr<util::Promise> promise,
                        const SkBitmap& bitmap) {
   // Hack to enable transparency in captured image
   // TODO(nitsakh) Remove hack once fixed in chromium
   const_cast<SkBitmap&>(bitmap).setAlphaType(kPremul_SkAlphaType);
-  callback.Run(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise->Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
 }  // namespace
@@ -493,14 +470,25 @@ WebContents::~WebContents() {
     RenderViewDeleted(web_contents()->GetRenderViewHost());
 
     if (type_ == WEB_VIEW) {
+      // For webview simply destroy the WebContents immediately.
+      // TODO(zcbenz): Add an internal API for webview instead of using
+      // destroy(), so we don't have to add a special branch here.
+      DestroyWebContents(false /* async */);
+    } else if (type_ == BROWSER_WINDOW && owner_window()) {
+      // For BrowserWindow we should close the window and clean up everything
+      // before WebContents is destroyed.
+      for (ExtendedWebContentsObserver& observer : observers_)
+        observer.OnCloseContents();
+      // BrowserWindow destroys WebContents asynchronously, manually emit the
+      // destroyed event here.
+      WebContentsDestroyed();
+    } else if (Browser::Get()->is_shutting_down()) {
+      // Destroy WebContents directly when app is shutting down.
       DestroyWebContents(false /* async */);
     } else {
-      if (type_ == BROWSER_WINDOW && owner_window()) {
-        for (ExtendedWebContentsObserver& observer : observers_)
-          observer.OnCloseContents();
-      } else {
-        DestroyWebContents(true /* async */);
-      }
+      // Destroy WebContents asynchronously unless app is shutting down,
+      // because destroy() might be called inside WebContents's event handler.
+      DestroyWebContents(true /* async */);
       // The WebContentsDestroyed will not be called automatically because we
       // destroy the webContents in the next tick. So we have to manually
       // call it here to make sure "destroyed" event is emitted.
@@ -567,6 +555,7 @@ void WebContents::AddNewContents(
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name)) {
+    // TODO(zcbenz): Can we make this sync?
     api_web_contents->DestroyWebContents(true /* async */);
   }
 }
@@ -1318,14 +1307,16 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   if (type_ == WEB_VIEW || !owner_window()) {
     state = "detach";
   }
+  bool activate = true;
   if (args && args->Length() == 1) {
     mate::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
+      options.Get("activate", &activate);
     }
   }
   managed_web_contents()->SetDockState(state);
-  managed_web_contents()->ShowDevTools();
+  managed_web_contents()->ShowDevTools(activate);
 }
 
 void WebContents::CloseDevTools() {
@@ -1469,50 +1460,58 @@ bool WebContents::IsCurrentlyAudible() {
   return web_contents()->IsCurrentlyAudible();
 }
 
-void WebContents::Print(mate::Arguments* args) {
 #if BUILDFLAG(ENABLE_PRINTING)
-  PrintSettings settings = {false, false, base::string16()};
-  if (args->Length() >= 1 && !args->GetNext(&settings)) {
-    args->ThrowError();
+void WebContents::Print(mate::Arguments* args) {
+  bool silent, print_background = false;
+  base::string16 device_name;
+  mate::Dictionary options = mate::Dictionary::CreateEmpty(args->isolate());
+  base::DictionaryValue settings;
+  if (args->Length() >= 1 && !args->GetNext(&options)) {
+    args->ThrowError("Invalid print settings specified");
     return;
   }
-  auto* print_view_manager_basic_ptr =
-      printing::PrintViewManagerBasic::FromWebContents(web_contents());
-  if (args->Length() == 2) {
-    base::Callback<void(bool)> callback;
-    if (!args->GetNext(&callback)) {
-      args->ThrowError();
-      return;
-    }
-    print_view_manager_basic_ptr->SetCallback(callback);
+  printing::CompletionCallback callback;
+  if (args->Length() == 2 && !args->GetNext(&callback)) {
+    args->ThrowError("Invalid optional callback provided");
+    return;
   }
-  print_view_manager_basic_ptr->PrintNow(
-      web_contents()->GetMainFrame(), settings.silent,
-      settings.print_background, settings.device_name);
-#else
-  LOG(ERROR) << "Printing is disabled";
-#endif
+  options.Get("silent", &silent);
+  options.Get("printBackground", &print_background);
+  if (options.Get("deviceName", &device_name) && !device_name.empty()) {
+    settings.SetString(printing::kSettingDeviceName, device_name);
+  }
+  auto* print_view_manager =
+      printing::PrintViewManagerBasic::FromWebContents(web_contents());
+  auto* focused_frame = web_contents()->GetFocusedFrame();
+  auto* rfh = focused_frame && focused_frame->HasSelection()
+                  ? focused_frame
+                  : web_contents()->GetMainFrame();
+  print_view_manager->PrintNow(
+      rfh,
+      std::make_unique<PrintMsg_PrintPages>(rfh->GetRoutingID(), silent,
+                                            print_background, settings),
+      std::move(callback));
 }
 
 std::vector<printing::PrinterBasicInfo> WebContents::GetPrinterList() {
   std::vector<printing::PrinterBasicInfo> printers;
-
-#if BUILDFLAG(ENABLE_PRINTING)
   auto print_backend = printing::PrintBackend::CreateInstance(nullptr);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
-  print_backend->EnumeratePrinters(&printers);
-#endif
-
+  {
+    // TODO(deepak1556): Deprecate this api in favor of an
+    // async version and post a non blocing task call.
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    print_backend->EnumeratePrinters(&printers);
+  }
   return printers;
 }
 
-void WebContents::PrintToPDF(const base::DictionaryValue& setting,
-                             const PrintToPDFCallback& callback) {
-#if BUILDFLAG(ENABLE_PRINTING)
-  AtomPrintPreviewMessageHandler::FromWebContents(web_contents())
-      ->PrintToPDF(setting, callback);
-#endif
+void WebContents::PrintToPDF(
+    const base::DictionaryValue& settings,
+    const PrintPreviewMessageHandler::PrintToPDFCallback& callback) {
+  PrintPreviewMessageHandler::FromWebContents(web_contents())
+      ->PrintToPDF(settings, callback);
 }
+#endif
 
 void WebContents::AddWorkSpace(mate::Arguments* args,
                                const base::FilePath& path) {
@@ -1757,21 +1756,17 @@ void WebContents::StartDrag(const mate::Dictionary& item,
   }
 }
 
-void WebContents::CapturePage(mate::Arguments* args) {
+v8::Local<v8::Promise> WebContents::CapturePage(mate::Arguments* args) {
   gfx::Rect rect;
-  base::Callback<void(const gfx::Image&)> callback;
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
-  if (!(args->Length() == 1 && args->GetNext(&callback)) &&
-      !(args->Length() == 2 && args->GetNext(&rect) &&
-        args->GetNext(&callback))) {
-    args->ThrowError();
-    return;
-  }
+  // get rect arguments if they exist
+  args->GetNext(&rect);
 
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view) {
-    callback.Run(gfx::Image());
-    return;
+    promise->Resolve(gfx::Image());
+    return promise->GetHandle();
   }
 
   // Capture full page if user doesn't specify a |rect|.
@@ -1790,7 +1785,8 @@ void WebContents::CapturePage(mate::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::BindOnce(&OnCapturePageDone, callback));
+                        base::BindOnce(&OnCapturePageDone, promise));
+  return promise->GetHandle();
 }
 
 void WebContents::OnCursorChange(const content::WebCursor& cursor) {
@@ -2131,9 +2127,11 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("unregisterServiceWorker",
                  &WebContents::UnregisterServiceWorker)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
-      .SetMethod("print", &WebContents::Print)
-      .SetMethod("getPrinters", &WebContents::GetPrinterList)
+#if BUILDFLAG(ENABLE_PRINTING)
+      .SetMethod("_print", &WebContents::Print)
+      .SetMethod("_getPrinters", &WebContents::GetPrinterList)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+#endif
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
       .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
       .SetMethod("showDefinitionForSelection",

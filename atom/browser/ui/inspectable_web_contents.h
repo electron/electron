@@ -47,7 +47,7 @@ class InspectableWebContents {
   virtual void ReleaseWebContents() = 0;
   virtual void SetDevToolsWebContents(content::WebContents* devtools) = 0;
   virtual void SetDockState(const std::string& state) = 0;
-  virtual void ShowDevTools() = 0;
+  virtual void ShowDevTools(bool activate) = 0;
   virtual void CloseDevTools() = 0;
   virtual bool IsDevToolsViewShowing() = 0;
   virtual void AttachTo(scoped_refptr<content::DevToolsAgentHost>) = 0;

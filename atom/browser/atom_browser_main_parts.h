@@ -20,10 +20,6 @@
 class BrowserProcess;
 class IconManager;
 
-namespace net_log {
-class ChromeNetLog;
-}
-
 #if defined(USE_AURA)
 namespace wm {
 class WMState;
@@ -34,7 +30,6 @@ namespace atom {
 
 class AtomBindings;
 class Browser;
-class IOThread;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeDebugger;
@@ -75,8 +70,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   IconManager* GetIconManager();
 
   Browser* browser() { return browser_.get(); }
-  IOThread* io_thread() const { return io_thread_.get(); }
-  net_log::ChromeNetLog* net_log() { return net_log_.get(); }
 
  protected:
   // content::BrowserMainParts:
@@ -134,8 +127,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<AtomBindings> atom_bindings_;
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<NodeDebugger> node_debugger_;
-  std::unique_ptr<IOThread> io_thread_;
-  std::unique_ptr<net_log::ChromeNetLog> net_log_;
   std::unique_ptr<IconManager> icon_manager_;
 
   base::RepeatingTimer gc_timer_;

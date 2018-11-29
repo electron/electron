@@ -182,6 +182,7 @@ class App : public AtomBrowserClient::Delegate,
 
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
+  std::string GetLocaleCountryCode();
   void OnSecondInstance(const base::CommandLine::StringVector& cmd,
                         const base::FilePath& cwd);
   bool HasSingleInstanceLock() const;

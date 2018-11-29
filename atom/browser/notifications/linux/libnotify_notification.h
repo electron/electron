@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/notifications/linux/libnotify_loader.h"
 #include "atom/browser/notifications/notification.h"
+#include "library_loaders/libnotify_loader.h"
 #include "ui/base/glib/glib_signal.h"
 
 namespace atom {

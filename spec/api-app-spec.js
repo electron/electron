@@ -122,6 +122,17 @@ describe('app module', () => {
     })
   })
 
+  describe('app.getLocaleCountryCode()', () => {
+    it('should be empty or have length of two', () => {
+      let expectedLength = 2
+      if (isCI && process.platform === 'linux') {
+        // Linux CI machines have no locale.
+        expectedLength = 0
+      }
+      expect(app.getLocaleCountryCode()).to.be.a('string').and.have.lengthOf(expectedLength)
+    })
+  })
+
   describe('app.isPackaged', () => {
     it('should be false durings tests', () => {
       expect(app.isPackaged).to.be.false()
@@ -484,6 +495,16 @@ describe('app module', () => {
         })
         done()
       }, delay)
+    })
+
+    it('correctly sets and unsets the LoginItem', function () {
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
+
+      app.setLoginItemSettings({ openAtLogin: true })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.true()
+
+      app.setLoginItemSettings({ openAtLogin: false })
+      expect(app.getLoginItemSettings().openAtLogin).to.be.false()
     })
 
     it('correctly sets and unsets the LoginItem as hidden', function () {

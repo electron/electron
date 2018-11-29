@@ -32,6 +32,7 @@
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_type.h"
+#include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/events/event_constants.h"
 #include "ui/gfx/canvas.h"
@@ -263,8 +264,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       transparent_(transparent),
       callback_(callback),
       frame_rate_(frame_rate),
-      scale_factor_(kDefaultScaleFactor),
-      size_(initial_size),
+      size_(native_window ? native_window->GetSize() : gfx::Size()),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       cursor_manager_(new content::CursorManager(this)),
@@ -281,7 +281,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   root_layer_.reset(new ui::Layer(ui::LAYER_SOLID_COLOR));
 #endif
 
-  current_device_scale_factor_ = 1;
+  current_device_scale_factor_ = kDefaultScaleFactor;
 
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
@@ -682,7 +682,7 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = 1.0;
+  screen_info->device_scale_factor = current_device_scale_factor_;
   screen_info->orientation_type =
       content::SCREEN_ORIENTATION_VALUES_LANDSCAPE_PRIMARY;
   screen_info->rect = gfx::Rect(size_);
@@ -715,7 +715,8 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize()
     const {
-  return gfx::ScaleToCeiledSize(GetRequestedRendererSize(), scale_factor_);
+  return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),
+                                current_device_scale_factor_);
 }
 
 content::RenderWidgetHostViewBase*
@@ -797,14 +798,15 @@ bool OffScreenRenderWidgetHostView::TransformPointToLocalCoordSpaceLegacy(
     gfx::PointF* transformed_point) {
   // Transformations use physical pixels rather than DIP, so conversion
   // is necessary.
-  gfx::PointF point_in_pixels = gfx::ConvertPointToPixel(scale_factor_, point);
+  gfx::PointF point_in_pixels =
+      gfx::ConvertPointToPixel(current_device_scale_factor_, point);
   if (!GetDelegatedFrameHost()->TransformPointToLocalCoordSpaceLegacy(
           point_in_pixels, original_surface, transformed_point)) {
     return false;
   }
 
   *transformed_point =
-      gfx::ConvertPointToDIP(scale_factor_, *transformed_point);
+      gfx::ConvertPointToDIP(current_device_scale_factor_, *transformed_point);
   return true;
 }
 
@@ -885,8 +887,8 @@ void OffScreenRenderWidgetHostView::RegisterGuestViewFrameSwappedCallback(
 
 void OffScreenRenderWidgetHostView::OnGuestViewFrameSwapped(
     content::RenderWidgetHostViewGuest* guest_host_view) {
-  InvalidateBounds(
-      gfx::ConvertRectToPixel(scale_factor_, guest_host_view->GetViewBounds()));
+  InvalidateBounds(gfx::ConvertRectToPixel(current_device_scale_factor_,
+                                           guest_host_view->GetViewBounds()));
 
   RegisterGuestViewFrameSwappedCallback(guest_host_view);
 }
@@ -947,23 +949,32 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
   } else {
     gfx::Rect damage(damage_rect);
 
-    gfx::Size size = GetViewBounds().size();
+    gfx::Size size_in_pixels = gfx::ConvertSizeToPixel(
+        current_device_scale_factor_, GetViewBounds().size());
+
     SkBitmap backing;
-    backing.allocN32Pixels(size.width(), size.height(), false);
+    backing.allocN32Pixels(size_in_pixels.width(), size_in_pixels.height(),
+                           false);
     SkCanvas canvas(backing);
 
     canvas.writePixels(bitmap, 0, 0);
 
     if (popup_host_view_ && popup_bitmap_.get()) {
-      gfx::Rect pos = popup_host_view_->popup_position_;
-      damage.Union(pos);
-      canvas.writePixels(*popup_bitmap_.get(), pos.x(), pos.y());
+      gfx::Rect rect = popup_host_view_->popup_position_;
+      gfx::Point origin_in_pixels =
+          gfx::ConvertPointToPixel(current_device_scale_factor_, rect.origin());
+      damage.Union(rect);
+      canvas.writePixels(*popup_bitmap_.get(), origin_in_pixels.x(),
+                         origin_in_pixels.y());
     }
 
     for (auto* proxy_view : proxy_views_) {
-      gfx::Rect pos = proxy_view->GetBounds();
-      damage.Union(pos);
-      canvas.writePixels(*proxy_view->GetBitmap(), pos.x(), pos.y());
+      gfx::Rect rect = proxy_view->GetBounds();
+      gfx::Point origin_in_pixels =
+          gfx::ConvertPointToPixel(current_device_scale_factor_, rect.origin());
+      damage.Union(rect);
+      canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
+                         origin_in_pixels.y());
     }
 
     damage.Intersect(GetViewBounds());
@@ -1231,8 +1242,13 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
-  const float compositorScaleFactor = GetCompositor()->device_scale_factor();
-  const bool scaleFactorDidChange = (compositorScaleFactor != scale_factor_);
+  display::Display display =
+      display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
+  const float scaleFactor = display.device_scale_factor();
+  const bool scaleFactorDidChange =
+      (scaleFactor != current_device_scale_factor_);
+
+  current_device_scale_factor_ = scaleFactor;
 
   gfx::Size size;
   if (!IsPopupWidget())
@@ -1245,12 +1261,12 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
     return;
 
   const gfx::Size& size_in_pixels =
-      gfx::ConvertSizeToPixel(scale_factor_, size);
+      gfx::ConvertSizeToPixel(current_device_scale_factor_, size);
 
   local_surface_id_ = local_surface_id_allocator_.GenerateId();
 
   GetRootLayer()->SetBounds(gfx::Rect(size));
-  GetCompositor()->SetScaleAndSize(scale_factor_, size_in_pixels,
+  GetCompositor()->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
                                    local_surface_id_);
 
 #if defined(OS_MACOSX)

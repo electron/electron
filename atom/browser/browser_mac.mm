@@ -278,7 +278,9 @@ void RemoveFromLoginItems() {
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 #if defined(MAS_BUILD)
-  platform_util::SetLoginItemEnabled(settings.open_at_login);
+  if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
+    LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
+  }
 #else
   if (settings.open_at_login)
     base::mac::AddToLoginItems(settings.open_as_hidden);
@@ -392,13 +394,12 @@ void Browser::ShowAboutPanel() {
 void Browser::SetAboutPanelOptions(const base::DictionaryValue& options) {
   about_panel_options_.Clear();
 
-  // Upper case option keys for orderFrontStandardAboutPanelWithOptions format
-  for (base::DictionaryValue::Iterator iter(options); !iter.IsAtEnd();
-       iter.Advance()) {
-    std::string key = iter.key();
-    if (!key.empty() && iter.value().is_string()) {
+  for (const auto& pair : options) {
+    std::string key = pair.first;
+    const auto& val = pair.second;
+    if (!key.empty() && val->is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.SetString(key, iter.value().GetString());
+      about_panel_options_.SetString(key, val->GetString());
     }
   }
 }

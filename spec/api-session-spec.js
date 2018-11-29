@@ -1,14 +1,17 @@
 const assert = require('assert')
+const chai = require('chai')
 const http = require('http')
 const https = require('https')
 const path = require('path')
 const fs = require('fs')
 const send = require('send')
 const auth = require('basic-auth')
+const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
 
 const { ipcRenderer, remote } = require('electron')
 const { ipcMain, session, BrowserWindow, net } = remote
+const { expect } = chai
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -210,6 +213,33 @@ describe('session module', () => {
           })
         })
       })
+    })
+
+    it('should survive an app restart for persistent partition', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app')
+      const electronPath = remote.getGlobal('process').execPath
+
+      const test = (result, phase) => {
+        return new Promise((resolve, reject) => {
+          let output = ''
+
+          const appProcess = ChildProcess.spawn(
+            electronPath,
+            [appPath],
+            { env: { PHASE: phase, ...process.env } }
+          )
+
+          appProcess.stdout.on('data', (data) => { output += data })
+          appProcess.stdout.on('end', () => {
+            output = output.replace(/(\r\n|\n|\r)/gm, '')
+            assert.strictEqual(output, result)
+            resolve()
+          })
+        })
+      }
+
+      await test('011', 'one')
+      await test('110', 'two')
     })
   })
 
@@ -416,6 +446,38 @@ describe('session module', () => {
           assert.strictEqual(receivedBytes, 0)
           assert.strictEqual(totalBytes, mockPDF.length)
           assert.strictEqual(disposition, contentDisposition)
+          done()
+        })
+      })
+    })
+
+    it('can set options for the save dialog', (done) => {
+      downloadServer.listen(0, '127.0.0.1', () => {
+        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf')
+        const port = downloadServer.address().port
+        const options = {
+          window: null,
+          title: 'title',
+          message: 'message',
+          buttonLabel: 'buttonLabel',
+          nameFieldLabel: 'nameFieldLabel',
+          defaultPath: '/',
+          filters: [{
+            name: '1', extensions: ['.1', '.2']
+          }, {
+            name: '2', extensions: ['.3', '.4', '.5']
+          }],
+          showsTagField: true,
+          securityScopedBookmarks: true
+        }
+
+        ipcRenderer.sendSync('set-download-option', true, false, filePath, options)
+        w.webContents.downloadURL(`${url}:${port}`)
+        ipcRenderer.once('download-done', (event, state, url,
+          mimeType, receivedBytes,
+          totalBytes, disposition,
+          filename, savePath, dialogOptions) => {
+          expect(dialogOptions).to.deep.equal(options)
           done()
         })
       })
@@ -697,7 +759,7 @@ describe('session module', () => {
         const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`
         const callback = (event, state, url, mimeType,
           receivedBytes, totalBytes, disposition,
-          filename, savePath, urlChain,
+          filename, savePath, dialogOptions, urlChain,
           lastModifiedTime, eTag) => {
           if (state === 'cancelled') {
             const options = {
