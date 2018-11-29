@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/logging.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
 #include "native_mate/dictionary.h"
@@ -46,11 +47,9 @@ void NodeDebugger::Start() {
       node::options_parser::kDisallowedInEnvironment, &errors);
 
   if (!errors.empty()) {
-    std::string error_str;
-    for (const auto& error : errors)
-      error_str += error;
     // TODO(jeremy): what's the appropriate behaviour here?
-    LOG(ERROR) << "Error parsing node options: " << error_str;
+    LOG(ERROR) << "Error parsing node options: "
+               << base::JoinString(errors, " ");
   }
 
   // Set process._debugWaitConnect if --inspect-brk was specified to stop
