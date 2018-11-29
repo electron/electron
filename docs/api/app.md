@@ -1225,12 +1225,6 @@ Enables full sandbox mode on the app.
 
 This method can only be called before app is ready.
 
-### `app.enableMixedSandbox()` _Experimental_ _macOS_ _Windows_
-
-Enables mixed sandbox mode on the app.
-
-This method can only be called before app is ready.
-
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the application is currently running from the
