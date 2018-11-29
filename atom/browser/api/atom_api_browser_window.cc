@@ -20,6 +20,7 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "ui/gl/gpu_switching_manager.h"
 
@@ -311,7 +312,7 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
 
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
                                 v8::Local<v8::Value> value) {
-  std::string type = mate::V8ToString(value);
+  std::string type = gin::V8ToString(isolate, value);
 
   auto* render_view_host = web_contents()->GetRenderViewHost();
   if (render_view_host) {

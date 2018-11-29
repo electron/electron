@@ -19,6 +19,7 @@
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
 #include "content/public/renderer/render_frame.h"
+#include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -52,7 +53,7 @@ v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
     global.SetHidden(kModuleCacheKey, cache);
   }
 
-  return cache->ToObject();
+  return cache->ToObject(isolate);
 }
 
 // adapted from node.cc
@@ -60,7 +61,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key,
                                 mate::Arguments* margs) {
   v8::Local<v8::Object> exports;
-  std::string module_key = mate::V8ToString(key);
+  std::string module_key = gin::V8ToString(isolate, key);
   mate::Dictionary cache(isolate, GetModuleCache(isolate));
 
   if (cache.Get(module_key.c_str(), &exports)) {
@@ -83,6 +84,12 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 isolate->GetCurrentContext(), mod->nm_priv);
   cache.Set(module_key.c_str(), exports);
   return exports;
+}
+
+v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
+                                         v8::Local<v8::String> preloadSrc) {
+  return RendererClientBase::RunScript(isolate->GetCurrentContext(),
+                                       preloadSrc);
 }
 
 class AtomSandboxedRenderFrameObserver : public AtomRenderFrameObserver {
@@ -134,7 +141,7 @@ void AtomSandboxedRendererClient::InitializeBindings(
   auto* isolate = context->GetIsolate();
   mate::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
-  b.SetMethod("createPreloadScript", RunScript);
+  b.SetMethod("createPreloadScript", CreatePreloadScript);
 
   mate::Dictionary process = mate::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
@@ -184,12 +191,13 @@ void AtomSandboxedRendererClient::DidCreateScriptContext(
   std::string right = "\n})";
   // Compile the wrapper and run it to get the function object
   auto source = v8::String::Concat(
-      mate::ConvertToV8(isolate, left)->ToString(),
-      v8::String::Concat(node::preload_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString()));
+      isolate, mate::ConvertToV8(isolate, left)->ToString(isolate),
+      v8::String::Concat(isolate,
+                         node::preload_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString(isolate)));
   auto result = RunScript(context, source);
 
-  CHECK(result->IsFunction());
+  DCHECK(result->IsFunction());
   // Create and initialize the binding object
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context);
@@ -218,7 +226,7 @@ void AtomSandboxedRendererClient::InvokeIpcCallback(
     const std::string& callback_name,
     std::vector<v8::Handle<v8::Value>> args) {
   auto* isolate = context->GetIsolate();
-  auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString();
+  auto binding_key = mate::ConvertToV8(isolate, kIpcKey)->ToString(isolate);
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
   v8::Local<v8::Value> value;
@@ -226,8 +234,9 @@ void AtomSandboxedRendererClient::InvokeIpcCallback(
     return;
   if (value.IsEmpty() || !value->IsObject())
     return;
-  auto binding = value->ToObject();
-  auto callback_key = mate::ConvertToV8(isolate, callback_name)->ToString();
+  auto binding = value->ToObject(isolate);
+  auto callback_key =
+      mate::ConvertToV8(isolate, callback_name)->ToString(isolate);
   auto callback_value = binding->Get(callback_key);
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = v8::Handle<v8::Function>::Cast(callback_value);

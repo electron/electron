@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/strings/string_piece.h"
+#include "gin/converter.h"
 #include "v8/include/v8.h"
 
 namespace mate {
@@ -135,8 +136,6 @@ struct Converter<std::string> {
 
 v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
                                      const base::StringPiece& input);
-
-std::string V8ToString(v8::Local<v8::Value> value);
 
 template <>
 struct Converter<v8::Local<v8::Function>> {
@@ -276,13 +275,14 @@ struct Converter<std::map<std::string, T>> {
     if (!val->IsObject())
       return false;
 
-    v8::Local<v8::Object> dict = val->ToObject();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Object> dict = val->ToObject(context).ToLocalChecked();
     v8::Local<v8::Array> keys = dict->GetOwnPropertyNames();
     for (uint32_t i = 0; i < keys->Length(); ++i) {
       v8::Local<v8::Value> key = keys->Get(i);
       T value;
       if (Converter<T>::FromV8(isolate, dict->Get(key), &value))
-        (*out)[V8ToString(key)] = std::move(value);
+        (*out)[gin::V8ToString(isolate, key)] = std::move(value);
     }
     return true;
   }

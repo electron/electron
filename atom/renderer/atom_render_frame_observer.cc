@@ -46,7 +46,7 @@ bool GetIPCObject(v8::Isolate* isolate,
     return false;
   if (value.IsEmpty() || !value->IsObject())
     return false;
-  *ipc = value->ToObject();
+  *ipc = value->ToObject(isolate);
   return true;
 }
 

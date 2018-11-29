@@ -131,7 +131,7 @@ void InitAsarSupport(v8::Isolate* isolate,
     result = asar_init->Run(context).ToLocalChecked();
 
   // Initialize asar support.
-  CHECK(result->IsFunction());
+  DCHECK(result->IsFunction());
 
   v8::Local<v8::Value> args[] = {
       source,

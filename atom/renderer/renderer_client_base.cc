@@ -277,8 +277,9 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     return frame->MainWorldScriptContext();
 }
 
-v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
-                               v8::Local<v8::String> source) {
+v8::Local<v8::Value> RendererClientBase::RunScript(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::String> source) {
   auto maybe_script = v8::Script::Compile(context, source);
   v8::Local<v8::Script> script;
   if (!maybe_script.ToLocal(&script))

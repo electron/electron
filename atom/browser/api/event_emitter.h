@@ -103,7 +103,8 @@ class EventEmitter : public Wrappable<T> {
     v8::HandleScope handle_scope(isolate());
     EmitEvent(isolate(), GetWrapper(), name, event, args...);
     return event->Get(StringToV8(isolate(), "defaultPrevented"))
-        ->BooleanValue();
+        ->BooleanValue(isolate()->GetCurrentContext())
+        .ToChecked();
   }
 
   DISALLOW_COPY_AND_ASSIGN(EventEmitter);

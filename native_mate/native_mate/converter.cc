@@ -10,16 +10,32 @@ using v8::Array;
 using v8::Boolean;
 using v8::External;
 using v8::Function;
+using v8::Int32;
 using v8::Integer;
 using v8::Isolate;
 using v8::Local;
+using v8::Maybe;
+using v8::MaybeLocal;
 using v8::Number;
 using v8::Object;
 using v8::Promise;
 using v8::String;
+using v8::Uint32;
 using v8::Value;
 
 namespace mate {
+
+namespace {
+
+template <typename T, typename U>
+bool FromMaybe(Maybe<T> maybe, U* out) {
+  if (maybe.IsNothing())
+    return false;
+  *out = static_cast<U>(maybe.FromJust());
+  return true;
+}
+
+}  // namespace
 
 Local<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
   return v8::Boolean::New(isolate, val);
@@ -28,7 +44,7 @@ Local<Value> Converter<bool>::ToV8(Isolate* isolate, bool val) {
 bool Converter<bool>::FromV8(Isolate* isolate, Local<Value> val, bool* out) {
   if (!val->IsBoolean())
     return false;
-  *out = val->BooleanValue();
+  *out = val.As<Boolean>()->Value();
   return true;
 }
 
@@ -43,8 +59,7 @@ bool Converter<unsigned long>::FromV8(Isolate* isolate,
                                       unsigned long* out) {
   if (!val->IsNumber())
     return false;
-  *out = val->IntegerValue();
-  return true;
+  return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 #endif
 
@@ -57,7 +72,7 @@ bool Converter<int32_t>::FromV8(Isolate* isolate,
                                 int32_t* out) {
   if (!val->IsInt32())
     return false;
-  *out = val->Int32Value();
+  *out = val.As<Int32>()->Value();
   return true;
 }
 
@@ -70,7 +85,7 @@ bool Converter<uint32_t>::FromV8(Isolate* isolate,
                                  uint32_t* out) {
   if (!val->IsUint32())
     return false;
-  *out = val->Uint32Value();
+  *out = val.As<Uint32>()->Value();
   return true;
 }
 
@@ -85,8 +100,7 @@ bool Converter<int64_t>::FromV8(Isolate* isolate,
     return false;
   // Even though IntegerValue returns int64_t, JavaScript cannot represent
   // the full precision of int64_t, which means some rounding might occur.
-  *out = val->IntegerValue();
-  return true;
+  return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 
 Local<Value> Converter<uint64_t>::ToV8(Isolate* isolate, uint64_t val) {
@@ -98,8 +112,7 @@ bool Converter<uint64_t>::FromV8(Isolate* isolate,
                                  uint64_t* out) {
   if (!val->IsNumber())
     return false;
-  *out = static_cast<uint64_t>(val->IntegerValue());
-  return true;
+  return FromMaybe(val->IntegerValue(isolate->GetCurrentContext()), out);
 }
 
 Local<Value> Converter<float>::ToV8(Isolate* isolate, float val) {
@@ -109,7 +122,7 @@ Local<Value> Converter<float>::ToV8(Isolate* isolate, float val) {
 bool Converter<float>::FromV8(Isolate* isolate, Local<Value> val, float* out) {
   if (!val->IsNumber())
     return false;
-  *out = static_cast<float>(val->NumberValue());
+  *out = static_cast<float>(val.As<Number>()->Value());
   return true;
 }
 
@@ -122,7 +135,7 @@ bool Converter<double>::FromV8(Isolate* isolate,
                                double* out) {
   if (!val->IsNumber())
     return false;
-  *out = val->NumberValue();
+  *out = val.As<Number>()->Value();
   return true;
 }
 
@@ -147,9 +160,10 @@ bool Converter<std::string>::FromV8(Isolate* isolate,
   if (!val->IsString())
     return false;
   Local<String> str = Local<String>::Cast(val);
-  int length = str->Utf8Length();
+  int length = str->Utf8Length(isolate);
   out->resize(length);
-  str->WriteUtf8(&(*out)[0], length, NULL, String::NO_NULL_TERMINATION);
+  str->WriteUtf8(isolate, &(*out)[0], length, NULL,
+                 String::NO_NULL_TERMINATION);
   return true;
 }
 
@@ -243,15 +257,6 @@ v8::Local<v8::String> StringToSymbol(v8::Isolate* isolate,
   return v8::String::NewFromUtf8(isolate, val.data(),
                                  v8::String::kInternalizedString,
                                  static_cast<uint32_t>(val.length()));
-}
-
-std::string V8ToString(v8::Local<v8::Value> value) {
-  if (value.IsEmpty())
-    return std::string();
-  std::string result;
-  if (!ConvertFromV8(NULL, value, &result))
-    return std::string();
-  return result;
 }
 
 }  // namespace mate

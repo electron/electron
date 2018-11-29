@@ -359,7 +359,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   if (!global_handle.IsEmpty()) {
     v8::Local<v8::Value> local_handle = global_handle.Get(isolate);
     if (local_handle->IsObject()) {
-      v8::Local<v8::Object> object = local_handle->ToObject();
+      v8::Local<v8::Object> object = local_handle->ToObject(isolate);
       void* ptr = object->GetAlignedPointerFromInternalField(0);
       if (!ptr)
         return;
