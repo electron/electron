@@ -39,6 +39,15 @@ index d9f245070249f5f153bd8fe11e0a5e718c7d3629..a0f033c3e3f7f3996897f5f969b2a209
  
  // Gets the transient parent aura window for |dialog|.
  aura::Window* GetAuraTransientParent(GtkWidget* dialog);
+@@ -180,7 +181,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
+ 
+ // Get the 'color' property from the style context created by
+ // GetStyleContextFromCss(|css_selector|).
+-SkColor GetFgColor(const std::string& css_selector);
++LIBGTKUI_EXPORT SkColor GetFgColor(const std::string& css_selector);
+ 
+ ScopedCssProvider GetCssProvider(const std::string& css);
+ 
 @@ -193,7 +194,7 @@ void RenderBackground(const gfx::Size& size,
  // Renders a background from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
