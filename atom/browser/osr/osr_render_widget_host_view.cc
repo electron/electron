@@ -264,7 +264,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       transparent_(transparent),
       callback_(callback),
       frame_rate_(frame_rate),
-      size_(native_window ? native_window->GetSize() : gfx::Size()),
+      size_(initial_size),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       cursor_manager_(new content::CursorManager(this)),
