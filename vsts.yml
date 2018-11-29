@@ -7,6 +7,12 @@ steps:
   condition: ne(variables['ELECTRON_RELEASE'], '1')
 
 - bash: |
+    git clean -fdx
+  displayName: Clean unneeded git directories
+  timeoutInMinutes: 2
+  condition: eq(variables['ELECTRON_RELEASE'], '1')
+
+- bash: |
     echo 'Bootstrapping Electron for release build'
     script/bootstrap.py --target_arch=$TARGET_ARCH
   name: Bootstrap
