@@ -1566,17 +1566,19 @@ describe('BrowserWindow module', () => {
         })
 
         ipcRenderer.send('set-web-preferences-on-next-new-window', w.webContents.id, 'preload', preload)
+        const openerWindowOpen = emittedOnce(ipcMain, 'opener-loaded')
         w.loadFile(
           path.join(fixtures, 'api', 'sandbox.html'),
           { search: 'window-open-external' }
         )
 
         // Wait for a message from the main window saying that it's ready.
-        await emittedOnce(ipcMain, 'opener-loaded')
+        await openerWindowOpen
 
         // Ask the opener to open a popup with window.opener.
-        const expectedPopupUrl =
-            `${server.url}/cross-site` // Set in "sandbox.html".
+        const expectedPopupUrl = `${server.url}/cross-site` // Set in "sandbox.html".
+
+        const browserWindowCreated = emittedOnce(app, 'browser-window-created')
         w.webContents.send('open-the-popup', expectedPopupUrl)
 
         // The page is going to open a popup that it won't be able to close.
@@ -1585,20 +1587,21 @@ describe('BrowserWindow module', () => {
         const [, popupWindow] = await browserWindowCreated
 
         // Ask the popup window for details.
+        const detailsAnswer = emittedOnce(ipcMain, 'child-loaded')
         popupWindow.webContents.send('provide-details')
-        const [, openerIsNull, , locationHref] =
-            await emittedOnce(ipcMain, 'child-loaded')
+        const [, openerIsNull, , locationHref] = await detailsAnswer
         expect(openerIsNull).to.be.false('window.opener is null')
         expect(locationHref).to.equal(expectedPopupUrl)
 
         // Ask the page to access the popup.
-        const answer = emittedOnce(ipcMain, 'answer')
+        const touchPopupResult = emittedOnce(ipcMain, 'answer')
         w.webContents.send('touch-the-popup')
-        const [, popupAccessMessage] = await emittedOnce(ipcMain, 'answer')
+        const [, popupAccessMessage] = await touchPopupResult
 
         // Ask the popup to access the opener.
+        const touchOpenerResult = emittedOnce(ipcMain, 'answer')
         popupWindow.webContents.send('touch-the-opener')
-        const [, openerAccessMessage] = await emittedOnce(ipcMain, 'answer')
+        const [, openerAccessMessage] = await touchOpenerResult
 
         // We don't need the popup anymore, and its parent page can't close it,
         // so let's close it from here before we run any checks.
