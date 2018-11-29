@@ -137,12 +137,14 @@ describe('webContents module', () => {
       const oscillator = context.createOscillator()
       oscillator.connect(context.destination)
       oscillator.start()
+      let p = emittedOnce(webContents, '-audio-state-changed')
       await context.resume()
-      const [, audible] = await emittedOnce(webContents, '-audio-state-changed')
+      const [, audible] = await p
       assert(webContents.isCurrentlyAudible() === audible)
       expect(webContents.isCurrentlyAudible()).to.be.true()
+      p = emittedOnce(webContents, '-audio-state-changed')
       oscillator.stop()
-      await emittedOnce(webContents, '-audio-state-changed')
+      await p
       expect(webContents.isCurrentlyAudible()).to.be.false()
       oscillator.disconnect()
       context.close()
@@ -163,14 +165,16 @@ describe('webContents module', () => {
     it('can show window with activation', async () => {
       w.show()
       assert.strictEqual(w.isFocused(), true)
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools({ mode: 'detach', activate: true })
-      await emittedOnce(w.webContents, 'devtools-opened')
+      await devtoolsOpened
       assert.strictEqual(w.isFocused(), false)
     })
 
     it('can show window without activation', async () => {
+      const devtoolsOpened = emittedOnce(w.webContents, 'devtools-opened')
       w.webContents.openDevTools({ mode: 'detach', activate: false })
-      await emittedOnce(w.webContents, 'devtools-opened')
+      await devtoolsOpened
       assert.strictEqual(w.isDevToolsOpened(), true)
     })
   })
@@ -496,7 +500,6 @@ describe('webContents module', () => {
     })
 
     it('can set the correct zoom level', (done) => {
-      w.loadURL('about:blank')
       w.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel) => {
           assert.strictEqual(zoomLevel, 0.0)
@@ -508,6 +511,7 @@ describe('webContents module', () => {
           })
         })
       })
+      w.loadURL('about:blank')
     })
 
     it('can persist zoom level across navigation', (done) => {
@@ -895,8 +899,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const filePath = path.join(remote.app.getPath('temp'), 'test.heapsnapshot')
 
@@ -926,8 +931,9 @@ describe('webContents module', () => {
         }
       })
 
+      const p = emittedOnce(w.webContents, 'did-finish-load')
       w.loadURL('about:blank')
-      await emittedOnce(w.webContents, 'did-finish-load')
+      await p
 
       const promise = w.webContents.takeHeapSnapshot('')
       return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed')
@@ -979,12 +985,12 @@ describe('webContents module', () => {
           sandbox: true
         }
       })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
       w.webContents.once('did-finish-load', () => {
         const printers = w.webContents.getPrinters()
         assert.strictEqual(Array.isArray(printers), true)
         done()
       })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
   })
 
@@ -1006,7 +1012,6 @@ describe('webContents module', () => {
           sandbox: true
         }
       })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
       w.webContents.once('did-finish-load', () => {
         w.webContents.printToPDF({}, function (error, data) {
           assert.strictEqual(error, null)
@@ -1015,6 +1020,7 @@ describe('webContents module', () => {
           done()
         })
       })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
   })
 })
