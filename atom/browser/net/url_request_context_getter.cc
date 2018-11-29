@@ -188,6 +188,9 @@ URLRequestContextGetter::Handle::CreateNetworkContextParams() {
         base_path.Append(chrome::kChannelIDFilename);
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
+    // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,
+    // enable encryption as a followup.
+    network_context_params->enable_encrypted_cookies = false;
   }
 
   // TODO(deepak1556): Decide the stand on chrome ct policy and
@@ -258,6 +261,11 @@ URLRequestContextGetter::~URLRequestContextGetter() {
 void URLRequestContextGetter::NotifyContextShuttingDown(
     std::unique_ptr<ResourceContext> resource_context) {
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+
+  // todo(brenca): remove once C70 lands
+  if (url_request_context_ && url_request_context_->cookie_store()) {
+    url_request_context_->cookie_store()->FlushStore(base::NullCallback());
+  }
 
   context_shutting_down_ = true;
   resource_context.reset();
