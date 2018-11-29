@@ -781,8 +781,21 @@ void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
     impl->disable_hidden_ = !background_throttling_;
 }
 
+void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                        content::RenderViewHost* new_host) {
+  currently_committed_process_id = new_host->GetProcess()->GetID();
+}
+
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+  // Only emit render-view-deleted if the RVH that has been deleted is the
+  // current RVH. Do not emit it for other (speculative) RVH's as that does not
+  // mean the embedder is closing the window.
+  if (-1 == currently_committed_process_id ||
+      render_view_host->GetProcess()->GetID() ==
+          currently_committed_process_id) {
+    currently_committed_process_id = -1;
+    Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+  }
 }
 
 void WebContents::RenderProcessGone(base::TerminationStatus status) {
