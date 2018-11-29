@@ -73,8 +73,7 @@ describe('session module', () => {
       })
       server.listen(0, '127.0.0.1', () => {
         const port = server.address().port
-        w.loadURL(`${url}:${port}`)
-        w.webContents.on('did-finish-load', () => {
+        w.webContents.once('did-finish-load', () => {
           w.webContents.session.cookies.get({ url }, (error, list) => {
             if (error) return done(error)
             for (let i = 0; i < list.length; i++) {
@@ -90,6 +89,7 @@ describe('session module', () => {
             done('Can\'t find cookie')
           })
         })
+        w.loadURL(`${url}:${port}`)
       })
     })
 
@@ -251,7 +251,6 @@ describe('session module', () => {
         assert.strictEqual(count, 0)
         done()
       })
-      w.loadFile(path.join(fixtures, 'api', 'localstorage.html'))
       w.webContents.on('did-finish-load', () => {
         const options = {
           origin: 'file://',
@@ -262,6 +261,7 @@ describe('session module', () => {
           w.webContents.send('getcount')
         })
       })
+      w.loadFile(path.join(fixtures, 'api', 'localstorage.html'))
     })
   })
 
@@ -388,10 +388,10 @@ describe('session module', () => {
         const port = downloadServer.address().port
         ipcRenderer.sendSync('set-download-option', false, false)
         webview = new WebView()
-        webview.src = `file://${fixtures}/api/blank.html`
         webview.addEventListener('did-finish-load', () => {
           webview.downloadURL(`${url}:${port}/`)
         })
+        webview.src = `file://${fixtures}/api/blank.html`
         ipcRenderer.once('download-done', (event, state, url,
           mimeType, receivedBytes,
           totalBytes, disposition,
