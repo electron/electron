@@ -24,8 +24,7 @@ to set the `NSRequiresAquaSystemAppearance` key in your app's `Info.plist` file 
 </plist>
 ```
 
-If you are using [`electron-packager` >= 12.2.0](https://github.com/electron-userland/electron-packager) or
-[`electron-forge` >= 6](https://github.com/electron-userland/electron-forge) you can set the
+If you are using [`electron-packager` >= 12.2.0](https://github.com/electron-userland/electron-packager), [`electron-forge` >= 6](https://github.com/electron-userland/electron-forge) or [`electron-builder` >= 20.37.0](https://github.com/electron-userland/electron-builder) you can set the
 [`darwinDarkModeSupport`](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 option when packaging and this key will be set for you.
 
