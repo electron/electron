@@ -78,7 +78,6 @@ class EventEmitter : public Wrappable<T> {
                       content::RenderFrameHost* sender,
                       IPC::Message* message,
                       const Args&... args) {
-    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();
@@ -99,6 +98,7 @@ class EventEmitter : public Wrappable<T> {
   bool EmitWithEvent(const base::StringPiece& name,
                      v8::Local<v8::Object> event,
                      const Args&... args) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     EmitEvent(isolate(), GetWrapper(), name, event, args...);
