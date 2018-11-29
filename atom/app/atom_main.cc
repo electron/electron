@@ -69,11 +69,11 @@ void FixStdioStreams() {
   // For details see https://github.com/libuv/libuv/issues/2062
   struct stat st;
   if (fstat(STDIN_FILENO, &st) < 0 && errno == EBADF)
-    freopen("/dev/null", "r", stdin);
+    ignore_result(freopen("/dev/null", "r", stdin));
   if (fstat(STDOUT_FILENO, &st) < 0 && errno == EBADF)
-    freopen("/dev/null", "w", stdout);
+    ignore_result(freopen("/dev/null", "w", stdout));
   if (fstat(STDERR_FILENO, &st) < 0 && errno == EBADF)
-    freopen("/dev/null", "w", stderr);
+    ignore_result(freopen("/dev/null", "w", stderr));
 }
 #endif
 
