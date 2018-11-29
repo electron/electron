@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Birunthan Mohanathas <birunthan@mohanathas.com>
+Date: Thu, 29 Nov 2018 20:53:52 +0200
+Subject: Add --disable-color-correct-rendering switch
+
+This allows apps to use the display color space (e.g. P3 on Macs)
+instead of sRGB. This effectively restores the functionality removed
+in: https://chromium-review.googlesource.com/698347
+
+This can be removed once web content (including WebGL) learn how
+to deal with color spaces. That is being tracked at
+https://crbug.com/634542 and https://crbug.com/711107.
+
+diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
+index 507ece40522fc29a56908d9a6532947a7f67db35..1659c05bfeecbf8ef4264f946aa045d58beb2775 100644
+--- a/cc/trees/layer_tree_host_impl.cc
++++ b/cc/trees/layer_tree_host_impl.cc
+@@ -1578,6 +1578,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+ }
+ 
+ RasterColorSpace LayerTreeHostImpl::GetRasterColorSpace() const {
++  if (!settings_.enable_color_correct_rendering) {
++    return {};
++  }
++
+   RasterColorSpace result;
+   // The pending tree will have the most recently updated color space, so
+   // prefer that.
+diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
+index 736df815a2815484b561bdc4828dbb8592a43d3a..b9b624e475bc244154febb214d88c63aaba5bbab 100644
+--- a/cc/trees/layer_tree_settings.h
++++ b/cc/trees/layer_tree_settings.h
+@@ -98,6 +98,8 @@ class CC_EXPORT LayerTreeSettings {
+ 
+   bool enable_mask_tiling = true;
+ 
++  bool enable_color_correct_rendering = true;
++
+   // If set to true, the compositor may selectively defer image decodes to the
+   // Image Decode Service and raster tiles without images until the decode is
+   // ready.
+diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
+index bdecceea7e66605869548efc15181d88cfb8a438..0f0e20308b8a7753ee40e12f8da9bbf0de4aef70 100644
+--- a/content/browser/gpu/gpu_process_host.cc
++++ b/content/browser/gpu/gpu_process_host.cc
+@@ -192,6 +192,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+ 
+ // Command-line switches to propagate to the GPU process.
+ static const char* const kSwitchNames[] = {
++    "disable-color-correct-rendering",
+     service_manager::switches::kDisableSeccompFilterSandbox,
+     service_manager::switches::kGpuSandboxAllowSysVShm,
+     service_manager::switches::kGpuSandboxFailuresFatal,
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index 05e0ee79e5ada8eee03b2bff9c127b4f11610c17..b19d8e8c53db0396b39fed0e2e530705c5337284 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -2779,6 +2779,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+   // Propagate the following switches to the renderer command line (along
+   // with any associated values) if present in the browser command line.
+   static const char* const kSwitchNames[] = {
++    "disable-color-correct-rendering",
+     network::switches::kNoReferrers,
+     service_manager::switches::kDisableInProcessStackTraces,
+     service_manager::switches::kDisableSeccompFilterSandbox,
+diff --git a/content/renderer/render_widget.cc b/content/renderer/render_widget.cc
+index 560c7caaa74c295a203bfa53c1acc63f1eb4283f..39fe8a6696d2cf0201d9b04364ffabab7af50bca 100644
+--- a/content/renderer/render_widget.cc
++++ b/content/renderer/render_widget.cc
+@@ -2458,6 +2458,9 @@ cc::LayerTreeSettings RenderWidget::GenerateLayerTreeSettings(
+   settings.main_frame_before_activation_enabled =
+       cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
+ 
++  settings.enable_color_correct_rendering =
++    !cmd.HasSwitch("disable-color-correct-rendering");
++
+   // Checkerimaging is not supported for synchronous single-threaded mode, which
+   // is what the renderer uses if its not threaded.
+   settings.enable_checker_imaging =
+diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
+index 00ad38db090096645d9ef9e3220a48661b6401df..57c9b06756efc0179ed9145cd14068ef53f228a8 100644
+--- a/ui/gfx/mac/io_surface.cc
++++ b/ui/gfx/mac/io_surface.cc
+@@ -199,6 +199,11 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+ 
+   // Ensure that all IOSurfaces start as sRGB.
+   CGColorSpaceRef color_space = base::mac::GetSRGBColorSpace();
++  auto* cmd_line = base::CommandLine::ForCurrentProcess();
++  if (cmd_line->HasSwitch("disable-color-correct-rendering")) {
++    color_space = base::mac::GetSystemColorSpace();
++  }
++
+   base::ScopedCFTypeRef<CFDataRef> color_space_icc(
+       CGColorSpaceCopyICCProfile(color_space));
+   IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), color_space_icc);
