@@ -10,10 +10,6 @@ if (process.argv.includes('--app-enable-sandbox')) {
   app.enableSandbox()
 }
 
-if (process.argv.includes('--app-enable-mixed-sandbox')) {
-  app.enableMixedSandbox()
-}
-
 let currentWindowSandboxed = false
 
 app.once('ready', () => {

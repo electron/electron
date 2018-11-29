@@ -204,12 +204,6 @@ void AtomMainDelegate::PreSandboxStartup() {
   // linux (namespace sandbox is available on most distros).
   command_line->AppendSwitch(service_manager::switches::kDisableSetuidSandbox);
 
-  if (!command_line->HasSwitch(switches::kEnableMixedSandbox) &&
-      !command_line->HasSwitch(switches::kEnableSandbox)) {
-    // Disable renderer sandbox for most of node's functions.
-    command_line->AppendSwitch(service_manager::switches::kNoSandbox);
-  }
-
   // Allow file:// URIs to read other file:// URIs by default.
   command_line->AppendSwitch(::switches::kAllowFileAccessFromFiles);
 
