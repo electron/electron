@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "atom/common/native_mate_converters/callback.h"
+#include "content/public/browser/browser_thread.h"
 
 #include "native_mate/dictionary.h"
 

@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "atom/common/api/event_emitter_caller.h"
+#include "content/public/browser/browser_thread.h"
 #include "native_mate/wrappable.h"
 
 namespace content {
@@ -77,6 +78,7 @@ class EventEmitter : public Wrappable<T> {
                       content::RenderFrameHost* sender,
                       IPC::Message* message,
                       const Args&... args) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Locker locker(isolate());
     v8::HandleScope handle_scope(isolate());
     v8::Local<v8::Object> wrapper = GetWrapper();

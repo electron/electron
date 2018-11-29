@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "atom/common/native_mate_converters/callback.h"
+#include "content/public/browser/browser_thread.h"
 
 namespace atom {
 
