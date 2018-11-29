@@ -22,19 +22,21 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 05e0ee79e5ad..80512d14c3dc 100644
+index 05e0ee79e5ad..9a4522f59e6f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -465,7 +465,7 @@ SiteProcessMap* GetSiteProcessMapForBrowserContext(BrowserContext* context) {
- class RendererSandboxedProcessLauncherDelegate
+@@ -466,6 +466,10 @@ class RendererSandboxedProcessLauncherDelegate
      : public SandboxedProcessLauncherDelegate {
   public:
--  RendererSandboxedProcessLauncherDelegate() {}
-+  RendererSandboxedProcessLauncherDelegate(bool use_zygote): use_zygote_(use_zygote) {}
+   RendererSandboxedProcessLauncherDelegate() {}
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
++    use_zygote_(use_zygote) {}
++#endif
  
    ~RendererSandboxedProcessLauncherDelegate() override {}
  
-@@ -485,6 +485,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -485,6 +489,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    service_manager::ZygoteHandle GetZygote() override {
@@ -44,28 +46,35 @@ index 05e0ee79e5ad..80512d14c3dc 100644
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -498,6 +501,9 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -498,6 +505,11 @@ class RendererSandboxedProcessLauncherDelegate
    service_manager::SandboxType GetSandboxType() override {
      return service_manager::SANDBOX_TYPE_RENDERER;
    }
 +
 + private:
-+  bool use_zygote_;
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++  bool use_zygote_ = true;
++#endif
  };
  
  const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1731,11 +1737,13 @@ bool RenderProcessHostImpl::Init() {
+@@ -1731,11 +1743,18 @@ bool RenderProcessHostImpl::Init() {
        cmd_line->PrependWrapper(renderer_prefix);
      AppendRendererCommandLine(cmd_line.get());
  
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
++    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote);
++#else
++    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>();
++#endif
 +
      // Spawn the child process asynchronously to avoid blocking the UI thread.
      // As long as there's no renderer prefix, we can use the zygote process
      // at this stage.
      child_process_launcher_ = std::make_unique<ChildProcessLauncher>(
 -        std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
-+        std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote),
++        std::move(delegate),
          std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
          base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_));
      channel_->Pause();
