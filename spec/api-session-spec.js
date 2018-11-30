@@ -5,6 +5,7 @@ const path = require('path')
 const fs = require('fs')
 const send = require('send')
 const auth = require('basic-auth')
+const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
 
 const { ipcRenderer, remote } = require('electron')
@@ -210,6 +211,33 @@ describe('session module', () => {
           })
         })
       })
+    })
+
+    it('should survive an app restart for persistent partition', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app')
+      const electronPath = remote.getGlobal('process').execPath
+
+      const test = (result, phase) => {
+        return new Promise((resolve, reject) => {
+          let output = ''
+
+          const appProcess = ChildProcess.spawn(
+            electronPath,
+            [appPath],
+            { env: { PHASE: phase, ...process.env } }
+          )
+
+          appProcess.stdout.on('data', (data) => { output += data })
+          appProcess.stdout.on('end', () => {
+            output = output.replace(/(\r\n|\n|\r)/gm, '')
+            assert.strictEqual(output, result)
+            resolve()
+          })
+        })
+      }
+
+      await test('011', 'one')
+      await test('110', 'two')
     })
   })
 
