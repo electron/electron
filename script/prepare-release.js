@@ -139,8 +139,8 @@ async function getReleaseNotes (currentBranch) {
 
 async function createRelease (branchToTarget, isBeta) {
   console.log('creating release for', branchToTarget, `isBeta=${isBeta}`)
-  let releaseNotes = await getReleaseNotes(branchToTarget)
   let newVersion = await getNewVersion()
+  let releaseNotes = !newVersion.includes('beta.1') ? await getReleaseNotes(branchToTarget) : ''
   await tagRelease(newVersion)
   const githubOpts = {
     owner: 'electron',
