@@ -136,12 +136,14 @@ describe('webContents module', () => {
       const oscillator = context.createOscillator()
       oscillator.connect(context.destination)
       oscillator.start()
+      let p = emittedOnce(webContents, '-audio-state-changed')
       await context.resume()
-      const [, audible] = await emittedOnce(webContents, '-audio-state-changed')
+      const [, audible] = await p
       assert(webContents.isCurrentlyAudible() === audible)
       expect(webContents.isCurrentlyAudible()).to.be.true()
+      p = emittedOnce(webContents, '-audio-state-changed')
       oscillator.stop()
-      await emittedOnce(webContents, '-audio-state-changed')
+      await p
       expect(webContents.isCurrentlyAudible()).to.be.false()
       oscillator.disconnect()
       context.close()
@@ -479,7 +481,6 @@ describe('webContents module', () => {
     })
 
     it('can set the correct zoom level', (done) => {
-      w.loadURL('about:blank')
       w.webContents.on('did-finish-load', () => {
         w.webContents.getZoomLevel((zoomLevel) => {
           assert.strictEqual(zoomLevel, 0.0)
@@ -491,6 +492,7 @@ describe('webContents module', () => {
           })
         })
       })
+      w.loadURL('about:blank')
     })
 
     it('can persist zoom level across navigation', (done) => {
