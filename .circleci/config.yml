@@ -493,6 +493,17 @@ steps-electron-build-for-tests: &steps-electron-build-for-tests
     - *step-mksnapshot-build
     - *step-mksnapshot-store
 
+    # native_mksnapshot
+    - *step-maybe-native-mksnapshot-gn-gen
+    - *step-maybe-native-mksnapshot-build
+    - *step-maybe-native-mksnapshot-strip
+    - *step-maybe-native-mksnapshot-store
+
+    # ffmpeg
+    - *step-ffmpeg-gn-gen
+    - *step-ffmpeg-build
+    - *step-ffmpeg-store
+
     # Save all data needed for a further tests run.
     - *step-persist-data-for-tests
 
