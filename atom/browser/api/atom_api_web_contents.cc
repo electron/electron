@@ -787,14 +787,16 @@ void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  // Only emit render-view-deleted if the RVH that has been deleted is the
-  // current RVH. Do not emit it for other (speculative) RVH's as that does not
-  // mean the embedder is closing the window.
+  Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+
+  // When the RVH that has been deleted is the current RVH it means that the
+  // the embedder is closing the window.
   if (-1 == currently_committed_process_id ||
       render_view_host->GetProcess()->GetID() ==
           currently_committed_process_id) {
     currently_committed_process_id = -1;
-    Emit("render-view-deleted", render_view_host->GetProcess()->GetID());
+    Emit("current-render-view-deleted",
+         render_view_host->GetProcess()->GetID());
   }
 }
 

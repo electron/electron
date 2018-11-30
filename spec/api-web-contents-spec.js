@@ -712,7 +712,7 @@ describe('webContents module', () => {
     })
   })
 
-  describe('render-view-deleted', () => {
+  describe('render view deleted events', () => {
     let server = null
 
     before((done) => {
@@ -742,31 +742,47 @@ describe('webContents module', () => {
       server = null
     })
 
-    it('does not emit when speculative RVHs are deleted', (done) => {
-      let renderViewDeletedEmitted = false
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+      let currentRenderViewDeletedEmitted = false
       w.webContents.once('destroyed', () => {
-        assert.strictEqual(renderViewDeletedEmitted, false, 'render-view-deleted was emitted')
+        assert.strictEqual(currentRenderViewDeletedEmitted, false, 'current-render-view-deleted was emitted')
         done()
       })
       const renderViewDeletedHandler = () => {
-        renderViewDeletedEmitted = true
+        currentRenderViewDeletedEmitted = true
       }
-      w.webContents.on('render-view-deleted', renderViewDeletedHandler)
+      w.webContents.on('current-render-view-deleted', renderViewDeletedHandler)
       w.webContents.on('did-finish-load', (e) => {
-        w.webContents.removeListener('render-view-deleted', renderViewDeletedHandler)
+        w.webContents.removeListener('current-render-view-deleted', renderViewDeletedHandler)
         w.close()
       })
       w.loadURL(`${server.url}/redirect-cross-site`)
     })
 
-    it('emits if the current RVHs are deleted', (done) => {
-      let renderViewDeletedEmitted = false
+    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+      let currentRenderViewDeletedEmitted = false
       w.webContents.once('destroyed', () => {
-        assert.strictEqual(renderViewDeletedEmitted, true, 'render-view-deleted wasn\'t emitted')
+        assert.strictEqual(currentRenderViewDeletedEmitted, true, 'current-render-view-deleted wasn\'t emitted')
+        done()
+      })
+      w.webContents.on('current-render-view-deleted', () => {
+        currentRenderViewDeletedEmitted = true
+      })
+      w.webContents.on('did-finish-load', (e) => {
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+
+    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+      let rvhDeletedCount = 0
+      w.webContents.once('destroyed', () => {
+        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        assert.strictEqual(rvhDeletedCount, expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
         done()
       })
       w.webContents.on('render-view-deleted', () => {
-        renderViewDeletedEmitted = true
+        rvhDeletedCount++
       })
       w.webContents.on('did-finish-load', (e) => {
         w.close()
