@@ -73,4 +73,3 @@ cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch
 fix_trackpad_scrolling.patch
 mac_fix_form_control_rendering_on_10_14_mojave.patch
-ensure_cookie_store.patch
