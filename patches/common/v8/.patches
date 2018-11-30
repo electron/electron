@@ -14,4 +14,3 @@ deps_revert_9136dd8088a9_from_upstream_v8.patch
 deps_provide_more_v8_backwards_compatibility.patch
 deps_backport_958b761_from_upstream_v8.patch
 deps_v8_cherry-pick_64-bit_hash_seed_commits.patch
-deps_cherry-pick_b0af309_from_upstream_v8.patch
