@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
 #define ATOM_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -33,10 +34,10 @@ class BluetoothChooser : public content::BluetoothChooser {
                          bool is_gatt_connected,
                          bool is_paired,
                          int signal_strength_level) override;
-  void RemoveDevice(const std::string& device_id);
+  std::vector<DeviceInfo> GetDeviceList();
 
  private:
-  std::vector<DeviceInfo> device_list_;
+  std::map<std::string, base::string16> device_map_;
   api::WebContents* api_web_contents_;
   EventHandler event_handler_;
   int num_retries_ = 0;
