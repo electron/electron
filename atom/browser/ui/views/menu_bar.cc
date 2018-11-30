@@ -7,7 +7,6 @@
 #include <memory>
 #include <set>
 #include <sstream>
-#include <string>
 
 #include "atom/browser/ui/views/submenu_button.h"
 #include "atom/common/keyboard_util.h"
@@ -268,13 +267,11 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
     theme = ui::NativeTheme::GetInstanceForNativeUi();
   if (theme) {
 #if defined(USE_X11)
-    const std::string menubar_selector = "GtkMenuBar#menubar";
-    background_color_ = libgtkui::GetBgColor(menubar_selector);
-
-    enabled_color_ = theme->GetSystemColor(
-        ui::NativeTheme::kColorId_EnabledMenuItemForegroundColor);
-    disabled_color_ = theme->GetSystemColor(
-        ui::NativeTheme::kColorId_DisabledMenuItemForegroundColor);
+    background_color_ = libgtkui::GetBgColor("GtkMenuBar#menubar");
+    enabled_color_ = libgtkui::GetFgColor(
+        "GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
+    disabled_color_ = libgtkui::GetFgColor(
+        "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #else
     background_color_ =
         theme->GetSystemColor(ui::NativeTheme::kColorId_MenuBackgroundColor);
