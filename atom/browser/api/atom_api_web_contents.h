@@ -51,7 +51,7 @@ class WebViewGuestDelegate;
 class FrameSubscriber;
 
 #if BUILDFLAG(ENABLE_OSR)
-class OffScreenWebContentsView;
+class OffScreenRenderWidgetHostView;
 #endif
 
 namespace api {
@@ -439,9 +439,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   uint32_t GetNextRequestId() { return ++request_id_; }
 
 #if BUILDFLAG(ENABLE_OSR)
-  OffScreenWebContentsView* GetOffScreenWebContentsView() const;
-  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
-      const override;
+  OffScreenWebContentsView* GetOffScreenWebContentsView() const override;
+  OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 #endif
 
   // Called when we receive a CursorChange message from chromium.

@@ -41,7 +41,7 @@
 #include "storage/browser/fileapi/isolated_context.h"
 
 #if BUILDFLAG(ENABLE_OSR)
-#include "atom/browser/osr/osr_render_widget_host_view.h"
+#include "atom/browser/osr/osr_web_contents_view.h"
 #endif
 
 using content::BrowserThread;
@@ -207,9 +207,9 @@ void CommonWebContentsDelegate::SetOwnerWindow(
         NativeWindowRelay::kNativeWindowRelayUserDataKey);
   }
 #if BUILDFLAG(ENABLE_OSR)
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (osr_rwhv)
-    osr_rwhv->SetNativeWindow(owner_window);
+  auto* osr_wcv = GetOffScreenWebContentsView();
+  if (osr_wcv)
+    osr_wcv->SetNativeWindow(owner_window);
 #endif
 }
 
@@ -247,8 +247,8 @@ content::WebContents* CommonWebContentsDelegate::GetDevToolsWebContents()
 }
 
 #if BUILDFLAG(ENABLE_OSR)
-OffScreenRenderWidgetHostView*
-CommonWebContentsDelegate::GetOffScreenRenderWidgetHostView() const {
+OffScreenWebContentsView*
+CommonWebContentsDelegate::GetOffScreenWebContentsView() const {
   return nullptr;
 }
 #endif

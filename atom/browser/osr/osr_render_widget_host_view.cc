@@ -257,15 +257,14 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     const OnPaintCallback& callback,
     content::RenderWidgetHost* host,
     OffScreenRenderWidgetHostView* parent_host_view,
-    NativeWindow* native_window)
+    gfx::Size initial_size)
     : content::RenderWidgetHostViewBase(host),
       render_widget_host_(content::RenderWidgetHostImpl::From(host)),
       parent_host_view_(parent_host_view),
-      native_window_(native_window),
       transparent_(transparent),
       callback_(callback),
       frame_rate_(frame_rate),
-      size_(native_window ? native_window->GetSize() : gfx::Size()),
+      size_(initial_size),
       painting_(painting),
       is_showing_(!render_widget_host_->is_hidden()),
       cursor_manager_(new content::CursorManager(this)),
@@ -312,18 +311,12 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 #endif
   GetCompositor()->SetDelegate(this);
 
-  if (native_window_)
-    native_window_->AddObserver(this);
-
   ResizeRootLayer(false);
   render_widget_host_->SetView(this);
   InstallTransparency();
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-  if (native_window_)
-    native_window_->RemoveObserver(this);
-
 #if defined(OS_MACOSX)
   if (is_showing_)
     browser_compositor_->SetRenderWidgetHostIsHidden(true);
@@ -352,19 +345,6 @@ OffScreenRenderWidgetHostView::CreateBrowserAccessibilityManager(
     content::BrowserAccessibilityDelegate*,
     bool) {
   return nullptr;
-}
-
-void OffScreenRenderWidgetHostView::OnWindowResize() {
-  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
-  auto size = native_window_ ? native_window_->GetSize() : gfx::Size();
-  SetSize(size);
-}
-
-void OffScreenRenderWidgetHostView::OnWindowClosed() {
-  if (native_window_) {
-    native_window_->RemoveObserver(this);
-    native_window_ = nullptr;
-  }
 }
 
 void OffScreenRenderWidgetHostView::OnBeginFrameTimerTick() {
@@ -757,7 +737,7 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
 
   return new OffScreenRenderWidgetHostView(
       transparent_, true, embedder_host_view->GetFrameRate(), callback_,
-      render_widget_host, embedder_host_view, native_window_);
+      render_widget_host, embedder_host_view, size());
 }
 
 #if !defined(OS_MACOSX)
@@ -1257,18 +1237,6 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   } else if (copy_frame_generator_) {
     copy_frame_generator_->GenerateCopyFrame(bounds);
   }
-}
-
-void OffScreenRenderWidgetHostView::SetNativeWindow(NativeWindow* window) {
-  if (native_window_)
-    native_window_->RemoveObserver(this);
-
-  native_window_ = window;
-
-  if (native_window_)
-    native_window_->AddObserver(this);
-
-  OnWindowResize();
 }
 
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
