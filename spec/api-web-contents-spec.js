@@ -712,6 +712,69 @@ describe('webContents module', () => {
     })
   })
 
+  describe('render-view-deleted', () => {
+    let server = null
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        const respond = () => {
+          if (req.url === '/redirect-cross-site') {
+            res.setHeader('Location', `${server.cross_site_url}/redirected`)
+            res.statusCode = 302
+            res.end()
+          } else if (req.url === '/redirected') {
+            res.end('<html><script>window.localStorage</script></html>')
+          } else {
+            res.end()
+          }
+        }
+        setTimeout(respond, 0)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        server.url = `http://127.0.0.1:${server.address().port}`
+        server.cross_site_url = `http://localhost:${server.address().port}`
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+      server = null
+    })
+
+    it('does not emit when speculative RVHs are deleted', (done) => {
+      let renderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        assert.strictEqual(renderViewDeletedEmitted, false, 'render-view-deleted was emitted')
+        done()
+      })
+      const renderViewDeletedHandler = () => {
+        renderViewDeletedEmitted = true
+      }
+      w.webContents.on('render-view-deleted', renderViewDeletedHandler)
+      w.webContents.on('did-finish-load', (e) => {
+        w.webContents.removeListener('render-view-deleted', renderViewDeletedHandler)
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+
+    it('emits if the current RVHs are deleted', (done) => {
+      let renderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        assert.strictEqual(renderViewDeletedEmitted, true, 'render-view-deleted wasn\'t emitted')
+        done()
+      })
+      w.webContents.on('render-view-deleted', () => {
+        renderViewDeletedEmitted = true
+      })
+      w.webContents.on('did-finish-load', (e) => {
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+  })
+
   describe('setIgnoreMenuShortcuts(ignore)', () => {
     it('does not throw', () => {
       assert.strictEqual(w.webContents.setIgnoreMenuShortcuts(true), undefined)
