@@ -302,8 +302,15 @@ jobs:
     displayName: Extract mksnapshot
     inputs:
       archiveFilePatterns: $(System.ArtifactsDirectory)/Default/mksnapshot.zip
-      destinationFolder: src/out/Default
-      cleanDestinationFolder: false
+      destinationFolder: src/out/mksnapshot
+    timeoutInMinutes: 1
+
+  - task: CopyFiles@2
+    displayName: 'Copy Files to: src/out/Default'
+    inputs:
+      SourceFolder: src/out/mksnapshot
+      TargetFolder: src/out/Default
+      OverWrite: true
     timeoutInMinutes: 1
 
   - task: ExtractFiles@1
