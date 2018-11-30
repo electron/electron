@@ -72,7 +72,7 @@ def main():
     if args.bump == 'nightly':
       version = get_next_nightly(curr_version)
     elif args.bump == 'beta':
-      raise Exception("You can\'t bump to a beta from stable")
+      version = get_next_beta(curr_version)
     elif args.bump == 'stable':
       version = get_next_stable_from_stable(curr_version)
     else:
