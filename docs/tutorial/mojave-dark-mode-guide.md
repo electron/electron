@@ -29,6 +29,8 @@ If you are using [`electron-packager` >= 12.2.0](https://github.com/electron-use
 [`darwinDarkModeSupport`](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md#darwindarkmodesupport)
 option when packaging and this key will be set for you.
 
+If you are using [`electron-builder` >= 20.37.0](https://github.com/electron-userland/electron-builder) you can set the [`darkModeSupport`](https://www.electron.build/configuration/mac.html) option.
+
 ## Automatically updating your own interfaces
 
 If your app has its own dark mode you should toggle it on and off in sync with the system's dark mode setting.  You can do
