@@ -534,7 +534,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // The ID of the process of the currently committed RenderViewHost.
   // -1 means no speculative RVH has been committed yet.
-  int currently_committed_process_id = -1;
+  int currently_committed_process_id_ = -1;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };

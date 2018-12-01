@@ -238,18 +238,18 @@ bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
     content::SiteInstance* speculative_instance,
     const GURL& dest_url,
     bool has_response_started) const {
-  bool navigationWasRedirected = false;
+  bool navigation_was_redirected = false;
   if (has_response_started) {
-    navigationWasRedirected = !IsSameWebSite(
+    navigation_was_redirected = !IsSameWebSite(
         browser_context, current_instance->GetSiteURL(), dest_url);
   } else {
-    navigationWasRedirected =
+    navigation_was_redirected =
         speculative_instance &&
         !IsSameWebSite(browser_context, speculative_instance->GetSiteURL(),
                        dest_url);
   }
 
-  return navigationWasRedirected;
+  return navigation_was_redirected;
 }
 
 void AtomBrowserClient::AddProcessPreferences(
