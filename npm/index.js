@@ -15,4 +15,20 @@ function getElectronPath () {
   }
 }
 
-module.exports = getElectronPath()
+// A list of the main modules the people will attempt to use from the Electron API, this is not a complete list but should cover most
+// use cases.
+var electronModuleNames = ['app', 'autoUpdater', 'BrowserWindow', 'ipcMain', 'Menu', 'net', 'Notification', 'systemPreferences', 'Tray']
+var electronPath = new String(getElectronPath())
+
+electronModuleNames.forEach(function warnOnElectronAPIAccess (apiKey) {
+  Object.defineProperty(electronPath, apiKey, {
+    enumerable: false,
+    configurable: false,
+    get: function getElectronAPI () {
+      console.warn('WARNING: You are attempting to access an Electron API from a node environment.\n\n' +
+      'You need to use the "electron" command to run your app. E.g. "electron ./myapp.js"')
+    }
+  })
+})
+
+module.exports = electronPath
