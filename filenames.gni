@@ -62,6 +62,7 @@ filenames = {
     "lib/common/init.js",
     "lib/common/parse-features-string.js",
     "lib/common/reset-search-paths.js",
+    "lib/common/web-view-methods.js",
     "lib/renderer/callbacks-registry.js",
     "lib/renderer/chrome-api.js",
     "lib/renderer/content-scripts-injector.js",
