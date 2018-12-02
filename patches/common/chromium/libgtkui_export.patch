@@ -6,7 +6,7 @@ Subject: libgtkui_export.patch
 Export libgtkui symbols for the GN component build.
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_util.h b/chrome/browser/ui/libgtkui/gtk_util.h
-index 1efb064df26488d9d893e1e58cb17110c10501f3..bb1aea692a356c206baf2750ed4c98fa86d39fb9 100644
+index 1efb064df26488d9d893e1e58cb17110c10501f3..f89015361652803962d1b4198848fb24573beae5 100644
 --- a/chrome/browser/ui/libgtkui/gtk_util.h
 +++ b/chrome/browser/ui/libgtkui/gtk_util.h
 @@ -11,6 +11,7 @@
@@ -37,9 +37,9 @@ index 1efb064df26488d9d893e1e58cb17110c10501f3..bb1aea692a356c206baf2750ed4c98fa
 -void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
 +LIBGTKUI_EXPORT void SetGtkTransientForAura(GtkWidget* dialog, aura::Window* parent);
  
- // Gets the transient parent aura window for |dialog|.
- aura::Window* GetAuraTransientParent(GtkWidget* dialog);
-@@ -180,7 +181,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
+ // Parses |button_string| into |leading_buttons| and
+ // |trailing_buttons|.  The string is of the format
+@@ -173,7 +174,7 @@ void ApplyCssToContext(GtkStyleContext* context, const std::string& css);
  
  // Get the 'color' property from the style context created by
  // GetStyleContextFromCss(|css_selector|).
@@ -48,7 +48,7 @@ index 1efb064df26488d9d893e1e58cb17110c10501f3..bb1aea692a356c206baf2750ed4c98fa
  
  ScopedCssProvider GetCssProvider(const std::string& css);
  
-@@ -193,7 +194,7 @@ void RenderBackground(const gfx::Size& size,
+@@ -186,7 +187,7 @@ void RenderBackground(const gfx::Size& size,
  // Renders a background from the style context created by
  // GetStyleContextFromCss(|css_selector|) into a 24x24 bitmap and
  // returns the average color.
