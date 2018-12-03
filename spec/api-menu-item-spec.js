@@ -349,11 +349,14 @@ describe('MenuItems', () => {
 
       expect(item.label).to.equal('Window')
       expect(item.submenu.items[0].role).to.equal('minimize')
-      expect(item.submenu.items[1].role).to.equal('close')
+      expect(item.submenu.items[1].role).to.equal('zoom')
 
       if (process.platform === 'darwin') {
         expect(item.submenu.items[2].type).to.equal('separator')
         expect(item.submenu.items[3].role).to.equal('front')
+
+        expect(item.submenu.items[4].type).to.equal('separator')
+        expect(item.submenu.items[5].role).to.equal('window')
       }
     })
 
