@@ -69,15 +69,7 @@ const setDefaultApplicationMenu = () => {
       ]
     },
     {
-      role: 'window',
-      submenu: [
-        {
-          role: 'minimize'
-        },
-        {
-          role: 'close'
-        }
-      ]
+      role: 'windowMenu'
     },
     {
       role: 'help',
@@ -158,23 +150,6 @@ const setDefaultApplicationMenu = () => {
         }
       ]
     })
-    template[3].submenu = [
-      {
-        role: 'close'
-      },
-      {
-        role: 'minimize'
-      },
-      {
-        role: 'zoom'
-      },
-      {
-        type: 'separator'
-      },
-      {
-        role: 'front'
-      }
-    ]
   } else {
     template.unshift({
       label: 'File',
