@@ -6,10 +6,10 @@ Subject: gtk_visibility.patch
 Allow electron to depend on GTK in the GN build.
 
 diff --git a/build/config/linux/gtk/BUILD.gn b/build/config/linux/gtk/BUILD.gn
-index deae4d3455a8b54292dd3abc0a316f9ca60b4104..5f5db2fd6e5ee8532e5fa796988ea4ed58265b0d 100644
+index a2b40d82674eec5c20f705ace36cf590d46b307a..98b93a08b9a0bdbbd68925e94bf4247666b69cc4 100644
 --- a/build/config/linux/gtk/BUILD.gn
 +++ b/build/config/linux/gtk/BUILD.gn
-@@ -18,6 +18,7 @@ group("gtk") {
+@@ -26,6 +26,7 @@ group("gtk") {
    visibility = [
      "//chrome/test:interactive_ui_tests",
      "//chrome/test:unit_tests",

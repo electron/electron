@@ -1,8 +1,10 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Thu, 20 Sep 2018 17:45:59 -0700
+Date: Wed, 14 Nov 2018 20:38:46 +0530
 Subject: frame_host_manager.patch
 
+Allows embedder to intercept site instances chosen by chromium
+and respond with custom instance. 
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
 index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..a59676004f2411631418bf12e2978623b9b27b53 100644

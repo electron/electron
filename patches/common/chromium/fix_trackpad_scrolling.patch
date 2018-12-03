@@ -9,7 +9,7 @@ This patch fixes https://github.com/electron/electron/issues/8960, and can be
 removed after upgraded to Chrome 72.
 
 diff --git a/gpu/ipc/service/child_window_win.cc b/gpu/ipc/service/child_window_win.cc
-index d531234..3cce23e 100644
+index 0f432fe2233e0ba90950f4ea9164d03df4ac9cf6..8bf56a44543be44cda74c341ba59dab87c8f69cb 100644
 --- a/gpu/ipc/service/child_window_win.cc
 +++ b/gpu/ipc/service/child_window_win.cc
 @@ -9,7 +9,6 @@
@@ -20,7 +20,7 @@ index d531234..3cce23e 100644
  #include "base/win/scoped_hdc.h"
  #include "base/win/wrapped_window_proc.h"
  #include "gpu/ipc/common/gpu_messages.h"
-@@ -21,49 +20,11 @@
+@@ -21,48 +20,10 @@
  
  namespace gpu {
  
@@ -38,7 +38,7 @@ index d531234..3cce23e 100644
  
  ATOM g_window_class;
  
- // This runs on the window owner thread.
+-// This runs on the window owner thread.
 -LRESULT CALLBACK IntermediateWindowProc(HWND window,
 -                                        UINT message,
 -                                        WPARAM w_param,
@@ -66,10 +66,9 @@ index d531234..3cce23e 100644
 -  }
 -}
 -
--// This runs on the window owner thread.
+ // This runs on the window owner thread.
  void InitializeWindowClass() {
    if (g_window_class)
-     return;
 @@ -71,9 +32,9 @@ void InitializeWindowClass() {
    WNDCLASSEX intermediate_class;
    base::win::InitializeWindowClass(
@@ -105,7 +104,7 @@ index d531234..3cce23e 100644
 +          WS_EX_NOREDIRECTIONBITMAP,
 +      reinterpret_cast<wchar_t*>(g_window_class), L"",
        WS_CHILDWINDOW | WS_DISABLED | WS_VISIBLE, 0, 0, size.width(),
-       size.height(), *parent_window, NULL, NULL, NULL);
+       size.height(), *parent_window, nullptr, nullptr, nullptr);
    CHECK(window);
    *child_window = window;
 -  gfx::SetWindowUserData(window, shared_data);
@@ -189,7 +188,7 @@ index d531234..3cce23e 100644
  
  }  // namespace gpu
 diff --git a/gpu/ipc/service/child_window_win.h b/gpu/ipc/service/child_window_win.h
-index c11202b..2b29fc6 100644
+index c11202b12da8fc540a78c3b13f731fc33d2d63b3..2b29fc641a810d2b521fa14e40da5bffb42ad722 100644
 --- a/gpu/ipc/service/child_window_win.h
 +++ b/gpu/ipc/service/child_window_win.h
 @@ -7,14 +7,13 @@
@@ -227,15 +226,15 @@ index c11202b..2b29fc6 100644
    HWND parent_window_;
    HWND window_;
 diff --git a/gpu/ipc/service/direct_composition_surface_win.cc b/gpu/ipc/service/direct_composition_surface_win.cc
-index e6ac830..2fc7cd93 100644
+index da05d806bfa7e8710833eec7a2d85dfaeb9ed37a..761384364cb2544bc984f391b7c433e12fae1c33 100644
 --- a/gpu/ipc/service/direct_composition_surface_win.cc
 +++ b/gpu/ipc/service/direct_composition_surface_win.cc
-@@ -1541,8 +1541,6 @@ gfx::SwapResult DirectCompositionSurfaceWin::SwapBuffers(
+@@ -1573,8 +1573,6 @@ gfx::SwapResult DirectCompositionSurfaceWin::SwapBuffers(
    gl::GLSurfacePresentationHelper::ScopedSwapBuffers scoped_swap_buffers(
        presentation_helper_.get(), callback);
  
 -  child_window_.ClearInvalidContents();
 -
+   bool succeeded = true;
+ 
    if (root_surface_->SwapBuffers(PresentationCallback()) ==
-       gfx::SwapResult::SWAP_FAILED)
-     scoped_swap_buffers.set_result(gfx::SwapResult::SWAP_FAILED);

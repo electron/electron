@@ -13,15 +13,13 @@ namespace mate {
 // Currently we don't have a mechanism for retaining a mate::Wrappable object
 // in the C++ heap because strong references from C++ to V8 can cause memory
 // leaks.
-template<typename T>
+template <typename T>
 class Handle {
  public:
   Handle() : object_(NULL) {}
 
   Handle(v8::Local<v8::Object> wrapper, T* object)
-    : wrapper_(wrapper),
-      object_(object) {
-  }
+      : wrapper_(wrapper), object_(object) {}
 
   bool IsEmpty() const { return !object_; }
 
@@ -39,13 +37,14 @@ class Handle {
   T* object_;
 };
 
-template<typename T>
-struct Converter<mate::Handle<T> > {
+template <typename T>
+struct Converter<mate::Handle<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                    const mate::Handle<T>& val) {
+                                   const mate::Handle<T>& val) {
     return val.ToV8();
   }
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val,
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
                      mate::Handle<T>* out) {
     T* object = NULL;
     if (val->IsNull() || val->IsUndefined()) {
@@ -55,14 +54,15 @@ struct Converter<mate::Handle<T> > {
     if (!Converter<T*>::FromV8(isolate, val, &object)) {
       return false;
     }
-    *out = mate::Handle<T>(val->ToObject(), object);
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    *out = mate::Handle<T>(val->ToObject(context).ToLocalChecked(), object);
     return true;
   }
 };
 
 // This function is a convenient way to create a handle from a raw pointer
 // without having to write out the type of the object explicitly.
-template<typename T>
+template <typename T>
 mate::Handle<T> CreateHandle(v8::Isolate* isolate, T* object) {
   return mate::Handle<T>(object->GetWrapper(), object);
 }

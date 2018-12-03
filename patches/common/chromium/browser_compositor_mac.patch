@@ -5,10 +5,10 @@ Subject: browser_compositor_mac.patch
 
 
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.h b/content/browser/renderer_host/browser_compositor_view_mac.h
-index 46be85eea4b52b191d9e717fd34408a6c2445199..4c816b7021f87873a524e0dc2384146193b86e3c 100644
+index 7dc490ea5607bc61344d763d73b008c9be43280a..df136ec5c30db5146e5d1dd34e2f5ff55377af59 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.h
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.h
-@@ -59,6 +59,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
+@@ -60,6 +60,8 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
    // These will not return nullptr until Destroy is called.
    DelegatedFrameHost* GetDelegatedFrameHost();
  
@@ -17,7 +17,7 @@ index 46be85eea4b52b191d9e717fd34408a6c2445199..4c816b7021f87873a524e0dc23841461
    // Ensure that the currect compositor frame be cleared (even if it is
    // potentially visible).
    void ClearCompositorFrame();
-@@ -69,6 +71,7 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
+@@ -70,6 +72,7 @@ class CONTENT_EXPORT BrowserCompositorMac : public DelegatedFrameHostClient,
    // no valid frame is available.
    const gfx::CALayerParams* GetLastCALayerParams() const;
  
@@ -26,10 +26,10 @@ index 46be85eea4b52b191d9e717fd34408a6c2445199..4c816b7021f87873a524e0dc23841461
        viz::mojom::CompositorFrameSinkClient* renderer_compositor_frame_sink);
    void OnDidNotProduceFrame(const viz::BeginFrameAck& ack);
 diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
-index 92afcc77910610e53378f55adc003cc1bdf3109a..42bd6fd7c169de36c775471c68b456f1386ff666 100644
+index fb23caccdd1dc0280ba2039937222679b6b460d8..d1739539e7bf5240c70aece8bcc84bc093ebde3a 100644
 --- a/content/browser/renderer_host/browser_compositor_view_mac.mm
 +++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
-@@ -81,6 +81,12 @@ BrowserCompositorMac::~BrowserCompositorMac() {
+@@ -79,6 +79,12 @@
    DCHECK_EQ(1u, num_erased);
  }
  

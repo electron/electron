@@ -26,8 +26,6 @@
 
 using content::BrowserThread;
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::PrintPreviewMessageHandler);
-
 namespace atom {
 
 namespace {
@@ -110,11 +108,9 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
         printing::PrintCompositeClient::FromWebContents(web_contents());
     DCHECK(client);
     client->DoCompositeDocumentToPdf(
-        params.document_cookie, render_frame_host, content.metafile_data_handle,
-        content.data_size, content.subframe_content_info,
+        params.document_cookie, render_frame_host, content,
         base::BindOnce(&PrintPreviewMessageHandler::OnCompositePdfDocumentDone,
-                       weak_ptr_factory_.GetWeakPtr(),
-                       params.expected_pages_count, ids));
+                       weak_ptr_factory_.GetWeakPtr(), ids));
   } else {
     RunPrintToPDFCallback(
         ids.request_id,
@@ -123,7 +119,6 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
 }
 
 void PrintPreviewMessageHandler::OnCompositePdfDocumentDone(
-    int page_number,
     const PrintHostMsg_PreviewIds& ids,
     printing::mojom::PdfCompositor::Status status,
     base::ReadOnlySharedMemoryRegion region) {

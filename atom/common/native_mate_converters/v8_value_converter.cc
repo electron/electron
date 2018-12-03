@@ -244,7 +244,7 @@ v8::Local<v8::Value> V8ValueConverter::ToV8Object(
 v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
     v8::Isolate* isolate,
     const base::Value* value) const {
-  const char* data = value->GetBlob().data();
+  const auto* data = reinterpret_cast<const char*>(value->GetBlob().data());
   size_t length = value->GetBlob().size();
 
   if (NodeBindings::IsInitialized()) {

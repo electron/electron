@@ -107,9 +107,8 @@ void AtomRendererClient::DidCreateScriptContext(
   }
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetTracingController())
-    node::tracing::TraceEventHelper::SetTracingController(
-        new v8::TracingController());
+  if (!node::tracing::TraceEventHelper::GetAgent())
+    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
   node::Environment* env = node_bindings_->CreateEnvironment(context);
@@ -163,13 +162,11 @@ bool AtomRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                     const GURL& url,
                                     const std::string& http_method,
                                     bool is_initial_navigation,
-                                    bool is_server_redirect,
-                                    bool* send_referrer) {
+                                    bool is_server_redirect) {
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
-  *send_referrer = true;
   return http_method == "GET";
 }
 
@@ -193,18 +190,21 @@ void AtomRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context) {
   // Setup window overrides in the main world context
   v8::Isolate* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
 
   // Wrap the bundle into a function that receives the binding object as
   // an argument.
   std::string left = "(function (binding, require) {\n";
   std::string right = "\n})";
   auto source = v8::String::Concat(
-      mate::ConvertToV8(isolate, left)->ToString(),
-      v8::String::Concat(node::isolated_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString()));
-  auto script = v8::Script::Compile(context, source).ToLocalChecked();
-  auto func =
-      v8::Handle<v8::Function>::Cast(script->Run(context).ToLocalChecked());
+      isolate, mate::ConvertToV8(isolate, left)->ToString(isolate),
+      v8::String::Concat(isolate,
+                         node::isolated_bundle_value.ToStringChecked(isolate),
+                         mate::ConvertToV8(isolate, right)->ToString(isolate)));
+  auto result = RunScript(context, source);
+
+  DCHECK(result->IsFunction());
 
   auto binding = v8::Object::New(isolate);
   api::Initialize(binding, v8::Null(isolate), context, nullptr);
@@ -223,7 +223,8 @@ void AtomRendererClient::SetupMainWorldOverrides(
            command_line->HasSwitch(switches::kNativeWindowOpen));
 
   v8::Local<v8::Value> args[] = {binding};
-  ignore_result(func->Call(context, v8::Null(isolate), 1, args));
+  ignore_result(
+      result.As<v8::Function>()->Call(context, v8::Null(isolate), 1, args));
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

@@ -23,10 +23,10 @@ Reviewed-By: Anna Henningsen <anna@addaleax.net>
 Reviewed-By: Eugene Ostroukhov <eostroukhov@google.com>
 
 diff --git a/src/libplatform/tracing/tracing-controller.cc b/src/libplatform/tracing/tracing-controller.cc
-index b4aa7baf724d4f29b4df08f3b57fdc018f6a32a7..e0a6a1234c597071b327d051c7da1d2b784529e5 100644
+index daaebc291a5a3f566fcd65cfcced0f5c3725fe08..aa8789fa07c167ecce97dd787782ce684d3a7c38 100644
 --- a/src/libplatform/tracing/tracing-controller.cc
 +++ b/src/libplatform/tracing/tracing-controller.cc
-@@ -63,13 +63,15 @@ uint64_t TracingController::AddTraceEvent(
+@@ -77,13 +77,15 @@ uint64_t TracingController::AddTraceEvent(
      const uint64_t* arg_values,
      std::unique_ptr<v8::ConvertableToTraceFormat>* arg_convertables,
      unsigned int flags) {
@@ -49,7 +49,7 @@ index b4aa7baf724d4f29b4df08f3b57fdc018f6a32a7..e0a6a1234c597071b327d051c7da1d2b
    }
    return handle;
  }
-@@ -81,13 +83,15 @@ uint64_t TracingController::AddTraceEventWithTimestamp(
+@@ -95,13 +97,15 @@ uint64_t TracingController::AddTraceEventWithTimestamp(
      const uint64_t* arg_values,
      std::unique_ptr<v8::ConvertableToTraceFormat>* arg_convertables,
      unsigned int flags, int64_t timestamp) {

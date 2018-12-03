@@ -46,7 +46,7 @@ class MenuDelegate : public views::MenuDelegate {
                           const ui::Event& e) override;
   bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
   base::string16 GetLabel(int id) const override;
-  const gfx::FontList* GetLabelFontList(int id) const override;
+  void GetLabelStyle(int id, LabelStyle* style) const override;
   bool IsCommandEnabled(int id) const override;
   bool IsCommandVisible(int id) const override;
   bool IsItemChecked(int id) const override;
@@ -70,7 +70,7 @@ class MenuDelegate : public views::MenuDelegate {
   views::MenuButton* button_to_open_ = nullptr;
   bool hold_first_switch_;
 
-  base::ObserverList<Observer> observers_;
+  base::ObserverList<Observer>::Unchecked observers_;
 
   DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };

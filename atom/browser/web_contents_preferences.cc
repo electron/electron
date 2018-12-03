@@ -30,8 +30,6 @@
 #include "ui/gfx/switches.h"
 #endif
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPreferences);
-
 namespace {
 
 bool GetAsString(const base::Value* val,

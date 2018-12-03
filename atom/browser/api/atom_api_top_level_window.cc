@@ -20,6 +20,7 @@
 #include "atom/common/native_mate_converters/value_converter.h"
 #include "atom/common/options_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/converter.h"
 #include "native_mate/handle.h"
 #include "native_mate/persistent_dictionary.h"
 
@@ -643,7 +644,8 @@ void TopLevelWindow::SetFocusable(bool focusable) {
 void TopLevelWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   mate::Handle<Menu> menu;
   if (value->IsObject() &&
-      mate::V8ToString(value->ToObject()->GetConstructorName()) == "Menu" &&
+      gin::V8ToString(
+          isolate, value->ToObject(isolate)->GetConstructorName()) == "Menu" &&
       mate::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
     menu_.Reset(isolate, menu.ToV8());
     window_->SetMenu(menu->model());
@@ -740,7 +742,7 @@ void TopLevelWindow::SetAutoHideCursor(bool auto_hide) {
 
 void TopLevelWindow::SetVibrancy(v8::Isolate* isolate,
                                  v8::Local<v8::Value> value) {
-  std::string type = mate::V8ToString(value);
+  std::string type = gin::V8ToString(isolate, value);
   window_->SetVibrancy(type);
 }
 

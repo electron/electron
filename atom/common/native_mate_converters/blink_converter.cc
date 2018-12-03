@@ -12,6 +12,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/native_web_keyboard_event.h"
+#include "gin/converter.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/platform/web_input_event.h"
 #include "third_party/blink/public/platform/web_mouse_event.h"
@@ -41,7 +42,7 @@ struct Converter<base::char16> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      base::char16* out) {
-    base::string16 code = base::UTF8ToUTF16(V8ToString(val));
+    base::string16 code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -54,7 +55,7 @@ struct Converter<blink::WebInputEvent::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Type* out) {
-    std::string type = base::ToLowerASCII(V8ToString(val));
+    std::string type = base::ToLowerASCII(gin::V8ToString(isolate, val));
     if (type == "mousedown")
       *out = blink::WebInputEvent::kMouseDown;
     else if (type == "mouseup")
@@ -92,7 +93,7 @@ struct Converter<blink::WebMouseEvent::Button> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
-    std::string button = base::ToLowerASCII(V8ToString(val));
+    std::string button = base::ToLowerASCII(gin::V8ToString(isolate, val));
     if (button == "left")
       *out = blink::WebMouseEvent::Button::kLeft;
     else if (button == "middle")
@@ -110,7 +111,7 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
-    std::string modifier = base::ToLowerASCII(V8ToString(val));
+    std::string modifier = base::ToLowerASCII(gin::V8ToString(isolate, val));
     if (modifier == "shift")
       *out = blink::WebInputEvent::kShiftKey;
     else if (modifier == "control" || modifier == "ctrl")
@@ -377,8 +378,6 @@ bool Converter<blink::WebFindOptions>::FromV8(v8::Isolate* isolate,
   dict.Get("forward", &out->forward);
   dict.Get("matchCase", &out->match_case);
   dict.Get("findNext", &out->find_next);
-  dict.Get("wordStart", &out->word_start);
-  dict.Get("medialCapitalAsWordStart", &out->medial_capital_as_word_start);
   return true;
 }
 
@@ -518,7 +517,7 @@ bool Converter<blink::WebReferrerPolicy>::FromV8(
     v8::Isolate* isolate,
     v8::Handle<v8::Value> val,
     blink::WebReferrerPolicy* out) {
-  std::string policy = base::ToLowerASCII(V8ToString(val));
+  std::string policy = base::ToLowerASCII(gin::V8ToString(isolate, val));
   if (policy == "default")
     *out = blink::kWebReferrerPolicyDefault;
   else if (policy == "unsafe-url")

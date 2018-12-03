@@ -9,7 +9,7 @@
 #include "atom/browser/microtasks_runner.h"
 #include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
-#include "base/task_scheduler/initialization_util.h"
+#include "base/task/task_scheduler/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
@@ -25,6 +25,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
       isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
                       gin::IsolateHolder::kSingleThread,
                       gin::IsolateHolder::kAllowAtomicsWait,
+                      gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
                       isolate_),
       isolate_scope_(isolate_),
@@ -45,8 +46,9 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_controller = new v8::TracingController();
-  node::tracing::TraceEventHelper::SetTracingController(tracing_controller);
+  auto* tracing_agent = node::CreateAgent();
+  auto* tracing_controller = tracing_agent->GetTracingController();
+  node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::CreatePlatform(
       base::RecommendedMaxNumberOfThreadsInPool(3, 8, 0.1, 0),
       tracing_controller);

@@ -26,7 +26,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc0
  
  namespace ui {
  
-@@ -139,7 +138,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -147,7 +146,15 @@ base::string16 Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName(key_code_);
  #endif
  
@@ -70,9 +70,9 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc0
 @@ -223,7 +226,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
-     shortcut = l10n_util::GetStringFUTF16(IDS_APP_CONTROL_MODIFIER, shortcut);
+     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);
 -  else if (IsAltDown())
 +  if (IsAltDown())
-     shortcut = l10n_util::GetStringFUTF16(IDS_APP_ALT_MODIFIER, shortcut);
+     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_ALT_KEY);
  
    if (IsCmdDown()) {

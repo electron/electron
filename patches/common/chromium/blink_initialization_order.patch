@@ -10,7 +10,7 @@ to fix electron/electron#13787.  The backport landed in Chromium 67 but the
 DidCreateScriptContext re-ordering needs to be upstreamed or kept indefinitely
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index cbd9f811d97855e8bf083cbb2dd9ebcbcab0a1a5..160e5bc7d57ad18619a4c912d57b6b07b790ddf5 100644
+index e148eda29606cdf8856c6875dc8e370f29e90f8a..c7289e9c60fc75d0db0d3671d7dd4b428bd80329 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -177,11 +177,10 @@ void LocalWindowProxy::Initialize() {

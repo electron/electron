@@ -5,13 +5,13 @@
 #ifndef ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 #define ATOM_BROWSER_API_FRAME_SUBSCRIBER_H_
 
-#include "content/public/browser/web_contents.h"
+#include <memory>
 
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
-#include "components/viz/common/frame_sinks/copy_output_result.h"
+#include "components/viz/host/client_frame_sink_video_capturer.h"
+#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "ui/gfx/image/image.h"
 #include "v8/include/v8.h"
 
 namespace atom {
@@ -20,7 +20,8 @@ namespace api {
 
 class WebContents;
 
-class FrameSubscriber : public content::WebContentsObserver {
+class FrameSubscriber : public content::WebContentsObserver,
+                        public viz::mojom::FrameSinkVideoConsumer {
  public:
   using FrameCaptureCallback =
       base::Callback<void(v8::Local<v8::Value>, v8::Local<v8::Value>)>;
@@ -32,13 +33,31 @@ class FrameSubscriber : public content::WebContentsObserver {
   ~FrameSubscriber() override;
 
  private:
-  gfx::Rect GetDamageRect();
-  void DidReceiveCompositorFrame() override;
+  void AttachToHost(content::RenderWidgetHost* host);
+  void DetachFromHost();
+
+  void RenderViewCreated(content::RenderViewHost* host) override;
+  void RenderViewDeleted(content::RenderViewHost* host) override;
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
+
+  // viz::mojom::FrameSinkVideoConsumer implementation.
+  void OnFrameCaptured(
+      base::ReadOnlySharedMemoryRegion data,
+      ::media::mojom::VideoFrameInfoPtr info,
+      const gfx::Rect& update_rect,
+      const gfx::Rect& content_rect,
+      viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) override;
+  void OnStopped() override;
+
   void Done(const gfx::Rect& damage, const SkBitmap& frame);
 
   v8::Isolate* isolate_;
   FrameCaptureCallback callback_;
   bool only_dirty_;
+
+  content::RenderWidgetHost* host_;
+  std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_;
 

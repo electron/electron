@@ -4,13 +4,12 @@
 
 #include "atom/browser/api/frame_subscriber.h"
 
+#include <utility>
+
 #include "atom/common/native_mate_converters/gfx_converter.h"
-#include "components/viz/common/frame_sinks/copy_output_request.h"
-#include "components/viz/service/frame_sinks/frame_sink_manager_impl.h"
-#include "components/viz/service/surfaces/surface_manager.h"
-#include "content/browser/compositor/surface_utils.h"
-#include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "ui/gfx/geometry/rect_conversions.h"
+#include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 #include "atom/common/node_includes.h"
@@ -18,6 +17,8 @@
 namespace atom {
 
 namespace api {
+
+constexpr static int kMaxFrameRate = 30;
 
 FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
                                  content::WebContents* web_contents,
@@ -27,47 +28,122 @@ FrameSubscriber::FrameSubscriber(v8::Isolate* isolate,
       isolate_(isolate),
       callback_(callback),
       only_dirty_(only_dirty),
-      weak_ptr_factory_(this) {}
+      weak_ptr_factory_(this) {
+  content::RenderViewHost* rvh = web_contents->GetRenderViewHost();
+  if (rvh)
+    AttachToHost(rvh->GetWidget());
+}
 
 FrameSubscriber::~FrameSubscriber() = default;
 
-gfx::Rect FrameSubscriber::GetDamageRect() {
-  auto* view = web_contents()->GetRenderWidgetHostView();
-  if (view == nullptr)
-    return gfx::Rect();
+void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
+  host_ = host;
 
-  auto* view_base = static_cast<content::RenderWidgetHostViewBase*>(view);
-  viz::SurfaceManager* surface_manager =
-      content::GetFrameSinkManager()->surface_manager();
-  viz::Surface* surface =
-      surface_manager->GetSurfaceForId(view_base->GetCurrentSurfaceId());
-  if (surface == nullptr)
-    return gfx::Rect();
+  // The view can be null if the renderer process has crashed.
+  // (https://crbug.com/847363)
+  if (!host_->GetView())
+    return;
 
-  if (surface->HasActiveFrame()) {
-    const viz::CompositorFrame& frame = surface->GetActiveFrame();
-    viz::RenderPass* root_pass = frame.render_pass_list.back().get();
-    gfx::Size frame_size = root_pass->output_rect.size();
-    gfx::Rect damage_rect =
-        gfx::ToEnclosingRect(gfx::RectF(root_pass->damage_rect));
-    damage_rect.Intersect(gfx::Rect(frame_size));
-    return gfx::ScaleToEnclosedRect(damage_rect,
-                                    1.0f / frame.device_scale_factor());
-  } else {
-    return gfx::Rect();
+  // Create and configure the video capturer.
+  video_capturer_ = host_->GetView()->CreateVideoCapturer();
+  video_capturer_->SetResolutionConstraints(
+      host_->GetView()->GetViewBounds().size(),
+      host_->GetView()->GetViewBounds().size(), true);
+  video_capturer_->SetAutoThrottlingEnabled(false);
+  video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
+  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB,
+                             media::COLOR_SPACE_UNSPECIFIED);
+  video_capturer_->SetMinCapturePeriod(base::TimeDelta::FromSeconds(1) /
+                                       kMaxFrameRate);
+  video_capturer_->Start(this);
+}
+
+void FrameSubscriber::DetachFromHost() {
+  if (!host_)
+    return;
+  video_capturer_.reset();
+  host_ = nullptr;
+}
+
+void FrameSubscriber::RenderViewCreated(content::RenderViewHost* host) {
+  if (!host_)
+    AttachToHost(host->GetWidget());
+}
+
+void FrameSubscriber::RenderViewDeleted(content::RenderViewHost* host) {
+  if (host->GetWidget() == host_) {
+    DetachFromHost();
   }
 }
 
-void FrameSubscriber::DidReceiveCompositorFrame() {
-  auto* view = web_contents()->GetRenderWidgetHostView();
-  if (view == nullptr)
-    return;
-
-  view->CopyFromSurface(
-      gfx::Rect(), view->GetViewBounds().size(),
-      base::BindOnce(&FrameSubscriber::Done, weak_ptr_factory_.GetWeakPtr(),
-                     GetDamageRect()));
+void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                            content::RenderViewHost* new_host) {
+  if ((old_host && old_host->GetWidget() == host_) || (!old_host && !host_)) {
+    DetachFromHost();
+    AttachToHost(new_host->GetWidget());
+  }
 }
+
+void FrameSubscriber::OnFrameCaptured(
+    base::ReadOnlySharedMemoryRegion data,
+    ::media::mojom::VideoFrameInfoPtr info,
+    const gfx::Rect& update_rect,
+    const gfx::Rect& content_rect,
+    viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr callbacks) {
+  gfx::Size view_size = host_->GetView()->GetViewBounds().size();
+  if (view_size != content_rect.size()) {
+    video_capturer_->SetResolutionConstraints(view_size, view_size, true);
+    video_capturer_->RequestRefreshFrame();
+    return;
+  }
+
+  if (!data.IsValid()) {
+    callbacks->Done();
+    return;
+  }
+  base::ReadOnlySharedMemoryMapping mapping = data.Map();
+  if (!mapping.IsValid()) {
+    DLOG(ERROR) << "Shared memory mapping failed.";
+    return;
+  }
+  if (mapping.size() <
+      media::VideoFrame::AllocationSize(info->pixel_format, info->coded_size)) {
+    DLOG(ERROR) << "Shared memory size was less than expected.";
+    return;
+  }
+
+  // The SkBitmap's pixels will be marked as immutable, but the installPixels()
+  // API requires a non-const pointer. So, cast away the const.
+  void* const pixels = const_cast<void*>(mapping.memory());
+
+  // Call installPixels() with a |releaseProc| that: 1) notifies the capturer
+  // that this consumer has finished with the frame, and 2) releases the shared
+  // memory mapping.
+  struct FramePinner {
+    // Keeps the shared memory that backs |frame_| mapped.
+    base::ReadOnlySharedMemoryMapping mapping;
+    // Prevents FrameSinkVideoCapturer from recycling the shared memory that
+    // backs |frame_|.
+    viz::mojom::FrameSinkVideoConsumerFrameCallbacksPtr releaser;
+  };
+
+  SkBitmap bitmap;
+  bitmap.installPixels(
+      SkImageInfo::MakeN32(content_rect.width(), content_rect.height(),
+                           kPremul_SkAlphaType),
+      pixels,
+      media::VideoFrame::RowBytes(media::VideoFrame::kARGBPlane,
+                                  info->pixel_format, info->coded_size.width()),
+      [](void* addr, void* context) {
+        delete static_cast<FramePinner*>(context);
+      },
+      new FramePinner{std::move(mapping), std::move(callbacks)});
+  bitmap.setImmutable();
+
+  Done(content_rect, bitmap);
+}
+
+void FrameSubscriber::OnStopped() {}
 
 void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())

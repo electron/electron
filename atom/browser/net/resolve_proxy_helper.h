@@ -9,25 +9,27 @@
 #include <string>
 
 #include "base/memory/ref_counted.h"
-#include "net/proxy_resolution/proxy_resolution_service.h"
+#include "base/optional.h"
+#include "mojo/public/cpp/bindings/binding.h"
+#include "services/network/public/mojom/proxy_lookup_client.mojom.h"
 #include "url/gurl.h"
-
-namespace net {
-class URLRequestContextGetter;
-}
 
 namespace atom {
 
 class AtomBrowserContext;
 
 class ResolveProxyHelper
-    : public base::RefCountedThreadSafe<ResolveProxyHelper> {
+    : public base::RefCountedThreadSafe<ResolveProxyHelper>,
+      network::mojom::ProxyLookupClient {
  public:
   using ResolveProxyCallback = base::Callback<void(std::string)>;
 
   explicit ResolveProxyHelper(AtomBrowserContext* browser_context);
 
   void ResolveProxy(const GURL& url, const ResolveProxyCallback& callback);
+
+ protected:
+  ~ResolveProxyHelper() override;
 
  private:
   friend class base::RefCountedThreadSafe<ResolveProxyHelper>;
@@ -47,18 +49,22 @@ class ResolveProxyHelper
     DISALLOW_COPY_AND_ASSIGN(PendingRequest);
   };
 
-  ~ResolveProxyHelper();
-
   // Starts the first pending request.
   void StartPendingRequest();
-  void StartPendingRequestInIO(const GURL& url);
-  void OnProxyResolveComplete(int result);
-  void SendProxyResult(const std::string& proxy);
 
-  net::ProxyInfo proxy_info_;
+  // network::mojom::ProxyLookupClient implementation.
+  void OnProxyLookupComplete(
+      const base::Optional<net::ProxyInfo>& proxy_info) override;
+
+  // Self-reference. Owned as long as there's an outstanding proxy lookup.
+  scoped_refptr<ResolveProxyHelper> owned_self_;
+
   std::deque<PendingRequest> pending_requests_;
-  scoped_refptr<net::URLRequestContextGetter> context_getter_;
-  scoped_refptr<base::SingleThreadTaskRunner> original_thread_;
+  // Binding for the currently in-progress request, if any.
+  mojo::Binding<network::mojom::ProxyLookupClient> binding_;
+
+  // Weak Ref
+  AtomBrowserContext* browser_context_;
 
   DISALLOW_COPY_AND_ASSIGN(ResolveProxyHelper);
 };

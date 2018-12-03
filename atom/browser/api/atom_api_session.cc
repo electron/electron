@@ -359,7 +359,7 @@ void DestroyGlobalHandle(v8::Isolate* isolate,
   if (!global_handle.IsEmpty()) {
     v8::Local<v8::Value> local_handle = global_handle.Get(isolate);
     if (local_handle->IsObject()) {
-      v8::Local<v8::Object> object = local_handle->ToObject();
+      v8::Local<v8::Object> object = local_handle->ToObject(isolate);
       void* ptr = object->GetAlignedPointerFromInternalField(0);
       if (!ptr)
         return;
@@ -471,13 +471,14 @@ void Session::SetProxy(const mate::Dictionary& options,
   if (!pac_url.empty()) {
     browser_context_->in_memory_pref_store()->SetValue(
         proxy_config::prefs::kProxy,
-        ProxyConfigDictionary::CreatePacScript(pac_url,
-                                               true /* pac_mandatory */),
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
+            pac_url, true /* pac_mandatory */)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   } else {
     browser_context_->in_memory_pref_store()->SetValue(
         proxy_config::prefs::kProxy,
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list),
+        std::make_unique<base::Value>(ProxyConfigDictionary::CreateFixedServers(
+            proxy_rules, bypass_list)),
         WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
   }
 

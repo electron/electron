@@ -1,5 +1,6 @@
 const inspector = require('inspector')
 const path = require('path')
+const { pathToFileURL } = require('url')
 
 // This test case will set a breakpoint 4 lines below
 function debuggedFunction () {
@@ -51,21 +52,13 @@ function testSampleDebugSession () {
   }
   const session = new inspector.Session()
   session.connect()
-  let secondSessionOpened = false
-  const secondSession = new inspector.Session()
-  try {
-    secondSession.connect()
-    secondSessionOpened = true
-  } catch (error) {
-    // expected as the session already exists
-  }
   session.on('Debugger.paused',
     (notification) => debuggerPausedCallback(session, notification))
   let cbAsSecondArgCalled = false
   session.post('Debugger.enable', () => { cbAsSecondArgCalled = true })
   session.post('Debugger.setBreakpointByUrl', {
-    'lineNumber': 8,
-    'url': path.resolve(__dirname, __filename),
+    'lineNumber': 9,
+    'url': pathToFileURL(path.resolve(__dirname, __filename)).toString(),
     'columnNumber': 0,
     'condition': ''
   })
@@ -76,7 +69,6 @@ function testSampleDebugSession () {
   process.send({
     'cmd': 'assert',
     'debuggerEnabled': cbAsSecondArgCalled,
-    'secondSessionOpened': secondSessionOpened,
     'success': (cur === 5) && (failures.length === 0)
   })
 }

@@ -29,6 +29,7 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
+#include "url/url_util.h"
 
 #include "atom/common/node_includes.h"
 
@@ -276,7 +277,7 @@ void WebFrame::RegisterURLSchemeAsPrivileged(const std::string& scheme,
         privileged_scheme);
   }
   if (corsEnabled) {
-    blink::SchemeRegistry::RegisterURLSchemeAsCORSEnabled(privileged_scheme);
+    url::AddCORSEnabledScheme(scheme.c_str());
   }
 }
 

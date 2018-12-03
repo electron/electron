@@ -38,7 +38,6 @@ mas_blink_no_private_api.patch
 mas_no_private_api.patch
 resource_file_conflict.patch
 scroll_bounce_flag.patch
-webview_reattach.patch
 mas-cfisobjc.patch
 mas-cgdisplayusesforcetogray.patch
 mas-audiodeviceduck.patch
@@ -55,7 +54,6 @@ disable_detach_webview_frame.patch
 ssl_security_state_tab_helper.patch
 leveldb_ssize_t.patch
 exclude-a-few-test-files-from-build.patch
-crashpad_http_status.patch
 expose-net-observer-api.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
@@ -69,11 +67,9 @@ tts.patch
 color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
-fix_zoom_display.patch
 chrome_process_finder.patch
 customizable_app_indicator_id_prefix.patch
 cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch
 fix_trackpad_scrolling.patch
 mac_fix_form_control_rendering_on_10_14_mojave.patch
-ensure_cookie_store.patch

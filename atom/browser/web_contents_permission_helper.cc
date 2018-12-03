@@ -14,8 +14,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_process_host.h"
 
-DEFINE_WEB_CONTENTS_USER_DATA_KEY(atom::WebContentsPermissionHelper);
-
 namespace {
 
 std::string MediaStreamTypeToString(content::MediaStreamType type) {

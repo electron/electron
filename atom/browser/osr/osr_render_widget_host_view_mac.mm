@@ -42,10 +42,6 @@ class MacHelper : public content::BrowserCompositorMacClient,
 
   void AcceleratedWidgetCALayerParamsUpdated() override {}
 
-  void DidReceiveFirstFrameAfterNavigation() override {
-    view_->render_widget_host()->DidReceiveFirstFrameAfterNavigation();
-  }
-
   void DestroyCompositorForShutdown() override {}
 
   bool SynchronizeVisualProperties(

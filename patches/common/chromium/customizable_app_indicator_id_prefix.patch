@@ -14,26 +14,32 @@ Reviewed-by: Scott Violet <sky@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#605435}
 
 diff --git a/chrome/browser/ui/libgtkui/gtk_ui.cc b/chrome/browser/ui/libgtkui/gtk_ui.cc
-index 23542f2cd7a58bd4b4f51847a47740fc40560dad..77e42d5ed707670cae384b44fd1630c768c21775 100644
+index 3e2f37380b1d23d2eaec82ca532843775b2f61d6..082162ce707bc575d7a0491471b430db041371da 100644
 --- a/chrome/browser/ui/libgtkui/gtk_ui.cc
 +++ b/chrome/browser/ui/libgtkui/gtk_ui.cc
-@@ -274,9 +274,6 @@ typedef std::unique_ptr<GIcon, GObjectDeleter> ScopedGIcon;
+@@ -234,11 +234,6 @@ typedef std::unique_ptr<GIcon, GObjectDeleter> ScopedGIcon;
  typedef std::unique_ptr<GtkIconInfo, GtkIconInfoDeleter> ScopedGtkIconInfo;
  typedef std::unique_ptr<GdkPixbuf, GObjectDeleter> ScopedGdkPixbuf;
  
+-#if !GTK_CHECK_VERSION(3, 90, 0)
 -// Prefix for app indicator ids
 -const char kAppIndicatorIdPrefix[] = "chrome_app_indicator_";
+-#endif
 -
  // Number of app indicators used (used as part of app-indicator id).
  int indicators_count;
  
-@@ -645,12 +642,13 @@ bool GtkUi::IsStatusIconSupported() const {
+@@ -600,7 +595,8 @@ bool GtkUi::IsStatusIconSupported() const {
  
  std::unique_ptr<views::StatusIconLinux> GtkUi::CreateLinuxStatusIcon(
      const gfx::ImageSkia& image,
 -    const base::string16& tool_tip) const {
 +    const base::string16& tool_tip,
 +    const char* id_prefix) const {
+ #if GTK_CHECK_VERSION(3, 90, 0)
+   NOTIMPLEMENTED();
+   return nullptr;
+@@ -608,8 +604,8 @@ std::unique_ptr<views::StatusIconLinux> GtkUi::CreateLinuxStatusIcon(
    if (AppIndicatorIcon::CouldOpen()) {
      ++indicators_count;
      return std::unique_ptr<views::StatusIconLinux>(new AppIndicatorIcon(
@@ -43,9 +49,9 @@ index 23542f2cd7a58bd4b4f51847a47740fc40560dad..77e42d5ed707670cae384b44fd1630c7
 +        tool_tip));
    } else {
      return std::unique_ptr<views::StatusIconLinux>(
-         new Gtk2StatusIcon(image, tool_tip));
+         new GtkStatusIcon(image, tool_tip));
 diff --git a/chrome/browser/ui/libgtkui/gtk_ui.h b/chrome/browser/ui/libgtkui/gtk_ui.h
-index 8f3539e3aa339fc69fa1db68a32f9f04d4bedc3a..99760afb4a1ed2e6519a1be4dbcbde45f0e458b7 100644
+index 6f4899402ec5d7b8107c9dc2c43bd040492fd8dd..c52874dd745463d3a1b1e798992ac17e64937ea2 100644
 --- a/chrome/browser/ui/libgtkui/gtk_ui.h
 +++ b/chrome/browser/ui/libgtkui/gtk_ui.h
 @@ -92,7 +92,8 @@ class GtkUi : public views::LinuxUI {
@@ -87,10 +93,10 @@ index eed6bb2eaf756189be016c382673e23eb7ca18e0..4694a9a920b1f9150399e183038f04ac
        return base::WrapUnique(
            new StatusIconLinuxWrapper(std::move(status_icon)));
 diff --git a/ui/views/linux_ui/linux_ui.h b/ui/views/linux_ui/linux_ui.h
-index c1f14d5c65aa5c1c58633c59431c1e7c5c720a0b..7c27b61e93f83b7f277461df94fb3c939e7702d3 100644
+index 86a3c0a78cb748f679e2313db569ac0029c8da0f..bd01febaf6e0b3712e86183f7a56122d7f1ee666 100644
 --- a/ui/views/linux_ui/linux_ui.h
 +++ b/ui/views/linux_ui/linux_ui.h
-@@ -137,10 +137,12 @@ class VIEWS_EXPORT LinuxUI : public ui::LinuxInputMethodContextFactory,
+@@ -132,10 +132,12 @@ class VIEWS_EXPORT LinuxUI : public ui::LinuxInputMethodContextFactory,
    // Checks for platform support for status icons.
    virtual bool IsStatusIconSupported() const = 0;
  

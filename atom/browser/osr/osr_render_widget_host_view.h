@@ -132,6 +132,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       base::Optional<viz::HitTestRegionList> hit_test_region_list) override;
 
   void ClearCompositorFrame(void) override;
+  void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
                    const gfx::Rect& rect) override;
   void InitAsFullscreen(content::RenderWidgetHostView*) override;
@@ -178,7 +179,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void OnFirstSurfaceActivation(const viz::SurfaceInfo& surface_info) override;
   void OnBeginFrame(base::TimeTicks frame_time) override;
   void OnFrameTokenChanged(uint32_t frame_token) override;
-  void DidReceiveFirstFrameAfterNavigation() override;
 #endif  // !defined(OS_MACOSX)
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;

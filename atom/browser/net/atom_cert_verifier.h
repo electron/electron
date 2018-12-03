@@ -46,11 +46,11 @@ class AtomCertVerifier : public net::CertVerifier {
  protected:
   // net::CertVerifier:
   int Verify(const RequestParams& params,
-             net::CRLSet* crl_set,
              net::CertVerifyResult* verify_result,
              net::CompletionOnceCallback callback,
              std::unique_ptr<Request>* out_req,
              const net::NetLogWithSource& net_log) override;
+  void SetConfig(const Config& config) override;
 
  private:
   friend class CertVerifierRequest;

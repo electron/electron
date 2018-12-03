@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/logging.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "libplatform/libplatform.h"
 #include "native_mate/dictionary.h"
@@ -39,15 +40,16 @@ void NodeDebugger::Start() {
   auto options = std::make_shared<node::DebugOptions>();
   std::vector<std::string> exec_args;
   std::vector<std::string> v8_args;
-  std::string error;
+  std::vector<std::string> errors;
 
   node::options_parser::DebugOptionsParser::instance.Parse(
       &args, &exec_args, &v8_args, options.get(),
-      node::options_parser::kDisallowedInEnvironment, &error);
+      node::options_parser::kDisallowedInEnvironment, &errors);
 
-  if (!error.empty()) {
+  if (!errors.empty()) {
     // TODO(jeremy): what's the appropriate behaviour here?
-    LOG(ERROR) << "Error parsing node options: " << error;
+    LOG(ERROR) << "Error parsing node options: "
+               << base::JoinString(errors, " ");
   }
 
   // Set process._debugWaitConnect if --inspect-brk was specified to stop
@@ -58,7 +60,7 @@ void NodeDebugger::Start() {
   }
 
   const char* path = "";
-  if (inspector->Start(path, options))
+  if (inspector->Start(path, options, true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
 }
 

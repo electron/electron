@@ -265,10 +265,9 @@ describe('node feature', () => {
         stdio: ['ipc']
       })
 
-      child.on('message', ({ cmd, debuggerEnabled, secondSessionOpened, success }) => {
+      child.on('message', ({ cmd, debuggerEnabled, success }) => {
         if (cmd === 'assert') {
           expect(debuggerEnabled).to.be.true()
-          expect(secondSessionOpened).to.be.true()
           expect(success).to.be.true()
           done()
         }

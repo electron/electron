@@ -119,23 +119,26 @@ class Archive : public mate::Wrappable<Archive> {
 };
 
 void InitAsarSupport(v8::Isolate* isolate,
-                     v8::Local<v8::Value> process,
+                     v8::Local<v8::Value> source,
                      v8::Local<v8::Value> require) {
   // Evaluate asar_init.js.
-  auto context = isolate->GetCurrentContext();
-  auto source = node::asar_init_value.ToStringChecked(isolate);
-  auto asar_init = v8::Script::Compile(context, source).ToLocalChecked();
-  auto result = asar_init->Run(context).ToLocalChecked();
+  v8::Local<v8::Context> context(isolate->GetCurrentContext());
+  auto maybe_asar_init = v8::Script::Compile(
+      context, node::asar_init_value.ToStringChecked(isolate));
+  v8::Local<v8::Script> asar_init;
+  v8::Local<v8::Value> result;
+  if (maybe_asar_init.ToLocal(&asar_init))
+    result = asar_init->Run(context).ToLocalChecked();
 
   // Initialize asar support.
-  if (result->IsFunction()) {
-    v8::Local<v8::Value> args[] = {
-        process,
-        require,
-        node::asar_value.ToStringChecked(isolate),
-    };
-    result.As<v8::Function>()->Call(result, 3, args);
-  }
+  DCHECK(result->IsFunction());
+
+  v8::Local<v8::Value> args[] = {
+      source,
+      require,
+      node::asar_value.ToStringChecked(isolate),
+  };
+  result.As<v8::Function>()->Call(result, 3, args);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

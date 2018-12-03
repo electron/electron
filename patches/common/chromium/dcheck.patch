@@ -59,7 +59,7 @@ index 3f80e73535c8b4a2bcff08821e3585306f691c8b..bf40b94ad24c0621cbe093002c335569
    }
  
 diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
-index 0e7c40b732ec283e006b2e3517c42e699d7e3102..7c513d95a586d8ac80e691aa89abaf49793e9a18 100644
+index be183011e7f4e0af6f7676ac8a343ef36d2e7bc2..8b40c554912754b05d3bc5dc4889667f87935a0a 100644
 --- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
 +++ b/third_party/blink/renderer/platform/wtf/text/string_impl.h
 @@ -258,21 +258,21 @@ class WTF_EXPORT StringImpl {

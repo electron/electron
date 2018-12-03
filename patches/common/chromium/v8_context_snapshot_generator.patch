@@ -7,10 +7,10 @@ v8_context_snapshot_generator is a build time executable.
 The patch adds the config.
 
 diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUILD.gn
-index b119ec095c7b1b55277a8d6784be35508ac37094..47df8af5ef68bf8e3fb4fa4f22f7d008c4921dd5 100644
+index 771fc0df366c6461f18940546992b3efe97c4186..2cf5730fd721d3dba97ad43562516c75cf1fc157 100644
 --- a/tools/v8_context_snapshot/BUILD.gn
 +++ b/tools/v8_context_snapshot/BUILD.gn
-@@ -114,6 +114,7 @@ if (use_v8_context_snapshot) {
+@@ -109,6 +109,7 @@ if (use_v8_context_snapshot) {
      configs += [
        "//v8:external_startup_data",
        ":disable_icf",

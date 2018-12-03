@@ -196,12 +196,6 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   auto* cmd_line = base::CommandLine::ForCurrentProcess();
   auto enable_features =
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
-  // Node depends on SharedArrayBuffer support, which was temporarily disabled
-  // by https://chromium-review.googlesource.com/c/chromium/src/+/849429 (in
-  // M64) and reenabled by
-  // https://chromium-review.googlesource.com/c/chromium/src/+/1159358 (in
-  // M70). Once Electron upgrades to M70, we can remove this.
-  enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
 #if defined(OS_MACOSX)
@@ -211,6 +205,12 @@ void AtomBrowserMainParts::InitializeFeatureList() {
   // Chromium drops support for the old sandbox implmentation.
   disable_features += std::string(",") + features::kMacV2Sandbox.name;
 #endif
+  // Disable creation of spare renderer process with site-per-process mode,
+  // it interferes with our process preference tracking for non sandboxed mode.
+  // Can be reenabled when our site instance policy is aligned with chromium
+  // when node integration is enabled.
+  disable_features +=
+      std::string(",") + features::kSpareRendererForSitePerProcess.name;
   auto feature_list = std::make_unique<base::FeatureList>();
   feature_list->InitializeFromCommandLine(enable_features, disable_features);
   base::FeatureList::SetInstance(std::move(feature_list));

@@ -46,6 +46,9 @@ class PlatformNotificationService
       const DisplayedNotificationsCallback& callback) override;
   int64_t ReadNextPersistentNotificationId(
       content::BrowserContext* browser_context) override;
+  void RecordNotificationUkmEvent(
+      content::BrowserContext* browser_context,
+      const content::NotificationDatabaseData& data) override;
 
  private:
   AtomBrowserClient* browser_client_;

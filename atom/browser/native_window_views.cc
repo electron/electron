@@ -347,7 +347,7 @@ void NativeWindowViews::Show() {
       !widget()->native_widget_private()->IsVisible())
     static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
-  widget()->native_widget_private()->ShowWithWindowState(GetRestoredState());
+  widget()->native_widget_private()->Show(GetRestoredState(), gfx::Rect());
 
   NotifyWindowShow();
 
@@ -454,8 +454,8 @@ void NativeWindowViews::Maximize() {
   if (IsVisible())
     widget()->Maximize();
   else
-    widget()->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_MAXIMIZED);
+    widget()->native_widget_private()->Show(ui::SHOW_STATE_MAXIMIZED,
+                                            gfx::Rect());
 }
 
 void NativeWindowViews::Unmaximize() {
@@ -477,8 +477,8 @@ void NativeWindowViews::Minimize() {
   if (IsVisible())
     widget()->Minimize();
   else
-    widget()->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_MINIMIZED);
+    widget()->native_widget_private()->Show(ui::SHOW_STATE_MINIMIZED,
+                                            gfx::Rect());
 }
 
 void NativeWindowViews::Restore() {
@@ -533,8 +533,8 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (IsVisible())
     widget()->SetFullscreen(fullscreen);
   else if (fullscreen)
-    widget()->native_widget_private()->ShowWithWindowState(
-        ui::SHOW_STATE_FULLSCREEN);
+    widget()->native_widget_private()->Show(ui::SHOW_STATE_FULLSCREEN,
+                                            gfx::Rect());
 
   // Auto-hide menubar when in fullscreen.
   if (fullscreen)
