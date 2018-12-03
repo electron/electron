@@ -12,7 +12,7 @@ const { GitProcess } = require('dugite')
 const path = require('path')
 const readline = require('readline')
 const releaseNotesGenerator = require('./release-notes/index.js')
-const { getCurrentBranch } = require('../lib/utils.js')
+const { getCurrentBranch } = require('./lib/utils.js')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 

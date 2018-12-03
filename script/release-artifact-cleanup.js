@@ -10,7 +10,7 @@ const args = require('minimist')(process.argv.slice(2), {
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
-const { getCurrentBranch } = require('../lib/utils.js')
+const { getCurrentBranch } = require('./lib/utils.js')
 
 const GitHub = require('github')
 const path = require('path')
