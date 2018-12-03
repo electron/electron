@@ -912,6 +912,18 @@ describe('asar package', function () {
         })
       })
 
+      it('executes binaries without callback', function (done) {
+        const process = execFile(echo, ['test'])
+        process.on('close', function (code) {
+          assert.strictEqual(code, 0)
+          done()
+        })
+        process.on('error', function () {
+          assert.fail()
+          done()
+        })
+      })
+
       it('execFileSync executes binaries', function () {
         const output = execFileSync(echo, ['test'])
         assert.strictEqual(String(output), 'test\n')
