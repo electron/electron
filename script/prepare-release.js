@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 
 if (!process.env.CI) require('dotenv-safe').load()
-require('colors')
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['automaticRelease', 'notesOnly', 'stable']
 })
 const ciReleaseBuild = require('./ci-release-build')
-const { execSync } = require('child_process')
-const fail = '\u2717'.red
-const { GitProcess } = require('dugite')
 const GitHub = require('github')
-const pass = '\u2713'.green
+const { execSync } = require('child_process')
+const { GitProcess } = require('dugite')
+
 const path = require('path')
 const readline = require('readline')
 const releaseNotesGenerator = require('./release-notes/index.js')
+const { getCurrentBranch } = require('./lib/utils.js')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
+
+require('colors')
+const pass = '\u2713'.green
+const fail = '\u2717'.red
 
 // TODO (future) automatically determine version based on conventional commits
 // via conventional-recommended-bump
@@ -50,23 +53,6 @@ async function getNewVersion (dryRun) {
   } catch (err) {
     console.log(`${fail} Could not bump version, error was:`, err)
     throw err
-  }
-}
-
-async function getCurrentBranch (gitDir) {
-  console.log(`Determining current git branch`)
-  const gitArgs = ['rev-parse', '--abbrev-ref', 'HEAD']
-  const branchDetails = await GitProcess.exec(gitArgs, gitDir)
-  if (branchDetails.exitCode === 0) {
-    const currentBranch = branchDetails.stdout.trim()
-    console.log(`${pass} Successfully determined current git branch is ` +
-      `${currentBranch}`)
-    return currentBranch
-  } else {
-    const error = GitProcess.parseError(branchDetails.stderr)
-    console.log(`${fail} Could not get details for the current branch,
-      error was ${branchDetails.stderr}`, error)
-    process.exit(1)
   }
 }
 
