@@ -114,10 +114,20 @@ new Promise((resolve, reject) => {
 
     if (release.tag_name.indexOf('nightly') > 0) {
       if (currentBranch === 'master') {
-        npmTag = 'nightly'
+        // Nightlies get published to their own module, so master nightlies should be tagged as latest
+        npmTag = 'latest'
       } else {
         npmTag = `nightly-${currentBranch}`
       }
+
+      const currentJson = JSON.stringify(fs.readFileSync(path.join(tempDir, 'package.json'), 'utf8'))
+      currentJson.name = 'electron-nightly'
+      rootPackageJson.name = 'electron-nightly'
+
+      fs.writeFileSync(
+        path.join(tempDir, 'package.json'),
+        JSON.stringify(currentJson, null, 2)
+      )
     } else {
       if (currentBranch === 'master') {
         // This should never happen, master releases should be nightly releases
@@ -149,13 +159,17 @@ new Promise((resolve, reject) => {
     const currentTags = JSON.parse(childProcess.execSync('npm show electron dist-tags --json').toString())
     const localVersion = rootPackageJson.version
     const parsedLocalVersion = semver.parse(localVersion)
-    if (parsedLocalVersion.prerelease.length === 0 &&
-          semver.gt(localVersion, currentTags.latest)) {
-      childProcess.execSync(`npm dist-tag add electron@${localVersion} latest --otp=${process.env.ELECTRON_NPM_OTP}`)
-    }
-    if (parsedLocalVersion.prerelease[0] === 'beta' &&
-          semver.gt(localVersion, currentTags.beta)) {
-      childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`)
+    if (rootPackageJson.name === 'electron') {
+      // We should only customly add dist tags for non-nightly releases where the package name is still
+      // "electron"
+      if (parsedLocalVersion.prerelease.length === 0 &&
+            semver.gt(localVersion, currentTags.latest)) {
+        childProcess.execSync(`npm dist-tag add electron@${localVersion} latest --otp=${process.env.ELECTRON_NPM_OTP}`)
+      }
+      if (parsedLocalVersion.prerelease[0] === 'beta' &&
+            semver.gt(localVersion, currentTags.beta)) {
+        childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`)
+      }
     }
   })
   .catch((err) => {
