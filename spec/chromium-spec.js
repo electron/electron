@@ -515,7 +515,7 @@ describe('chromium feature', () => {
       }
       app.once('browser-window-created', (event, window) => {
         window.webContents.once('did-finish-load', () => {
-          assert.strictEqual(b.location, targetURL)
+          assert.strictEqual(b.location.href, targetURL)
           b.close()
           done()
         })
