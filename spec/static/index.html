@@ -41,7 +41,6 @@
     })
   }
 
-  const { Coverage } = require('electabul')
   const Mocha = require('mocha')
   const mochaOptions = {}
   if (process.env.MOCHA_REPORTER) {
@@ -100,14 +99,6 @@
       }
 
       Mocha.utils.highlightTags('code')
-
-      const coverage = new Coverage({
-        libPath: path.join(__dirname, '..', '..', 'lib'),
-        outputPath: path.join(__dirname, '..', '..', 'out', 'coverage'),
-        formats: ['text', 'lcov']
-      })
-      coverage.addCoverage(ipcRenderer.sendSync('get-main-process-coverage'))
-      coverage.generateReport()
 
       if (isCi) {
         ipcRenderer.send('process.exit', runner.failures)
