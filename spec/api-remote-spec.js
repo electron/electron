@@ -413,16 +413,16 @@ describe('remote module', () => {
     })
 
     it('handles rejections via catch(onRejected)', (done) => {
-      const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
-      promise.reject(Promise.resolve(1234)).catch((error) => {
+      const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
+      promise.rejectPromise(Promise.resolve(1234)).catch((error) => {
         assert.strictEqual(error.message, 'rejected')
         done()
       })
     })
 
     it('handles rejections via then(onFulfilled, onRejected)', (done) => {
-      const promise = remote.require(path.join(fixtures, 'module', 'rejected-promise.js'))
-      promise.reject(Promise.resolve(1234)).then(() => {}, (error) => {
+      const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
+      promise.rejectPromise(Promise.resolve(1234)).then(() => {}, (error) => {
         assert.strictEqual(error.message, 'rejected')
         done()
       })
@@ -433,7 +433,7 @@ describe('remote module', () => {
         done(reason)
       })
 
-      const promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
+      const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
       promise.reject().then(() => {
         done(new Error('Promise was not rejected'))
       }).catch((error) => {
@@ -450,7 +450,7 @@ describe('remote module', () => {
         done()
       })
 
-      const promise = remote.require(path.join(fixtures, 'module', 'unhandled-rejection.js'))
+      const promise = remote.require(path.join(fixtures, 'module', 'promise.js'))
       promise.reject().then(() => {
         done(new Error('Promise was not rejected'))
       })

@@ -3,6 +3,8 @@ import * as path from 'path'
 import * as electron from 'electron'
 import { EventEmitter } from 'events'
 
+import { markPromisified } from '@electron/internal/common/promise-utils'
+
 const bindings = process.electronBinding('app')
 const commandLine = process.electronBinding('command_line')
 const { app, App } = bindings
@@ -46,6 +48,10 @@ Object.defineProperty(app, 'applicationMenu', {
   }
 })
 
+// Mark promisifed APIs
+markPromisified(app.getFileIcon)
+markPromisified(app.getGPUInfo)
+
 app.isPackaged = (() => {
   const execFile = path.basename(process.execPath).toLowerCase()
   if (process.platform === 'win32') {
@@ -76,6 +82,9 @@ if (process.platform === 'darwin') {
     setDockMenu(menu)
   }
   app.dock.getMenu = () => dockMenu
+
+  // Mark promisifed APIs
+  markPromisified(app.dock.show)
 }
 
 // Routes the events to webContents.
