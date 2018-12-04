@@ -3,34 +3,17 @@ From: John Kleinschmidt <jkleinsc@github.com>
 Date: Mon, 19 Nov 2018 18:33:56 -0500
 Subject: Do not run arm/arm64 mksnapshot binaries
 
-* For arm and arm64 target_arches, Chromium builds mksnapshot as an x64 binary
-  and as part of that build mksnapshot is executed to produce snapshot_blob.bin.  
-  Chromium does not build native arm and arm64 binaries of mksnapshot, but 
-  Electron does, so this patch makes sure that the build doesn't try to run 
-  the mksnapshot binary if it was built for arm or arm64.
-* Disable embedded builtins feature for arm flavor, these are generated during
-  build and cannot be created without running the mksnapshot binaries.
-  https://bugs.chromium.org/p/v8/issues/detail?id=6666
+For arm and arm64 target_arches, Chromium builds mksnapshot as an x64 binary and
+as part of that build mksnapshot is executed to produce snapshot_blob.bin.  
+Chromium does not build native arm and arm64 binaries of mksnapshot, but 
+Electron does, so this patch makes sure that the build doesn't try to run 
+the mksnapshot binary if it was built for arm or arm64.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 22a465d7732ad9ec36e465bc87df79687a6f2425..a575495b80a9852ca25abcdc18ee3fc0f96005a2 100644
+index b1194e4b828e66d8d09fac57481efe313031f3ac..c256945650c24324c28a2e17fb299a1d0c2dcd19 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -73,8 +73,11 @@ declare_args() {
- 
-   # Enable embedded builtins.
-   # TODO(jgruber,v8:6666): Support ia32 and maybe MSVC.
--  v8_enable_embedded_builtins = v8_use_snapshot && v8_current_cpu != "x86" &&
--                                !is_aix && (!is_win || is_clang)
-+  # FIXME: mksnapshot binaries must be run on arm hardware to support
-+  # embedded builtins.
-+  v8_enable_embedded_builtins =
-+      v8_use_snapshot && v8_current_cpu != "x86" && v8_current_cpu != "arm64" &&
-+      v8_current_cpu != "arm" && !is_aix && (!is_win || is_clang)
- 
-   # Enable embedded bytecode handlers.
-   v8_enable_embedded_bytecode_handlers = false
-@@ -1263,9 +1266,15 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
+@@ -1247,9 +1247,19 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
      ]
      public_deps = [
        ":natives_blob",
@@ -39,9 +22,13 @@ index 22a465d7732ad9ec36e465bc87df79687a6f2425..a575495b80a9852ca25abcdc18ee3fc0
  
 +    if (v8_snapshot_toolchain == "//build/toolchain/linux:clang_arm" ||
 +        v8_snapshot_toolchain == "//build/toolchain/linux:clang_arm64") {
-+      public_deps += [ ":mksnapshot($v8_snapshot_toolchain)" ]
++      public_deps += [
++        ":mksnapshot($v8_snapshot_toolchain)",
++      ]
 +    } else {
-+      public_deps += [ ":run_mksnapshot_default" ]
++      public_deps += [
++        ":run_mksnapshot_default",
++      ]
 +    }
 +
      if (v8_use_multi_snapshots) {
