@@ -77,7 +77,7 @@ class App : public AtomBrowserClient::Delegate,
 #if defined(USE_NSS_CERTS)
   void OnCertificateManagerModelCreated(
       std::unique_ptr<base::DictionaryValue> options,
-      const net::CompletionCallback& callback,
+      scoped_refptr<util::Promise> promise,
       std::unique_ptr<CertificateManagerModel> model);
 #endif
 
