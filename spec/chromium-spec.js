@@ -545,14 +545,14 @@ describe('chromium feature', () => {
         webContents.once('did-finish-load', () => {
           const { location } = b
           b.close()
-          assert.strictEqual(location, 'about:blank')
+          assert.strictEqual(location.href, 'about:blank')
 
           let c = null
           app.once('browser-window-created', (event, { webContents }) => {
             webContents.once('did-finish-load', () => {
               const { location } = c
               c.close()
-              assert.strictEqual(location, 'about:blank')
+              assert.strictEqual(location.href, 'about:blank')
               done()
             })
           })
@@ -645,7 +645,7 @@ describe('chromium feature', () => {
 
     it('does nothing when origin of current window does not match opener', (done) => {
       listener = (event) => {
-        assert.strictEqual(event.data, null)
+        assert.strictEqual(event.data, '')
         done()
       }
       window.addEventListener('message', listener)
@@ -694,7 +694,7 @@ describe('chromium feature', () => {
     it('does nothing when origin of webview src URL does not match opener', (done) => {
       webview = new WebView()
       webview.addEventListener('console-message', (e) => {
-        assert.strictEqual(e.message, 'null')
+        assert.strictEqual(e.message, '')
         done()
       })
       webview.setAttribute('allowpopups', 'on')
