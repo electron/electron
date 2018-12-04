@@ -45,19 +45,6 @@ index d8aca9e2cbffdfd0bbb0bd67e8adfb53547132bb..86224ab7a3c5637422559da25bc8c104
    // The browser requested to clear the session history when it initiated the
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
-diff --git a/ppapi/host/ppapi_host.cc b/ppapi/host/ppapi_host.cc
-index 3f80e73535c8b4a2bcff08821e3585306f691c8b..bf40b94ad24c0621cbe093002c3355693219ebc4 100644
---- a/ppapi/host/ppapi_host.cc
-+++ b/ppapi/host/ppapi_host.cc
-@@ -238,7 +238,7 @@ void PpapiHost::OnHostMsgResourceCreated(
-       CreateResourceHost(params.pp_resource(), instance, nested_msg);
- 
-   if (!resource_host.get()) {
--    NOTREACHED();
-+    // NOTREACHED();
-     return;
-   }
- 
 diff --git a/third_party/blink/renderer/platform/wtf/text/string_impl.h b/third_party/blink/renderer/platform/wtf/text/string_impl.h
 index be183011e7f4e0af6f7676ac8a343ef36d2e7bc2..8b40c554912754b05d3bc5dc4889667f87935a0a 100644
 --- a/third_party/blink/renderer/platform/wtf/text/string_impl.h
