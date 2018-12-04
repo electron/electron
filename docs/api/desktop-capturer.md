@@ -84,6 +84,9 @@ The `desktopCapturer` module has the following methods:
     to be captured, available types are `screen` and `window`.
   * `thumbnailSize` [Size](structures/size.md) (optional) - The size that the media source thumbnail
     should be scaled to. Default is `150` x `150`.
+  * `fetchWindowIcons` Boolean (optional) - Set to true to enable fetching window icons. The default
+    value is false. When false the appIcon property of the sources return null. Same if a source has
+    the type screen.
 * `callback` Function
   * `error` Error
   * `sources` [DesktopCapturerSource[]](structures/desktop-capturer-source.md)

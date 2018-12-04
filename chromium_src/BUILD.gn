@@ -72,6 +72,7 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
       "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
       "//chrome/browser/media/webrtc/native_desktop_media_list.h",
+      "//chrome/browser/media/webrtc/window_icon_util.h",
     ]
     deps += [ "//ui/snapshot" ]
   }
@@ -93,6 +94,7 @@ static_library("chrome") {
 
     if (is_mac) {
       sources += [
+        "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
         "//chrome/browser/ui/cocoa/color_chooser_mac.h",
         "//chrome/browser/ui/cocoa/color_chooser_mac.mm",
       ]
@@ -100,6 +102,7 @@ static_library("chrome") {
 
     if (is_win) {
       sources += [
+        "//chrome/browser/media/webrtc/window_icon_util_win.cc",
         "//chrome/browser/ui/views/color_chooser_dialog.cc",
         "//chrome/browser/ui/views/color_chooser_dialog.h",
         "//chrome/browser/ui/views/color_chooser_win.cc",
@@ -126,7 +129,10 @@ static_library("chrome") {
     ]
 
     if (is_linux) {
-      sources += [ "//chrome/browser/speech/tts_linux.cc" ]
+      sources += [
+        "//chrome/browser/media/webrtc/window_icon_util_x11.cc",
+        "//chrome/browser/speech/tts_linux.cc",
+      ]
       deps += [ "//third_party/speech-dispatcher" ]
     }
   }
