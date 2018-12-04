@@ -3480,7 +3480,7 @@ describe('BrowserWindow module', () => {
       iw.loadURL('about:blank')
       iw.webContents.executeJavaScript(`
         const opened = window.open()
-        openedLocation = opened.location
+        openedLocation = opened.location.href
         opened.close()
         window.postMessage({openedLocation}, '*')
       `)
