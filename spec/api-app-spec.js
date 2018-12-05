@@ -793,7 +793,6 @@ describe('app module', () => {
 
       it('fetches a normal icon', async () => {
         const icon = await app.getFileIcon(iconPath, { size: 'normal' })
-        console.log(icon)
         const size = icon.getSize()
 
         expect(size.height).to.equal(sizes.normal)

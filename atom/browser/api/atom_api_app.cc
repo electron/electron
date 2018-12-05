@@ -1126,7 +1126,7 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
                                         mate::Arguments* args) {
   v8::Locker locker(isolate());
-  v8::HandleScope scope(isolate());
+  v8::HandleScope handle_scope(isolate());
 
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   base::FilePath normalized_path = path.NormalizePathSeparators();
