@@ -4,8 +4,6 @@ process.throwDeprecation = false
 const electron = require('electron')
 const { app, BrowserWindow, crashReporter, dialog, ipcMain, protocol, webContents } = electron
 
-const { Coverage } = require('electabul')
-
 const fs = require('fs')
 const path = require('path')
 const util = require('util')
@@ -84,15 +82,6 @@ global.permissionChecks = {
   allow: () => electron.session.defaultSession.setPermissionCheckHandler(null),
   reject: () => electron.session.defaultSession.setPermissionCheckHandler(() => false)
 }
-
-const coverage = new Coverage({
-  outputPath: path.join(__dirname, '..', '..', 'out', 'coverage')
-})
-coverage.setup()
-
-ipcMain.on('get-main-process-coverage', function (event) {
-  event.returnValue = global.__coverage__ || null
-})
 
 global.isCi = !!argv.ci
 if (global.isCi) {

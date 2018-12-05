@@ -54,15 +54,6 @@
         })
       }
 
-      function reportCoverage () {
-        var message = JSON.stringify({
-          pid: chrome.runtime.id,
-          coverage: window.__coverage__
-        })
-        var coverageMessage = `require('electron').ipcRenderer.send('report-coverage', ${message})`
-        window.chrome.devtools.inspectedWindow.eval(coverageMessage, function () {})
-      }
-
       testStorage(function (
         syncForSet, localForSet,
         syncForRemove, localForRemove,
@@ -86,7 +77,6 @@
           }
         })
 
-        reportCoverage()
         var sendMessage = `require('electron').ipcRenderer.send('answer', ${message})`
         window.chrome.devtools.inspectedWindow.eval(sendMessage, function () {})
       })
