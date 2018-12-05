@@ -206,7 +206,7 @@ class NativeWindowViews : public NativeWindow,
       const content::NativeWebKeyboardEvent& event) override;
 
 #if defined(OS_LINUX)
-  // EventHandler:
+  // ui::EventHandler:
   void OnMouseEvent(ui::MouseEvent* event) override;
 #endif
 

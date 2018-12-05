@@ -22,6 +22,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
@@ -289,6 +290,7 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
 #endif
 
 #if defined(OS_LINUX)
+  // Listen to move events.
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
@@ -1288,9 +1290,9 @@ void NativeWindowViews::HandleKeyboardEvent(
     const content::NativeWebKeyboardEvent& event) {
 #if defined(OS_LINUX)
   if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
-    NotifyWindowExecuteAppCommand(appCommand::kBrowserBackward);
-  if (event.windows_key_code == ui::VKEY_BROWSER_FORWARD)
-    NotifyWindowExecuteAppCommand(appCommand::kBrowserForward);
+    NotifyWindowExecuteAppCommand(kBrowserBackward);
+  else if (event.windows_key_code == ui::VKEY_BROWSER_FORWARD)
+    NotifyWindowExecuteAppCommand(kBrowserForward);
 #endif
 
   keyboard_event_handler_->HandleKeyboardEvent(event,
@@ -1304,9 +1306,9 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
     return;
 
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
-    NotifyWindowExecuteAppCommand(appCommand::kBrowserBackward);
-  if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
-    NotifyWindowExecuteAppCommand(appCommand::kBrowserForward);
+    NotifyWindowExecuteAppCommand(kBrowserBackward);
+  else if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
+    NotifyWindowExecuteAppCommand(kBrowserForward);
 }
 #endif
 

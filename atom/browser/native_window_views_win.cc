@@ -4,6 +4,7 @@
 
 #include "atom/browser/browser.h"
 #include "atom/browser/native_window_views.h"
+#include "atom/common/atom_constants.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "ui/base/win/accessibility_misc_utils.h"
 
@@ -18,9 +19,9 @@ namespace {
 const char* AppCommandToString(int command_id) {
   switch (command_id) {
     case APPCOMMAND_BROWSER_BACKWARD:
-      return appCommand::kBrowserBackward;
+      return kBrowserBackward;
     case APPCOMMAND_BROWSER_FORWARD:
-      return appCommand::kBrowserForward;
+      return kBrowserForward;
     case APPCOMMAND_BROWSER_REFRESH:
       return "browser-refresh";
     case APPCOMMAND_BROWSER_STOP:

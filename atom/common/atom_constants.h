@@ -9,6 +9,10 @@
 
 namespace atom {
 
+// The app-command in NativeWindow.
+extern const char kBrowserForward[];
+extern const char kBrowserBackward[];
+
 // Header to ignore CORS.
 extern const char kCORSHeader[];
 
