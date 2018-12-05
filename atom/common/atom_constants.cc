@@ -6,6 +6,9 @@
 
 namespace atom {
 
+const char kBrowserForward[] = "browser-forward";
+const char kBrowserBackward[] = "browser-backward";
+
 const char kCORSHeader[] = "Access-Control-Allow-Origin: *";
 
 const char kSHA1Certificate[] = "SHA-1 Certificate";

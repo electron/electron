@@ -267,7 +267,7 @@ void TopLevelWindow::OnWindowAlwaysOnTopChanged() {
   Emit("always-on-top-changed", IsAlwaysOnTop());
 }
 
-void TopLevelWindow::OnExecuteWindowsCommand(const std::string& command_name) {
+void TopLevelWindow::OnExecuteAppCommand(const std::string& command_name) {
   Emit("app-command", command_name);
 }
 

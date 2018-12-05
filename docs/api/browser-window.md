@@ -554,7 +554,7 @@ Returns:
 
 Emitted when the window is set or unset to show always on top of other windows.
 
-#### Event: 'app-command' _Windows_
+#### Event: 'app-command' _Windows_ _Linux_
 
 Returns:
 
@@ -579,6 +579,11 @@ win.on('app-command', (e, cmd) => {
   }
 })
 ```
+
+The following app commands are explictly supported on Linux:
+
+* `browser-backward`
+* `browser-forward`
 
 #### Event: 'scroll-touch-begin' _macOS_
 

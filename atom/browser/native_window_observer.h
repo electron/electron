@@ -95,7 +95,8 @@ class NativeWindowObserver : public base::CheckedObserver {
 #endif
 
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
-  virtual void OnExecuteWindowsCommand(const std::string& command_name) {}
+  // Some commands are implemented on on other platforms as well
+  virtual void OnExecuteAppCommand(const std::string& command_name) {}
 };
 
 }  // namespace atom

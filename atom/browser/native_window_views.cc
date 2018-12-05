@@ -22,6 +22,7 @@
 #include "atom/browser/web_contents_preferences.h"
 #include "atom/browser/web_view_manager.h"
 #include "atom/browser/window_list.h"
+#include "atom/common/atom_constants.h"
 #include "atom/common/draggable_region.h"
 #include "atom/common/native_mate_converters/image_converter.h"
 #include "atom/common/options_switches.h"
@@ -287,6 +288,13 @@ NativeWindowViews::NativeWindowViews(const mate::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_NORMAL;
   last_normal_bounds_ = GetBounds();
 #endif
+
+#if defined(OS_LINUX)
+  // Listen to move events.
+  aura::Window* window = GetNativeWindow();
+  if (window)
+    window->AddPreTargetHandler(this);
+#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -295,6 +303,12 @@ NativeWindowViews::~NativeWindowViews() {
 #if defined(OS_WIN)
   // Disable mouse forwarding to relinquish resources, should any be held.
   SetForwardMouseMessages(false);
+#endif
+
+#if defined(OS_LINUX)
+  aura::Window* window = GetNativeWindow();
+  if (window)
+    window->RemovePreTargetHandler(this);
 #endif
 }
 
@@ -1274,10 +1288,29 @@ void NativeWindowViews::OnWidgetMove() {
 void NativeWindowViews::HandleKeyboardEvent(
     content::WebContents*,
     const content::NativeWebKeyboardEvent& event) {
+#if defined(OS_LINUX)
+  if (event.windows_key_code == ui::VKEY_BROWSER_BACK)
+    NotifyWindowExecuteAppCommand(kBrowserBackward);
+  else if (event.windows_key_code == ui::VKEY_BROWSER_FORWARD)
+    NotifyWindowExecuteAppCommand(kBrowserForward);
+#endif
+
   keyboard_event_handler_->HandleKeyboardEvent(event,
                                                root_view_->GetFocusManager());
   root_view_->HandleKeyEvent(event);
 }
+
+#if defined(OS_LINUX)
+void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
+  if (event->type() != ui::ET_MOUSE_PRESSED)
+    return;
+
+  if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
+    NotifyWindowExecuteAppCommand(kBrowserBackward);
+  else if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
+    NotifyWindowExecuteAppCommand(kBrowserForward);
+}
+#endif
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized())
