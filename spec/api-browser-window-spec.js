@@ -11,8 +11,8 @@ const http = require('http')
 const { closeWindow } = require('./window-helpers')
 const { emittedOnce } = require('./events-helpers')
 const { resolveGetters } = require('./assert-helpers')
-const { ipcRenderer, remote, screen } = require('electron')
-const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, webContents } = remote
+const { ipcRenderer, remote } = require('electron')
+const { app, ipcMain, BrowserWindow, BrowserView, protocol, session, screen, webContents } = remote
 
 const features = process.atomBinding('features')
 const { expect } = chai
