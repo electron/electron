@@ -401,6 +401,16 @@ gets emitted.
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
 
+### Event: 'desktop-capturer-get-sources'
+
+Returns:
+
+* `event` Event
+* `webContents` [WebContents](web-contents.md)
+
+Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
+Calling `event.preventDefault()` will make it throw an error.
+
 ### Event: 'remote-require'
 
 Returns:

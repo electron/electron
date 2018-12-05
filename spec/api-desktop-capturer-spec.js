@@ -1,6 +1,6 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { desktopCapturer, remote } = require('electron')
+const { desktopCapturer, ipcRenderer, remote } = require('electron')
 const { screen } = remote
 const features = process.atomBinding('features')
 
@@ -35,6 +35,15 @@ describe('desktopCapturer', () => {
   it('throws an error for invalid options', done => {
     desktopCapturer.getSources(['window', 'screen'], error => {
       expect(error.message).to.equal('Invalid options')
+      done()
+    })
+  })
+
+  it('throws an error when blocked', done => {
+    ipcRenderer.send('handle-next-desktop-capturer-get-sources')
+    desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
+      expect(error.message).to.equal('desktopCapturer.getSources() blocked')
+      expect(sources).to.be.undefined()
       done()
     })
   })

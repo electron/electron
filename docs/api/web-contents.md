@@ -663,6 +663,15 @@ Returns:
 Emitted when the associated window logs a console message. Will not be emitted
 for windows with *offscreen rendering* enabled.
 
+#### Event: 'desktop-capturer-get-sources'
+
+Returns:
+
+* `event` Event
+
+Emitted when `desktopCapturer.getSources()` is called in the renderer process.
+Calling `event.preventDefault()` will make it throw an error.
+
 #### Event: 'remote-require'
 
 Returns:

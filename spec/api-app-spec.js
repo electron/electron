@@ -370,6 +370,16 @@ describe('app module', () => {
       w = new BrowserWindow({ show: false })
     })
 
+    it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', (done) => {
+      app.once('desktop-capturer-get-sources', (event, webContents) => {
+        expect(webContents).to.equal(w.webContents)
+        done()
+      })
+      w = new BrowserWindow({ show: false })
+      w.loadURL('about:blank')
+      w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
+    })
+
     it('should emit remote-require event when remote.require() is invoked', (done) => {
       app.once('remote-require', (event, webContents, moduleName) => {
         expect(webContents).to.equal(w.webContents)
