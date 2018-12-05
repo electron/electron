@@ -769,61 +769,45 @@ describe('app module', () => {
       }
     })
 
-    it('fetches a non-empty icon', done => {
-      app.getFileIcon(iconPath, (err, icon) => {
-        expect(err).to.be.null()
-        expect(icon.isEmpty()).to.be.false()
-        done()
-      })
+    it('fetches a non-empty icon', async () => {
+      const icon = await app.getFileIcon(iconPath)
+      expect(icon.isEmpty()).to.be.false()
     })
 
-    it('fetches normal icon size by default', done => {
-      app.getFileIcon(iconPath, (err, icon) => {
-        const size = icon.getSize()
+    it('fetches normal icon size by default', async () => {
+      const icon = await app.getFileIcon(iconPath)
+      const size = icon.getSize()
 
-        expect(err).to.be.null()
-        expect(size.height).to.equal(sizes.normal)
-        expect(size.width).to.equal(sizes.normal)
-        done()
-      })
+      expect(size.height).to.equal(sizes.normal)
+      expect(size.width).to.equal(sizes.normal)
     })
 
     describe('size option', () => {
-      it('fetches a small icon', (done) => {
-        app.getFileIcon(iconPath, { size: 'small' }, (err, icon) => {
-          const size = icon.getSize()
-          expect(err).to.be.null()
-          expect(size.height).to.equal(sizes.small)
-          expect(size.width).to.equal(sizes.small)
-          done()
-        })
+      it('fetches a small icon', async () => {
+        const icon = await app.getFileIcon(iconPath, { size: 'small' })
+        const size = icon.getSize()
+
+        expect(size.height).to.equal(sizes.small)
+        expect(size.width).to.equal(sizes.small)
       })
 
-      it('fetches a normal icon', (done) => {
-        app.getFileIcon(iconPath, { size: 'normal' }, (err, icon) => {
-          const size = icon.getSize()
-          expect(err).to.be.null()
-          expect(size.height).to.equal(sizes.normal)
-          expect(size.width).to.equal(sizes.normal)
-          done()
-        })
+      it('fetches a normal icon', async () => {
+        const icon = await app.getFileIcon(iconPath, { size: 'normal' })
+        const size = icon.getSize()
+
+        expect(size.height).to.equal(sizes.normal)
+        expect(size.width).to.equal(sizes.normal)
       })
 
-      it('fetches a large icon', function (done) {
+      it('fetches a large icon', async () => {
         // macOS does not support large icons
-        if (process.platform === 'darwin') {
-          // FIXME(alexeykuzmin): Skip the test.
-          // this.skip()
-          return done()
-        }
+        if (process.platform === 'darwin') return
 
-        app.getFileIcon(iconPath, { size: 'large' }, (err, icon) => {
-          const size = icon.getSize()
-          expect(err).to.be.null()
-          expect(size.height).to.equal(sizes.large)
-          expect(size.width).to.equal(sizes.large)
-          done()
-        })
+        const icon = await app.getFileIcon(iconPath, { size: 'large' })
+        const size = icon.getSize()
+
+        expect(size.height).to.equal(sizes.large)
+        expect(size.width).to.equal(sizes.large)
       })
     })
   })

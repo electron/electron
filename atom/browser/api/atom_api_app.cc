@@ -536,17 +536,15 @@ int ImportIntoCertStore(CertificateManagerModel* model,
 #endif
 
 void OnIconDataAvailable(v8::Isolate* isolate,
-                         const App::FileIconCallback& callback,
+                         scoped_refptr<util::Promise> promise,
                          gfx::Image* icon) {
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
 
   if (icon && !icon->IsEmpty()) {
-    callback.Run(v8::Null(isolate), *icon);
+    promise->Resolve(*icon);
   } else {
-    v8::Local<v8::String> error_message =
-        v8::String::NewFromUtf8(isolate, "Failed to get file icon.");
-    callback.Run(v8::Exception::Error(error_message), gfx::Image());
+    promise->RejectWithErrorMessage("Failed to get file icon.");
   }
 }
 
@@ -1125,16 +1123,16 @@ JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
 }
 #endif  // defined(OS_WIN)
 
-void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
-  mate::Dictionary options;
-  IconLoader::IconSize icon_size;
-  FileIconCallback callback;
-
+v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
+                                        mate::Arguments* args) {
   v8::Locker locker(isolate());
   v8::HandleScope handle_scope(isolate());
 
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
   base::FilePath normalized_path = path.NormalizePathSeparators();
 
+  IconLoader::IconSize icon_size;
+  mate::Dictionary options;
   if (!args->GetNext(&options)) {
     icon_size = IconLoader::IconSize::NORMAL;
   } else {
@@ -1143,22 +1141,17 @@ void App::GetFileIcon(const base::FilePath& path, mate::Arguments* args) {
     icon_size = GetIconSizeByString(icon_size_string);
   }
 
-  if (!args->GetNext(&callback)) {
-    args->ThrowError("Missing required callback function");
-    return;
-  }
-
   auto* icon_manager = AtomBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
   if (icon) {
-    callback.Run(v8::Null(isolate()), *icon);
+    promise->Resolve(*icon);
   } else {
-    icon_manager->LoadIcon(
-        normalized_path, icon_size,
-        base::Bind(&OnIconDataAvailable, isolate(), callback),
-        &cancelable_task_tracker_);
+    icon_manager->LoadIcon(normalized_path, icon_size,
+                           base::Bind(&OnIconDataAvailable, isolate(), promise),
+                           &cancelable_task_tracker_);
   }
+  return promise->GetHandle();
 }
 
 std::vector<mate::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
