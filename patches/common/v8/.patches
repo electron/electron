@@ -1,5 +1,4 @@
 deps_backport_detailed_line_info_for_cpu_profiler.patch
-deps_cherry-pick_2363cdf_from_upstream_v8.patch
 add_realloc.patch
 build_gn.patch
 array_buffer.patch
@@ -8,7 +7,5 @@ export_platform.patch
 dcheck.patch
 disable-warning-win.patch
 expose_mksnapshot.patch
-build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
-deps_revert_9136dd8088a9_from_upstream_v8.patch
 deps_provide_more_v8_backwards_compatibility.patch

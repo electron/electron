@@ -4,16 +4,16 @@ Date: Mon, 19 Nov 2018 18:33:56 -0500
 Subject: Do not run arm/arm64 mksnapshot binaries
 
 For arm and arm64 target_arches, Chromium builds mksnapshot as an x64 binary and
-as part of that build mksnapshot is executed to produce snapshot_blob.bin.  
-Chromium does not build native arm and arm64 binaries of mksnapshot, but 
-Electron does, so this patch makes sure that the build doesn't try to run 
+as part of that build mksnapshot is executed to produce snapshot_blob.bin.
+Chromium does not build native arm and arm64 binaries of mksnapshot, but
+Electron does, so this patch makes sure that the build doesn't try to run
 the mksnapshot binary if it was built for arm or arm64.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index b1194e4b828e66d8d09fac57481efe313031f3ac..c256945650c24324c28a2e17fb299a1d0c2dcd19 100644
+index 1f9dd022ac804e58263f527af5a47768c882de40..d40848056235b9a8307533c8b1e238aecf18207d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -1247,9 +1247,19 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
+@@ -1286,9 +1286,19 @@ if (v8_use_snapshot && v8_use_external_startup_data) {
      ]
      public_deps = [
        ":natives_blob",
