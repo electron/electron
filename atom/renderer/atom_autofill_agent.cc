@@ -177,7 +177,8 @@ bool AutofillAgent::OnMessageReceived(const IPC::Message& message) {
 }
 
 bool AutofillAgent::IsUserGesture() const {
-  return blink::WebUserGestureIndicator::IsProcessingUserGesture();
+  return blink::WebUserGestureIndicator::IsProcessingUserGesture(
+      render_frame()->GetWebFrame());
 }
 
 void AutofillAgent::HidePopup() {
