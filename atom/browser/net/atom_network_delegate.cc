@@ -399,14 +399,16 @@ net::NetworkDelegate::AuthRequiredResponse AtomNetworkDelegate::OnAuthRequired(
 }
 
 bool AtomNetworkDelegate::OnCanGetCookies(const net::URLRequest& request,
-                                          const net::CookieList& cookie_list) {
+                                          const net::CookieList& cookie_list,
+                                          bool allowed_from_caller) {
   return true;
 }
 
 bool AtomNetworkDelegate::OnCanSetCookie(
     const net::URLRequest& request,
     const net::CanonicalCookie& cookie_line,
-    net::CookieOptions* options) {
+    net::CookieOptions* options,
+    bool allowed_from_caller) {
   return true;
 }
 
