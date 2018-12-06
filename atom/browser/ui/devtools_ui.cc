@@ -4,6 +4,7 @@
 
 #include "atom/browser/ui/devtools_ui.h"
 
+#include <memory>
 #include <string>
 
 #include "base/memory/ref_counted_memory.h"
@@ -56,6 +57,7 @@ std::string GetMimeTypeForPath(const std::string& path) {
 class BundledDataSource : public content::URLDataSource {
  public:
   BundledDataSource() {}
+  ~BundledDataSource() override {}
 
   // content::URLDataSource implementation.
   std::string GetSource() const override { return kChromeUIDevToolsHost; }
@@ -104,7 +106,6 @@ class BundledDataSource : public content::URLDataSource {
   }
 
  private:
-  ~BundledDataSource() override {}
   DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 
@@ -114,7 +115,8 @@ DevToolsUI::DevToolsUI(content::BrowserContext* browser_context,
                        content::WebUI* web_ui)
     : WebUIController(web_ui) {
   web_ui->SetBindings(0);
-  content::URLDataSource::Add(browser_context, new BundledDataSource());
+  content::URLDataSource::Add(browser_context,
+                              std::make_unique<BundledDataSource>());
 }
 
 }  // namespace atom
