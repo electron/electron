@@ -192,6 +192,8 @@ void BrowserMainParts::InitializeFeatureList() {
   enable_features += std::string(",") + features::kSharedArrayBuffer.name;
   auto disable_features =
       cmd_line->GetSwitchValueASCII(switches::kDisableFeatures);
+  disable_features +=
+      std::string(",") + features::kSpareRendererForSitePerProcess.name;
 #if defined(OS_MACOSX)
   // Disable the V2 sandbox on macOS.
   // Chromium is going to use the system sandbox API of macOS for the sandbox
