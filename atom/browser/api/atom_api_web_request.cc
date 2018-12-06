@@ -31,7 +31,7 @@ struct Converter<URLPattern> {
     if (!ConvertFromV8(isolate, val, &pattern))
       return false;
     *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::PARSE_SUCCESS;
+    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
   }
 };
 
