@@ -23,6 +23,10 @@ class URLLoaderFactory;
 class SharedURLLoaderFactory;
 }  // namespace network
 
+namespace net_log {
+class NetExportFileWriter;
+}
+
 // Responsible for creating and managing access to the system NetworkContext.
 // Lives on the UI thread. The NetworkContext this owns is intended for requests
 // not associated with a session. It stores no data on disk, and has no HTTP
@@ -71,6 +75,9 @@ class SystemNetworkContextManager {
   // that is backed by the SystemNetworkContext.
   scoped_refptr<network::SharedURLLoaderFactory> GetSharedURLLoaderFactory();
 
+  // Returns a shared global NetExportFileWriter instance.
+  net_log::NetExportFileWriter* GetNetExportFileWriter();
+
   // Called when content creates a NetworkService. Creates the
   // SystemNetworkContext, if the network service is enabled.
   void OnNetworkServiceCreated(network::mojom::NetworkService* network_service);
@@ -97,6 +104,9 @@ class SystemNetworkContextManager {
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   network::mojom::URLLoaderFactoryPtr url_loader_factory_;
+
+  // Initialized on first access.
+  std::unique_ptr<net_log::NetExportFileWriter> net_export_file_writer_;
 
   DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };
