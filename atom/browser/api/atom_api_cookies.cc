@@ -153,8 +153,7 @@ void FilterCookies(std::unique_ptr<base::DictionaryValue> filter,
 
 // Receives cookies matching |filter| in IO thread.
 void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
-                    std::unique_ptr<base::DictionaryValue> filter,
-                    const Cookies::GetCallback& callback) {
+                    std::unique_ptr<base::DictionaryValue> filter) {
   std::string url;
   filter->GetString("url", &url);
 
@@ -179,9 +178,9 @@ void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
 }
 
 // Callback of SetCookie.
-void OnSetCookie(const Cookies::SetCallback& callback, bool success) {
+void OnSetCookie(scoped_refptr<util::Promise> promise, bool success) {
   RunCallbackInUI(
-      base::Bind(callback, success ? Cookies::SUCCESS : Cookies::FAILED));
+      base::Bind(promise, success ? Cookies::SUCCESS : Cookies::FAILED));
 }
 
 // Flushes cookie store in IO thread.
@@ -194,7 +193,7 @@ void FlushCookieStoreOnIOThread(
 // Sets cookie with |details| in IO thread.
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
-                   const Cookies::SetCallback& callback) {
+                   scoped_refptr<util::Promise> promise) {
   std::string url, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
@@ -235,7 +234,7 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
           GURL(url), name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
-  auto completion_callback = base::BindOnce(OnSetCookie, callback);
+  auto completion_callback = base::BindOnce(OnSetCookie, promise);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     std::move(completion_callback).Run(false);
     return;
@@ -265,8 +264,9 @@ Cookies::Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context)
 
 Cookies::~Cookies() {}
 
-void Cookies::Get(const base::DictionaryValue& filter,
-                  const GetCallback& callback) {
+v8::Local<v8::Promise> Cookies::Get(const base::DictionaryValue& filter) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(filter.Clone()));
   auto* getter = browser_context_->GetRequestContext();
@@ -276,9 +276,10 @@ void Cookies::Get(const base::DictionaryValue& filter,
                      callback));
 }
 
-void Cookies::Remove(const GURL& url,
-                     const std::string& name,
-                     const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
+                     const std::string& name) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
@@ -286,18 +287,21 @@ void Cookies::Remove(const GURL& url,
                      name, callback));
 }
 
-void Cookies::Set(const base::DictionaryValue& details,
-                  const SetCallback& callback) {
+v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto copy = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(details.Clone()));
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
-                     callback));
+                     promise));
 }
 
-void Cookies::FlushStore(const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::FlushStore() {
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,

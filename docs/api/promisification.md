@@ -8,7 +8,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 
 ### Candidate Functions
 
-- [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
 - [ ] [app.importCertificate(options, callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#importCertificate)
 - [ ] [request.write(chunk[, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#write)
 - [ ] [request.end([chunk][, encoding][, callback])](https://github.com/electron/electron/blob/master/docs/api/client-request.md#end)
@@ -19,10 +18,6 @@ When a majority of affected functions are migrated, this flag will be enabled by
 - [ ] [contentTracing.stopMonitoring(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#stopMonitoring)
 - [ ] [contentTracing.captureMonitoringSnapshot(resultFilePath, callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#captureMonitoringSnapshot)
 - [ ] [contentTracing.getTraceBufferUsage(callback)](https://github.com/electron/electron/blob/master/docs/api/content-tracing.md#getTraceBufferUsage)
-- [ ] [cookies.get(filter, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#get)
-- [ ] [cookies.set(details, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#set)
-- [ ] [cookies.remove(url, name, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#remove)
-- [ ] [cookies.flushStore(callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#flushStore)
 - [ ] [debugger.sendCommand(method[, commandParams, callback])](https://github.com/electron/electron/blob/master/docs/api/debugger.md#sendCommand)
 - [ ] [desktopCapturer.getSources(options, callback)](https://github.com/electron/electron/blob/master/docs/api/desktop-capturer.md#getSources)
 - [ ] [dialog.showOpenDialog([browserWindow, ]options[, callback])](https://github.com/electron/electron/blob/master/docs/api/dialog.md#showOpenDialog)
@@ -59,6 +54,11 @@ When a majority of affected functions are migrated, this flag will be enabled by
 
 ### Converted Functions
 
+- [ ] [app.getFileIcon(path[, options], callback)](https://github.com/electron/electron/blob/master/docs/api/app.md#getFileIcon)
+- [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
+- [ ] [cookies.get(filter, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#get)
+- [ ] [cookies.set(details, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#set)
+- [ ] [cookies.remove(url, name, callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#remove)
+- [ ] [cookies.flushStore(callback)](https://github.com/electron/electron/blob/master/docs/api/cookies.md#flushStore)
 - [ ] [win.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/browser-window.md#capturePage)
 - [ ] [webviewTag.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/webview-tag.md#capturePage)
-- [ ] [contents.capturePage([rect, ]callback)](https://github.com/electron/electron/blob/master/docs/api/web-contents.md#capturePage)
