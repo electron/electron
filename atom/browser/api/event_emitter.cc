@@ -5,6 +5,7 @@
 #include "atom/browser/api/event_emitter.h"
 
 #include "atom/browser/api/event.h"
+#include "content/public/browser/render_frame_host.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -56,6 +57,8 @@ v8::Local<v8::Object> CreateJSEvent(v8::Isolate* isolate,
     event = CreateEventObject(isolate);
   }
   mate::Dictionary(isolate, event).Set("sender", object);
+  if (sender)
+    mate::Dictionary(isolate, event).Set("frameId", sender->GetRoutingID());
   return event;
 }
 

@@ -218,6 +218,12 @@ class WebContents : public mate::TrackableObject<WebContents>,
                                 const base::ListValue& args,
                                 int32_t sender_id = 0);
 
+  bool SendIPCMessageToFrame(bool internal,
+                             bool send_to_all,
+                             int32_t frame_id,
+                             const std::string& channel,
+                             const base::ListValue& args);
+
   // Send WebInputEvent to the page.
   void SendInputEvent(v8::Isolate* isolate, v8::Local<v8::Value> input_event);
 
