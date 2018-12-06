@@ -19,6 +19,7 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "third_party/blink/public/platform/web_cache.h"
+#include "third_party/blink/public/web/web_custom_element.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -188,13 +189,14 @@ void WebFrame::SetLayoutZoomLevelLimits(double min_level, double max_level) {
   web_frame_->View()->ZoomLimitsChanged(min_level, max_level);
 }
 
-v8::Local<v8::Value> WebFrame::RegisterEmbedderCustomElement(
-    v8::Local<v8::Object> context,
-    const base::string16& name,
-    v8::Local<v8::Object> options) {
-  v8::Context::Scope context_scope(context->CreationContext());
-  return web_frame_->GetDocument().RegisterEmbedderCustomElement(
-      blink::WebString::FromUTF16(name), options);
+void WebFrame::RegisterEmbedderCustomElement(
+    v8::Local<v8::Function> register_cb) {
+  blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
+  v8::HandleScope handle_scope(isolate());
+  v8::Context::Scope context_scope(isolate()->GetCurrentContext());
+  web_frame_->RequestExecuteV8Function(isolate()->GetCurrentContext(),
+                                       register_cb, v8::Null(isolate()), 0,
+                                       nullptr, nullptr);
 }
 
 int WebFrame::GetWebFrameId(v8::Local<v8::Value> content_window) {
