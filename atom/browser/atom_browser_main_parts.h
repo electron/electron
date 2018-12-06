@@ -73,7 +73,6 @@ class AtomBrowserMainParts : public content::BrowserMainParts {
 
  protected:
   // content::BrowserMainParts:
-  bool ShouldContentCreateFeatureList() override;
   int PreEarlyInitialization() override;
   void PostEarlyInitialization() override;
   int PreCreateThreads() override;

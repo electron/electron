@@ -276,10 +276,6 @@ void AtomBrowserMainParts::RegisterDestructionCallback(
   destructors_.insert(destructors_.begin(), std::move(callback));
 }
 
-bool AtomBrowserMainParts::ShouldContentCreateFeatureList() {
-  return false;
-}
-
 int AtomBrowserMainParts::PreEarlyInitialization() {
   InitializeFeatureList();
   OverrideAppLogsPath();
