@@ -28,6 +28,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
@@ -803,19 +804,20 @@ content::ColorChooser* InspectableWebContentsImpl::OpenColorChooser(
 
 void InspectableWebContentsImpl::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
-    const content::FileChooserParams& params) {
+    std::unique_ptr<content::FileSelectListener> listener,
+    const blink::mojom::FileChooserParams& params) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
-    delegate->RunFileChooser(render_frame_host, params);
+    delegate->RunFileChooser(render_frame_host, std::move(listener), params);
 }
 
 void InspectableWebContentsImpl::EnumerateDirectory(
     content::WebContents* source,
-    int request_id,
+    std::unique_ptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
   auto* delegate = web_contents_->GetDelegate();
   if (delegate)
-    delegate->EnumerateDirectory(source, request_id, path);
+    delegate->EnumerateDirectory(source, std::move(listener), path);
 }
 
 void InspectableWebContentsImpl::OnWebContentsFocused(
