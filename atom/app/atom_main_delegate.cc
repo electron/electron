@@ -273,4 +273,8 @@ bool AtomMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
 
+bool AtomMainDelegate::ShouldCreateFeatureList() {
+  return false;
+}
+
 }  // namespace atom

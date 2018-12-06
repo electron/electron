@@ -36,6 +36,7 @@ class AtomMainDelegate : public content::ContentMainDelegate {
   bool DelaySandboxInitialization(const std::string& process_type) override;
 #endif
   bool ShouldLockSchemeRegistry() override;
+  bool ShouldCreateFeatureList() override;
 
  private:
 #if defined(OS_MACOSX)
