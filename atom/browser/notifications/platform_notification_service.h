@@ -28,15 +28,15 @@ class PlatformNotificationService
       content::BrowserContext* browser_context,
       const std::string& notification_id,
       const GURL& origin,
-      const content::PlatformNotificationData& notification_data,
-      const content::NotificationResources& notification_resources) override;
+      const blink::PlatformNotificationData& notification_data,
+      const blink::NotificationResources& notification_resources) override;
   void DisplayPersistentNotification(
       content::BrowserContext* browser_context,
       const std::string& notification_id,
       const GURL& service_worker_scope,
       const GURL& origin,
-      const content::PlatformNotificationData& notification_data,
-      const content::NotificationResources& notification_resources) override;
+      const blink::PlatformNotificationData& notification_data,
+      const blink::NotificationResources& notification_resources) override;
   void ClosePersistentNotification(content::BrowserContext* browser_context,
                                    const std::string& notification_id) override;
   void CloseNotification(content::BrowserContext* browser_context,
