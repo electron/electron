@@ -22,7 +22,9 @@ struct Converter<CrashReporter::UploadReportResult> {
       v8::Isolate* isolate,
       const CrashReporter::UploadReportResult& reports) {
     mate::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("date", v8::Date::New(isolate, reports.first * 1000.0));
+    dict.Set("date",
+             v8::Date::New(isolate->GetCurrentContext(), reports.first * 1000.0)
+                 .ToLocalChecked());
     dict.Set("id", reports.second);
     return dict.GetHandle();
   }
