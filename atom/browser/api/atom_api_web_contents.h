@@ -406,7 +406,8 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void OnAudioStateChanged(bool audible) override;
 
   // content::WebContentsObserver:
-  void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
+  void BeforeUnloadFired(bool proceed,
+                         const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost*) override;
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;

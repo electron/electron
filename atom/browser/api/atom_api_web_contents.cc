@@ -768,7 +768,8 @@ void WebContents::OnAudioStateChanged(bool audible) {
   Emit("-audio-state-changed", audible);
 }
 
-void WebContents::BeforeUnloadFired(const base::TimeTicks& proceed_time) {
+void WebContents::BeforeUnloadFired(bool proceed,
+                                    const base::TimeTicks& proceed_time) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
 }
