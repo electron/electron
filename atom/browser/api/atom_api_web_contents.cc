@@ -57,7 +57,7 @@
 #include "content/browser/frame_host/render_frame_host_manager.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
-#include "content/common/view_messages.h"
+#include "content/common/widget_messages.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
@@ -1053,7 +1053,7 @@ void WebContents::ShowAutofillPopup(content::RenderFrameHost* frame_host,
 bool WebContents::OnMessageReceived(const IPC::Message& message) {
   bool handled = true;
   IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_HANDLER_CODE(ViewHostMsg_SetCursor, OnCursorChange,
+    IPC_MESSAGE_HANDLER_CODE(WidgetHostMsg_SetCursor, OnCursorChange,
                              handled = false)
     IPC_MESSAGE_UNHANDLED(handled = false)
   IPC_END_MESSAGE_MAP()
@@ -1373,8 +1373,8 @@ void WebContents::EnableDeviceEmulation(
         frame_host ? frame_host->GetView()->GetRenderWidgetHost() : nullptr;
     if (!widget_host)
       return;
-    widget_host->Send(
-        new ViewMsg_EnableDeviceEmulation(widget_host->GetRoutingID(), params));
+    widget_host->Send(new WidgetMsg_EnableDeviceEmulation(
+        widget_host->GetRoutingID(), params));
   }
 }
 
@@ -1389,7 +1389,7 @@ void WebContents::DisableDeviceEmulation() {
     if (!widget_host)
       return;
     widget_host->Send(
-        new ViewMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
+        new WidgetMsg_DisableDeviceEmulation(widget_host->GetRoutingID()));
   }
 }
 
