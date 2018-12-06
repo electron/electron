@@ -52,7 +52,6 @@ allow_nested_error_trackers.patch
 blink_initialization_order.patch
 disable_detach_webview_frame.patch
 ssl_security_state_tab_helper.patch
-leveldb_ssize_t.patch
 exclude-a-few-test-files-from-build.patch
 expose-net-observer-api.patch
 desktop_media_list.patch

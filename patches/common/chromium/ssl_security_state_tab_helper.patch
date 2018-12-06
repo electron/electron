@@ -6,7 +6,7 @@ Subject: ssl_security_state_tab_helper.patch
 Allows populating security tab info for devtools in Electron.
 
 diff --git a/chrome/browser/ssl/security_state_tab_helper.cc b/chrome/browser/ssl/security_state_tab_helper.cc
-index c88e2729738d28ba626e14dd95924522bca2c336..a017ea4b37a39f6d65636f3c1aecc43838b80d4f 100644
+index aebdb130ba687e0d0c0aa45a08b1820b67d3c25c..fdbeb9cd398eac5659b1dac4af9094c5a5d531f4 100644
 --- a/chrome/browser/ssl/security_state_tab_helper.cc
 +++ b/chrome/browser/ssl/security_state_tab_helper.cc
 @@ -13,17 +13,23 @@
@@ -119,7 +119,7 @@ index c88e2729738d28ba626e14dd95924522bca2c336..a017ea4b37a39f6d65636f3c1aecc438
    return secure_origin_whitelist::ParseWhitelist(origins_str);
  }
 diff --git a/chrome/common/secure_origin_whitelist.cc b/chrome/common/secure_origin_whitelist.cc
-index 3319df136d4d32aad066fe98bfadacfb3c05322a..fbc6eea480d23e7158bbbfb8dc77926824b94c3d 100644
+index b70d6ced887d2a2ecb576b20d79e7fc4272e2054..5a75fe115c3c77f4a9edf7913b47341a757d1b42 100644
 --- a/chrome/common/secure_origin_whitelist.cc
 +++ b/chrome/common/secure_origin_whitelist.cc
 @@ -13,7 +13,9 @@

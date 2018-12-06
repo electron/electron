@@ -38,7 +38,7 @@ index 44c85b5ad571c39c4580cb9d0cdf08f694c1dfb4..1714c403edf21092e43192f25cf0c19f
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964bba90d0c 100644
+index ec60dd6b8f2500ac812654817f76cef26636d911..4c8c2cca0a15ad27c655fad98a6c395228d33e4e 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -135,6 +135,7 @@
@@ -85,7 +85,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
        {NSAccessibilitySizeAttribute, @"size"},
        {NSAccessibilitySortDirectionAttribute, @"sortDirection"},
        {NSAccessibilitySubroleAttribute, @"subrole"},
-@@ -1116,6 +1124,7 @@ - (NSNumber*)enabled {
+@@ -1117,6 +1125,7 @@ - (NSNumber*)enabled {
                                    ax::mojom::Restriction::kDisabled];
  }
  
@@ -93,7 +93,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  // Returns a text marker that points to the last character in the document that
  // can be selected with VoiceOver.
  - (id)endTextMarker {
-@@ -1126,6 +1135,7 @@ - (id)endTextMarker {
+@@ -1127,6 +1136,7 @@ - (id)endTextMarker {
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtEndOfAnchor());
  }
@@ -101,7 +101,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  
  - (NSNumber*)expanded {
    if (![self instanceActive])
-@@ -2034,6 +2044,7 @@ - (NSValue*)selectedTextRange {
+@@ -2036,6 +2046,7 @@ - (NSValue*)selectedTextRange {
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
  
@@ -109,7 +109,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
-@@ -2066,6 +2077,7 @@ - (id)selectedTextMarkerRange {
+@@ -2068,6 +2079,7 @@ - (id)selectedTextMarkerRange {
                                                 anchorAffinity, *focusObject,
                                                 focusOffset, focusAffinity));
  }
@@ -117,7 +117,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2098,6 +2110,7 @@ - (NSString*)sortDirection {
+@@ -2100,6 +2112,7 @@ - (NSString*)sortDirection {
    return nil;
  }
  
@@ -125,7 +125,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2108,6 +2121,7 @@ - (id)startTextMarker {
+@@ -2110,6 +2123,7 @@ - (id)startTextMarker {
    BrowserAccessibilityPositionInstance position = root->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfAnchor());
  }
@@ -133,7 +133,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  
  // Returns a subrole based upon the role.
  - (NSString*) subrole {
-@@ -2413,12 +2427,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2418,12 +2432,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
    NSMutableAttributedString* attributedValue =
        [[[NSMutableAttributedString alloc] initWithString:value] autorelease];
  
@@ -148,7 +148,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  
    return [attributedValue attributedSubstringFromRange:range];
  }
-@@ -2535,6 +2551,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2540,6 +2556,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
      return nil;
    }
  
@@ -156,7 +156,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
    if ([attribute isEqualToString:@"AXUIElementForTextMarker"]) {
      BrowserAccessibilityPositionInstance position =
          CreatePositionFromTextMarker(parameter);
-@@ -2712,6 +2729,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2717,6 +2734,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
      NSString* text = GetTextForTextMarkerRange(parameter);
      return [NSNumber numberWithInt:[text length]];
    }
@@ -164,7 +164,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
  
    if ([attribute isEqualToString:
        NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -2749,6 +2767,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2754,6 +2772,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
      return nil;
    }
  
@@ -172,7 +172,7 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
    if ([attribute isEqualToString:
             NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
      BrowserAccessibilityPositionInstance position =
-@@ -2828,6 +2847,7 @@ AXPlatformRange range(position->CreatePreviousLineStartPosition(
+@@ -2833,6 +2852,7 @@ AXPlatformRange range(position->CreatePreviousLineStartPosition(
  
      return @(child->GetIndexInParent());
    }
@@ -181,10 +181,10 @@ index 06db282cd7415e21d91f4209a51b96f408475c75..980e2387756ea8e01396b84d95844964
    return nil;
  }
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 09cb7f8a55d1d85abbe88a2bfe76ff4b9c8f253b..18e262218fe657cde910e4b3eee7a8b524b7b5e8 100644
+index ace4792b6861452555e819a2412303e3495c2018..b258a8302e85e8eee04b23106616a825b344e32f 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -459,6 +459,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -462,6 +462,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:native_focus_object
                      forKey:NSAccessibilityTextChangeElement];
  
@@ -192,7 +192,7 @@ index 09cb7f8a55d1d85abbe88a2bfe76ff4b9c8f253b..18e262218fe657cde910e4b3eee7a8b5
        id selected_text = [native_focus_object selectedTextMarkerRange];
        if (selected_text) {
          NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -466,6 +467,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -469,6 +470,7 @@ void PostAnnouncementNotification(NSString* announcement) {
          [user_info setObject:selected_text
                        forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
        }
@@ -201,32 +201,31 @@ index 09cb7f8a55d1d85abbe88a2bfe76ff4b9c8f253b..18e262218fe657cde910e4b3eee7a8b5
    }
  
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index e2122fb5fe931c911f92e709d1a643cd575972f3..da6847eea755a0b564fcd7daa36c4badc014c7f3 100644
+index b7142c2871faf4a0ba8be79266e9515d81585bdd..3d80c332e9af280a166612f6be54b6f767d729a1 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
-@@ -23,10 +23,12 @@
+@@ -23,9 +23,11 @@
  #include "sandbox/mac/system_services.h"
  #include "services/service_manager/sandbox/mac/sandbox_mac.h"
  
 +#ifndef MAS_BUILD
  extern "C" {
- void CGSSetDenyWindowServerConnections(bool);
- void CGSShutdownServerConnections();
+ CGError CGSSetDenyWindowServerConnections(bool);
  };
 +#endif
  
  namespace content {
  
 @@ -35,6 +37,7 @@
- // This disconnects from the window server, and then indicates that Chrome
- // should continue execution without access to launchservicesd.
- void DisconnectWindowServer() {
+ // verifies there are no existing open connections), and then indicates that
+ // Chrome should continue execution without access to launchservicesd.
+ void DisableSystemServices() {
 +#ifndef MAS_BUILD
-   // Now disconnect from WindowServer, after all objects have been warmed up.
-   // Shutting down the connection requires connecting to WindowServer,
-   // so do this before actually engaging the sandbox. This may cause two log
-@@ -43,6 +46,7 @@ void DisconnectWindowServer() {
-   CGSShutdownServerConnections();
+   // Tell the WindowServer that we don't want to make any future connections.
+   // This will return Success as long as there are no open connections, which
+   // is what we want.
+@@ -42,6 +45,7 @@ void DisableSystemServices() {
+   CHECK_EQ(result, kCGErrorSuccess);
  
    sandbox::DisableLaunchServices();
 +#endif
@@ -278,7 +277,7 @@ index 24a63be8a4be4f74f78fec810490d16cffaf43c1..414423de009d14ac6ac7bab2a260b3e0
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 6b7eccaf55c1b81a8db03c96f9c4353716fa8eed..7011139d73253a9f6771f0be4e6c8827493a64ea 100644
+index 38e7bb1d7f4ac8ddede73fcb2d64ff3ea25205d7..c1a9026b1fb8610546b682b4d677871482327e63 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -202,6 +202,12 @@ source_set("audio") {
@@ -295,7 +294,7 @@ index 6b7eccaf55c1b81a8db03c96f9c4353716fa8eed..7011139d73253a9f6771f0be4e6c8827
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 74dd21d45b4ff8da203ef7d759bbccf05033f862..d7dd95b4d461981c36061d1031c932fcb6f2e31b 100644
+index 31f593c59087969c3879b1da5a3de1eedcffc3a3..3bc29f5a5560b4436ebe70924bf10354e0b6be99 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -868,7 +868,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
@@ -308,10 +307,10 @@ index 74dd21d45b4ff8da203ef7d759bbccf05033f862..d7dd95b4d461981c36061d1031c932fc
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 06e9d7969c0f21726de216cd670e4752c8aff6ab..6fc766e981fdc59fcbb3c0780fde87c5cd953e2d 100644
+index 1b947c5b63564ac87cc3fb5a0d060e41a5407b4a..2bf92efa3c77ac13383dd904ba2a24081deccd04 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -242,6 +242,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -243,6 +243,7 @@ class DnsConfigServicePosix::Watcher {
  
    bool Watch() {
      bool success = true;
@@ -319,7 +318,7 @@ index 06e9d7969c0f21726de216cd670e4752c8aff6ab..6fc766e981fdc59fcbb3c0780fde87c5
      if (!config_watcher_.Watch(base::Bind(&Watcher::OnConfigChanged,
                                            base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -263,6 +264,7 @@ class DnsConfigServicePosix::Watcher {
+@@ -264,6 +265,7 @@ class DnsConfigServicePosix::Watcher {
                                  DNS_CONFIG_WATCH_MAX);
      }
  #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)

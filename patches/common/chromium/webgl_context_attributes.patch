@@ -5,10 +5,10 @@ Subject: webgl_context_attributes.patch
 
 
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 4a594bd98bcdd9d13bee61011883075de2d23495..a91f06ffb8782630714a88d1d3d00eca0c2c0f7f 100644
+index 907fd2f4f8567b828f1a45caa32cbd4dafdcac4e..8eb8b5a763c58da80ab826f629aa33e0d782ad14 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -1040,8 +1040,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
+@@ -1029,8 +1029,10 @@ RendererBlinkPlatformImpl::CreateOffscreenGraphicsContext3DProvider(
    attributes.sample_buffers = 0;
    attributes.bind_generates_resource = false;
    attributes.enable_raster_interface = web_attributes.enable_raster_interface;
@@ -22,10 +22,10 @@ index 4a594bd98bcdd9d13bee61011883075de2d23495..a91f06ffb8782630714a88d1d3d00eca
    attributes.fail_if_major_perf_caveat =
        web_attributes.fail_if_major_performance_caveat;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 3e8fae9161252cf0cfb95f81596996822026f514..362a2978452e758c8f74739bb5c635e8be9b834f 100644
+index 2f57bdd1ef3ee4f81d248fffc6e1e512ed83bb27..f016cfb6d31d0feeb32800fe6bc1c0421bad66e0 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -531,6 +531,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -550,6 +550,7 @@ class BLINK_PLATFORM_EXPORT Platform {
      kWebGPUContextType,  // WebGPU context
    };
    struct ContextAttributes {
@@ -34,19 +34,19 @@ index 3e8fae9161252cf0cfb95f81596996822026f514..362a2978452e758c8f74739bb5c635e8
      ContextType context_type = kGLES2ContextType;
      // Offscreen contexts usually share a surface for the default frame buffer
 diff --git a/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h b/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
-index 03da0840b0e398fa0826fb36b55ff41bd95af77d..9551675de44d1475714726d9b58f4d1b7863d98f 100644
+index a6f46ede75f84294d34ad042a1fb103d106a0543..c62399bde32c6296d7bdede710e63f30cef50833 100644
 --- a/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
 +++ b/third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h
 @@ -30,6 +30,7 @@ class CORE_EXPORT CanvasContextCreationAttributesCore {
-   String pixel_format = "8-8-8-8";
+   String pixel_format = "uint8";
    bool premultiplied_alpha = true;
    bool preserve_drawing_buffer = false;
 +  String power_preference = "default";
    bool stencil = false;
  
-   // This attribute is of type XRDevice, defined in modules/xr/XRDevice.h
+   // This attribute is of type XRDevice, defined in modules/xr/xr_device.h
 diff --git a/third_party/blink/renderer/modules/canvas/htmlcanvas/canvas_context_creation_attributes_module.idl b/third_party/blink/renderer/modules/canvas/htmlcanvas/canvas_context_creation_attributes_module.idl
-index 7b655dd12a77d701453988d949295ead0b7dbf4d..8969eb7d98f3a7bf2e431a398a2156499d1be326 100644
+index 98875e974f51ea77a0adf6f6f304ff97f1f62102..36739547ce2ffda7e6f243f50dab5a63a1fc6a4f 100644
 --- a/third_party/blink/renderer/modules/canvas/htmlcanvas/canvas_context_creation_attributes_module.idl
 +++ b/third_party/blink/renderer/modules/canvas/htmlcanvas/canvas_context_creation_attributes_module.idl
 @@ -28,6 +28,12 @@ enum CanvasPixelFormat {
@@ -71,7 +71,7 @@ index 7b655dd12a77d701453988d949295ead0b7dbf4d..8969eb7d98f3a7bf2e431a398a215649
      [OriginTrialEnabled=WebXR] XRDevice compatibleXRDevice = null;
  };
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc b/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
-index 3846b2a179d963a99c3785c4b9b41f346403eeb2..bf7c63a8139152c4e6a01f52965da09f6ed0b48e 100644
+index 26b4610c87c2a2c38e45e0c3d26b5b52ef1097e4..fa6923ed17aee8d85f4d1d7e27dd17fae619da85 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_context_attribute_helpers.cc
 @@ -18,6 +18,7 @@ WebGLContextAttributes ToWebGLContextAttributes(
@@ -82,7 +82,7 @@ index 3846b2a179d963a99c3785c4b9b41f346403eeb2..bf7c63a8139152c4e6a01f52965da09f
    result.setFailIfMajorPerformanceCaveat(
        attrs.fail_if_major_performance_caveat);
    result.setCompatibleXRDevice(
-@@ -30,6 +31,7 @@ Platform::ContextAttributes ToPlatformContextAttributes(
+@@ -31,6 +32,7 @@ Platform::ContextAttributes ToPlatformContextAttributes(
      Platform::ContextType context_type,
      bool support_own_offscreen_surface) {
    Platform::ContextAttributes result;
@@ -91,7 +91,7 @@ index 3846b2a179d963a99c3785c4b9b41f346403eeb2..bf7c63a8139152c4e6a01f52965da09f
        attrs.fail_if_major_performance_caveat;
    result.context_type = context_type;
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl b/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl
-index 38ca0f6b6a0c4bcb042887cd168ba8040435875d..90cfe8497daf2db6c3022826b5f1ab4e854e9955 100644
+index 39092f2acab0996dc4f29c3687f92fcd4b8b090f..256beda2da43bf02391943c6ca337fed141bc2a3 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl
 +++ b/third_party/blink/renderer/modules/webgl/webgl_context_attributes.idl
 @@ -26,6 +26,12 @@
@@ -114,4 +114,4 @@ index 38ca0f6b6a0c4bcb042887cd168ba8040435875d..90cfe8497daf2db6c3022826b5f1ab4e
 +    WebGLPowerPreference powerPreference = "default";
      boolean failIfMajorPerformanceCaveat = false;
      [OriginTrialEnabled=WebXR] XRDevice compatibleXRDevice = null;
- };
+     // TODO(crbug.com/788439): remove OriginTrialEnabled.

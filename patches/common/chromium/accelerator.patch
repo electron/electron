@@ -5,7 +5,7 @@ Subject: accelerator.patch
 
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc052960766 100644
+index d56e87be04cb4d765d0aa0eae1af86a9f562b222..9364ac4b75debc61e201e0da7eaef104acea770d 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -42,7 +42,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc0
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -148,18 +155,14 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -156,18 +163,14 @@ base::string16 Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -67,7 +67,7 @@ index 7e55ef366ac8320f730cdcb268453b1fa2710887..9b000ab1dfb85c097e879eacbfe69dc0
    }
  
    // Checking whether the character used for the accelerator is alphanumeric.
-@@ -223,7 +226,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -231,7 +234,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);

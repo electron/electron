@@ -5,10 +5,10 @@ Subject: blink_world_context.patch
 
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index e2f071b74c17c4d8854a66c461e6f3fa34ee5eaf..03f725429382a3b2ebc9e73600dc1b92168592b1 100644
+index 68b3ae21865f7c23072e2783e6c474cd0d96b806..6318eb4bac9ac38185f3192c73489966d6918a9b 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
-@@ -466,6 +466,9 @@ class WebLocalFrame : public WebFrame {
+@@ -441,6 +441,9 @@ class WebLocalFrame : public WebFrame {
    // be calling this API.
    virtual v8::Local<v8::Context> MainWorldScriptContext() const = 0;
  
@@ -19,10 +19,10 @@ index e2f071b74c17c4d8854a66c461e6f3fa34ee5eaf..03f725429382a3b2ebc9e73600dc1b92
    // that the script evaluated to with callback. Script execution can be
    // suspend.
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index fbadba8e0f240ce48ba26ad01573a97203a123ab..ac062b3967e61def6484bb266b55e6006bb0fcdd 100644
+index a7c0e79100e18fe02469a8453c84713ee68d5019..2f71ed674e4cb41e42b320e7bb0373dfb01df519 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -885,6 +885,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -891,6 +891,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  
@@ -37,10 +37,10 @@ index fbadba8e0f240ce48ba26ad01573a97203a123ab..ac062b3967e61def6484bb266b55e600
    return BindingSecurity::ShouldAllowAccessToFrame(
        CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 9b07d3bc3e50775225fafc020f6264c6b3f4cd15..8420f56040c87643365d40bd17ff6071e81eb4f8 100644
+index e857ff94ca93d44b67b2b850516fc6a93ac344e4..69ad8c4e747ac1ee311135371d932cf0b15b377c 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-@@ -146,6 +146,8 @@ class CORE_EXPORT WebLocalFrameImpl final
+@@ -148,6 +148,8 @@ class CORE_EXPORT WebLocalFrameImpl final
        int argc,
        v8::Local<v8::Value> argv[]) override;
    v8::Local<v8::Context> MainWorldScriptContext() const override;

@@ -5,7 +5,7 @@ Subject: blink-worker-enable-csp-in-file-scheme.patch
 
 
 diff --git a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
-index fae3bbccaf04ae653b52b484334a1b402a127b76..5a13426281adb0d51a5259346c1f588a67a78e07 100644
+index 4bc3d11ba0270bb4bba863724688ee5b6bc063d2..4f9accd65348b9c8f23f3e2d160e836c7841420b 100644
 --- a/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 +++ b/third_party/blink/renderer/core/workers/worker_classic_script_loader.cc
 @@ -261,7 +261,6 @@ void WorkerClassicScriptLoader::ProcessContentSecurityPolicy(

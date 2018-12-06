@@ -11,12 +11,11 @@ is ready, but after the //content layer has already locked the registry.
 Without this patch, calling `registerStandardSchemes` during initialization
 when in debug mode will cause a DCHECK to fire.
 
-
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 034fdcad958cb25780c304d184b2fbb721a13200..c2090368f6678950690463e0b90620cb9fdf5f41 100644
+index 6ed770290b1f18791c1a38a0e8e4dc0f670c29cf..37668b3e74c4031417c5ff91376a20aa56e15c07 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -808,7 +808,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -739,7 +739,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
  #endif
  
      RegisterPathProvider();
@@ -26,10 +25,10 @@ index 034fdcad958cb25780c304d184b2fbb721a13200..c2090368f6678950690463e0b90620cb
  #if defined(OS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
      int icudata_fd = g_fds->MaybeGet(kAndroidICUDataDescriptor);
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index c4bdfd36ad0c34b3a91b59502414bc98c091ccee..d7ac740d0088c002bee98238faea1ef9593eee92 100644
+index cf3c71fe0edc7fd9b788e5ca06cedcd5f9dfa369..877642228966170f3c6bbf4faf80af66bbac387e 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -63,6 +63,10 @@ bool ContentMainDelegate::ShouldEnableProfilerRecording() {
+@@ -59,6 +59,10 @@ bool ContentMainDelegate::ShouldEnableProfilerRecording() {
    return false;
  }
  
@@ -41,10 +40,10 @@ index c4bdfd36ad0c34b3a91b59502414bc98c091ccee..d7ac740d0088c002bee98238faea1ef9
    return service_manager::ProcessType::kDefault;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 979e25d1c1b9ff4b16adbab28cb44d8473f8232a..7aca113058ed111a98e396df57ebc36c06e3b896 100644
+index d55f5050c8c3cb15c549dd3ae90d00f1455d34c8..f00266ce4f93bea585f191512226cc40e1f46545 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -101,6 +101,9 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -93,6 +93,9 @@ class CONTENT_EXPORT ContentMainDelegate {
    // Returns whether or not profiler recording should be enabled.
    virtual bool ShouldEnableProfilerRecording();
  

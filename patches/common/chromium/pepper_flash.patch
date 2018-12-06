@@ -28,13 +28,13 @@ index 735da93c3cabb8c6139971295740ba14a30d1b69..533f53fbc42397608e3762e370cc935c
    // Non-owning pointer to the filter must outlive this class.
    explicit ChromeBrowserPepperHostFactory(content::BrowserPpapiHost* host);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-index f4f1741a8ecfdb570e3fe77d39146329c0677c13..103238cdd53f8f103de55e199162979c6ace948c 100644
+index 83cedb4c9e1323259afd041e571240cd971e1241..3686ae2fab5f400cf119a54aea547a72655c2b0a 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_broker_message_filter.cc
-@@ -6,10 +6,12 @@
- 
+@@ -7,10 +7,12 @@
  #include <string>
  
+ #include "base/task/post_task.h"
 +#if 0
  #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
  #include "chrome/browser/profiles/profile.h"
@@ -42,9 +42,9 @@ index f4f1741a8ecfdb570e3fe77d39146329c0677c13..103238cdd53f8f103de55e199162979c
  #include "components/content_settings/core/common/content_settings.h"
 +#endif
  #include "content/public/browser/browser_ppapi_host.h"
+ #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
- #include "content/public/browser/render_process_host.h"
-@@ -57,6 +59,7 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
+@@ -59,6 +61,7 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
        RenderProcessHost::FromID(render_process_id_);
    if (!render_process_host)
      return PP_ERROR_FAILED;
@@ -52,7 +52,7 @@ index f4f1741a8ecfdb570e3fe77d39146329c0677c13..103238cdd53f8f103de55e199162979c
    Profile* profile =
        Profile::FromBrowserContext(render_process_host->GetBrowserContext());
    HostContentSettingsMap* content_settings =
-@@ -68,5 +71,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
+@@ -70,5 +73,6 @@ int32_t PepperBrokerMessageFilter::OnIsAllowed(
                                            std::string());
    if (setting == CONTENT_SETTING_ALLOW)
      return PP_OK;
@@ -61,11 +61,11 @@ index f4f1741a8ecfdb570e3fe77d39146329c0677c13..103238cdd53f8f103de55e199162979c
 +  return PP_OK;
  }
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b907ab695c0 100644
+index 1ecf64b2068a9c4a234c3ef075a5b22dfc61669a..fa58a62346de7e57f6473ebce23d771509ccccee 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_browser_host.cc
-@@ -6,9 +6,11 @@
- 
+@@ -7,9 +7,11 @@
+ #include "base/task/post_task.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
 +#if 0
@@ -75,8 +75,8 @@ index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b90
 +#endif
  #include "content/public/browser/browser_context.h"
  #include "content/public/browser/browser_ppapi_host.h"
- #include "content/public/browser/browser_thread.h"
-@@ -40,6 +42,7 @@ using content::ServiceManagerConnection;
+ #include "content/public/browser/browser_task_traits.h"
+@@ -42,6 +44,7 @@ using content::ServiceManagerConnection;
  
  namespace {
  
@@ -84,7 +84,7 @@ index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b90
  // Get the CookieSettings on the UI thread for the given render process ID.
  scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
      int render_process_id) {
-@@ -53,6 +56,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
+@@ -55,6 +58,7 @@ scoped_refptr<content_settings::CookieSettings> GetCookieSettings(
    }
    return NULL;
  }
@@ -92,7 +92,7 @@ index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b90
  
  void PepperBindConnectorRequest(
      service_manager::mojom::ConnectorRequest connector_request) {
-@@ -70,7 +74,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
+@@ -72,7 +76,9 @@ PepperFlashBrowserHost::PepperFlashBrowserHost(BrowserPpapiHost* host,
                                                 PP_Instance instance,
                                                 PP_Resource resource)
      : ResourceHost(host->GetPpapiHost(), instance, resource),
@@ -102,7 +102,7 @@ index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b90
        delay_timer_(FROM_HERE, base::TimeDelta::FromSeconds(45), this,
                     &PepperFlashBrowserHost::OnDelayTimerFired),
        weak_factory_(this) {
-@@ -122,6 +128,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
+@@ -124,6 +130,7 @@ int32_t PepperFlashBrowserHost::OnGetLocalTimeZoneOffset(
  
  int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
      ppapi::host::HostMessageContext* context) {
@@ -111,7 +111,7 @@ index 1c1844a9eb71fe0d75cf8e3cef833fa5ffb13608..2c9834b11d34f6311f445c3ef8b62b90
    // belong to the profile which lives on the UI thread. We lazily initialize
    // |cookie_settings_| by grabbing the reference from the UI thread and then
 @@ -144,9 +151,11 @@ int32_t PepperFlashBrowserHost::OnGetLocalDataRestrictions(
-                    document_url,
+                    context->MakeReplyMessageContext(), document_url,
                     plugin_url));
    }
 -  return PP_OK_COMPLETIONPENDING;
@@ -179,10 +179,10 @@ index 154120ce5156d77dd302b85cb17e2f14fb69cc2d..5152fd847c012fc2f40017687db426fa
  
    DISALLOW_COPY_AND_ASSIGN(PepperFlashBrowserHost);
 diff --git a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-index e267746783bde72ff4f9d8a4ec706c25a039432f..bc84b44ceb276b57700be1300d5e860f482c4d20 100644
+index 1644f1233e2ae3142f7c9b450b0af97ae7325abc..bac25204c3afa7b87ed9e2861f96b5168b3e8aa6 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_flash_drm_host.cc
-@@ -18,6 +18,7 @@
+@@ -20,6 +20,7 @@
  #include "content/public/browser/child_process_security_policy.h"
  #include "content/public/browser/render_frame_host.h"
  #include "content/public/common/pepper_plugin_info.h"
@@ -190,7 +190,7 @@ index e267746783bde72ff4f9d8a4ec706c25a039432f..bc84b44ceb276b57700be1300d5e860f
  #include "ppapi/c/pp_errors.h"
  #include "ppapi/host/dispatch_host_message.h"
  #include "ppapi/host/host_message_context.h"
-@@ -127,7 +128,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
+@@ -128,7 +129,9 @@ PepperFlashDRMHost::PepperFlashDRMHost(BrowserPpapiHost* host,
    content::ChildProcessSecurityPolicy::GetInstance()->GrantReadFile(
        render_process_id, voucher_file);
  
@@ -200,7 +200,7 @@ index e267746783bde72ff4f9d8a4ec706c25a039432f..bc84b44ceb276b57700be1300d5e860f
    monitor_finder_ = new MonitorFinder(render_process_id, render_frame_id);
    monitor_finder_->GetMonitor();
  }
-@@ -150,12 +153,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
+@@ -151,12 +154,18 @@ int32_t PepperFlashDRMHost::OnResourceMessageReceived(
  
  int32_t PepperFlashDRMHost::OnHostMsgGetDeviceID(
      ppapi::host::HostMessageContext* context) {
@@ -220,7 +220,7 @@ index e267746783bde72ff4f9d8a4ec706c25a039432f..bc84b44ceb276b57700be1300d5e860f
  }
  
  int32_t PepperFlashDRMHost::OnHostMsgGetHmonitor(
-@@ -184,6 +193,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
+@@ -185,6 +194,7 @@ int32_t PepperFlashDRMHost::OnHostMsgMonitorIsExternal(
    return PP_OK;
  }
  
@@ -228,7 +228,7 @@ index e267746783bde72ff4f9d8a4ec706c25a039432f..bc84b44ceb276b57700be1300d5e860f
  void PepperFlashDRMHost::GotDeviceID(
      ppapi::host::ReplyMessageContext reply_context,
      const std::string& id,
-@@ -196,3 +206,4 @@ void PepperFlashDRMHost::GotDeviceID(
+@@ -197,3 +207,4 @@ void PepperFlashDRMHost::GotDeviceID(
    host()->SendReply(reply_context,
                      PpapiPluginMsg_FlashDRM_GetDeviceIDReply(id));
  }
@@ -258,13 +258,13 @@ index aa4433cccff4bc637ce5e71039de3c4352e7cd6b..d9630fdf6b87e11fb9657814895dff36
  
    base::WeakPtrFactory<PepperFlashDRMHost> weak_factory_;
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6d0478394 100644
+index d266f41233ff676539438d7cdd3799d83129e242..1cd381fd576fedd4ee382b33282ecd991d1f9ea7 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-@@ -7,16 +7,20 @@
- #include <stddef.h>
+@@ -8,17 +8,21 @@
  
  #include "base/macros.h"
+ #include "base/task/post_task.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/profiles/profile.h"
@@ -273,6 +273,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  #include "chrome/common/pepper_permission_util.h"
 +#endif
  #include "content/public/browser/browser_ppapi_host.h"
+ #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/child_process_security_policy.h"
  #include "content/public/browser/render_view_host.h"
@@ -282,7 +283,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  #include "ppapi/c/pp_errors.h"
  #include "ppapi/host/dispatch_host_message.h"
  #include "ppapi/host/host_message_context.h"
-@@ -25,12 +29,11 @@
+@@ -27,12 +31,11 @@
  #include "ppapi/shared_impl/file_system_util.h"
  #include "storage/browser/fileapi/isolated_context.h"
  
@@ -296,7 +297,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  
  namespace {
  
-@@ -40,6 +43,7 @@ const char* kPredefinedAllowedCrxFsOrigins[] = {
+@@ -42,6 +45,7 @@ const char* kPredefinedAllowedCrxFsOrigins[] = {
  };
  
  }  // namespace
@@ -304,7 +305,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  
  // static
  PepperIsolatedFileSystemMessageFilter*
-@@ -67,8 +71,10 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
+@@ -69,8 +73,10 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
        profile_directory_(profile_directory),
        document_url_(document_url),
        ppapi_host_(ppapi_host) {
@@ -315,7 +316,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  }
  
  PepperIsolatedFileSystemMessageFilter::
-@@ -94,6 +100,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
+@@ -96,6 +102,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
    return PP_ERROR_FAILED;
  }
  
@@ -323,7 +324,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    ProfileManager* profile_manager = g_browser_process->profile_manager();
-@@ -120,6 +127,7 @@ std::string PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(
+@@ -122,6 +129,7 @@ std::string PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(
    return std::string();
  #endif
  }
@@ -331,7 +332,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  
  int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      ppapi::host::HostMessageContext* context,
-@@ -128,7 +136,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -130,7 +138,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
        break;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
@@ -340,7 +341,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_PLUGINPRIVATE:
        return OpenPluginPrivateFileSystem(context);
    }
-@@ -138,6 +146,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -140,6 +148,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
    return PP_ERROR_FAILED;
  }
  
@@ -348,7 +349,7 @@ index 5599a2d3d62f8511655a7bc1fa88e39187451fe8..84e12cf5d2731a8a7b0ba0396ba14db6
  int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
      ppapi::host::HostMessageContext* context) {
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-@@ -176,6 +185,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+@@ -178,6 +187,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
    return PP_ERROR_NOTSUPPORTED;
  #endif
  }
