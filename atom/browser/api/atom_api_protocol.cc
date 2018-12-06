@@ -85,8 +85,8 @@ void Protocol::UnregisterProtocol(const std::string& scheme,
   args->GetNext(&callback);
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
-  content::BrowserThread::PostTaskAndReplyWithResult(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraitsAndReplyWithResult(
+      FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&Protocol::UnregisterProtocolInIO,
                      base::RetainedRef(getter), scheme),
       base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
@@ -107,8 +107,8 @@ void Protocol::IsProtocolHandled(const std::string& scheme,
                                  const BooleanCallback& callback) {
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
-  content::BrowserThread::PostTaskAndReplyWithResult(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraitsAndReplyWithResult(
+      FROM_HERE, {content::BrowserThread::IO},
       base::Bind(&Protocol::IsProtocolHandledInIO, base::RetainedRef(getter),
                  scheme),
       callback);
@@ -127,8 +127,8 @@ void Protocol::UninterceptProtocol(const std::string& scheme,
   args->GetNext(&callback);
   auto* getter = static_cast<URLRequestContextGetter*>(
       browser_context_->GetRequestContext());
-  content::BrowserThread::PostTaskAndReplyWithResult(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraitsAndReplyWithResult(
+      FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&Protocol::UninterceptProtocolInIO,
                      base::RetainedRef(getter), scheme),
       base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));

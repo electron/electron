@@ -9,7 +9,9 @@
 #include "base/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_context.h"
 #include "crypto/nss_util.h"
@@ -71,8 +73,8 @@ net::NSSCertDatabase* GetNSSCertDatabaseForResourceContext(
 void CertificateManagerModel::Create(content::BrowserContext* browser_context,
                                      const CreationCallback& callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::Bind(&CertificateManagerModel::GetCertDBOnIOThread,
                  browser_context->GetResourceContext(), callback));
 }
@@ -144,8 +146,8 @@ void CertificateManagerModel::DidGetCertDBOnIOThread(
   DCHECK_CURRENTLY_ON(BrowserThread::IO);
 
   bool is_user_db_available = !!cert_db->GetPublicSlot();
-  BrowserThread::PostTask(
-      BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::UI},
       base::Bind(&CertificateManagerModel::DidGetCertDBOnUIThread, cert_db,
                  is_user_db_available, callback));
 }

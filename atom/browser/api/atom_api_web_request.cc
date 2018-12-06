@@ -12,6 +12,8 @@
 #include "atom/common/native_mate_converters/callback.h"
 #include "atom/common/native_mate_converters/net_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
@@ -97,8 +99,8 @@ void WebRequest::SetListener(Method method, Event type, mate::Arguments* args) {
       browser_context_->GetRequestContext());
   if (!url_request_context_getter)
     return;
-  BrowserThread::PostTask(
-      BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {BrowserThread::IO},
       base::BindOnce(&CallNetworkDelegateMethod<Method, Event, Listener>,
                      base::RetainedRef(url_request_context_getter), method,
                      type, std::move(patterns), std::move(listener)));

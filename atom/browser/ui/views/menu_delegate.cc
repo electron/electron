@@ -6,6 +6,8 @@
 
 #include "atom/browser/ui/views/menu_bar.h"
 #include "atom/browser/ui/views/menu_model_adapter.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/controls/menu/menu_item_view.h"
@@ -130,8 +132,8 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     button_to_open_ = button;
     // Switching menu asyncnously to avoid crash.
     if (!switch_in_progress) {
-      content::BrowserThread::PostTask(
-          content::BrowserThread::UI, FROM_HERE,
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
           base::Bind(&views::MenuRunner::Cancel,
                      base::Unretained(menu_runner_.get())));
     }

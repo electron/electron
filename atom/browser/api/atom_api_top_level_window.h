@@ -14,6 +14,8 @@
 #include "atom/browser/native_window.h"
 #include "atom/browser/native_window_observer.h"
 #include "atom/common/api/atom_api_native_image.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/handle.h"
 
@@ -230,8 +232,8 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 
   template <typename... Args>
   void EmitEventSoon(base::StringPiece eventName) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce(base::IgnoreResult(&TopLevelWindow::Emit<Args...>),
                        weak_factory_.GetWeakPtr(), eventName));
   }

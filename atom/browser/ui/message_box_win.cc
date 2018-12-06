@@ -17,8 +17,10 @@
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
 #include "base/threading/thread.h"
 #include "base/win/scoped_gdi_object.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
@@ -222,9 +224,8 @@ void RunMessageBoxInNewThread(base::Thread* thread,
   int result = ShowTaskDialogUTF8(parent, type, buttons, default_id, cancel_id,
                                   options, title, message, detail,
                                   checkbox_label, &checkbox_checked, icon);
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
-      base::Bind(callback, result, checkbox_checked));
+  base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                           base::Bind(callback, result, checkbox_checked));
   content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                      thread);
 }

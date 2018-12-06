@@ -16,6 +16,8 @@
 #include "atom/browser/net/atom_url_request_job_factory.h"
 #include "base/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/arguments.h"
 #include "native_mate/dictionary.h"
@@ -104,8 +106,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     args->GetNext(&callback);
     auto* getter = static_cast<URLRequestContextGetter*>(
         browser_context_->GetRequestContext());
-    content::BrowserThread::PostTaskAndReplyWithResult(
-        content::BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraitsAndReplyWithResult(
+        FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&Protocol::RegisterProtocolInIO<RequestJob>,
                        base::RetainedRef(getter), isolate(), scheme, handler),
         base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));
@@ -149,8 +151,8 @@ class Protocol : public mate::TrackableObject<Protocol> {
     args->GetNext(&callback);
     auto* getter = static_cast<URLRequestContextGetter*>(
         browser_context_->GetRequestContext());
-    content::BrowserThread::PostTaskAndReplyWithResult(
-        content::BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraitsAndReplyWithResult(
+        FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&Protocol::InterceptProtocolInIO<RequestJob>,
                        base::RetainedRef(getter), isolate(), scheme, handler),
         base::BindOnce(&Protocol::OnIOCompleted, GetWeakPtr(), callback));

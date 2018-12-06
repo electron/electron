@@ -15,6 +15,8 @@
 
 #include "atom/browser/browser.h"
 #include "base/posix/eintr_wrapper.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 using content::BrowserThread;
@@ -137,7 +139,7 @@ void ShutdownDetector::ThreadMain() {
   base::Closure task =
       base::Bind(&Browser::Quit, base::Unretained(Browser::Get()));
 
-  if (!BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, task)) {
+  if (!base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI}, task)) {
     // Without a UI thread to post the exit task to, there aren't many
     // options.  Raise the signal again.  The default handler will pick it up
     // and cause an ungraceful exit.
