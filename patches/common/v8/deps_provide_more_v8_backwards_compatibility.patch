@@ -22,10 +22,10 @@ Reviewed-By: Yang Guo <yangguo@chromium.org>
 Reviewed-By: Michaël Zasso <targos@protonmail.com>
 
 diff --git a/include/v8.h b/include/v8.h
-index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbbadb1e3210 100644
+index 6934a9c3838641446fa96a8ab48abed4cfc1841c..2ab60e2ceebf0648ff5b58f5d9909e0bf000585f 100644
 --- a/include/v8.h
 +++ b/include/v8.h
-@@ -1123,6 +1123,10 @@ class V8_EXPORT PrimitiveArray {
+@@ -999,6 +999,10 @@ class V8_EXPORT PrimitiveArray {
   public:
    static Local<PrimitiveArray> New(Isolate* isolate, int length);
    int Length() const;
@@ -36,7 +36,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
    void Set(Isolate* isolate, int index, Local<Primitive> item);
    Local<Primitive> Get(Isolate* isolate, int index);
  };
-@@ -1829,6 +1833,8 @@ class V8_EXPORT StackTrace {
+@@ -1710,6 +1714,8 @@ class V8_EXPORT StackTrace {
    /**
     * Returns a StackFrame at a particular index.
     */
@@ -45,7 +45,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
    Local<StackFrame> GetFrame(Isolate* isolate, uint32_t index) const;
  
    /**
-@@ -2537,6 +2543,13 @@ class V8_EXPORT Value : public Data {
+@@ -2423,6 +2429,13 @@ class V8_EXPORT Value : public Data {
    V8_DEPRECATE_SOON("Use maybe version",
                      Local<Int32> ToInt32(Isolate* isolate) const);
  
@@ -59,7 +59,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
    /**
     * Attempts to convert a string to an array index.
     * Returns an empty handle if the conversion fails.
-@@ -2552,7 +2565,14 @@ class V8_EXPORT Value : public Data {
+@@ -2442,7 +2455,14 @@ class V8_EXPORT Value : public Data {
        Local<Context> context) const;
    V8_WARN_UNUSED_RESULT Maybe<int32_t> Int32Value(Local<Context> context) const;
  
@@ -74,7 +74,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
    V8_WARN_UNUSED_RESULT Maybe<bool> Equals(Local<Context> context,
                                             Local<Value> that) const;
    bool StrictEquals(Local<Value> that) const;
-@@ -2659,6 +2679,8 @@ class V8_EXPORT String : public Name {
+@@ -2549,6 +2569,8 @@ class V8_EXPORT String : public Name {
     * Returns the number of bytes in the UTF-8 encoded
     * representation of this string.
     */
@@ -83,7 +83,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
    int Utf8Length(Isolate* isolate) const;
  
    /**
-@@ -2715,12 +2737,23 @@ class V8_EXPORT String : public Name {
+@@ -2605,12 +2627,23 @@ class V8_EXPORT String : public Name {
    // 16-bit character codes.
    int Write(Isolate* isolate, uint16_t* buffer, int start = 0, int length = -1,
              int options = NO_OPTIONS) const;
@@ -99,15 +99,15 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
 +                    const);
    // UTF-8 encoded characters.
    int WriteUtf8(Isolate* isolate, char* buffer, int length = -1,
-                 int* nchars_ref = NULL, int options = NO_OPTIONS) const;
+                 int* nchars_ref = nullptr, int options = NO_OPTIONS) const;
 +  V8_DEPRECATED("Use Isolate* version",
 +                int WriteUtf8(char* buffer, int length = -1,
-+                              int* nchars_ref = NULL,
++                              int* nchars_ref = nullptr,
 +                              int options = NO_OPTIONS) const);
  
    /**
     * A zero length string.
-@@ -2884,6 +2917,9 @@ class V8_EXPORT String : public Name {
+@@ -2812,6 +2845,9 @@ class V8_EXPORT String : public Name {
     */
    static Local<String> Concat(Isolate* isolate, Local<String> left,
                                Local<String> right);
@@ -117,7 +117,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
  
    /**
     * Creates a new external string using the data defined in the given
-@@ -2952,6 +2988,8 @@ class V8_EXPORT String : public Name {
+@@ -2880,6 +2916,8 @@ class V8_EXPORT String : public Name {
     */
    class V8_EXPORT Utf8Value {
     public:
@@ -126,7 +126,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
      Utf8Value(Isolate* isolate, Local<v8::Value> obj);
      ~Utf8Value();
      char* operator*() { return str_; }
-@@ -2975,6 +3013,7 @@ class V8_EXPORT String : public Name {
+@@ -2903,6 +2941,7 @@ class V8_EXPORT String : public Name {
     */
    class V8_EXPORT Value {
     public:
@@ -134,7 +134,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
      Value(Isolate* isolate, Local<v8::Value> obj);
      ~Value();
      uint16_t* operator*() { return str_; }
-@@ -5224,6 +5263,8 @@ class V8_EXPORT BooleanObject : public Object {
+@@ -5140,6 +5179,8 @@ class V8_EXPORT BooleanObject : public Object {
  class V8_EXPORT StringObject : public Object {
   public:
    static Local<Value> New(Isolate* isolate, Local<String> value);
@@ -143,7 +143,7 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
  
    Local<String> ValueOf() const;
  
-@@ -10226,6 +10267,30 @@ template <class T> Value* Value::Cast(T* value) {
+@@ -9999,6 +10040,30 @@ template <class T> Value* Value::Cast(T* value) {
  }
  
  
@@ -175,10 +175,10 @@ index 784e1830edeebaf2b15eaad4230f318f91acad5f..cc2fefc56a4eeaeab48f2042d6c8dbba
  #ifdef V8_ENABLE_CHECKS
    CheckCast(value);
 diff --git a/src/api.cc b/src/api.cc
-index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ededb6a30a 100644
+index 9be405b6c4822da81e48daf96169450be3e4356f..f34a63cb528ea619896957009922b0a0ee576616 100644
 --- a/src/api.cc
 +++ b/src/api.cc
-@@ -2161,6 +2161,10 @@ int PrimitiveArray::Length() const {
+@@ -2162,6 +2162,10 @@ int PrimitiveArray::Length() const {
    return array->length();
  }
  
@@ -189,7 +189,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  void PrimitiveArray::Set(Isolate* v8_isolate, int index,
                           Local<Primitive> item) {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-@@ -2174,6 +2178,10 @@ void PrimitiveArray::Set(Isolate* v8_isolate, int index,
+@@ -2175,6 +2179,10 @@ void PrimitiveArray::Set(Isolate* v8_isolate, int index,
    array->set(index, *i_item);
  }
  
@@ -200,7 +200,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Local<Primitive> PrimitiveArray::Get(Isolate* v8_isolate, int index) {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
    i::Handle<i::FixedArray> array = Utils::OpenHandle(this);
-@@ -2904,6 +2912,10 @@ void Message::PrintCurrentStackTrace(Isolate* isolate, FILE* out) {
+@@ -2909,6 +2917,10 @@ void Message::PrintCurrentStackTrace(Isolate* isolate, FILE* out) {
  
  // --- S t a c k T r a c e ---
  
@@ -211,7 +211,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Local<StackFrame> StackTrace::GetFrame(Isolate* v8_isolate,
                                         uint32_t index) const {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-@@ -3880,6 +3892,36 @@ void v8::RegExp::CheckCast(v8::Value* that) {
+@@ -3888,6 +3900,36 @@ void v8::RegExp::CheckCast(v8::Value* that) {
  }
  
  
@@ -248,7 +248,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Maybe<bool> Value::BooleanValue(Local<Context> context) const {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(context->GetIsolate());
    return Just(Utils::OpenHandle(this)->BooleanValue(isolate));
-@@ -3968,6 +4010,12 @@ MaybeLocal<Uint32> Value::ToArrayIndex(Local<Context> context) const {
+@@ -3976,6 +4018,12 @@ MaybeLocal<Uint32> Value::ToArrayIndex(Local<Context> context) const {
  }
  
  
@@ -261,7 +261,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Maybe<bool> Value::Equals(Local<Context> context, Local<Value> that) const {
    i::Isolate* isolate = Utils::OpenHandle(*context)->GetIsolate();
    auto self = Utils::OpenHandle(this);
-@@ -5299,6 +5347,10 @@ bool String::ContainsOnlyOneByte() const {
+@@ -5312,6 +5360,10 @@ bool String::ContainsOnlyOneByte() const {
    return helper.Check(*str);
  }
  
@@ -272,7 +272,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  int String::Utf8Length(Isolate* isolate) const {
    i::Handle<i::String> str = Utils::OpenHandle(this);
    str = i::String::Flatten(reinterpret_cast<i::Isolate*>(isolate), str);
-@@ -5522,6 +5574,14 @@ static bool RecursivelySerializeToUtf8(i::String* current,
+@@ -5535,6 +5587,14 @@ static bool RecursivelySerializeToUtf8(i::String* current,
    return true;
  }
  
@@ -287,7 +287,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  int String::WriteUtf8(Isolate* v8_isolate, char* buffer, int capacity,
                        int* nchars_ref, int options) const {
    i::Handle<i::String> str = Utils::OpenHandle(this);
-@@ -5589,6 +5649,18 @@ static inline int WriteHelper(i::Isolate* isolate, const String* string,
+@@ -5602,6 +5662,18 @@ static inline int WriteHelper(i::Isolate* isolate, const String* string,
  }
  
  
@@ -306,7 +306,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  int String::WriteOneByte(Isolate* isolate, uint8_t* buffer, int start,
                           int length, int options) const {
    return WriteHelper(reinterpret_cast<i::Isolate*>(isolate), this, buffer,
-@@ -6536,6 +6608,11 @@ MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
+@@ -6549,6 +6621,11 @@ MaybeLocal<String> String::NewFromTwoByte(Isolate* isolate,
    return result;
  }
  
@@ -318,7 +318,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Local<String> v8::String::Concat(Isolate* v8_isolate, Local<String> left,
                                   Local<String> right) {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
-@@ -6762,6 +6839,11 @@ bool v8::BooleanObject::ValueOf() const {
+@@ -6774,6 +6851,11 @@ bool v8::BooleanObject::ValueOf() const {
  }
  
  
@@ -330,7 +330,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  Local<v8::Value> v8::StringObject::New(Isolate* v8_isolate,
                                         Local<String> value) {
    i::Handle<i::String> string = Utils::OpenHandle(*value);
-@@ -8904,6 +8986,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8Isolate) {
+@@ -8915,6 +8997,9 @@ bool MicrotasksScope::IsRunningMicrotasks(Isolate* v8Isolate) {
    return isolate->IsRunningMicrotasks();
  }
  
@@ -340,7 +340,7 @@ index 7a53cc1370cf30c858fd87156e2eb75d4b57a60b..bc544f1c7c7f9f8e3bac9804697848ed
  String::Utf8Value::Utf8Value(v8::Isolate* isolate, v8::Local<v8::Value> obj)
      : str_(nullptr), length_(0) {
    if (obj.IsEmpty()) return;
-@@ -8923,6 +9008,9 @@ String::Utf8Value::~Utf8Value() {
+@@ -8934,6 +9019,9 @@ String::Utf8Value::~Utf8Value() {
    i::DeleteArray(str_);
  }
  
