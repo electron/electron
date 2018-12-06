@@ -80,8 +80,8 @@
 #include "native_mate/dictionary.h"
 #include "native_mate/object_template_builder.h"
 #include "net/url_request/url_request_context.h"
+#include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/platform/web_input_event.h"
-#include "third_party/blink/public/web/web_find_options.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 
@@ -1600,15 +1600,20 @@ void WebContents::ReplaceMisspelling(const base::string16& word) {
 uint32_t WebContents::FindInPage(mate::Arguments* args) {
   uint32_t request_id = GetNextRequestId();
   base::string16 search_text;
-  blink::WebFindOptions options;
+  mate::Dictionary dict;
+  auto options = blink::mojom::FindOptions::New();
   if (!args->GetNext(&search_text) || search_text.empty()) {
     args->ThrowError("Must provide a non-empty search content");
     return 0;
   }
 
-  args->GetNext(&options);
+  if (args->GetNext(&dict)) {
+    dict.Get("forward", &options->forward);
+    dict.Get("matchCase", &options->match_case);
+    dict.Get("findNext", &options->find_next);
+  }
 
-  web_contents()->Find(request_id, search_text, options);
+  web_contents()->Find(request_id, search_text, std::move(options));
   return request_id;
 }
 
