@@ -19,6 +19,7 @@
     <includes>
       <include name="IDR_ELECTRON_CONTENT_BROWSER_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_browser_manifest_overlay.json" use_base_dir="false" type="BINDATA" />
       <include name="IDR_ELECTRON_CONTENT_PACKAGED_SERVICES_MANIFEST_OVERLAY" file="${target_gen_dir}\electron_content_packaged_services_manifest_overlay.json" use_base_dir="false" type="BINDATA" />
+      <include name="IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE" file="${target_gen_dir}\shell_devtools_discovery_page.html" use_base_dir="false" type="BINDATA" />
     </includes>
   </release>
 </grit>
