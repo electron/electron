@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
-Date: Mon Nov 26 09:32:14 2018 +0900
+Date: Mon, 26 Nov 2018 09:32:14 +0900
 Subject: fix_trackpad_scrolling.patch
 
 Backport https://chromium-review.googlesource.com/c/chromium/src/+/1299342.
@@ -226,10 +226,10 @@ index c11202b12da8fc540a78c3b13f731fc33d2d63b3..2b29fc641a810d2b521fa14e40da5bff
    HWND parent_window_;
    HWND window_;
 diff --git a/gpu/ipc/service/direct_composition_surface_win.cc b/gpu/ipc/service/direct_composition_surface_win.cc
-index da05d806bfa7e8710833eec7a2d85dfaeb9ed37a..761384364cb2544bc984f391b7c433e12fae1c33 100644
+index faf9e3a2ab0c1e11bf25803084dc1c4213143ab8..1e667e04605de6e105bcd485f3c84c444546b044 100644
 --- a/gpu/ipc/service/direct_composition_surface_win.cc
 +++ b/gpu/ipc/service/direct_composition_surface_win.cc
-@@ -1573,8 +1573,6 @@ gfx::SwapResult DirectCompositionSurfaceWin::SwapBuffers(
+@@ -1674,8 +1674,6 @@ gfx::SwapResult DirectCompositionSurfaceWin::SwapBuffers(
    gl::GLSurfacePresentationHelper::ScopedSwapBuffers scoped_swap_buffers(
        presentation_helper_.get(), callback);
  

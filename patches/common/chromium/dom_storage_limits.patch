@@ -32,36 +32,36 @@ for a given `BrowserWindow` via a `webPreferences` option,
 similar to [`nodeIntegration`](https://electronjs.org/docs/tutorial/security#2-disable-nodejs-integration-for-remote-content).
 
 diff --git a/content/common/dom_storage/dom_storage_map.cc b/content/common/dom_storage/dom_storage_map.cc
-index fd088fb170be..b90b6cf9132d 100644
+index fd088fb170bead6452ded14016f21f0c29659e03..b90b6cf9132d16bc3b2076c3fa313916e2b5ea7d 100644
 --- a/content/common/dom_storage/dom_storage_map.cc
 +++ b/content/common/dom_storage/dom_storage_map.cc
 @@ -185,10 +185,12 @@ bool DOMStorageMap::SetItemInternal(MapType* map_type,
    size_t new_item_size = size_in_storage(key, value);
    size_t new_storage_used = storage_used_ - old_item_size + new_item_size;
-
+ 
 +#if 0
    // Only check quota if the size is increasing, this allows
    // shrinking changes to pre-existing files that are over budget.
    if (new_item_size > old_item_size && new_storage_used > quota_)
      return false;
 +#endif
-
+ 
    (*map_type)[key] = value;
    ResetKeyIterator();
 diff --git a/content/common/dom_storage/dom_storage_types.h b/content/common/dom_storage/dom_storage_types.h
-index e87afe5b8ee0..61c9a0dfff60 100644
+index e87afe5b8ee07f7038a7cc9c40832b6cd27884da..61c9a0dfff60f79c7b36ff5c7d741c06dca03ada 100644
 --- a/content/common/dom_storage/dom_storage_types.h
 +++ b/content/common/dom_storage/dom_storage_types.h
 @@ -21,6 +21,7 @@ typedef std::map<base::string16, base::NullableString16> DOMStorageValuesMap;
-
+ 
  // The quota for each storage area.
  // This value is enforced in renderer processes and the browser process.
 +// However, Electron's dom_storage_limits.patch removes the code that checks this limit.
  const size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
-
+ 
  // In the browser process we allow some overage to
 diff --git a/content/renderer/dom_storage/dom_storage_cached_area.cc b/content/renderer/dom_storage/dom_storage_cached_area.cc
-index 402c27727ff1..f5908a1c55f9 100644
+index a7cdf900661bff52e1d3d9bc98d68e6a457c3fa7..ce302dcbece11880b5b6da4b6d5d807ba9dc09c9 100644
 --- a/content/renderer/dom_storage/dom_storage_cached_area.cc
 +++ b/content/renderer/dom_storage/dom_storage_cached_area.cc
 @@ -53,11 +53,13 @@ bool DOMStorageCachedArea::SetItem(int connection_id,
@@ -75,14 +75,14 @@ index 402c27727ff1..f5908a1c55f9 100644
        kPerStorageAreaQuota)
      return false;
 +#endif
-
+ 
    PrimeIfNeeded(connection_id);
    base::NullableString16 old_value;
 diff --git a/content/renderer/dom_storage/local_storage_cached_area.cc b/content/renderer/dom_storage/local_storage_cached_area.cc
-index ffa21c9200d0..0edbd6152292 100644
+index c04e0e8bff1a7a41a1e18aca5403aed16a80aead..d63cec971f0a98f7b8ff30c1f6a0fa843efbecfa 100644
 --- a/content/renderer/dom_storage/local_storage_cached_area.cc
 +++ b/content/renderer/dom_storage/local_storage_cached_area.cc
-@@ -141,11 +141,13 @@ bool LocalStorageCachedArea::SetItem(const base::string16& key,
+@@ -142,11 +142,13 @@ bool LocalStorageCachedArea::SetItem(const base::string16& key,
                                       const base::string16& value,
                                       const GURL& page_url,
                                       const std::string& storage_area_id) {
@@ -93,6 +93,6 @@ index ffa21c9200d0..0edbd6152292 100644
        kPerStorageAreaQuota)
      return false;
 +#endif
-
+ 
    EnsureLoaded();
    bool result = false;

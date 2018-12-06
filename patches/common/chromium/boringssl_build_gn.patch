@@ -7,7 +7,7 @@ Build BoringSSL with some extra functions that nodejs needs. Only affects
 the GN build; with the GYP build, nodejs is still built with OpenSSL.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index d31a9f29fa9c12e753708b2a1e75c33b70924300..dea5a6403f4c32f94bb58198c467bc7cc87a8217 100644
+index f57824f04d044b7180c0fc41df616a22174fe367..37735a7c2cad0a75aa609bac4e855cc564a7b2eb 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
 @@ -46,6 +46,13 @@ config("no_asm_config") {

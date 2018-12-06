@@ -5,10 +5,10 @@ Subject: web_contents.patch
 
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 499c8c0a2e899d9c2a35be461cc8d247f42a6f17..a9e95f9b18bbd5327536499c58362167fa01a583 100644
+index c9d8ca8da4934497ee71a2c4261a04e0a32d86c5..b50572db02fdd3def70d8c892b043f5db47cafe9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -1940,6 +1940,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -1993,6 +1993,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    std::string unique_name;
    frame_tree_.root()->SetFrameName(params.main_frame_name, unique_name);
  
@@ -21,7 +21,7 @@ index 499c8c0a2e899d9c2a35be461cc8d247f42a6f17..a9e95f9b18bbd5327536499c58362167
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -1955,6 +1961,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2008,6 +2014,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
            &render_view_host_delegate_view_);
      }
    }
@@ -30,10 +30,10 @@ index 499c8c0a2e899d9c2a35be461cc8d247f42a6f17..a9e95f9b18bbd5327536499c58362167
    CHECK(view_.get());
  
 diff --git a/content/browser/web_contents/web_contents_view_guest.cc b/content/browser/web_contents/web_contents_view_guest.cc
-index 12f6817499eff069f4bc52a775fe1275a332881c..f20fe106c4cb443be8cf4311e531418eb4c80b5c 100644
+index 5de4d7cf8a7a812ad3f6383cd60acbd39135924d..dca9ec76b44be34124a12f453d3c6ecbb1509b9f 100644
 --- a/content/browser/web_contents/web_contents_view_guest.cc
 +++ b/content/browser/web_contents/web_contents_view_guest.cc
-@@ -67,21 +67,27 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
+@@ -69,19 +69,26 @@ gfx::NativeWindow WebContentsViewGuest::GetTopLevelNativeWindow() const {
  
  void WebContentsViewGuest::OnGuestAttached(WebContentsView* parent_view) {
  #if defined(USE_AURA)
@@ -44,27 +44,25 @@ index 12f6817499eff069f4bc52a775fe1275a332881c..f20fe106c4cb443be8cf4311e531418e
    // view hierarchy. We add this view as embedder's child here.
    // This would go in WebContentsViewGuest::CreateView, but that is too early to
    // access embedder_web_contents(). Therefore, we do it here.
-   if (!features::IsUsingWindowService())
--    parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
-+    if (parent_view->GetNativeView() != platform_view_->GetNativeView())
-+      parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
+-  if (!features::IsMultiProcessMash())
++  if (!features::IsMultiProcessMash() &&
++      parent_view->GetNativeView() != platform_view_->GetNativeView()) {
+     parent_view->GetNativeView()->AddChild(platform_view_->GetNativeView());
++  }
  #endif  // defined(USE_AURA)
  }
  
  void WebContentsViewGuest::OnGuestDetached(WebContentsView* old_parent_view) {
  #if defined(USE_AURA)
+-  if (!features::IsMultiProcessMash()) {
 +  if (!platform_view_->GetNativeView())
 +    return;
-   if (!features::IsUsingWindowService()) {
--    old_parent_view->GetNativeView()->RemoveChild(
--        platform_view_->GetNativeView());
-+    if (old_parent_view->GetNativeView() != platform_view_->GetNativeView())
-+      old_parent_view->GetNativeView()->RemoveChild(
-+          platform_view_->GetNativeView());
++  if (!features::IsMultiProcessMash() &&
++      old_parent_view->GetNativeView() != platform_view_->GetNativeView()) {
+     old_parent_view->GetNativeView()->RemoveChild(
+         platform_view_->GetNativeView());
    }
- #endif  // defined(USE_AURA)
- }
-@@ -144,11 +150,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
+@@ -136,11 +143,22 @@ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForWidget(
          render_widget_host->GetView());
    }
  
@@ -90,12 +88,12 @@ index 12f6817499eff069f4bc52a775fe1275a332881c..f20fe106c4cb443be8cf4311e531418e
 +  return guest_view;
  }
  
- RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForPopupWidget(
+ RenderWidgetHostViewBase* WebContentsViewGuest::CreateViewForChildWidget(
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 786eecfcb70cd5145a29f9dc89765930739e0d63..0916329b2bf483381065476108978683ec2e6bf9 100644
+index f26f7e50166310d52fd1c1e45b3d956c28e63074..52735286515c5332c64bca8bf332ae8d65bc7e5c 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -77,9 +77,12 @@ class BrowserPluginGuestDelegate;
+@@ -74,9 +74,12 @@ class BrowserPluginGuestDelegate;
  class InterstitialPage;
  class RenderFrameHost;
  class RenderViewHost;
@@ -108,7 +106,7 @@ index 786eecfcb70cd5145a29f9dc89765930739e0d63..0916329b2bf483381065476108978683
  struct CustomContextMenuContext;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -216,6 +219,10 @@ class WebContents : public PageNavigator,
+@@ -213,6 +216,10 @@ class WebContents : public PageNavigator,
        kInitializeAndWarmupRendererProcess,
      } desired_renderer_state;
  

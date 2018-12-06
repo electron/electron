@@ -4,16 +4,16 @@ Date: Wed, 14 Nov 2018 20:38:46 +0530
 Subject: frame_host_manager.patch
 
 Allows embedder to intercept site instances chosen by chromium
-and respond with custom instance. 
+and respond with custom instance.
 
 diff --git a/content/browser/frame_host/render_frame_host_manager.cc b/content/browser/frame_host/render_frame_host_manager.cc
-index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..39d26adb60c50f88d19e824846519338083dc166 100644
+index 69913022bb1955a22d93acabbdda84e8090de29d..20db3861e67290787fd8c45e5dbeb7507064bdf9 100644
 --- a/content/browser/frame_host/render_frame_host_manager.cc
 +++ b/content/browser/frame_host/render_frame_host_manager.cc
-@@ -1960,6 +1960,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-   bool was_server_redirect = request.navigation_handle() &&
-                              request.navigation_handle()->WasServerRedirect();
- 
+@@ -1933,6 +1933,16 @@ bool RenderFrameHostManager::InitRenderView(
+ scoped_refptr<SiteInstance>
+ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+     const NavigationRequest& request) {
 +  BrowserContext* browser_context =
 +      delegate_->GetControllerForRenderManager().GetBrowserContext();
 +  // If the navigation can swap SiteInstances, compute the SiteInstance it
@@ -24,12 +24,11 @@ index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..39d26adb60c50f88d19e824846519338
 +      speculative_render_frame_host_
 +          ? speculative_render_frame_host_->GetSiteInstance()
 +          : nullptr;
-+
-   if (frame_tree_node_->IsMainFrame()) {
-     // Renderer-initiated main frame navigations that may require a
-     // SiteInstance swap are sent to the browser via the OpenURL IPC and are
-@@ -1979,6 +1990,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-                                                request.common_params().url));
+   // First, check if the navigation can switch SiteInstances. If not, the
+   // navigation should use the current SiteInstance.
+   SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
+@@ -1965,6 +1975,51 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+                                               request.common_params().url);
      no_renderer_swap_allowed |=
          request.from_begin_navigation() && !can_renderer_initiate_transfer;
 +
@@ -80,8 +79,8 @@ index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..39d26adb60c50f88d19e824846519338
    } else {
      // Subframe navigations will use the current renderer, unless specifically
      // allowed to swap processes.
-@@ -1990,23 +2046,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-   if (no_renderer_swap_allowed)
+@@ -1976,23 +2031,17 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+   if (no_renderer_swap_allowed && !should_swap_for_error_isolation)
      return scoped_refptr<SiteInstance>(current_site_instance);
  
 -  // If the navigation can swap SiteInstances, compute the SiteInstance it
@@ -109,10 +108,10 @@ index 872e4609c94f1e052d623ae57c1279c72eb2c3f4..39d26adb60c50f88d19e824846519338
  }
  
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index bb54b89bef5c6f32e7b4a056336c85494e2a04de..f713d0cfbf90665d921f56f4d828887ad1f7842c 100644
+index abfb6afec00a691ea2ff27e7797921e3eb25d8ea..ae4bfc6553f347ad5a7e5327d64155e700e6584e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -47,6 +47,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
+@@ -49,6 +49,16 @@ void OverrideOnBindInterface(const service_manager::BindSourceInfo& remote_info,
                                                           handle);
  }
  
@@ -130,10 +129,10 @@ index bb54b89bef5c6f32e7b4a056336c85494e2a04de..f713d0cfbf90665d921f56f4d828887a
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3be31602689cb93b965729cc4e35cf6d23a8ec2f..4bf6b2b5f8110f539adc61858cfdc8f77f7ed08b 100644
+index eb2f9a8f240f8805e4bcbde0465ec445dd7539e7..5f6fdb2d66acfa73c895cac18714d0998eed2ab2 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -194,8 +194,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
+@@ -202,8 +202,37 @@ CONTENT_EXPORT void OverrideOnBindInterface(
  // the observer interfaces.)
  class CONTENT_EXPORT ContentBrowserClient {
   public:

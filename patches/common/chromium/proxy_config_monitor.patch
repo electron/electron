@@ -6,12 +6,12 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 90a8b0895f10d59ade41cf156e3887c526123b29..26c1bc0e5859e832d03be7215d067312e2d691c0 100644
+index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..b8e4aecfffcde3a91e056934e1be0dcd878bc1c1 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
-@@ -5,9 +5,13 @@
- #include "chrome/browser/net/proxy_config_monitor.h"
+@@ -6,9 +6,13 @@
  
+ #include "base/strings/utf_string_conversions.h"
  #include "build/build_config.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
@@ -23,47 +23,29 @@ index 90a8b0895f10d59ade41cf156e3887c526123b29..26c1bc0e5859e832d03be7215d067312
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
-@@ -15,7 +19,7 @@
- #if defined(OS_CHROMEOS)
- #include "chrome/browser/chromeos/profiles/profile_helper.h"
- #endif  // defined(OS_CHROMEOS)
--
+@@ -23,6 +27,7 @@
+ 
+ using content::BrowserThread;
+ 
 +#if 0
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -41,14 +45,13 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -52,6 +57,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
 +#endif
  
--ProxyConfigMonitor::ProxyConfigMonitor() {
-+ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_prefs) {
-   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
--
-   pref_proxy_config_tracker_.reset(
-       ProxyServiceFactory::CreatePrefProxyConfigTrackerOfLocalState(
--          g_browser_process->local_state()));
--
-+          local_prefs));
-   proxy_config_service_ = ProxyServiceFactory::CreateProxyConfigService(
-       pref_proxy_config_tracker_.get());
- 
+ ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
+   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index b783ab18d2d77cb2d443eed36a508f1eac77c04d..4475b58756dbf686cf78f6e317e55bc1df783e8d 100644
+index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..6105afe0ad08176f1ddc4dfc087eba15ee880c58 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
-@@ -20,22 +20,24 @@ class ProxyConfigWithAnnotation;
+@@ -37,11 +37,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
- class Profile;
- class PrefProxyConfigTracker;
-+class PrefService;
- 
- // Tracks the ProxyConfig to use, and passes any updates to a NetworkContext's
- // ProxyConfigClient.
- class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
-                            public network::mojom::ProxyConfigPollerClient {
+ {
   public:
 +#if 0
    // Creates a ProxyConfigMonitor that gets proxy settings from |profile| and
@@ -73,19 +55,5 @@ index b783ab18d2d77cb2d443eed36a508f1eac77c04d..4475b58756dbf686cf78f6e317e55bc1
 -
 +#endif
    // Creates a ProxyConfigMonitor that gets proxy settings from the
-   // BrowserProcess's |local_state_|, for use with NetworkContexts not
-   // assocaited with a profile. Must be destroyed before the BrowserProcess's
-   // |local_state_|.
--  ProxyConfigMonitor();
-+  explicit ProxyConfigMonitor(PrefService* local_prefs);
- 
-   ~ProxyConfigMonitor() override;
- 
-@@ -63,7 +65,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
-   std::unique_ptr<net::ProxyConfigService> proxy_config_service_;
-   // Monitors global and Profile prefs related to proxy configuration.
-   std::unique_ptr<PrefProxyConfigTracker> pref_proxy_config_tracker_;
--
-   mojo::BindingSet<network::mojom::ProxyConfigPollerClient> binding_set_;
- 
-   mojo::InterfacePtrSet<network::mojom::ProxyConfigClient>
+   // |local_state|, for use with NetworkContexts not
+   // associated with a profile. Must be destroyed before |local_state|.
