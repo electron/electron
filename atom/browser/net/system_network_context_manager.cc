@@ -13,6 +13,7 @@
 #include "base/lazy_instance.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "components/net_log/net_export_file_writer.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
@@ -145,6 +146,14 @@ SystemNetworkContextManager::GetURLLoaderFactory() {
 scoped_refptr<network::SharedURLLoaderFactory>
 SystemNetworkContextManager::GetSharedURLLoaderFactory() {
   return shared_url_loader_factory_;
+}
+
+net_log::NetExportFileWriter*
+SystemNetworkContextManager::GetNetExportFileWriter() {
+  if (!net_export_file_writer_) {
+    net_export_file_writer_ = std::make_unique<net_log::NetExportFileWriter>();
+  }
+  return net_export_file_writer_.get();
 }
 
 // static
