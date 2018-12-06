@@ -6,6 +6,8 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 #import <CommonCrypto/CommonCrypto.h>
@@ -117,8 +119,8 @@
  */
 - (void)runCallback:(bool)isProductValid {
   if (callback_) {
-    content::BrowserThread::PostTask(content::BrowserThread::UI, FROM_HERE,
-                                     base::Bind(callback_, isProductValid));
+    base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::UI},
+                             base::Bind(callback_, isProductValid));
   }
   // Release this delegate.
   [self release];

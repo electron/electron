@@ -16,7 +16,9 @@
 #include "atom/common/node_includes.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/task/post_task.h"
 #include "base/time/time.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "native_mate/dictionary.h"
 #include "net/base/net_errors.h"
 #include "net/filter/gzip_source_stream.h"
@@ -32,8 +34,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
   bool ended = false;
   if (!args->GetNext(&value) || !value->IsObject()) {
     // Invalid opts.
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&URLRequestStreamJob::OnError, job, net::ERR_FAILED));
     return;
   }
@@ -65,8 +67,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
     // "data" was explicitly passed as null or undefined, assume the user wants
     // to send an empty body.
     ended = true;
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&URLRequestStreamJob::StartAsync, job, nullptr,
                        base::RetainedRef(response_headers), ended, error));
     return;
@@ -76,8 +78,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
   if (!data.Get("on", &value) || !value->IsFunction() ||
       !data.Get("removeListener", &value) || !value->IsFunction()) {
     // If data is passed but it is not a stream, signal an error.
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::IO},
         base::BindOnce(&URLRequestStreamJob::OnError, job, net::ERR_FAILED));
     return;
   }
@@ -85,8 +87,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestStreamJob> job,
   auto subscriber = std::make_unique<mate::StreamSubscriber>(
       args->isolate(), data.GetHandle(), job);
 
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&URLRequestStreamJob::StartAsync, job,
                      std::move(subscriber), base::RetainedRef(response_headers),
                      ended, error));
@@ -113,8 +115,8 @@ URLRequestStreamJob::~URLRequestStreamJob() {
 void URLRequestStreamJob::Start() {
   auto request_details = std::make_unique<base::DictionaryValue>();
   FillRequestDetails(request_details.get(), request());
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
                      handler(), std::move(request_details),
                      base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));

@@ -13,6 +13,7 @@
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/single_thread_task_runner.h"
+#include "base/task/post_task.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
 #include "components/viz/common/frame_sinks/copy_output_request.h"
@@ -23,6 +24,7 @@
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"
 #include "content/common/view_messages.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/render_process_host.h"
@@ -168,8 +170,8 @@ class AtomCopyFrameGenerator {
       base::TimeDelta next_frame_in = next_frame_time_ - now;
       if (next_frame_in > frame_duration_ / 4) {
         next_frame_time_ += frame_duration_;
-        content::BrowserThread::PostDelayedTask(
-            content::BrowserThread::UI, FROM_HERE,
+        base::PostDelayedTaskWithTraits(
+            FROM_HERE, {content::BrowserThread::UI},
             base::BindOnce(&AtomCopyFrameGenerator::OnCopyFrameCaptureSuccess,
                            weak_ptr_factory_.GetWeakPtr(), damage_rect, bitmap),
             next_frame_in);
@@ -188,8 +190,8 @@ class AtomCopyFrameGenerator {
     const bool force_frame = (++frame_retry_count_ <= kFrameRetryLimit);
     if (force_frame) {
       // Retry with the same |damage_rect|.
-      content::BrowserThread::PostTask(
-          content::BrowserThread::UI, FROM_HERE,
+      base::PostTaskWithTraits(
+          FROM_HERE, {content::BrowserThread::UI},
           base::BindOnce(&AtomCopyFrameGenerator::GenerateCopyFrame,
                          weak_ptr_factory_.GetWeakPtr(), damage_rect));
     }
@@ -222,8 +224,8 @@ class AtomBeginFrameTimer : public viz::DelayBasedTimeSourceClient {
                       const base::Closure& callback)
       : callback_(callback) {
     time_source_.reset(new viz::DelayBasedTimeSource(
-        content::BrowserThread::GetTaskRunnerForThread(
-            content::BrowserThread::UI)
+        base::CreateSingleThreadTaskRunnerWithTraits(
+            {content::BrowserThread::UI})
             .get()));
     time_source_->SetTimebaseAndInterval(
         base::TimeTicks(),
@@ -1005,8 +1007,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    content::BrowserThread::PostTask(
-        content::BrowserThread::UI, FROM_HERE,
+    base::PostTaskWithTraits(
+        FROM_HERE, {content::BrowserThread::UI},
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
             weak_ptr_factory_.GetWeakPtr()));
@@ -1110,8 +1112,8 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        content::BrowserThread::PostTask(
-            content::BrowserThread::UI, FROM_HERE,
+        base::PostTaskWithTraits(
+            FROM_HERE, {content::BrowserThread::UI},
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }

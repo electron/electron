@@ -16,6 +16,8 @@
 #include "base/guid.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
+#include "base/task/post_task.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "native_mate/dictionary.h"
 #include "net/base/io_buffer.h"
@@ -87,10 +89,9 @@ void BeforeStartInUI(base::WeakPtr<URLRequestFetchJob> job,
   mate::Dictionary options;
   if (!args->GetNext(&value) ||
       !mate::ConvertFromV8(args->isolate(), value, &options)) {
-    content::BrowserThread::PostTask(
-        content::BrowserThread::IO, FROM_HERE,
-        base::BindOnce(&URLRequestFetchJob::OnError, job,
-                       net::ERR_NOT_IMPLEMENTED));
+    base::PostTaskWithTraits(FROM_HERE, {content::BrowserThread::IO},
+                             base::BindOnce(&URLRequestFetchJob::OnError, job,
+                                            net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -125,8 +126,8 @@ void BeforeStartInUI(base::WeakPtr<URLRequestFetchJob> job,
 
   JsAsker::IsErrorOptions(request_options.get(), &error);
 
-  content::BrowserThread::PostTask(
-      content::BrowserThread::IO, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::IO},
       base::BindOnce(&URLRequestFetchJob::StartAsync, job,
                      base::RetainedRef(url_request_context_getter),
                      base::RetainedRef(custom_browser_context),
@@ -144,8 +145,8 @@ URLRequestFetchJob::~URLRequestFetchJob() = default;
 void URLRequestFetchJob::Start() {
   auto request_details = std::make_unique<base::DictionaryValue>();
   FillRequestDetails(request_details.get(), request());
-  content::BrowserThread::PostTask(
-      content::BrowserThread::UI, FROM_HERE,
+  base::PostTaskWithTraits(
+      FROM_HERE, {content::BrowserThread::UI},
       base::BindOnce(&JsAsker::AskForOptions, base::Unretained(isolate()),
                      handler(), std::move(request_details),
                      base::Bind(&BeforeStartInUI, weak_factory_.GetWeakPtr())));

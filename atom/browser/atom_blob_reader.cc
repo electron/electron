@@ -6,7 +6,9 @@
 
 #include <utility>
 
+#include "base/task/post_task.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
@@ -60,8 +62,8 @@ void AtomBlobReader::StartReading(
   auto blob_data_handle = blob_context_->context()->GetBlobDataFromUUID(uuid);
   auto callback = base::Bind(&RunCallbackInUI, completion_callback);
   if (!blob_data_handle) {
-    BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                            base::BindOnce(callback, nullptr, 0));
+    base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
+                             base::BindOnce(callback, nullptr, 0));
     return;
   }
 
@@ -116,8 +118,8 @@ void AtomBlobReader::BlobReadHelper::DidReadBlobData(
 
   char* data = new char[size];
   memcpy(data, blob_data->data(), size);
-  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
-                          base::BindOnce(completion_callback_, data, size));
+  base::PostTaskWithTraits(FROM_HERE, {BrowserThread::UI},
+                           base::BindOnce(completion_callback_, data, size));
   delete this;
 }
 
