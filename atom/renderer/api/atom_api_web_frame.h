@@ -50,10 +50,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void SetVisualZoomLevelLimits(double min_level, double max_level);
   void SetLayoutZoomLevelLimits(double min_level, double max_level);
 
-  v8::Local<v8::Value> RegisterEmbedderCustomElement(
-      v8::Local<v8::Object> context,
-      const base::string16& name,
-      v8::Local<v8::Object> options);
+  void RegisterEmbedderCustomElement(v8::Local<v8::Function> register_cb);
   int GetWebFrameId(v8::Local<v8::Value> content_window);
 
   // Set the provider that will be used by SpellCheckClient for spell check.
