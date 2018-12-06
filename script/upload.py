@@ -15,7 +15,7 @@ from io import StringIO
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
                        get_zip_name
 from lib.util import get_electron_branding, execute, get_electron_version, \
-                     parse_version, scoped_cwd, s3put, get_electron_exec, \
+                     scoped_cwd, s3put, get_electron_exec, \
                      get_out_dir, SRC_DIR
 
 
