@@ -76,9 +76,6 @@
   NSButton* miniaturize_button =
       [NSWindow standardWindowButton:NSWindowMiniaturizeButton
                         forStyleMask:NSWindowStyleMaskTitled];
-  NSButton* zoom_button =
-      [NSWindow standardWindowButton:NSWindowZoomButton
-                        forStyleMask:NSWindowStyleMaskTitled];
 
   CGFloat x = 0;
   const CGFloat space_between = 20;
@@ -91,11 +88,7 @@
   x += space_between;
   [self addSubview:miniaturize_button];
 
-  [zoom_button setFrameOrigin:NSMakePoint(x, 0)];
-  x += space_between;
-  [self addSubview:zoom_button];
-
-  const auto last_button_frame = zoom_button.frame;
+  const auto last_button_frame = miniaturize_button.frame;
   [self setFrameSize:NSMakeSize(last_button_frame.origin.x +
                                     last_button_frame.size.width,
                                 last_button_frame.size.height)];
