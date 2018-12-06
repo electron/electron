@@ -46,18 +46,6 @@ void StopWorker(int document_cookie) {
   }
 }
 
-scoped_refptr<base::RefCountedMemory> GetDataFromHandle(
-    base::SharedMemoryHandle handle,
-    uint32_t data_size) {
-  auto shared_buf = std::make_unique<base::SharedMemory>(handle, true);
-  if (!shared_buf->Map(data_size)) {
-    return nullptr;
-  }
-
-  return base::MakeRefCounted<base::RefCountedSharedMemory>(
-      std::move(shared_buf), data_size);
-}
-
 }  // namespace
 
 PrintPreviewMessageHandler::PrintPreviewMessageHandler(
@@ -99,7 +87,7 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   StopWorker(params.document_cookie);
 
   const PrintHostMsg_DidPrintContent_Params& content = params.content;
-  if (!content.metafile_data_handle.IsValid() ||
+  if (!content.metafile_data_region.IsValid() ||
       params.expected_pages_count <= 0) {
     RunPrintToPDFCallback(ids.request_id, nullptr);
     return;
@@ -116,7 +104,8 @@ void PrintPreviewMessageHandler::OnMetafileReadyForPrinting(
   } else {
     RunPrintToPDFCallback(
         ids.request_id,
-        GetDataFromHandle(content.metafile_data_handle, content.data_size));
+        base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(
+            content.metafile_data_region));
   }
 }
 
