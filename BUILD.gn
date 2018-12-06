@@ -182,16 +182,28 @@ grit("resources") {
     "electron_resources.pak",
   ]
 
+  # Mojo manifest overlays are generated.
+  source_is_generated = true
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
 
   deps = [
+    ":copy_shell_devtools_discovery_page",
     ":electron_content_manifest_overlays",
   ]
 
   output_dir = "$target_gen_dir"
+}
+
+copy("copy_shell_devtools_discovery_page") {
+  sources = [
+    "//content/shell/resources/shell_devtools_discovery_page.html",
+  ]
+  outputs = [
+    "$target_gen_dir/shell_devtools_discovery_page.html",
+  ]
 }
 
 if (is_linux) {
@@ -244,7 +256,6 @@ static_library("electron_lib") {
     "//content/public/browser",
     "//content/public/child",
     "//content/public/common:service_names",
-    "//content/shell:copy_shell_resources",
     "//gin",
     "//media/capture/mojom:video_capture",
     "//media/mojo/interfaces",
