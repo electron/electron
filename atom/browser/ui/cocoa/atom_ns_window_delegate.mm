@@ -9,8 +9,8 @@
 #include "atom/browser/ui/cocoa/atom_preview_item.h"
 #include "atom/browser/ui/cocoa/atom_touch_bar.h"
 #include "base/mac/mac_util.h"
-#include "ui/views/cocoa/bridged_native_widget.h"
 #include "ui/views/widget/native_widget_mac.h"
+#include "ui/views_bridge_mac/bridged_native_widget_impl.h"
 
 @implementation AtomNSWindowDelegate
 
@@ -21,9 +21,8 @@
   // on the fly.
   // TODO(zcbenz): Add interface in NativeWidgetMac to allow overriding creating
   // window delegate.
-  views::BridgedNativeWidget* bridged_view =
-      views::NativeWidgetMac::GetBridgeForNativeWindow(
-          shell->GetNativeWindow());
+  auto* bridged_view = views::BridgedNativeWidgetImpl::GetFromNativeWindow(
+      shell->GetNativeWindow());
   if ((self = [super initWithBridgedNativeWidget:bridged_view])) {
     shell_ = shell;
     is_zooming_ = false;
@@ -248,9 +247,8 @@
   // Clears the delegate when window is going to be closed, since EL Capitan it
   // is possible that the methods of delegate would get called after the window
   // has been closed.
-  views::BridgedNativeWidget* bridged_view =
-      views::NativeWidgetMac::GetBridgeForNativeWindow(
-          shell_->GetNativeWindow());
+  auto* bridged_view = views::BridgedNativeWidgetImpl::GetFromNativeWindow(
+      shell_->GetNativeWindow());
   bridged_view->OnWindowWillClose();
 }
 
