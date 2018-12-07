@@ -231,7 +231,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     return;
 
   if (web_contents()->NeedToFireBeforeUnload())
-    web_contents()->DispatchBeforeUnload();
+    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
   else
     web_contents()->Close();
 }

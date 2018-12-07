@@ -429,7 +429,7 @@ void InspectableWebContentsImpl::ActivateWindow() {
 }
 
 void InspectableWebContentsImpl::CloseWindow() {
-  GetDevToolsWebContents()->DispatchBeforeUnload();
+  GetDevToolsWebContents()->DispatchBeforeUnload(false /* auto_cancel */);
 }
 
 void InspectableWebContentsImpl::LoadCompleted() {
