@@ -26,7 +26,7 @@ electronModuleNames.forEach(function warnOnElectronAPIAccess (apiKey) {
     configurable: false,
     get: function getElectronAPI () {
       console.warn('WARNING: You are attempting to access an Electron API from a node environment.\n\n' +
-      'You need to use the "electron" command to run your app. E.g. "electron ./myapp.js"')
+      'You need to use the "electron" command to run your app. E.g. "npx electron ./myapp.js"')
     }
   })
 })
