@@ -6,12 +6,35 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/mac/scoped_sending_event.h"
 
-// Forward Declare Appareance APIs
+#import <AVFoundation/AVFoundation.h>
+
+// Forward Declare Appearance APIs
 @interface NSApplication (HighSierraSDK)
 @property(copy, readonly)
     NSAppearance* effectiveAppearance API_AVAILABLE(macosx(10.14));
 @property(copy, readonly) NSAppearance* appearance API_AVAILABLE(macosx(10.14));
 - (void)setAppearance:(NSAppearance*)appearance API_AVAILABLE(macosx(10.14));
+@end
+
+// forward declare Access APIs
+typedef NSString* AVMediaType NS_EXTENSIBLE_STRING_ENUM;
+
+AVF_EXPORT AVMediaType const AVMediaTypeVideo;
+AVF_EXPORT AVMediaType const AVMediaTypeAudio;
+
+typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
+  AVAuthorizationStatusNotDeterminedMac = 0,
+  AVAuthorizationStatusRestrictedMac = 1,
+  AVAuthorizationStatusDeniedMac = 2,
+  AVAuthorizationStatusAuthorizedMac = 3,
+};
+
+@interface AVCaptureDevice (MojaveSDK)
++ (void)requestAccessForMediaType:(AVMediaType)mediaType
+                completionHandler:(void (^)(BOOL granted))handler
+    API_AVAILABLE(macosx(10.14));
++ (AVAuthorizationStatusMac)authorizationStatusForMediaType:
+    (AVMediaType)mediaType API_AVAILABLE(macosx(10.14));
 @end
 
 extern "C" {

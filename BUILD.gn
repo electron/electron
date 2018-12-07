@@ -558,6 +558,7 @@ if (is_mac) {
     sources = filenames.framework_sources
 
     libs = [
+      "AVFoundation.framework",
       "Carbon.framework",
       "QuartzCore.framework",
       "Quartz.framework",
