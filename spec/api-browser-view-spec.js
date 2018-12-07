@@ -157,13 +157,13 @@ describe('BrowserView module', () => {
       w.addBrowserView(view1)
       let view2 = new BrowserView()
       w.addBrowserView(view2)
-      
+
       assert.notEqual(view1.id, null)
       let views = w.getBrowserViews()
       assert.equal(views.length, 2)
       assert.equal(views[0].webContents.id, view1.webContents.id)
       assert.equal(views[1].webContents.id, view2.webContents.id)
-      
+
       view1.destroy()
       view1 = null
       view2.destroy()

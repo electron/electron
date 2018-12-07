@@ -1165,6 +1165,25 @@ void NativeWindowViews::OnWidgetActivationChanged(
   menu_bar_alt_pressed_ = false;
 }
 
+void NativeWindowViews::AutoresizeBrowserView(
+    int width_delta, int height_delta, NativeBrowserView* browser_view) {
+  const auto flags = static_cast<NativeBrowserViewViews*>(browser_view)
+                     ->GetAutoResizeFlags();
+  if (!(flags & kAutoResizeWidth)) {
+    width_delta = 0;
+  }
+  if (!(flags & kAutoResizeHeight)) {
+    height_delta = 0;
+  }
+  if (height_delta || width_delta) {
+    auto* view = browser_view->GetInspectableWebContentsView()->GetView();
+    auto new_view_size = view->size();
+    new_view_size.set_width(new_view_size.width() + width_delta);
+    new_view_size.set_height(new_view_size.height() + height_delta);
+    view->SetSize(new_view_size);
+  }
+}
+
 void NativeWindowViews::OnWidgetBoundsChanged(
     views::Widget* widget, const gfx::Rect& bounds) {
   if (widget != window_.get())
@@ -1174,25 +1193,16 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
+    int width_delta = new_bounds.width() - widget_size_.width();
+    int height_delta = new_bounds.height() - widget_size_.height();
     if (browser_view_) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view_)
-                             ->GetAutoResizeFlags();
-      int width_delta = 0;
-      int height_delta = 0;
-      if (flags & kAutoResizeWidth) {
-        width_delta = new_bounds.width() - widget_size_.width();
-      }
-      if (flags & kAutoResizeHeight) {
-        height_delta = new_bounds.height() - widget_size_.height();
-      }
-
-      auto* view = browser_view_->GetInspectableWebContentsView()->GetView();
-      auto new_view_size = view->size();
-      new_view_size.set_width(new_view_size.width() + width_delta);
-      new_view_size.set_height(new_view_size.height() + height_delta);
-      view->SetSize(new_view_size);
+      AutoresizeBrowserView(width_delta, height_delta, browser_view_);
     }
-
+    for (auto iter = browser_views_.begin();
+         iter != browser_views_.end();
+         iter++) {
+      AutoresizeBrowserView(width_delta, height_delta, (*iter));
+    }
     NotifyWindowResize();
     widget_size_ = new_bounds.size();
   }
