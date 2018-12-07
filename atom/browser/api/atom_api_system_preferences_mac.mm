@@ -13,6 +13,7 @@
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
