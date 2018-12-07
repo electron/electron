@@ -587,7 +587,7 @@ if (is_mac) {
     }
     info_plist = "atom/common/resources/mac/Info.plist"
 
-    electron_version = read_file("VERSION", "trim string")
+    electron_version = read_file("ELECTRON_VERSION", "trim string")
     extra_substitutions = [
       "ATOM_BUNDLE_ID=$electron_mac_bundle_id.framework",
       "ELECTRON_VERSION=$electron_version",
@@ -908,7 +908,7 @@ group("licenses") {
 
 copy("electron_version") {
   sources = [
-    "VERSION",
+    "ELECTRON_VERSION",
   ]
   outputs = [
     "$root_build_dir/version",

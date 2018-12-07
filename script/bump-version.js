@@ -105,7 +105,7 @@ async function nextVersion (bumpType, version) {
 
 // update VERSION file with latest release info
 async function updateVersion (version) {
-  const versionPath = path.resolve(__dirname, '..', 'VERSION')
+  const versionPath = path.resolve(__dirname, '..', 'ELECTRON_VERSION')
   await writeFile(versionPath, version, 'utf8')
 }
 
