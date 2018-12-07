@@ -24,6 +24,7 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
       "videoEncodeAcceleratorSupportedProfile";
   const char* kAuxAttributesKey = "auxAttributes";
   const char* kOverlayCapabilityKey = "overlayCapability";
+  const char* kDx12VulkanVersionInfoKey = "dx12VulkanVersionInfo";
 
  public:
   GPUInfoEnumerator();
@@ -44,6 +45,8 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   void EndAuxAttributes() override;
   void BeginOverlayCapability() override;
   void EndOverlayCapability() override;
+  void BeginDx12VulkanVersionInfo() override;
+  void EndDx12VulkanVersionInfo() override;
   std::unique_ptr<base::DictionaryValue> GetDictionary();
 
  private:
