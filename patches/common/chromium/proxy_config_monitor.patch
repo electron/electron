@@ -6,16 +6,12 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..b8e4aecfffcde3a91e056934e1be0dcd878bc1c1 100644
+index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..6207b646b0041628653532b014500e9990cc5e78 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
-@@ -6,9 +6,13 @@
- 
- #include "base/strings/utf_string_conversions.h"
+@@ -8,7 +8,9 @@
  #include "build/build_config.h"
-+#if 0
  #include "chrome/browser/browser_process.h"
-+#endif
  #include "chrome/browser/net/proxy_service_factory.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
@@ -23,7 +19,14 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..b8e4aecfffcde3a91e056934e1be0dcd
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/associated_interface_ptr.h"
-@@ -23,6 +27,7 @@
+@@ -17,12 +19,13 @@
+ #include "chrome/browser/chromeos/profiles/profile_helper.h"
+ #endif  // defined(OS_CHROMEOS)
+ 
+-#if BUILDFLAG(ENABLE_EXTENSIONS)
++#if 0
+ #include "chrome/browser/extensions/api/proxy/proxy_api.h"
+ #endif
  
  using content::BrowserThread;
  
@@ -31,7 +34,7 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..b8e4aecfffcde3a91e056934e1be0dcd
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -52,6 +57,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -52,6 +55,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -39,8 +42,32 @@ index 2d08d23e04008415f04b4d45d46c0aa6ed4dfee8..b8e4aecfffcde3a91e056934e1be0dcd
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
+@@ -132,9 +136,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+ void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
+                                           const std::string& details) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++#if 0
+   extensions::ProxyEventRouter::GetInstance()->OnPACScriptError(
+       g_browser_process->extension_event_router_forwarder(), profile_,
+       line_number, base::UTF8ToUTF16(details));
++#endif
+ }
+ 
+ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -148,9 +154,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+     // controlled.
+     return;
+   }
+-
++#if 0
+   extensions::ProxyEventRouter::GetInstance()->OnProxyError(
+       g_browser_process->extension_event_router_forwarder(), profile_,
+       net_error);
++#endif
+ }
+ #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..6105afe0ad08176f1ddc4dfc087eba15ee880c58 100644
+index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..30764a251b9a09defaca86c2ac80877914dd1fe9 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -37,11 +37,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
@@ -57,3 +84,11 @@ index 172e71b085a58ff3060a3c90e7e3b9f3ef6df199..6105afe0ad08176f1ddc4dfc087eba15
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
+@@ -88,7 +89,6 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+ 
+ #if BUILDFLAG(ENABLE_EXTENSIONS)
+   mojo::BindingSet<network::mojom::ProxyErrorClient> error_binding_set_;
+-  Profile* profile_ = nullptr;
+ #endif
+ 
+   DISALLOW_COPY_AND_ASSIGN(ProxyConfigMonitor);
