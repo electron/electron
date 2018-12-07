@@ -1,28 +1,26 @@
-const platformDependent = (platforms, [goodPlatformFn, badPlatformFn], args) => {
-  let fn = goodPlatformFn
-  if (!platforms.includes(process.platform)) {
-    fn = badPlatformFn
+const platformDependent = ([goodPlatformFn, skipFn, onlyFn]) => {
+  const resultFn = (goodFn, badFn) => (name, platforms, testFn) => {
+    let fn = goodPlatformFn
+    if (!platforms.includes(process.platform)) {
+      fn = skipFn
+    }
+    return fn(name, testFn);
   }
-  return fn(...args)
+  const returnFn = resultFn(goodPlatformFn, skipFn);
+  returnFn.skip = resultFn(skipFn, skipFn);
+  returnFn.only = resultFn(onlyFn, skipFn);
+  return returnFn;
 }
 
-const platformDescribe = (name, platforms, fn) => {
-  return platformDependent(platforms, [describe, describe.skip], [name, fn])
-}
+const platformDescribe =  platformDependent([describe, describe.skip, describe.only])
 
-const platformIt = (name, platforms, fn) => {
-  return platformDependent(platforms, [it, it.skip], [name, fn])
-}
-
-// eslint-disable standard/no-unused-vars
-const xplatformDescribe = (name, platforms, fn) => {
-  return xdescribe([name, fn])
-}
+const platformIt = platformDependent([it, it.skip, it.only])
 
 // eslint-disable standard/no-unused-vars
-const xplatformIt = (name, platforms, fn) => {
-  return xit([name, fn])
-}
+const xplatformDescribe = platformDescribe.skip
+
+// eslint-disable standard/no-unused-vars
+const xplatformIt = platformIt.skip
 
 module.exports = {
   platformDescribe,
