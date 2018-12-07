@@ -1607,6 +1607,32 @@ void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
   native_view.hidden = NO;
 }
 
+void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
+  if (!view) {
+    return;
+  }
+  
+  browser_views_.push_back(view);
+
+  auto* native_view = view->GetInspectableWebContentsView()->GetNativeView();
+  [[window_ contentView] addSubview:native_view
+                         positioned:NSWindowAbove
+                         relativeTo:nil];
+  native_view.hidden = NO;
+}
+
+void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
+  if (!view) {
+    return;
+  }
+  
+  [view->GetInspectableWebContentsView()->GetNativeView()
+            removeFromSuperview];
+
+  browser_views_.remove_if(
+        [&view](NativeBrowserView* n) { return (n == view); });
+}
+
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
   InternalSetParentWindow(parent, IsVisible());
 }

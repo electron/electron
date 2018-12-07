@@ -204,6 +204,7 @@ void Window::OnWindowClosed() {
   RemoveFromParentChildWindows();
 
   ResetBrowserView();
+  ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -914,6 +915,65 @@ void Window::ResetBrowserView() {
   browser_view_.Reset();
 }
 
+void Window::AddBrowserView(v8::Local<v8::Value> value) {
+  mate::Handle<BrowserView> browser_view;
+  if (value->IsNull() || value->IsUndefined()) {
+  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
+    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    if (get_that_view == browser_views_.end()) {
+      window_->AddBrowserView(browser_view->view());
+      browser_view->web_contents()->SetOwnerWindow(window_.get());
+      browser_views_[browser_view->weak_map_id()].Reset(isolate(), value);
+    }
+    window_->UpdateDraggableRegionViews();
+  }
+}
+
+void Window::RemoveBrowserView(v8::Local<v8::Value> value) {
+  mate::Handle<BrowserView> browser_view;
+  if (value->IsNull() || value->IsUndefined()) {
+  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
+    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    if (get_that_view != browser_views_.end()) {
+      window_->RemoveBrowserView(browser_view->view());
+      browser_view->web_contents()->SetOwnerWindow(nullptr);
+
+      (*get_that_view).second.Reset(isolate(), value);
+      browser_views_.erase(get_that_view);
+    }
+    window_->UpdateDraggableRegionViews();
+  }
+}
+
+void Window::ResetBrowserViews() {
+  for (auto views_iter = browser_views_.begin();
+       views_iter != browser_views_.end(); views_iter++) {
+    mate::Handle<BrowserView> browser_view;
+    if (mate::ConvertFromV8(
+            isolate(),
+            v8::Local<v8::Value>::New(isolate(), (*views_iter).second),
+            &browser_view) &&
+        !browser_view.IsEmpty()) {
+      browser_view->web_contents()->SetOwnerWindow(nullptr);
+    }
+
+    (*views_iter).second.Reset();
+  }
+  browser_views_.clear();
+  window_->UpdateDraggableRegionViews();
+}
+
+std::vector<v8::Local<v8::Value>> Window::GetBrowserViews() const {
+  std::vector<v8::Local<v8::Value>> ret;
+
+  for (auto views_iter = browser_views_.begin();
+       views_iter != browser_views_.end(); views_iter++) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), (*views_iter).second));
+  }
+
+  return ret;
+}
+
 bool Window::IsModal() const {
   return window_->is_modal();
 }
@@ -1041,6 +1101,9 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getChildWindows", &Window::GetChildWindows)
       .SetMethod("getBrowserView", &Window::GetBrowserView)
       .SetMethod("setBrowserView", &Window::SetBrowserView)
+      .SetMethod("addBrowserView", &Window::AddBrowserView)
+      .SetMethod("removeBrowserView", &Window::RemoveBrowserView)
+      .SetMethod("getBrowserViews", &Window::GetBrowserViews)
       .SetMethod("isModal", &Window::IsModal)
       .SetMethod("getNativeWindowHandle", &Window::GetNativeWindowHandle)
       .SetMethod("getBounds", &Window::GetBounds)

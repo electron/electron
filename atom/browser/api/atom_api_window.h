@@ -192,6 +192,10 @@ class Window : public mate::TrackableObject<Window>,
   v8::Local<v8::Value> GetBrowserView() const;
   void SetBrowserView(v8::Local<v8::Value> value);
   void ResetBrowserView();
+  void AddBrowserView(v8::Local<v8::Value> value);
+  void RemoveBrowserView(v8::Local<v8::Value> value);
+  std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
+  void ResetBrowserViews();
   bool IsModal() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
 
@@ -240,6 +244,7 @@ class Window : public mate::TrackableObject<Window>,
 #endif
 
   v8::Global<v8::Value> browser_view_;
+  std::unordered_map<int32_t, v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> web_contents_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;

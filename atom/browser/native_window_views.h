@@ -7,6 +7,7 @@
 
 #include "atom/browser/native_window.h"
 
+#include <list>
 #include <set>
 #include <string>
 #include <vector>
@@ -111,6 +112,9 @@ class NativeWindowViews : public NativeWindow,
   void SetFocusable(bool focusable) override;
   void SetMenu(AtomMenuModel* menu_model) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
+  void AddBrowserView(NativeBrowserView* browser_view) override;
+  void RemoveBrowserView(NativeBrowserView* browser_view) override;
+
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
@@ -212,6 +216,7 @@ class NativeWindowViews : public NativeWindow,
   views::View* web_view_;  // Managed by inspectable_web_contents_.
 
   NativeBrowserView* browser_view_;
+  std::list<NativeBrowserView*> browser_views_;
 
   std::unique_ptr<AutofillPopup> autofill_popup_;
 

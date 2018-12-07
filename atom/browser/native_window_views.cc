@@ -968,6 +968,27 @@ void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
       browser_view->GetInspectableWebContentsView()->GetView());
 }
 
+void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
+  if (!view) {
+    return;
+  }
+
+  browser_views_.push_back(view);
+  web_view_->AddChildView(
+      view->GetInspectableWebContentsView()->GetView());
+}
+
+void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
+  if (!view) {
+    return;
+  }
+
+  web_view_->RemoveChildView(
+      view->GetInspectableWebContentsView()->GetView());
+  browser_views_.remove_if(
+        [&view](NativeBrowserView* n) { return (n == view); });
+}
+
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   NativeWindow::SetParentWindow(parent);
 

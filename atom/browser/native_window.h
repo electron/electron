@@ -156,6 +156,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
   virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual void AddBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual void RemoveBrowserView(NativeBrowserView* browser_view) = 0;
   virtual gfx::NativeView GetNativeView() const = 0;
   virtual gfx::NativeWindow GetNativeWindow() const = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;

@@ -93,6 +93,9 @@ class NativeWindowMac : public NativeWindow,
   void SetIgnoreMouseEvents(bool ignore, bool) override;
   void SetContentProtection(bool enable) override;
   void SetBrowserView(NativeBrowserView* browser_view) override;
+  void AddBrowserView(NativeBrowserView* browser_view) override;
+  void RemoveBrowserView(NativeBrowserView* browser_view) override;
+
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
