@@ -77,17 +77,18 @@
 
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
-  auto* webContents = inspectable_web_contents->GetWebContents();
   auto* devToolsWebContents =
       inspectable_web_contents->GetDevToolsWebContents();
   auto devToolsView = devToolsWebContents->GetNativeView();
 
-  if (visible && devtools_docked_) {
+  // FIXME: SetAllowOtherViews is removed in
+  // https://chromium-review.googlesource.com/c/chromium/src/+/1251323/
+  /*if (visible && devtools_docked_) {
     webContents->SetAllowOtherViews(true);
     devToolsWebContents->SetAllowOtherViews(true);
   } else if (!inspectable_web_contents->IsGuest()) {
     webContents->SetAllowOtherViews(false);
-  }
+  }*/
 
   devtools_visible_ = visible;
   if (devtools_docked_) {
