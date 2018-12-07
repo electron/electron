@@ -4,7 +4,7 @@ const { Buffer } = require('buffer')
 
 const { clipboard, nativeImage } = require('electron')
 
-const { platformIt } = require('./test-helpers')
+const { platformIt, platformDescribe } = require('./test-helpers')
 
 describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures')
@@ -43,13 +43,7 @@ describe('clipboard module', () => {
     })
   })
 
-  describe('clipboard.readBookmark', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('clipboard.readBookmark', ['win32', 'darwin'], () => {
     it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org')
       expect(clipboard.readBookmark()).to.deep.equal({
@@ -92,13 +86,7 @@ describe('clipboard module', () => {
     })
   })
 
-  describe('clipboard.read/writeFindText(text)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('clipboard.read/writeFindText(text)', ['darwin'], () => {
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this')
       expect(clipboard.readFindText()).to.equal('find this')
@@ -106,13 +94,13 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.writeBuffer(format, buffer)', () => {
-    platformIt('writes a Buffer for the specified format', ['darwin'], function () {
+    platformIt('writes a Buffer for the specified format', ['darwin'], () => {
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('public.utf8-plain-text', buffer)
       expect(clipboard.readText()).to.equal('writeBuffer')
     })
 
-    platformIt('writes a Buffer for the specified format', ['linux'], function () {
+    platformIt('writes a Buffer for the specified format', ['linux'], () => {
       const buffer = Buffer.from('writeBuffer', 'utf8')
       clipboard.writeBuffer('text/plain', buffer)
       expect(clipboard.readText()).to.equal('writeBuffer')
@@ -126,13 +114,7 @@ describe('clipboard module', () => {
   })
 
   describe('clipboard.readBuffer(format)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
-    it('returns a Buffer of the content for the specified format', () => {
+    platformIt('returns a Buffer of the content for the specified format', ['darwin'], () => {
       const buffer = Buffer.from('this is binary', 'utf8')
       clipboard.writeText(buffer.toString())
       expect(buffer.equals(clipboard.readBuffer('public.utf8-plain-text'))).to.equal(true)
