@@ -15,7 +15,16 @@ extern "C" {
 namespace atom {
 
 NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
-    : NodeBindings(browser_env) {}
+    : NodeBindings(browser_env) {
+  // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
+  // to avoid cpu pegging likely caused by a busy loop in PollEvents
+  char* numProcessors = getenv("NUMBER_OF_PROCESSORS");
+  if (numProcessors && strcmp(numProcessors, "1") == 0) {
+    if (uv_loop_->iocp && uv_loop_->iocp != INVALID_HANDLE_VALUE)
+      CloseHandle(uv_loop_->iocp);
+    uv_loop_->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+  }
+}
 
 NodeBindingsWin::~NodeBindingsWin() {}
 
