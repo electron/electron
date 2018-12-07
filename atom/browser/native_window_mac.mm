@@ -2042,6 +2042,10 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   if (browser_view_) {
     browser_view_->UpdateDraggableRegions(drag_exclude_rects);
   }
+  
+  for (auto iter = browser_views_.begin(); iter != browser_views_.end(); iter++){
+      (*iter)->UpdateDraggableRegions(drag_exclude_rects);
+  }
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.
