@@ -4,6 +4,7 @@
 
 #include "atom/common/promise_util.h"
 
+#include <iostream>
 #include <string>
 
 namespace atom {
@@ -11,13 +12,18 @@ namespace atom {
 namespace util {
 
 Promise::Promise(v8::Isolate* isolate) {
+  std::cerr << __FILE__ << ':' << __LINE__ << " Promise::Promise(), this is "
+            << this << std::endl;
   auto context = isolate->GetCurrentContext();
   auto resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
   isolate_ = isolate;
   resolver_.Reset(isolate, resolver);
 }
 
-Promise::~Promise() = default;
+Promise::~Promise() {
+  std::cerr << __FILE__ << ':' << __LINE__ << " Promise::~Promise(), this is "
+            << this << std::endl;
+}
 
 v8::Maybe<bool> Promise::RejectWithErrorMessage(const std::string& string) {
   v8::Local<v8::String> error_message =

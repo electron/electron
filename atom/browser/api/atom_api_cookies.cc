@@ -4,6 +4,7 @@
 
 #include "atom/browser/api/atom_api_cookies.h"
 
+#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -180,12 +181,23 @@ void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
 
 // Resolves/rejects the SetCookie |promise|in UI thread.
 void SettleSetPromiseOnUI(scoped_refptr<util::Promise> promise, bool success) {
+  std::cerr
+      << __FILE__ << ':' << __LINE__ << ' '
+      << "SettlesSetPromiseOnUI enter -- resolving promise with success flag: "
+      << success << std::endl;
   promise->Resolve(success ? Cookies::SUCCESS : Cookies::FAILED);
+  std::cerr << __FILE__ << ':' << __LINE__ << ' '
+            << "SettlesSetPromiseOnUI exit" << std::endl;
 }
 
 // Callback of SetCookie.
 void OnSetCookie(scoped_refptr<util::Promise> promise, bool success) {
-  RunCallbackInUI(base::Bind(SettleSetPromiseOnUI, promise, success));
+  std::cerr << __FILE__ << ':' << __LINE__ << ' '
+            << "OnSetCookie enter -- success is " << success << std::endl;
+  RunCallbackInUI(
+      base::Bind(SettleSetPromiseOnUI, std::move(promise), success));
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "OnSetCookie exit"
+            << std::endl;
 }
 
 // Flushes cookie store in IO thread.
@@ -199,6 +211,8 @@ void FlushCookieStoreOnIOThread(
 void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
                    std::unique_ptr<base::DictionaryValue> details,
                    scoped_refptr<util::Promise> promise) {
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "SetCookieOnIO enter"
+            << std::endl;
   std::string url, name, value, domain, path;
   bool secure = false;
   bool http_only = false;
@@ -239,22 +253,29 @@ void SetCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
           GURL(url), name, value, domain, path, creation_time, expiration_time,
           last_access_time, secure, http_only,
           net::CookieSameSite::DEFAULT_MODE, net::COOKIE_PRIORITY_DEFAULT));
-  auto completion_callback = base::BindOnce(OnSetCookie, promise);
+  auto completion_callback = base::BindOnce(OnSetCookie, std::move(promise));
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
+    std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "false 1" << std::endl;
     std::move(completion_callback).Run(false);
     return;
   }
   if (url.empty()) {
+    std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "false 2" << std::endl;
     std::move(completion_callback).Run(false);
     return;
   }
   if (name.empty()) {
+    std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "false 3" << std::endl;
     std::move(completion_callback).Run(false);
     return;
   }
+  std::cerr << __FILE__ << ':' << __LINE__ << ' '
+            << "calling SetCanonicalCookieAsync" << std::endl;
   GetCookieStore(getter)->SetCanonicalCookieAsync(
       std::move(canonical_cookie), secure, http_only,
       std::move(completion_callback));
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "SetCookieOnIO exit"
+            << std::endl;
 }
 
 }  // namespace
@@ -291,9 +312,13 @@ void Cookies::Remove(const GURL& url,
 }
 
 v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "Cookies::Set enter"
+            << std::endl;
+  // v8::Locker locker(isolate());
+  // v8::HandleScope handle_scope(isolate());
 
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "creating promise"
+            << std::endl;
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
   auto copy = base::DictionaryValue::From(
@@ -304,7 +329,10 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
                      promise));
 
-  return promise->GetHandle();
+  v8::Local<v8::Promise> handle = promise->GetHandle();
+  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "Cookies::Set exit"
+            << std::endl;
+  return handle;
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {
