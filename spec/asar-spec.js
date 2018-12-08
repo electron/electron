@@ -6,6 +6,7 @@ const path = require('path')
 const temp = require('temp').track()
 const util = require('util')
 const { closeWindow } = require('./window-helpers')
+const { platformDescribe } = require('./test-helpers')
 
 const nativeImage = require('electron').nativeImage
 const remote = require('electron').remote
@@ -883,36 +884,30 @@ describe('asar package', function () {
       })
     })
 
-    describe('child_process.execSync', function () {
+    describe('child_process.execSync', () => {
       const echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
-      it('should not try to extract the command if there is a reference to a file inside an .asar', function (done) {
+      it('should not try to extract the command if there is a reference to a file inside an .asar', (done) => {
         const stdout = ChildProcess.execSync('echo ' + echo + ' foo bar')
         assert.strictEqual(stdout.toString().replace(/\r/g, ''), echo + ' foo bar\n')
         done()
       })
     })
 
-    describe('child_process.execFile', function () {
+    platformDescribe('child_process.execFile', ['darwin'], () => {
       const execFile = ChildProcess.execFile
       const execFileSync = ChildProcess.execFileSync
       const echo = path.join(fixtures, 'asar', 'echo.asar', 'echo')
 
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
-      it('executes binaries', function (done) {
-        execFile(echo, ['test'], function (error, stdout) {
+      it('executes binaries', (done) => {
+        execFile(echo, ['test'], (error, stdout) => {
           assert.strictEqual(error, null)
           assert.strictEqual(stdout, 'test\n')
           done()
         })
       })
 
-      it('execFileSync executes binaries', function () {
+      it('execFileSync executes binaries', () => {
         const output = execFileSync(echo, ['test'])
         assert.strictEqual(String(output), 'test\n')
       })

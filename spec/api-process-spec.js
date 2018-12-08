@@ -3,6 +3,7 @@ const fs = require('fs')
 const path = require('path')
 
 const { expect } = require('chai')
+const { platformDescribe } = require('./test-helpers')
 
 describe('process module', () => {
   describe('process.getCreationTime()', () => {
@@ -20,13 +21,7 @@ describe('process module', () => {
     })
   })
 
-  describe('process.getIOCounters()', () => {
-    before(function () {
-      if (process.platform === 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('process.getIOCounters()', ['win32', 'linux'], () => {
     it('returns an io counters object', () => {
       const ioCounters = process.getIOCounters()
       expect(ioCounters.readOperationCount).to.be.a('number')

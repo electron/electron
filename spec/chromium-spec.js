@@ -18,6 +18,8 @@ const features = process.atomBinding('features')
 const { expect } = chai
 chai.use(dirtyChai)
 
+const { platformIt } = require('./test-helpers')
+
 /* Most of the APIs here don't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
 
@@ -1441,10 +1443,7 @@ describe('font fallback', () => {
     }[process.platform])
   })
 
-  it('should fall back to Japanese font for sans-serif Japanese script', async function () {
-    if (process.platform === 'linux') {
-      return this.skip()
-    }
+  platformIt('should fall back to Japanese font for sans-serif Japanese script', ['win32', 'darwin'], async function () {
     const html = `
     <html lang="ja-JP">
       <head>

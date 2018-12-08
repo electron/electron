@@ -10,6 +10,8 @@ const { ipcRenderer, remote } = require('electron')
 const isCI = remote.getGlobal('isCi')
 chai.use(dirtyChai)
 
+const { platformDescribe } = require('./test-helpers')
+
 describe('node feature', () => {
   const fixtures = path.join(__dirname, 'fixtures')
 
@@ -297,13 +299,7 @@ describe('node feature', () => {
     })
   })
 
-  describe('net.connect', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('net.connect', ['darwin'], () => {
     it('emit error when connect to a socket path without listeners', (done) => {
       const socketPath = path.join(os.tmpdir(), 'atom-shell-test.sock')
       const script = path.join(fixtures, 'module', 'create_socket.js')

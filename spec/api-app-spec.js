@@ -8,7 +8,7 @@ const fs = require('fs')
 const path = require('path')
 const { ipcRenderer, remote } = require('electron')
 const { emittedOnce } = require('./events-helpers')
-const { platformIt } = require('./test-helpers')
+const { platformIt, platformDescribe, xplatformDescribe } = require('./test-helpers')
 const { closeWindow } = require('./window-helpers')
 
 const { expect } = chai
@@ -140,13 +140,7 @@ describe('app module', () => {
     })
   })
 
-  describe('app.isInApplicationsFolder()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('app.isInApplicationsFolder()', ['darwin'], () => {
     it('should be false during tests', () => {
       expect(app.isInApplicationsFolder()).to.be.false()
     })
@@ -185,12 +179,7 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound')
     })
 
-    it('exits gracefully', async function () {
-      if (!['darwin', 'linux'].includes(process.platform)) {
-        this.skip()
-        return
-      }
-
+    platformIt('exits gracefully', ['darwin', 'linux'], async function () {
       const electronPath = remote.getGlobal('process').execPath
       const appPath = path.join(__dirname, 'fixtures', 'api', 'singleton')
       appProcess = ChildProcess.spawn(electronPath, [appPath])
@@ -269,27 +258,15 @@ describe('app module', () => {
     })
   })
 
-  describe('app.setUserActivity(type, userInfo)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('app.setUserActivity(type, userInfo)', ['darwin'], () => {
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', { testData: '123' })
       expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity')
     })
   })
 
-  xdescribe('app.importCertificate', () => {
+  xplatformDescribe('app.importCertificate', ['linux'], () => {
     let w = null
-
-    before(function () {
-      if (process.platform !== 'linux') {
-        this.skip()
-      }
-    })
 
     afterEach(() => closeWindow(w).then(() => { w = null }))
 
@@ -443,18 +420,12 @@ describe('app module', () => {
     })
   })
 
-  describe('app.get/setLoginItemSettings API', () => {
+  describe('app.get/setLoginItemSettings API', ['win32', 'darwin'], () => {
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
       '--process-start-args', `"--hidden"`
     ]
-
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false })
@@ -562,14 +533,8 @@ describe('app module', () => {
     })
   })
 
-  describe('select-client-certificate event', () => {
+  platformDescribe('select-client-certificate event', ['win32', 'darwin'], () => {
     let w = null
-
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
 
     beforeEach(() => {
       w = new BrowserWindow({
@@ -593,7 +558,7 @@ describe('app module', () => {
     })
   })
 
-  describe('setAsDefaultProtocolClient(protocol, path, args)', () => {
+  platformDescribe('setAsDefaultProtocolClient(protocol, path, args)', ['win32'], () => {
     const protocol = 'electron-test'
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe')
     const processStartArgs = [
@@ -604,20 +569,16 @@ describe('app module', () => {
     let Winreg
     let classesKey
 
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      } else {
-        Winreg = require('winreg')
+    before(() => {
+      Winreg = require('winreg')
 
-        classesKey = new Winreg({
-          hive: Winreg.HKCU,
-          key: '\\Software\\Classes\\'
-        })
-      }
+      classesKey = new Winreg({
+        hive: Winreg.HKCU,
+        key: '\\Software\\Classes\\'
+      })
     })
 
-    after(function (done) {
+    after((done) => {
       if (process.platform !== 'win32') {
         done()
       } else {
@@ -709,13 +670,7 @@ describe('app module', () => {
     })
   })
 
-  describe('app launch through uri', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('app launch through uri', ['win32'], () => {
     it('does not launch for argument following a URL', done => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'quit-app')
       // App should exit with non 123 code.
@@ -891,27 +846,12 @@ describe('app module', () => {
     })
   })
 
-  describe('sandbox options', () => {
+  platformDescribe('sandbox options', ['linux', 'arm64', 'arm'], () => {
     let appProcess = null
     let server = null
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox'
 
-    beforeEach(function (done) {
-      if (process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')) {
-        // Our ARM tests are run on VSTS rather than CircleCI, and the Docker
-        // setup on VSTS disallows syscalls that Chrome requires for setting up
-        // sandboxing.
-        // See:
-        // - https://docs.docker.com/engine/security/seccomp/#significant-syscalls-blocked-by-the-default-profile
-        // - https://chromium.googlesource.com/chromium/src/+/70.0.3538.124/sandbox/linux/services/credentials.cc#292
-        // - https://github.com/docker/docker-ce/blob/ba7dfc59ccfe97c79ee0d1379894b35417b40bca/components/engine/profiles/seccomp/seccomp_default.go#L497
-        // - https://blog.jessfraz.com/post/how-to-use-new-docker-seccomp-profiles/
-        //
-        // Adding `--cap-add SYS_ADMIN` or `--security-opt seccomp=unconfined`
-        // to the Docker invocation allows the syscalls that Chrome needs, but
-        // are probably more permissive than we'd like.
-        this.skip()
-      }
+    beforeEach((done) => {
       fs.unlink(socketPath, () => {
         server = net.createServer()
         server.listen(socketPath)
@@ -1040,13 +980,7 @@ describe('app module', () => {
     })
   })
 
-  describe('dock.setMenu', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('dock.setMenu', ['darwin'], () => {
     it('keeps references to the menu', () => {
       app.dock.setMenu(new Menu())
       const v8Util = process.atomBinding('v8_util')

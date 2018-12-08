@@ -69,14 +69,8 @@ describe('autoUpdater module', function () {
       })
     })
 
-    describe('on Mac', function () {
+    platformDescribe('on Mac', ['darwin'], function () {
       const isServerTypeError = (err) => err.message.includes('Expected serverType to be \'default\' or \'json\'')
-
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
 
       it('emits an error when the application is unsigned', done => {
         ipcRenderer.once('auto-updater-error', (event, message) => {

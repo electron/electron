@@ -2,14 +2,10 @@ const assert = require('assert')
 const { remote } = require('electron')
 const { systemPreferences } = remote
 
-describe('systemPreferences module', () => {
-  describe('systemPreferences.getAccentColor', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
+const { platformDescribe } = require('./test-helpers')
 
+describe('systemPreferences module', () => {
+  platformDescribe('systemPreferences.getAccentColor', ['win32'], () => {
     it('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor()
       assert.notStrictEqual(accentColor, null)
@@ -17,13 +13,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.getColor(id)', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('systemPreferences.getColor(id)', ['win32'], () => {
     it('throws an error when the id is invalid', () => {
       assert.throws(() => {
         systemPreferences.getColor('not-a-color')
@@ -35,13 +25,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.registerDefaults(defaults)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('systemPreferences.registerDefaults(defaults)', ['darwin'], () => {
     it('registers defaults', () => {
       const defaultsMap = [
         { key: 'one', type: 'string', value: 'ONE' },
@@ -77,13 +61,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.getUserDefault(key, type)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('systemPreferences.getUserDefault(key, type)', ['darwin'], () => {
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string')
       assert.strictEqual(typeof locale, 'string')
@@ -107,7 +85,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.setUserDefault(key, type, value)', () => {
+  platformDescribe('systemPreferences.setUserDefault(key, type, value)', ['darwin'], () => {
     const KEY = 'SystemPreferencesTest'
     const TEST_CASES = [
       ['string', 'abc'],
@@ -119,12 +97,6 @@ describe('systemPreferences module', () => {
       ['array', [1, 2, 3]],
       ['dictionary', { 'a': 1, 'b': 2 }]
     ]
-
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
 
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
@@ -149,13 +121,7 @@ describe('systemPreferences module', () => {
     })
   })
 
-  describe('systemPreferences.setUserDefault(key, type, value)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('systemPreferences.setUserDefault(key, type, value)', ['darwin'], () => {
     it('removes keys', () => {
       const KEY = 'SystemPreferencesTest'
       systemPreferences.setUserDefault(KEY, 'string', 'foo')

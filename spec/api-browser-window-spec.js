@@ -19,7 +19,7 @@ const { expect } = chai
 const isCI = remote.getGlobal('isCi')
 const nativeModulesEnabled = remote.getGlobal('nativeModulesEnabled')
 
-const { platformIt } = require('./test-helpers')
+const { platformIt, platformDescribe } = require('./test-helpers')
 
 chai.use(dirtyChai)
 
@@ -413,9 +413,7 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.show()', () => {
     before(function () {
-      if (isCI) {
-        this.skip()
-      }
+      if (isCI) this.skip()
     })
 
     it('should focus on window', () => {
@@ -437,9 +435,7 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.hide()', () => {
     before(function () {
-      if (isCI) {
-        this.skip()
-      }
+      if (isCI) this.skip()
     })
 
     it('should defocus on window', () => {
@@ -671,9 +667,7 @@ describe('BrowserWindow module', () => {
     })
     describe(`Maximized state`, () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
+        if (isCI) this.skip()
       })
       it(`checks normal bounds when maximized`, (done) => {
         const bounds = w.getBounds()
@@ -699,9 +693,7 @@ describe('BrowserWindow module', () => {
     })
     describe(`Minimized state`, () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
+        if (isCI) this.skip()
       })
       it(`checks normal bounds when minimized`, (done) => {
         const bounds = w.getBounds()
@@ -712,6 +704,7 @@ describe('BrowserWindow module', () => {
         w.show()
         w.minimize()
       })
+
       it(`checks normal bounds when restored`, (done) => {
         const bounds = w.getBounds()
         w.once('minimize', () => {
@@ -725,15 +718,11 @@ describe('BrowserWindow module', () => {
         w.minimize()
       })
     })
-    describe(`Fullscreen state`, () => {
+    platformDescribe(`Fullscreen state`, ['win32', 'linux'], () => {
       before(function () {
-        if (isCI) {
-          this.skip()
-        }
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
+        if (isCI) this.skip()
       })
+
       it(`checks normal bounds when fullscreen'ed`, (done) => {
         const bounds = w.getBounds()
         w.once('enter-full-screen', () => {
@@ -743,11 +732,10 @@ describe('BrowserWindow module', () => {
         w.show()
         w.setFullScreen(true)
       })
+
       it(`checks normal bounds when unfullscreen'ed`, (done) => {
         const bounds = w.getBounds()
-        w.once('enter-full-screen', () => {
-          w.setFullScreen(false)
-        })
+        w.once('enter-full-screen', () => w.setFullScreen(false))
         w.once('leave-full-screen', () => {
           assertBoundsEqual(w.getNormalBounds(), bounds)
           done()
@@ -810,13 +798,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.alwaysOnTop() resets level on minimize', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.alwaysOnTop() resets level on minimize', ['darwin'], () => {
     it('resets the windows level on minimize', () => {
       assert.strictEqual(w.isAlwaysOnTop(), false)
       w.setAlwaysOnTop(true, 'screen-saver')
@@ -829,13 +811,7 @@ describe('BrowserWindow module', () => {
   })
 
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
-    describe('on macOS', () => {
-      before(function () {
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('on macOS', ['darwin'], () => {
       it('allows changing cursor auto-hiding', () => {
         assert.doesNotThrow(() => {
           w.setAutoHideCursor(false)
@@ -844,26 +820,14 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('on non-macOS platforms', () => {
-      before(function () {
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('on non-macOS platforms', ['win32', 'linux'], () => {
       it('is not available', () => {
         assert.ok(!w.setAutoHideCursor)
       })
     })
   })
 
-  describe('BrowserWindow.selectPreviousTab()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.selectPreviousTab()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.selectPreviousTab()
@@ -871,13 +835,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.selectNextTab()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.selectNextTab()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.selectNextTab()
@@ -885,13 +843,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.mergeAllWindows()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.mergeAllWindows()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.mergeAllWindows()
@@ -899,13 +851,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.moveTabToNewWindow()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.moveTabToNewWindow()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.moveTabToNewWindow()
@@ -913,13 +859,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.toggleTabBar()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.toggleTabBar()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.toggleTabBar()
@@ -927,13 +867,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.addTabbedWindow()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.addTabbedWindow()', ['darwin'], () => {
     it('does not throw', (done) => {
       const tabbedWindow = new BrowserWindow({})
       assert.doesNotThrow(() => {
@@ -955,13 +889,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.setWindowButtonVisibility()', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.setWindowButtonVisibility()', ['darwin'], () => {
     it('does not throw', () => {
       assert.doesNotThrow(() => {
         w.setWindowButtonVisibility(true)
@@ -994,13 +922,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.setAppDetails(options)', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('BrowserWindow.setAppDetails(options)', ['win32'], () => {
     it('supports setting the app details', () => {
       const iconPath = path.join(fixtures, 'assets', 'icon.ico')
 
@@ -1035,9 +957,7 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.fromWebContents(webContents)', () => {
     let contents = null
-
     beforeEach(() => { contents = webContents.create({}) })
-
     afterEach(() => { contents.destroy() })
 
     it('returns the window with the webContents', () => {
@@ -1048,9 +968,7 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.fromDevToolsWebContents(webContents)', () => {
     let contents = null
-
     beforeEach(() => { contents = webContents.create({}) })
-
     afterEach(() => { contents.destroy() })
 
     it('returns the window with the webContents', (done) => {
@@ -1165,12 +1083,8 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('"titleBarStyle" option', () => {
+  platformDescribe('"titleBarStyle" option', ['darwin'], () => {
     before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-
       if (parseInt(os.release().split('.')[0]) < 14) {
         this.skip()
       }
@@ -1200,13 +1114,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('enableLargerThanScreen" option', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('enableLargerThanScreen" option', ['darwin', 'win32'], () => {
     beforeEach(() => {
       w.destroy()
       w = new BrowserWindow({
@@ -1223,6 +1131,7 @@ describe('BrowserWindow module', () => {
       assert.strictEqual(after[0], -10)
       assert.strictEqual(after[1], -10)
     })
+
     it('can set the window larger than screen', () => {
       const size = screen.getPrimaryDisplay().size
       size.width += 100
@@ -1232,13 +1141,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('"zoomToPageWidth" option', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('"zoomToPageWidth" option', ['darwin'], () => {
     it('sets the window width to the page width when used', () => {
       w.destroy()
       w = new BrowserWindow({
@@ -2290,14 +2193,8 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('sheet-begin event', () => {
+  platformDescribe('sheet-begin event', ['darwin'], () => {
     let sheet = null
-
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
 
     afterEach(() => {
       return closeWindow(sheet, { assertSingleWindow: false }).then(() => { sheet = null })
@@ -2316,14 +2213,8 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('sheet-end event', () => {
+  platformDescribe('sheet-end event', ['darwin'], () => {
     let sheet = null
-
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
 
     afterEach(() => {
       return closeWindow(sheet, { assertSingleWindow: false }).then(() => { sheet = null })
@@ -2343,9 +2234,7 @@ describe('BrowserWindow module', () => {
   describe('beginFrameSubscription method', () => {
     before(function () {
       // This test is too slow, only test it on CI.
-      if (!isCI) {
-        this.skip()
-      }
+      if (!isCI) this.skip()
 
       // FIXME These specs crash on Linux when run in a docker container
       if (isCI && process.platform === 'linux') {
@@ -2663,14 +2552,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreenable state', () => {
-      before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('fullscreenable state', ['darwin'], () => {
       it('can be changed with fullscreenable option', () => {
         w.destroy()
         w = new BrowserWindow({ show: false, fullscreenable: false })
@@ -2686,14 +2568,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('kiosk state', () => {
-      before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('kiosk state', ['darwin'], () => {
       it('can be changed with setKiosk method', (done) => {
         w.destroy()
         w = new BrowserWindow()
@@ -2710,14 +2585,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreen state with resizable set', () => {
-      before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('fullscreen state with resizable set', ['darwin'], () => {
       it('resizable flag should be set to true and restored', (done) => {
         w.destroy()
         w = new BrowserWindow({ resizable: false })
@@ -2733,14 +2601,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('fullscreen state', () => {
-      before(function () {
-        // Only implemented on macOS.
-        if (process.platform !== 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('fullscreen state', ['darwin'], () => {
       it('can be changed with setFullScreen method', (done) => {
         w.destroy()
         w = new BrowserWindow()
@@ -2839,14 +2700,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.setFullScreen(false)', () => {
-    before(function () {
-      // only applicable to windows: https://github.com/electron/electron/issues/6036
-      if (process.platform !== 'win32') {
-        this.skip()
-      }
-    })
-
+  describe('BrowserWindow.setFullScreen(false)', ['win32'], () => {
     it('should restore a normal visible window from a fullscreen startup state', (done) => {
       w.webContents.once('did-finish-load', () => {
         // start fullscreen and hidden
@@ -2861,6 +2715,7 @@ describe('BrowserWindow module', () => {
       })
       w.loadURL('about:blank')
     })
+
     it('should keep window hidden if already in hidden state', (done) => {
       w.webContents.once('did-finish-load', () => {
         w.once('leave-full-screen', () => {
@@ -2874,13 +2729,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  describe('BrowserWindow.setFullScreen(false) when HTML fullscreen', ['darwin'], () => {
     it('exits HTML fullscreen when window leaves fullscreen', (done) => {
       w.destroy()
       w = new BrowserWindow()
@@ -2931,13 +2780,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('win.setParentWindow(parent)', () => {
-      before(function () {
-        if (process.platform === 'win32') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('win.setParentWindow(parent)', ['darwin', 'linux'], () => {
       beforeEach(() => {
         if (c != null) c.destroy()
         c = new BrowserWindow({ show: false })
@@ -2968,14 +2811,7 @@ describe('BrowserWindow module', () => {
       })
     })
 
-    describe('modal option', () => {
-      before(function () {
-        // The isEnabled API is not reliable on macOS.
-        if (process.platform === 'darwin') {
-          this.skip()
-        }
-      })
-
+    platformDescribe('modal option', ['win32', 'linux'], () => {
       beforeEach(() => {
         if (c != null) c.destroy()
         c = new BrowserWindow({ show: false, parent: w, modal: true })
@@ -3334,13 +3170,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  describe('previewFile', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip()
-      }
-    })
-
+  platformDescribe('previewFile', ['darwin'], () => {
     it('opens the path in Quick Look on macOS', () => {
       assert.doesNotThrow(() => {
         w.previewFile(__filename)
