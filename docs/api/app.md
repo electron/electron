@@ -409,7 +409,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 
 Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will make it throw an error.
+Calling `event.preventDefault()` will make it return empty sources.
 
 ### Event: 'remote-require'
 

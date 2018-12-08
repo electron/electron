@@ -39,15 +39,6 @@ describe('desktopCapturer', () => {
     })
   })
 
-  it('throws an error when blocked', done => {
-    ipcRenderer.send('handle-next-desktop-capturer-get-sources')
-    desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
-      expect(error.message).to.equal('desktopCapturer.getSources() blocked')
-      expect(sources).to.be.undefined()
-      done()
-    })
-  })
-
   it('does not throw an error when called more than once (regression)', (done) => {
     let callCount = 0
     const callback = (error, sources) => {
@@ -107,6 +98,15 @@ describe('desktopCapturer', () => {
         expect(sources[i].display_id).to.equal(displays[i].id.toString())
       }
       done()
+    })
+
+    it('returns empty sources when blocked', done => {
+      ipcRenderer.send('handle-next-desktop-capturer-get-sources')
+      desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
+        expect(error).to.be.null()
+        expect(sources).to.be.empty()
+        done()
+      })
     })
   })
 })
