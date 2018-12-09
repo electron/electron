@@ -1685,6 +1685,8 @@ bool WebContents::SendIPCMessageToFrame(bool internal,
   });
   if (iter == frames.end())
     return false;
+  if (!(*iter)->IsRenderFrameLive())
+    return false;
   return (*iter)->Send(new AtomFrameMsg_Message(
       frame_id, internal, send_to_all, channel, args, 0 /* sender_id */));
 }
