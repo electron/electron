@@ -9,10 +9,12 @@ jobs:
   displayName: Test Arm on Arm32v7 hardware
   timeoutInMinutes: 30
   steps:
+
   - bash: |
-    which git
-    git --version
-    git --help
-    git tag --list -l v2.0.0-beta.*
-    git clean -ffdx
-  displayName: 'Check git commands and functionality'
+      git clean -fdx
+      which git
+      git --version
+      git --help
+      git tag --list -l v2.0.0-beta.*
+      git clean -ffdx
+    displayName: 'Check git commands and functionality'
