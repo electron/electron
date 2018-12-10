@@ -35,6 +35,13 @@ async function nextBeta (v) {
   const next = semver.coerce(semver.clean(v))
 
   const tagBlob = await GitProcess.exec(['tag', '--list', '-l', `v${next}-beta.*`], gitDir)
+  if (tagBlob.exitCode === 0) {
+    console.log('Git tag succeeded with: ' + tagBlob.stdout)
+  } else {
+    const error = tagBlob.stderr
+    console.log('Error with git tag on next beta: ' + error)
+    console.error('ERROR: ' + error)
+  }
   const tags = tagBlob.stdout.split('\n').filter(e => e !== '')
   tags.sort((t1, t2) => semver.gt(t1, t2))
 
