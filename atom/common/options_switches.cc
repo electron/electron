@@ -110,6 +110,13 @@ const char kPreloadURL[] = "preloadURL";
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
+// Whether node integration was explicitly enabled.
+// This is to support the change from default-enabled to default-disabled in
+// Electron 5 (with a warning message in 4). This option and its usages
+// can be removed in Electron 5.
+const char kNodeIntegrationWasExplicitlyEnabled[] =
+    "nodeIntegrationWasExplicitlyEnabled";
+
 // Enable the remote module
 const char kEnableRemoteModule[] = "enableRemoteModule";
 
