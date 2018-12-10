@@ -380,8 +380,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(const base::TimeTicks& proceed_time) override;
   void RenderViewCreated(content::RenderViewHost*) override;
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
   void DocumentLoadedInFrame(
@@ -513,10 +511,6 @@ class WebContents : public mate::TrackableObject<WebContents>,
 
   // Observers of this WebContents.
   base::ObserverList<ExtendedWebContentsObserver> observers_;
-
-  // The ID of the process of the currently committed RenderViewHost.
-  // -1 means no speculative RVH has been committed yet.
-  int currently_committed_process_id_ = -1;
 
   DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
