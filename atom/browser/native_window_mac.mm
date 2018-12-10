@@ -1405,6 +1405,8 @@ void NativeWindowMac::AddContentViewLayers() {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
       buttons_view_.reset(
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
+      // NSWindowStyleMaskFullSizeContentView does not work with zoom button
+      SetFullScreenable(false);
       [[window_ contentView] addSubview:buttons_view_];
     } else {
       if (title_bar_style_ != NORMAL)
