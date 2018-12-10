@@ -6,7 +6,7 @@ describe('bump-version script', () => {
   const betaPattern = /[0-9.]*(-beta[0-9.]*)/g
 
   before(function () {
-    if (process.platform === 'linux' && process.arch === 'arm32') {
+    if (process.platform === 'linux' && process.arch === 'arm') {
       this.skip()
     }
   })
