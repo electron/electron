@@ -93,36 +93,41 @@ void BrowserWindow::UpdateDraggableRegions(
     if ([subview isKindOfClass:[ControlRegionView class]])
       [subview removeFromSuperview];
 
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  draggable_regions_ = regions;
-  std::vector<gfx::Rect> drag_exclude_rects;
-  if (regions.empty()) {
-    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
-  } else {
-    drag_exclude_rects = CalculateNonDraggableRegions(
-        DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
-  }
+  // // Draggable regions is implemented by having the whole web view draggable
+  // // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
+  // draggable_regions_ = regions;
+  // std::vector<gfx::Rect> drag_exclude_rects;
+  // if (regions.empty()) {
+  //   drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth,
+  //   webViewHeight));
+  // } else {
+  //   drag_exclude_rects = CalculateNonDraggableRegions(
+  //       DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
+  // }
 
-  if (window_->browser_view())
-    window_->browser_view()->UpdateDraggableRegions(drag_exclude_rects);
+  // if (window_->browser_view())
+  //   window_->browser_view()->UpdateDraggableRegions(drag_exclude_rects);
 
-  // Create and add a ControlRegionView for each region that needs to be
-  // excluded from the dragging.
-  for (const auto& rect : drag_exclude_rects) {
-    base::scoped_nsobject<NSView> controlRegion(
-        [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
-    [controlRegion setFrame:NSMakeRect(rect.x(), webViewHeight - rect.bottom(),
-                                       rect.width(), rect.height())];
-    [webView addSubview:controlRegion];
-  }
+  // // Create and add a ControlRegionView for each region that needs to be
+  // // excluded from the dragging.
+  // for (const auto& rect : drag_exclude_rects) {
+  //   base::scoped_nsobject<NSView> controlRegion(
+  //       [[ControlRegionView alloc] initWithFrame:NSZeroRect]);
+  //   [controlRegion setFrame:NSMakeRect(rect.x(), webViewHeight -
+  //   rect.bottom(),
+  //                                      rect.width(), rect.height())];
+  //   [webView addSubview:controlRegion];
+  // }
 
-  // AppKit will not update its cache of mouseDownCanMoveWindow unless something
-  // changes. Previously we tried adding an NSView and removing it, but for some
-  // reason it required reposting the mouse-down event, and didn't always work.
-  // Calling the below seems to be an effective solution.
-  [[webView window] setMovableByWindowBackground:NO];
-  [[webView window] setMovableByWindowBackground:YES];
+  // // AppKit will not update its cache of mouseDownCanMoveWindow unless
+  // something
+  // // changes. Previously we tried adding an NSView and removing it, but for
+  // some
+  // // reason it required reposting the mouse-down event, and didn't always
+  // work.
+  // // Calling the below seems to be an effective solution.
+  // [[webView window] setMovableByWindowBackground:NO];
+  // [[webView window] setMovableByWindowBackground:YES];
 }
 
 }  // namespace api
