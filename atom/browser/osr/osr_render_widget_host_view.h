@@ -14,8 +14,6 @@
 #include <windows.h>
 #endif
 
-#include "atom/browser/native_window.h"
-#include "atom/browser/native_window_observer.h"
 #include "atom/browser/osr/osr_output_device.h"
 #include "atom/browser/osr/osr_view_proxy.h"
 #include "base/process/kill.h"
@@ -75,7 +73,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 #if !defined(OS_MACOSX)
                                       public content::DelegatedFrameHostClient,
 #endif
-                                      public NativeWindowObserver,
                                       public OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
@@ -84,7 +81,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 const OnPaintCallback& callback,
                                 content::RenderWidgetHost* render_widget_host,
                                 OffScreenRenderWidgetHostView* parent_host_view,
-                                NativeWindow* native_window);
+                                gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
   content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
@@ -205,10 +202,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool InstallTransparency();
 
-  // NativeWindowObserver:
-  void OnWindowResize() override;
-  void OnWindowClosed() override;
-
   void OnBeginFrameTimerTick();
   void SendBeginFrame(base::TimeTicks frame_time, base::TimeDelta vsync_period);
 
@@ -268,8 +261,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   content::RenderWidgetHostImpl* render_widget_host() const {
     return render_widget_host_;
   }
-  void SetNativeWindow(NativeWindow* window);
-  NativeWindow* window() const { return native_window_; }
+
   gfx::Size size() const { return size_; }
 
   void set_popup_host_view(OffScreenRenderWidgetHostView* popup_view) {
@@ -306,7 +298,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
-  NativeWindow* native_window_;
   OffScreenOutputDevice* software_output_device_ = nullptr;
 
   const bool transparent_;

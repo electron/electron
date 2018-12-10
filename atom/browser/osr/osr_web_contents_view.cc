@@ -15,13 +15,16 @@ namespace atom {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     const OnPaintCallback& callback)
-    : transparent_(transparent), callback_(callback) {
+    : native_window_(nullptr), transparent_(transparent), callback_(callback) {
 #if defined(OS_MACOSX)
   PlatformCreate();
 #endif
 }
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
+  if (native_window_)
+    native_window_->RemoveObserver(this);
+
 #if defined(OS_MACOSX)
   PlatformDestroy();
 #endif
@@ -34,35 +37,52 @@ void OffScreenWebContentsView::SetWebContents(
   RenderViewCreated(web_contents_->GetRenderViewHost());
 }
 
+void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
+  if (native_window_)
+    native_window_->RemoveObserver(this);
+
+  native_window_ = window;
+
+  if (native_window_)
+    native_window_->AddObserver(this);
+
+  OnWindowResize();
+}
+
+void OffScreenWebContentsView::OnWindowResize() {
+  // In offscreen mode call RenderWidgetHostView's SetSize explicitly
+  if (GetView())
+    GetView()->SetSize(GetSize());
+}
+
+void OffScreenWebContentsView::OnWindowClosed() {
+  if (native_window_) {
+    native_window_->RemoveObserver(this);
+    native_window_ = nullptr;
+  }
+}
+
+gfx::Size OffScreenWebContentsView::GetSize() {
+  return native_window_ ? native_window_->GetSize() : gfx::Size();
+}
+
 #if !defined(OS_MACOSX)
 gfx::NativeView OffScreenWebContentsView::GetNativeView() const {
-  if (!web_contents_)
+  if (!native_window_)
     return gfx::NativeView();
-
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
-  if (!relay)
-    return gfx::NativeView();
-  return relay->GetNativeWindow()->GetNativeView();
+  return native_window_->GetNativeView();
 }
 
 gfx::NativeView OffScreenWebContentsView::GetContentNativeView() const {
-  if (!web_contents_)
+  if (!native_window_)
     return gfx::NativeView();
-
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
-  if (!relay)
-    return gfx::NativeView();
-  return relay->GetNativeWindow()->GetNativeView();
+  return native_window_->GetNativeView();
 }
 
 gfx::NativeWindow OffScreenWebContentsView::GetTopLevelNativeWindow() const {
-  if (!web_contents_)
+  if (!native_window_)
     return gfx::NativeWindow();
-
-  auto* relay = NativeWindowRelay::FromWebContents(web_contents_);
-  if (!relay)
-    return gfx::NativeWindow();
-  return relay->GetNativeWindow()->GetNativeWindow();
+  return native_window_->GetNativeWindow();
 }
 #endif
 
@@ -104,7 +124,7 @@ OffScreenWebContentsView::CreateViewForWidget(
 
   return new OffScreenRenderWidgetHostView(
       transparent_, painting_, GetFrameRate(), callback_, render_widget_host,
-      nullptr, nullptr);
+      nullptr, GetSize());
 }
 
 content::RenderWidgetHostViewBase*
@@ -122,7 +142,7 @@ OffScreenWebContentsView::CreateViewForPopupWidget(
 
   return new OffScreenRenderWidgetHostView(transparent_, true,
                                            view->GetFrameRate(), callback_,
-                                           render_widget_host, view, nullptr);
+                                           render_widget_host, view, GetSize());
 }
 
 void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}

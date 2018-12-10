@@ -33,7 +33,7 @@ class NativeWindow;
 class WebDialogHelper;
 
 #if BUILDFLAG(ENABLE_OSR)
-class OffScreenRenderWidgetHostView;
+class OffScreenWebContentsView;
 #endif
 
 class CommonWebContentsDelegate
@@ -71,8 +71,7 @@ class CommonWebContentsDelegate
 
  protected:
 #if BUILDFLAG(ENABLE_OSR)
-  virtual OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView()
-      const;
+  virtual OffScreenWebContentsView* GetOffScreenWebContentsView() const;
 #endif
 
   // content::WebContentsDelegate:
