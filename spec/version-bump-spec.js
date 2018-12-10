@@ -5,6 +5,12 @@ describe('bump-version script', () => {
   const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g
   const betaPattern = /[0-9.]*(-beta[0-9.]*)/g
 
+  before(function () {
+    if (process.platform === 'linux' && process.arch === 'arm32') {
+      this.skip()
+    }
+  })
+
   it('bumps to nightly from stable', async () => {
     const version = 'v2.0.0'
     const next = await nextVersion('nightly', version)
