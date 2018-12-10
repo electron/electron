@@ -128,7 +128,7 @@ AtomBrowserClient::~AtomBrowserClient() {}
 content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
     int process_id) {
   // If the process is a pending process, we should use the web contents
-  // for the frame host passed into OverrideSiteInstanceForNavigation.
+  // for the frame host passed into RegisterPendingProcess.
   if (base::ContainsKey(pending_processes_, process_id))
     return pending_processes_[process_id];
 
@@ -137,24 +137,36 @@ content::WebContents* AtomBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
-bool AtomBrowserClient::ShouldCreateNewSiteInstance(
-    content::RenderFrameHost* render_frame_host,
+bool AtomBrowserClient::ShouldForceNewSiteInstance(
+    content::RenderFrameHost* current_rfh,
+    content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
-    content::SiteInstance* current_instance,
-    const GURL& url) {
+    const GURL& url,
+    bool has_response_started) const {
   if (url.SchemeIs(url::kJavaScriptScheme))
     // "javacript:" scheme should always use same SiteInstance
     return false;
 
+  content::SiteInstance* current_instance = current_rfh->GetSiteInstance();
+  content::SiteInstance* speculative_instance =
+      speculative_rfh ? speculative_rfh->GetSiteInstance() : nullptr;
   int process_id = current_instance->GetProcess()->GetID();
-  if (!IsRendererSandboxed(process_id)) {
-    if (!RendererUsesNativeWindowOpen(process_id)) {
-      // non-sandboxed renderers without native window.open should always create
-      // a new SiteInstance
-      return true;
-    }
-    auto* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
+  if (NavigationWasRedirectedCrossSite(browser_context, current_instance,
+                                       speculative_instance, url,
+                                       has_response_started)) {
+    // Navigation was redirected. We can't force the current, speculative or a
+    // new unrelated site instance to be used. Delegate to the content layer.
+    return false;
+  } else if (IsRendererSandboxed(process_id)) {
+    // Renderer is sandboxed, delegate the decision to the content layer for all
+    // origins.
+    return false;
+  } else if (!RendererUsesNativeWindowOpen(process_id)) {
+    // non-sandboxed renderers without native window.open should always create
+    // a new SiteInstance
+    return true;
+  } else {
+    auto* web_contents = content::WebContents::FromRenderFrameHost(current_rfh);
     if (!ChildWebContentsTracker::IsChildWebContents(web_contents)) {
       // Root WebContents should always create new process to make sure
       // native addons are loaded correctly after reload / navigation.
@@ -169,6 +181,26 @@ bool AtomBrowserClient::ShouldCreateNewSiteInstance(
   return !IsSameWebSite(browser_context, src_url, url);
 }
 
+bool AtomBrowserClient::NavigationWasRedirectedCrossSite(
+    content::BrowserContext* browser_context,
+    content::SiteInstance* current_instance,
+    content::SiteInstance* speculative_instance,
+    const GURL& dest_url,
+    bool has_response_started) const {
+  bool navigation_was_redirected = false;
+  if (has_response_started) {
+    navigation_was_redirected = !IsSameWebSite(
+        browser_context, current_instance->GetSiteURL(), dest_url);
+  } else {
+    navigation_was_redirected =
+        speculative_instance &&
+        !IsSameWebSite(browser_context, speculative_instance->GetSiteURL(),
+                       dest_url);
+  }
+
+  return navigation_was_redirected;
+}
+
 void AtomBrowserClient::AddProcessPreferences(
     int process_id,
     AtomBrowserClient::ProcessPreferences prefs) {
@@ -181,27 +213,67 @@ void AtomBrowserClient::RemoveProcessPreferences(int process_id) {
   process_preferences_.erase(process_id);
 }
 
-bool AtomBrowserClient::IsProcessObserved(int process_id) {
+bool AtomBrowserClient::IsProcessObserved(int process_id) const {
   base::AutoLock auto_lock(process_preferences_lock_);
   return process_preferences_.find(process_id) != process_preferences_.end();
 }
 
-bool AtomBrowserClient::IsRendererSandboxed(int process_id) {
+bool AtomBrowserClient::IsRendererSandboxed(int process_id) const {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.sandbox;
 }
 
-bool AtomBrowserClient::RendererUsesNativeWindowOpen(int process_id) {
+bool AtomBrowserClient::RendererUsesNativeWindowOpen(int process_id) const {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.native_window_open;
 }
 
-bool AtomBrowserClient::RendererDisablesPopups(int process_id) {
+bool AtomBrowserClient::RendererDisablesPopups(int process_id) const {
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(process_id);
   return it != process_preferences_.end() && it->second.disable_popups;
+}
+
+std::string AtomBrowserClient::GetAffinityPreference(
+    content::RenderFrameHost* rfh) const {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  std::string affinity;
+  if (web_preferences &&
+      web_preferences->GetPreference("affinity", &affinity) &&
+      !affinity.empty()) {
+    affinity = base::ToLowerASCII(affinity);
+  }
+
+  return affinity;
+}
+
+content::SiteInstance* AtomBrowserClient::GetSiteInstanceFromAffinity(
+    content::BrowserContext* browser_context,
+    const GURL& url,
+    content::RenderFrameHost* rfh) const {
+  std::string affinity = GetAffinityPreference(rfh);
+  if (!affinity.empty()) {
+    auto iter = site_per_affinities_.find(affinity);
+    GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
+    if (iter != site_per_affinities_.end() &&
+        IsSameWebSite(browser_context, iter->second->GetSiteURL(), dest_site)) {
+      return iter->second;
+    }
+  }
+
+  return nullptr;
+}
+
+void AtomBrowserClient::ConsiderSiteInstanceForAffinity(
+    content::RenderFrameHost* rfh,
+    content::SiteInstance* site_instance) {
+  std::string affinity = GetAffinityPreference(rfh);
+  if (!affinity.empty()) {
+    site_per_affinities_[affinity] = site_instance;
+  }
 }
 
 void AtomBrowserClient::RenderProcessWillLaunch(
@@ -263,62 +335,59 @@ void AtomBrowserClient::OverrideWebkitPrefs(content::RenderViewHost* host,
     web_preferences->OverrideWebkitPrefs(prefs);
 }
 
-void AtomBrowserClient::OverrideSiteInstanceForNavigation(
-    content::RenderFrameHost* rfh,
+content::ContentBrowserClient::SiteInstanceForNavigationType
+AtomBrowserClient::ShouldOverrideSiteInstanceForNavigation(
+    content::RenderFrameHost* current_rfh,
+    content::RenderFrameHost* speculative_rfh,
     content::BrowserContext* browser_context,
     const GURL& url,
-    bool has_request_started,
-    content::SiteInstance* candidate_instance,
-    content::SiteInstance** new_instance) {
+    bool has_response_started,
+    content::SiteInstance** affinity_site_instance) const {
   if (g_suppress_renderer_process_restart) {
     g_suppress_renderer_process_restart = false;
-    return;
+    return SiteInstanceForNavigationType::ASK_CHROMIUM;
   }
-
-  content::SiteInstance* current_instance = rfh->GetSiteInstance();
-  if (!ShouldCreateNewSiteInstance(rfh, browser_context, current_instance, url))
-    return;
 
   // Do we have an affinity site to manage ?
-  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
-  std::string affinity;
-  if (web_preferences &&
-      web_preferences->GetPreference("affinity", &affinity) &&
-      !affinity.empty()) {
-    affinity = base::ToLowerASCII(affinity);
-    auto iter = site_per_affinities.find(affinity);
-    GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
-    if (iter != site_per_affinities.end() &&
-        IsSameWebSite(browser_context, iter->second->GetSiteURL(), dest_site)) {
-      *new_instance = iter->second;
-    } else {
-      site_per_affinities[affinity] = candidate_instance;
-      *new_instance = candidate_instance;
-      // Remember the original web contents for the pending renderer process.
-      auto* pending_process = candidate_instance->GetProcess();
-      pending_processes_[pending_process->GetID()] = web_contents;
-    }
-  } else {
-    // OverrideSiteInstanceForNavigation will be called more than once during a
-    // navigation (currently twice, on request and when it's about to commit in
-    // the renderer), look at RenderFrameHostManager::GetFrameHostForNavigation.
-    // In the default mode we should resuse the same site instance until the
-    // request commits otherwise it will get destroyed. Currently there is no
-    // unique lifetime tracker for a navigation request during site instance
-    // creation. We check for the state of the request, which should be one of
-    // (WAITING_FOR_RENDERER_RESPONSE, STARTED, RESPONSE_STARTED, FAILED) along
-    // with the availability of a speculative render frame host.
-    if (has_request_started) {
-      *new_instance = current_instance;
-      return;
-    }
-
-    *new_instance = candidate_instance;
-    // Remember the original web contents for the pending renderer process.
-    auto* pending_process = candidate_instance->GetProcess();
-    pending_processes_[pending_process->GetID()] = web_contents;
+  content::SiteInstance* site_instance_from_affinity =
+      GetSiteInstanceFromAffinity(browser_context, url, current_rfh);
+  if (site_instance_from_affinity) {
+    *affinity_site_instance = site_instance_from_affinity;
+    return SiteInstanceForNavigationType::FORCE_AFFINITY;
   }
+
+  if (!ShouldForceNewSiteInstance(current_rfh, speculative_rfh, browser_context,
+                                  url, has_response_started)) {
+    return SiteInstanceForNavigationType::ASK_CHROMIUM;
+  }
+
+  // ShouldOverrideSiteInstanceForNavigation will be called more than once
+  // during a navigation (currently twice, on request and when it's about
+  // to commit in the renderer), look at
+  // RenderFrameHostManager::GetFrameHostForNavigation.
+  // In the default mode we should reuse the same site instance until the
+  // request commits otherwise it will get destroyed. Currently there is no
+  // unique lifetime tracker for a navigation request during site instance
+  // creation. We check for the state of the request, which should be one of
+  // (WAITING_FOR_RENDERER_RESPONSE, STARTED, RESPONSE_STARTED, FAILED) along
+  // with the availability of a speculative render frame host.
+  if (has_response_started) {
+    return SiteInstanceForNavigationType::FORCE_CURRENT;
+  }
+
+  return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;
+}
+
+void AtomBrowserClient::RegisterPendingSiteInstance(
+    content::RenderFrameHost* rfh,
+    content::SiteInstance* pending_site_instance) {
+  // Do we have an affinity site to manage?
+  ConsiderSiteInstanceForAffinity(rfh, pending_site_instance);
+
+  // Remember the original web contents for the pending renderer process.
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  auto* pending_process = pending_site_instance->GetProcess();
+  pending_processes_[pending_process->GetID()] = web_contents;
 }
 
 void AtomBrowserClient::AppendExtraCommandLineSwitches(
@@ -491,10 +560,10 @@ void AtomBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
   // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
   // when an instance is destroyed.
-  for (auto iter = site_per_affinities.begin();
-       iter != site_per_affinities.end(); ++iter) {
+  for (auto iter = site_per_affinities_.begin();
+       iter != site_per_affinities_.end(); ++iter) {
     if (iter->second == site_instance) {
-      site_per_affinities.erase(iter);
+      site_per_affinities_.erase(iter);
       break;
     }
   }
@@ -664,11 +733,16 @@ AtomBrowserClient::CreateThrottlesForNavigation(
   return throttles;
 }
 
-bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) {
+bool AtomBrowserClient::ShouldBypassCORB(int render_process_id) const {
   // This is called on the network thread.
   base::AutoLock auto_lock(process_preferences_lock_);
   auto it = process_preferences_.find(render_process_id);
   return it != process_preferences_.end() && !it->second.web_security;
+}
+
+bool AtomBrowserClient::ShouldEnableStrictSiteIsolation() {
+  // Enable site isolation. It is off by default in Chromium <= 69.
+  return true;
 }
 
 }  // namespace atom

@@ -693,6 +693,85 @@ describe('webContents module', () => {
     })
   })
 
+  describe('render view deleted events', () => {
+    let server = null
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        const respond = () => {
+          if (req.url === '/redirect-cross-site') {
+            res.setHeader('Location', `${server.cross_site_url}/redirected`)
+            res.statusCode = 302
+            res.end()
+          } else if (req.url === '/redirected') {
+            res.end('<html><script>window.localStorage</script></html>')
+          } else {
+            res.end()
+          }
+        }
+        setTimeout(respond, 0)
+      })
+      server.listen(0, '127.0.0.1', () => {
+        server.url = `http://127.0.0.1:${server.address().port}`
+        server.cross_site_url = `http://localhost:${server.address().port}`
+        done()
+      })
+    })
+
+    after(() => {
+      server.close()
+      server = null
+    })
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted', (done) => {
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        assert.strictEqual(currentRenderViewDeletedEmitted, false, 'current-render-view-deleted was emitted')
+        done()
+      })
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true
+      }
+      w.webContents.on('current-render-view-deleted', renderViewDeletedHandler)
+      w.webContents.on('did-finish-load', (e) => {
+        w.webContents.removeListener('current-render-view-deleted', renderViewDeletedHandler)
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+
+    it('emits current-render-view-deleted if the current RVHs are deleted', (done) => {
+      let currentRenderViewDeletedEmitted = false
+      w.webContents.once('destroyed', () => {
+        assert.strictEqual(currentRenderViewDeletedEmitted, true, 'current-render-view-deleted wasn\'t emitted')
+        done()
+      })
+      w.webContents.on('current-render-view-deleted', () => {
+        currentRenderViewDeletedEmitted = true
+      })
+      w.webContents.on('did-finish-load', (e) => {
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+
+    it('emits render-view-deleted if any RVHs are deleted', (done) => {
+      let rvhDeletedCount = 0
+      w.webContents.once('destroyed', () => {
+        const expectedRenderViewDeletedEventCount = 3 // 1 speculative upon redirection + 2 upon window close.
+        assert.strictEqual(rvhDeletedCount, expectedRenderViewDeletedEventCount, 'render-view-deleted wasn\'t emitted the expected nr. of times')
+        done()
+      })
+      w.webContents.on('render-view-deleted', () => {
+        rvhDeletedCount++
+      })
+      w.webContents.on('did-finish-load', (e) => {
+        w.close()
+      })
+      w.loadURL(`${server.url}/redirect-cross-site`)
+    })
+  })
+
   describe('setIgnoreMenuShortcuts(ignore)', () => {
     it('does not throw', () => {
       assert.strictEqual(w.webContents.setIgnoreMenuShortcuts(true), undefined)
