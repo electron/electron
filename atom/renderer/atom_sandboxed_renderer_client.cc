@@ -68,7 +68,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
     return exports;
   }
 
-  auto* mod = node::get_builtin_module(module_key.c_str());
+  auto* mod = node::binding::get_builtin_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
