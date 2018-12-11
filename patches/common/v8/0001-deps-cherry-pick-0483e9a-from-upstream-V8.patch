@@ -1,0 +1,112 @@
+From 0e090768de1844c493013d5e99bd903928aff2ab Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyeec9h3@gmail.com>
+Date: Tue, 6 Nov 2018 18:05:48 +0800
+Subject: [PATCH 1/4] deps: cherry-pick 0483e9a from upstream V8
+
+Original commit message:
+
+    [api] Allow embedder to construct an Array from Local<Value>*
+
+    Currently to obtain a v8::Array out of a C array or a std::vector,
+    one needs to loop through the elements and call array->Set() multiple
+    times, and these calls go into v8::Object::Set() which can be slow.
+    This patch adds a new Array::New overload that converts a
+    Local<Value>* with known size into a Local<Array>.
+
+    Change-Id: I0a768f0e18eec51e78d58be455482ec6425ca188
+    Reviewed-on: https://chromium-review.googlesource.com/c/1317049
+    Reviewed-by: Yang Guo <yangguo@chromium.org>
+    Reviewed-by: Adam Klein <adamk@chromium.org>
+    Commit-Queue: Joyee Cheung <joyee@igalia.com>
+    Cr-Commit-Position: refs/heads/master@{#57261}
+
+Refs: https://github.com/v8/v8/commit/0483e9a9abe77a73632fd85b9c0cd608efa9aa0d
+
+PR-URL: https://github.com/nodejs/node/pull/24125
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: Yang Guo <yangguo@chromium.org>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Ben Noordhuis <info@bnoordhuis.nl>
+Reviewed-By: Refael Ackermann <refack@gmail.com>
+---
+ include/v8.h            |  6 ++++++
+ src/api.cc              | 17 +++++++++++++++++
+ test/cctest/test-api.cc | 16 ++++++++++++++++
+ 3 files changed, 39 insertions(+)
+
+diff --git a/include/v8.h b/include/v8.h
+index a4bbe1b0c4..9b7be9fb93 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -3680,6 +3680,12 @@ class V8_EXPORT Array : public Object {
+    */
+   static Local<Array> New(Isolate* isolate, int length = 0);
+ 
++  /**
++   * Creates a JavaScript array out of a Local<Value> array in C++
++   * with a known length.
++   */
++  static Local<Array> New(Isolate* isolate, Local<Value>* elements,
++                          size_t length);
+   V8_INLINE static Array* Cast(Value* obj);
+  private:
+   Array();
+diff --git a/src/api.cc b/src/api.cc
+index 3f62a23d43..4e233d96dc 100644
+--- a/src/api.cc
++++ b/src/api.cc
+@@ -6911,6 +6911,23 @@ Local<v8::Array> v8::Array::New(Isolate* isolate, int length) {
+   return Utils::ToLocal(obj);
+ }
+ 
++Local<v8::Array> v8::Array::New(Isolate* isolate, Local<Value>* elements,
++                                size_t length) {
++  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
++  i::Factory* factory = i_isolate->factory();
++  LOG_API(i_isolate, Array, New);
++  ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate);
++  int len = static_cast<int>(length);
++
++  i::Handle<i::FixedArray> result = factory->NewFixedArray(len);
++  for (int i = 0; i < len; i++) {
++    i::Handle<i::Object> element = Utils::OpenHandle(*elements[i]);
++    result->set(i, *element);
++  }
++
++  return Utils::ToLocal(
++      factory->NewJSArrayWithElements(result, i::PACKED_ELEMENTS, len));
++}
+ 
+ uint32_t v8::Array::Length() const {
+   i::Handle<i::JSArray> obj = Utils::OpenHandle(this);
+diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
+index 9eb73fab7e..0d92508d24 100644
+--- a/test/cctest/test-api.cc
++++ b/test/cctest/test-api.cc
+@@ -5225,6 +5225,22 @@ THREADED_TEST(Array) {
+   CHECK_EQ(27u, array->Length());
+   array = v8::Array::New(context->GetIsolate(), -27);
+   CHECK_EQ(0u, array->Length());
++
++  std::vector<Local<Value>> vector = {v8_num(1), v8_num(2), v8_num(3)};
++  array = v8::Array::New(context->GetIsolate(), vector.data(), vector.size());
++  CHECK_EQ(vector.size(), array->Length());
++  CHECK_EQ(1, arr->Get(context.local(), 0)
++                  .ToLocalChecked()
++                  ->Int32Value(context.local())
++                  .FromJust());
++  CHECK_EQ(2, arr->Get(context.local(), 1)
++                  .ToLocalChecked()
++                  ->Int32Value(context.local())
++                  .FromJust());
++  CHECK_EQ(3, arr->Get(context.local(), 2)
++                  .ToLocalChecked()
++                  ->Int32Value(context.local())
++                  .FromJust());
+ }
+ 
+ 
+-- 
+2.14.3 (Apple Git-98)
+

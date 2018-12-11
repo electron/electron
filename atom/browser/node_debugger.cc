@@ -37,13 +37,13 @@ void NodeDebugger::Start() {
 #endif
   }
 
-  auto options = std::make_shared<node::DebugOptions>();
+  node::DebugOptions options;
   std::vector<std::string> exec_args;
   std::vector<std::string> v8_args;
   std::vector<std::string> errors;
 
   node::options_parser::DebugOptionsParser::instance.Parse(
-      &args, &exec_args, &v8_args, options.get(),
+      &args, &exec_args, &v8_args, &options,
       node::options_parser::kDisallowedInEnvironment, &errors);
 
   if (!errors.empty()) {
@@ -54,13 +54,14 @@ void NodeDebugger::Start() {
 
   // Set process._debugWaitConnect if --inspect-brk was specified to stop
   // the debugger on the first line
-  if (options->wait_for_connect()) {
+  if (options.wait_for_connect()) {
     mate::Dictionary process(env_->isolate(), env_->process_object());
     process.Set("_breakFirstLine", true);
   }
 
   const char* path = "";
-  if (inspector->Start(path, options, true /* is_main */))
+  if (inspector->Start(path, options, env_->inspector_host_port(),
+                       true /* is_main */))
     DCHECK(env_->inspector_agent()->IsListening());
 }
 
