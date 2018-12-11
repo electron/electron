@@ -292,12 +292,12 @@ describe('webContents module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
     })
 
-    it('has the correct properties', (done) => {
-      w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-      w.webContents.once('did-finish-load', () => {
-        const testBeforeInput = (opts) => {
-          return new Promise((resolve, reject) => {
-            w.webContents.once('before-input-event', (event, input) => {
+    it('has the correct properties', async () => {
+      await w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
+      const testBeforeInput = (opts) => {
+        return new Promise((resolve, reject) => {
+          w.webContents.once('before-input-event', (event, input) => {
+            try {
               assert.strictEqual(input.type, opts.type)
               assert.strictEqual(input.key, opts.key)
               assert.strictEqual(input.code, opts.code)
@@ -307,72 +307,69 @@ describe('webContents module', () => {
               assert.strictEqual(input.alt, opts.alt)
               assert.strictEqual(input.meta, opts.meta)
               resolve()
-            })
+            } catch (e) {
+              reject(e)
+            }
+          })
 
-            const modifiers = []
-            if (opts.shift) modifiers.push('shift')
-            if (opts.control) modifiers.push('control')
-            if (opts.alt) modifiers.push('alt')
-            if (opts.meta) modifiers.push('meta')
-            if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
+          const modifiers = []
+          if (opts.shift) modifiers.push('shift')
+          if (opts.control) modifiers.push('control')
+          if (opts.alt) modifiers.push('alt')
+          if (opts.meta) modifiers.push('meta')
+          if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
 
-            w.webContents.sendInputEvent({
-              type: opts.type,
-              keyCode: opts.keyCode,
-              modifiers: modifiers
-            })
+          w.webContents.sendInputEvent({
+            type: opts.type,
+            keyCode: opts.keyCode,
+            modifiers: modifiers
           })
-        }
+        })
+      }
 
-        Promise.resolve().then(() => {
-          return testBeforeInput({
-            type: 'keyDown',
-            key: 'A',
-            code: 'KeyA',
-            keyCode: 'a',
-            shift: true,
-            control: true,
-            alt: true,
-            meta: true,
-            isAutoRepeat: true
-          })
-        }).then(() => {
-          return testBeforeInput({
-            type: 'keyUp',
-            key: '.',
-            code: 'Period',
-            keyCode: '.',
-            shift: false,
-            control: true,
-            alt: true,
-            meta: false,
-            isAutoRepeat: false
-          })
-        }).then(() => {
-          return testBeforeInput({
-            type: 'keyUp',
-            key: '!',
-            code: 'Digit1',
-            keyCode: '1',
-            shift: true,
-            control: false,
-            alt: false,
-            meta: true,
-            isAutoRepeat: false
-          })
-        }).then(() => {
-          return testBeforeInput({
-            type: 'keyUp',
-            key: 'Tab',
-            code: 'Tab',
-            keyCode: 'Tab',
-            shift: false,
-            control: true,
-            alt: false,
-            meta: false,
-            isAutoRepeat: true
-          })
-        }).then(done).catch(done)
+      await testBeforeInput({
+        type: 'keyDown',
+        key: 'A',
+        code: 'KeyA',
+        keyCode: 'a',
+        shift: true,
+        control: true,
+        alt: true,
+        meta: true,
+        isAutoRepeat: true
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: '.',
+        code: 'Period',
+        keyCode: '.',
+        shift: false,
+        control: true,
+        alt: true,
+        meta: false,
+        isAutoRepeat: false
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: '!',
+        code: 'Digit1',
+        keyCode: '1',
+        shift: true,
+        control: false,
+        alt: false,
+        meta: true,
+        isAutoRepeat: false
+      })
+      await testBeforeInput({
+        type: 'keyUp',
+        key: 'Tab',
+        code: 'Tab',
+        keyCode: 'Tab',
+        shift: false,
+        control: true,
+        alt: false,
+        meta: false,
+        isAutoRepeat: true
       })
     })
   })
