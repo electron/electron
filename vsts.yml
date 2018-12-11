@@ -233,8 +233,10 @@ jobs:
     condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
     timeoutInMinutes: 1
 
-  - task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3
-    displayName: 'Clean Agent Directories'
+  - bash: |
+      rm -rf src
+    condition: always()
+    displayName: 'Cleanup source directories'
 
 - job: run_tests
   displayName: Run Tests
