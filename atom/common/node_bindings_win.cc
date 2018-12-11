@@ -7,11 +7,25 @@
 #include <windows.h>
 
 #include "base/logging.h"
+#include "base/sys_info.h"
 
 namespace atom {
 
 NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
-    : NodeBindings(browser_env) {}
+    : NodeBindings(browser_env) {
+  // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
+  // to avoid cpu pegging likely caused by a busy loop in PollEvents
+  if (base::SysInfo::NumberOfProcessors() == 1) {
+    // the expectation is the uv_loop_ has just been initialized
+    // which makes iocp replacement safe
+    CHECK_EQ(0u, uv_loop_->active_handles);
+    CHECK_EQ(0u, uv_loop_->active_reqs.count);
+
+    if (uv_loop_->iocp && uv_loop_->iocp != INVALID_HANDLE_VALUE)
+      CloseHandle(uv_loop_->iocp);
+    uv_loop_->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+  }
+}
 
 NodeBindingsWin::~NodeBindingsWin() {}
 
