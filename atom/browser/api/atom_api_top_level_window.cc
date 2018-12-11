@@ -696,8 +696,8 @@ v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
   // landed
-  auto handle = window_->GetNativeWindowHandlePointer();
-  return ToBuffer(isolate(), std::get<0>(handle), std::get<1>(handle));
+  NativeWindowHandle handle = window_->GetNativeWindowHandle();
+  return ToBuffer(isolate(), &handle, sizeof(handle));
 }
 
 void TopLevelWindow::SetProgressBar(double progress, mate::Arguments* args) {

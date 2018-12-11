@@ -130,7 +130,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsVisibleOnAllWorkspaces() override;
 
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
-  std::tuple<void*, int> GetNativeWindowHandlePointer() const override;
+  NativeWindowHandle GetNativeWindowHandle() const override;
 
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
