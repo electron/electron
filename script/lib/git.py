@@ -40,11 +40,13 @@ def get_repo_root(path):
   return get_repo_root(parent_path)
 
 
-def am(repo, patch_data, threeway=False,
+def am(repo, patch_data, threeway=False, directory=None,
     committer_name=None, committer_email=None):
   args = []
   if threeway:
     args += ['--3way']
+  if directory is not None:
+    args += ['--directory', directory]
   root_args = ['-C', repo]
   if committer_name is not None:
     root_args += ['-c', 'user.name=' + committer_name]
