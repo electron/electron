@@ -58,6 +58,7 @@ extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
+extern const char kNodeIntegrationWasExplicitlyEnabled[];
 extern const char kEnableRemoteModule[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];

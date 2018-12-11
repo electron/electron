@@ -98,6 +98,9 @@ WebContentsPreferences::WebContentsPreferences(
 
   instances_.push_back(this);
 
+  preference_.SetKey(options::kNodeIntegrationWasExplicitlyEnabled,
+                     base::Value(IsEnabled(options::kNodeIntegration)));
+
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
   SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
