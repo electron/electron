@@ -3086,6 +3086,19 @@ describe('BrowserWindow module', () => {
     })
   })
 
+  describe('window.getNativeWindowHandle()', () => {
+    if (!nativeModulesEnabled) {
+      this.skip()
+    }
+
+    it('returns valid handle', () => {
+      // The module's source code is hosted at
+      // https://github.com/electron/node-is-valid-window
+      const isValidWindow = remote.require('is-valid-window')
+      assert.ok(isValidWindow(w.getNativeWindowHandle()))
+    })
+  })
+
   describe('extensions and dev tools extensions', () => {
     let showPanelTimeoutId
 
