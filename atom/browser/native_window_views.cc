@@ -1057,9 +1057,8 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
   return GetNativeWindow()->GetHost()->GetAcceleratedWidget();
 }
 
-std::tuple<void*, int> NativeWindowViews::GetNativeWindowHandlePointer() const {
-  gfx::AcceleratedWidget handle = GetAcceleratedWidget();
-  return std::make_tuple(static_cast<void*>(&handle), sizeof(handle));
+NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
+  return GetAcceleratedWidget();
 }
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(

@@ -1102,9 +1102,8 @@ gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
   return gfx::kNullAcceleratedWidget;
 }
 
-std::tuple<void*, int> NativeWindowMac::GetNativeWindowHandlePointer() const {
-  NSView* view = [window_ contentView];
-  return std::make_tuple(static_cast<void*>(view), sizeof(view));
+NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
+  return [window_ contentView];
 }
 
 void NativeWindowMac::SetProgressBar(double progress,
