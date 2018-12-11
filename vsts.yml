@@ -234,9 +234,9 @@ jobs:
     timeoutInMinutes: 1
 
   - bash: |
-      rm -rf src
+      rm -rf *
     condition: always()
-    displayName: 'Cleanup source directories'
+    displayName: 'Cleanup directories'
 
 - job: run_tests
   displayName: Run Tests
