@@ -234,7 +234,9 @@ jobs:
     timeoutInMinutes: 1
 
   - bash: |
+      ls -la
       rm -rf *
+      ls -la
     condition: always()
     displayName: 'Cleanup directories'
 
