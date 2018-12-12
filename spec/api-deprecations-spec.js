@@ -117,4 +117,54 @@ describe('deprecations', () => {
       deprecate.log('this is deprecated')
     }).to.throw(/this is deprecated/)
   })
+
+  describe('promisify', () => {
+    const expected = 'Hello, world!'
+    let promiseFunc
+    let warnings
+
+    const enableCallbackWarnings = () => {
+      warnings = []
+      deprecations.setHandler(warning => { warnings.push(warning) })
+      process.enablePromiseAPIs = true
+    }
+
+    beforeEach(() => {
+      deprecations.setHandler(null)
+      process.throwDeprecation = true
+
+      promiseFunc = param => new Promise((resolve, reject) => { resolve(param) })
+    })
+
+    it('acts as a pass-through for promise-based invocations', async () => {
+      enableCallbackWarnings()
+      promiseFunc = deprecate.promisify(promiseFunc, 1)
+
+      const actual = await promiseFunc(expected)
+      expect(actual).to.equal(expected)
+      expect(warnings).to.have.lengthOf(0)
+    })
+
+    it('warns exactly once for callback-based invocations', (done) => {
+      enableCallbackWarnings()
+      promiseFunc = deprecate.promisify(promiseFunc, 1)
+
+      let callbackCount = 0
+      const invocationCount = 3
+      const callback = (error, actual) => {
+        expect(error).to.be.null()
+        expect(actual).to.equal(expected)
+        expect(warnings).to.have.lengthOf(1)
+        expect(warnings[0]).to.include('promiseFunc')
+        callbackCount += 1
+        if (callbackCount === invocationCount) {
+          done()
+        }
+      }
+
+      for (let i = 0; i < invocationCount; i += 1) {
+        promiseFunc(expected, callback)
+      }
+    })
+  })
 })

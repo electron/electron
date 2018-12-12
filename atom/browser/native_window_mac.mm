@@ -76,9 +76,6 @@
   NSButton* miniaturize_button =
       [NSWindow standardWindowButton:NSWindowMiniaturizeButton
                         forStyleMask:NSWindowStyleMaskTitled];
-  NSButton* zoom_button =
-      [NSWindow standardWindowButton:NSWindowZoomButton
-                        forStyleMask:NSWindowStyleMaskTitled];
 
   CGFloat x = 0;
   const CGFloat space_between = 20;
@@ -91,11 +88,7 @@
   x += space_between;
   [self addSubview:miniaturize_button];
 
-  [zoom_button setFrameOrigin:NSMakePoint(x, 0)];
-  x += space_between;
-  [self addSubview:zoom_button];
-
-  const auto last_button_frame = zoom_button.frame;
+  const auto last_button_frame = miniaturize_button.frame;
   [self setFrameSize:NSMakeSize(last_button_frame.origin.x +
                                     last_button_frame.size.width,
                                 last_button_frame.size.height)];
@@ -1117,9 +1110,8 @@ gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
   return gfx::kNullAcceleratedWidget;
 }
 
-std::tuple<void*, int> NativeWindowMac::GetNativeWindowHandlePointer() const {
-  NSView* view = [window_ contentView];
-  return std::make_tuple(static_cast<void*>(view), sizeof(view));
+NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
+  return [window_ contentView];
 }
 
 void NativeWindowMac::SetProgressBar(double progress,
@@ -1412,6 +1404,8 @@ void NativeWindowMac::AddContentViewLayers() {
     if (title_bar_style_ == CUSTOM_BUTTONS_ON_HOVER) {
       buttons_view_.reset(
           [[CustomWindowButtonView alloc] initWithFrame:NSZeroRect]);
+      // NSWindowStyleMaskFullSizeContentView does not work with zoom button
+      SetFullScreenable(false);
       [[window_ contentView] addSubview:buttons_view_];
     } else {
       if (title_bar_style_ != NORMAL)
