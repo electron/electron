@@ -144,6 +144,8 @@ void AtomRendererClient::WillReleaseScriptContext(
 
   mate::EmitEvent(env->isolate(), env->process_object(), "exit");
 
+  RendererClientBase::WillReleaseScriptContext(context, render_frame);
+
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
     node_bindings_->set_uv_env(nullptr);

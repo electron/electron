@@ -219,6 +219,8 @@ void AtomSandboxedRendererClient::WillReleaseScriptContext(
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeIpcCallback(context, "onExit", std::vector<v8::Local<v8::Value>>());
+
+  RendererClientBase::WillReleaseScriptContext(context, render_frame);
 }
 
 void AtomSandboxedRendererClient::InvokeIpcCallback(
