@@ -61,6 +61,7 @@ extern const char kNodeIntegration[];
 extern const char kNodeIntegrationWasExplicitlyEnabled[];
 extern const char kEnableRemoteModule[];
 extern const char kContextIsolation[];
+extern const char kContextIsolationWasExplicitlyDisabled[];
 extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kOpenerID[];

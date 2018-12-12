@@ -123,6 +123,13 @@ const char kEnableRemoteModule[] = "enableRemoteModule";
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
+// Whether context isolation was explicitly enabled.
+// This is to support the change from default-disabled to default-enabled in
+// Electron 5 (with a warning message in 4). This option and its usages
+// can be removed in Electron 5.
+const char kContextIsolationWasExplicitlyDisabled[] =
+    "contextIsolationWasExplicitlyDisabled";
+
 // Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 

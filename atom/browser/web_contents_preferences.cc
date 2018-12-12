@@ -100,6 +100,8 @@ WebContentsPreferences::WebContentsPreferences(
 
   preference_.SetKey(options::kNodeIntegrationWasExplicitlyEnabled,
                      base::Value(IsEnabled(options::kNodeIntegration)));
+  preference_.SetKey(options::kContextIsolationWasExplicitlyDisabled,
+                     base::Value(!IsEnabled(options::kContextIsolation, true)));
 
   // Set WebPreferences defaults onto the JS object
   SetDefaultBoolIfUndefined(options::kPlugins, false);
