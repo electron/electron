@@ -233,6 +233,11 @@ jobs:
     condition: and(failed(), eq(variables['NOTIFY_SLACK'], '1'))
     timeoutInMinutes: 1
 
+  - bash: |
+      rm -rf ..?* .[!.]* *
+    condition: always()
+    displayName: 'Cleanup directories'
+
 - job: run_tests
   displayName: Run Tests
   dependsOn: build
