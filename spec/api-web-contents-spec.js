@@ -581,7 +581,7 @@ describe('webContents module', () => {
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
-    it('can set the correct zoom level', () => {
+    it('can set the correct zoom level', async () => {
       try {
         await w.loadURL('about:blank')
         const zoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))

@@ -10,7 +10,6 @@ const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
-const { emittedOnce } = require('./events-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')

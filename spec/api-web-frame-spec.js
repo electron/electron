@@ -5,7 +5,6 @@ const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { remote, webFrame } = require('electron')
 const { BrowserWindow, protocol, ipcMain } = remote
-const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
