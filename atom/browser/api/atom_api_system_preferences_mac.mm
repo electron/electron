@@ -109,9 +109,8 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
 void SystemPreferences::PostNotification(const std::string& name,
                                          const base::DictionaryValue& user_info,
                                          mate::Arguments* args) {
-  bool immediate;
-  if (!args->GetNext(&immediate))
-    immediate = false;
+  bool immediate = false;
+  args->GetNext(&immediate);
 
   NSDistributedNotificationCenter* center =
       [NSDistributedNotificationCenter defaultCenter];
