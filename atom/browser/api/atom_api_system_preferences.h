@@ -68,7 +68,8 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
       base::Callback<void(const std::string&, const base::DictionaryValue&)>;
 
   void PostNotification(const std::string& name,
-                        const base::DictionaryValue& user_info);
+                        const base::DictionaryValue& user_info,
+                        mate::Arguments* args);
   int SubscribeNotification(const std::string& name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
