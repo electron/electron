@@ -12,7 +12,6 @@
 #include "atom/common/asar/asar_util.h"
 #include "atom/common/node_bindings.h"
 #include "atom/common/options_switches.h"
-#include "atom/renderer/api/atom_api_renderer_ipc.h"
 #include "atom/renderer/atom_render_frame_observer.h"
 #include "atom/renderer/web_worker_observer.h"
 #include "base/command_line.h"
@@ -187,15 +186,16 @@ void AtomRendererClient::WillDestroyWorkerContextOnWorkerThread(
 }
 
 void AtomRendererClient::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context) {
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
   // Setup window overrides in the main world context
   v8::Isolate* isolate = context->GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
 
-  // Wrap the bundle into a function that receives the binding object as
+  // Wrap the bundle into a function that receives the isolatedWorld as
   // an argument.
-  std::string left = "(function (binding, require) {\n";
+  std::string left = "(function (nodeProcess, isolatedWorld) {\n";
   std::string right = "\n})";
   auto source = v8::String::Concat(
       isolate, mate::ConvertToV8(isolate, left)->ToString(isolate),
@@ -203,28 +203,14 @@ void AtomRendererClient::SetupMainWorldOverrides(
                          node::isolated_bundle_value.ToStringChecked(isolate),
                          mate::ConvertToV8(isolate, right)->ToString(isolate)));
   auto result = RunScript(context, source);
-
   DCHECK(result->IsFunction());
 
-  auto binding = v8::Object::New(isolate);
-  api::Initialize(binding, v8::Null(isolate), context, nullptr);
-
-  // Pass in CLI flags needed to setup window
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  mate::Dictionary dict(isolate, binding);
-  if (command_line->HasSwitch(switches::kGuestInstanceID))
-    dict.Set(options::kGuestInstanceID,
-             command_line->GetSwitchValueASCII(switches::kGuestInstanceID));
-  if (command_line->HasSwitch(switches::kOpenerID))
-    dict.Set(options::kOpenerID,
-             command_line->GetSwitchValueASCII(switches::kOpenerID));
-  dict.Set("hiddenPage", command_line->HasSwitch(switches::kHiddenPage));
-  dict.Set(options::kNativeWindowOpen,
-           command_line->HasSwitch(switches::kNativeWindowOpen));
-
-  v8::Local<v8::Value> args[] = {binding};
-  ignore_result(
-      result.As<v8::Function>()->Call(context, v8::Null(isolate), 1, args));
+  v8::Local<v8::Value> args[] = {
+      GetEnvironment(render_frame)->process_object(),
+      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
+  };
+  ignore_result(result.As<v8::Function>()->Call(context, v8::Null(isolate),
+                                                node::arraysize(args), args));
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(
