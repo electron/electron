@@ -36,13 +36,15 @@ newPRWelcomeComment: |
 firstPRMergeComment: >
   Congrats on merging your first pull request! 🎉🎉🎉
 
-# Configuration for trop - https://github.com/codebytere/trop
+# Configuration for trop - https://github.com/electron/trop
 
 watchedProject:
   name: Backports
 
+# Users authorized to run manual trop backports
 authorizedUsers:
   - alexeykuzmin
+  - BinaryMuse
   - ckerr
   - codebytere
   - deepak1556
