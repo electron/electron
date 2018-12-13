@@ -122,7 +122,6 @@ state is `hidden` in order to minimize power consumption.
 * On macOS the child windows will keep the relative position to parent window
   when parent window moves, while on Windows and Linux child windows will not
   move.
-* On Windows it is not supported to change parent window dynamically.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
 
@@ -1529,7 +1528,7 @@ On Windows it calls SetWindowDisplayAffinity with `WDA_MONITOR`.
 
 Changes whether the window can be focused.
 
-#### `win.setParentWindow(parent)` _Linux_ _macOS_
+#### `win.setParentWindow(parent)`
 
 * `parent` BrowserWindow
 
