@@ -198,13 +198,6 @@ void AtomBrowserMainParts::InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
-#if defined(OS_MACOSX)
-  // Disable the V2 sandbox on macOS.
-  // Chromium is going to use the system sandbox API of macOS for the sandbox
-  // implmentation, we may have to deprecate --mixed-sandbox for macOS once
-  // Chromium drops support for the old sandbox implmentation.
-  disable_features += std::string(",") + features::kMacV2Sandbox.name;
-#endif
   // Disable creation of spare renderer process with site-per-process mode,
   // it interferes with our process preference tracking for non sandboxed mode.
   // Can be reenabled when our site instance policy is aligned with chromium
