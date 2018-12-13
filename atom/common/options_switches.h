@@ -70,6 +70,7 @@ extern const char kEnableBlinkFeatures[];
 extern const char kDisableBlinkFeatures[];
 extern const char kNodeIntegrationInWorker[];
 extern const char kWebviewTag[];
+extern const char kWebviewTagWasExplicitlyEnabled[];
 extern const char kNativeWindowOpen[];
 extern const char kCustomArgs[];
 extern const char kPlugins[];
