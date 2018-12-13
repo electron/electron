@@ -96,9 +96,10 @@ void AtomRenderFrameObserver::DidCreateScriptContext(
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
   if (renderer_client_->isolated_world() && IsMainWorld(world_id) &&
-      render_frame_->IsMainFrame()) {
+      // Only the top window's main frame has isolated world.
+      render_frame_->IsMainFrame() && !render_frame_->GetWebFrame()->Opener()) {
     CreateIsolatedWorldContext();
-    renderer_client_->SetupMainWorldOverrides(context);
+    renderer_client_->SetupMainWorldOverrides(context, render_frame_);
   }
 }
 
