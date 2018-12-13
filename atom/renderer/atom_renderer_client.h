@@ -31,7 +31,8 @@ class AtomRendererClient : public RendererClientBase {
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
-  void SetupMainWorldOverrides(v8::Handle<v8::Context> context) override;
+  void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
+                               content::RenderFrame* render_frame) override;
 
  private:
   enum NodeIntegration {
