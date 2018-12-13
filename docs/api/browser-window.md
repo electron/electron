@@ -348,8 +348,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       This option uses the same technique used by [Chrome Content Scripts][chrome-content-scripts].
       You can access this context in the dev tools by selecting the
       'Electron Isolated Context' entry in the combo box at the top of the
-      Console tab. **Note:** This option is currently experimental and may
-      change or be removed in future Electron releases.
+      Console tab.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. If set to `true`, the `webPreferences` of child window
       will always be the same with parent window, regardless of the parameters
