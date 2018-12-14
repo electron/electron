@@ -29,11 +29,6 @@ void SendTo(mate::Arguments* args,
             const std::string& channel,
             const base::ListValue& arguments);
 
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv);
-
 }  // namespace api
 
 }  // namespace atom

@@ -78,18 +78,22 @@ void SendTo(mate::Arguments* args,
     args->ThrowError("Unable to send AtomFrameHostMsg_Message_To");
 }
 
+}  // namespace api
+
+}  // namespace atom
+
+namespace {
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   mate::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("send", &Send);
-  dict.SetMethod("sendSync", &SendSync);
-  dict.SetMethod("sendTo", &SendTo);
+  dict.SetMethod("send", &atom::api::Send);
+  dict.SetMethod("sendSync", &atom::api::SendSync);
+  dict.SetMethod("sendTo", &atom::api::SendTo);
 }
 
-}  // namespace api
+}  // namespace
 
-}  // namespace atom
-
-NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_renderer_ipc, atom::api::Initialize)
+NODE_BUILTIN_MODULE_CONTEXT_AWARE(atom_renderer_ipc, Initialize)
