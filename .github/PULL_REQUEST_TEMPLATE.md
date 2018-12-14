@@ -17,6 +17,7 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 
 #### Release Notes
-<!-- Used to describe release notes for future release versions. Use `no-notes` to indicate no user-facing changes. -->
 
-Notes: <!-- One-line Change Summary Here-->
+<!-- The note that you write here will be communicated to Electron users in the release notes when this change is released. Write something short but descriptive that explains what, if anything, this change means for a developer building an app with Electron. -->
+
+Notes: <!-- Short, descriptive end-user-facing change summary here -->
