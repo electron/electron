@@ -897,7 +897,8 @@ void Window::SetBrowserView(v8::Local<v8::Value> value) {
 
 void Window::AddBrowserView(v8::Local<v8::Value> value) {
   mate::Handle<BrowserView> browser_view;
-  if (value->IsObject() && mate::ConvertFromV8(isolate(), value, &browser_view)) {
+  if (value->IsObject()
+      && mate::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
@@ -910,7 +911,8 @@ void Window::AddBrowserView(v8::Local<v8::Value> value) {
 
 void Window::RemoveBrowserView(v8::Local<v8::Value> value) {
   mate::Handle<BrowserView> browser_view;
-  if (value->IsObject() && mate::ConvertFromV8(isolate(), value, &browser_view)) {
+  if (value->IsObject()
+      && mate::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
