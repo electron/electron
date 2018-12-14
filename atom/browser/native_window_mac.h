@@ -191,7 +191,7 @@ class NativeWindowMac : public NativeWindow,
   base::scoped_nsobject<FullSizeContentView> content_view_;
 
   NativeBrowserView* browser_view_;
-  NativeBrowserView* browser_views_;
+  std::list<NativeBrowserView*> browser_views_;
 
   std::vector<DraggableRegion> draggable_regions_;
 
