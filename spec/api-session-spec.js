@@ -9,7 +9,7 @@ const auth = require('basic-auth')
 const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
 
-const { ipcRenderer, remote, deprecate } = require('electron')
+const { ipcRenderer, remote } = require('electron')
 const { ipcMain, session, BrowserWindow, net } = remote
 const { expect } = chai
 
@@ -65,35 +65,29 @@ describe('session module', () => {
   })
 
   describe('ses.cookies', () => {
-    before(() => {
-      console.log('deprecating session.defaultSession.cookies.set w/callbacks')
-      session.defaultSession.cookies.set = deprecate.promisify(session.defaultSession.cookies.set, 1)
-    })
-
+    const cookieName = '0'
+    const cookieValue = '0'
     it('should get cookies', (done) => {
       const server = http.createServer((req, res) => {
-        res.setHeader('Set-Cookie', ['0=0'])
+        res.setHeader('Set-Cookie', [`${cookieName}=${cookieValue}`])
         res.end('finished')
         server.close()
       })
       server.listen(0, '127.0.0.1', () => {
-        const port = server.address().port
+        const { port } = server.address()
         w.loadURL(`${url}:${port}`)
         w.webContents.on('did-finish-load', () => {
-          w.webContents.session.cookies.get({ url }, (error, list) => {
-            if (error) return done(error)
-            for (let i = 0; i < list.length; i++) {
-              const cookie = list[i]
-              if (cookie.name === '0') {
-                if (cookie.value === '0') {
-                  return done()
-                } else {
-                  return done(`cookie value is ${cookie.value} while expecting 0`)
-                }
+          w.webContents.session.cookies
+            .get({ url })
+            .then((list) => {
+              const cookie = list.find(cookie => cookie.name === cookieName)
+              if (!cookie) {
+                done('Can\'t find cookie')
+              } else {
+                expect(cookie.value).to.equal(cookieValue)
+                return done()
               }
-            }
-            done('Can\'t find cookie')
-          })
+            })
         })
       })
     })

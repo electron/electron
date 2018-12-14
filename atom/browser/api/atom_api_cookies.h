@@ -37,7 +37,6 @@ class Cookies : public mate::TrackableObject<Cookies> {
   };
 
   using GetCallback = base::Callback<void(Error, const net::CookieList&)>;
-  using SetCallback = base::Callback<void(Error)>;
 
   static mate::Handle<Cookies> Create(v8::Isolate* isolate,
                                       AtomBrowserContext* browser_context);
@@ -50,7 +49,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   Cookies(v8::Isolate* isolate, AtomBrowserContext* browser_context);
   ~Cookies() override;
 
-  void Get(const base::DictionaryValue& filter, const GetCallback& callback);
+  v8::Local<v8::Promise> Get(const base::DictionaryValue& filter);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   void FlushStore(const base::Closure& callback);
