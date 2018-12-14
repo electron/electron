@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "device/bluetooth/dbus/dbus_thread_manager_linux.h"
+#include "device/bluetooth/dbus/bluez_dbus_thread_manager.h"
 
 namespace {
 
@@ -33,7 +33,7 @@ namespace atom {
 
 PowerObserverLinux::PowerObserverLinux()
     : lock_owner_name_(get_executable_basename()), weak_ptr_factory_(this) {
-  auto* bus = bluez::DBusThreadManagerLinux::Get()->GetSystemBus();
+  auto* bus = bluez::BluezDBusThreadManager::Get()->GetSystemBus();
   if (!bus) {
     LOG(WARNING) << "Failed to get system bus connection";
     return;
