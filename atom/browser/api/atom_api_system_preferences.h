@@ -114,9 +114,6 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   ~SystemPreferences() override;
 
 #if defined(OS_MACOSX)
-  void DoPostNotification(const std::string& name,
-                          const base::DictionaryValue& user_info,
-                          NotificationCenterKind kind);
   int DoSubscribeNotification(const std::string& name,
                               const NotificationCallback& callback,
                               NotificationCenterKind kind);
