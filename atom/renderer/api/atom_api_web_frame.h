@@ -51,6 +51,7 @@ class WebFrame : public mate::Wrappable<WebFrame> {
   void SetLayoutZoomLevelLimits(double min_level, double max_level);
 
   v8::Local<v8::Value> RegisterEmbedderCustomElement(
+      v8::Local<v8::Object> context,
       const base::string16& name,
       v8::Local<v8::Object> options);
   int GetWebFrameId(v8::Local<v8::Value> content_window);
