@@ -127,7 +127,7 @@ describe('session module', () => {
       expect(error).to.have.property('message').which.equals('Setting cookie failed')
     })
 
-    it('should over-write the existent cookie', (done) => {
+    it('should overwrite the existent cookie', (done) => {
       session.defaultSession.cookies.set({
         url,
         name: '1',
@@ -156,18 +156,19 @@ describe('session module', () => {
         url: url,
         name: '2',
         value: '2'
-      }, (error) => {
-        if (error) return done(error)
-        session.defaultSession.cookies.remove(url, '2', () => {
-          session.defaultSession.cookies.get({ url }, (error, list) => {
-            if (error) return done(error)
-            for (let i = 0; i < list.length; i++) {
-              const cookie = list[i]
-              if (cookie.name === '2') return done('Cookie not deleted')
-            }
-            done()
-          })
+      }).then(() => {
+        session.defaultSession.cookies.remove(url, '2')
+      }).then(() => {
+        session.defaultSession.cookies.get({ url }, (error, list) => {
+          if (error) return done(error)
+          for (let i = 0; i < list.length; i++) {
+            const cookie = list[i]
+            if (cookie.name === '2') return done('Cookie not deleted')
+          }
+          done()
         })
+      }).catch((error) => {
+        return done(error)
       })
     })
 

@@ -51,10 +51,8 @@ class Cookies : public mate::TrackableObject<Cookies> {
   ~Cookies() override;
 
   void Get(const base::DictionaryValue& filter, const GetCallback& callback);
-  void Remove(const GURL& url,
-              const std::string& name,
-              const base::Closure& callback);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
+  v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
   void FlushStore(const base::Closure& callback);
 
   // CookieChangeNotifier subscription:

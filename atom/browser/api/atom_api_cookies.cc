@@ -135,6 +135,18 @@ inline net::CookieStore* GetCookieStore(
   return getter->GetURLRequestContext()->cookie_store();
 }
 
+void ResolvePromise(scoped_refptr<util::Promise> promise) {
+  LOG(INFO) << "resolving";
+  promise->Resolve();
+}
+
+// Resolve |promise| in UI thread.
+void ResolvePromiseInUI(scoped_refptr<util::Promise> promise) {
+  LOG(INFO) << "ResolvePromiseInUI";
+  BrowserThread::PostTask(BrowserThread::UI, FROM_HERE,
+                          base::BindOnce(ResolvePromise, std::move(promise)));
+}
+
 // Run |callback| on UI thread.
 void RunCallbackInUI(const base::Closure& callback) {
   BrowserThread::PostTask(BrowserThread::UI, FROM_HERE, callback);
@@ -171,39 +183,33 @@ void GetCookiesOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
 }
 
 // Removes cookie with |url| and |name| in IO thread.
-void RemoveCookieOnIOThread(scoped_refptr<net::URLRequestContextGetter> getter,
-                            const GURL& url,
-                            const std::string& name,
-                            const base::Closure& callback) {
+void RemoveCookieOnIO(scoped_refptr<net::URLRequestContextGetter> getter,
+                      const GURL& url,
+                      const std::string& name,
+                      scoped_refptr<util::Promise> promise) {
+  LOG(INFO) << "RemoveCookieOnIO " << url << ", " << name;
   GetCookieStore(getter)->DeleteCookieAsync(
-      url, name, base::BindOnce(RunCallbackInUI, callback));
+      url, name, base::BindOnce(ResolvePromiseInUI, promise));
 }
 
-// Resolves/rejects the SetCookie |promise|in UI thread.
-void SettleSetPromiseOnUI(scoped_refptr<util::Promise> promise, bool success) {
-  std::cerr
-      << __FILE__ << ':' << __LINE__ << ' '
-      << "SettlesSetPromiseOnUI enter -- resolving promise with success flag: "
-      << success << std::endl;
-  if (success) {
-    std::cerr << __FILE__ << ':' << __LINE__ << " resolving" << std::endl;
+// Resolves/rejects the |promise| in UI thread.
+void SettlePromiseInUI(scoped_refptr<util::Promise> promise,
+                       const std::string& errmsg) {
+  LOG(INFO) << "errmsg is '" << errmsg << "'";
+  if (errmsg.empty()) {
     promise->Resolve();
   } else {
-    std::cerr << __FILE__ << ':' << __LINE__ << " rejecting" << std::endl;
-    promise->RejectWithErrorMessage("Setting cookie failed");
+    promise->RejectWithErrorMessage(errmsg);
   }
-  std::cerr << __FILE__ << ':' << __LINE__ << ' '
-            << "SettlesSetPromiseOnUI exit" << std::endl;
 }
 
 // Callback of SetCookie.
 void OnSetCookie(scoped_refptr<util::Promise> promise, bool success) {
-  std::cerr << __FILE__ << ':' << __LINE__ << ' '
-            << "OnSetCookie enter -- success is " << success << std::endl;
-  RunCallbackInUI(
-      base::Bind(SettleSetPromiseOnUI, std::move(promise), success));
-  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "OnSetCookie exit"
-            << std::endl;
+  std::string errmsg;
+  if (!success) {
+    errmsg = "Setting cookie failed";
+  }
+  RunCallbackInUI(base::Bind(SettlePromiseInUI, std::move(promise), errmsg));
 }
 
 // Flushes cookie store in IO thread.
@@ -307,24 +313,25 @@ void Cookies::Get(const base::DictionaryValue& filter,
                      callback));
 }
 
-void Cookies::Remove(const GURL& url,
-                     const std::string& name,
-                     const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::Remove(const GURL& url,
+                                       const std::string& name) {
+  LOG(INFO) << "Cookies::Remove " << url << ", " << name;
+  // v8::Locker locker(isolate());
+  // v8::HandleScope handle_scope(isolate());
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
-      base::BindOnce(RemoveCookieOnIOThread, base::RetainedRef(getter), url,
-                     name, callback));
+      base::BindOnce(RemoveCookieOnIO, base::RetainedRef(getter), url, name,
+                     promise));
+
+  return promise->GetHandle();
 }
 
 v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
-  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "Cookies::Set enter"
-            << std::endl;
   // v8::Locker locker(isolate());
   // v8::HandleScope handle_scope(isolate());
-
-  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "creating promise"
-            << std::endl;
   scoped_refptr<util::Promise> promise = new util::Promise(isolate());
 
   auto copy = base::DictionaryValue::From(
@@ -336,8 +343,6 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
                      promise));
 
   v8::Local<v8::Promise> handle = promise->GetHandle();
-  std::cerr << __FILE__ << ':' << __LINE__ << ' ' << "Cookies::Set exit"
-            << std::endl;
   return handle;
 }
 
