@@ -208,7 +208,6 @@ static_library("electron_lib") {
     "//base",
     "//base:i18n",
     "//chrome/app/resources:platform_locale_settings",
-    "//chrome/common",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
@@ -371,6 +370,7 @@ static_library("electron_lib") {
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
+    sources += filenames.lib_sources_win
     libs += [ "dwmapi.lib" ]
   }
   if (is_linux || is_win) {

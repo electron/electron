@@ -11,6 +11,8 @@ import("//third_party/widevine/cdm/widevine.gni")
 source_set("chrome") {
   visibility = [ "//electron:electron_lib" ]
   sources = [
+    "//chrome/browser/browser_process.cc",
+    "//chrome/browser/browser_process.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_loader_mac.mm",
@@ -38,7 +40,7 @@ source_set("chrome") {
     "//content/public/browser",
   ]
   deps = [
-    "//chrome/common:constants",
+    "//chrome/common",
     "//components/proxy_config",
     "//components/security_state/content",
   ]
@@ -57,22 +59,6 @@ source_set("chrome") {
       "//chrome/browser/media/webrtc/native_desktop_media_list.h",
     ]
     deps += [ "//ui/snapshot" ]
-  }
-
-  sources += [
-    "//chrome/browser/platform_util.cc",
-    "//chrome/browser/platform_util.h",
-    "//chrome/browser/ui/browser_dialogs.h",
-  ]
-
-  if (is_mac) {
-    sources += [ "//chrome/browser/platform_util_mac.mm" ]
-  }
-  if (is_linux) {
-    sources += [ "//chrome/browser/platform_util_linux.cc" ]
-  }
-  if (is_win) {
-    sources += [ "//chrome/browser/platform_util_win.cc" ]
   }
 
   if (enable_basic_printing) {

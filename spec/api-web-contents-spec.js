@@ -967,12 +967,12 @@ describe('webContents module', () => {
           sandbox: true
         }
       })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
       w.webContents.once('did-finish-load', () => {
         const printers = w.webContents.getPrinters()
         assert.strictEqual(Array.isArray(printers), true)
         done()
       })
+      w.loadURL('about:blank')
     })
   })
 
@@ -994,7 +994,6 @@ describe('webContents module', () => {
           sandbox: true
         }
       })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
       w.webContents.once('did-finish-load', () => {
         w.webContents.printToPDF({}, function (error, data) {
           assert.strictEqual(error, null)
@@ -1003,6 +1002,7 @@ describe('webContents module', () => {
           done()
         })
       })
+      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
     })
   })
 })
