@@ -141,7 +141,6 @@ NativeWindowViews::NativeWindowViews(
     : NativeWindow(web_contents, options, parent),
       window_(new views::Widget),
       web_view_(inspectable_web_contents()->GetView()->GetView()),
-      browser_view_(nullptr),
       menu_bar_autohide_(false),
       menu_bar_visible_(false),
       menu_bar_alt_pressed_(false),
@@ -950,24 +949,6 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   Layout();
 }
 
-void NativeWindowViews::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
-    web_view_->RemoveChildView(
-        browser_view_->GetInspectableWebContentsView()->GetView());
-    browser_view_ = nullptr;
-  }
-
-  if (!browser_view) {
-    return;
-  }
-
-  // Add as child of the main web view to avoid (0, 0) origin from overlapping
-  // with menu bar.
-  browser_view_ = browser_view;
-  web_view_->AddChildView(
-      browser_view->GetInspectableWebContentsView()->GetView());
-}
-
 void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
   if (!view) {
     return;
@@ -1195,13 +1176,8 @@ void NativeWindowViews::OnWidgetBoundsChanged(
   if (widget_size_ != new_bounds.size()) {
     int width_delta = new_bounds.width() - widget_size_.width();
     int height_delta = new_bounds.height() - widget_size_.height();
-    if (browser_view_) {
-      AutoresizeBrowserView(width_delta, height_delta, browser_view_);
-    }
-    for (auto iter = browser_views_.begin();
-         iter != browser_views_.end();
-         iter++) {
-      AutoresizeBrowserView(width_delta, height_delta, (*iter));
+    for (const auto & item : browser_views_) {
+      AutoresizeBrowserView(width_delta, height_delta, item);
     }
     NotifyWindowResize();
     widget_size_ = new_bounds.size();

@@ -203,7 +203,6 @@ void Window::OnWindowClosed() {
 
   RemoveFromParentChildWindows();
 
-  ResetBrowserView();
   ResetBrowserViews();
 
   // Destroy the native class when window is closed.
@@ -878,47 +877,27 @@ std::vector<v8::Local<v8::Object>> Window::GetChildWindows() const {
   return child_windows_.Values(isolate());
 }
 
-v8::Local<v8::Value> Window::GetBrowserView() const {
-  if (browser_view_.IsEmpty()) {
+v8::Local<v8::Value> Window::GetBrowserView(mate::Arguments* args) const {
+  if (browser_views_.size() == 0) {
     return v8::Null(isolate());
+  } else if (browser_views_.size() == 1) {
+    auto first_view = browser_views_.begin();
+    return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
+  } else {
+    args->ThrowError(
+        "BrowserWindow have multiple BrowserViews, Use getBrowserViews() "
+        "instead");
   }
-
-  return v8::Local<v8::Value>::New(isolate(), browser_view_);
 }
 
 void Window::SetBrowserView(v8::Local<v8::Value> value) {
-  ResetBrowserView();
-
-  mate::Handle<BrowserView> browser_view;
-  if (value->IsNull() || value->IsUndefined()) {
-    window_->SetBrowserView(nullptr);
-  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
-    window_->SetBrowserView(browser_view->view());
-    browser_view->web_contents()->SetOwnerWindow(window_.get());
-    browser_view_.Reset(isolate(), value);
-
-    window_->UpdateDraggableRegionViews();
+  ResetBrowserViews();
+  AddBrowserView(value);
   }
-}
-
-void Window::ResetBrowserView() {
-  if (browser_view_.IsEmpty()) {
-    return;
-  }
-
-  mate::Handle<BrowserView> browser_view;
-  if (mate::ConvertFromV8(isolate(), GetBrowserView(), &browser_view)
-    && !browser_view.IsEmpty()) {
-    browser_view->web_contents()->SetOwnerWindow(nullptr);
-  }
-
-  browser_view_.Reset();
-}
 
 void Window::AddBrowserView(v8::Local<v8::Value> value) {
   mate::Handle<BrowserView> browser_view;
-  if (value->IsNull() || value->IsUndefined()) {
-  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
+  if (value->IsObject() && mate::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view == browser_views_.end()) {
       window_->AddBrowserView(browser_view->view());
@@ -931,8 +910,7 @@ void Window::AddBrowserView(v8::Local<v8::Value> value) {
 
 void Window::RemoveBrowserView(v8::Local<v8::Value> value) {
   mate::Handle<BrowserView> browser_view;
-  if (value->IsNull() || value->IsUndefined()) {
-  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
+  if (value->IsObject() && mate::ConvertFromV8(isolate(), value, &browser_view)) {
     auto get_that_view = browser_views_.find(browser_view->weak_map_id());
     if (get_that_view != browser_views_.end()) {
       window_->RemoveBrowserView(browser_view->view());
@@ -946,19 +924,19 @@ void Window::RemoveBrowserView(v8::Local<v8::Value> value) {
 }
 
 void Window::ResetBrowserViews() {
-  for (auto views_iter = browser_views_.begin();
-       views_iter != browser_views_.end(); views_iter++) {
+  for (auto& item : browser_views_) {
     mate::Handle<BrowserView> browser_view;
-    if (mate::ConvertFromV8(
-            isolate(),
-            v8::Local<v8::Value>::New(isolate(), (*views_iter).second),
+    if (mate::ConvertFromV8(isolate(),
+                            v8::Local<v8::Value>::New(isolate(), item.second),
             &browser_view) &&
         !browser_view.IsEmpty()) {
+      window_->RemoveBrowserView(browser_view->view());
       browser_view->web_contents()->SetOwnerWindow(nullptr);
     }
 
-    (*views_iter).second.Reset();
+    item.second.Reset();
   }
+
   browser_views_.clear();
   window_->UpdateDraggableRegionViews();
 }
@@ -966,9 +944,8 @@ void Window::ResetBrowserViews() {
 std::vector<v8::Local<v8::Value>> Window::GetBrowserViews() const {
   std::vector<v8::Local<v8::Value>> ret;
 
-  for (auto views_iter = browser_views_.begin();
-       views_iter != browser_views_.end(); views_iter++) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), (*views_iter).second));
+  for (auto const& views_iter : browser_views_) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
   }
 
   return ret;
@@ -1082,7 +1059,7 @@ void Window::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("hide", &Window::Hide)
       .SetMethod("isVisible", &Window::IsVisible)
       .SetMethod("isEnabled", &Window::IsEnabled)
-      .SetMethod("setEnabled", & Window::SetEnabled)
+      .SetMethod("setEnabled", &Window::SetEnabled)
       .SetMethod("maximize", &Window::Maximize)
       .SetMethod("unmaximize", &Window::Unmaximize)
       .SetMethod("isMaximized", &Window::IsMaximized)
@@ -1213,7 +1190,6 @@ v8::Local<v8::Value> Window::From(v8::Isolate* isolate,
 }  // namespace api
 
 }  // namespace atom
-
 
 namespace {
 

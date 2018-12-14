@@ -846,7 +846,6 @@ NativeWindowMac::NativeWindowMac(
     const mate::Dictionary& options,
     NativeWindow* parent)
     : NativeWindow(web_contents, options, parent),
-      browser_view_(nullptr),
       is_kiosk_(false),
       was_fullscreen_(false),
       zoom_to_page_width_(false),
@@ -1587,26 +1586,6 @@ void NativeWindowMac::SetContentProtection(bool enable) {
                                  : NSWindowSharingReadOnly];
 }
 
-void NativeWindowMac::SetBrowserView(NativeBrowserView* browser_view) {
-  if (browser_view_) {
-    [browser_view_->GetInspectableWebContentsView()->GetNativeView()
-            removeFromSuperview];
-    browser_view_ = nullptr;
-  }
-
-  if (!browser_view) {
-    return;
-  }
-
-  browser_view_ = browser_view;
-  auto* native_view =
-      browser_view->GetInspectableWebContentsView()->GetNativeView();
-  [[window_ contentView] addSubview:native_view
-                         positioned:NSWindowAbove
-                         relativeTo:nil];
-  native_view.hidden = NO;
-}
-
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   if (!view) {
     return;
@@ -2039,12 +2018,8 @@ void NativeWindowMac::UpdateDraggableRegionViews(
   std::vector<gfx::Rect> drag_exclude_rects =
       CalculateNonDraggableRegions(regions, webViewWidth, webViewHeight);
 
-  if (browser_view_) {
-    browser_view_->UpdateDraggableRegions(drag_exclude_rects);
-  }
-  
-  for (auto iter = browser_views_.begin(); iter != browser_views_.end(); iter++){
-      (*iter)->UpdateDraggableRegions(drag_exclude_rects);
+  for (auto & item : browser_views_) {
+      item->UpdateDraggableRegions(drag_exclude_rects);
   }
 
   // Create and add a ControlRegionView for each region that needs to be

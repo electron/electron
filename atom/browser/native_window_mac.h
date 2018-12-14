@@ -93,7 +93,6 @@ class NativeWindowMac : public NativeWindow,
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool) override;
   void SetContentProtection(bool enable) override;
-  void SetBrowserView(NativeBrowserView* browser_view) override;
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
 
@@ -191,7 +190,6 @@ class NativeWindowMac : public NativeWindow,
   // The view that will fill the whole frameless window.
   base::scoped_nsobject<FullSizeContentView> content_view_;
 
-  NativeBrowserView* browser_view_;
   std::list<NativeBrowserView*> browser_views_;
 
   std::vector<DraggableRegion> draggable_regions_;
