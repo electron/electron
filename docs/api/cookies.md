@@ -13,14 +13,20 @@ For example:
 const { session } = require('electron')
 
 // Query all cookies.
-session.defaultSession.cookies.get({}, (error, cookies) => {
-  console.log(error, cookies)
-})
+session.defaultSession.cookies.get({})
+  .then((cookies) => {
+    // success
+  }).catch((error) => {
+    console.log(error)
+  })
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url: 'http://www.github.com' }, (error, cookies) => {
-  console.log(error, cookies)
-})
+session.defaultSession.cookies.get({ url: 'http://www.github.com' })
+  .then((cookies) => {
+    // success
+  }).catch((error) => {
+    console.log(error)
+  })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
@@ -31,7 +37,6 @@ session.defaultSession.cookies.set(cookie)
   }, (error) => {
     console.error(error)
   })
-})
 ```
 
 ### Instance Events
