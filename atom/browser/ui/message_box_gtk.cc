@@ -13,9 +13,9 @@
 #include "base/callback.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "chrome/browser/ui/libgtkui/gtk_signal.h"
 #include "chrome/browser/ui/libgtkui/gtk_util.h"
 #include "chrome/browser/ui/libgtkui/skia_utils_gtk.h"
+#include "ui/base/glib/glib_signal.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/desktop_aura/x11_desktop_handler.h"
 
@@ -168,8 +168,8 @@ class GtkMessageBox : public NativeWindowObserver {
     parent_ = nullptr;
   }
 
-  CHROMEGTK_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, int);
-  CHROMEGTK_CALLBACK_0(GtkMessageBox, void, OnCheckboxToggled);
+  CHROMEG_CALLBACK_1(GtkMessageBox, void, OnResponseDialog, GtkWidget*, int);
+  CHROMEG_CALLBACK_0(GtkMessageBox, void, OnCheckboxToggled, GtkWidget*);
 
  private:
   atom::UnresponsiveSuppressor unresponsive_suppressor_;
