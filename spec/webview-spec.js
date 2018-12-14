@@ -70,6 +70,18 @@ describe('<webview> tag', function () {
     await emittedOnce(ipcMain, 'pong')
   })
 
+  it('works with contextIsolation', async () => {
+    const w = await openTheWindow({
+      show: false,
+      webPreferences: {
+        webviewTag: true,
+        contextIsolation: true
+      }
+    })
+    w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'))
+    await emittedOnce(ipcMain, 'pong')
+  })
+
   it('is disabled when nodeIntegration is disabled', async () => {
     const w = await openTheWindow({
       show: false,
