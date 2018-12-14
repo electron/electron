@@ -63,6 +63,7 @@ describe('chromium feature', () => {
           output += data
           const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output)
           if (m) {
+            appProcess.stderr.removeAllListeners('data')
             const port = m[1]
             http.get(`http://127.0.0.1:${port}`, (res) => {
               res.destroy()
