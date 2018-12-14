@@ -20,4 +20,4 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 <!-- The note that you write here will be communicated to Electron users in the release notes when this change is released. Write something short but descriptive that explains what, if anything, this change means for a developer building an app with Electron. -->
 
-Notes: <!-- Short, descriptive end-user-facing change summary here -->
+Notes: <!-- Short, descriptive end-user-facing change summary here, or `no-notes` if no user-facing changes -->
