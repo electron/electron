@@ -5,19 +5,11 @@ app.on('ready', async function () {
   const persistentSession = session.fromPartition('persist:ence-test')
 
   const set = () => {
-    return new Promise((resolve, reject) => {
-      persistentSession.cookies.set({
-        url,
-        name: 'test',
-        value: 'true',
-        expirationDate: Date.now() + 60000
-      }, error => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      })
+    return persistentSession.cookies.set({
+      url,
+      name: 'test',
+      value: 'true',
+      expirationDate: Date.now() + 60000
     })
   }
 

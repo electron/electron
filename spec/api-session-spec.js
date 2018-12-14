@@ -9,7 +9,7 @@ const auth = require('basic-auth')
 const ChildProcess = require('child_process')
 const { closeWindow } = require('./window-helpers')
 
-const { ipcRenderer, remote } = require('electron')
+const { ipcRenderer, remote, deprecate } = require('electron')
 const { ipcMain, session, BrowserWindow, net } = remote
 const { expect } = chai
 
@@ -65,6 +65,11 @@ describe('session module', () => {
   })
 
   describe('ses.cookies', () => {
+    before(() => {
+      console.log('deprecating session.defaultSession.cookies.set w/callbacks')
+      session.defaultSession.cookies.set = deprecate.promisify(session.defaultSession.cookies.set, 1)
+    })
+
     it('should get cookies', (done) => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', ['0=0'])
@@ -93,16 +98,33 @@ describe('session module', () => {
       })
     })
 
-    it('calls back with an error when setting a cookie with missing required fields', (done) => {
-      session.defaultSession.cookies.set({
-        url: '',
-        name: '1',
-        value: '1'
-      }, (error) => {
-        assert(error, 'Should have an error')
-        assert.strictEqual(error.message, 'Setting cookie failed')
-        done()
-      })
+    it('sets cookies', async () => {
+      let error
+      try {
+        await session.defaultSession.cookies.set({
+          url,
+          name: '1',
+          value: '1'
+        })
+      } catch (e) {
+        error = e
+      }
+      expect(error).to.be.undefined()
+    })
+
+    it('yields an error when setting a cookie with missing required fields', async () => {
+      let error
+      try {
+        await session.defaultSession.cookies.set({
+          url: '',
+          name: '1',
+          value: '1'
+        })
+      } catch (e) {
+        error = e
+      }
+      expect(error).is.an('Error')
+      expect(error).to.have.property('message').which.equals('Setting cookie failed')
     })
 
     it('should over-write the existent cookie', (done) => {

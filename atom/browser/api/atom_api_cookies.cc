@@ -185,7 +185,13 @@ void SettleSetPromiseOnUI(scoped_refptr<util::Promise> promise, bool success) {
       << __FILE__ << ':' << __LINE__ << ' '
       << "SettlesSetPromiseOnUI enter -- resolving promise with success flag: "
       << success << std::endl;
-  promise->Resolve(success ? Cookies::SUCCESS : Cookies::FAILED);
+  if (success) {
+    std::cerr << __FILE__ << ':' << __LINE__ << " resolving" << std::endl;
+    promise->Resolve();
+  } else {
+    std::cerr << __FILE__ << ':' << __LINE__ << " rejecting" << std::endl;
+    promise->RejectWithErrorMessage("Setting cookie failed");
+  }
   std::cerr << __FILE__ << ':' << __LINE__ << ' '
             << "SettlesSetPromiseOnUI exit" << std::endl;
 }
