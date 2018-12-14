@@ -12,8 +12,8 @@ const { GitProcess } = require('dugite')
 const GitHub = require('github')
 const pass = '\u2713'.green
 const path = require('path')
-const pkg = require('../package.json')
 const readline = require('readline')
+const releaseNotesGenerator = require('./release-notes/index.js')
 const versionType = args._[0]
 const targetRepo = versionType === 'nightly' ? 'nightlies' : 'electron'
 
@@ -75,65 +75,10 @@ async function getReleaseNotes (currentBranch) {
     return 'Nightlies do not get release notes, please compare tags for info'
   }
   console.log(`Generating release notes for ${currentBranch}.`)
-  const githubOpts = {
-    owner: 'electron',
-    repo: targetRepo,
-    base: `v${pkg.version}`,
-    head: currentBranch
+  const releaseNotes = await releaseNotesGenerator(currentBranch)
+  if (releaseNotes.warning) {
+    console.warn(releaseNotes.warning)
   }
-  let releaseNotes
-  if (args.automaticRelease) {
-    releaseNotes = '## Bug Fixes/Changes \n\n'
-  } else {
-    releaseNotes = '(placeholder)\n'
-  }
-  console.log(`Checking for commits from ${pkg.version} to ${currentBranch}`)
-  const commitComparison = await github.repos.compareCommits(githubOpts)
-    .catch(err => {
-      console.log(`${fail} Error checking for commits from ${pkg.version} to ` +
-        `${currentBranch}`, err)
-      process.exit(1)
-    })
-
-  if (commitComparison.data.commits.length === 0) {
-    console.log(`${pass} There are no commits from ${pkg.version} to ` +
-      `${currentBranch}, skipping release.`)
-    process.exit(0)
-  }
-
-  let prCount = 0
-  const mergeRE = /Merge pull request #(\d+) from .*\n/
-  const newlineRE = /(.*)\n*.*/
-  const prRE = /(.* )\(#(\d+)\)(?:.*)/
-  commitComparison.data.commits.forEach(commitEntry => {
-    let commitMessage = commitEntry.commit.message
-    if (commitMessage.indexOf('#') > -1) {
-      let prMatch = commitMessage.match(mergeRE)
-      let prNumber
-      if (prMatch) {
-        commitMessage = commitMessage.replace(mergeRE, '').replace('\n', '')
-        const newlineMatch = commitMessage.match(newlineRE)
-        if (newlineMatch) {
-          commitMessage = newlineMatch[1]
-        }
-        prNumber = prMatch[1]
-      } else {
-        prMatch = commitMessage.match(prRE)
-        if (prMatch) {
-          commitMessage = prMatch[1].trim()
-          prNumber = prMatch[2]
-        }
-      }
-      if (prMatch) {
-        if (commitMessage.substr(commitMessage.length - 1, commitMessage.length) !== '.') {
-          commitMessage += '.'
-        }
-        releaseNotes += `* ${commitMessage} #${prNumber} \n\n`
-        prCount++
-      }
-    }
-  })
-  console.log(`${pass} Done generating release notes for ${currentBranch}. Found ${prCount} PRs.`)
   return releaseNotes
 }
 
@@ -165,12 +110,12 @@ async function createRelease (branchToTarget, isBeta) {
       githubOpts.body = `Note: This is a nightly release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the nightly tag and can be installed via npm install electron@nightly, ` +
-        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     } else {
       githubOpts.body = `Note: This is a beta release.  Please file new issues ` +
         `for any bugs you find in it.\n \n This release is published to npm ` +
         `under the beta tag and can be installed via npm install electron@beta, ` +
-        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes}`
+        `or npm i electron@${newVersion.substr(1)}.\n \n ${releaseNotes.text}`
     }
     githubOpts.name = `${githubOpts.name}`
     githubOpts.prerelease = true
@@ -263,7 +208,7 @@ async function prepareRelease (isBeta, notesOnly) {
     const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(gitDir)
     if (notesOnly) {
       const releaseNotes = await getReleaseNotes(currentBranch)
-      console.log(`Draft release notes are: \n${releaseNotes}`)
+      console.log(`Draft release notes are: \n${releaseNotes.text}`)
     } else {
       const changes = await changesToRelease(currentBranch)
       if (changes) {
