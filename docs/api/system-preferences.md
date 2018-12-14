@@ -63,7 +63,7 @@ Returns `Boolean` - Whether the Swipe between pages setting is on.
 
 * `event` String
 * `userInfo` Object
-* `deliverImmediately` Boolean (optional) - `true` to post notifications immediately regardless of whether or not the subscribing app is active or not.
+* `deliverImmediately` Boolean (optional) - `true` to post notifications immediately regardless of whether or not the subscribing app is active or not. Defaults to `false`. See [NSDistributedNotificationCenter documentation](https://developer.apple.com/documentation/foundation/nsdistributednotificationcenter/1418360-postnotificationname) for details.
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
