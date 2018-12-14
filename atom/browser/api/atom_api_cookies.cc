@@ -353,8 +353,7 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
       base::BindOnce(SetCookieOnIO, base::RetainedRef(getter), std::move(copy),
                      promise));
 
-  v8::Local<v8::Promise> handle = promise->GetHandle();
-  return handle;
+  return promise->GetHandle();
 }
 
 void Cookies::FlushStore(const base::Closure& callback) {
