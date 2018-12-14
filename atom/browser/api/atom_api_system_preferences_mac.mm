@@ -106,10 +106,18 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
 
 }  // namespace
 
-void SystemPreferences::PostNotification(
-    const std::string& name,
-    const base::DictionaryValue& user_info) {
-  DoPostNotification(name, user_info, kNSDistributedNotificationCenter);
+void SystemPreferences::PostNotification(const std::string& name,
+                                         const base::DictionaryValue& user_info,
+                                         mate::Arguments* args) {
+  bool immediate = false;
+  args->GetNext(&immediate);
+
+  NSDistributedNotificationCenter* center =
+      [NSDistributedNotificationCenter defaultCenter];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)
+            deliverImmediately:immediate];
 }
 
 int SystemPreferences::SubscribeNotification(
@@ -126,7 +134,10 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
 void SystemPreferences::PostLocalNotification(
     const std::string& name,
     const base::DictionaryValue& user_info) {
-  DoPostNotification(name, user_info, kNSNotificationCenter);
+  NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 int SystemPreferences::SubscribeLocalNotification(
@@ -142,7 +153,11 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
 void SystemPreferences::PostWorkspaceNotification(
     const std::string& name,
     const base::DictionaryValue& user_info) {
-  DoPostNotification(name, user_info, kNSWorkspaceNotificationCenter);
+  NSNotificationCenter* center =
+      [[NSWorkspace sharedWorkspace] notificationCenter];
+  [center postNotificationName:base::SysUTF8ToNSString(name)
+                        object:nil
+                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
@@ -154,29 +169,6 @@ int SystemPreferences::SubscribeWorkspaceNotification(
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
   DoUnsubscribeNotification(request_id, kNSWorkspaceNotificationCenter);
-}
-
-void SystemPreferences::DoPostNotification(
-    const std::string& name,
-    const base::DictionaryValue& user_info,
-    NotificationCenterKind kind) {
-  NSNotificationCenter* center;
-  switch (kind) {
-    case kNSDistributedNotificationCenter:
-      center = [NSDistributedNotificationCenter defaultCenter];
-      break;
-    case kNSNotificationCenter:
-      center = [NSNotificationCenter defaultCenter];
-      break;
-    case kNSWorkspaceNotificationCenter:
-      center = [[NSWorkspace sharedWorkspace] notificationCenter];
-      break;
-    default:
-      break;
-  }
-  [center postNotificationName:base::SysUTF8ToNSString(name)
-                        object:nil
-                      userInfo:DictionaryValueToNSDictionary(user_info)];
 }
 
 int SystemPreferences::DoSubscribeNotification(

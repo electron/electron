@@ -59,10 +59,11 @@ Returns `Boolean` - Whether the system is in Dark Mode.
 
 Returns `Boolean` - Whether the Swipe between pages setting is on.
 
-### `systemPreferences.postNotification(event, userInfo)` _macOS_
+### `systemPreferences.postNotification(event, userInfo[, deliverImmediately])` _macOS_
 
 * `event` String
 * `userInfo` Object
+* `deliverImmediately` Boolean (optional) - `true` to post notifications immediately even when the subscribing app is inactive.
 
 Posts `event` as native notifications of macOS. The `userInfo` is an Object
 that contains the user information dictionary sent along with the notification.
