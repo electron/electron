@@ -52,7 +52,7 @@ class Cookies : public mate::TrackableObject<Cookies> {
   v8::Local<v8::Promise> Get(const base::DictionaryValue& filter);
   v8::Local<v8::Promise> Set(const base::DictionaryValue& details);
   v8::Local<v8::Promise> Remove(const GURL& url, const std::string& name);
-  void FlushStore(const base::Closure& callback);
+  v8::Local<v8::Promise> FlushStore();
 
   // CookieChangeNotifier subscription:
   void OnCookieChanged(const CookieDetails*);

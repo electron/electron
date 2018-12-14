@@ -228,8 +228,9 @@ void OnSetCookie(scoped_refptr<util::Promise> promise, bool success) {
 // Flushes cookie store in IO thread.
 void FlushCookieStoreOnIOThread(
     scoped_refptr<net::URLRequestContextGetter> getter,
-    const base::Closure& callback) {
-  GetCookieStore(getter)->FlushStore(base::BindOnce(RunCallbackInUI, callback));
+    scoped_refptr<util::Promise> promise) {
+  GetCookieStore(getter)->FlushStore(
+      base::BindOnce(ResolvePromiseInUI, promise));
 }
 
 // Sets cookie with |details| in IO thread.
@@ -356,12 +357,19 @@ v8::Local<v8::Promise> Cookies::Set(const base::DictionaryValue& details) {
   return promise->GetHandle();
 }
 
-void Cookies::FlushStore(const base::Closure& callback) {
+v8::Local<v8::Promise> Cookies::FlushStore() {
+  LOG(INFO) << "Cookies::Set";
+  // v8::Locker locker(isolate());
+  // v8::HandleScope handle_scope(isolate());
+  scoped_refptr<util::Promise> promise = new util::Promise(isolate());
+
   auto* getter = browser_context_->GetRequestContext();
   content::BrowserThread::PostTask(
       BrowserThread::IO, FROM_HERE,
       base::BindOnce(FlushCookieStoreOnIOThread, base::RetainedRef(getter),
-                     callback));
+                     promise));
+
+  return promise->GetHandle();
 }
 
 void Cookies::OnCookieChanged(const CookieDetails* details) {

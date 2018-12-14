@@ -151,7 +151,7 @@ describe('session module', () => {
         name: '2',
         value: '2'
       }).then(() => {
-        session.defaultSession.cookies.remove(url, '2')
+        return session.defaultSession.cookies.remove(url, '2')
       }).then(() => {
         session.defaultSession.cookies.get({ url }, (error, list) => {
           if (error) return done(error)
@@ -217,17 +217,18 @@ describe('session module', () => {
       })
     })
 
-    describe('ses.cookies.flushStore(callback)', () => {
+    describe('ses.cookies.flushStore()', (done) => {
       it('flushes the cookies to disk and invokes the callback when done', (done) => {
         session.defaultSession.cookies.set({
           url: url,
           name: 'foo',
           value: 'bar'
-        }, (error) => {
-          if (error) return done(error)
-          session.defaultSession.cookies.flushStore(() => {
-            done()
-          })
+        }).then(() => {
+          return session.defaultSession.cookies.flushStore()
+        }).then(() => {
+          done()
+        }).catch((error) => {
+          done(error)
         })
       })
     })
