@@ -71,14 +71,20 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
   }
 
   std::string file_path;
+  response_headers_ = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
   if (options->is_dict()) {
-    auto* path_value =
-        options->FindKeyOfType("path", base::Value::Type::STRING);
-    if (path_value)
-      file_path = path_value->GetString();
+    base::DictionaryValue* headersValue = nullptr;
+    base::DictionaryValue* dict =
+        static_cast<base::DictionaryValue*>(options.get());
+    dict->GetString("path", &file_path);
+    dict->GetDictionary("headers", &headersValue);
+    for (const auto& iter : headersValue->DictItems()) {
+      response_headers_->AddHeader(iter.first + ": " + iter.second.GetString());
+    }
   } else if (options->is_string()) {
     file_path = options->GetString();
   }
+  response_headers_->AddHeader(kCORSHeader);
 
   if (file_path.empty()) {
     NotifyStartError(net::URLRequestStatus(net::URLRequestStatus::FAILED,
@@ -103,11 +109,7 @@ void URLRequestAsyncAsarJob::Kill() {
 }
 
 void URLRequestAsyncAsarJob::GetResponseInfo(net::HttpResponseInfo* info) {
-  std::string status("HTTP/1.1 200 OK");
-  auto* headers = new net::HttpResponseHeaders(status);
-
-  headers->AddHeader(kCORSHeader);
-  info->headers = headers;
+  info->headers = response_headers_;
 }
 
 }  // namespace atom
