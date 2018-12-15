@@ -887,6 +887,7 @@ v8::Local<v8::Value> Window::GetBrowserView(mate::Arguments* args) const {
     args->ThrowError(
         "BrowserWindow have multiple BrowserViews, Use getBrowserViews() "
         "instead");
+    return v8::Null(isolate());
   }
 }
 
