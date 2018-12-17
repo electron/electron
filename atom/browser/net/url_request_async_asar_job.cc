@@ -78,8 +78,11 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
         static_cast<base::DictionaryValue*>(options.get());
     dict->GetString("path", &file_path);
     dict->GetDictionary("headers", &headersValue);
-    for (const auto& iter : headersValue->DictItems()) {
-      response_headers_->AddHeader(iter.first + ": " + iter.second.GetString());
+    if (headersValue) {
+      for (const auto& iter : headersValue->DictItems()) {
+        response_headers_->AddHeader(iter.first + ": " +
+                                     iter.second.GetString());
+      }
     }
   } else if (options->is_string()) {
     file_path = options->GetString();

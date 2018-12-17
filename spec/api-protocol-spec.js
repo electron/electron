@@ -323,7 +323,7 @@ describe('protocol module', () => {
     it('sets custom headers', (done) => {
       const handler = (request, callback) => callback({
         path: filePath,
-        headers: ['X-Great-Header: sogreat']
+        headers: { 'X-Great-Header': 'sogreat' }
       })
       protocol.registerFileProtocol(protocolName, handler, (error) => {
         if (error) return done(error)
