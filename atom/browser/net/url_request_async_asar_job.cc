@@ -73,11 +73,15 @@ void URLRequestAsyncAsarJob::StartAsync(std::unique_ptr<base::Value> options,
   std::string file_path;
   response_headers_ = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
   if (options->is_dict()) {
-    base::DictionaryValue* headersValue = nullptr;
     base::DictionaryValue* dict =
         static_cast<base::DictionaryValue*>(options.get());
-    dict->GetString("path", &file_path);
-    dict->GetDictionary("headers", &headersValue);
+    base::Value* pathValue =
+        dict->FindKeyOfType("path", base::Value::Type::STRING);
+    if (pathValue) {
+      file_path = pathValue->GetString();
+    }
+    base::Value* headersValue =
+        dict->FindKeyOfType("headers", base::Value::Type::DICTIONARY);
     if (headersValue) {
       for (const auto& iter : headersValue->DictItems()) {
         response_headers_->AddHeader(iter.first + ": " +
