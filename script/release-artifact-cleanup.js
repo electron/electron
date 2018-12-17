@@ -5,8 +5,8 @@ require('colors')
 const pass = '\u2713'.green
 const fail = '\u2717'.red
 const args = require('minimist')(process.argv.slice(2), {
-  string: ['tag', 'releaseId'],
-  default: { releaseId: '' }
+  string: ['tag', 'releaseID'],
+  default: { releaseID: '' }
 })
 const { execSync } = require('child_process')
 const { GitProcess } = require('dugite')
@@ -93,7 +93,7 @@ async function deleteTag (tag, targetRepo) {
 }
 
 async function cleanReleaseArtifacts () {
-  const releaseId = args.releaseId.length > 0 ? args.releaseId : null
+  const releaseId = args.releaseID.length > 0 ? args.releaseID : null
   const isNightly = args.tag.includes('nightly')
 
   if (releaseId) {
