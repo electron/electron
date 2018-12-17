@@ -77,19 +77,6 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
   return !*result;
 }
 
-// Convert Command line string to argv.
-base::CommandLine::StringVector CommandLineStringToArgv(
-    const std::wstring& command_line_string) {
-  int num_args = 0;
-  wchar_t** args = NULL;
-  args = ::CommandLineToArgvW(command_line_string.c_str(), &num_args);
-  base::CommandLine::StringVector argv;
-  for (int i = 0; i < num_args; ++i)
-    argv.push_back(std::wstring(args[i]));
-  LocalFree(args);
-  return argv;
-}
-
 bool ParseCommandLine(const COPYDATASTRUCT* cds,
                       base::CommandLine::StringVector* parsed_command_line,
                       base::FilePath* current_directory) {
@@ -143,7 +130,7 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
     // Get command line.
     const std::wstring cmd_line =
         msg.substr(second_null + 1, third_null - second_null);
-    *parsed_command_line = CommandLineStringToArgv(cmd_line);
+    *parsed_command_line = base::CommandLine::FromString(cmd_line).argv();
     return true;
   }
   return false;

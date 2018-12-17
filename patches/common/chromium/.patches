@@ -67,7 +67,6 @@ tts.patch
 color_chooser.patch
 printing.patch
 verbose_generate_breakpad_symbols.patch
-chrome_process_finder.patch
 customizable_app_indicator_id_prefix.patch
 cross_site_document_resource_handler.patch
 content_allow_embedder_to_prevent_locking_scheme_registry.patch

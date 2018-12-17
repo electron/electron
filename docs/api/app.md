@@ -398,6 +398,9 @@ non-minimized.
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
+**Note:** Extra command line arguments might be added by Chromium,
+such as `--original-process-start-time`.
+
 ### Event: 'remote-require'
 
 Returns:
