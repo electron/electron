@@ -5,7 +5,9 @@
     "service_manager:connector": {
       "requires": {
         "device": [ "device:geolocation_control" ],
-        "proxy_resolver": [ "factory" ]
+        "proxy_resolver": [ "factory" ],
+        "chrome_printing": [ "converter" ],
+        "pdf_compositor": [ "compositor"]
       }
     }
   }

@@ -207,11 +207,11 @@ static_library("electron_lib") {
     "native_mate",
     "//base",
     "//base:i18n",
+    "//chrome/app/resources:platform_locale_settings",
     "//components/certificate_transparency",
     "//components/net_log",
     "//components/network_session_configurator/common",
     "//components/prefs",
-    "//components/printing/common",
     "//components/viz/service",
     "//content/public/app:both",
     "//content/public/child",
@@ -222,7 +222,6 @@ static_library("electron_lib") {
     "//ppapi/host",
     "//ppapi/proxy",
     "//ppapi/shared_impl",
-    "//printing",
     "//services/proxy_resolver:lib",
     "//skia",
     "//third_party/blink/public:blink",
@@ -367,6 +366,7 @@ static_library("electron_lib") {
       # Disable warnings for g_settings_list_schemas.
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
+
     sources += filenames.lib_sources_nss
   }
   if (is_win) {
@@ -434,6 +434,15 @@ static_library("electron_lib") {
       "atom/browser/api/views/atom_api_layout_manager.h",
       "atom/browser/api/views/atom_api_text_field.cc",
       "atom/browser/api/views/atom_api_text_field.h",
+    ]
+  }
+
+  if (enable_basic_printing) {
+    sources += [
+      "atom/browser/printing/print_preview_message_handler.cc",
+      "atom/browser/printing/print_preview_message_handler.h",
+      "atom/renderer/printing/print_render_frame_helper_delegate.cc",
+      "atom/renderer/printing/print_render_frame_helper_delegate.h",
     ]
   }
 
@@ -831,7 +840,6 @@ group("chromium_unittests") {
     "//mojo:mojo_unittests",
     "//net:net_unittests",
     "//ppapi:ppapi_unittests",
-    "//printing:printing_unittests",
     "//skia:skia_unittests",
     "//sql:sql_unittests",
     "//storage:storage_unittests",
@@ -848,6 +856,10 @@ group("chromium_unittests") {
     "//url/ipc:url_ipc_unittests",
     "//v8/test/unittests:unittests",
   ]
+
+  if (enable_basic_printing) {
+    deps += [ "//printing:printing_unittests" ]
+  }
 
   if (is_linux) {
     deps += [
@@ -991,6 +1003,13 @@ group("electron_content_manifest_overlays") {
 service_manifest("electron_content_packaged_services_manifest_overlay") {
   source = "//electron/manifests/electron_content_packaged_services_manifest_overlay.json"
   packaged_services = [ "//services/proxy_resolver:proxy_resolver_manifest" ]
+
+  if (enable_basic_printing) {
+    packaged_services += [
+      "//chrome/services/printing:manifest",
+      "//components/services/pdf_compositor:pdf_compositor_manifest",
+    ]
+  }
 }
 
 service_manifest("electron_content_browser_manifest_overlay") {

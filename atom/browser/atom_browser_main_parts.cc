@@ -19,7 +19,7 @@
 #include "atom/common/node_bindings.h"
 #include "base/command_line.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "chrome/browser/browser_process.h"
+#include "chrome/browser/browser_process_impl.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/net/chrome_net_log_helper.h"
 #include "components/net_log/chrome_net_log.h"
@@ -68,7 +68,7 @@ AtomBrowserMainParts* AtomBrowserMainParts::self_ = nullptr;
 
 AtomBrowserMainParts::AtomBrowserMainParts(
     const content::MainFunctionParams& params)
-    : fake_browser_process_(new BrowserProcess),
+    : fake_browser_process_(new BrowserProcessImpl),
       browser_(new Browser),
       node_bindings_(NodeBindings::Create(NodeBindings::BROWSER)),
       atom_bindings_(new AtomBindings(uv_default_loop())),

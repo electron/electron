@@ -11,4 +11,6 @@ enable_extensions = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"
 
+enable_basic_printing = true
+
 is_cfi = false

@@ -40,6 +40,7 @@ disable-redraw-lock.patch
 v8_context_snapshot_generator.patch
 boringssl_build_gn.patch
 pepper_flash.patch
+printing.patch
 no_cache_storage_check.patch
 blink_fix_prototype_assert.patch
 disable_scroll_begin_dcheck.patch

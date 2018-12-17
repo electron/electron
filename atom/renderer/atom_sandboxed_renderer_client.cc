@@ -18,7 +18,6 @@
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
 #include "brightray/common/application_info.h"
-#include "chrome/renderer/printing/print_web_view_helper.h"
 #include "content/public/renderer/render_frame.h"
 #include "native_mate/dictionary.h"
 #include "third_party/blink/public/web/blink.h"

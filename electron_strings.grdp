@@ -5,6 +5,22 @@
     V8 Proxy Resolver
   </message>
 
+  <!-- PDF Compositor Service -->
+  <message name="IDS_UTILITY_PROCESS_PDF_COMPOSITOR_SERVICE_NAME" desc="The name of the utility process used for PDF compositing.">
+    PDF Compositor Service
+  </message>
+
+  <!-- Printing Service -->
+  <message name="IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME" desc="The name of the utility process used for printing conversions.">
+    Printing Service
+  </message>
+  <message name="IDS_PRINT_INVALID_PRINTER_SETTINGS" desc="Message to display when selected printer is not reachable or its settings are invalid.">
+    The selected printer is not available or not installed correctly. <ph name="BR">&lt;br&gt;</ph> Check your printer or try selecting another printer.
+  </message>
+  <message name="IDS_DEFAULT_PRINT_DOCUMENT_TITLE" desc="Default title for a print document">
+    Untitled Document
+  </message>
+
   <!-- Desktop Capturer API -->
   <message name="IDS_DESKTOP_MEDIA_PICKER_SINGLE_SCREEN_NAME" desc="Name for screens in the desktop media picker UI when there is only one monitor.">
     Entire screen
