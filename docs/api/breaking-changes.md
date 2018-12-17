@@ -6,6 +6,41 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 The `FIXME` string is used in code comments to denote things that should be fixed for future releases. See https://github.com/electron/electron/search?q=fixme
 
+# Planned Breaking API Changes (6.0)
+
+## `electron.screen` in renderer process
+
+```js
+// Deprecated
+require('electron').screen
+// Replace with
+require('electron').remote.screen
+```
+
+## `require` in sandboxed renderers
+
+```js
+// Deprecated
+require('child_process')
+// Replace with
+require('electron').remote.require('child_process')
+
+// Deprecated
+require('fs')
+// Replace with
+require('electron').remote.require('fs')
+
+// Deprecated
+require('os')
+// Replace with
+require('electron').remote.require('os')
+
+// Deprecated
+require('path')
+// Replace with
+require('electron').remote.require('path')
+```
+
 # Planned Breaking API Changes (5.0)
 
 ## `new BrowserWindow({ webPreferences })`
@@ -68,7 +103,6 @@ the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
 guide](/docs/tutorial/using-native-node-modules.md) for more.
-
 
 # Breaking API Changes (3.0)
 
