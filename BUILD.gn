@@ -62,14 +62,6 @@ npm_action("atom_browserify_sandbox") {
     "lib/sandboxed_renderer/init.js",
     "-r",
     "./lib/sandboxed_renderer/api/exports/electron.js:electron",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/fs.js:fs",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/os.js:os",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/path.js:path",
-    "-r",
-    "./lib/sandboxed_renderer/api/exports/child_process.js:child_process",
     "-t",
     "aliasify",
   ]
@@ -80,10 +72,6 @@ npm_action("atom_browserify_sandbox") {
     # Use a script to generate all dependencies and put them here.
     "lib/sandboxed_renderer/init.js",
     "lib/sandboxed_renderer/api/exports/electron.js",
-    "lib/sandboxed_renderer/api/exports/fs.js",
-    "lib/sandboxed_renderer/api/exports/os.js",
-    "lib/sandboxed_renderer/api/exports/path.js",
-    "lib/sandboxed_renderer/api/exports/child_process.js",
   ]
   outputs = [
     "$target_gen_dir/js2c/preload_bundle.js",
