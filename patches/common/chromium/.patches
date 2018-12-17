@@ -85,3 +85,5 @@ fix_trackpad_scrolling.patch
 mac_fix_form_control_rendering_on_10_14_mojave.patch
 ensure_cookie_store.patch
 disable_color_correct_rendering.patch
+sqlite_upgrade_from_3_24_to_3_26.patch
+sqlite_update_api_3_26.patch
