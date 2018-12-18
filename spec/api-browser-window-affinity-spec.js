@@ -21,6 +21,7 @@ describe('BrowserWindow with affinity module', () => {
       webPreferences: webPrefs || {}
     })
     await w.loadFile(path.join(fixtures, 'api', 'blank.html'))
+    return w
   }
 
   function testAffinityProcessIds (name, webPreferences = {}) {
