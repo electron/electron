@@ -19,9 +19,4 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 #### Release Notes
 
-<!-- A one-line description for the release notes. Please make this
-understandable to end users (Electron app developers). Examples and help
-on special cases: https://github.com/electron/clerk/blob/master/README.md#examples
--->
-
-Notes: <!-- Short, descriptive change summary here, or `no-notes` if no app developer facing changes -->
+Notes: <!-- Please add a one-line description for app developers to read in the release notes. Examples and help on special cases: https://github.com/electron/clerk/blob/master/README.md#examples -->
