@@ -34,6 +34,8 @@ function uploadToGitHub () {
       console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err)
       retry++
       github.repos.getRelease(githubOpts).then(release => {
+        console.log('Got list of assets for existing release:')
+        console.log(JSON.stringify(release.data.assets, null, '  '))
         let existingAssets = release.data.assets.filter(asset => asset.name === fileName)
         if (existingAssets.length > 0) {
           console.log(`${fileName} already exists; will delete before retrying upload.`)
@@ -41,10 +43,15 @@ function uploadToGitHub () {
             owner: 'electron',
             repo: targetRepo,
             id: existingAssets[0].id
-          }).then(uploadToGitHub).catch(uploadToGitHub)
+          }).catch((deleteErr) => {
+            console.log(`Failed to delete existing asset ${fileName}.  Error was:`, deleteErr)
+          }).then(uploadToGitHub)
         } else {
+          console.log(`Current asset ${fileName} not found in existing assets; retrying upload.`)
           uploadToGitHub()
         }
+      }).catch((getReleaseErr) => {
+        console.log(`Fatal: Unable to get current release assets via getRelease!  Error was:`, getReleaseErr)
       })
     } else {
       console.log(`Error retrying uploading ${fileName} to GitHub:`, err)
