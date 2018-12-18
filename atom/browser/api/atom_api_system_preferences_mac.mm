@@ -378,6 +378,16 @@ void SystemPreferences::SetUserDefault(const std::string& name,
   }
 }
 
+bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
+  NSDictionary* options;
+  if (prompt)
+    options = @{(id)kAXTrustedCheckOptionPrompt : @YES};
+  else
+    options = @{(id)kAXTrustedCheckOptionPrompt : @YES};
+
+  return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
+}
+
 std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type,
     mate::Arguments* args) {
