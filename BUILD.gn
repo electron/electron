@@ -67,6 +67,9 @@ npm_action("atom_browserify_sandbox") {
   ]
 
   inputs = [
+    # FIXME(zcbenz): The dependencies of these files are not listed here, so
+    # the generated file will be out-dated when dependencies are modified.
+    # Use a script to generate all dependencies and put them here.
     "lib/sandboxed_renderer/init.js",
     "lib/sandboxed_renderer/api/exports/electron.js",
     "lib/sandboxed_renderer/api/exports/fs.js",
