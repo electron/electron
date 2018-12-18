@@ -939,6 +939,12 @@ Sends a request to get current zoom level, the `callback` will be called with
 
 Sets the maximum and minimum pinch-to-zoom level.
 
+> **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
+>
+> ```js
+> contents.setVisualZoomLevelLimits(1, 3)
+> ```
+
 #### `contents.setLayoutZoomLevelLimits(minimumLevel, maximumLevel)`
 
 * `minimumLevel` Number
