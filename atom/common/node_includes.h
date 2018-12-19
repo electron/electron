@@ -30,11 +30,11 @@
 #undef NO_RETURN
 #undef LIKELY
 #undef arraysize
-#undef debug_string  // This is defined in macOS SDK in AssertMacros.h.
+#undef debug_string    // This is defined in macOS SDK in AssertMacros.h.
+#undef require_string  // This is defined in macOS SDK in AssertMacros.h.
 #include "env-inl.h"
 #include "env.h"
 #include "node.h"
-#include "node_binding.h"
 #include "node_buffer.h"
 #include "node_internals.h"
 #include "node_options.h"
