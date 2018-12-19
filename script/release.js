@@ -2,7 +2,15 @@
 
 if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
-const args = require('minimist')(process.argv.slice(2))
+const args = require('minimist')(process.argv.slice(2), {
+  boolean: [
+    'validateRelease',
+    'skipVersionCheck',
+    'automaticRelease',
+    'verboseNugget'
+  ],
+  default: { 'verboseNugget': false }
+})
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
@@ -328,7 +336,7 @@ async function verifyAssets (release) {
 function downloadFiles (urls, directory, targetName) {
   return new Promise((resolve, reject) => {
     const nuggetOpts = { dir: directory }
-    nuggetOpts.quiet = true
+    nuggetOpts.quiet = !args.verboseNugget
     if (targetName) nuggetOpts.target = targetName
 
     nugget(urls, nuggetOpts, (err) => {
