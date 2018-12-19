@@ -315,11 +315,6 @@ NativeWindowViews::~NativeWindowViews() {
 void NativeWindowViews::SetContentView(views::View* view) {
   if (content_view()) {
     root_view_->RemoveChildView(content_view());
-    if (browser_view()) {
-      content_view()->RemoveChildView(
-          browser_view()->GetInspectableWebContentsView()->GetView());
-      set_browser_view(nullptr);
-    }
   }
   set_content_view(view);
   focused_view_ = view;
@@ -960,25 +955,31 @@ void NativeWindowViews::SetMenu(AtomMenuModel* menu_model) {
   }
 }
 
-void NativeWindowViews::SetBrowserView(NativeBrowserView* view) {
+void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
   if (!content_view())
     return;
-
-  if (browser_view()) {
-    content_view()->RemoveChildView(
-        browser_view()->GetInspectableWebContentsView()->GetView());
-    set_browser_view(nullptr);
-  }
 
   if (!view) {
     return;
   }
 
-  // Add as child of the main web view to avoid (0, 0) origin from overlapping
-  // with menu bar.
-  set_browser_view(view);
+  add_browser_view(view);
+
   content_view()->AddChildView(
       view->GetInspectableWebContentsView()->GetView());
+}
+
+void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
+  if (!content_view())
+    return;
+
+  if (!view) {
+    return;
+  }
+
+  content_view()->RemoveChildView(
+      view->GetInspectableWebContentsView()->GetView());
+  remove_browser_view(view);
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
@@ -1175,6 +1176,26 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   root_view_->ResetAltState();
 }
 
+void NativeWindowViews::AutoresizeBrowserView(int width_delta,
+                                              int height_delta,
+                                              NativeBrowserView* browser_view) {
+  const auto flags =
+      static_cast<NativeBrowserViewViews*>(browser_view)->GetAutoResizeFlags();
+  if (!(flags & kAutoResizeWidth)) {
+    width_delta = 0;
+  }
+  if (!(flags & kAutoResizeHeight)) {
+    height_delta = 0;
+  }
+  if (height_delta || width_delta) {
+    auto* view = browser_view->GetInspectableWebContentsView()->GetView();
+    auto new_view_size = view->size();
+    new_view_size.set_width(new_view_size.width() + width_delta);
+    new_view_size.set_height(new_view_size.height() + height_delta);
+    view->SetSize(new_view_size);
+  }
+}
+
 void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
                                               const gfx::Rect& bounds) {
   if (changed_widget != widget())
@@ -1184,23 +1205,10 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
   // handle minimized windows on Windows.
   const auto new_bounds = GetBounds();
   if (widget_size_ != new_bounds.size()) {
-    if (browser_view()) {
-      const auto flags = static_cast<NativeBrowserViewViews*>(browser_view())
-                             ->GetAutoResizeFlags();
-      int width_delta = 0;
-      int height_delta = 0;
-      if (flags & kAutoResizeWidth) {
-        width_delta = new_bounds.width() - widget_size_.width();
-      }
-      if (flags & kAutoResizeHeight) {
-        height_delta = new_bounds.height() - widget_size_.height();
-      }
-
-      auto* view = browser_view()->GetInspectableWebContentsView()->GetView();
-      auto new_view_size = view->size();
-      new_view_size.set_width(new_view_size.width() + width_delta);
-      new_view_size.set_height(new_view_size.height() + height_delta);
-      view->SetSize(new_view_size);
+    int width_delta = new_bounds.width() - widget_size_.width();
+    int height_delta = new_bounds.height() - widget_size_.height();
+    for (NativeBrowserView* item : browser_views()) {
+      AutoresizeBrowserView(width_delta, height_delta, item);
     }
 
     NotifyWindowResize();

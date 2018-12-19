@@ -1601,11 +1601,29 @@ removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_
 
-* `browserView` [BrowserView](browser-view.md)
+* `browserView` [BrowserView](browser-view.md). Attach browserView to win.
+If there is some other browserViews was attached they will be removed from
+this window.  
 
 #### `win.getBrowserView()` _Experimental_
 
-Returns `BrowserView | null` - an attached BrowserView. Returns `null` if none is attached.
+Returns `BrowserView | null` - an BrowserView what is attached. Returns `null`
+if none is attached. Throw error if multiple BrowserViews is attached.
+
+#### `win.addBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+Replacement API for setBrowserView supporting work with multi browser views.
+
+#### `win.removeBrowserView(browserView)` _Experimental_
+
+* `browserView` [BrowserView](browser-view.md)
+
+#### `win.getBrowserViews()` _Experimental_
+
+Returns array of `BrowserView` what was an attached with addBrowserView
+or setBrowserView.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
