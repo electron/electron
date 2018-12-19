@@ -120,7 +120,7 @@ const getPreviousPoint = async (point) => {
   }
 }
 
-async function getReleaseNotes (range) {
+async function getReleaseNotes (range, explicitLinks) {
   const rangeList = range.split('..') || ['HEAD']
   const to = rangeList.pop()
   const from = rangeList.pop() || (await getPreviousPoint(to))
@@ -128,7 +128,7 @@ async function getReleaseNotes (range) {
 
   const notes = await notesGenerator.get(from, to)
   const ret = {
-    text: notesGenerator.render(notes)
+    text: notesGenerator.render(notes, explicitLinks)
   }
 
   if (notes.unknown.length) {
@@ -139,13 +139,15 @@ async function getReleaseNotes (range) {
 }
 
 async function main () {
-  if (process.argv.length > 3) {
-    console.log('Use: script/release-notes/index.js [tag | tag1..tag2]')
+  // TODO: minimist/commander
+  const explicitLinks = process.argv.slice(2).some(arg => arg === '--explicit-links')
+  if (process.argv.length > 4) {
+    console.log('Use: script/release-notes/index.js [--explicit-links] [tag | tag1..tag2]')
     return 1
   }
 
   const range = process.argv[2] || 'HEAD'
-  const notes = await getReleaseNotes(range)
+  const notes = await getReleaseNotes(range, explicitLinks)
   console.log(notes.text)
   if (notes.warning) {
     throw new Error(notes.warning)
