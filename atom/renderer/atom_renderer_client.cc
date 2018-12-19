@@ -21,8 +21,7 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 
 #include "atom/common/node_includes.h"
-#include "atom_natives.h"  // NOLINT: This file is generated with js2c
-#include "tracing/trace_event.h"
+#include "third_party/electron_node/src/node_native_module.h"
 
 namespace atom {
 
@@ -189,28 +188,20 @@ void AtomRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
   // Setup window overrides in the main world context
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
-
   // Wrap the bundle into a function that receives the isolatedWorld as
   // an argument.
-  std::string left = "(function (nodeProcess, isolatedWorld) {\n";
-  std::string right = "\n})";
-  auto source = v8::String::Concat(
-      isolate, mate::ConvertToV8(isolate, left)->ToString(isolate),
-      v8::String::Concat(isolate,
-                         node::isolated_bundle_value.ToStringChecked(isolate),
-                         mate::ConvertToV8(isolate, right)->ToString(isolate)));
-  auto result = RunScript(context, source);
-  DCHECK(result->IsFunction());
+  auto* isolate = context->GetIsolate();
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
 
-  v8::Local<v8::Value> args[] = {
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
       GetEnvironment(render_frame)->process_object(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
-  };
-  ignore_result(result.As<v8::Function>()->Call(context, v8::Null(isolate),
-                                                node::arraysize(args), args));
+      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
+
+  node::per_process::native_module_loader.CompileAndCall(
+      context, "electron/js2c/isolated_bundle", &isolated_bundle_params,
+      &isolated_bundle_args, nullptr);
 }
 
 node::Environment* AtomRendererClient::GetEnvironment(

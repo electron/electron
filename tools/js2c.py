@@ -1,54 +1,38 @@
 #!/usr/bin/env python
 
-import contextlib
-import glob
 import os
 import subprocess
 import sys
 
-
-SOURCE_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-
 TEMPLATE = """
-#ifndef ATOM_NATIVES_H_
-#define ATOM_NATIVES_H_
+#include "node_native_module.h"
+#include "node_internals.h"
 
 namespace node {{
 
+namespace native_module {{
+
 {definitions}
 
+void NativeModuleLoader::LoadEmbedderJavaScriptSource() {{
+  {initializers}
+}}
+
+}}  // namespace native_module
+
 }}  // namespace node
-
-#endif  // ATOM_NATIVES_H_
 """
-
 
 def main():
   node_path = os.path.abspath(sys.argv[1])
   natives = os.path.abspath(sys.argv[2])
-  js_source_files = glob.glob('{0}/*.js'.format(sys.argv[3]))
+  js_source_files = sys.argv[3:]
 
-  call_js2c(node_path, natives, js_source_files)
-
-
-def call_js2c(node_path, natives, js_source_files):
   js2c = os.path.join(node_path, 'tools', 'js2c.py')
-  src_dir = os.path.dirname(js_source_files[0])
-  with scoped_cwd(src_dir):
-    subprocess.check_call(
-        [sys.executable, js2c, natives] +
-        [os.path.basename(source) for source in js_source_files] +
-        ['-t', TEMPLATE])
-
-
-@contextlib.contextmanager
-def scoped_cwd(path):
-  cwd = os.getcwd()
-  os.chdir(path)
-  try:
-    yield
-  finally:
-    os.chdir(cwd)
+  subprocess.check_call(
+    [sys.executable, js2c, natives] +
+    js_source_files +
+    ['-t', TEMPLATE])
 
 
 if __name__ == '__main__':

@@ -1,9 +1,4 @@
 filenames = {
-  js2c_sources = [
-    "lib/common/asar.js",
-    "lib/common/asar_init.js",
-  ]
-
   js_sources = [
     "lib/browser/api/app.js",
     "lib/browser/api/auto-updater.js",
