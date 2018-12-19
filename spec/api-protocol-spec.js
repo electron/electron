@@ -320,6 +320,28 @@ describe('protocol module', () => {
       })
     })
 
+    it('sets custom headers', (done) => {
+      const handler = (request, callback) => callback({
+        path: filePath,
+        headers: { 'X-Great-Header': 'sogreat' }
+      })
+      protocol.registerFileProtocol(protocolName, handler, (error) => {
+        if (error) return done(error)
+        $.ajax({
+          url: protocolName + '://fake-host',
+          cache: false,
+          success: (data, status, request) => {
+            assert.strictEqual(data, String(fileContent))
+            assert.strictEqual(request.getResponseHeader('X-Great-Header'), 'sogreat')
+            done()
+          },
+          error: (xhr, errorType, error) => {
+            done(error)
+          }
+        })
+      })
+    })
+
     it('sends object as response', (done) => {
       const handler = (request, callback) => callback({ path: filePath })
       protocol.registerFileProtocol(protocolName, handler, (error) => {

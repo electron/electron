@@ -26,6 +26,7 @@ class URLRequestAsyncAsarJob : public asar::URLRequestAsarJob, public JsAsker {
   void Kill() override;
 
  private:
+  scoped_refptr<net::HttpResponseHeaders> response_headers_;
   base::WeakPtrFactory<URLRequestAsyncAsarJob> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(URLRequestAsyncAsarJob);
