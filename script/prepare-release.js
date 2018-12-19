@@ -179,11 +179,12 @@ async function createRelease (branchToTarget, isBeta) {
   }
   githubOpts.tag_name = newVersion
   githubOpts.target_commitish = newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
-  await github.repos.createRelease(githubOpts)
+  const release = await github.repos.createRelease(githubOpts)
     .catch(err => {
       console.log(`${fail} Error creating new release: `, err)
       process.exit(1)
     })
+  console.log(`Release has been created with id: ${release.data.id}.`)
   console.log(`${pass} Draft release for ${newVersion} has been created.`)
 }
 
