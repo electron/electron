@@ -185,7 +185,7 @@ async function createRelease (branchToTarget, isBeta) {
       console.log(`${fail} Error creating new release: `, err)
       process.exit(1)
     })
-  console.log(`Release has been created with id: ${release.id}.`)
+  console.log(`Release has been created with id: ${release.data.id}.`)
   console.log(`${pass} Draft release for ${newVersion} successful.`)
 }
 
