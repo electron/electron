@@ -279,7 +279,7 @@ describe('webContents module', () => {
   })
 
   describe('before-input-event event', () => {
-    it('can prevent document keyboard events', async (done) => {
+    it('can prevent document keyboard events', async () => {
       await w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
       const keyDown = new Promise(resolve => {
         ipcMain.once('keydown', (event, key) => resolve(key))
