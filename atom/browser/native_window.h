@@ -290,7 +290,8 @@ class NativeWindow : public base::SupportsUserData,
 
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
-
+  std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
+  
  protected:
   NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
 
@@ -300,7 +301,6 @@ class NativeWindow : public base::SupportsUserData,
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
-  std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
   void add_browser_view(NativeBrowserView* browser_view) {
     browser_views_.push_back(browser_view);
   }

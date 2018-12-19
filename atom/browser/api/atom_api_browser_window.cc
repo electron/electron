@@ -332,6 +332,27 @@ void BrowserWindow::ResetBrowserViews() {
 #endif
 }
 
+void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
+  TopLevelWindow::AddBrowserView(value);
+#if defined(OS_MACOSX)
+  UpdateDraggableRegions(nullptr, draggable_regions_);
+#endif
+}
+
+void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
+  TopLevelWindow::RemoveBrowserView(value);
+#if defined(OS_MACOSX)
+  UpdateDraggableRegions(nullptr, draggable_regions_);
+#endif
+}
+
+void BrowserWindow::ResetBrowserViews() {
+  TopLevelWindow::ResetBrowserViews();
+#if defined(OS_MACOSX)
+  UpdateDraggableRegions(nullptr, draggable_regions_);
+#endif
+}
+
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
                                 v8::Local<v8::Value> value) {
   std::string type = gin::V8ToString(isolate, value);
