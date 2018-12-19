@@ -10,7 +10,6 @@ const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
-const { emittedOnce } = require('./events-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
 const isCI = remote.getGlobal('isCi')
 const features = process.atomBinding('features')
@@ -1417,9 +1416,7 @@ describe('font fallback', () => {
   async function getRenderedFonts (html) {
     const w = new BrowserWindow({ show: false })
     try {
-      const loaded = emittedOnce(w.webContents, 'did-finish-load')
-      w.loadURL(`data:text/html,${html}`)
-      await loaded
+      await w.loadURL(`data:text/html,${html}`)
       w.webContents.debugger.attach()
       const sendCommand = (...args) => new Promise((resolve, reject) => {
         w.webContents.debugger.sendCommand(...args, (e, r) => {

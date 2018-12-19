@@ -279,54 +279,44 @@ describe('webContents module', () => {
   })
 
   describe('before-input-event event', () => {
-    it('can prevent document keyboard events', (done) => {
-      ipcMain.once('keydown', (event, key) => {
-        assert.strictEqual(key, 'b')
-        done()
+    it('can prevent document keyboard events', async () => {
+      await w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
+      const keyDown = new Promise(resolve => {
+        ipcMain.once('keydown', (event, key) => resolve(key))
       })
-      w.webContents.once('did-finish-load', () => {
-        ipcRenderer.sendSync('prevent-next-input-event', 'a', w.webContents.id)
-        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
-        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
-      })
-      w.loadFile(path.join(fixtures, 'pages', 'key-events.html'))
+      ipcRenderer.sendSync('prevent-next-input-event', 'a', w.webContents.id)
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a' })
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'b' })
+      assert.strictEqual(await keyDown, 'b')
     })
 
     it('has the correct properties', async () => {
       await w.loadFile(path.join(fixtures, 'pages', 'base-page.html'))
-      const testBeforeInput = (opts) => {
-        return new Promise((resolve, reject) => {
-          w.webContents.once('before-input-event', (event, input) => {
-            try {
-              assert.strictEqual(input.type, opts.type)
-              assert.strictEqual(input.key, opts.key)
-              assert.strictEqual(input.code, opts.code)
-              assert.strictEqual(input.isAutoRepeat, opts.isAutoRepeat)
-              assert.strictEqual(input.shift, opts.shift)
-              assert.strictEqual(input.control, opts.control)
-              assert.strictEqual(input.alt, opts.alt)
-              assert.strictEqual(input.meta, opts.meta)
-              resolve()
-            } catch (e) {
-              reject(e)
-            }
-          })
+      const testBeforeInput = async (opts) => {
+        const modifiers = []
+        if (opts.shift) modifiers.push('shift')
+        if (opts.control) modifiers.push('control')
+        if (opts.alt) modifiers.push('alt')
+        if (opts.meta) modifiers.push('meta')
+        if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
 
-          const modifiers = []
-          if (opts.shift) modifiers.push('shift')
-          if (opts.control) modifiers.push('control')
-          if (opts.alt) modifiers.push('alt')
-          if (opts.meta) modifiers.push('meta')
-          if (opts.isAutoRepeat) modifiers.push('isAutoRepeat')
-
-          w.webContents.sendInputEvent({
-            type: opts.type,
-            keyCode: opts.keyCode,
-            modifiers: modifiers
-          })
+        const p = emittedOnce(w.webContents, 'before-input-event')
+        w.webContents.sendInputEvent({
+          type: opts.type,
+          keyCode: opts.keyCode,
+          modifiers: modifiers
         })
-      }
+        const [, input] = await p
 
+        assert.strictEqual(input.type, opts.type)
+        assert.strictEqual(input.key, opts.key)
+        assert.strictEqual(input.code, opts.code)
+        assert.strictEqual(input.isAutoRepeat, opts.isAutoRepeat)
+        assert.strictEqual(input.shift, opts.shift)
+        assert.strictEqual(input.control, opts.control)
+        assert.strictEqual(input.alt, opts.alt)
+        assert.strictEqual(input.meta, opts.meta)
+      }
       await testBeforeInput({
         type: 'keyDown',
         key: 'A',
@@ -553,16 +543,12 @@ describe('webContents module', () => {
   })
 
   describe('getOSProcessId()', () => {
-    it('returns a valid procress id', (done) => {
+    it('returns a valid procress id', async () => {
       assert.strictEqual(w.webContents.getOSProcessId(), 0)
 
-      w.webContents.once('did-finish-load', () => {
-        const pid = w.webContents.getOSProcessId()
-        assert.strictEqual(typeof pid, 'number')
-        assert(pid > 0, `pid ${pid} is not greater than 0`)
-        done()
-      })
-      w.loadURL('about:blank')
+      await w.loadURL('about:blank')
+      const pid = w.webContents.getOSProcessId()
+      expect(pid).to.be.above(0)
     })
   })
 
@@ -595,19 +581,17 @@ describe('webContents module', () => {
       protocol.unregisterProtocol(zoomScheme, (error) => done(error))
     })
 
-    it('can set the correct zoom level', (done) => {
-      w.webContents.on('did-finish-load', () => {
-        w.webContents.getZoomLevel((zoomLevel) => {
-          assert.strictEqual(zoomLevel, 0.0)
-          w.webContents.setZoomLevel(0.5)
-          w.webContents.getZoomLevel((zoomLevel) => {
-            assert.strictEqual(zoomLevel, 0.5)
-            w.webContents.setZoomLevel(0)
-            done()
-          })
-        })
-      })
-      w.loadURL('about:blank')
+    it('can set the correct zoom level', async () => {
+      try {
+        await w.loadURL('about:blank')
+        const zoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
+        expect(zoomLevel).to.eql(0.0)
+        w.webContents.setZoomLevel(0.5)
+        const newZoomLevel = await new Promise(resolve => w.webContents.getZoomLevel(resolve))
+        expect(newZoomLevel).to.eql(0.5)
+      } finally {
+        w.webContents.setZoomLevel(0)
+      }
     })
 
     it('can persist zoom level across navigation', (done) => {
@@ -1148,7 +1132,7 @@ describe('webContents module', () => {
       }
     })
 
-    it('can get printer list', (done) => {
+    it('can get printer list', async () => {
       w.destroy()
       w = new BrowserWindow({
         show: false,
@@ -1156,12 +1140,9 @@ describe('webContents module', () => {
           sandbox: true
         }
       })
-      w.webContents.once('did-finish-load', () => {
-        const printers = w.webContents.getPrinters()
-        assert.strictEqual(Array.isArray(printers), true)
-        done()
-      })
-      w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+      await w.loadURL('data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E')
+      const printers = w.webContents.getPrinters()
+      assert.strictEqual(Array.isArray(printers), true)
     })
   })
 

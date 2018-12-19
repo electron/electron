@@ -5,7 +5,6 @@ const path = require('path')
 const { closeWindow } = require('./window-helpers')
 const { remote, webFrame } = require('electron')
 const { BrowserWindow, protocol, ipcMain } = remote
-const { emittedOnce } = require('./events-helpers')
 
 const { expect } = chai
 chai.use(dirtyChai)
@@ -148,13 +147,12 @@ describe('webFrame module', function () {
 
   it('calls a spellcheck provider', async () => {
     w = new BrowserWindow({ show: false })
-    w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'))
-    await emittedOnce(w.webContents, 'did-finish-load')
+    await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'))
     w.focus()
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true)
 
     const spellCheckerFeedback =
-      new Promise((resolve, reject) => {
+      new Promise(resolve => {
         ipcMain.on('spec-spell-check', (e, words, callback) => {
           if (words.length === 2) {
             // The promise is resolved only after this event is received twice
