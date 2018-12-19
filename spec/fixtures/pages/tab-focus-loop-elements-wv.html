@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <body>
+    <div>
+      <button id="wv-element-1">Button 1</button>
+      <button id="wv-element-2">Button 2</button>
+    </div>
+    <script>
+      const { ipcRenderer } = require('electron')
+
+      function handleFocusChange(event) {
+        if (event.target.tagName) {
+          const elementId = event.target.id ? `-${event.target.id}` : ''
+          const elementIdentifier = `${event.target.tagName}${elementId}`
+          ipcRenderer.send('focus-changed', elementIdentifier)
+        }
+      }
+
+      addEventListener('focus', handleFocusChange, true)
+    </script>
+  </body>
+</html>

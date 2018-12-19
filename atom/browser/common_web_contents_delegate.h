@@ -98,6 +98,7 @@ class CommonWebContentsDelegate : public content::WebContentsDelegate,
   blink::WebSecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
       content::SecurityStyleExplanations* explanations) override;
+  bool TakeFocus(content::WebContents* source, bool reverse) override;
   void HandleKeyboardEvent(
       content::WebContents* source,
       const content::NativeWebKeyboardEvent& event) override;

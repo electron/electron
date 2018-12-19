@@ -346,6 +346,19 @@ blink::WebSecurityStyle CommonWebContentsDelegate::GetSecurityStyle(
                                           security_style_explanations);
 }
 
+bool CommonWebContentsDelegate::TakeFocus(content::WebContents* source,
+                                          bool reverse) {
+  if (source && source->GetOutermostWebContents() == source) {
+    // If this is the outermost web contents and the user has tabbed or
+    // shift + tabbed through all the elements, reset the focus back to
+    // the first or last element so that it doesn't stay in the body.
+    source->FocusThroughTabTraversal(reverse);
+    return true;
+  }
+
+  return false;
+}
+
 void CommonWebContentsDelegate::DevToolsSaveToFile(const std::string& url,
                                                    const std::string& content,
                                                    bool save_as) {
