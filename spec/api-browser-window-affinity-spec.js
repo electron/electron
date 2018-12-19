@@ -145,7 +145,7 @@ describe('BrowserWindow with affinity module', () => {
     })
 
     it('enables node integration when first window is true', async () => {
-      const [, w1] = Promise.all([
+      const [, w1] = await Promise.all([
         testNodeIntegration(true),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
