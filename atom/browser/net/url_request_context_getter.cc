@@ -308,6 +308,7 @@ void URLRequestContextGetter::NotifyContextShuttingDown(
 
   context_shutting_down_ = true;
   resource_context.reset();
+  http_auth_preferences_.reset();
   net::URLRequestContextGetter::NotifyContextShuttingDown();
 }
 
@@ -341,22 +342,32 @@ net::URLRequestContext* URLRequestContextGetter::GetURLRequestContext() {
       host_resolver = std::move(remapped_resolver);
     }
 
-    net::HttpAuthPreferences auth_preferences;
+    std::vector<std::string> supported_schemes = {
+        net::kBasicAuthScheme, net::kDigestAuthScheme,
+        net::kNegotiateAuthScheme, net::kNtlmAuthScheme};
+    http_auth_preferences_ =
+        std::make_unique<net::HttpAuthPreferences>(supported_schemes
+#if defined(OS_POSIX)
+                                                   ,
+                                                   std::string()
+#endif
+        );  // NOLINT(whitespace/parens)
+
     // --auth-server-whitelist
     if (command_line.HasSwitch(switches::kAuthServerWhitelist)) {
-      auth_preferences.SetServerWhitelist(
+      http_auth_preferences_->SetServerWhitelist(
           command_line.GetSwitchValueASCII(switches::kAuthServerWhitelist));
     }
 
     // --auth-negotiate-delegate-whitelist
     if (command_line.HasSwitch(switches::kAuthNegotiateDelegateWhitelist)) {
-      auth_preferences.SetDelegateWhitelist(command_line.GetSwitchValueASCII(
-          switches::kAuthNegotiateDelegateWhitelist));
+      http_auth_preferences_->SetDelegateWhitelist(
+          command_line.GetSwitchValueASCII(
+              switches::kAuthNegotiateDelegateWhitelist));
     }
     auto http_auth_handler_factory =
-        net::HttpAuthHandlerRegistryFactory::CreateDefault(host_resolver.get());
-    http_auth_handler_factory->SetHttpAuthPreferences(net::kNegotiateAuthScheme,
-                                                      &auth_preferences);
+        net::HttpAuthHandlerRegistryFactory::Create(
+            http_auth_preferences_.get(), host_resolver.get());
     builder->SetHttpAuthHandlerFactory(std::move(http_auth_handler_factory));
     builder->set_host_resolver(std::move(host_resolver));
     builder->set_ct_verifier(std::make_unique<net::MultiLogCTVerifier>());
