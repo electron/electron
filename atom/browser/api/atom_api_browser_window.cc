@@ -304,7 +304,8 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
 }
 
 void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
-  TopLevelWindow::SetBrowserView(value);
+  TopLevelWindow::ResetBrowserViews();
+  TopLevelWindow::AddBrowserView(value);
 #if defined(OS_MACOSX)
   UpdateDraggableRegions(nullptr, draggable_regions_);
 #endif

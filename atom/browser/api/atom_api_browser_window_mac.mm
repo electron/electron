@@ -108,7 +108,7 @@ void BrowserWindow::UpdateDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
-  auto browser_views = window_->browser_view();
+  auto browser_views = window_->browser_views();
   for (NativeBrowserView* view : browser_views) {
     (view)->UpdateDraggableRegions(drag_exclude_rects);
   }
