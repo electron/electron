@@ -120,7 +120,7 @@ async function createRelease (branchToTarget, isBeta) {
     githubOpts.name = `${githubOpts.name}`
     githubOpts.prerelease = true
   } else {
-    githubOpts.body = releaseNotes
+    githubOpts.body = releaseNotes.text
   }
   githubOpts.tag_name = newVersion
   githubOpts.target_commitish = newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
