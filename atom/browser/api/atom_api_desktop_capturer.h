@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "atom/browser/api/event_emitter.h"
+#include "atom/browser/api/trackable_object.h"
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "native_mate/handle.h"
@@ -18,7 +18,7 @@ namespace atom {
 
 namespace api {
 
-class DesktopCapturer : public mate::EventEmitter<DesktopCapturer>,
+class DesktopCapturer : public mate::TrackableObject<DesktopCapturer>,
                         public DesktopMediaListObserver {
  public:
   struct Source {

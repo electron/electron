@@ -233,6 +233,12 @@ app.on('ready', function () {
   })
 })
 
+ipcMain.on('handle-next-desktop-capturer-get-sources', function (event) {
+  event.sender.once('desktop-capturer-get-sources', (event) => {
+    event.preventDefault()
+  })
+})
+
 ipcMain.on('handle-next-remote-require', function (event, modulesMap = {}) {
   event.sender.once('remote-require', (event, moduleName) => {
     event.preventDefault()

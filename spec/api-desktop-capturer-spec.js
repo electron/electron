@@ -1,6 +1,6 @@
 const chai = require('chai')
 const dirtyChai = require('dirty-chai')
-const { desktopCapturer, remote } = require('electron')
+const { desktopCapturer, ipcRenderer, remote } = require('electron')
 const { screen } = remote
 const features = process.atomBinding('features')
 
@@ -98,6 +98,15 @@ describe('desktopCapturer', () => {
         expect(sources[i].display_id).to.equal(displays[i].id.toString())
       }
       done()
+    })
+
+    it('returns empty sources when blocked', done => {
+      ipcRenderer.send('handle-next-desktop-capturer-get-sources')
+      desktopCapturer.getSources({ types: ['screen'] }, (error, sources) => {
+        expect(error).to.be.null()
+        expect(sources).to.be.empty()
+        done()
+      })
     })
   })
 })
