@@ -8,6 +8,7 @@ const ws = require('ws')
 const url = require('url')
 const ChildProcess = require('child_process')
 const { ipcRenderer, remote } = require('electron')
+const { emittedOnce } = require('./events-helpers')
 const { closeWindow } = require('./window-helpers')
 const { resolveGetters } = require('./assert-helpers')
 const { app, BrowserWindow, ipcMain, protocol, session, webContents } = remote
