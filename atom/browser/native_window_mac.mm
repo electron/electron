@@ -1097,8 +1097,7 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  [browser_view()->GetInspectableWebContentsView()->GetNativeView()
-          removeFromSuperview];
+  [view->GetInspectableWebContentsView()->GetNativeView() removeFromSuperview];
   remove_browser_view(view);
 
   [CATransaction commit];
