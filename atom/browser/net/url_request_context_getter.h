@@ -24,8 +24,9 @@ class RequireCTDelegate;
 }  // namespace brightray
 
 namespace net {
+class HttpAuthPreferences;
 class NetLog;
-}
+}  // namespace net
 
 namespace atom {
 
@@ -100,6 +101,7 @@ class URLRequestContextGetter : public net::URLRequestContextGetter {
 
   std::unique_ptr<brightray::RequireCTDelegate> ct_delegate_;
   std::unique_ptr<AtomURLRequestJobFactory> top_job_factory_;
+  std::unique_ptr<net::HttpAuthPreferences> http_auth_preferences_;
   std::unique_ptr<network::mojom::NetworkContext> network_context_;
 
   net::NetLog* net_log_;
