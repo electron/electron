@@ -10,7 +10,9 @@ Currently, the tool only supports Linux, Android, and Mac. Support for other
 platforms is planned.
 """
 
+import collections
 import errno
+import glob
 import argparse
 import os
 import Queue
@@ -22,6 +24,10 @@ import threading
 
 
 CONCURRENT_TASKS=4
+
+# The BINARY_INFO tuple describes a binary as dump_syms identifies it.
+BINARY_INFO = collections.namedtuple('BINARY_INFO',
+                                     ['platform', 'arch', 'hash', 'name'])
 
 
 def GetCommandOutput(command):
@@ -44,47 +50,10 @@ def GetDumpSymsBinary(build_dir=None):
   DUMP_SYMS = 'dump_syms'
   dump_syms_bin = os.path.join(os.path.expanduser(build_dir), DUMP_SYMS)
   if not os.access(dump_syms_bin, os.X_OK):
-    print 'Cannot find %s.' % DUMP_SYMS
-    sys.exit(1)
+    print 'Cannot find %s.' % dump_syms_bin
+    return None
 
   return dump_syms_bin
-
-
-def FindBundlePart(full_path):
-  if full_path.endswith(('.dylib', '.framework', '.app')):
-    return os.path.basename(full_path)
-  elif full_path != '' and full_path != '/':
-    return FindBundlePart(os.path.dirname(full_path))
-  else:
-    return ''
-
-
-def GetDSYMBundle(options, binary_path):
-  """Finds the .dSYM bundle to the binary."""
-  if os.path.isabs(binary_path):
-    dsym_path = binary_path + '.dSYM'
-    if os.path.exists(dsym_path):
-      return dsym_path
-
-  filename = FindBundlePart(binary_path)
-  search_dirs = [options.build_dir, options.libchromiumcontent_dir]
-  if filename.endswith(('.dylib', '.framework', '.app')):
-    for directory in search_dirs:
-      dsym_path = os.path.join(directory, filename) + '.dSYM'
-      if os.path.exists(dsym_path):
-        return dsym_path
-
-  return binary_path
-
-
-def GetSymbolPath(options, binary_path):
-  """Finds the .dbg to the binary."""
-  filename = os.path.basename(binary_path)
-  dbg_path = os.path.join(options.libchromiumcontent_dir, filename) + '.dbg'
-  if os.path.exists(dbg_path):
-    return dbg_path
-
-  return binary_path
 
 
 def Resolve(path, exe_path, loader_path, rpaths):
@@ -101,7 +70,7 @@ def Resolve(path, exe_path, loader_path, rpaths):
     for rpath in rpaths:
       new_path = Resolve(path.replace('@rpath', rpath), exe_path, loader_path,
                          [])
-      if os.access(new_path, os.F_OK):
+      if os.access(new_path, os.X_OK):
         return new_path
     return ''
   return path
@@ -159,7 +128,8 @@ def GetSharedLibraryDependencies(options, binary, exe_path):
   result = []
   build_dir = os.path.abspath(options.build_dir)
   for dep in deps:
-    if (os.access(dep, os.F_OK)):
+    if (os.access(dep, os.X_OK) and
+        os.path.abspath(os.path.dirname(dep)).startswith(build_dir)):
       result.append(dep)
   return result
 
@@ -174,6 +144,15 @@ def mkdir_p(path):
     else: raise
 
 
+def GetBinaryInfoFromHeaderInfo(header_info):
+  """Given a standard symbol header information line, returns BINARY_INFO."""
+  # header info is of the form "MODULE $PLATFORM $ARCH $HASH $BINARY"
+  info_split = header_info.strip().split(' ', 4)
+  if len(info_split) != 5 or info_split[0] != 'MODULE':
+    return None
+  return BINARY_INFO(*info_split[1:])
+
+
 def GenerateSymbols(options, binaries):
   """Dumps the symbols of binary and places them in the given directory."""
 
@@ -181,28 +160,67 @@ def GenerateSymbols(options, binaries):
   print_lock = threading.Lock()
 
   def _Worker():
+    dump_syms = GetDumpSymsBinary(options.build_dir)
     while True:
+      should_dump_syms = True
+      reason = "no reason"
       binary = queue.get()
+
+      run_once = True
+      while run_once:
+        run_once = False
+
+        if not dump_syms:
+          should_dump_syms = False
+          reason = "Could not locate dump_syms executable."
+          break
+
+        binary_info = GetBinaryInfoFromHeaderInfo(
+            GetCommandOutput([dump_syms, '-i', binary]).splitlines()[0])
+        if not binary_info:
+          should_dump_syms = False
+          reason = "Could not obtain binary information."
+          break
+
+        # See if the output file already exists.
+        output_path = os.path.join(options.symbols_dir, binary_info.name,
+                                   binary_info.hash, binary_info.name + '.sym')
+        if os.path.isfile(output_path):
+          should_dump_syms = False
+          reason = "Symbol file already found."
+          break
+
+        # See if there is a symbol file already found next to the binary
+        potential_symbol_files = glob.glob('%s.breakpad*' % binary)
+        for potential_symbol_file in potential_symbol_files:
+          with open(potential_symbol_file, 'rt') as f:
+            symbol_info = GetBinaryInfoFromHeaderInfo(f.readline())
+          if symbol_info == binary_info:
+            mkdir_p(os.path.dirname(output_path))
+            shutil.copyfile(potential_symbol_file, output_path)
+            should_dump_syms = False
+            reason = "Found local symbol file."
+            break
+
+      if not should_dump_syms:
+        if options.verbose:
+          with print_lock:
+            print "Skipping %s (%s)" % (binary, reason)
+        queue.task_done()
+        continue
 
       if options.verbose:
         with print_lock:
           print "Generating symbols for %s" % binary
 
-      if sys.platform == 'darwin':
-        binary = GetDSYMBundle(options, binary)
-      elif sys.platform == 'linux2':
-        binary = GetSymbolPath(options, binary)
-
-      syms = GetCommandOutput([GetDumpSymsBinary(options.build_dir), '-r', '-c',
-                               binary])
-      module_line = re.match("MODULE [^ ]+ [^ ]+ ([0-9A-F]+) (.*)\n", syms)
-      output_path = os.path.join(options.symbols_dir, module_line.group(2),
-                                 module_line.group(1))
-      mkdir_p(output_path)
-      symbol_file = "%s.sym" % module_line.group(2)
-      f = open(os.path.join(output_path, symbol_file), 'w')
-      f.write(syms)
-      f.close()
+      mkdir_p(os.path.dirname(output_path))
+      try:
+        with open(output_path, 'wb') as f:
+          subprocess.check_call([dump_syms, '-r', binary], stdout=f)
+      except Exception, e:
+        # Not much we can do about this.
+        with print_lock:
+          print e
 
       queue.task_done()
 
@@ -247,6 +265,9 @@ def main():
       shutil.rmtree(options.symbols_dir)
     except:
       pass
+
+  if not GetDumpSymsBinary(options.build_dir):
+    return 1
 
   # Build the transitive closure of all dependencies.
   binaries = set(options.binary)
