@@ -2,7 +2,15 @@
 
 if (!process.env.CI) require('dotenv-safe').load()
 require('colors')
-const args = require('minimist')(process.argv.slice(2))
+const args = require('minimist')(process.argv.slice(2), {
+  boolean: [
+    'validateRelease',
+    'skipVersionCheck',
+    'automaticRelease',
+    'verboseNugget'
+  ],
+  default: { 'verboseNugget': false }
+})
 const fs = require('fs')
 const { execSync } = require('child_process')
 const GitHub = require('github')
@@ -307,7 +315,7 @@ async function verifyAssets (release) {
   let filesToCheck = await Promise.all(release.assets.map(async (asset) => {
     githubOpts.id = asset.id
     const assetDetails = await github.repos.getAsset(githubOpts)
-    await downloadFiles(assetDetails.meta.location, downloadDir, false, asset.name)
+    await downloadFiles(assetDetails.meta.location, downloadDir, asset.name)
     return asset.name
   })).catch(err => {
     console.log(`${fail} Error downloading files from GitHub`, err)
@@ -325,21 +333,17 @@ async function verifyAssets (release) {
   })
 }
 
-function downloadFiles (urls, directory, quiet, targetName) {
+function downloadFiles (urls, directory, targetName) {
   return new Promise((resolve, reject) => {
-    const nuggetOpts = {
-      dir: directory
-    }
-    if (quiet) {
-      nuggetOpts.quiet = quiet
-    }
-    if (targetName) {
-      nuggetOpts.target = targetName
-    }
+    const nuggetOpts = { dir: directory }
+    nuggetOpts.quiet = !args.verboseNugget
+    if (targetName) nuggetOpts.target = targetName
+
     nugget(urls, nuggetOpts, (err) => {
       if (err) {
         reject(err)
       } else {
+        console.log(`${pass} all files downloaded successfully!`)
         resolve()
       }
     })
@@ -369,7 +373,7 @@ async function verifyShasums (urls, isS3) {
           if (s3VersionPathIdx !== -1 && filename.indexof('SHASUMS') === -1) {
             filesToCheck.push(filename)
           }
-          await downloadFiles(url, downloadDir, true)
+          await downloadFiles(url, downloadDir)
         } else {
           const subDirectory = dirname.substr(s3VersionPathIdx + s3VersionPath.length)
           const fileDirectory = path.join(downloadDir, subDirectory)
@@ -379,7 +383,7 @@ async function verifyShasums (urls, isS3) {
             fs.mkdirSync(fileDirectory)
           }
           filesToCheck.push(path.join(subDirectory, filename))
-          await downloadFiles(url, fileDirectory, true)
+          await downloadFiles(url, fileDirectory)
         }
       }))
     }
