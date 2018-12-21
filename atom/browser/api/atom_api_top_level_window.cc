@@ -159,7 +159,7 @@ void TopLevelWindow::OnWindowClosed() {
   Emit("closed");
 
   RemoveFromParentChildWindows();
-  ResetBrowserViews();
+  TopLevelWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
