@@ -251,8 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ## 4) Handle Session Permission Requests From Remote Content
 
 You may have seen permission requests while using Chrome: They pop up whenever
-the website attempts to use a feature that the user has to manually approve (
-like notifications).
+the website attempts to use a feature that the user has to manually approve (like notifications).
 
 The API is based on the [Chromium permissions API](https://developer.chrome.com/extensions/permissions)
 and implements the same types of permissions.
