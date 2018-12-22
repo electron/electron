@@ -121,8 +121,8 @@ new Promise((resolve, reject) => {
       }
 
       const currentJson = JSON.stringify(fs.readFileSync(path.join(tempDir, 'package.json'), 'utf8'))
-      currentJson.name = 'electron-nightly'
-      rootPackageJson.name = 'electron-nightly'
+      currentJson.name = '@electron/nightly'
+      rootPackageJson.name = '@electron/nightly'
 
       fs.writeFileSync(
         path.join(tempDir, 'package.json'),
