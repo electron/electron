@@ -108,8 +108,10 @@ void BrowserWindow::UpdateDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
-  if (window_->browser_view())
-    window_->browser_view()->UpdateDraggableRegions(drag_exclude_rects);
+  auto browser_views = window_->browser_views();
+  for (NativeBrowserView* view : browser_views) {
+    (view)->UpdateDraggableRegions(drag_exclude_rects);
+  }
 
   // Create and add a ControlRegionView for each region that needs to be
   // excluded from the dragging.

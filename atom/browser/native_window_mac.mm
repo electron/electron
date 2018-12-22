@@ -1069,27 +1069,36 @@ void NativeWindowMac::SetContentProtection(bool enable) {
       setSharingType:enable ? NSWindowSharingNone : NSWindowSharingReadOnly];
 }
 
-void NativeWindowMac::SetBrowserView(NativeBrowserView* view) {
+void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
-
-  if (browser_view()) {
-    [browser_view()->GetInspectableWebContentsView()->GetNativeView()
-            removeFromSuperview];
-    set_browser_view(nullptr);
-  }
 
   if (!view) {
     [CATransaction commit];
     return;
   }
 
-  set_browser_view(view);
+  add_browser_view(view);
   auto* native_view = view->GetInspectableWebContentsView()->GetNativeView();
   [[window_ contentView] addSubview:native_view
                          positioned:NSWindowAbove
                          relativeTo:nil];
   native_view.hidden = NO;
+
+  [CATransaction commit];
+}
+
+void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+
+  if (!view) {
+    [CATransaction commit];
+    return;
+  }
+
+  [view->GetInspectableWebContentsView()->GetNativeView() removeFromSuperview];
+  remove_browser_view(view);
 
   [CATransaction commit];
 }

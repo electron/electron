@@ -5,6 +5,7 @@
 #ifndef ATOM_BROWSER_NATIVE_WINDOW_H_
 #define ATOM_BROWSER_NATIVE_WINDOW_H_
 
+#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -155,7 +156,8 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetFocusable(bool focusable);
   virtual void SetMenu(AtomMenuModel* menu);
   virtual void SetParentWindow(NativeWindow* parent);
-  virtual void SetBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual void AddBrowserView(NativeBrowserView* browser_view) = 0;
+  virtual void RemoveBrowserView(NativeBrowserView* browser_view) = 0;
   virtual gfx::NativeView GetNativeView() const = 0;
   virtual gfx::NativeWindow GetNativeWindow() const = 0;
   virtual gfx::AcceleratedWidget GetAcceleratedWidget() const = 0;
@@ -286,9 +288,10 @@ class NativeWindow : public base::SupportsUserData,
   bool transparent() const { return transparent_; }
   bool enable_larger_than_screen() const { return enable_larger_than_screen_; }
 
-  NativeBrowserView* browser_view() const { return browser_view_; }
   NativeWindow* parent() const { return parent_; }
   bool is_modal() const { return is_modal_; }
+
+  std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
  protected:
   NativeWindow(const mate::Dictionary& options, NativeWindow* parent);
@@ -298,8 +301,13 @@ class NativeWindow : public base::SupportsUserData,
   const views::Widget* GetWidget() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
-  void set_browser_view(NativeBrowserView* browser_view) {
-    browser_view_ = browser_view;
+
+  void add_browser_view(NativeBrowserView* browser_view) {
+    browser_views_.push_back(browser_view);
+  }
+  void remove_browser_view(NativeBrowserView* browser_view) {
+    browser_views_.remove_if(
+        [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
   }
 
  private:
@@ -340,7 +348,7 @@ class NativeWindow : public base::SupportsUserData,
   bool is_modal_ = false;
 
   // The browser view layer.
-  NativeBrowserView* browser_view_ = nullptr;
+  std::list<NativeBrowserView*> browser_views_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;

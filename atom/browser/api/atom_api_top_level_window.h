@@ -165,6 +165,10 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetParentWindow(v8::Local<v8::Value> value, mate::Arguments* args);
   virtual void SetBrowserView(v8::Local<v8::Value> value);
+  virtual void AddBrowserView(v8::Local<v8::Value> value);
+  virtual void RemoveBrowserView(v8::Local<v8::Value> value);
+  virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
+  virtual void ResetBrowserViews();
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, mate::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
@@ -195,7 +199,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
   v8::Local<v8::Value> GetContentView() const;
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
-  v8::Local<v8::Value> GetBrowserView() const;
+  v8::Local<v8::Value> GetBrowserView(mate::Arguments* args) const;
   bool IsModal() const;
 
   // Extra APIs added in JS.
@@ -238,7 +242,7 @@ class TopLevelWindow : public mate::TrackableObject<TopLevelWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  v8::Global<v8::Value> browser_view_;
+  std::map<int32_t, v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;

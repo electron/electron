@@ -159,7 +159,7 @@ void TopLevelWindow::OnWindowClosed() {
   Emit("closed");
 
   RemoveFromParentChildWindows();
-  ResetBrowserView();
+  TopLevelWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
   base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
@@ -294,6 +294,7 @@ void TopLevelWindow::OnWindowMessage(UINT message,
 #endif
 
 void TopLevelWindow::SetContentView(mate::Handle<View> view) {
+  ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
@@ -681,18 +682,37 @@ void TopLevelWindow::SetParentWindow(v8::Local<v8::Value> value,
 }
 
 void TopLevelWindow::SetBrowserView(v8::Local<v8::Value> value) {
-  ResetBrowserView();
+  ResetBrowserViews();
+  AddBrowserView(value);
+}
 
+void TopLevelWindow::AddBrowserView(v8::Local<v8::Value> value) {
   mate::Handle<BrowserView> browser_view;
-  if (value->IsNull() || value->IsUndefined()) {
-    window_->SetBrowserView(nullptr);
-  } else if (mate::ConvertFromV8(isolate(), value, &browser_view)) {
-    window_->SetBrowserView(browser_view->view());
-    browser_view->web_contents()->SetOwnerWindow(window_.get());
-    browser_view_.Reset(isolate(), value);
+  if (value->IsObject() &&
+      mate::ConvertFromV8(isolate(), value, &browser_view)) {
+    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    if (get_that_view == browser_views_.end()) {
+      window_->AddBrowserView(browser_view->view());
+      browser_view->web_contents()->SetOwnerWindow(window_.get());
+      browser_views_[browser_view->weak_map_id()].Reset(isolate(), value);
+    }
   }
 }
 
+void TopLevelWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
+  mate::Handle<BrowserView> browser_view;
+  if (value->IsObject() &&
+      mate::ConvertFromV8(isolate(), value, &browser_view)) {
+    auto get_that_view = browser_views_.find(browser_view->weak_map_id());
+    if (get_that_view != browser_views_.end()) {
+      window_->RemoveBrowserView(browser_view->view());
+      browser_view->web_contents()->SetOwnerWindow(nullptr);
+
+      (*get_that_view).second.Reset(isolate(), value);
+      browser_views_.erase(get_that_view);
+    }
+  }
+}
 v8::Local<v8::Value> TopLevelWindow::GetNativeWindowHandle() {
   // TODO(MarshallOfSound): Replace once
   // https://chromium-review.googlesource.com/c/chromium/src/+/1253094/ has
@@ -847,12 +867,29 @@ std::vector<v8::Local<v8::Object>> TopLevelWindow::GetChildWindows() const {
   return child_windows_.Values(isolate());
 }
 
-v8::Local<v8::Value> TopLevelWindow::GetBrowserView() const {
-  if (browser_view_.IsEmpty()) {
+v8::Local<v8::Value> TopLevelWindow::GetBrowserView(
+    mate::Arguments* args) const {
+  if (browser_views_.size() == 0) {
+    return v8::Null(isolate());
+  } else if (browser_views_.size() == 1) {
+    auto first_view = browser_views_.begin();
+    return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
+  } else {
+    args->ThrowError(
+        "BrowserWindow have multiple BrowserViews, "
+        "Use getBrowserViews() instead");
     return v8::Null(isolate());
   }
+}
 
-  return v8::Local<v8::Value>::New(isolate(), browser_view_);
+std::vector<v8::Local<v8::Value>> TopLevelWindow::GetBrowserViews() const {
+  std::vector<v8::Local<v8::Value>> ret;
+
+  for (auto const& views_iter : browser_views_) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
+  }
+
+  return ret;
 }
 
 bool TopLevelWindow::IsModal() const {
@@ -944,17 +981,21 @@ int32_t TopLevelWindow::GetID() const {
   return weak_map_id();
 }
 
-void TopLevelWindow::ResetBrowserView() {
-  if (browser_view_.IsEmpty())
-    return;
+void TopLevelWindow::ResetBrowserViews() {
+  for (auto& item : browser_views_) {
+    mate::Handle<BrowserView> browser_view;
+    if (mate::ConvertFromV8(isolate(),
+                            v8::Local<v8::Value>::New(isolate(), item.second),
+                            &browser_view) &&
+        !browser_view.IsEmpty()) {
+      window_->RemoveBrowserView(browser_view->view());
+      browser_view->web_contents()->SetOwnerWindow(nullptr);
+    }
 
-  mate::Handle<BrowserView> browser_view;
-  if (mate::ConvertFromV8(isolate(), GetBrowserView(), &browser_view) &&
-      !browser_view.IsEmpty()) {
-    browser_view->web_contents()->SetOwnerWindow(nullptr);
+    item.second.Reset();
   }
 
-  browser_view_.Reset();
+  browser_views_.clear();
 }
 
 void TopLevelWindow::RemoveFromParentChildWindows() {
@@ -1064,6 +1105,8 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setMenu", &TopLevelWindow::SetMenu)
       .SetMethod("setParentWindow", &TopLevelWindow::SetParentWindow)
       .SetMethod("setBrowserView", &TopLevelWindow::SetBrowserView)
+      .SetMethod("addBrowserView", &TopLevelWindow::AddBrowserView)
+      .SetMethod("removeBrowserView", &TopLevelWindow::RemoveBrowserView)
       .SetMethod("getNativeWindowHandle",
                  &TopLevelWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &TopLevelWindow::SetProgressBar)
@@ -1101,6 +1144,7 @@ void TopLevelWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getParentWindow", &TopLevelWindow::GetParentWindow)
       .SetMethod("getChildWindows", &TopLevelWindow::GetChildWindows)
       .SetMethod("getBrowserView", &TopLevelWindow::GetBrowserView)
+      .SetMethod("getBrowserViews", &TopLevelWindow::GetBrowserViews)
       .SetMethod("isModal", &TopLevelWindow::IsModal)
       .SetMethod("setThumbarButtons", &TopLevelWindow::SetThumbarButtons)
 #if defined(TOOLKIT_VIEWS)
