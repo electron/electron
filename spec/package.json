@@ -14,6 +14,7 @@
     "coffee-script": "1.12.7",
     "dbus-native": "^0.2.5",
     "dirty-chai": "^2.0.1",
+    "echo": "file:fixtures/native-addon/echo",
     "graceful-fs": "^4.1.11",
     "is-valid-window": "^0.0.4",
     "mkdirp": "^0.5.1",
