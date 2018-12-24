@@ -37,6 +37,14 @@ struct Converter<atom::AutoResizeFlags> {
     if (params.Get("height", &height) && height) {
       flags |= atom::kAutoResizeHeight;
     }
+    bool horizontal = false;
+    if (params.Get("horizontal", &horizontal) && horizontal) {
+      flags |= atom::kAutoResizeHorizontal;
+    }
+    bool vertical = false;
+    if (params.Get("vertical", &vertical) && vertical) {
+      flags |= atom::kAutoResizeVertical;
+    }
 
     *auto_resize_flags = static_cast<atom::AutoResizeFlags>(flags);
     return true;
