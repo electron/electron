@@ -1,5 +1,8 @@
 <script>
-  const {ipcRenderer} = require('electron')
-  document.cookie = "test=123"
-  ipcRenderer.send('cookie-response', document.cookie)
+  try {
+    document.cookie = "test=123"
+  } catch (e) {
+    const {ipcRenderer} = require('electron')
+    ipcRenderer.send('cookie-response', e.message)
+  }
 </script>

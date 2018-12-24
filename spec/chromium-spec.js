@@ -1017,19 +1017,11 @@ describe('chromium feature', () => {
       })
 
       it('cannot access localStorage', (done) => {
-        contents.on('crashed', (event, killed) => {
-          // Site isolation ON: process is killed for trying to access resources without permission.
-          if (process.platform !== 'win32') {
-            // Chromium on Windows does not set this flag correctly.
-            assert.strictEqual(killed, true, 'Process should\'ve been killed')
-          }
-          done()
-        })
         ipcMain.once('local-storage-response', (event, message) => {
-          // Site isolation OFF: access is refused.
           assert.strictEqual(
             message,
             'Failed to read the \'localStorage\' property from \'Window\': Access is denied for this document.')
+          done()
         })
         contents.loadURL(protocolName + '://host/localStorage')
       })
@@ -1048,7 +1040,7 @@ describe('chromium feature', () => {
         ipcMain.once('web-sql-response', (event, error) => {
           assert.strictEqual(
             error,
-            'An attempt was made to break through the security policy of the user agent.')
+            'Failed to execute \'openDatabase\' on \'Window\': Access to the WebDatabase API is denied in this context.')
           done()
         })
         contents.loadURL(`${protocolName}://host/WebSQL`)
@@ -1056,15 +1048,19 @@ describe('chromium feature', () => {
 
       it('cannot access indexedDB', (done) => {
         ipcMain.once('indexed-db-response', (event, error) => {
-          assert.strictEqual(error, 'The user denied permission to access the database.')
+          assert.strictEqual(
+            error,
+            'Failed to execute \'open\' on \'IDBFactory\': access to the Indexed Database API is denied in this context.')
           done()
         })
         contents.loadURL(`${protocolName}://host/indexedDB`)
       })
 
       it('cannot access cookie', (done) => {
-        ipcMain.once('cookie-response', (event, cookie) => {
-          assert(!cookie)
+        ipcMain.once('cookie-response', (event, error) => {
+          assert.strictEqual(
+            error,
+            'Failed to set the \'cookie\' property on \'Document\': Access is denied for this document.')
           done()
         })
         contents.loadURL(`${protocolName}://host/cookie`)
