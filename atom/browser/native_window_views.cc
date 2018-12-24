@@ -1189,7 +1189,7 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
     int height_delta = new_bounds.height() - widget_size_.height();
     for (NativeBrowserView* item : browser_views()) {
       NativeBrowserViewViews* native_view =
-          dynamic_cast<NativeBrowserViewViews*>(item);
+          static_cast<NativeBrowserViewViews*>(item);
       native_view->SetAutoResizeProportions(widget_size_);
       native_view->AutoResize(new_bounds, width_delta, height_delta);
     }
