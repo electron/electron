@@ -29,7 +29,7 @@ Using the [React Developer Tools][react-devtools] as example:
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to `BrowserWindow.addDevToolsExtension`
    API, for the React Developer Tools, it is something like:
-   ```
+   ```javascript
    const { join } = require('path');
    const { homedir } = require('os');
 
