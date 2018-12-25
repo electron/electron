@@ -34,7 +34,7 @@ Using the [React Developer Tools][react-devtools] as example:
    const { homedir } = require('os');
 
    BrowserWindow.addDevToolsExtension(
-      join(homedir(),'/Library/Application\Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0')
+      join(homedir(),'/Library/Application Support/Google/Chrome/Default/Extensions/fmkadmapgofadopljbjfkapdkoienihi/0.15.0_0')
    );
    ```
 
