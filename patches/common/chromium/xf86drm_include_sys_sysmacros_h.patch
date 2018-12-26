@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 26 Dec 2018 21:40:14 +0530
+Subject: xf86drm: define MAJOR_IN_SYSMACROS to include <sys/sysmacros.h>
+
+https://patchwork.kernel.org/patch/9628231/
+
+diff --git a/third_party/libdrm/BUILD.gn b/third_party/libdrm/BUILD.gn
+index 97b6505b20c70ca9c1023b28cc3f47d4e6708e76..bfc193c6d0e6da93c58d27c0530892b334dfb4d0 100644
+--- a/third_party/libdrm/BUILD.gn
++++ b/third_party/libdrm/BUILD.gn
+@@ -40,6 +40,8 @@ if (!use_system_libdrm) {
+   }
+ 
+   static_library("libdrm") {
++    # Include <sys/sysmacros.h> for major, minor and mkdev.
++    defines = [ "MAJOR_IN_SYSMACROS" ]
+     sources = [
+       "src/xf86drm.c",
+       "src/xf86drmHash.c",

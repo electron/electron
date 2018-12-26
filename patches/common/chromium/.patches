@@ -72,3 +72,4 @@ content_allow_embedder_to_prevent_locking_scheme_registry.patch
 fix_trackpad_scrolling.patch
 support_mixed_sandbox_with_zygote.patch
 disable_color_correct_rendering.patch
+xf86drm_include_sys_sysmacros_h.patch
