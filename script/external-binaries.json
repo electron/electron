@@ -1,0 +1,40 @@
+{
+  "baseUrl": "http://github.com/electron/electron-frameworks/releases/download",
+  "version": "v1.4.0",
+  "binaries": [
+    {
+      "url": "Mantle.zip",
+      "platform": "darwin"
+    },
+    {
+      "url": "ReactiveCocoa.zip",
+      "platform": "darwin"
+    },
+    {
+      "url": "Squirrel.zip",
+      "platform": "darwin"
+    },
+    {
+      "url": "directxsdk-ia32.zip",
+      "platform": "win32",
+      "targetArch": "ia32"
+    },
+    {
+      "url": "directxsdk-x64.zip",
+      "platform": "win32",
+      "targetArch": "x64"
+    },
+    {
+      "url": "sccache-darwin-x64.zip",
+      "platform": "darwin"
+    },
+    {
+      "url": "sccache-linux-x64.zip",
+      "platform": "linux"
+    },
+    {
+      "url": "sccache-win32-x64.zip",
+      "platform": "win32"
+    }
+  ]
+}
