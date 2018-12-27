@@ -99,8 +99,6 @@ hooks = [
     'action': [
       'python',
       'src/electron/script/update-external-binaries.py',
-      '--root-url=http://github.com/electron/electron-frameworks/releases/download',
-      '--version=v1.4.0',
     ],
   },
   {
