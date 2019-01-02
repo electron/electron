@@ -10,7 +10,7 @@ const url = require('url')
 const { closeWindow } = require('./window-helpers')
 
 const { remote } = require('electron')
-const { app, BrowserWindow, crashReporter } = remote.require('electron')
+const { app, BrowserWindow, crashReporter } = remote
 
 describe('crashReporter module', () => {
   if (process.mas || process.env.DISABLE_CRASH_REPORTER_TESTS) return
@@ -188,7 +188,11 @@ describe('crashReporter module', () => {
     })
   }
 
-  generateSpecs('without sandbox', {})
+  generateSpecs('without sandbox', {
+    webPreferences: {
+      nodeIntegration: true
+    }
+  })
   generateSpecs('with sandbox', {
     webPreferences: {
       sandbox: true,
@@ -197,6 +201,7 @@ describe('crashReporter module', () => {
   })
   generateSpecs('with remote module disabled', {
     webPreferences: {
+      nodeIntegration: true,
       enableRemoteModule: false
     }
   })

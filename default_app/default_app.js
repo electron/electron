@@ -18,7 +18,6 @@ exports.load = async (appUrl) => {
     backgroundColor: '#FFFFFF',
     webPreferences: {
       contextIsolation: true,
-      nodeIntegration: false,
       preload: path.resolve(__dirname, 'renderer.js'),
       webviewTag: false
     },

@@ -124,7 +124,9 @@ app.on('ready', function () {
     width: 800,
     height: 600,
     webPreferences: {
-      backgroundThrottling: false
+      backgroundThrottling: false,
+      nodeIntegration: true,
+      webviewTag: true
     }
   })
   window.loadFile('static/index.html', {

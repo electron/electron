@@ -24,7 +24,12 @@ describe('ipc main module', () => {
     afterEach(() => { ipcMain.removeAllListeners('send-sync-message') })
 
     it('does not crash when reply is not sent and browser is destroyed', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       ipcMain.once('send-sync-message', (event) => {
         event.returnValue = null
         done()
@@ -33,7 +38,12 @@ describe('ipc main module', () => {
     })
 
     it('does not crash when reply is sent by multiple listeners', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       ipcMain.on('send-sync-message', (event) => {
         event.returnValue = null
       })
@@ -59,7 +69,12 @@ describe('ipc main module', () => {
 
   describe('remote objects registry', () => {
     it('does not dereference until the render view is deleted (regression)', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       ipcMain.once('error-message', (event, message) => {
         const correctMsgStart = message.startsWith('Cannot call function \'getURL\' on missing remote object')

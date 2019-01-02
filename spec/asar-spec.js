@@ -10,8 +10,7 @@ const { closeWindow } = require('./window-helpers')
 const nativeImage = require('electron').nativeImage
 const remote = require('electron').remote
 
-const ipcMain = remote.require('electron').ipcMain
-const BrowserWindow = remote.require('electron').BrowserWindow
+const { ipcMain, BrowserWindow } = remote
 
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures')
@@ -1134,7 +1133,10 @@ describe('asar package', function () {
       w = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
       const p = path.resolve(fixtures, 'asar', 'web.asar', 'index.html')
       ipcMain.once('dirname', function (event, dirname) {
@@ -1152,7 +1154,10 @@ describe('asar package', function () {
       w = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
       const p = path.resolve(fixtures, 'asar', 'script.asar', 'index.html')
       w.loadFile(p)
@@ -1172,7 +1177,10 @@ describe('asar package', function () {
       w = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
       const p = path.resolve(fixtures, 'asar', 'video.asar', 'index.html')
       w.loadFile(p)

@@ -112,12 +112,7 @@ describe('chromium feature', () => {
 
   describe('loading jquery', () => {
     it('does not crash', (done) => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: false
-        }
-      })
+      w = new BrowserWindow({ show: false })
       w.webContents.once('did-finish-load', () => { done() })
       w.webContents.once('crashed', () => done(new Error('WebContents crashed.')))
       w.loadFile(path.join(fixtures, 'pages', 'jquery.html'))
@@ -176,6 +171,7 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           session: ses
         }
       })
@@ -216,6 +212,7 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'sw-file-scheme-spec'
         }
       })
@@ -253,7 +250,10 @@ describe('chromium feature', () => {
 
       w = new BrowserWindow({
         show: false,
-        webPreferences: { session: customSession }
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession
+        }
       })
       w.webContents.on('ipc-message', (event, args) => {
         if (args[0] === 'reload') {
@@ -294,6 +294,7 @@ describe('chromium feature', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'geolocation-spec'
         }
       })
@@ -382,26 +383,6 @@ describe('chromium feature', () => {
         protocol: 'file',
         query: {
           p: `${fixtures}/pages/window-opener-node.html`
-        },
-        slashes: true
-      })
-      b = window.open(windowUrl, '', 'nodeIntegration=no,show=no')
-    })
-
-    it('disables webviewTag when node integration is disabled on the parent window', (done) => {
-      let b = null
-      listener = (event) => {
-        assert.strictEqual(event.data.isWebViewUndefined, true)
-        b.close()
-        done()
-      }
-      window.addEventListener('message', listener)
-
-      const windowUrl = require('url').format({
-        pathname: `${fixtures}/pages/window-opener-no-web-view-tag.html`,
-        protocol: 'file',
-        query: {
-          p: `${fixtures}/pages/window-opener-web-view.html`
         },
         slashes: true
       })
@@ -604,7 +585,12 @@ describe('chromium feature', () => {
   describe('window.opener', () => {
     const url = `file://${fixtures}/pages/window-opener.html`
     it('is null for main window', (done) => {
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.webContents.once('ipc-message', (event, args) => {
         assert.deepStrictEqual(args, ['opener', null])
         done()
@@ -1008,7 +994,9 @@ describe('chromium feature', () => {
       })
 
       beforeEach(() => {
-        contents = webContents.create({})
+        contents = webContents.create({
+          nodeIntegration: true
+        })
       })
 
       afterEach(() => {
@@ -1102,8 +1090,10 @@ describe('chromium feature', () => {
 
       const testLocalStorageAfterXSiteRedirect = (testTitle, extraPreferences = {}) => {
         it(testTitle, (done) => {
-          const webPreferences = { show: false, ...extraPreferences }
-          w = new BrowserWindow(webPreferences)
+          w = new BrowserWindow({
+            show: false,
+            ...extraPreferences
+          })
           let redirected = false
           w.webContents.on('crashed', () => {
             assert.fail('renderer crashed / was killed')
@@ -1417,7 +1407,11 @@ describe('chromium feature', () => {
 
     beforeEach(async () => {
       w = new BrowserWindow({
-        show: true
+        show: true,
+        webPreferences: {
+          nodeIntegration: true,
+          webviewTag: true
+        }
       })
 
       const webviewReady = emittedOnce(w.webContents, 'did-attach-webview')

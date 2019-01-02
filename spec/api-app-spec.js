@@ -32,7 +32,10 @@ describe('electron module', () => {
       window = new BrowserWindow({
         show: false,
         width: 400,
-        height: 400
+        height: 400,
+        webPreferences: {
+          nodeIntegration: true
+        }
       })
     })
 
@@ -298,7 +301,12 @@ describe('app module', () => {
         password: 'electron'
       }
 
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
 
       w.webContents.on('did-finish-load', () => {
         expect(w.webContents.getTitle()).to.equal('authorized')
@@ -375,7 +383,12 @@ describe('app module', () => {
         expect(webContents).to.equal(w.webContents)
         done()
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.loadURL('about:blank')
       w.webContents.executeJavaScript(`require('electron').desktopCapturer.getSources({ types: ['screen'] }, () => {})`)
     })
@@ -386,7 +399,12 @@ describe('app module', () => {
         expect(moduleName).to.equal('test')
         done()
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.loadURL('about:blank')
       w.webContents.executeJavaScript(`require('electron').remote.require('test')`)
     })
@@ -397,7 +415,12 @@ describe('app module', () => {
         expect(globalName).to.equal('test')
         done()
       })
-      w = new BrowserWindow({ show: false })
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true
+        }
+      })
       w.loadURL('about:blank')
       w.webContents.executeJavaScript(`require('electron').remote.getGlobal('test')`)
     })
@@ -590,6 +613,7 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
+          nodeIntegration: true,
           partition: 'empty-certificate'
         }
       })
