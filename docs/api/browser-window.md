@@ -139,81 +139,85 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 ### `new BrowserWindow([options])`
 
 * `options` Object (optional)
-  * `width` Integer (optional) - Window's width in pixels. Default is `800`.
-  * `height` Integer (optional) - Window's height in pixels. Default is `600`.
-  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
-    Default is to center the window.
-  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
-    Default is to center the window.
-  * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
-    page's size, which means the actual window's size will include window
-    frame's size and be slightly larger. Default is `false`.
+  * `acceptFirstMouse` Boolean (optional) - Whether the web view accepts a single
+    mouse-down event that simultaneously activates the window. Default is
+    `false`.
+  * `alwaysOnTop` Boolean (optional) - Whether the window should always stay on top of
+    other windows. Default is `false`.
+  * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
+    key is pressed. Default is `false`.
+  * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if
+    `transparent` is set to `true`). Default is `#FFF` (white).
   * `center` Boolean (optional) - Show window in the center of the screen.
-  * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
-  * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
-  * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
-  * `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
-  * `resizable` Boolean (optional) - Whether window is resizable. Default is `true`.
-  * `movable` Boolean (optional) - Whether window is movable. This is not implemented
-    on Linux. Default is `true`.
-  * `minimizable` Boolean (optional) - Whether window is minimizable. This is not
-    implemented on Linux. Default is `true`.
-  * `maximizable` Boolean (optional) - Whether window is maximizable. This is not
-    implemented on Linux. Default is `true`.
   * `closable` Boolean (optional) - Whether window is closable. This is not implemented
     on Linux. Default is `true`.
+  * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
+    some GTK+3 desktop environments. Default is `false`.
+  * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
+    Default is `false`.
+  * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
+    than screen. Default is `false`.
   * `focusable` Boolean (optional) - Whether the window can be focused. Default is
     `true`. On Windows setting `focusable: false` also implies setting
     `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
     stop interacting with wm, so the window will always stay on top in all
     workspaces.
-  * `alwaysOnTop` Boolean (optional) - Whether the window should always stay on top of
-    other windows. Default is `false`.
+  * `frame` Boolean (optional) - Specify `false` to create a
+    [Frameless Window](frameless-window.md). Default is `true`.
   * `fullscreen` Boolean (optional) - Whether the window should show in fullscreen. When
     explicitly set to `false` the fullscreen button will be hidden or disabled
     on macOS. Default is `false`.
   * `fullscreenable` Boolean (optional) - Whether the window can be put into fullscreen
     mode. On macOS, also whether the maximize/zoom button should toggle full
     screen mode or maximize window. Default is `true`.
-  * `simpleFullscreen` Boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
-  * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
-    `false`.
-  * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
-  * `title` String (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
+  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
+    title bar in full screen mode on macOS for all `titleBarStyle` options.
+    Default is `false`.
+  * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
+    implemented on macOS. Default is `true`.
+  * `height` Integer (optional) - Window's height in pixels. Default is `600`.
   * `icon` ([NativeImage](native-image.md) | String) (optional) - The window icon. On Windows it is
     recommended to use `ICO` icons to get best visual effects, you can also
     leave it undefined so the executable's icon will be used.
-  * `show` Boolean (optional) - Whether window should be shown when created. Default is
-    `true`.
-  * `frame` Boolean (optional) - Specify `false` to create a
-    [Frameless Window](frameless-window.md). Default is `true`.
-  * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
+  * `kiosk` Boolean (optional) - The kiosk mode. Default is `false`.
+  * `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
+  * `maximizable` Boolean (optional) - Whether window is maximizable. This is not
+    implemented on Linux. Default is `true`.
+  * `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
+  * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
+  * `minimizable` Boolean (optional) - Whether window is minimizable. This is not
+    implemented on Linux. Default is `true`.
+  * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
   * `modal` Boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
-  * `acceptFirstMouse` Boolean (optional) - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is
-    `false`.
-  * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
-    Default is `false`.
-  * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
-    key is pressed. Default is `false`.
-  * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
-    than screen. Default is `false`.
-  * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if
-    `transparent` is set to `true`). Default is `#FFF` (white).
-  * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
-    implemented on macOS. Default is `true`.
+  * `movable` Boolean (optional) - Whether window is movable. This is not implemented
+    on Linux. Default is `true`.
   * `opacity` Number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
-  * `darkTheme` Boolean (optional) - Forces using dark theme for the window, only works on
-    some GTK+3 desktop environments. Default is `false`.
-  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
-    Default is `false`.
-  * `type` String (optional) - The type of window, default is normal window. See more about
-    this below.
+  * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
+  * `resizable` Boolean (optional) - Whether window is resizable. Default is `true`.
+  * `show` Boolean (optional) - Whether window should be shown when created. Default is
+    `true`.
+  * `simpleFullscreen` Boolean (optional) - Use pre-Lion fullscreen on macOS. Default is `false`.
+  * `skipTaskbar` Boolean (optional) - Whether to show the window in taskbar. Default is
+    `false`.
+  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
+    window as a native tab on macOS 10.12+. Windows with the same tabbing
+    identifier will be grouped together. This also adds a native new tab button
+    to your window's tab bar and allows your `app` and window to receive the
+    `new-window-for-tab` event.
+  * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
+    Windows, which adds standard window frame. Setting it to `false` will remove
+    window shadow and window animations. Default is `true`.
+  * `title` String (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `titleBarStyle` String (optional) - The style of window title bar.
     Default is `default`. Possible values are:
+    * `customButtonsOnHover` Boolean (optional) - Draw custom close,
+      and minimize buttons on macOS frameless windows. These buttons will not display
+      unless hovered over in the top left of the window. These custom buttons prevent
+      issues with mouse events that occur with the standard window toolbar buttons.
+      **Note:** This option is currently experimental.
     * `default` - Results in the standard gray opaque Mac title
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
@@ -221,67 +225,21 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       the top left.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-    * `customButtonsOnHover` Boolean (optional) - Draw custom close,
-      and minimize buttons on macOS frameless windows. These buttons will not display
-      unless hovered over in the top left of the window. These custom buttons prevent
-      issues with mouse events that occur with the standard window toolbar buttons.
-      **Note:** This option is currently experimental.
-  * `fullscreenWindowTitle` Boolean (optional) - Shows the title in the
-    title bar in full screen mode on macOS for all `titleBarStyle` options.
+  * `transparent` Boolean (optional) - Makes the window [transparent](frameless-window.md).
     Default is `false`.
-  * `thickFrame` Boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
-    Windows, which adds standard window frame. Setting it to `false` will remove
-    window shadow and window animations. Default is `true`.
+  * `type` String (optional) - The type of window, default is normal window. See more about
+    this below.
+  * `useContentSize` Boolean (optional) - The `width` and `height` would be used as web
+    page's size, which means the actual window's size will include window
   * `vibrancy` String (optional) - Add a type of vibrancy effect to the window, only on
     macOS. Can be `appearance-based`, `light`, `dark`, `titlebar`, `selection`,
     `menu`, `popover`, `sidebar`, `medium-light` or `ultra-dark`.  Please note that
     using `frame: false` in combination with a vibrancy value requires that you use a
     non-default `titleBarStyle` as well.
-  * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
-    option-clicking the green stoplight button on the toolbar or by clicking the
-    Window > Zoom menu item. If `true`, the window will grow to the preferred
-    width of the web page when zoomed, `false` will cause it to zoom to the
-    width of the screen. This will also affect the behavior when calling
-    `maximize()` directly. Default is `false`.
-  * `tabbingIdentifier` String (optional) - Tab group name, allows opening the
-    window as a native tab on macOS 10.12+. Windows with the same tabbing
-    identifier will be grouped together. This also adds a native new tab button
-    to your window's tab bar and allows your `app` and window to receive the
-    `new-window-for-tab` event.
   * `webPreferences` Object (optional) - Settings of web page's features.
-    * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
-    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
-      is `true`.
-    * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
-      enabled in web workers. Default is `false`. More about this can be found
-      in [Multithreading](../tutorial/multithreading.md).
-    * `preload` String (optional) - Specifies a script that will be loaded before other
-      scripts run in the page. This script will always have access to node APIs
-      no matter whether node integration is turned on or off. The value should
-      be the absolute file path to the script.
-      When node integration is turned off, the preload script can reintroduce
-      Node global symbols back to the global scope. See example
-      [here](process.md#event-loaded).
-    * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
-      associated with the window, making it compatible with the Chromium
-      OS-level sandbox and disabling the Node.js engine. This is not the same as
-      the `nodeIntegration` option and the APIs available to the preload script
-      are more limited. Read more about the option [here](sandbox-option.md).
-      **Note:** This option is currently experimental and may change or be
-      removed in future Electron releases.
-    * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
-      Default is `true`.
-    * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
-      page. Instead of passing the Session object directly, you can also choose to
-      use the `partition` option instead, which accepts a partition string. When
-      both `session` and `partition` are provided, `session` will be preferred.
-      Default is the default session.
-    * `partition` String (optional) - Sets the session used by the page according to the
-      session's partition string. If `partition` starts with `persist:`, the page
-      will use a persistent session available to all pages in the app with the
-      same `partition`. If there is no `persist:` prefix, the page will use an
-      in-memory session. By assigning the same `partition`, multiple pages can share
-      the same session. Default is the default session.
+    * `additionalArguments` String[] (optional) - A list of strings that will be appended
+      to `process.argv` in the renderer process of this app.  Useful for passing small
+      bits of data down to renderer process preload scripts.
     * `affinity` String (optional) - When specified, web pages with the same
       `affinity` will run in the same renderer process. Note that due to reusing
       the renderer process, certain `webPreferences` options will also be shared
@@ -289,51 +247,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       including but not limited to `preload`, `sandbox` and `nodeIntegration`.
       So it is suggested to use exact same `webPreferences` for web pages with
       the same `affinity`. _This property is experimental_
-    * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
-      `300%`. Default is `1.0`.
-    * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
-    * `webSecurity` Boolean (optional) - When `false`, it will disable the
-      same-origin policy (usually using testing websites by people), and set
-      `allowRunningInsecureContent` to `true` if this options has not been set
-      by user. Default is `true`.
     * `allowRunningInsecureContent` Boolean (optional) - Allow an https page to run
       JavaScript, CSS or plugins from http URLs. Default is `false`.
-    * `images` Boolean (optional) - Enables image support. Default is `true`.
-    * `textAreasAreResizable` Boolean (optional) - Make TextArea elements resizable. Default
-      is `true`.
-    * `webgl` Boolean (optional) - Enables WebGL support. Default is `true`.
-    * `webaudio` Boolean (optional) - Enables WebAudio support. Default is `true`.
-    * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
-    * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
-      Default is `false`.
-    * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
-      macOS. Default is `false`.
-    * `enableBlinkFeatures` String (optional) - A list of feature strings separated by `,`, like
-      `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
-      strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]
-      file.
-    * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
-      like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
-      feature strings can be found in the
-      [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
-    * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
-      * `standard` String (optional) - Defaults to `Times New Roman`.
-      * `serif` String (optional) - Defaults to `Times New Roman`.
-      * `sansSerif` String (optional) - Defaults to `Arial`.
-      * `monospace` String (optional) - Defaults to `Courier New`.
-      * `cursive` String (optional) - Defaults to `Script`.
-      * `fantasy` String (optional) - Defaults to `Impact`.
-    * `defaultFontSize` Integer (optional) - Defaults to `16`.
-    * `defaultMonospaceFontSize` Integer (optional) - Defaults to `13`.
-    * `minimumFontSize` Integer (optional) - Defaults to `0`.
-    * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
     * `backgroundThrottling` Boolean (optional) - Whether to throttle animations and timers
       when the page becomes background. This also affects the
       [Page Visibility API](#page-visibility). Defaults to `true`.
-    * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
-      window. Defaults to `false`. See the
-      [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
-      more details.
     * `contextIsolation` Boolean (optional) - Whether to run Electron APIs and
       the specified `preload` script in a separate JavaScript context. Defaults
       to `false`. The context that the `preload` script runs in will still
@@ -348,10 +266,89 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       You can access this context in the dev tools by selecting the
       'Electron Isolated Context' entry in the combo box at the top of the
       Console tab.
+    * `defaultEncoding` String (optional) - Defaults to `ISO-8859-1`.
+    * `defaultFontFamily` Object (optional) - Sets the default font for the font-family.
+      * `standard` String (optional) - Defaults to `Times New Roman`.
+      * `serif` String (optional) - Defaults to `Times New Roman`.
+      * `sansSerif` String (optional) - Defaults to `Arial`.
+      * `monospace` String (optional) - Defaults to `Courier New`.
+      * `cursive` String (optional) - Defaults to `Script`.
+      * `fantasy` String (optional) - Defaults to `Impact`.
+    * `defaultFontSize` Integer (optional) - Defaults to `16`.
+    * `defaultMonospaceFontSize` Integer (optional) - Defaults to `13`.
+    * `disableBlinkFeatures` String (optional) - A list of feature strings separated by `,`,
+      like `CSSVariables,KeyboardEventKey` to disable. The full list of supported
+      feature strings can be found in the
+      [RuntimeEnabledFeatures.json5][runtime-enabled-features] file.
+      Default is `true`.
+    * `devTools` Boolean (optional) - Whether to enable DevTools. If it is set to `false`, can not use `BrowserWindow.webContents.openDevTools()` to open DevTools. Default is `true`.
+    * `enableBlinkFeatures` String (optional) - A list of feature strings separated by `,`, like
+      `CSSVariables,KeyboardEventKey` to enable. The full list of supported feature
+      strings can be found in the [RuntimeEnabledFeatures.json5][runtime-enabled-features]
+      file.
+    * `enableRemoteModule` Boolean (optional) - Whether to enable the [`remote`](remote.md) module.
+    * `experimentalFeatures` Boolean (optional) - Enables Chromium's experimental features.
+      Default is `false`.
+    * `images` Boolean (optional) - Enables image support. Default is `true`.
+    * `javascript` Boolean (optional) - Enables JavaScript support. Default is `true`.
+    * `minimumFontSize` Integer (optional) - Defaults to `0`.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
       integration disabled. **Note:** This option is currently
       experimental.
+    * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
+      file or link onto the page causes a navigation. Default is `false`.
+    * `nodeIntegration` Boolean (optional) - Whether node integration is enabled. Default
+      is `true`.
+    * `nodeIntegrationInWorker` Boolean (optional) - Whether node integration is
+      enabled in web workers. Default is `false`. More about this can be found
+      in [Multithreading](../tutorial/multithreading.md).
+    * `offscreen` Boolean (optional) - Whether to enable offscreen rendering for the browser
+      window. Defaults to `false`. See the
+      [offscreen rendering tutorial](../tutorial/offscreen-rendering.md) for
+      more details.
+    * `partition` String (optional) - Sets the session used by the page according to the
+      session's partition string. If `partition` starts with `persist:`, the page
+      will use a persistent session available to all pages in the app with the
+      same `partition`. If there is no `persist:` prefix, the page will use an
+      in-memory session. By assigning the same `partition`, multiple pages can share
+      the same session. Default is the default session.
+    * `plugins` Boolean (optional) - Whether plugins should be enabled. Default is `false`.
+    * `preload` String (optional) - Specifies a script that will be loaded before other
+      scripts run in the page. This script will always have access to node APIs
+      no matter whether node integration is turned on or off. The value should
+      be the absolute file path to the script.
+      When node integration is turned off, the preload script can reintroduce
+      Node global symbols back to the global scope. See example
+      [here](process.md#event-loaded).
+    * `safeDialogs` Boolean (optional) - Whether to enable browser style
+      consecutive dialog protection. Default is `false`.
+    * `safeDialogsMessage` String (optional) - The message to display when
+      consecutive dialog protection is triggered. If not defined the default
+      message would be used, note that currently the default message is in
+      English and not localized.
+    * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
+      associated with the window, making it compatible with the Chromium
+      OS-level sandbox and disabling the Node.js engine. This is not the same as
+      the `nodeIntegration` option and the APIs available to the preload script
+      are more limited. Read more about the option [here](sandbox-option.md).
+      **Note:** This option is currently experimental and may change or be
+      removed in future Electron releases.
+    * `scrollBounce` Boolean (optional) - Enables scroll bounce (rubber banding) effect on
+      macOS. Default is `false`.
+    * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
+      page. Instead of passing the Session object directly, you can also choose to
+      use the `partition` option instead, which accepts a partition string. When
+      both `session` and `partition` are provided, `session` will be preferred.
+      Default is the default session.
+    * `textAreasAreResizable` Boolean (optional) - Make TextArea elements resizable. Default
+      is `true`.
+    * `webaudio` Boolean (optional) - Enables WebAudio support. Default is `true`.
+    * `webgl` Boolean (optional) - Enables WebGL support. Default is `true`.
+    * `webSecurity` Boolean (optional) - When `false`, it will disable the
+      same-origin policy (usually using testing websites by people), and set
+      `allowRunningInsecureContent` to `true` if this options has not been set
+      by user. Default is `true`.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to the value of the `nodeIntegration` option. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
@@ -360,17 +357,22 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       script. You can use the `will-attach-webview` event on [webContents](web-contents.md)
       to strip away the `preload` script and to validate or alter the
       `<webview>`'s initial settings.
-    * `additionalArguments` String[] (optional) - A list of strings that will be appended
-      to `process.argv` in the renderer process of this app.  Useful for passing small
-      bits of data down to renderer process preload scripts.
-    * `safeDialogs` Boolean (optional) - Whether to enable browser style
-      consecutive dialog protection. Default is `false`.
-    * `safeDialogsMessage` String (optional) - The message to display when
-      consecutive dialog protection is triggered. If not defined the default
-      message would be used, note that currently the default message is in
-      English and not localized.
-    * `navigateOnDragDrop` Boolean (optional) - Whether dragging and dropping a
-      file or link onto the page causes a navigation. Default is `false`.
+    * `zoomFactor` Number (optional) - The default zoom factor of the page, `3.0` represents
+      `300%`. Default is `1.0`.
+  * `width` Integer (optional) - Window's width in pixels. Default is `800`.
+  * `x` Integer (optional) (**required** if y is used) - Window's left offset from screen.
+    Default is to center the window.
+  * `y` Integer (optional) (**required** if x is used) - Window's top offset from screen.
+    Default is to center the window.
+    frame's size and be slightly larger. Default is `false`.
+  * `zoomToPageWidth` Boolean (optional) - Controls the behavior on macOS when
+    option-clicking the green stoplight button on the toolbar or by clicking the
+    Window > Zoom menu item. If `true`, the window will grow to the preferred
+    width of the web page when zoomed, `false` will cause it to zoom to the
+    width of the screen. This will also affect the behavior when calling
+    `maximize()` directly. Default is `false`.
+
+
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -397,151 +399,6 @@ Objects created with `new BrowserWindow` emit the following events:
 
 **Note:** Some events are only available on specific operating systems and are
 labeled as such.
-
-#### Event: 'page-title-updated'
-
-Returns:
-
-* `event` Event
-* `title` String
-
-Emitted when the document changed its title, calling `event.preventDefault()`
-will prevent the native window's title from changing.
-
-#### Event: 'close'
-
-Returns:
-
-* `event` Event
-
-Emitted when the window is going to be closed. It's emitted before the
-`beforeunload` and `unload` event of the DOM. Calling `event.preventDefault()`
-will cancel the close.
-
-Usually you would want to use the `beforeunload` handler to decide whether the
-window should be closed, which will also be called when the window is
-reloaded. In Electron, returning any value other than `undefined` would cancel the
-close. For example:
-
-```javascript
-window.onbeforeunload = (e) => {
-  console.log('I do not want to be closed')
-
-  // Unlike usual browsers that a message box will be prompted to users, returning
-  // a non-void value will silently cancel the close.
-  // It is recommended to use the dialog API to let the user confirm closing the
-  // application.
-  e.returnValue = false // equivalent to `return false` but not recommended
-}
-```
-_**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
-
-#### Event: 'closed'
-
-Emitted when the window is closed. After you have received this event you should
-remove the reference to the window and avoid using it any more.
-
-#### Event: 'session-end' _Windows_
-
-Emitted when window session is going to end due to force shutdown or machine restart
-or session log off.
-
-#### Event: 'unresponsive'
-
-Emitted when the web page becomes unresponsive.
-
-#### Event: 'responsive'
-
-Emitted when the unresponsive web page becomes responsive again.
-
-#### Event: 'blur'
-
-Emitted when the window loses focus.
-
-#### Event: 'focus'
-
-Emitted when the window gains focus.
-
-#### Event: 'show'
-
-Emitted when the window is shown.
-
-#### Event: 'hide'
-
-Emitted when the window is hidden.
-
-#### Event: 'ready-to-show'
-
-Emitted when the web page has been rendered (while not being shown) and window can be displayed without
-a visual flash.
-
-#### Event: 'maximize'
-
-Emitted when window is maximized.
-
-#### Event: 'unmaximize'
-
-Emitted when the window exits from a maximized state.
-
-#### Event: 'minimize'
-
-Emitted when the window is minimized.
-
-#### Event: 'restore'
-
-Emitted when the window is restored from a minimized state.
-
-#### Event: 'will-resize' _macOS_ _Windows_
-
-Returns:
-
-* `event` Event
-* `newBounds` [`Rectangle`](structures/rectangle.md) - Size the window is being resized to.
-
-Emitted before the window is resized. Calling `event.preventDefault()` will prevent the window from being resized.
-
-Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
-
-#### Event: 'resize'
-
-Emitted after the window has been resized.
-
-#### Event: 'will-move' _Windows_
-
-Returns:
-
-* `event` Event
-* `newBounds` [`Rectangle`](structures/rectangle.md) - Location the window is being moved to.
-
-Emitted before the window is moved. Calling `event.preventDefault()` will prevent the window from being moved.
-
-Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
-
-#### Event: 'move'
-
-Emitted when the window is being moved to a new position.
-
-__Note__: On macOS this event is an alias of `moved`.
-
-#### Event: 'moved' _macOS_
-
-Emitted once when the window is moved to a new position.
-
-#### Event: 'enter-full-screen'
-
-Emitted when the window enters a full-screen state.
-
-#### Event: 'leave-full-screen'
-
-Emitted when the window leaves a full-screen state.
-
-#### Event: 'enter-html-full-screen'
-
-Emitted when the window enters a full-screen state triggered by HTML API.
-
-#### Event: 'leave-html-full-screen'
-
-Emitted when the window leaves a full-screen state triggered by HTML API.
 
 #### Event: 'always-on-top-changed' _macOS_
 
@@ -583,17 +440,146 @@ The following app commands are explictly supported on Linux:
 * `browser-backward`
 * `browser-forward`
 
+#### Event: 'blur'
+
+Emitted when the window loses focus.
+
+#### Event: 'close'
+
+Returns:
+
+* `event` Event
+
+Emitted when the window is going to be closed. It's emitted before the
+`beforeunload` and `unload` event of the DOM. Calling `event.preventDefault()`
+will cancel the close.
+
+Usually you would want to use the `beforeunload` handler to decide whether the
+window should be closed, which will also be called when the window is
+reloaded. In Electron, returning any value other than `undefined` would cancel the
+close. For example:
+
+```javascript
+window.onbeforeunload = (e) => {
+  console.log('I do not want to be closed')
+
+  // Unlike usual browsers that a message box will be prompted to users, returning
+  // a non-void value will silently cancel the close.
+  // It is recommended to use the dialog API to let the user confirm closing the
+  // application.
+  e.returnValue = false // equivalent to `return false` but not recommended
+}
+```
+_**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
+
+
+#### Event: 'closed'
+
+Emitted when the window is closed. After you have received this event you should
+remove the reference to the window and avoid using it any more.
+
+#### Event: 'enter-html-full-screen'
+
+Emitted when the window enters a full-screen state triggered by HTML API.
+
+
+#### Event: 'enter-full-screen'
+
+Emitted when the window enters a full-screen state.
+
+#### Event: 'focus'
+
+Emitted when the window gains focus.
+
+#### Event: 'hide'
+
+Emitted when the window is hidden.
+
+#### Event: 'leave-html-full-screen'
+
+Emitted when the window leaves a full-screen state triggered by HTML API.
+
+#### Event: 'leave-full-screen'
+
+Emitted when the window leaves a full-screen state.
+
+#### Event: 'maximize'
+
+Emitted when window is maximized.
+
+#### Event: 'minimize'
+
+Emitted when the window is minimized.
+
+#### Event: 'move'
+
+Emitted when the window is being moved to a new position.
+
+__Note__: On macOS this event is an alias of `moved`.
+
+#### Event: 'moved' _macOS_
+
+Emitted once when the window is moved to a new position.
+
+#### Event: 'new-window-for-tab' _macOS_
+
+Emitted when the native new tab button is clicked.
+
+#### Event: 'page-title-updated'
+
+Returns:
+
+* `event` Event
+* `title` String
+
+Emitted when the document changed its title, calling `event.preventDefault()`
+will prevent the native window's title from changing.
+
+#### Event: 'ready-to-show'
+
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without
+a visual flash.
+
+#### Event: 'resize'
+
+Emitted after the window has been resized.
+
+#### Event: 'responsive'
+
+Emitted when the unresponsive web page becomes responsive again.
+
+#### Event: 'restore'
+
+Emitted when the window is restored from a minimized state.
+
 #### Event: 'scroll-touch-begin' _macOS_
 
 Emitted when scroll wheel event phase has begun.
+
+#### Event: 'scroll-touch-edge' _macOS_
+
+Emitted when scroll wheel event phase filed upon reaching the edge of element.
 
 #### Event: 'scroll-touch-end' _macOS_
 
 Emitted when scroll wheel event phase has ended.
 
-#### Event: 'scroll-touch-edge' _macOS_
+#### Event: 'session-end' _Windows_
 
-Emitted when scroll wheel event phase filed upon reaching the edge of element.
+Emitted when window session is going to end due to force shutdown or machine restart
+or session log off.
+
+#### Event: 'sheet-begin' _macOS_
+
+Emitted when the window opens a sheet.
+
+#### Event: 'sheet-end' _macOS_
+
+Emitted when the window has closed a sheet.
+
+#### Event: 'show'
+
+Emitted when the window is shown.
 
 #### Event: 'swipe' _macOS_
 
@@ -604,17 +590,35 @@ Returns:
 
 Emitted on 3-finger swipe. Possible directions are `up`, `right`, `down`, `left`.
 
-#### Event: 'sheet-begin' _macOS_
+#### Event: 'unmaximize'
 
-Emitted when the window opens a sheet.
+Emitted when the window exits from a maximized state.
 
-#### Event: 'sheet-end' _macOS_
+#### Event: 'unresponsive'
 
-Emitted when the window has closed a sheet.
+Emitted when the web page becomes unresponsive.
 
-#### Event: 'new-window-for-tab' _macOS_
+#### Event: 'will-move' _Windows_
 
-Emitted when the native new tab button is clicked.
+Returns:
+
+* `event` Event
+* `newBounds` [`Rectangle`](structures/rectangle.md) - Location the window is being moved to.
+
+Emitted before the window is moved. Calling `event.preventDefault()` will prevent the window from being moved.
+
+Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
+
+#### Event: 'will-resize' _macOS_ _Windows_
+
+Returns:
+
+* `event` Event
+* `newBounds` [`Rectangle`](structures/rectangle.md) - Size the window is being resized to.
+
+Emitted before the window is resized. Calling `event.preventDefault()` will prevent the window from being resized.
+
+Note that this is only emitted when the window is being resized manually. Resizing the window with `setBounds`/`setSize` will not emit this event.
 
 ### Static Methods
 
