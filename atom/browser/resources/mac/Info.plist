@@ -32,5 +32,9 @@
   <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
+  <key>NSMicrophoneUsageDescription</key>
+	<string></string>
+  <key>NSCameraUsageDescription</key>
+	<string></string>
 </dict>
 </plist>
