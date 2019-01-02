@@ -95,7 +95,7 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
 
   std::string GetSystemColor(const std::string& color, mate::Arguments* args);
 
-  bool IsTrustedAccessibilityClient(bool prompt);
+  static bool IsTrustedAccessibilityClient(bool prompt);
 
   // TODO(codebytere): Write tests for these methods once we
   // are running tests on a Mojave machine
