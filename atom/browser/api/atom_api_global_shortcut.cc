@@ -19,6 +19,29 @@
 
 using extensions::GlobalShortcutListener;
 
+namespace {
+
+#if defined(OS_MACOSX)
+bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
+  if (base::mac::IsAtLeastOS10_14()) {
+    constexpr ui::KeyboardCode mediaKeys[] = {ui::VKEY_MEDIA_PLAY_PAUSE,
+                                              ui::VKEY_MEDIA_NEXT_TRACK,
+                                              ui::VKEY_MEDIA_PREV_TRACK};
+
+    if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
+                  accelerator.key_code()) != std::end(mediaKeys)) {
+      bool trusted =
+          atom::api::SystemPreferences::IsTrustedAccessibilityClient(false);
+      if (!trusted)
+        return true;
+    }
+  }
+  return false;
+}
+#endif
+
+}  // namespace
+
 namespace atom {
 
 namespace api {
@@ -40,22 +63,6 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
     return;
   }
   accelerator_callback_map_[accelerator].Run();
-}
-
-bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
-  if (base::mac::IsAtLeastOS10_14()) {
-    std::vector<ui::KeyboardCode> mediaKeys = {ui::VKEY_MEDIA_PLAY_PAUSE,
-                                               ui::VKEY_MEDIA_NEXT_TRACK,
-                                               ui::VKEY_MEDIA_PREV_TRACK};
-
-    if (std::find(mediaKeys.begin(), mediaKeys.end(), accelerator.key_code()) !=
-        mediaKeys.end()) {
-      bool trusted = SystemPreferences::IsTrustedAccessibilityClient(false);
-      if (!trusted)
-        return true;
-    }
-  }
-  return false;
 }
 
 bool GlobalShortcut::RegisterAll(
