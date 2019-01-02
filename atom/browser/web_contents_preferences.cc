@@ -228,19 +228,16 @@ void WebContentsPreferences::AppendCommandLineSwitches(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
   // Check if we have node integration specified.
-  bool enable_node_integration = IsEnabled(options::kNodeIntegration, true);
-  command_line->AppendSwitchASCII(switches::kNodeIntegration,
-                                  enable_node_integration ? "true" : "false");
+  if (IsEnabled(options::kNodeIntegration))
+    command_line->AppendSwitch(switches::kNodeIntegration);
 
   // Whether to enable node integration in Worker.
   if (IsEnabled(options::kNodeIntegrationInWorker))
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // Check if webview tag creation is enabled, default to nodeIntegration value.
-  // TODO(kevinsawicki): Default to false in 2.0
-  bool webview_tag = IsEnabled(options::kWebviewTag, enable_node_integration);
-  command_line->AppendSwitchASCII(switches::kWebviewTag,
-                                  webview_tag ? "true" : "false");
+  if (IsEnabled(options::kWebviewTag))
+    command_line->AppendSwitch(switches::kWebviewTag);
 
   // If the `sandbox` option was passed to the BrowserWindow's webPreferences,
   // pass `--enable-sandbox` to the renderer so it won't have any node.js

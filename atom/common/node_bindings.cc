@@ -58,6 +58,7 @@
   V(atom_browser_window)                     \
   V(atom_common_asar)                        \
   V(atom_common_clipboard)                   \
+  V(atom_common_command_line)                \
   V(atom_common_crash_reporter)              \
   V(atom_common_features)                    \
   V(atom_common_native_image)                \
