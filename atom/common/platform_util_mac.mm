@@ -22,64 +22,21 @@
 
 namespace {
 
-std::string MessageForOSStatus(OSStatus status, const char* default_message) {
-  switch (status) {
-    case kLSAppInTrashErr:
-      return "The application cannot be run because it is inside a Trash "
-             "folder.";
-    case kLSUnknownErr:
-      return "An unknown error has occurred.";
-    case kLSNotAnApplicationErr:
-      return "The item to be registered is not an application.";
-    case kLSNotInitializedErr:
-      return "Formerly returned by LSInit on initialization failure; "
-             "no longer used.";
-    case kLSDataUnavailableErr:
-      return "Data of the desired type is not available (for example, there is "
-             "no kind string).";
-    case kLSApplicationNotFoundErr:
-      return "No application in the Launch Services database matches the input "
-             "criteria.";
-    case kLSDataErr:
-      return "Data is structured improperly (for example, an item’s "
-             "information property list is malformed). Not used in macOS 10.4.";
-    case kLSLaunchInProgressErr:
-      return "A launch of the application is already in progress.";
-    case kLSServerCommunicationErr:
-      return "There is a problem communicating with the server process that "
-             "maintains the Launch Services database.";
-    case kLSCannotSetInfoErr:
-      return "The filename extension to be hidden cannot be hidden.";
-    case kLSIncompatibleSystemVersionErr:
-      return "The application to be launched cannot run on the current Mac OS "
-             "version.";
-    case kLSNoLaunchPermissionErr:
-      return "The user does not have permission to launch the application (on a"
-             "managed network).";
-    case kLSNoExecutableErr:
-      return "The executable file is missing or has an unusable format.";
-    case kLSNoClassicEnvironmentErr:
-      return "The Classic emulation environment was required but is not "
-             "available.";
-    case kLSMultipleSessionsNotSupportedErr:
-      return "The application to be launched cannot run simultaneously in two "
-             "different user sessions.";
-    default:
-      return base::StringPrintf("%s (%d)", default_message, status);
-  }
-}
-
 // This may be called from a global dispatch queue, the methods used here are
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef openingApp = nullptr;
-  OSStatus status = LSGetApplicationForURL(base::mac::NSToCFCast(ns_url),
-                                           kLSRolesAll, nullptr, &openingApp);
-  if (status != noErr)
-    return MessageForOSStatus(status, "Failed to open");
+  CFURLRef ref = nil;
+  if (@available(macOS 10.10, *)) {
+    ref = LSCopyDefaultApplicationURLForURL(base::mac::NSToCFCast(ns_url),
+                                            kLSRolesAll, nullptr);
+  }
 
-  CFRelease(openingApp);  // NOT A BUG; LSGetApplicationForURL retains for us
+  // If no application could be found, NULL is returned and outError
+  // (if not NULL) is populated with kLSApplicationNotFoundErr.
+  if (ref == NULL)
+    return "No application in the Launch Services database matches the input "
+           "criteria.";
 
   NSUInteger launchOptions = NSWorkspaceLaunchDefault;
   if (!activate)
