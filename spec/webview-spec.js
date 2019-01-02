@@ -309,7 +309,7 @@ describe('<webview> tag', function () {
     // FIXME: Disabled with C71 upgrade
     // Verify if its required to expose Buffer global in require wrapper
     // Context: https://github.com/electron/electron/pull/8605
-    xit('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
+    it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload-node-off-wrapper.js`,
         src: `file://${fixtures}/api/blank.html`
