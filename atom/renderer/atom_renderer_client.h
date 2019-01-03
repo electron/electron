@@ -35,13 +35,6 @@ class AtomRendererClient : public RendererClientBase {
                                content::RenderFrame* render_frame) override;
 
  private:
-  enum NodeIntegration {
-    ALL,
-    EXCEPT_IFRAME,
-    MANUAL_ENABLE_IFRAME,
-    DISABLE,
-  };
-
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;

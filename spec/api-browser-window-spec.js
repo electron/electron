@@ -1971,7 +1971,7 @@ describe('BrowserWindow module', () => {
         const p = emittedOnce(ipcMain, 'answer')
         w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'))
         const [, args, typeofProcess] = await p
-        expect(args).to.include('--node-integration=false')
+        expect(args).not.to.include('--node-integration')
         expect(args).to.include('--native-window-open')
         expect(typeofProcess).to.eql('undefined')
       })
