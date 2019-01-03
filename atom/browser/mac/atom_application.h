@@ -37,6 +37,11 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
     (AVMediaType)mediaType API_AVAILABLE(macosx(10.14));
 @end
 
+@interface NSColor (MojaveSDK)
+@property(class, strong, readonly)
+    NSColor* controlAccentColor API_AVAILABLE(macosx(10.14));
+@end
+
 extern "C" {
 #if !defined(MAC_OS_X_VERSION_10_14) || \
     MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_14

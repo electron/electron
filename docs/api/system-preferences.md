@@ -227,7 +227,7 @@ if (browserOptions.transparent) {
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
 
-### `systemPreferences.getAccentColor()` _Windows_
+### `systemPreferences.getAccentColor()` _Windows_ _macOS_
 
 Returns `String` - The users current system wide accent color preference in RGBA
 hexadecimal form.
