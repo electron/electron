@@ -55,7 +55,7 @@ silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
 The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
-the app has been authorizes as a trusted accessibility client:
+the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
 
 * "Media Play/Pause"
 * "Media Next Track"
@@ -74,7 +74,7 @@ silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
 The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
-the app has been authorizes as a trusted accessibility client:
+the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
 
 * "Media Play/Pause"
 * "Media Next Track"
