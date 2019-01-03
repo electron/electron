@@ -40,6 +40,26 @@ typedef NS_ENUM(NSInteger, AVAuthorizationStatusMac) {
 @interface NSColor (MojaveSDK)
 @property(class, strong, readonly)
     NSColor* controlAccentColor API_AVAILABLE(macosx(10.14));
+
+// macOS system colors
+@property(class, strong, readonly)
+    NSColor* systemBlueColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemBrownColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemGrayColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemGreenColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemOrangeColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemPinkColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemPurpleColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemRedColor API_AVAILABLE(macosx(10.10));
+@property(class, strong, readonly)
+    NSColor* systemYellowColor API_AVAILABLE(macosx(10.10));
 @end
 
 extern "C" {

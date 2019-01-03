@@ -105,12 +105,19 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
   }
 }
 
-// Convert color to RGBA value like "#ABCDEF"
+// Convert color to RGBA value like "aabbccdd"
 std::string ToRGBA(NSColor* color) {
   return base::StringPrintf(
       "%02X%02X%02X%02X", (int)(color.redComponent * 0xFF),
       (int)(color.greenComponent * 0xFF), (int)(color.blueComponent * 0xFF),
       (int)(color.alphaComponent * 0xFF));
+}
+
+// Convert color to RGB hex value like "#ABCDEF"
+std::string ToRGBHex(NSColor* color) {
+  return base::StringPrintf("#%02X%02X%02X", (int)(color.redComponent * 0xFF),
+                            (int)(color.greenComponent * 0xFF),
+                            (int)(color.blueComponent * 0xFF));
 }
 
 }  // namespace
@@ -393,6 +400,41 @@ std::string SystemPreferences::GetAccentColor() {
     sysColor = [NSColor controlAccentColor];
 
   return ToRGBA(sysColor);
+}
+
+std::string SystemPreferences::GetSystemColor(const std::string& color,
+                                              mate::Arguments* args) {
+  if (@available(macOS 10.10, *)) {
+    NSColor* sysColor;
+    if (color == "blue") {
+      sysColor = [NSColor systemBlueColor];
+    } else if (color == "brown") {
+      sysColor = [NSColor systemBrownColor];
+    } else if (color == "gray") {
+      sysColor = [NSColor systemGrayColor];
+    } else if (color == "green") {
+      sysColor = [NSColor systemGreenColor];
+    } else if (color == "orange") {
+      sysColor = [NSColor systemOrangeColor];
+    } else if (color == "pink") {
+      sysColor = [NSColor systemPinkColor];
+    } else if (color == "purple") {
+      sysColor = [NSColor systemPurpleColor];
+    } else if (color == "red") {
+      sysColor = [NSColor systemRedColor];
+    } else if (color == "yellow") {
+      sysColor = [NSColor systemYellowColor];
+    } else {
+      args->ThrowError("Unknown system color: " + color);
+      return "";
+    }
+
+    return ToRGBHex(sysColor);
+  } else {
+    args->ThrowError(
+        "This api is not available on MacOS version 10.9 or lower.");
+    return "";
+  }
 }
 
 bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
