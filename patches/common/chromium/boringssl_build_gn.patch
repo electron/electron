@@ -1,15 +1,28 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:48:05 -0700
-Subject: boringssl_build_gn.patch
+Subject: BoringSSL BUILD.gn
 
-Build BoringSSL with some extra functions that nodejs needs. Only affects
-the GN build; with the GYP build, nodejs is still built with OpenSSL.
+Build BoringSSL with some extra functions that nodejs needs.
+
+Also, export BoringSSL symbols from the main binary. This allows
+third-party native modules to link against the BoringSSL that's compiled
+into Electron. There's no way to flip this `#define` other than through
+a patch to BUILD.gn.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index d31a9f29fa9c12e753708b2a1e75c33b70924300..dea5a6403f4c32f94bb58198c467bc7cc87a8217 100644
+index d31a9f29fa9c12e753708b2a1e75c33b70924300..7da11744f61f69ee0052446ee454e2b70db6a9e2 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
+@@ -13,7 +13,7 @@ import("BUILD.generated_tests.gni")
+ # Config for us and everybody else depending on BoringSSL.
+ config("external_config") {
+   include_dirs = [ "src/include" ]
+-  if (is_component_build) {
++  if (is_component_build || is_electron_build) {
+     defines = [ "BORINGSSL_SHARED_LIBRARY" ]
+   }
+ }
 @@ -46,6 +46,13 @@ config("no_asm_config") {
  
  all_sources = crypto_sources + ssl_sources
