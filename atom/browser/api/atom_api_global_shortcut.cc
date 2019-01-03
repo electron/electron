@@ -24,9 +24,9 @@ namespace {
 #if defined(OS_MACOSX)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
   if (base::mac::IsAtLeastOS10_14()) {
-    constexpr ui::KeyboardCode mediaKeys[] = {ui::VKEY_MEDIA_PLAY_PAUSE,
-                                              ui::VKEY_MEDIA_NEXT_TRACK,
-                                              ui::VKEY_MEDIA_PREV_TRACK};
+    constexpr ui::KeyboardCode mediaKeys[] = {
+        ui::VKEY_MEDIA_PLAY_PAUSE, ui::VKEY_MEDIA_NEXT_TRACK,
+        ui::VKEY_MEDIA_PREV_TRACK, ui::VKEY_MEDIA_STOP};
 
     if (std::find(std::begin(mediaKeys), std::end(mediaKeys),
                   accelerator.key_code()) != std::end(mediaKeys)) {

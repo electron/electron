@@ -60,6 +60,7 @@ the app has been authorizes as a trusted accessibility client:
 * "Media Play/Pause"
 * "Media Next Track"
 * "Media Previous Track"
+* "Media Stop"
 
 ### `globalShortcut.registerAll(accelerators, callback)`
 
@@ -78,6 +79,7 @@ the app has been authorizes as a trusted accessibility client:
 * "Media Play/Pause"
 * "Media Next Track"
 * "Media Previous Track"
+* "Media Stop"
 
 ### `globalShortcut.isRegistered(accelerator)`
 
