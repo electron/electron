@@ -227,7 +227,7 @@ if (browserOptions.transparent) {
 
 [dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
 
-### `systemPreferences.getAccentColor()` _Windows_
+### `systemPreferences.getAccentColor()` _Windows_ _macOS_
 
 Returns `String` - The users current system wide accent color preference in RGBA
 hexadecimal form.
@@ -239,6 +239,8 @@ const green = color.substr(2, 2) // "bb"
 const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
+
+This API is only available on macOS 10.14 Mojave or newer.
 
 ### `systemPreferences.getColor(color)` _Windows_
 

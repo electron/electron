@@ -49,10 +49,13 @@ class SystemPreferences : public mate::EventEmitter<SystemPreferences>
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+#if defined(OS_WIN) || defined(OS_MACOSX)
+  std::string GetAccentColor();
+#endif
+
 #if defined(OS_WIN)
   bool IsAeroGlassEnabled();
 
-  std::string GetAccentColor();
   std::string GetColor(const std::string& color, mate::Arguments* args);
 
   void InitializeWindow();

@@ -13,6 +13,7 @@
 #include "atom/browser/mac/dict_util.h"
 #include "atom/common/native_mate_converters/gurl_converter.h"
 #include "atom/common/native_mate_converters/value_converter.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 #include "native_mate/object_template_builder.h"
@@ -102,6 +103,14 @@ std::string ConvertAuthorizationStatus(AVAuthorizationStatusMac status) {
     default:
       return "unknown";
   }
+}
+
+// Convert color to RGBA value like "#ABCDEF"
+std::string ToRGBA(NSColor* color) {
+  return base::StringPrintf(
+      "%02X%02X%02X%02X", (int)(color.redComponent * 0xFF),
+      (int)(color.greenComponent * 0xFF), (int)(color.blueComponent * 0xFF),
+      (int)(color.alphaComponent * 0xFF));
 }
 
 }  // namespace
@@ -376,6 +385,14 @@ void SystemPreferences::SetUserDefault(const std::string& name,
     args->ThrowError("Invalid type: " + type);
     return;
   }
+}
+
+std::string SystemPreferences::GetAccentColor() {
+  NSColor* sysColor = nil;
+  if (@available(macOS 10.14, *))
+    sysColor = [NSColor controlAccentColor];
+
+  return ToRGBA(sysColor);
 }
 
 bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
