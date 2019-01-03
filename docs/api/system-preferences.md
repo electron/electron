@@ -240,6 +240,8 @@ const blue = color.substr(4, 2) // "cc"
 const alpha = color.substr(6, 2) // "dd"
 ```
 
+This API is only available on macOS 10.14 Mojave or newer.
+
 ### `systemPreferences.getColor(color)` _Windows_
 
 * `color` String - One of the following values:
