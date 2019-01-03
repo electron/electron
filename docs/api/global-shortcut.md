@@ -54,7 +54,7 @@ When the accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
-The following accelerators will not be registered successfully on MacOS 10.14 Mojave unless
+The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
 the app has been authorizes as a trusted accessibility client:
 
 * "Media Play/Pause"
@@ -73,7 +73,7 @@ When a given accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
 
-The following accelerators will not be registered successfully on MacOS 10.14 Mojave unless
+The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
 the app has been authorizes as a trusted accessibility client:
 
 * "Media Play/Pause"
