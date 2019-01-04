@@ -317,6 +317,12 @@ You can use the `setAppLevelAppearance` API to set this value.
 Sets the appearance setting for your application, this should override the
 system default and override the value of `getEffectiveAppearance`.
 
+### `systemPreferences.isTrustedAccessibilityClient(prompt)` _macOS_
+
+* `prompt` Boolean - whether or not the user will be informed via prompt if the current process is untrusted.
+
+Returns `Boolean` - `true` if the current process is a trusted accessibility client and `false` if it is not.
+
 ### `systemPreferences.getMediaAccessStatus(mediaType)` _macOS_
 
 * `mediaType` String - `microphone` or `camera`.
