@@ -68,7 +68,7 @@ async function deleteDraft (releaseId, targetRepo) {
       await github.repos.deleteRelease({
         owner: 'electron',
         repo: targetRepo,
-        release_id: result.id
+        release_id: result.data.id
       })
     }
     console.log(`${pass} successfully deleted draft with id ${releaseId} from ${targetRepo}`)
