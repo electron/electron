@@ -79,7 +79,7 @@ steps:
 
 - bash: |
    cd src
-   ./out/Default/electron electron/spec --ci
+   ./out/Default/electron electron/spec --ci --enable-logging
   displayName: 'Run Electron tests'
   timeoutInMinutes: 10
 
