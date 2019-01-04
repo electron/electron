@@ -50,7 +50,7 @@ async function deleteDraft (releaseId, targetRepo) {
       id: parseInt(releaseId, 10)
     })
     console.log(result)
-    if (!result.draft) {
+    if (!result.data.draft) {
       console.log(`${fail} published releases cannot be deleted.`)
       return false
     } else {
