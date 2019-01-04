@@ -83,6 +83,8 @@ void SystemPreferences::BuildPrototype(
                  &SystemPreferences::GetAppLevelAppearance)
       .SetMethod("setAppLevelAppearance",
                  &SystemPreferences::SetAppLevelAppearance)
+      .SetMethod("isTrustedAccessibilityClient",
+                 &SystemPreferences::IsTrustedAccessibilityClient)
       .SetMethod("getMediaAccessStatus",
                  &SystemPreferences::GetMediaAccessStatus)
       .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
