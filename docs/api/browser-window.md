@@ -200,7 +200,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` Boolean (optional) - Enable the window to be resized larger
     than screen. Default is `false`.
   * `backgroundColor` String (optional) - Window's background color as a hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if
+    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
     `transparent` is set to `true`). Default is `#FFF` (white).
   * `hasShadow` Boolean (optional) - Whether window should have a shadow. This is only
     implemented on macOS. Default is `true`.
