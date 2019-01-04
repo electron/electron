@@ -57,10 +57,10 @@ Returns:
 * `event` Event
 
 Emitted before the application starts closing its windows.
-Calling `event.preventDefault()` will prevent the default behaviour, which is
+Calling `event.preventDefault()` will prevent the default behavior, which is
 terminating the application.
 
-**Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`
+**Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`,
 then `before-quit` is emitted *after* emitting `close` event on all windows and
 closing them.
 
@@ -203,7 +203,7 @@ Returns:
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` Object - Contains app-specific state stored by the activity.
 
-Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediately, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise the operation will fail and `continue-activity-error` will be called.
+Emitted when [Handoff][handoff] is about to be resumed on another device. If you need to update the state to be transferred, you should call `event.preventDefault()` immediately, construct a new `userInfo` dictionary and call `app.updateCurrentActiviy()` in a timely manner. Otherwise, the operation will fail and `continue-activity-error` will be called.
 
 ### Event: 'new-window-for-tab' _macOS_
 
@@ -330,7 +330,7 @@ Returns:
 
 Emitted when `webContents` wants to do basic auth.
 
-The default behavior is to cancel all authentications, to override this you
+The default behavior is to cancel all authentications. To override this you
 should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
@@ -458,7 +458,7 @@ returning `false` in the `beforeunload` event handler.
 
 Exits immediately with `exitCode`. `exitCode` defaults to 0.
 
-All windows will be closed immediately without asking user and the `before-quit`
+All windows will be closed immediately without asking the user, and the `before-quit`
 and `will-quit` events will not be emitted.
 
 ### `app.relaunch([options])`
@@ -469,7 +469,7 @@ and `will-quit` events will not be emitted.
 
 Relaunches the app when current instance exits.
 
-By default the new instance will use the same working directory and command line
+By default, the new instance will use the same working directory and command line
 arguments with current instance. When `args` is specified, the `args` will be
 passed as command line arguments instead. When `execPath` is specified, the
 `execPath` will be executed for relaunch instead of current app.
@@ -523,7 +523,7 @@ Returns `String` - The current application directory.
 * `name` String
 
 Returns `String` - A path to a special directory or file associated with `name`. On
-failure an `Error` is thrown.
+failure, an `Error` is thrown.
 
 You can request the following paths by the name:
 
@@ -635,7 +635,7 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
 
-**Note:** On Windows you have to call it after the `ready` events gets emitted.
+**Note:** On Windows, you have to call it after the `ready` events gets emitted.
 
 ### `app.getLocaleCountryCode()`
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
@@ -648,8 +648,8 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 Adds `path` to the recent documents list.
 
-This list is managed by the OS. On Windows you can visit the list from the task
-bar, and on macOS you can visit it from dock menu.
+This list is managed by the OS. On Windows, you can visit the list from the task
+bar, and on macOS, you can visit it from dock menu.
 
 ### `app.clearRecentDocuments()` _macOS_ _Windows_
 
@@ -671,7 +671,7 @@ system. Once registered, all links with `your-protocol://` will be opened with
 the current executable. The whole link, including protocol, will be passed to
 your application as a parameter.
 
-On Windows you can provide optional parameters path, the path to your executable,
+On Windows, you can provide optional parameters path, the path to your executable,
 and args, an array of arguments to be passed to your executable when it launches.
 
 **Note:** On macOS, you can only register protocols that have been added to
@@ -841,7 +841,7 @@ single instance of your app is running, and other instances signal this
 instance and exit.
 
 The return value of this method indicates whether or not this instance of your
-application successfully obtained the lock.  If it failed to obtain the lock
+application successfully obtained the lock.  If it failed to obtain the lock,
 you can assume that another instance of your application is already running with
 the lock and exit immediately.
 
@@ -850,10 +850,10 @@ application and your app should continue loading.  It returns `false` if your
 process should immediately quit as it has sent its parameters to another
 instance that has already acquired the lock.
 
-On macOS the system enforces single instance automatically when users try to open
+On macOS, the system enforces single instance automatically when users try to open
 a second instance of your app in Finder, and the `open-file` and `open-url`
 events will be emitted for that. However when users start your app in command
-line the system's single instance mechanism will be bypassed and you have to
+line, the system's single instance mechanism will be bypassed, and you have to
 use this method to ensure single instance.
 
 An example of activating the window of primary instance when a second instance
@@ -1011,7 +1011,7 @@ Returns `Boolean` - Whether the call succeeded.
 Sets the counter badge for current app. Setting the count to `0` will hide the
 badge.
 
-On macOS it shows on the dock icon. On Linux it only works for Unity launcher,
+On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 
 **Note:** Unity launcher requires the existence of a `.desktop` file to work,
 for more information please read [Desktop Environment Integration][unity-requirement].
@@ -1032,7 +1032,7 @@ Returns `Boolean` - Whether the current desktop environment is Unity launcher.
   * `args` String[] (optional) _Windows_ - The command-line arguments to compare
     against. Defaults to an empty array.
 
-If you provided `path` and `args` options to `app.setLoginItemSettings` then you
+If you provided `path` and `args` options to `app.setLoginItemSettings`, then you
 need to pass the same arguments here for `openAtLogin` to be set correctly.
 
 Returns `Object`:
@@ -1177,15 +1177,15 @@ systems Application folder. Use in combination with `app.moveToApplicationsFolde
 ### `app.moveToApplicationsFolder()` _macOS_
 
 Returns `Boolean` - Whether the move was successful. Please note that if
-the move is successful your application will quit and relaunch.
+the move is successful, your application will quit and relaunch.
 
-No confirmation dialog will be presented by default, if you wish to allow
-the user to confirm the operation you may do so using the
+No confirmation dialog will be presented by default. If you wish to allow
+the user to confirm the operation, you may do so using the
 [`dialog`](dialog.md) API.
 
 **NOTE:** This method throws errors if anything other than the user causes the
-move to fail. For instance if the user cancels the authorization dialog this
-method returns false. If we fail to perform the copy then this method will
+move to fail. For instance if the user cancels the authorization dialog, this
+method returns false. If we fail to perform the copy, then this method will
 throw an error. The message in the error should be informative and tell
 you exactly what went wrong
 
