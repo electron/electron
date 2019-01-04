@@ -7,6 +7,7 @@ export_platform.patch
 dcheck.patch
 disable-warning-win.patch
 expose_mksnapshot.patch
+build-torque-with-x64-toolchain-on-arm.patch
 do_not_run_arm_arm64_mksnapshot_binaries.patch
 deps_provide_more_v8_backwards_compatibility.patch
 0001-deps-cherry-pick-0483e9a-from-upstream-V8.patch

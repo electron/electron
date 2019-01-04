@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 4 Jan 2019 15:50:24 +0530
+Subject: build-torque-with-x64-toolchain-on-arm.patch
+
+torque binary has to be run during the build.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 1f9dd022ac804e58263f527af5a47768c882de40..f5d777f657de7737263fa407a42e625276226b70 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -170,7 +170,8 @@ declare_args() {
+ 
+ v8_generator_toolchain = v8_snapshot_toolchain
+ if (host_cpu == "x64" &&
+-    (v8_current_cpu == "mips" || v8_current_cpu == "mips64")) {
++    (v8_current_cpu == "mips" || v8_current_cpu == "mips64" ||
++     v8_current_cpu == "arm" || v8_current_cpu == "arm64")) {
+   v8_generator_toolchain = "//build/toolchain/linux:clang_x64"
+ }
+ 
+@@ -3330,7 +3331,8 @@ if (v8_monolithic) {
+ # Executables
+ #
+ 
+-if (current_toolchain == v8_generator_toolchain) {
++if (current_toolchain == v8_generator_toolchain ||
++    (v8_current_cpu == "arm" || v8_current_cpu == "arm64")) {
+   v8_executable("bytecode_builtins_list_generator") {
+     visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+@@ -3374,7 +3376,8 @@ if (v8_use_snapshot && current_toolchain == v8_snapshot_toolchain) {
+   }
+ }
+ 
+-if (current_toolchain == v8_snapshot_toolchain) {
++if (current_toolchain == v8_snapshot_toolchain ||
++    (v8_current_cpu == "arm" || v8_current_cpu == "arm64")) {
+   v8_executable("torque") {
+     visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
